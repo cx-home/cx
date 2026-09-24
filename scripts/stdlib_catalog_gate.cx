@@ -168,8 +168,15 @@
       # is left out, its half being stdlib_dispatch.v above, and its
       # ring1_register.v registering packs that file already names) — the I3 ring split
       # moved the platform modules' dispatch behind the seam-G registry,
-      # so reading only the code/ half reports them as unimplemented
-      # (same both-halves rule as check-completions-drift). find-all
+      # so reading only the code/ half reports them as unimplemented. The
+      # glob ALSO runs over deps/*/vcx/*/*_register.v, the same reasoning
+      # BUNDLE_SET's deps/*/stdlib/*.cx arm gives: a V product's register
+      # file moves whole with its RS-12 extraction (RULED: RS-12, RS-8;
+      # #1591 item K3 found this reading db's sql/redis builtins, which
+      # have no stdlib/*.cx at all and so depend on DISPATCH_SET alone,
+      # as `[specced, no impl]` the run after cx-platform-db's vcx/cxdb/
+      # left vcx/*/ for deps/cx-platform-db/vcx/cxdb/) (same both-halves
+      # rule as check-completions-drift). find-all
       # yields one match per occurrence; the membership tests below
       # tolerate duplicates and the orphan walk dedups explicitly.
       # Normalizations: a module whose PURE half and whose SOCKET half are
@@ -193,7 +200,9 @@
       [?let [= $dispatch-rx [$re:compile "([a-z0-9_]+)_stdlib_builtin"]]
              [= $dispatch-raw [$concat [$io:read-file "vcx/code/stdlib_dispatch.v"]
                                        [$strings:join
-                                         [?for [in $rf [$io:glob "vcx/*/*_register.v"]]
+                                         [?for [in $rg ([$io:glob "vcx/*/*_register.v"],
+                                                        [$io:glob "deps/*/vcx/*/*_register.v"])]
+                                           [in $rf $rg]
                                            [where [not [$strings:starts-with $rf "vcx/code/"]]]
                                            [yield [$io:read-file $rf]]]
                                          "\n"]]]

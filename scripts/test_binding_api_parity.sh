@@ -99,11 +99,14 @@ echo "  go..."
 
 # V
 echo "  v..."
-# -path matches test-v's V_MODULE_PATH (@vlib|@vmodules|vcx): `native`
+# -path is test-v's V_MODULE_PATH, which the Makefile exports as CX_V_SEARCH
+# (vcx/, the pinned V roots of deps.cxd, V's library; RULED: RS-12) -- a
+# command-line -path REPLACES the exported VFLAGS one, so it must name the
+# pinned roots itself or `import cx` finds nothing once vcx/cx has left. `native`
 # resolves relative to the driver file, and ALSO listing $ROOT/lang/v
 # double-registered the module trees — post-I1 vcx is big enough that
 # the duplicate load overflows V's 65535-type table (new_type panic).
-if ! v -path "@vlib|@vmodules|$ROOT/vcx" -o "$V_DRIVER" "$V_DRIVER_SRC" 2>"$WORK/v_build.err"; then
+if ! v -path "${CX_V_SEARCH:-@vlib|@vmodules|$ROOT/vcx}" -o "$V_DRIVER" "$V_DRIVER_SRC" 2>"$WORK/v_build.err"; then
     echo "error: failed to build V driver" >&2
     cat "$WORK/v_build.err" >&2
     exit 2

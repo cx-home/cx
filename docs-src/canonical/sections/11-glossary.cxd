@@ -86,7 +86,7 @@
     [body
       """The unique byte sequence that represents a CX document after
          the canonicalization rules in
-         [`spec/03-approved/core/canonical.md`](../../spec/03-approved/core/canonical.md) are applied.
+         [`spec/03-approved/core/canonical.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md) are applied.
          The SHA-256 of the canonical bytes is the document's
          identity. See [[canonical]]."""]]
 
@@ -159,7 +159,7 @@
   [child id=g-cxdm title='CXDM'
     [body
       """CX Data Model — the abstract value model formalised in
-         [`spec/03-approved/core/cxdm.md`](../../spec/03-approved/core/cxdm.md).
+         [`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md).
          Defines the eleven
          atomic kinds, container kinds, sequence-flatness, equality,
          and the effective boolean value. The basis for every
@@ -238,7 +238,7 @@
   [child id=g-ebv title='effective boolean value (EBV)'
     [body
       """The truthiness coercion rule applied by `[?if]` and `[where …]`
-         guards. Defined in [`spec/03-approved/core/cxdm.md`](../../spec/03-approved/core/cxdm.md)
+         guards. Defined in [`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md)
          §4.6. Empty sequence / `false` / `0` / `''` / `null` are
          false; everything else is true. See [[if]]."""]]
 
@@ -561,7 +561,7 @@
     [body
       """A CX document (`.cxs`) describing the allowed shape of
          another CX document. The schema language is documented
-         in [`spec/03-approved/core/schema.md`](../../spec/03-approved/core/schema.md). See
+         in [`spec/03-approved/core/schema.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/schema.md). See
          [[schema]]."""]]
 
   [child id=g-scope title='scope'

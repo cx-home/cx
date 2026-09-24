@@ -22,13 +22,13 @@ A spec section fails if:
 - Two reasonable engineers reading it could make different implementation choices that produce different observable behaviour.
 - It references a concept defined elsewhere without citing where.
 
-Every method signature in API-bearing specs ([`../misc/api.md`](../misc/api.md), [`../core/code.md`](../core/code.md), [`../misc/bindings.md`](../misc/bindings.md)) must specify:
+Every method signature in API-bearing specs ([`../misc/api.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/misc/api.md), [`../core/code.md`](../core/code.md), [`../misc/bindings.md`](../misc/bindings.md)) must specify:
 
 1. What it returns on success.
 2. What it returns when the target is absent (not an error).
 3. What constitutes a programming error (panic/throw) vs a soft return.
 
-Every binary-format spec ([`../core/data-bin.md`](../core/data-bin.md), [`../core/ast-bin.md`](../core/ast-bin.md), [`../core/streaming.md`](../core/streaming.md)) must include a hex-annotated test vector.
+Every binary-format spec ([`../core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md), [`../core/ast-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/ast-bin.md), [`../core/streaming.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/streaming.md)) must include a hex-annotated test vector.
 
 **Four-channel refinement (CX language/stdlib specs).** The API-bearing checklist above (items 1–3) refines for **CX language/stdlib** specs to the four outcome channels (`../core/code.md` §9.1.2): what it returns as a **value**, on **absence** (empty node-set/sequence), as a **failure** (`[err]`, auto-propagating), and as a **reported problem** (`[invalid …]`, flows as data).
 
