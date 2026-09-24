@@ -391,6 +391,15 @@ sync-cmd-split:
 	for f in vcx/cmd/*.v; do \
 	  ln -sf "$(CURDIR)/$$f" "deps/cx-core-code/vcx/cmd/$$(basename $$f)"; \
 	done
+	@# vcx/target/cx is the ~86-site shorthand this Makefile's own gate steps
+	@# (placement-gate etc.) use for "the tree's own binary" — it stopped
+	@# existing locally the day vcx/Makefile left with cx-core-code (K7a); a
+	@# symlink to the real build output is simpler and safer than rewriting
+	@# every site, and DEPS_CX_FOUND's existing "$(CURDIR)/vcx/target/cx"
+	@# probe keeps working unchanged (RULED: RS-12, D68a).
+	@if [ -d deps/cx-core-code/vcx/target ] && [ ! -e vcx/target ]; then \
+	  ln -s "$(CURDIR)/deps/cx-core-code/vcx/target" vcx/target; \
+	fi
 
 .PHONY: deps-present
 deps-present: sync-cmd-split
