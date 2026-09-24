@@ -140,7 +140,7 @@ Without a strict parse, an attacker could submit a non-numeric string through `x
 
 ### T14 — the store network surface (`cx-store://`)
 
-A network-deployed store server (the retired protocol page is kept at [`../../_archived/cxstore-remote-protocol.md`](../../_archived/cxstore-remote-protocol.md)) is reachable from untrusted clients; the wire protocol carries auth tokens, query / mutation payloads, and result-set bytes that an attacker could intercept, replay, or amplify.
+A network-deployed store server (the retired protocol page is kept at [`../../_archived/cxstore-remote-protocol.md`](https://github.com/cx-home/cx-decisions/blob/main/spec/_archived/cxstore-remote-protocol.md)) is reachable from untrusted clients; the wire protocol carries auth tokens, query / mutation payloads, and result-set bytes that an attacker could intercept, replay, or amplify.
 
 **Mitigation:**
 

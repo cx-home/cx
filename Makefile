@@ -2320,20 +2320,16 @@ check-completions-drift:
 check-editor-surface-parity: build-vcx-dev
 	@vcx/target/cx-dev --allow-read --allow-write scripts/check_editor_surface_parity.cx
 
-# Stage-1 registry publish (distribution spec §4.1 — publish-by-PR): seal +
-# sign + alias a package directory into registry/store, then re-verify.
-#   CX_PKG_DIR=packages/gtin CX_PKG_NAME=gtin CX_PKG_VERSION=0.1.0 \
-#     make registry-publish
-.PHONY: registry-publish
-registry-publish: build-vcx-dev
-	@vcx/target/cx-dev --allow-all registry/publish.cx
-
-# Stage-2 served registry (distribution spec §4.2): the SAME store, re-hosted
-# behind the store daemon on loopback. Consumers open
-# cx-store+http://127.0.0.1:8460/registry/ — hashes/signatures unchanged.
-.PHONY: registry-serve
-registry-serve: build-vcx-dev
-	@vcx/target/cx-dev store-serve --config registry/cxstore.service.cx --allow-net=127.0.0.1:8460
+# registry-publish / registry-serve RETIRED here (RULED: RS-12, RS-8, D59a,
+# D77d; #1591 item K3): registry/publish.cx, registry/keys/cx-home.cxd and
+# registry/store/ left whole for cx-registry (RS-25-shaped gap — a
+# ships=none package repo carries no V toolchain of its own yet, so unlike
+# test-connector-real-lanes there is no lane to re-point the two targets
+# through; cx-private's deps.cxd carries no row for cx-registry either,
+# since this repo consumes none of its namespaces, RS-7). Run these two
+# dev conveniences from a checkout of cx-home/cx-registry against a `cx`
+# binary once that repository's own Makefile carries them (flagged, not
+# fixed, in _gate_evidence/pipeline_xdecreg/RESULTS.md).
 
 # Default parallelism: detected core count, override with `make test TEST_JOBS=N`.
 # Measured speedup on a warm build: ~10× wall-clock vs sequential (342s → 33s).
