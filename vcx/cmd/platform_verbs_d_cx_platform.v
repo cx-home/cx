@@ -15,9 +15,10 @@ import code
 // D73a (RULED: D73a, D71a, RS-18): a product's verbs reach this table through
 // code's CLI verb registry (vcx/code/cli_verb_registry.v), registered from the
 // product's own init() — cx-platform-store registers store-serve,
-// store-health, store-rotate-kek and store-mint-principal — so this file names
-// no product's function. fabric-serve is still written here: its
-// implementation (fabric_serve_d_cx_platform.v) has not left with its product.
+// store-health, store-rotate-kek and store-mint-principal, and
+// cx-platform-fabric registers fabric-serve (K3's extraction moved
+// fabric_serve_d_cx_platform.v through this same hook) — so this file names
+// no product's function.
 import xap as _
 
 // platform_subcommands returns the platform-only SubcommandSpec entries,
@@ -29,22 +30,6 @@ import xap as _
 // platform its word would otherwise read as a FILE (the #426 lesson).
 fn platform_subcommands() []SubcommandSpec {
 	mut by_name := map[string]SubcommandSpec{}
-	fabric := SubcommandSpec{
-		name:    'fabric-serve'
-		summary: 'Run the CX fabric eventing daemon from a config.'
-		help:    [
-			'Usage: cx fabric-serve --config PATH [--allow-net[=host:port]] [--allow-*]',
-			'',
-			'Runs the single-node cx-fabric served tier: loads + validates the',
-			'fabric.service.cx config, mounts the configured fabrics (journal-backed',
-			'durable streams + transient channels), and serves XSP-AUTH-attached',
-			'clients over raw XSP frames until SIGTERM/SIGINT, then drains.',
-			'Health/ready probes ride the optional [health addr=…] listener',
-			'(compatible with `cx store-health --url`).',
-		]
-		run:     run_fabric_serve
-	}
-	by_name[fabric.name] = fabric
 	for v in code.cli_verbs() {
 		if v.name !in absent_platform_verbs {
 			panic('cx: verb `${v.name}` is registered but absent_platform_verbs does not name it — a profile without the platform would read the word as a file (RULED: D73a)')
