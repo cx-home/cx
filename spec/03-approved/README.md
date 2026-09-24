@@ -29,7 +29,7 @@ The `cx-stdlib` module specs: the modules that are pure or purely local. See [`s
 
 ## `platform/` — the bundled platform modules, the platform group (17 modules + README + `store/`)
 
-The `cx-platform` module specs: the modules that serve, or that reach a store or a protocol. See [`platform/README.md`](platform/README.md) for the per-module index; `platform/store/` holds the external-engine catalog entries (`redis`, `sql`) and the two approved store design texts.
+The `cx-platform` module specs: the modules that serve, or that reach a store or a protocol. See [`platform/README.md`](https://github.com/cx-home/cx-platform-xap/blob/main/spec/03-approved/platform/README.md) for the per-module index; `platform/store/` holds the external-engine catalog entries (`redis`, `sql`) and the two approved store design texts.
 
 A surface's ring is DECLARED once, in [`registry/modules.cxd`](../../registry/modules.cxd), and `make placement-gate` refuses a tree where a spec's directory, its `ring=` header, its corpus, its code directory or its namespace disagrees with that row (RULED: 1427-a/1427-f, OL-15).
 

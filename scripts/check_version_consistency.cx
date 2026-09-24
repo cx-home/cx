@@ -61,10 +61,13 @@
 
 # Live trees scanned for stray literals: (root, extensions). spec/_archived
 # is immutable history (excluded); *_test.v fixtures are excluded.
+# spec/02-working scan row RETIRED here (RULED: RS-12, D59a; #1591 item K3):
+# the directory left whole for cx-decisions with the rest of the ledger's
+# working-spec estate; a stray-literal scan of it is that repository's own
+# concern now, not this tree's.
 [?const STRAY-SCAN (
   [scan root='vcx'              exts='v'],
   [scan root='spec/01-new'      exts='md ebnf'],
-  [scan root='spec/02-working'  exts='md ebnf'],
   [scan root='spec/03-approved' exts='md ebnf'],
   [scan root='docs-src'         exts='md cx cxd html'],
   [scan root='stdlib'           exts='cx'],

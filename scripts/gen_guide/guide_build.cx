@@ -984,9 +984,19 @@
      title='D4 · Guestbook + agent'
      blurb='Adds an agent as a fourth peer alongside the human clients. It emits the SAME [do :sign …] intents (agent-parity); the dial — an authz delegation — governs how much it does on its own.'])]
 
-[# xap-demo-page: one demo dir → its page body (blurb · run · source · output). #]
+[# xap-demo-page: one demo dir → its page body (blurb · run · source · output).
+   K3 (RULED: RS-12, RS-8, RS-7, RS-20; #1591 item K3): spec/03-approved/xap/
+   left with cx-platform-xap's extraction -- read the local path while a
+   repository has not done its own leave yet, the pin once it is gone
+   (scripts/gen_docs/primer_platform.cx's platform-path fallback, same
+   shape). #]
+[?def xap-demos-root scope=private impure [returns string] ()
+  [?if [$io:exists 'spec/03-approved/xap/demos']
+   [then 'spec/03-approved/xap/demos/']
+   [else 'deps/cx-platform-xap/spec/03-approved/xap/demos/']]]
+
 [?def xap-demo-page scope=public impure ($d)
-  [?let [= $base [$cat ('spec/03-approved/xap/demos/', $d@dir, '/')]]
+  [?let [= $base [$cat ([xap-demos-root], $d@dir, '/')]]
         [= $src [$io:read-file [$cat ($base, $d@file)]]]
         [= $out [$io:read-file [$cat ($base, 'expected-output.txt')]]]
     [$post-body [$xml:emit

@@ -521,7 +521,6 @@ const accepted_by_one_table = [
 	//    and deps/cx-core-data/conformance/ only (pinned_conformance_dir(), RS-7),
 	//    so the entry cannot be repointed at the pin the way a corpus grader's
 	//    would be; it is simply gone from the population this step scans) ──
-	AcceptedByOne{'conformance/gates.cxd', .data, reason_l25c_residue},
 	AcceptedByOne{'examples/doc.cx', .data, reason_l25c_residue},
 	// ── recorded exception — an `&Name;` entity reference (2) ──
 	AcceptedByOne{'examples/cx-tour.cx', .data, reason_entity},
@@ -558,12 +557,10 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/check_code_fixtures.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/check_code_spec_consistency.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/check_completions_drift.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/check_composition_seams.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/check_no_adr_citations.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/check_no_cxl_token.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/check_null_absence_conflation.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/check_portable_links.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/check_xap_dist_absences.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/check_xpath_parity_fixtures.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/compare_bench.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/compile_binding_api_fixtures.cx', .program, reason_1536},
@@ -590,12 +587,10 @@ const accepted_by_one_table = [
 	// D59a); the scan walks stdlib/ of THIS tree and does not follow deps/.
 	AcceptedByOne{'examples/code-tour.cx', .program, reason_attr},
 	AcceptedByOne{'examples/cxpath-tour.cx', .program, reason_attr},
-	AcceptedByOne{'examples/htmx/serve.cx', .program, reason_attr},
 	AcceptedByOne{'examples/match-multi.cx', .program, reason_attr},
 	AcceptedByOne{'examples/modify-crud.cx', .program, reason_attr},
 	AcceptedByOne{'examples/platform/scim/projection/no-leak.cx', .program, reason_attr},
 	AcceptedByOne{'examples/platform/scim/provisioning/provision.cx', .program, reason_attr},
-	AcceptedByOne{'examples/platform/xap/storefront/compose.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/bundle_check.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/bundle_sources.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/check_bundle_sources_fixtures.cx', .program, reason_attr},
