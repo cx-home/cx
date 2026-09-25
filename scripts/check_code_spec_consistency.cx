@@ -367,7 +367,7 @@
 [?let
   [= $argv [$env:argv]]
   [= $spec-path [?if [>= [$count $argv] 2] [then [$nth $argv 2]]
-                 [else "spec/03-approved/core/code.md"]]]
+                 [else "deps/cx-core-code/spec/03-approved/core/code.md"]]]
   [?if [not [$io:is-file $spec-path]]
     [then [?let [= $_e [$cry [$concat "error: " $spec-path " not found"]]]
             [$env:exit 2]]]

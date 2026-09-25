@@ -231,7 +231,7 @@ program-viz-
 [?let
   [= $argv [$env:argv]]
   [= $fix-path [?if [>= [$count $argv] 2] [then [$nth $argv 2]] [else "conformance/code.cxd"]]]
-  [= $spec-path [?if [>= [$count $argv] 3] [then [$nth $argv 3]] [else "spec/03-approved/core/code.md"]]]
+  [= $spec-path [?if [>= [$count $argv] 3] [then [$nth $argv 3]] [else "deps/cx-core-code/spec/03-approved/core/code.md"]]]
   [?if [not [and [$io:is-file $fix-path] [$io:is-file $spec-path]]]
     [then [?let [= $_e [$cry [$concat "error: fixture or spec file not found: "
                                        $fix-path ", " $spec-path]]]
