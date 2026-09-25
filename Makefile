@@ -442,6 +442,7 @@ deps-present: sync-cmd-split
 	    *) vbad="$$vbad~$$root is not on the V search path [$(CX_DEPS_VPATH)] -- the Makefile did not derive this row from deps.cxd";; esac; \
 	  fi; \
 	  for m in "$$root"/*/; do m=$$(basename "$$m"); \
+	    [ -n "$$(git -C "deps/$$r" ls-files "vcx/$$m" 2>/dev/null | head -1)" ] || continue; \
 	    if [ -d "vcx/$$m" ] && [ -z "$$(git ls-files "vcx/$$m" 2>/dev/null | head -1)" ] && git rev-parse --git-dir >/dev/null 2>&1; then \
 	      vbad="$$vbad~vcx/$$m is on disk and tracks nothing -- a stale copy of a module that left this tree; V searches vcx/ before the pin, so it would compile in place of $$root/$$m (remove it)"; \
 	    fi; \
