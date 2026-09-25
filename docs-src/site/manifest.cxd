@@ -17,7 +17,12 @@ scripts/gen_site/site_assemble.cx (`make site`, `make site-check`). Declares:
             path per line, relative to the site root, grouped by where it comes
             from. `make site-check` lists the assembled tree against the union
             of these blocks: a file missing from the tree, or present in it and
-            claimed by no line, fails the step by name.
+            claimed by no line, fails the step by name. A block may carry
+            `optional=true` (the wasm bundle below is the one so far): its
+            lines may be absent from the tree without failing MISSING, but a
+            file present that no line — required or optional — declares still
+            fails EXTRA. Never an undeclared file, in a tree with or without
+            the optional artifacts.
 
 Where each group comes from is the map scripts/publish.sh applied before it
 retired with the allowlist mirror (RULED: RS-11), now `make site`'s:
@@ -28,9 +33,24 @@ assembly step copies them, untracked); docs/dev/ under dev/; docs/install and
 docs/CNAME at the root; an empty .nojekyll.
 
 Adding a guide section, a stdlib module (its reference page is lib-<name>.html)
-or a docs/llm/ output adds its line here in the same change. The playground's
-wasm/ bundle is absent: it needs emcc, which neither this box nor a GitHub
-runner has by default; the change that stages it adds its files here.
+or a docs/llm/ output adds its line here in the same change. A module renders
+x-<name>.html only while its source glob-matches this front door's OWN
+top-level x/*.cx (guide_build.cx's `is-x-file`, D63a: a PINNED repo's
+deps/<repo>/x/*.cx never counts, however its source path reads) — with no
+live x/ tier here today, no x-<name>.html line belongs in this manifest, and
+`clean-stale-pages` (#1672, guide_build.cx) is what keeps one from
+reappearing on its own: it sweeps every docs/guide/*.html a run does not
+(re)write, so a module that moves tier, is renamed, or is retired never
+leaves its old page for `site-check` to have to either reject or be told to
+bless. #1672 is what this file's own history got wrong before this line was
+written — see the `[files from=guide]` block's own note below.
+
+The playground's wasm/ bundle IS declared, `optional=true`: it needs emcc,
+which neither this box nor a GitHub runner has by default, so a tree that
+never ran `make guide-wasm` holds none of the five files named below and a
+tree that did holds them — `site-check` accepts either shape (and anything
+between, since `copy-if` stages each independently), never a file among them
+that this group does not name.
 #]]
 
   [site repo=cx base='https://cxhome.org/' out=site]
@@ -60,8 +80,22 @@ guide.html
   [; the rendered guide (make guide, docs/guide/), at the root; the lib- pages
      are projected from the [module-doc]/[fn-doc] blocks of the pinned
      repositories' stdlib/*.cx and x/*.cx (82 bundled modules: the eleven the x/
-     tier graduated keep that path in cx-platform-agent and cx-platform-ux,
-     RULED: D45a, D63a), the codec- pages from the synthesized codecs ]
+     tier graduated keep the x/ SOURCE path in cx-platform-agent and
+     cx-platform-ux, RULED: D45a, D63a — but graduated means graduated: they
+     render as lib-<name>.html same as any frozen module, because is-x-file
+     reads only this front door's own top-level x/*.cx, never a pinned repo's),
+     the codec- pages from the synthesized codecs.
+     #1672: this list once carried 12 x-<name>.html lines that no build of the
+     tree this HEAD produces can generate — orphans from before D45a/D63a
+     graduated the last cohort and/or before the repo split moved their
+     sources under deps/, when the front door's OWN x/ still existed and
+     `make guide` never cleans a page whose source moved out from under it.
+     One long-lived checkout still carried them on disk (a fresh `make guide`
+     here never does; measured on this branch's own worktree, zero x- pages,
+     same 82 modules, all lib-). guide_build.cx's `clean-stale-pages` closes
+     the actual gap: it sweeps every docs/guide/*.html a run does not
+     (re)write, so the next tier move or rename cannot leave a page behind
+     for this list to have to either reject or bless. ]
   [files from=guide [#
 about.html
 analytics.html
@@ -204,6 +238,19 @@ xap-d3.html
 xap-d4.html
 xap-distribution.html
 xap.html
+#]]
+
+  [; the playground's wasm engine, staged by `make guide` under docs/guide/wasm/
+     only when dist/wasm/ holds it (built by `make guide-wasm`, which needs
+     emcc — neither this box nor a GitHub runner has it by default). optional:
+     `site-check` does not fail MISSING when this whole tree lacks wasm/, and
+     does not fail EXTRA for any of these five present without the rest. ]
+  [files from=guide-wasm optional=true [#
+wasm/cxlib.js
+wasm/libcx-async.js
+wasm/libcx-pthreads.js
+wasm/libcx-pthreads.wasm
+wasm/libcx-sync.js
 #]]
 
   [; docs/llm/ (make docs), under llm/ — the primer, the references, the

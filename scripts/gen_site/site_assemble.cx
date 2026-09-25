@@ -57,10 +57,23 @@
 [?def member scope=public ($seq $x)
   [> [$count [?for [in $y $seq] [where [= $y $x]] [yield 1]]] 0]]
 
-# declared: every path the manifest's [files] blocks name.
-[?def declared scope=public impure ()
+# attr-or: $e's $k attribute, or $d when $e carries no such attribute.
+[?def attr-or scope=public ($e $k $d)
+  [?let [= $hits [?for [in $a [$attrs $e]] [where [= [$string $a@name] $k]] [yield [$string $a]]]]
+    [?if [= [$count $hits] 0] [then $d] [else [$first $hits]]]]]
+
+# optional-of: a [files] block's own optional=true|false, AS A STRING (kept
+# comparable to a string $want-optional below, the way this file already
+# compares $e@is-file's bool to "true" rather than to a bare bool).
+[?def optional-of scope=public ($k) [$attr-or $k "optional" "false"]]
+
+# declared-lines: every path named by a manifest [files] block for which
+# $want-optional ("true" or "false") matches the block's own optional=
+# (default "false").
+[?def declared-lines scope=public impure ($want-optional)
   [?for [in $k [$cx:parse [$io:read-file MANIFEST]]/*]
     [where [= [?else [$name $k] ""] "files"]]
+    [where [= [$optional-of $k] $want-optional]]
     [in $l [$strings:split-lines [$pb:normalize [$pb:raw-of $k]]]]
     [where [not [= [$strings:trim $l] ""]]]
     [yield [$strings:trim $l]]]]
@@ -114,36 +127,70 @@
                    "the landing page, " [$string [$count $llm]] " llm/ files and the llms.txt pair at the root, "
                    [$string [$count $dev]] " dev/ files, install, CNAME, .nojekyll"]]]]
 
+# report: the shared verdict over a LISTING $have (a sequence of paths,
+# however it was obtained) against the manifest. $label names what $have is,
+# for the messages only — this never reads or writes a tree itself, so a
+# listing captured from a tree this program must not touch (a read-only main
+# checkout, #1672's proof) is exactly as gradable as a live `$out/`.
+[?def report scope=public impure ($label $have)
+  [?let
+    [= $required [$declared-lines "false"]]
+    [= $optional [$declared-lines "true"]]
+    [= $want [?for [in $grp ($required, $optional)]
+               [in $f $grp]
+               [yield $f]]]
+    [= $_e [?if [$empty $want] [then [$die [$concat MANIFEST " declares no [files] — refusing to vouch"]]] [else 0]]]
+    [= $missing [?for [in $f $required] [where [not [$member $have $f]]] [yield $f]]]
+    [= $extra [?for [in $f $have] [where [not [$member $want $f]]] [yield $f]]]
+    [= $dupes [?for [in $f [$distinct $want]]
+                [where [> [$count [?for [in $g $want] [where [= $g $f]] [yield 1]]] 1]]
+                [yield $f]]]
+    [= $opt-present [$count [?for [in $f $optional] [where [$member $have $f]] [yield 1]]]]
+    [?if [and [$empty $missing] [and [$empty $extra] [$empty $dupes]]]
+      [then [?let [= $_s [$say [$concat "site-check: " $label " holds exactly the "
+                                        [$string [$count $required]] " required files " MANIFEST
+                                        " declares, plus " [$string $opt-present] "/" [$string [$count $optional]]
+                                        " optional (wasm) files present"]]]
+              [$env:exit 0]]]
+      [else [?let
+        [= $_h [$cry [$concat "site-check: " $label " does not match " MANIFEST " — "
+                              [$string [$count $missing]] " missing, " [$string [$count $extra]]
+                              " extra, " [$string [$count $dupes]] " declared twice"]]]
+        [= $_m [?for [in $f $missing] [yield [$cry [$concat "  MISSING: " $f
+                                                 " — declared required, and the assembled site does not hold it"]]]]]
+        [= $_x [?for [in $f $extra] [yield [$cry [$concat "  EXTRA:   " $f
+                                                " — assembled, and no line of the manifest declares it"]]]]]
+        [= $_d [?for [in $f $dupes] [yield [$cry [$concat "  TWICE:   " $f]]]]]
+        [$env:exit 1]]]]]]
+
 [?def check scope=public impure ($out)
   [?if [not [$io:is-directory $out]]
     [then [$die [$concat $out "/ is not there — run `make site` first"]]]
+    [else [$report [$concat $out "/"] [$files-under $out]]]]]
+
+# check-list: the same verdict against a captured LISTING rather than a live
+# tree — one path per line, relative to the site root, exactly what
+# `files-under` would have yielded had it walked that tree. Reads a text file,
+# never a directory: the way to grade a tree this program is not allowed to
+# touch (or copy, when it is large) is to list it elsewhere and hand the list
+# here (`make site-check-list LIST=path/to/listing.txt`, #1672).
+[?def check-list scope=public impure ($list-path)
+  [?if [not [$io:exists $list-path]]
+    [then [$die [$concat $list-path " is not there — write one path per line, relative to the site root"]]]
     [else [?let
-      [= $want [$declared]]
-      [= $_e [?if [$empty $want] [then [$die [$concat MANIFEST " declares no [files] — refusing to vouch"]]] [else 0]]]
-      [= $have [$files-under $out]]
-      [= $missing [?for [in $f $want] [where [not [$member $have $f]]] [yield $f]]]
-      [= $extra [?for [in $f $have] [where [not [$member $want $f]]] [yield $f]]]
-      [= $dupes [?for [in $f [$distinct $want]]
-                  [where [> [$count [?for [in $g $want] [where [= $g $f]] [yield 1]]] 1]]
-                  [yield $f]]]
-      [?if [and [$empty $missing] [and [$empty $extra] [$empty $dupes]]]
-        [then [?let [= $_s [$say [$concat "site-check: " $out "/ holds exactly the "
-                                          [$string [$count $want]] " files " MANIFEST " declares"]]]
-                [$env:exit 0]]]
-        [else [?let
-          [= $_h [$cry [$concat "site-check: " $out "/ does not match " MANIFEST " — "
-                                [$string [$count $missing]] " missing, " [$string [$count $extra]]
-                                " extra, " [$string [$count $dupes]] " declared twice"]]]
-          [= $_m [?for [in $f $missing] [yield [$cry [$concat "  MISSING: " $f
-                                                   " — declared, and the assembled site does not hold it"]]]]]
-          [= $_x [?for [in $f $extra] [yield [$cry [$concat "  EXTRA:   " $f
-                                                  " — assembled, and no line of the manifest declares it"]]]]]
-          [= $_d [?for [in $f $dupes] [yield [$cry [$concat "  TWICE:   " $f]]]]]
-          [$env:exit 1]]]]]]]]
+      [= $have [?for [in $l [$strings:split-lines [$io:read-file $list-path]]]
+                 [where [not [= [$strings:trim $l] ""]]]
+                 [yield [$strings:trim $l]]]]
+      [$report [$concat "the listing at " $list-path] $have]]]]]
 
 [?let [= $argv [$env:argv]]
       [= $out [$string [$first [?for [in $k [$cx:parse [$io:read-file MANIFEST]]/*]
                                  [where [= [?else [$name $k] ""] "site"]] [yield $k@out]]]]]
+      [; SITE_CHECK_LIST names a captured file listing (one path per line,
+         relative to the site root) to grade instead of walking $out/ live —
+         how a tree this program must not touch, or must not copy, is graded
+         (#1672's proof against the main checkout's own site/). ]
+      [= $list-path [$env:var-or-default "SITE_CHECK_LIST" ""]]
   [?if [$member $argv "--check"]
-    [then [$check $out]]
+    [then [?if [= $list-path ""] [then [$check $out]] [else [$check-list $list-path]]]]
     [else [?let [= $_a [$assemble $out]] [$env:exit 0]]]]]
