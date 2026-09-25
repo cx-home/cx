@@ -1602,7 +1602,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := check-no-ai-attribution check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := check-no-ai-attribution check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -2318,7 +2318,7 @@ check-verification-timings:
 #                the binding/doc/tooling gates.
 .PHONY: test-ring0 test-ring1 test-ring2
 test-ring0: test-vcx-cx test-extraction-gate libcx-abi-gate ring-import-gate ring-tag-gate gates-manifest-gate
-test-ring1: test-ring0 test-profile-gate check-effect-alignment
+test-ring1: test-ring0 test-vcx-code test-profile-gate check-effect-alignment
 	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-fmt
 test-ring2: test-ring1 test-vcx-suite test-vcx-cmd
 	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-all
@@ -2744,7 +2744,7 @@ test-vcx-gates: build-vcx-dev
 	@"$(CX_BIN)" --allow-all scripts/stdlib_catalog_gate.cx
 	@bash scripts/cxer_registry_report.sh --strict
 
-test-vcx: build-vcx-dev test-vcx-gates test-vcx-suite test-vcx-cmd test-vcx-cx
+test-vcx: build-vcx-dev test-vcx-gates test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx
 	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-all
 	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-fmt
 	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-data-bin-arrow
@@ -3464,7 +3464,15 @@ CODE_SERIAL_RETRY := deps/cx-core-code/vcx/code/code_module_umbrella_test.v
 # (found removing cx-platform-db's vcx/cxdb/, RULED: RS-12, RS-8, #1591 item
 # K3). The extracted product's own `v test` runs from the pin, same as its
 # `cx corpus`.
-CODE_TEST_DIRS :=
+#
+# vcx/code/ itself LEFT WHOLE with cx-core-code (K7a, RULED: RS-12, RS-7), the
+# same shape as every other extracted vmodule above -- but unlike those, this
+# tree keeps grading it FROM THE PIN rather than dropping the entry: RS-32
+# left "cx-core-code runs its own in-module gate" open (no gate of its own
+# exists there yet), so until it does, `deps/cx-core-code/vcx/code/` is this
+# step's one directory, the same way mail's real-socket lanes grade from
+# their pins. Repoint (or drop, once cx-core-code ships its own gate) then.
+CODE_TEST_DIRS := deps/cx-core-code/vcx/code/
 test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	@$(JS_CLOSE) log=deps/cx-core-code/vcx/target/test-code-run.log; stf=deps/cx-core-code/vcx/target/test-code-status; \
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(CODE_TEST_DIRS) 2>&1; echo $$? > $$stf; } | tee $$log; \
