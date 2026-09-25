@@ -13,6 +13,7 @@ hand. Filed as #938.
 | `docs/llm/primer.md` | The one file to load. ~10–15k tokens: the surface taught through runnable examples, a ring decision table, the core idioms, the anti-patterns. |
 | `docs/llm/reference-*.md` | Thin per-area references (data language, code language, stdlib, CLI, platform), loaded on demand. |
 | `docs/llm/playbook-xap.md` | The build-a-production-XAP arc: feature grammars and their composition, derived nouns and deriver principals, the authority model, the `*.xap.cxd` deployment document, identity bootstrap, hosting, and the ux-web surface. |
+| `docs/llm/contributor.md` + `contributor-{architecture,design,implementation,test}.md` | The contributor's front door (RULED: K11a): the rules for changing CX, each citing its decision, and the reading order; the facts (repository map, pins, module census, step roster, the ledger's `RS-n` statements, the umbrellas) projected by `contributor_facts.cx` from the files that declare them. |
 | `docs/llm/llms.txt` | The [llmstxt.org](https://llmstxt.org) index, sectioned by the manifest's `section=` (`start` \| `build` \| `reference`). |
 | `docs/llm/llms-full.txt` | Every document above, one concatenation, for a single-URL fetch. |
 
@@ -86,6 +87,7 @@ primer.
 | `{{DIRECTIVES}}` | the normative directive registry, projected from the spec's own §4.1 table |
 | `{{MODULES:stdlib}}` / `{{MODULES:x}}` | the bundle catalog, projected from each module's `[module-doc]` |
 | `{{CXHELP}}` | the binary's own `--help`, captured live |
+| `{{REPOS}}` `{{PINS}}` `{{MODULE-CENSUS}}` `{{MODULE-COLUMNS}}` `{{STEPS}}` `{{RULINGS}}` `{{UMBRELLAS}}` | the contributor front door's facts (RULED: K11a), projected by `contributor_facts.cx` from `registry/repos.cxd`, `deps.cxd`, `registry/modules.cxd`, the Makefile's `TEST_TARGETS`, the ledger's `RS-n` statements and the pinned checkouts' umbrella test files; each carries a provenance line and a row floor |
 
 An undeclared suite, an unknown fixture id, an unknown placeholder, an
 unclosed `{{`, a duplicate case id across suites, an `[output]` naming an

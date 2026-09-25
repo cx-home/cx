@@ -34,6 +34,13 @@
 #   {{MODULES:x}}               registry/modules.cxd and its prose projected
 #                               from each module's own [module-doc]
 #   {{CXHELP}}                  the binary's own `--help`, captured live
+#   {{REPOS}} {{PINS}}          the contributor front door's FACTS (RULED: K11a),
+#   {{MODULE-CENSUS}}           each projected by scripts/gen_docs/
+#   {{MODULE-COLUMNS}}          contributor_facts.cx from the file that declares
+#   {{STEPS}} {{RULINGS}}       it: registry/repos.cxd, deps.cxd,
+#   {{UMBRELLAS}}               registry/modules.cxd, the Makefile's TEST_TARGETS,
+#                               the ledger's RS-n rows and headings, the
+#                               umbrella test files of the pinned checkouts
 #
 # The last three carry no example code and make no output claim; they are
 # projections of the spec and the bundle, which is exactly why they must not
@@ -83,6 +90,10 @@
    spelled from the CHECKOUT ROOT — see #1604. ]
 [?lib './scripts/docs_fragment.cx' as=frag]
 [?lib './scripts/deps_pins.cx'     as=pins]
+[; The contributor front door's generated fragments (RULED: K11a): the
+   repository map, the pins, the module census, the step roster and the
+   ledger's RS-n statements, projected from the files that declare them. ]
+[?lib './scripts/gen_docs/contributor_facts.cx' as=facts]
 
 [?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
 [?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
@@ -485,6 +496,73 @@
     [$fence "console" [$concat "$ cx --help\n"
       [$strings:trim-end-chars [$string $r@stdout] "\n"]]]]]
 
+# ── the contributor front door's facts (RULED: K11a) ────────────────────
+
+# Each placeholder projects one file the tree already declares; the floor is
+# the fewest body rows a projection may carry before it is refused as a
+# truncated derivation (the directive-rows idiom: a table shape that moved
+# must fail here, not ship a short table).
+[?const FACT-KINDS ("REPOS", "PINS", "MODULE-CENSUS", "MODULE-COLUMNS", "STEPS", "RULINGS", "UMBRELLAS")]
+
+[?def fact-floor scope=public pure [returns int] ($kind)
+  [?match $kind
+    [case "REPOS" 20] [case "PINS" 10] [case "MODULE-CENSUS" 10]
+    [case "MODULE-COLUMNS" 8] [case "STEPS" 50] [case "RULINGS" 30] [case "UMBRELLAS" 10]
+    [else 1]]]
+
+# makefile-includes: the files the Makefile splices in (`-include <path>`),
+# whose rules are as much a step's recipe as its own.
+[?def makefile-includes scope=public impure ($mk)
+  [?for [in $l [$strings:split-lines $mk]]
+    [where [or [$strings:starts-with $l "-include "] [$strings:starts-with $l "include "]]]
+    [= $p [$strings:trim [$strings:slice $l [+ [$strings:find $l " "] 1] [$strings:length $l]]]]
+    [where [$io:is-file $p]]
+    [yield [$io:read-file $p]]]]
+
+[?def ledger-pages scope=public impure ()
+  [?for [in $f [$io:glob "ledger/*.md"]]
+    [where [not [= [$path:basename $f] "README.md"]]]
+    [yield [page path=[$path:basename $f] text=[$io:read-file $f]]]]]
+
+# umbrella-paths: the front door's own umbrellas, then each pinned checkout's, in
+# deps.cxd order, each sorted -- a deterministic list for the drift gate.
+[?def umbrella-paths scope=public impure ()
+  [?let [= $own [$sort [$io:glob "vcx/tests/*_umbrella_test.v"]]]
+        [= $repos [?if [$io:is-file "deps.cxd"]
+                     [then [?for [in $r [$pins:rows [$pins:read [$io:read-file "deps.cxd"]]]] [yield [$string $r@repo]]]]
+                     [else ()]]]
+        [= $pinned [?for [in $r $repos]
+                      [in $d ("vcx/tests", "vcx/code")]
+                      [in $f [$sort [$io:glob [$concat "deps/" $r "/" $d "/*_umbrella_test.v"]]]]
+                      [yield $f]]]
+    [$cat-seqs ($own, $pinned)]]]
+
+[?def fact-table scope=public impure ($kind)
+  [?match $kind
+    [case "REPOS" [$facts:repo-rows [$io:read-file "registry/repos.cxd"]]]
+    [case "PINS" [$facts:pin-rows [$io:read-file "deps.cxd"]]]
+    [case "MODULE-CENSUS" [$facts:module-census [$io:read-file "registry/modules.cxd"]]]
+    [case "MODULE-COLUMNS" [$facts:module-columns [$io:read-file "registry/modules.cxd"]]]
+    [case "STEPS" [?let [= $mk [$io:read-file "Makefile"]]
+                    [$facts:step-rows $mk [$makefile-includes $mk]]]]
+    [case "RULINGS" [$facts:ruling-rows [$ledger-pages]]]
+    [case "UMBRELLAS" [$facts:umbrella-rows [$umbrella-paths]]]
+    [else [$die [$concat "unknown fact placeholder " $kind]]]]]
+
+[?def fact-fragment scope=public impure ($kind)
+  [?let [= $t [$fact-table $kind]]
+        [= $n [$facts:row-count $t]]
+    [?if [< $n [$fact-floor $kind]]
+      [then [$die [$concat "{{" $kind "}} projected only " [$string $n] " rows (floor "
+                           [$string [$fact-floor $kind]] ") — the source's shape moved; fix "
+                           "scripts/gen_docs/contributor_facts.cx rather than shipping a short table"]]]
+      [else [?if [$strings:contains $t "MISSING-FROM-LEDGER"]
+        [then [$die [$concat "{{" $kind "}}: an RS id a ledger heading names has no "
+                             "statement the reader found — record it in a shape the reader takes:\n"
+                             [$strings:join [?for [in $l [$strings:split-lines $t]]
+                                              [where [$strings:contains $l "MISSING-FROM-LEDGER"]]
+                                              [yield [$concat "  " $l]]] "\n"]]]]
+        [else $t]]]]]]
 # ── placeholder expansion ───────────────────────────────────────────────
 
 # lookup: the case's section map, or a hard failure naming the template.
@@ -530,6 +608,7 @@
       [when [= $kind "PLATFORM-CHAPTER"] [$io:read-file PLATFORM-CHAPTER-PATH]]
       [when [= $kind "CXHELP"]  [$cx-help $cxbin]]
       [when [= $kind "DIRECTIVES"] [$directive-rows]]
+      [when [$member FACT-KINDS $kind] [$fact-fragment $kind]]
       [when [$strings:starts-with $kind "MODULES:"]
         [$module-rows [$concat "cx-" [$strings:slice $kind 9 [$strings:length $kind]]]]]
       [when [$strings:starts-with $kind "EXAMPLE:"]
@@ -610,7 +689,7 @@
 # list is a hard failure rather than a document that silently vanishes from
 # the index (the index IS the discovery surface; a file missing from it is
 # a file nobody loads).
-[?const SECTION-KEYS ("start", "build", "reference")]
+[?const SECTION-KEYS ("start", "build", "contribute", "reference")]
 
 [?def check-sections scope=public impure ($docs)
   [?let [= $bad [?for [in $d $docs]
@@ -637,6 +716,7 @@
     "",
     [$section-block $base $docs "start" "Start here"],
     [$section-block $base $docs "build" "Building something"],
+    [$section-block $base $docs "contribute" "Contributing to CX"],
     [$section-block $base $docs "reference" "Reference"],
     "## Optional",
     "",

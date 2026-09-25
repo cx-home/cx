@@ -713,6 +713,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rs-31` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | Not decided here (RS-30, RS-31) |
 | `rs-32` | [rulings_2026_09_24_front_door_letters.md](rulings_2026_09_24_front_door_letters.md) | RS-32 — the front-door letters of 2026-09-24 (owner: D79a, D80a, D81a, D82a, D83a, D84a) |
 | `rs-33` | [rulings_2026_09_24_no_ai_attribution_rs33.md](rulings_2026_09_24_no_ai_attribution_rs33.md) | RS-33 — zero AI attribution anywhere in any repository, ever (owner: D87, D88b) |
+| `rs-34` | [rulings_2026_09_25_llm_front_door_k11a.md](rulings_2026_09_25_llm_front_door_k11a.md) | K11a and RS-34 — the LLM front door's home, and the order of work before the cut (owner: K11a, D89a, D90b) |
+| `rs-34` | [rulings_2026_09_25_llm_front_door_k11a.md](rulings_2026_09_25_llm_front_door_k11a.md) | RS-34 — the letters of 2026-09-25 (owner: D89a, D90b) |
 | `rs-35` | [rulings_2026_09_25_v_fork_rs35.md](rulings_2026_09_25_v_fork_rs35.md) | RS-35 — the V fork under the zero-attribution rule: strip the fork's own range only (owner: Letter 2 = (a), 2026-09-25) |
 | `rs-36` | [rulings_2026_09_25_component_waves_rs36.md](rulings_2026_09_25_component_waves_rs36.md) | RS-36 — how a wave in a component repository lands after the split (owner, 2026-09-25, Letter 4 (a)) |
 | `run-1` | [rulings_2026_09_16_run_selection_run1.md](rulings_2026_09_16_run_selection_run1.md) | Owner decision 2026-09-16 ~05:05Z — the post-merge run tests what changed and what reads it (RULED: RUN-1) |
@@ -1339,4 +1341,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*326 ledger pages; 684 ids declared, 384 cited only.*
+*327 ledger pages; 685 ids declared, 384 cited only.*
