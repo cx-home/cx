@@ -38,7 +38,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GATES="$ROOT/conformance/gates.cxd"
-CXBIN="${CX_BIN:-$ROOT/vcx/target/cx}"
+CXBIN="${CX_BIN:-$ROOT/deps/cx-core-code/vcx/target/cx}"
 
 KNOWN_SUITES="code stdlib packages xpath-31-parity"
 

@@ -63,7 +63,7 @@ CURL_MAX_TIME="${CURL_MAX_TIME:-30}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PLAYGROUND="$ROOT/dist/playground-preview"
-CX_BIN="${CX_BIN:-$ROOT/vcx/target/cx}"
+CX_BIN="${CX_BIN:-$ROOT/deps/cx-core-code/vcx/target/cx}"
 
 if [[ ! -x "$CX_BIN" ]]; then
     echo "Gate 17 FAIL — CX binary not found at $CX_BIN. Run make build-vcx first (or set CX_BIN)."

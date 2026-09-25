@@ -75,7 +75,7 @@ export LIBCX_PATH="$LIBCX"
 
 # The fixture compiler IS a CX program (#922 / PYE-5), so `cx` is now a hard
 # prerequisite rather than a convenience for the drivers.
-CX_BIN="${CX_BIN:-$ROOT/vcx/target/cx}"
+CX_BIN="${CX_BIN:-$ROOT/deps/cx-core-code/vcx/target/cx}"
 if [[ ! -x "$CX_BIN" ]]; then
     echo "error: cx binary missing at $CX_BIN — the fixture compiler needs it" >&2
     echo "       Build with: devbox run -- make build-vcx" >&2

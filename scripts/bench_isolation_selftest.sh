@@ -22,7 +22,7 @@ set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-CX=${CX_BIN:-vcx/target/cx}
+CX=${CX_BIN:-deps/cx-core-code/vcx/target/cx}
 [ -x "$CX" ] || { echo "bench-isolation self-test: no cx binary at $CX — build first"; exit 2; }
 CX="$(cd "$(dirname "$CX")" && pwd)/$(basename "$CX")"
 
