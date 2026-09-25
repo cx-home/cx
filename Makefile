@@ -1621,6 +1621,11 @@ verify-doc-links:
 	@# "0 failed" as the layer grows — the moment a template starts emitting
 	@# `](…)` paths, they have to resolve in the checkout too.
 	@tools/verify-doc-links.sh docs/llm/
+	@# The reference connectors (RULED: 1430-f; reference/connectors/README.md
+	@# §5.1 item 3): the design document and the packages' docs, read from the
+	@# cx-platform-connector pin's tree (RS-12), where their relative links
+	@# resolve against that repository's own layout.
+	@tools/verify-doc-links.sh deps/cx-platform-connector/reference/
 
 # Pre-tag version-string consistency. VERSION (the repo-root file) is the
 # single source of truth; scripts/check_version_consistency.cx verifies every

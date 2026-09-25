@@ -47,9 +47,22 @@
 # command's exit code into its own output, so `expected.txt` pins the exit
 # codes too and a refusal is an ASSERTED answer rather than a silent skip.
 #
+# THE SECOND SCENARIO ROOT — the reference connectors (RULED: 1430-f;
+# reference/connectors/README.md §5.1). Each reference connector is a package
+# whose `scenario/` directory holds the same `run.sh` + `expected.txt` pair,
+# and it is graded by the SAME check_scenario and the SAME stray audit: every
+# `.cx` under the root must sit in a scenario directory or be named by one,
+# and a half-built scenario is a FAIL. The packages live in
+# cx-platform-connector's tree, so the root is that pin's checkout,
+# deps/cx-platform-connector/reference/connectors/ (RULED: RS-12). A feature
+# document is DATA — a per-file reading would pass a connector vacuously
+# without anything opening a socket — so this root has no per-file reading at
+# all. The examples/platform/ contract is unchanged.
+#
 # Usage:
 #   tools/verify-examples.sh
 #   tools/verify-examples.sh examples/comparisons/
+#   tools/verify-examples.sh deps/cx-platform-connector/reference/connectors/
 
 set -uo pipefail
 
@@ -61,6 +74,7 @@ if [ ! -x "$CX" ]; then
 fi
 
 TARGET="${1:-$ROOT/examples}"
+CONNECTORS="$ROOT/deps/cx-platform-connector/reference/connectors"
 PASS=0
 FAIL=0
 FAIL_DETAILS=()
@@ -215,7 +229,7 @@ audit_platform_tree() {
 			# not in a scenario directory: some scenario must NAME it
 			if ! grep -rqF -- "$base" --include='run.sh' --include='*.cx' "$root" 2>/dev/null; then
 				SCEN_FAIL=$((SCEN_FAIL + 1))
-				FAIL_DETAILS+=("$rel [no scenario runs or names this file — every .cx under examples/platform/ must sit in a scenario directory or be reached from one]")
+				FAIL_DETAILS+=("$rel [no scenario runs or names this file — every .cx under ${root#$ROOT/}/ must sit in a scenario directory or be reached from one]")
 			fi
 		fi
 	done < <(find "$root" -name "*.cx" -not -path "*/node_modules/*")
@@ -235,19 +249,37 @@ audit_platform_tree() {
 	done < <(find "$root" -name expected.txt -exec dirname {} \;)
 }
 
-if [ -d "$TARGET" ]; then
-	while IFS= read -r f; do check_file "$f"; done < <(find "$TARGET" -name "*.cx" -not -path "*/node_modules/*")
-	PLATFORM="$TARGET/platform"
-	case "$TARGET" in
-		*/platform|*/platform/*) PLATFORM="$TARGET" ;;
-	esac
-	if [ -d "$PLATFORM" ]; then
-		audit_platform_tree "$PLATFORM"
-		while IFS= read -r dir; do check_scenario "$dir"; done < <(find "$PLATFORM" -name run.sh -exec dirname {} \; | sort)
-	fi
-elif [ -f "$TARGET" ]; then
-	check_file "$TARGET"
-fi
+# scenario_root — the stray audit, then every scenario under one root.
+scenario_root() {
+	local root="$1"
+	[ -d "$root" ] || return 0
+	audit_platform_tree "$root"
+	while IFS= read -r dir; do check_scenario "$dir"; done < <(find "$root" -name run.sh -exec dirname {} \; | sort)
+}
+
+TARGET_ABS="$(cd "$(dirname "$TARGET")" 2>/dev/null && pwd)/$(basename "$TARGET")"
+case "$TARGET_ABS/" in
+	"$CONNECTORS"/*)
+		# a reference connector, or the whole root: scenarios only
+		scenario_root "$CONNECTORS"
+		;;
+	*)
+		if [ -d "$TARGET" ]; then
+			while IFS= read -r f; do check_file "$f"; done < <(find "$TARGET" -name "*.cx" -not -path "*/node_modules/*")
+			PLATFORM="$TARGET/platform"
+			case "$TARGET" in
+				*/platform|*/platform/*) PLATFORM="$TARGET" ;;
+			esac
+			scenario_root "$PLATFORM"
+		elif [ -f "$TARGET" ]; then
+			check_file "$TARGET"
+		fi
+		# The default run grades the second root too; a pin with no
+		# reference/connectors/ (a checkout that predates it) grades nothing
+		# there, and deps-present is the step that says a pin is missing.
+		[ $# -eq 0 ] && scenario_root "$CONNECTORS"
+		;;
+esac
 
 echo "verify-examples: $PASS passed, $FAIL failed; platform scenarios: $SCEN_PASS passed, $SCEN_FAIL failed"
 if [ $FAIL -ne 0 ] || [ $SCEN_FAIL -ne 0 ]; then

@@ -182,6 +182,17 @@
      package directory name; absent = enforced. #]
   [; packages/gtin/ (the suite's one module) RETIRED (RULED: RS-12, RS-8, RS-7, RS-20; #1591 item K3) -- left with the extraction of cx-platform-xap ('the gtin sample package the registry publishes'); the suite carries no other package directory. ]
 
+  [# connectors (RULED: 1430-f; reference/connectors/README.md §5.3): every
+     reference/connectors/<name>/<name>.test.cxd acceptance corpus of the
+     cx-platform-connector pin, graded by vcx/tests/code_eval_fixtures_test.v's
+     second acceptance-fixture root with that pin's checkout as the working
+     directory (its [?lib] and file paths are that repository's root-relative
+     ones). Keyed by package directory name; absent = this default. The kit
+     crm-rest exercises (kind=http, #1430) has landed, so the suite is
+     enforced; a later example whose kind has not landed states gate=advisory
+     on its own [test-suite] element and gains its derived row here (D49a). #]
+  [suite name=connectors default=enforced]
+
   [# xpath-31-parity (RULED: VC-7, #945): conformance/xpath_31_parity.cxd, the
      CXPath / XPath 3.1 alignment corpus. Single-file suite — no module rows,
      the suite default governs the whole file (the `code` shape). Consumer:
