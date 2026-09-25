@@ -966,10 +966,18 @@ const flow_cli_watch_line_budget = 1_000_000
 // operator acts landed (flow.md §4.21, RULED: WF-19; W7): a cancelled run is
 // over. `:paused` and `:cancelling` are not — the one waits on `resume`, the
 // other is an unwind still in progress.
+//
+// THE STATUS IS COMPARED WITH ITS SIGIL. `[$string]` renders an atom WITHOUT
+// its `:` (`:done` → `done`), and the loop reads the status that way off each
+// paint, so the image is normalized to carry the sigil before it is looked up
+// — measured: before this, a watch with no `--for` never ended on ANY
+// terminal status, `:done` included (`done` never equals `':done'`), and
+// every existing test bounded it with `--for`.
 fn flow_cli_watch_defs() string {
 	return r"[?def fw--terminal pure [returns bool] ($s::string)
-  [$exists [$first [?for [in $x (':done', ':compensated', ':incomplete', ':conflict', ':failed', ':cancelled')]
-    [where [= $x $s]] [yield 1]]]]]
+  [?let [= $k [?if [$str-starts-with $s ':'] [then $s] [else [$concat ':' $s]]]]
+    [$exists [$first [?for [in $x (':done', ':compensated', ':incomplete', ':conflict', ':failed', ':cancelled')]
+      [where [= $x $k]] [yield 1]]]]]]
 
 [; a batch is a PAINT: the record is the fold at head, so one paint after a
    batch says exactly what several paints inside it would. An empty batch
