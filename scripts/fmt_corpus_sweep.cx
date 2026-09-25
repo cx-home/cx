@@ -284,7 +284,7 @@
              [recover-with ([$cry 'usage: fmt_corpus_sweep.cx [--bin PATH] [--jobs N] [--no-bench] [--timed] [--max-declined N] [--max-errors N]'],
                             [$env:exit 2], null)]]]
   [= $bin [?let [= $b [$string [$env:flag $args 'bin']]]
-            [?if [= $b ''] [then 'vcx/target/cx'] [else $b]]]]
+            [?if [= $b ''] [then 'deps/cx-core-code/vcx/target/cx'] [else $b]]]]
   [= $jobs [?let [= $j [$env:flag $args 'jobs']]
              [?if [> $j 0] [then $j] [else [$env:cpu-count]]]]]
   [= $include-bench [not [$env:flag $args 'no-bench']]]

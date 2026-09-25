@@ -731,7 +731,7 @@
 [?let
   [= $argv [$env:argv]]
   [= $check [$member $argv "--check"]]
-  [= $cxbin [$env:var-or-default "CX_BIN" "vcx/target/cx"]]
+  [= $cxbin [$env:var-or-default "CX_BIN" "deps/cx-core-code/vcx/target/cx"]]
   [= $version [$strings:trim [$io:read-file "VERSION"]]]
   [= $manifest [$cx:parse [$io:read-file [$path:join SRC-DIR "manifest.cxd"]]]]
 
