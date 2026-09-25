@@ -59,7 +59,7 @@
 
       [?let [= $ddoc [$cx:parse [$io:read-file "docs-src/canonical/reference/directives.cx"]]]
             [= $sdoc [$cx:parse [$io:read-file "docs-src/canonical/reference/syntax.cx"]]]
-            [= $codecxd [$io:read-file "conformance/code.cxd"]]
+            [= $codecxd [$io:read-file "deps/cx-core-code/conformance/code.cxd"]]
             [= $datacxd
               [$concat
                 [$io:read-file "deps/cx-core-data/conformance/core.cxd"]
