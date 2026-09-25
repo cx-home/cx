@@ -32,7 +32,7 @@ DOCS_CAPS := --allow-read --allow-write --allow-subprocess --allow-env
 # here would make GNU make warn about overriding the recipe and silently drop
 # one of the two. So this file declares the path and the opt-out, and depends
 # on the rule already in scope.
-DOCS_CX_BIN := $(CURDIR)/vcx/target/cx
+DOCS_CX_BIN := $(CURDIR)/deps/cx-core-code/vcx/target/cx
 
 ifeq ($(DOCS_SKIP_CX_BUILD),)
   DOCS_CX_DEP := $(DOCS_CX_BIN)

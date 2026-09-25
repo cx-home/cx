@@ -443,7 +443,7 @@
 # missing or invented directive is exactly the poison an LLM-facing document
 # cannot afford — and it must not carry § numbers either (specs stay loosely
 # coupled), so the reference column is dropped and only name + category ship.
-[?const REGISTRY-SPEC "spec/03-approved/core/code.md"]
+[?const REGISTRY-SPEC "deps/cx-core-code/spec/03-approved/core/code.md"]
 [?const REGISTRY-HEADING "### §4.1 Directive registry"]
 
 [?def registry-row scope=public ($line)
@@ -731,7 +731,7 @@
 [?let
   [= $argv [$env:argv]]
   [= $check [$member $argv "--check"]]
-  [= $cxbin [$env:var-or-default "CX_BIN" "vcx/target/cx"]]
+  [= $cxbin [$env:var-or-default "CX_BIN" "deps/cx-core-code/vcx/target/cx"]]
   [= $version [$strings:trim [$io:read-file "VERSION"]]]
   [= $manifest [$cx:parse [$io:read-file [$path:join SRC-DIR "manifest.cxd"]]]]
 

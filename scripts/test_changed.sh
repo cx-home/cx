@@ -751,7 +751,14 @@ suite_files() {
         continue ;;
       # deps.cxd: a moved pin moves the Ring 0 module every test compiles
       # against, exactly as third_party/ moves the compiler (RULED: RS-12).
-      "$SUITE_DIR"/*|vcx/testenv/*|vcx/fixtures/*|third_party/*|deps.cxd|Makefile|vcx/Makefile|vcx/v.mod|devbox.json|devbox.lock|scripts/*)
+      # vcx/corpus/*: found-and-fixed (K7a, FIX-1) — RING_SUP already selects
+      # test-vcx-suite for a vcx/corpus/ change (#1634, the outer step-level
+      # decision), but THIS narrowing function never gained the matching case,
+      # so a change to exactly vcx/corpus/grade.v (the one RS-16 grading core
+      # #1634's own comment names) selected zero suite files and dropped the
+      # step right back out — the false-skip #1634 exists to prevent, still
+      # open in the file that actually decides which files run.
+      "$SUITE_DIR"/*|vcx/testenv/*|vcx/fixtures/*|vcx/corpus/*|third_party/*|deps.cxd|Makefile|vcx/Makefile|vcx/v.mod|devbox.json|devbox.lock|scripts/*)
         echo ALL; return 0 ;;
     esac
   done < "$TC_TMP/changed"

@@ -3,7 +3,7 @@
 # stdlib corpus across grader shards is COMPLETE and DISJOINT, or the step is
 # red.
 #
-# 1448-a splits `vcx/tests/code_eval_fixtures_test.v`'s single-threaded walk
+# 1448-a splits `deps/cx-core-code/vcx/tests/code_eval_fixtures_test.v`'s single-threaded walk
 # over the module corpus into shard test files the V runner's parallel jobs
 # carry. That buys 12–25 minutes off every run and introduces exactly one
 # new failure mode: a module file assigned to NO shard is graded by nothing,
@@ -22,14 +22,14 @@
 #   3. every [file name=…] row resolves to a file that EXISTS under
 #      conformance/;
 #   4. every [shard … test=…] row names a test file that EXISTS;
-#   5. every vcx/tests/code_eval_fixtures_shard_*_test.v in the tree has a
+#   5. every deps/cx-core-code/vcx/tests/code_eval_fixtures_shard_*_test.v in the tree has a
 #      manifest row — a shard file with no row grades nothing and passes.
 #
 # (macOS bash 3.2: no associative arrays — the sets are sorted text streams.)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-MANIFEST=vcx/tests/fixtures_grader/fixture_shards.cxd
+MANIFEST=deps/cx-core-code/vcx/tests/fixtures_grader/fixture_shards.cxd
 [ -f "$MANIFEST" ] || { echo "check-fixture-shard-manifest: no $MANIFEST"; exit 1; }
 
 tmp="$(mktemp -d "${TMPDIR:-/tmp}/cx-shard-manifest.XXXXXX")"
@@ -66,7 +66,7 @@ fi
 
 while read -r name test; do
   [ -n "$name" ] || continue
-  if [ ! -f "$test" ]; then
+  if [ ! -f "$test" ] && [ ! -f "deps/cx-core-code/$test" ]; then
     echo "check-fixture-shard-manifest: shard '$name' names test file '$test', which does not exist"
     fail=1
   fi
@@ -74,7 +74,8 @@ done < "$tmp/shards"
 
 # ── property 5: every shard test file in the tree has a row ─────────────────
 cut -d' ' -f2 "$tmp/shards" | sort > "$tmp/claimed_tests"
-ls vcx/tests/code_eval_fixtures_shard_*_test.v 2>/dev/null | sort > "$tmp/tree_tests" || true
+ls deps/cx-core-code/vcx/tests/code_eval_fixtures_shard_*_test.v 2>/dev/null \
+  | sed 's#^deps/cx-core-code/##' | sort > "$tmp/tree_tests" || true
 orphan_tests=$(comm -13 "$tmp/claimed_tests" "$tmp/tree_tests")
 if [ -n "$orphan_tests" ]; then
   echo "check-fixture-shard-manifest: shard test file(s) with NO manifest row —"
@@ -99,7 +100,7 @@ fi
 missing=""
 while read -r f; do
   [ -n "$f" ] || continue
-  if [ ! -f "conformance/$f" ]; then missing="$missing $f"; fi
+  if [ ! -f "conformance/$f" ] && [ ! -f "deps/cx-core-code/conformance/$f" ]; then missing="$missing $f"; fi
 done < "$tmp/assigned"
 if [ -n "$missing" ]; then
   echo "check-fixture-shard-manifest: manifest row(s) naming a corpus file that does not exist —"
@@ -112,7 +113,7 @@ fi
 # step with fixtures_grader's corpus_dirs / corpus_loose.
 {
   for d in stdlib platform x xap; do
-    for f in conformance/$d/*.cxd; do [ -e "$f" ] && echo "$d/$(basename "$f")"; done
+    for f in conformance/$d/*.cxd deps/cx-core-code/conformance/$d/*.cxd; do [ -e "$f" ] && echo "$d/$(basename "$f")"; done
   done
   echo "../deps/cx-core-data/conformance/extended.cxd"   # pinned (RULED: RS-12)
   echo "xml_codec.cxd"

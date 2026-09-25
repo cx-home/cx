@@ -54,7 +54,7 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-CX="$ROOT/vcx/target/cx"
+CX="$ROOT/deps/cx-core-code/vcx/target/cx"
 
 if [ ! -x "$CX" ]; then
 	(cd "$ROOT" && make -s build-vcx) || { echo "FAIL: cx build failed"; exit 1; }

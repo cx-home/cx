@@ -1984,7 +1984,7 @@ Live gate state was tracked in `spec/v0_8_0_status.md` (retired with the spec-tr
   constants, `:scope public` / `:scope private` visibility.
 - **Bundled `cx-stdlib`** — 14 sub-packages: strings / json / http /
   re / time / math / io / bytes / format / path / log / hash / env /
-  test. [`spec/03-approved/std-lib/`](spec/03-approved/stdlib/README.md).
+  test. [`spec/03-approved/std-lib/`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/stdlib/README.md).
 - **Atom scalar kind** — `:NAME` literals with type-strict
   name-equality and a disjoint hash domain.
 - **`[expr]` general predicate body** + `:pure` / `:impure` modifier
@@ -1995,7 +1995,7 @@ Live gate state was tracked in `spec/v0_8_0_status.md` (retired with the spec-tr
   via byte-offset `loc`.
 - **`cx_code_diagram`** (Mermaid emit, ERD-or-CFG auto-detect) +
   **`cx_code_tree`** (JSON with `loc` byte offsets) C ABI exports.
-- **`cast()` generic builtin** + **`exists()`** in [`spec/03-approved/core/code.md` §6.5](spec/03-approved/core/code.md).
+- **`cast()` generic builtin** + **`exists()`** in [`spec/03-approved/core/code.md` §6.5](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md).
 - **ast_bin v8 wire format** with PathNode kind discriminator `0x13`
   (cap bit 36).
 - **42 §11.6 release gates** — 16 v0.7.6 carryover + 14 new for the

@@ -505,10 +505,11 @@ const reason_prog = 'RECORDED EXCEPTION (1548-c) — a program document whose BR
 // 2026-09-18 morning, seventy-five after, and every departure forced by this
 // judgement rather than asserted by a commit message.
 const accepted_by_one_table = [
-	// ── #1559 — an ASCII BareChar in prose the run does not admit (6) ──
-	AcceptedByOne{'conformance/code.cxd', .data, reason_1577},
+	// ── #1559 — an ASCII BareChar in prose the run does not admit (4) ──
+	// 6 -> 4: conformance/code.cxd and conformance/stdlib/array.cxd left with
+	// cx-core-code's extraction (RULED: RS-12, D68a); the scan walks conformance/
+	// of THIS tree and does not follow deps/.
 	AcceptedByOne{'deps/cx-core-data/conformance/lockfile.cxd', .data, reason_1576},
-	AcceptedByOne{'conformance/stdlib/array.cxd', .data, reason_1579},
 	AcceptedByOne{'deps/cx-core-data/conformance/yaml.cxd', .data, reason_1576},
 	AcceptedByOne{'examples/article.cx', .data, reason_1579},
 	AcceptedByOne{'examples/vcore.cx', .data, reason_1577},
@@ -527,7 +528,7 @@ const accepted_by_one_table = [
 	AcceptedByOne{'examples/env.cx', .data, reason_entity},
 	// ── recorded exception — a token-initial operator head (1) ──
 	AcceptedByOne{'examples/logs.cx', .data, reason_ophead},
-	// ── recorded exception — a DATA-only lane the program grammar has no form for (7) ──
+	// ── recorded exception — a DATA-only lane the program grammar has no form for (6) ──
 	// 4 -> 6: the front door's two corpora (#1589 item 23, RULED: RS-7, RS-9) -- a
 	// [title] of bare prose carrying a word the program reader takes as a keyword
 	// (`module`, `shape`). The three data-language suites are read at cx-core-data's
@@ -535,14 +536,16 @@ const accepted_by_one_table = [
 	// 6 -> 7: conformance/gates_register.cxd, D49a's derived-register corpus (RULED:
 	// RS-27) -- the same class: a bare-prose [title] (`the suite element says …`)
 	// the program reader does not read as text.
+	// 7 -> 6: conformance/xml_codec.cxd left with cx-core-code's extraction
+	// (RULED: RS-12, D68a); the scan walks conformance/ of THIS tree and does
+	// not follow deps/.
 	AcceptedByOne{'conformance/bundle_sources.cxd', .data, reason_datalane},
 	AcceptedByOne{'deps/cx-core-data/conformance/conversions.cxd', .data, reason_datalane},
 	AcceptedByOne{'conformance/docs_fragment.cxd', .data, reason_datalane},
 	AcceptedByOne{'conformance/gates_register.cxd', .data, reason_datalane},
 	AcceptedByOne{'deps/cx-core-data/conformance/fmt.cxd', .data, reason_datalane},
 	AcceptedByOne{'deps/cx-core-data/conformance/xml.cxd', .data, reason_datalane},
-	AcceptedByOne{'conformance/xml_codec.cxd', .data, reason_datalane},
-	// ── #1536 — a call-shaped head beside a ws-delimited literal (23) ──
+	// ── #1536 — a call-shaped head beside a ws-delimited literal (21) ──
 	// 33 -> 22: eleven of these were cx-platform-sso's and left with the
 	// extraction (RULED: RS-12, #1591 item 11) -- the module, the four interop
 	// programs' three judged files and the seven example programs. The scan
@@ -551,7 +554,6 @@ const accepted_by_one_table = [
 	// owns those files judges its own reader parity, or nothing does, and
 	// RESULTS.md says which. `examples/platform/together/sso-flow-xap/actor.cx`
 	// stays -- it is cx's composition, not sso's.
-	AcceptedByOne{'examples/platform/scim/projection/project.cx', .program, reason_1536},
 	AcceptedByOne{'examples/platform/together/sso-flow-xap/actor.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/check_code_diagram_fixtures.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/check_code_fixtures.cx', .program, reason_1536},
@@ -573,15 +575,18 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/gen_guide/snippet_check.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/lang_stats.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/run_bench_json.cx', .program, reason_1536},
-	AcceptedByOne{'stdlib/supervise.cx', .program, reason_1536},
 	// 21 -> 23: RS-33's K12 branch, scripts/check_no_ai_attribution.cx and
 	// scripts/strip_attribution.cx -- the class's own shape,
 	// `[$process:run ("git", "clone", "--mirror", $source, $mirror)]` and
 	// `[$process:run ("git", "-C", $dir, ...)]`, same as deps_cx_selftest.cx
 	// above (RULED: RS-33; fix(ff8ebdc35), CXF-8).
+	// 23 -> 21: examples/platform/scim/projection/project.cx and
+	// stdlib/supervise.cx left with cx-core-code's extraction (RULED: RS-12,
+	// D68a); the scan walks examples/ and stdlib/ of THIS tree and does not
+	// follow deps/.
 	AcceptedByOne{'scripts/check_no_ai_attribution.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/strip_attribution.cx', .program, reason_1536},
-	// ── recorded exception — a computed attribute `name=[EXPR]` (26) ──
+	// ── recorded exception — a computed attribute `name=[EXPR]` (24) ──
 	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
 	// 21 -> 22: scripts/check_migrate_namespace_fixtures.cx, RS-4's sweep grader.
 	// 22 -> 26: the front door's bundled-source table, its tree check, and the two
@@ -592,12 +597,13 @@ const accepted_by_one_table = [
 	// RULED: RS-27).
 	// 27 -> 26: stdlib/diagram.cx left with cx-tooling's extraction (RULED: RS-12,
 	// D59a); the scan walks stdlib/ of THIS tree and does not follow deps/.
+	// 26 -> 24: examples/platform/scim/projection/no-leak.cx and
+	// examples/platform/scim/provisioning/provision.cx left with cx-core-code's
+	// extraction (RULED: RS-12, D68a).
 	AcceptedByOne{'examples/code-tour.cx', .program, reason_attr},
 	AcceptedByOne{'examples/cxpath-tour.cx', .program, reason_attr},
 	AcceptedByOne{'examples/match-multi.cx', .program, reason_attr},
 	AcceptedByOne{'examples/modify-crud.cx', .program, reason_attr},
-	AcceptedByOne{'examples/platform/scim/projection/no-leak.cx', .program, reason_attr},
-	AcceptedByOne{'examples/platform/scim/provisioning/provision.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/bundle_check.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/bundle_sources.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/check_bundle_sources_fixtures.cx', .program, reason_attr},
@@ -697,9 +703,13 @@ fn test_accepted_by_one_red_proof() {
 	assert stale.len == 1, 'the column must refuse a reason for a divergence that is gone'
 	assert stale[0].contains('NO LONGER'), stale[0]
 
-	// and a divergence that changed sides is not silently re-labelled
+	// and a divergence that changed sides is not silently re-labelled.
+	// Anchor RETARGETED (K7a, RULED: RS-12) from conformance/code.cxd, which
+	// left with cx-core-code's extraction and is no longer in the table at
+	// all under any kind, to examples/article.cx, a `.data` entry the table
+	// still carries (reason_1579) and that this tree keeps for good.
 	side, _ := judge_accepted_by_one([
-		AcceptedByOne{'conformance/code.cxd', .program, ''},
+		AcceptedByOne{'examples/article.cx', .program, ''},
 	], accepted_by_one_table)
 	assert side.len == 1, 'the column must refuse an entry whose accepting reader changed'
 	assert side[0].contains('changed sides'), side[0]

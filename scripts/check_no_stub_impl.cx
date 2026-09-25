@@ -53,7 +53,7 @@
   # from the pinned checkout deps/<repo>/vcx/<vmodule>/, so once vcx/<vmodule>/
   # is gone that checkout is the directory scanned (#1651); a directory absent
   # from both is still refused.
-  [= $impl-dirs [$fp:flat-map ("vcx/code",
+  [= $impl-dirs [$fp:flat-map ([?if [$io:exists "vcx/code"] [then ("vcx/code")] [else ("deps/cx-core-code/vcx/code")]],
                                 [?if [$io:exists "vcx/platform"] [then ("vcx/platform")] [else ()]],
                                 [?for [in $x [$cx:parse [$io:read-file "registry/repos.cxd"]]//repo]
                                   [where [not [= [$string [?else $x@vmodule ""]] ""]]]

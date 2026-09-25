@@ -55,8 +55,15 @@ check "ALL" "an engine change selects everything" "vcx/code/eval.v"
 # registry/modules.cxd's row. Before this, every one of these answered ALL, so
 # #1560's selection never reached a stdlib branch: c5's profile-gate step was
 # the unselected 70-100 minute run and every stdlib branch paid the same.
-check "map.cxd" "a stdlib module's source selects ITS corpus file" "stdlib/map.cx"
-check "bytes.cxd" "a module's Ring-1 V half selects its corpus file" "vcx/code/stdlib_bytes.v"
+# map's own stdlib/map.cx and bytes's own vcx/code/stdlib_bytes.v RETIRED as
+# these examples (RULED: RS-12, RS-8; K7a, #1591 item K7a): cx-core-code's
+# extraction took stdlib/ and vcx/code/ WHOLE — registry/modules.cxd's map
+# and bytes rows now name the pinned paths (deps/cx-core-code/stdlib/map.cx,
+# deps/cx-core-code/vcx/code/stdlib_bytes.v), which this rule's exact string
+# match against a LOCAL stdlib/ or vcx/code/ path can no longer reach — as it
+# should not: nothing under stdlib/ or vcx/code/ exists here to touch any
+# more (CODE_TEST_DIRS is empty; every remaining `source=`/`code=` in the
+# registry reads `none` or a `deps/…` pin, per the audit below this comment).
 # audit's own vcx/store/stdlib_audit.v RETIRED as this example (RULED: RS-12,
 # RS-8; #1591 item K3): audit left cx-private with cx-platform-store's
 # extraction, and registry/modules.cxd's row now names the pinned path
@@ -84,16 +91,27 @@ check "bytes.cxd" "a module's Ring-1 V half selects its corpus file" "vcx/code/s
 # vcx/xsp/ -- the row now reads half=none and names the pinned path, which this
 # rule's exact string match against a LOCAL vcx/code/ path can no longer reach.
 # No row declares a half= any more, so no local file can stand in for it.
-check "bytes.cxd map.cxd" "two module sources select both corpus files" "stdlib/map.cx" "vcx/code/stdlib_bytes.v"
+# map+bytes together RETIRED as this example for the same reason as the two
+# checks above (K7a: both left cx-private whole, in the same extraction).
 # connector's own stdlib/connector.cx RETIRED as this example (RULED: RS-12,
 # RS-8, RS-27; #1591 item K3): connector left cx-private with
 # cx-platform-connector's extraction, and registry/modules.cxd's row now
 # names the pinned path (deps/cx-platform-connector/stdlib/connector.cx),
 # which this rule's exact string match against a LOCAL stdlib/ path can no
 # longer reach — as it should not: nothing under stdlib/connector.cx exists
-# here to touch any more. geo's own source is the same shape and has not
-# left (the d2cec18fa/fabric.cxd precedent, applied here).
-check "db.cxd geo.cxd" "a module source and a corpus file together" "stdlib/geo.cx" "conformance/platform/db.cxd"
+# here to touch any more. geo's own stdlib/geo.cx RETIRED as this example too
+# (RULED: RS-12, RS-8; K7a): geo left with cx-core-code's extraction (the
+# d2cec18fa/fabric.cxd precedent no longer applies — geo did not stay).
+# registry/modules.cxd's geo row now names deps/cx-core-code/stdlib/geo.cx.
+#
+# Rule (2b) — the whole module map — now has NO live example: every
+# `source=`/`code=`/`half=` in registry/modules.cxd reads `none` or a
+# `deps/…` pin (verified: zero bare `source=stdlib/` or `code=vcx/` rows
+# remain). The property still holds — profile_gate_files_for_branch.sh's own
+# awk match is unchanged and a NEW local module would exercise it again —
+# there is simply no file left in this tree that can demonstrate it. The
+# fail-safe direction (an unmapped source, or a source with no registry row,
+# answers ALL) is still checked below, live, against real local files.
 
 # ALL still wins wherever a module cannot be named, and wherever the change is
 # the ENGINE rather than a module: those are the doubts the fail-safe exists for.
@@ -113,4 +131,4 @@ if [ "$fails" -gt 0 ]; then
   echo "profile-gate selection self-test: $fails failure(s)"
   exit 1
 fi
-echo "profile-gate selection self-test OK — 19 rules (#1560 + #1587's module-to-corpus map)"
+echo "profile-gate selection self-test OK — 14 rules (#1560 + #1587's module-to-corpus map, now demonstrated only by its fail-safe direction: K7a left rule 2b with no local module-source example, see the RETIRED comments above)"

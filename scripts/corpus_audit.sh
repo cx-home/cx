@@ -6,7 +6,7 @@
 # computes a live status, and compares against corpus/rosetta/AUDIT.md.
 # Exits 0 if every live status matches recorded; exits 1 on drift.
 set -u
-CX_BIN=${CX_BIN:-vcx/target/cx}
+CX_BIN=${CX_BIN:-deps/cx-core-code/vcx/target/cx}
 CORPUS_DIR=${CORPUS_DIR:-corpus/rosetta}
 AUDIT_FILE="${CORPUS_DIR}/AUDIT.md"
 [ -x "$CX_BIN" ] || { echo "corpus-audit: missing $CX_BIN — run 'make build-vcx' first" >&2; exit 2; }

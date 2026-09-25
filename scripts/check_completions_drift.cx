@@ -85,9 +85,10 @@
        [?fn ($x) $x]]]]]
 
 [?let
-  [= $main-v "vcx/cmd/main.v"]
+  [= $main-v [?if [$io:exists "vcx/cmd/main.v"] [then "vcx/cmd/main.v"] [else "deps/cx-core-code/vcx/cmd/main.v"]]]
   # I4 (#651/#516): the platform-profile verbs (store/fabric daemons +
-  # operator helpers) live in their own `-d cx_platform`-gated file.
+  # operator helpers) live in their own `-d cx_platform`-gated file -- this one
+  # stays TRACKED here (RS-8) even after main.v itself left with cx-core-code.
   [= $platform-v "vcx/cmd/platform_verbs_d_cx_platform.v"]
   # The completions left with cx-tooling and are read from its pinned checkout;
   # this step stays here because it grades THIS tree's verb table (RULED: RS-12, D59a).

@@ -428,7 +428,7 @@ before being used in a module's error table.
 The CX core language reserves `CXER0001` (generic-core panic) and
 `CXER0100–CXER0299` (CX-code directive errors); the full sub-block
 allocation table inside that range lives in
-[`spec/core/code.md §9.4`](../core/code.md#§9.4-cx-code-error-code-reservation)
+[`spec/core/code.md §9.4`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md#§9.4-cx-code-error-code-reservation)
 and is not duplicated here.
 
 | Range | Owner module / subsystem | Spec file |
@@ -626,7 +626,7 @@ CI-tested as part of the build.
 ### 12.1 Reserved CX directive names
 
 Reserved directive names (the `[?Name …]` head position) are the
-closed set fixed by [`core/code.md`](../core/code.md) §4.1 and
+closed set fixed by [`core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §4.1 and
 mirrored in `grammar.ebnf [127e]` ProgramDirName. Only the CX project
 may extend this set; user `[?def]` MUST NOT shadow a reserved name,
 and `[?<Name>]` with `Name` outside the closed set raises
@@ -660,8 +660,8 @@ and `[?<Name>]` with `Name` outside the closed set raises
 
 **Document-level CX directive family** (`[?cx <name> …]`, distinct
 from the closed `[?<Name>]` set above and reserved as a two-token
-head): `[?cx include=…]` ([`core/code.md`](../core/code.md) §13),
-`[?cx max-eval-depth=…]` ([`modules/cx.md`](../stdlib/cx.md) §3),
+head): `[?cx include=…]` ([`core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §13),
+`[?cx max-eval-depth=…]` ([`modules/cx.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/stdlib/cx.md) §3),
 plus the XML-declaration sibling `[?xml …]`
 (`grammar.ebnf [33]`).
 
@@ -671,7 +671,7 @@ is not a NameStartChar, so the directive production cannot collide
 with the element production. The reservation applies only to the
 `[?Name …]` (and `[?cx <name> …]`) head positions.
 
-The canonical source for this list is [`core/code.md`](../core/code.md)
+The canonical source for this list is [`core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)
 §4.1; any directive added or removed there MUST be reflected here in
 the same PR per §10.1.
 

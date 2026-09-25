@@ -182,7 +182,7 @@
          prefix CX code over the context node `$_` — `[= $_@active
          true]`. If you have written XPath, the alignment is
          deliberate — see the CXPath sections of
-         [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md)
+         [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)
          and the conformance corpus `conformance/xpath_31_parity.cxd`
          for what carries over and what does not."""]
 

@@ -192,7 +192,7 @@
 
 # -- the corpus ----------------------------------------------------------
 
-[?let [= $p "conformance/migrate_namespace.cxd"]
+[?let [= $p "deps/cx-core-code/conformance/migrate_namespace.cxd"]
   [?if [not [$io:exists $p]]
     [then [?let [= $_ [$cry [$concat "migrate-namespace: cannot read " $p " -- run from the checkout root"]]]
             [$env:exit 2]]]
@@ -200,7 +200,7 @@
 
 [?let
   [= $verbose [$member "--verbose" [$env:argv]]]
-  [= $suite [$cx:parse [$io:read-file "conformance/migrate_namespace.cxd"]]]
+  [= $suite [$cx:parse [$io:read-file "deps/cx-core-code/conformance/migrate_namespace.cxd"]]]
   [= $cases [?for [in $c $suite/case] [yield $c]]]
   [= $cxbin [$env:executable-path]]
   [= $graded [?for [in $c $cases] [yield [$grade $c $cxbin]]]]

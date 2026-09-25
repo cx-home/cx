@@ -1,7 +1,7 @@
 # CX
 
 [![Version](https://img.shields.io/badge/version-v0.18.0-pre.1-blue.svg)](#status)
-[![CX](https://img.shields.io/badge/CX-37.0%25_of_source-1a1a17.svg)](#status)
+[![CX](https://img.shields.io/badge/CX-54.7%25_of_source-1a1a17.svg)](#status)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-cx--home.github.io%2Fcx-brightgreen.svg)](https://cx-home.github.io/cx/)
 [![Status](https://img.shields.io/badge/status-pre--1.0_experimental-orange.svg)](#status)
@@ -199,8 +199,8 @@ and registry setup/consumption for distributing features
 ## Embedding libcx
 
 CX ships as an embeddable C library: `make install` installs `libcx`, the
-[`include/cx.h`](include/cx.h) header, and a pkg-config file (generated from
-[`cx.pc.in`](cx.pc.in)) so `pkg-config --cflags --libs cx` works from any C
+[`include/cx.h`](https://github.com/cx-home/cx-core-code/blob/main/include/cx.h) header, and a pkg-config file (generated from
+[`cx.pc.in`](https://github.com/cx-home/cx-core-code/blob/main/cx.pc.in)) so `pkg-config --cflags --libs cx` works from any C
 consumer. The versioned C ABI contract — symbols, capability bits,
 memory/threading rules — is
 [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md), and every

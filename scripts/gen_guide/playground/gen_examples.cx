@@ -929,7 +929,7 @@
   # The recorded answer (#1170 §C1, RULED: 1170-a) — a generated sibling of
   # the corpus, never the corpus itself.
   [= $pin-path [$path:join $self-dir 'examples.out.cxd']]
-  [= $cxbin 'vcx/target/cx']
+  [= $cxbin 'deps/cx-core-code/vcx/target/cx']
   # PER-RUN temp dir (the pid in the name). Measured 2026-09-10 00:20Z: the
   # gate's run of this checker and an impl lane's run shared
   # $TMPDIR/cx-gen-examples, each read the other's probe files, and the

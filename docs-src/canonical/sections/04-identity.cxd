@@ -164,7 +164,7 @@
            byte-identical hash strings for byte-identical input. The
            guarantee extends to architecture (x86-64, ARM64,
            little-endian, big-endian) and OS (macOS, Linux, Windows,
-           BSD). Verified by [`conformance/binding_api.cxd`](../../conformance/binding_api.cxd)
+           BSD). Verified by [`conformance/binding_api.cxd`](https://github.com/cx-home/cx-core-code/blob/main/conformance/binding_api.cxd)
            gate 28.6."""]
       [body
         """**Determinism details:**"""]

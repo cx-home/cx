@@ -33,8 +33,8 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 LIB="${1:-}"
-BASELINE="$ROOT/vcx/tests/runners/abi_gate/libcx_abi_surface.txt"
-HEADER="$ROOT/include/cx.h"
+BASELINE="$ROOT/deps/cx-core-code/vcx/tests/runners/abi_gate/libcx_abi_surface.txt"
+HEADER="$ROOT/deps/cx-core-code/include/cx.h"
 
 if [ -z "$LIB" ] || [ ! -f "$LIB" ]; then
   echo "libcx-abi-gate FAILED — library artifact not found: ${LIB:-<none given>}"
@@ -75,7 +75,7 @@ if diff -u "$BASELINE" "$CUR" > /tmp/libcx_abi_diff.$$ 2>&1; then
 else
   echo "libcx-abi-gate FAILED — the CX export surface changed:"
   cat /tmp/libcx_abi_diff.$$
-  echo "  (baseline: vcx/tests/runners/abi_gate/libcx_abi_surface.txt — re-bless ONLY with a"
+  echo "  (baseline: deps/cx-core-code/vcx/tests/runners/abi_gate/libcx_abi_surface.txt — re-bless ONLY with a"
   echo "   deliberate ABI change, recorded per the governance versioning rules)"
   FAIL=1
 fi

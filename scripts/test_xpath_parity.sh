@@ -73,7 +73,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 FIXTURES="$ROOT/conformance/xpath_31_parity.cxd"
-CX_BIN="${CX_BIN:-$ROOT/vcx/target/cx}"
+CX_BIN="${CX_BIN:-$ROOT/deps/cx-core-code/vcx/target/cx}"
 SAXON_IMAGE="${SAXON_IMAGE:-saxonica/saxonhe:12}"
 
 # ── preconditions, reported all at once ──────────────────────────────────

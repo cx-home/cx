@@ -29,8 +29,8 @@ GUIDE_GEN := scripts/gen_guide
 # compile notices. Opt OUT of the rebuild check with
 # `make guide GUIDE_SKIP_CX_BUILD=1` (reuse the binary as-is); to force a fresh
 # optimized binary, run `make build-vcx` first.
-GUIDE_CX_BIN  := $(CURDIR)/vcx/target/cx
-GUIDE_CX_SRCS := $(shell find $(CURDIR)/vcx/cx $(CURDIR)/vcx/code $(CURDIR)/vcx/cmd -name '*.v' 2>/dev/null)
+GUIDE_CX_BIN  := $(CURDIR)/deps/cx-core-code/vcx/target/cx
+GUIDE_CX_SRCS := $(shell find $(CURDIR)/deps/cx-core-code/vcx/cx $(CURDIR)/deps/cx-core-code/vcx/code $(CURDIR)/vcx/cmd -name '*.v' 2>/dev/null)
 
 # The recipe has to build the FILE IT DECLARES. Since #1312 split the dev and
 # prod artifacts, `build-vcx-dev` writes vcx/target/cx-dev and never
@@ -83,7 +83,7 @@ guide: $(GUIDE_CX_DEP)
 	@# how a 0.13.0 engine reached a v0.17 playground and stayed there for
 	@# five releases (#992). --warn reports and keeps going: the reuse
 	@# stays, the silence does not.
-	@./scripts/wasm/check_wasm_fresh.sh --warn || true
+	@OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/check_wasm_fresh.sh --warn || true
 	@echo "guide: built $(GUIDE_OUT)/ via $(GUIDE_GEN)/guide_build.cx (render = .cx)"
 
 ## guide-snippets-check  Docs-example gate (#425): run every
@@ -211,9 +211,9 @@ build-playground-wasm-for-guide:
 	@# bundles abort at instantiation there. cxlib.js selects it when
 	@# WebAssembly.Suspending is absent. MUST stay in lockstep with the
 	@# top-level Makefile's build-playground recipe.
-	@SINGLE_FILE=1 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=0 OUT_NAME=libcx-async    ./scripts/wasm/build_libcx_wasm.sh
-	@SINGLE_FILE=0 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=1 OUT_NAME=libcx-pthreads ./scripts/wasm/build_libcx_wasm.sh
-	@SINGLE_FILE=1 ASYNCIFY=0                 PTHREADS=0 OUT_NAME=libcx-sync     ./scripts/wasm/build_libcx_wasm.sh
+	@SINGLE_FILE=1 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=0 OUT_NAME=libcx-async    DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
+	@SINGLE_FILE=0 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=1 OUT_NAME=libcx-pthreads DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
+	@SINGLE_FILE=1 ASYNCIFY=0                 PTHREADS=0 OUT_NAME=libcx-sync     DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
 
 ## guide-http   Build docs/guide/ + boot the dog-food CX HTTP static
 ##                                   server (scripts/gen_guide/guide_serve.cx)
@@ -228,7 +228,7 @@ build-playground-wasm-for-guide:
 .PHONY: guide-http
 guide-http: guide
 	@echo "[guide-http] starting cx-guide-serve via cx"
-	@vcx/target/cx scripts/gen_guide/guide_serve.cx
+	@deps/cx-core-code/vcx/target/cx scripts/gen_guide/guide_serve.cx
 
 ## guide-diff   Preview what re-running the
 ##                                   target would change in docs/guide/.
@@ -246,7 +246,7 @@ guide-diff:
 endif
 	@stage="$$(mktemp -d -t cxguide-diff.XXXXXX)"; \
 	 cp -R $(GUIDE_OUT) "$$stage/before" 2>/dev/null || mkdir -p "$$stage/before"; \
-	 $(CURDIR)/vcx/target/cx --allow-read --allow-write --allow-subprocess $(GUIDE_GEN)/guide_build.cx >/dev/null; \
+	 $(CURDIR)/deps/cx-core-code/vcx/target/cx --allow-read --allow-write --allow-subprocess $(GUIDE_GEN)/guide_build.cx >/dev/null; \
 	 diff -ruN "$$stage/before" $(GUIDE_OUT) || true; \
 	 rm -rf "$$stage"
 

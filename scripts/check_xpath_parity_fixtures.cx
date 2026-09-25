@@ -247,6 +247,7 @@
                 reason=[$concat "CX_BIN=" $envbin " is not an executable file"]]]]]
       [else
         [?let [= $cands ([$path:join $root "dist/bin/cx"],
+                         [$path:join $root "deps/cx-core-code/vcx/target/cx"],
                          [$path:join $root "vcx/target/cx"],
                          [$path:join $root "vcx/cx"])]
               [= $hits [?for [in $c $cands] [where [$executable-file $c]] [yield $c]]]
@@ -389,7 +390,7 @@
   [= $root [$path:dirname [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]]
   [= $fx-flag [$string [?else [$env:flag $args "fixtures"] ""]]]
   [= $fix-path [?if [= $fx-flag ""]
-    [then [$path:join $root "conformance/xpath_31_parity.cxd"]]
+    [then [$path:join $root "deps/cx-core-code/conformance/xpath_31_parity.cxd"]]
     [else $fx-flag]]]
   [= $gates-path [$path:join $root "conformance/gates.cxd"]]
   [= $_g1 [$need-file $fix-path "fixture file"]]

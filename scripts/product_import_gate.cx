@@ -212,16 +212,22 @@
                  [else [?if [$member $h $vlib] [then [ok]]
                          [else [failure kind="unknown import" what=[$concat [$string $s@file] ": " $h]]]]]]]]]
     [= $edge-failures [?for [in $c $edge-checks] [where [?match $c [case [ok] false] [else true]]] [yield $c]]]
-    # a pinned ring's files: their own repository's modules and vlib, only.
+    # a pinned ring's files: their own repository's modules, their own
+    # repository's declared pins (K7a: cx-core-code, a SECOND core repository,
+    # pins cx-core-data -- Ring 1 on Ring 0 is the layering, not an up-edge;
+    # cx-core-data itself still has no pins, so this changes nothing for it),
+    # and vlib.
     [= $ring-checks
       [?for [in $s $psrcs]
+        [= $me [$string $s@repo]]
+        [= $mypins [$words [$string [$first [?for [in $x $repos] [where [= [$string $x@name] $me]] [yield [$string [?else $x@pins ""]]]]]]]]
         [in $h [$words [$string $s@imps]]]
         [where [not [= $h [$string $s@dir]]]]
         [yield [?if [$member $h $dirs]
                  [then [?let [= $o [$string [$first [?for [in $w $owners] [where [= [$string $w@dir] $h]] [yield [$string $w@repo]]]]]]
-                         [?if [= $o [$string $s@repo]] [then [ok]]
+                         [?if [?if [= $o $me] [then true] [else [$member $o $mypins]]] [then [ok]]
                            [else [failure kind="ring up-edge"
-                                   what=[$concat [$string $s@file] ": " [$string $s@dir] " (" [$string $s@repo] ") -> " $h " ("
+                                   what=[$concat [$string $s@file] ": " [$string $s@dir] " (" $me ") -> " $h " ("
                                           [?if [= $o ""] [then "no repository"] [else $o]] ")"]]]]]]
                  [else [?if [$member $h $vlib] [then [ok]]
                          [else [failure kind="unknown import" what=[$concat [$string $s@file] ": " $h]]]]]]]]]
@@ -420,10 +426,17 @@
   # repository owns, read for its imports -- a ring imports its own modules
   # and vlib only ([ring up-edge]).
   [= $core-names [?for [in $x $repos] [where [= [$string [?else $x@group ""]] "core"]] [yield [$string $x@name]]]]
+  # A core repository can carry a directory that is not a ring module at all
+  # (cx-core-code's vcx/tests/, vcx/tools/, vcx/bench/, vcx/timing/, vcx/testenv/
+  # beside code and cmd, K7a) -- the same "module main file is not a product
+  # module" reasoning qsrcs already applies below, so a file whose own
+  # `module` does not match its directory name is not a ring module either.
   [= $psrcs [?for [in $o $pinned] [where [$member [$string $o@repo] $core-names]]
               [in $f [$io:glob [$concat "deps/" [$string $o@repo] "/vcx/" [$string $o@dir] "/*.v"]]]
+              [= $text [$io:read-file [$string $f]]]
+              [where [= [$module-of $text] [$string $o@dir]]]
               [yield [src file=[$string $f] dir=[$string $o@dir] repo=[$string $o@repo]
-                          imps=[$strings:join [$import-heads [$io:read-file [$string $f]]] " "]]]]]
+                          imps=[$strings:join [$import-heads $text] " "]]]]]
   # The pinned PRODUCTS' files (D65d): every V file of a pinned root a
   # non-core repository owns that declares its directory's module, read for
   # its imports and held to that repository's pins ([pinned edge]) -- a

@@ -102,8 +102,8 @@
 # code-diagram; its pins are diagram.cxd 035..038 (cd-view-refused), read from
 # cx-tooling's pinned checkout since the corpus left with it (RULED: RS-12, D59a).
 [?const CROSS-SUITE (
-  [xs code='CXER0120' file='conformance/stdlib/cx.cxd'],
-  [xs code='CXER0273' file='vcx/tests/eval_semantics_umbrella_test.v'],
+  [xs code='CXER0120' file='deps/cx-core-code/conformance/stdlib/cx.cxd'],
+  [xs code='CXER0273' file='deps/cx-core-code/vcx/tests/eval_semantics_umbrella_test.v'],
   [xs code='CXER0275' file='deps/cx-platform-store/conformance/platform/store.cxd'],
   [xs code='CXER0282' file='deps/cx-tooling/conformance/stdlib/diagram.cxd'])]
 
@@ -230,8 +230,8 @@ program-viz-
 
 [?let
   [= $argv [$env:argv]]
-  [= $fix-path [?if [>= [$count $argv] 2] [then [$nth $argv 2]] [else "conformance/code.cxd"]]]
-  [= $spec-path [?if [>= [$count $argv] 3] [then [$nth $argv 3]] [else "spec/03-approved/core/code.md"]]]
+  [= $fix-path [?if [>= [$count $argv] 2] [then [$nth $argv 2]] [else "deps/cx-core-code/conformance/code.cxd"]]]
+  [= $spec-path [?if [>= [$count $argv] 3] [then [$nth $argv 3]] [else "deps/cx-core-code/spec/03-approved/core/code.md"]]]
   [?if [not [and [$io:is-file $fix-path] [$io:is-file $spec-path]]]
     [then [?let [= $_e [$cry [$concat "error: fixture or spec file not found: "
                                        $fix-path ", " $spec-path]]]

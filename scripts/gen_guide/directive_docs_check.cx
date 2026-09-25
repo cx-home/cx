@@ -48,7 +48,7 @@
 # cross-reference tables), so the match set is exactly the closed registry.
 [?def reg-rx () [$re:compile "\\|\\s*`\\[\\?([a-z][a-z0-9-]*)\\]`\\s*\\|"]]
 
-[?let [= $codemd [$io:read-file "spec/03-approved/core/code.md"]]
+[?let [= $codemd [$io:read-file "deps/cx-core-code/spec/03-approved/core/code.md"]]
       [= $reg-from [$strings:slice $codemd
                      [$strings:find $codemd "### §4.1 Directive registry"]
                      [$strings:length $codemd]]]
@@ -59,7 +59,7 @@
 
       [?let [= $ddoc [$cx:parse [$io:read-file "docs-src/canonical/reference/directives.cx"]]]
             [= $sdoc [$cx:parse [$io:read-file "docs-src/canonical/reference/syntax.cx"]]]
-            [= $codecxd [$io:read-file "conformance/code.cxd"]]
+            [= $codecxd [$io:read-file "deps/cx-core-code/conformance/code.cxd"]]
             [= $datacxd
               [$concat
                 [$io:read-file "deps/cx-core-data/conformance/core.cxd"]

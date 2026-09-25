@@ -68,7 +68,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-CX_BIN="${CX_BIN:-$ROOT/vcx/target/cx}"
+CX_BIN="${CX_BIN:-$ROOT/deps/cx-core-code/vcx/target/cx}"
 V_FLAGS=(-cc cc -gc e -d cx_db_sqlite -d cx_db_redis -usecache)
 
 usage() { echo "usage: $0 {gen|verify|apply|absorb|audit} <area>   (manifest: scripts/consolidation/<area>.files; 'audit all' sweeps every area)"; exit 2; }

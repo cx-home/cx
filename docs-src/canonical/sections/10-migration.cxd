@@ -47,7 +47,7 @@
          round-trips canonically as the terse form. The retired v0.7.0
          CXPath subset is replaced by XPath 3.1 alignment — see the
          path-expression sections of
-         [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md)."""]
+         [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)."""]
 
     [body
       """**Multi-arm `[?match]`.** `[?match]` now supports N arms
@@ -123,7 +123,7 @@
               elements; their bodies are opaque text."""]
       [item """**XPath queries** — port to CXPath. The selection core
               is identical (see the path-expression sections of
-              [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md));
+              [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md));
               you drop XPath's `for`/`let`/`if`/`function` constructs
               in favor of the CX directives."""]
       [item """**XSLT / XQuery transforms** — port to CX code. There
