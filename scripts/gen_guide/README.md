@@ -58,7 +58,7 @@ Output in `docs/guide/`:
 docs-src/canonical/sections/NN-*.cxd
         │  [$io:glob] + [$io:read-file] + [$cx:parse]  → DocumentNode
         ▼
-render-doc:  //section → walk [child]/[intro]/[body]/[example]/[note]/[list]/
+render-doc:  //section → walk [child]/[intro]/[body]/[example]/[fixture]/[note]/[list]/
         │    [table], retagging prose in place ([?modify … [rename …]]) and
         │    emitting an HTML-shaped CX tree (h1/h2/h3/h4/p/pre/code/section/ul/li)
         ▼
@@ -88,6 +88,8 @@ file's own `[section n= id= title=]` header; glob order is the reading order.
 | `[body "prose"]`                   | `<p>prose</p>`                                |
 | `[note "prose"]`                   | `<p class="note">prose</p>`                   |
 | `[example lang=X "code"]`          | `<pre><code class="language-X">code</code></pre>` |
+| `[fixture id=<case>]`              | `<div class="fixture">`: the case's `input.cx` / `prog.cx`, the `$ cx …` invocation and its LIVE output, the case id and suite — replayed when the guide is built, refused on a moved output or an unknown id (RULED: RS-30) |
+| `{{COUNT:modules}}` (inside prose) | the count, from the file that declares it (also `directives`, `repositories`) |
 | `[list [item "..."] …]`            | `<ul><li>...</li>…</ul>`                      |
 | `[table [row ...] …]`              | `<table><row …/>…</table>`                    |
 | `[[anchor]]` (inside prose)        | `<a class="xref" href="<target>">anchor</a>`  |
