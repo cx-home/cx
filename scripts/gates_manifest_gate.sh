@@ -118,8 +118,8 @@ while IFS= read -r line; do
     # fixture must exist. #945's whole class was a policy/runner reference
     # to a file the tree no longer had under that name.
     case "$cur_suite" in
-      code)            sf="conformance/code.cxd" ;;
-      xpath-31-parity) sf="conformance/xpath_31_parity.cxd" ;;
+      code)            sf="deps/cx-core-code/conformance/code.cxd" ;;
+      xpath-31-parity) sf="deps/cx-core-code/conformance/xpath_31_parity.cxd" ;;
       *)               sf="" ;;
     esac
     if [ -n "$sf" ] && [ ! -f "$ROOT/$sf" ]; then
@@ -130,7 +130,7 @@ while IFS= read -r line; do
   if printf '%s\n' "$line" | grep -qE '\[module name='; then
     mod="$(printf '%s\n' "$line" | sed -E "s/.*\[module name=('[^']*'|\"[^\"]*\"|[A-Za-z0-9_-]+).*/\1/; s/^'(.*)'$/\1/; s/^\"(.*)\"$/\1/")"
     case "$cur_suite" in
-      stdlib)   [ -f "$ROOT/conformance/stdlib/$mod.cxd" ] || [ -f "$ROOT/conformance/platform/$mod.cxd" ] || [ -f "$ROOT/conformance/x/$mod.cxd" ] || [ -f "$ROOT/conformance/xap/$mod.cxd" ] || { echo "GATE-DANGLING: stdlib module '$mod' has no corpus under conformance/{stdlib,platform,x,xap}/$mod.cxd (RULED: 1427-c — the ring directory is the corpus's home now)"; fail=1; } ;;
+      stdlib)   [ -f "$ROOT/deps/cx-core-code/conformance/stdlib/$mod.cxd" ] || [ -f "$ROOT/conformance/stdlib/$mod.cxd" ] || [ -f "$ROOT/conformance/platform/$mod.cxd" ] || [ -f "$ROOT/conformance/x/$mod.cxd" ] || [ -f "$ROOT/conformance/xap/$mod.cxd" ] || { echo "GATE-DANGLING: stdlib module '$mod' has no corpus under deps/cx-core-code/conformance/stdlib/$mod.cxd or conformance/{stdlib,platform,x,xap}/$mod.cxd (RULED: 1427-c, K7a — Ring 1's stdlib corpus now lives in the pinned cx-core-code checkout)"; fail=1; } ;;
       packages) [ -f "$ROOT/packages/$mod/$mod.test.cxd" ] || { echo "GATE-DANGLING: packages module '$mod' has no packages/$mod/$mod.test.cxd"; fail=1; } ;;
       code)     echo "GATE-UNEXPECTED: module row '$mod' under suite 'code' (code.cxd uses the suite default, no module rows)"; fail=1 ;;
       xpath-31-parity) echo "GATE-UNEXPECTED: module row '$mod' under suite 'xpath-31-parity' (xpath_31_parity.cxd uses the suite default, no module rows)"; fail=1 ;;
