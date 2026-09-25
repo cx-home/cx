@@ -76,31 +76,31 @@ correctly.
      checkout, spelled from conformance/ (RULED: RS-7, RS-9, RS-12): the docs
      a build embeds cite exactly the corpus of the module version it compiles. ]
   [suites [#
-code
+deps/cx-core-code/conformance/code
 ../deps/cx-core-data/conformance/core
 llm/antipatterns
 ../deps/cx-core-data/conformance/operator_heads
 deps/cx-platform-store/conformance/platform/store
 deps/cx-platform-store/conformance/platform/journal
 deps/cx-platform-net/conformance/platform/http
-stdlib/http-client
+deps/cx-core-code/conformance/stdlib/http-client
 deps/cx-platform-agent/conformance/x/mcp
 deps/cx-platform-agent/conformance/x/a2a
-stdlib/strings
-stdlib/fp
-stdlib/json
-stdlib/map
-stdlib/array
-stdlib/re
-stdlib/time
-stdlib/io
-stdlib/env
-stdlib/cx
-stdlib/format
-stdlib/authz
+deps/cx-core-code/conformance/stdlib/strings
+deps/cx-core-code/conformance/stdlib/fp
+deps/cx-core-code/conformance/stdlib/json
+deps/cx-core-code/conformance/stdlib/map
+deps/cx-core-code/conformance/stdlib/array
+deps/cx-core-code/conformance/stdlib/re
+deps/cx-core-code/conformance/stdlib/time
+deps/cx-core-code/conformance/stdlib/io
+deps/cx-core-code/conformance/stdlib/env
+deps/cx-core-code/conformance/stdlib/cx
+deps/cx-core-code/conformance/stdlib/format
+deps/cx-core-code/conformance/stdlib/authz
 deps/cx-platform-identity/conformance/platform/authz-store
 deps/cx-platform-identity/conformance/platform/session
-stdlib/log
+deps/cx-core-code/conformance/stdlib/log
 deps/cx-platform-ux/conformance/xap/ux
 deps/cx-platform-ux/conformance/xap/ux-web
 deps/cx-platform-xap/conformance/xap/xap-compose
@@ -108,7 +108,7 @@ deps/cx-platform-xap/conformance/xap/xap-dist
 ../deps/cx-core-data/conformance/xml
 ../deps/cx-core-data/conformance/table
 ../deps/cx-core-data/conformance/identity
-stdlib/validate
+deps/cx-core-code/conformance/stdlib/validate
 #]]
 
   [output id=primer out='primer.md' template='primer.md.tmpl'
