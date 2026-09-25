@@ -1,0 +1,385 @@
+# scripts/gen_site/site_build.cx — the cxhome.org landing page generator
+# (RULED: RS-28, RS-30, D86b).
+#
+# Renders docs/index.html, the site's front page, from docs-src/site/index.md,
+# the page's Markdown source, under docs-src/site/manifest.cxd's [page] row.
+# The output is TRACKED and GENERATED, like docs/llm/: `make docs` writes it,
+# `make docs-check` (this program's --check) refuses a committed page that a
+# fresh generation would not reproduce byte for byte.
+#
+# RS-30's voice rule is enforced here, not reviewed: every claim on the page
+# keeps a runnable corpus example or a measured number beside it. So the
+# page's examples are conformance fixtures, and the generator EXECUTES each one
+# and requires the live output to equal the fixture's recorded output — the
+# primer's freshness contract, reused, not re-read: the fixture index, the
+# replay, the verification and the {{EXAMPLE:…}} / {{VERSION}} expansion are
+# scripts/gen_docs/primer_build.cx's own public functions (imported below).
+# The page's numbers are counted from the files that declare them, at
+# generation time, so a stale number is a drift like any other.
+#
+# ── Placeholders (beside primer_build.cx's own) ─────────────────────────────
+#
+#   {{PAGE:<path> <label…>}}  a link to a page OF THE SITE — refused unless
+#                             <path> (less any #fragment) is a line of the
+#                             manifest's [files] blocks, so the landing page
+#                             can never link to a file the site does not serve
+#   {{REPO-MAP}}              the repository map: the front door ([site repo=])
+#                             and every registry/repos.cxd row with
+#                             status=extracted, grouped by group=, each linked
+#                             to its repository, with what it ships and what it is
+#   {{COUNT:modules}}         registry/modules.cxd rows with kind=module that
+#                             are not status=planned — the shipped modules
+#   {{COUNT:directives}}      the rows of the normative directive registry
+#                             (the spec's §4.1 table, as the primer projects it)
+#   {{COUNT:repositories}}    the rows {{REPO-MAP}} shows
+#   {{COUNT:examples}}        the fixtures this page cites, replayed green
+#
+# ── The Markdown it renders ─────────────────────────────────────────────────
+#
+# The subset the page is written in, and nothing else: `#`…`####` headings,
+# paragraphs, `- ` lists (a continuation line indented by two spaces), `|`
+# tables (header row, separator row, body), ``` fences with a language, and
+# inline `code`, **bold** and [label](url). Text is HTML-escaped before any
+# inline form is applied; a code span's content is escaped and nothing else.
+# An unclosed fence or an unpaired backtick is a hard failure, never output.
+#
+# Run (from the repository root):
+#   cx --allow-read --allow-write --allow-subprocess --allow-env \
+#      scripts/gen_site/site_build.cx [--check]
+#   (or: make site-index; make docs / make docs-check run it too)
+#
+# Exit: 0 green; 1 any failure (a missing case, an output mismatch, a link to a
+# file the site does not serve, drift).
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+# The primer's generator, as a library: its fixture index, replay, freshness
+# verification and placeholder expansion (every def there is scope=public; its
+# top-level run does not execute on import).
+[?lib './scripts/gen_docs/primer_build.cx' as=pb]
+
+[?const MANIFEST "docs-src/site/manifest.cxd"]
+
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def die scope=public impure ($s)
+  [?let [= $_ [$cry [$concat "site_build: " $s]]]
+    [$env:exit 1]]]
+
+[?def child-named scope=public ($doc $n)
+  [?for [in $k $doc/*] [where [= [?else [$name $k] ""] $n]] [yield $k]]]
+
+# raw-lines: the non-empty trimmed lines of a [#…#] raw-text child.
+[?def raw-lines scope=public ($k)
+  [?for [in $l [$strings:split-lines [$pb:normalize [$pb:raw-of $k]]]]
+    [where [not [= [$strings:trim $l] ""]]]
+    [yield [$strings:trim $l]]]]
+
+# site-files: every path the manifest's [files] blocks declare.
+[?def site-files scope=public ($m)
+  [$fp:flat-map [$child-named $m "files"] [?fn ($k) [$raw-lines $k]]]]
+
+# ── HTML text ────────────────────────────────────────────────────────────────
+
+[?def esc scope=public ($s)
+  [$strings:replace [$strings:replace [$strings:replace $s "&" "&amp;"] "<" "&lt;"] ">" "&gt;"]]
+
+[?def link-rx scope=public impure () [$re:compile "\\[([^\\]]+)\\]\\(([^) ]+)\\)"]]
+[?def bold-rx scope=public impure () [$re:compile "\\*\\*([^*]+)\\*\\*"]]
+
+# inline-text: one run of prose outside any code span (already escaped).
+[?def inline-text scope=public impure ($s)
+  [$re:replace [$bold-rx] [$re:replace [$link-rx] $s "<a href=\"$2\">$1</a>"] "<b>$1</b>"]]
+
+# inline: a line of Markdown prose → HTML. Backticks split the text into
+# alternating prose and code runs; an odd count is an unpaired backtick.
+[?def inline scope=public impure ($s $where)
+  [?let [= $segs [$strings:split $s "`"]]
+        [= $n [$count $segs]]
+    [?if [and [> $n 0] [= [% $n 2] 0]]
+      [then [$die [$concat "unpaired backtick in " $where ": " $s]]]
+      [else [$strings:join [?for [in $i [$range 1 $n]]
+              [= $seg [$nth $segs $i]]
+              [yield [?if [= [% $i 2] 1]
+                [then [$inline-text [$esc $seg]]]
+                [else [$concat "<code>" [$esc $seg] "</code>"]]]]] ""]]]]]
+
+
+# ── block rendering: a fold over the lines, one open block at a time ────────
+
+[?def cells scope=public ($row)
+  [?let [= $parts [$strings:split [$strings:trim $row] "|"]]
+        [= $n [$count $parts]]
+    [?for [in $i [$range 2 [- $n 1]]] [yield [$strings:trim [$nth $parts $i]]]]]]
+
+[?def render-table scope=public impure ($rows $where)
+  [?let [= $n [$count $rows]]
+        [= $head [$cells [$first $rows]]]
+    [?if [< $n 2]
+      [then [$die [$concat "a table needs a header row and a separator row in " $where]]]
+      [else [$concat
+        "<table>\n<thead><tr>"
+        [$strings:join [?for [in $c $head] [yield [$concat "<th>" [$inline $c $where] "</th>"]]] ""]
+        "</tr></thead>\n<tbody>\n"
+        [$strings:join [?for [in $i [$range 3 $n]]
+          [yield [$concat "<tr>"
+                   [$strings:join [?for [in $c [$cells [$nth $rows $i]]]
+                     [yield [$concat "<td>" [$inline $c $where] "</td>"]]] ""]
+                   "</tr>\n"]]] ""]
+        "</tbody></table>\n"]]]]]
+
+# list items: a line opening "- " starts an item, an indented line continues it.
+[?def list-items scope=public ($rows)
+  [$fp:fold $rows ()
+    [?fn ($acc $l)
+      [?if [$strings:starts-with $l "- "]
+        [then [$pb:cat-seqs ($acc, ([$strings:slice $l 3 [$strings:length $l]],))]]
+        [else [?let [= $k [$count $acc]]
+          [$pb:cat-seqs ([?for [in $i [$range 1 [- $k 1]]] [yield [$nth $acc $i]]],
+                         ([$concat [$nth $acc $k] " " [$strings:trim $l]],))]]]]]]]
+
+[?def render-list scope=public impure ($rows $where)
+  [$concat "<ul>\n"
+    [$strings:join [?for [in $it [$list-items $rows]]
+      [yield [$concat "<li>" [$inline $it $where] "</li>\n"]]] ""]
+    "</ul>\n"]]
+
+[?def heading scope=public impure ($l $where)
+  [?let [= $lvl [?if [$strings:starts-with $l "#### "] [then 4]
+                  [else [?if [$strings:starts-with $l "### "] [then 3]
+                  [else [?if [$strings:starts-with $l "## "] [then 2] [else 1]]]]]]]
+        [= $text [$strings:slice $l [+ $lvl 2] [$strings:length $l]]]
+    [$concat "<h" [$string $lvl] ">" [$inline $text $where] "</h" [$string $lvl] ">\n"]]]
+
+# flush: close the open block into the HTML accumulated so far.
+[?def flush scope=public impure ($st $where)
+  [?let [= $mode [$map:get $st "mode"]]
+        [= $buf [$map:get $st "buf"]]
+        [= $out [?match $mode
+                  [case "para"  [$concat "<p>" [$inline [$strings:join $buf " "] $where] "</p>\n"]]
+                  [case "list"  [$render-list $buf $where]]
+                  [case "table" [$render-table $buf $where]]
+                  [case "code"  [$die [$concat "unclosed ``` fence in " $where]]]
+                  [else ""]]]
+    {html: [$concat [$map:get $st "html"] $out], mode: "none", lang: "", buf: ()}]]
+
+[?def push-line scope=public ($st $mode $l)
+  [$map:put [$map:put $st "mode" $mode] "buf" [$pb:cat-seqs ([$map:get $st "buf"], ($l,))]]]
+
+[?def step scope=public impure ($st $l $where)
+  [?let [= $mode [$map:get $st "mode"]]
+        [= $t [$strings:trim $l]]
+    [?if [= $mode "code"]
+      [then [?if [$strings:starts-with $t "```"]
+        [then {html: [$concat [$map:get $st "html"]
+                        "<pre><code class=\"language-" [$map:get $st "lang"] "\">"
+                        [$esc [$strings:join [$map:get $st "buf"] "\n"]]
+                        "</code></pre>\n"],
+               mode: "none", lang: "", buf: ()}]
+        [else [$push-line $st "code" $l]]]]
+      [else [?if [$strings:starts-with $t "```"]
+        [then [$map:put [$map:put [$flush $st $where] "mode" "code"]
+                        "lang" [$strings:trim [$strings:slice $t 4 [$strings:length $t]]]]]
+      [else [?if [= $t ""]
+        [then [$flush $st $where]]
+      [else [?if [$strings:starts-with $l "#"]
+        [then [?let [= $f [$flush $st $where]]
+                [$map:put $f "html" [$concat [$map:get $f "html"] [$heading $t $where]]]]]
+      [else [?if [$strings:starts-with $l "|"]
+        [then [$push-line [?if [= $mode "table"] [then $st] [else [$flush $st $where]]] "table" $l]]
+      [else [?if [$strings:starts-with $l "- "]
+        [then [$push-line [?if [= $mode "list"] [then $st] [else [$flush $st $where]]] "list" $l]]
+      [else [?if [and [= $mode "list"] [$strings:starts-with $l "  "]]
+        [then [$push-line $st "list" $l]]
+      [else [$push-line [?if [= $mode "para"] [then $st] [else [$flush $st $where]]] "para" $l]]]]]]]]]]]]]]]]]
+
+[?def markdown scope=public impure ($md $where)
+  [$map:get
+    [$flush [$fp:fold [$strings:split-lines $md] {html: "", mode: "none", lang: "", buf: ()}
+              [?fn ($st $l) [$step $st $l $where]]]
+            $where]
+    "html"]]
+
+# ── the site's own placeholders ─────────────────────────────────────────────
+
+
+# The repository map: the front door and every repository the split has
+# published (status=extracted), in registry order, grouped by group=.
+[?const GROUPS ("dist", "core", "platform", "binding", "ecosystem")]
+[?const GROUP-TITLE {dist: "the front door", core: "the two cores", platform: "the platform group",
+                     binding: "the bindings", ecosystem: "the ecosystem"}]
+
+[?def shown-repos scope=public impure ($self)
+  [?for [in $r [$cx:parse [$io:read-file "registry/repos.cxd"]]//repo]
+    [where [or [= [$string $r@name] $self] [= [$string [?else $r@status ""]] "extracted"]]]
+    [yield $r]]]
+
+[; A row whose group= is not one of GROUPS would silently drop off the map, so
+   it is refused by name instead: a new group is a new heading here first. ]
+[?def repo-map scope=public impure ($self)
+  [?let [= $rs [$shown-repos $self]]
+        [= $stray [?for [in $r $rs] [where [not [$pb:member GROUPS [$string $r@group]]]]
+                    [yield [$string $r@name]]]]
+        [= $_g [?if [$empty $stray] [then 0]
+                 [else [$die [$concat "registry/repos.cxd row(s) with a group= the repository map has "
+                                      "no heading for: " [$strings:join $stray " "]]]]]]
+    [$strings:join (
+      "| group | repository | what it is | ships |",
+      "|---|---|---|---|",
+      [$strings:join [?for [in $g GROUPS]
+        [= $mine [?for [in $r $rs] [where [= [$string $r@group] $g]] [yield $r]]]
+        [in $i [$range 1 [$count $mine]]]
+        [= $r [$nth $mine $i]]
+        [yield [$concat "| " [?if [= $i 1] [then [$map:get GROUP-TITLE $g]] [else ""]]
+                        " | [" [$string $r@name] "](https://github.com/cx-home/" [$string $r@name] ")"
+                        " | " [$string $r@about]
+                        " | " [$string $r@ships] " |"]]] "\n"]) "\n"]]]
+
+[?def count-of scope=public impure ($what $self $nrefs)
+  [?match $what
+    [case "modules"
+      [$string [$count [?for [in $m [$cx:parse [$io:read-file "registry/modules.cxd"]]//module]
+                         [where [= [$string [?else $m@kind "module"]] "module"]]
+                         [where [not [= [$string [?else $m@status ""]] "planned"]]]
+                         [yield 1]]]]]
+    [case "directives"
+      [$string [$count [?for [in $l [$strings:split-lines [$pb:directive-rows]]]
+                         [where [$strings:starts-with $l "| `[?"]] [yield 1]]]]]
+    [case "repositories" [$string [$count [$shown-repos $self]]]]
+    [case "examples" [$string $nrefs]]
+    [else [$die [$concat "unknown COUNT '" $what "' in " MANIFEST "'s page"]]]]]
+
+[?def page-link scope=public impure ($parts $files $where)
+  [?let [= $target [$strings:slice [$first $parts] 6 [$strings:length [$first $parts]]]]
+        [= $file [$first [$strings:split $target "#"]]]
+        [= $label [$strings:join [?for [in $i [$range 2 [$count $parts]]] [yield [$nth $parts $i]]] " "]]
+    [?if [not [$pb:member $files $file]]
+      [then [$die [$concat "{{PAGE:" $target "}} in " $where " names a file the site does not "
+                           "serve — no line of " MANIFEST "'s [files] blocks is '" $file "'"]]]
+      [else [?if [= $label ""]
+        [then [$die [$concat "{{PAGE:" $target "}} in " $where " has no label"]]]
+        [else [$concat "[" $label "](" $target ")"]]]]]]]
+
+[?def expand-site-one scope=public impure ($body $ctx)
+  [?let [= $parts [$strings:split-whitespace $body]]
+        [= $kind [?if [$empty $parts] [then ""] [else [$first $parts]]]]
+        [= $where [$map:get $ctx "where"]]
+    [?match $kind
+      [when [$strings:starts-with $kind "PAGE:"] [$page-link $parts [$map:get $ctx "files"] $where]]
+      [when [= $kind "REPO-MAP"] [$repo-map [$map:get $ctx "self"]]]
+      [when [$strings:starts-with $kind "COUNT:"]
+        [$count-of [$strings:slice $kind 7 [$strings:length $kind]] [$map:get $ctx "self"] [$map:get $ctx "nrefs"]]]
+      [else [$pb:expand-one $body [$map:get $ctx "index"] [$map:get $ctx "replays"]
+                            [$map:get $ctx "version"] [$map:get $ctx "cxbin"] $where]]]]]
+
+# expand: the template, every `{{…}}` replaced (an unclosed one is refused).
+[?def expand scope=public impure ($tmpl $ctx)
+  [?let [= $chunks [$strings:split $tmpl "{{"]]
+        [= $n [$count $chunks]]
+    [$strings:join (
+      [$first $chunks],
+      [$strings:join [?for [in $i [$range 2 $n]]
+        [= $ch [$nth $chunks $i]]
+        [= $j [$strings:find $ch "}}"]]
+        [yield [?if [not [$present $j]]
+          [then [$die [$concat "unclosed '{{' in " [$map:get $ctx "where"]]]]
+          [else [$concat [$expand-site-one [$strings:slice $ch 1 [- $j 1]] $ctx]
+                         [$strings:slice $ch [+ $j 2] [$strings:length $ch]]]]]]] ""]) ""]]]
+
+# ── the page ────────────────────────────────────────────────────────────────
+
+# The landing page wears the guide's stylesheet (style.css sits at the site
+# root beside it) with the sidebar column dropped; asset URLs carry
+# ?v=<VERSION> exactly as the guide's own pages do (#953).
+[?def wrap scope=public ($title $ver $body)
+  [$strings:join (
+    "<!DOCTYPE html>",
+    "<html lang=\"en\">",
+    "<head>",
+    "<meta charset=\"utf-8\">",
+    "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
+    [$concat "<title>" [$esc $title] "</title>"],
+    "<meta name=\"description\" content=\"CX is one bracketed syntax for documents, queries, programs and the compiler's own tree — exact decimals, deny-by-default effects, errors as values, a content-addressed store.\">",
+    "<link rel=\"icon\" type=\"image/svg+xml\" href=\"assets/cx-logo.svg\">",
+    "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">",
+    "<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>",
+    "<link href=\"https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap\" rel=\"stylesheet\">",
+    [$concat "<link rel=\"stylesheet\" href=\"style.css?v=" $ver "\">"],
+    "<style>",
+    "body.site-home { grid-template-columns: 1fr; }",
+    "body.site-home header.sheet-bar, body.site-home main, body.site-home footer.title-block { grid-column: 1; }",
+    "body.site-home main { max-width: 920px; margin: 0 auto; }",
+    "</style>",
+    "</head>",
+    "<body class=\"site-home\">",
+    "<header class=\"sheet-bar\">",
+    "  <div class=\"sb-left\"><span class=\"sb-brand\">CX · cxhome.org</span><span class=\"sb-title\">Home</span></div>",
+    [$concat "  <div class=\"sb-right\"><a href=\"guide.html\">Guide</a><a href=\"llm/primer.md\">Primer</a>"
+             "<a href=\"downloads.html\">Downloads</a><a href=\"https://github.com/cx-home/cx\">GitHub</a>"
+             "<span class=\"sb-rev\">v" $ver "</span></div>"],
+    "</header>",
+    "<main>",
+    [$strings:trim-end-chars $body "\n"],
+    "</main>",
+    "<footer class=\"title-block\">",
+    "  <div class=\"tb-cell tb-project\"><span>Project</span><b>CX — one language, data format to platform</b></div>",
+    "  <div class=\"tb-cell\"><span>Drawing</span><b>Home</b></div>",
+    [$concat "  <div class=\"tb-cell\"><span>Rev</span><b>" $ver "</b></div>"],
+    "  <div class=\"tb-cell\"><span>Checked by</span><b class=\"tb-accent\">The compiler</b></div>",
+    "  <div class=\"tb-cell\"><span>Issued</span><b>cxhome.org</b></div>",
+    "</footer>",
+    [$concat "<script src=\"highlight/highlight.js?v=" $ver "\" defer></script>"],
+    "</body>",
+    "</html>",
+    "") "\n"]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $check [$pb:member $argv "--check"]]
+  [= $cxbin [$env:var-or-default "CX_BIN" "deps/cx-core-code/vcx/target/cx"]]
+  [= $version [$strings:trim [$io:read-file "VERSION"]]]
+  [= $m [$cx:parse [$io:read-file MANIFEST]]]
+  [= $site [$first [$child-named $m "site"]]]
+  [= $page [$first [$child-named $m "page"]]]
+  [= $self [$string $site@repo]]
+  [= $src [$string $page@src]]
+  [= $out [$string $page@out]]
+  [= $files [$site-files $m]]
+  [= $_f [?if [$empty $files] [then [$die [$concat MANIFEST " declares no [files]"]]] [else 0]]]
+  [= $suites [$fp:flat-map [$child-named $m "suites"] [?fn ($k) [$raw-lines $k]]]]
+  [= $tmpl [?if [$io:is-file $src] [then [$io:read-file $src]]
+             [else [$die [$concat "the page source " $src " is not there"]]]]]
+  [= $index [$pb:load-index $suites]]
+  [= $refs [$distinct [$pb:refs-in $tmpl]]]
+  [= $tmpdir [$path:join [$env:var-or-default "TMPDIR" "/tmp"] "cx-site-build"]]
+  [= $_md [$io:make-dirs $tmpdir]]
+  [= $replays [$fp:fold $refs {}
+    [?fn ($acc $id) [$pb:add-replay $acc $id $index $cxbin $tmpdir]]]]
+  [= $_rm [$io:remove-tree $tmpdir]]
+  [= $ctx {index: $index, replays: $replays, version: $version, cxbin: $cxbin,
+           where: $src, files: $files, self: $self, nrefs: [$count $refs]}]
+  [= $md [$expand $tmpl $ctx]]
+  [= $html [$wrap [$string $page@title] $version [$markdown $md $src]]]
+  [?if $check
+    [then [?let [= $old [?if [$io:is-file $out] [then [$io:read-file $out]] [else "absent"]]]
+      [?if [= $old $html]
+        [then [?let [= $_s [$say [$concat "site_build: " $out " — " [$string [$count $refs]]
+                                          " fixture(s) replayed green — no drift"]]]
+                [$env:exit 0]]]
+        [else [?let [= $_c [$cry [$concat "docs-check: DRIFT: " $out
+                                          [?if [= $old "absent"] [then " (not committed)"] [else ""]]
+                                          " does not match a fresh generation from " $src
+                                          " — run `make docs` and commit the result"]]]
+                [$env:exit 1]]]]]]
+    [else [?let [= $_w [$io:write-file $out $html]]
+                [= $_s [$say [$concat "site_build: " $src " → " $out " (" [$string [$count $refs]]
+                                      " fixture(s) replayed green, "
+                                      [$string [$strings:length $html]] " bytes)"]]]
+      [$env:exit 0]]]]]
