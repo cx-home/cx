@@ -265,7 +265,10 @@ step_globs() {
     # move its output. VERSION too: the primer's heading derives from it. And the
     # documentation fragments of the pinned repositories (RULED: RS-9): the
     # contract module, the pin reader, and deps.cxd, which says which to read.
-    docs-check)                    echo 'docs-src/* docs/llm/* scripts/gen_docs/* scripts/docs_fragment.cx scripts/deps_pins.cx deps.cxd conformance/* spec/* stdlib/* vcx/* VERSION' ;;
+    # And the contributor front door's facts (RULED: K11a): the two registries,
+    # the Makefile's step roster (and the files it includes) and the ledger's
+    # RS-n statements are projected into docs/llm/contributor-*.md.
+    docs-check)                    echo 'docs-src/* docs/llm/* scripts/gen_docs/* scripts/docs_fragment.cx scripts/deps_pins.cx deps.cxd registry/* Makefile scripts/gen_guide/guide.mk ledger/* conformance/* spec/* stdlib/* vcx/* VERSION' ;;
     ring-import-gate)              echo 'vcx/* scripts/ring_import_gate* registry/repos.cxd' ;;
     gates-manifest-gate)           echo 'conformance/* packages/* scripts/gates_manifest_gate* scripts/gates_register*' ;;
     ring-tag-gate)                 echo 'conformance/* scripts/*' ;;
