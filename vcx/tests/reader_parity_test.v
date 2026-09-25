@@ -545,7 +545,7 @@ const accepted_by_one_table = [
 	AcceptedByOne{'conformance/gates_register.cxd', .data, reason_datalane},
 	AcceptedByOne{'deps/cx-core-data/conformance/fmt.cxd', .data, reason_datalane},
 	AcceptedByOne{'deps/cx-core-data/conformance/xml.cxd', .data, reason_datalane},
-	// ── #1536 — a call-shaped head beside a ws-delimited literal (21) ──
+	// ── #1536 — a call-shaped head beside a ws-delimited literal (22) ──
 	// 33 -> 22: eleven of these were cx-platform-sso's and left with the
 	// extraction (RULED: RS-12, #1591 item 11) -- the module, the four interop
 	// programs' three judged files and the seven example programs. The scan
@@ -572,6 +572,11 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/fmt_corpus_sweep.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/gate_lock_selftest.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/gen_docs/primer_build.cx', .program, reason_1536},
+	// 21 -> 22: scripts/gen_site/site_build.cx, the cxhome.org landing-page
+	// generator (RULED: RS-28, RS-30) -- the class's own shape,
+	// `[$pb:cat-seqs ($acc, ($item,))]`, the same fold primer_build.cx above
+	// folds with, whose functions it imports.
+	AcceptedByOne{'scripts/gen_site/site_build.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/gen_guide/snippet_check.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/lang_stats.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/run_bench_json.cx', .program, reason_1536},

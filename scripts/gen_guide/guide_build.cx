@@ -1044,7 +1044,20 @@
   [= $gen 'scripts/gen_guide']
   [= $out 'docs/guide']
   [= $metas [$load-metas $src]]
-  [= $libfiles [$fp:flat-map ([$io:glob 'stdlib/*.cx'], [$io:glob 'x/*.cx'], [$synth-libfiles])
+  [; #1662: the bundled module sources live in the PINS since the extractions
+     (RULED: RS-12) — deps/<repo>/stdlib/*.cx, and deps/<repo>/x/*.cx for the
+     eleven modules the x/ tier graduated (D45a), which kept that path. The
+     same three globs guide-check (stdlib_docs_check.cx) reads, so the pages
+     rendered and the docs graded are one set; slug order is the reading order
+     every nav group assumes. A pinned x/ path is NOT the retired x/ tier
+     (D63a): is-x-file reads the front door's own top-level x/ only. ]
+  [= $libfiles [$fp:flat-map (
+                   [?for [in $f [$fp:flat-map ([$io:glob 'stdlib/*.cx'], [$io:glob 'x/*.cx'],
+                                               [$io:glob 'deps/*/stdlib/*.cx'], [$io:glob 'deps/*/x/*.cx'])
+                                  [?fn ($g) $g]]]
+                     [order-by [$stdlib-slug $f]]
+                     [yield $f]],
+                   [$synth-libfiles])
                  [?fn ($g) $g]]]
   [= $ver [$strings:trim [$io:read-file 'VERSION']]]
   [= $sec-ancs [?for [in $m $metas] [yield

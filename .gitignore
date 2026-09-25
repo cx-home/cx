@@ -141,3 +141,7 @@ __snapshots__/
 # in a tracked document, never a tracked copy of the dependency — a checked-in
 # copy is the stale-copy class #1589's Risks names.
 deps/
+
+# cxhome.org as `make site` assembles it (scripts/gen_site/site.mk); the Pages
+# workflow uploads it, nothing tracks it (RULED: RS-28, D57a).
+/site/

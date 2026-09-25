@@ -16,6 +16,14 @@
 -include scripts/gen_docs/docs.mk
 # ── LLM onboarding layer (#938) ────────────────────────────────────── END gen_docs
 
+# ── cxhome.org, the one site (RULED: RS-28, D57a, D58a, RS-30, D86b) ─── BEGIN gen_site
+# `make site` assembles site/ from the guide, the landing page and the LLM layer;
+# `make site-check` lists it against docs-src/site/manifest.cxd (in TEST_TARGETS);
+# `make site-index` renders the landing page, docs/index.html, which `make docs`
+# and `make docs-check` also run. .github/workflows/site.yml deploys site/.
+-include scripts/gen_site/site.mk
+# ── cxhome.org, the one site ─────────────────────────────────────────── END gen_site
+
 # Prefer the patched V toolchain (third_party/v/v) for EVERY recipe that
 # invokes `v`. It carries the macOS hardened-runtime libgc / -prod fixes and
 # the picoev shared-listener patch (`new_with_listen_fd`) the http
@@ -904,20 +912,20 @@ guide-check: build-vcx
 ## Cost, measured at the #989 row: 27.3-27.8 s wall / 26.5 CPU-s, single
 ## process — absorbed under -j against a ~3 h gate.
 .PHONY: guide-render-gate
+## #1663: "written by THIS run" was an mtime test against a stamp touched just
+## before the render, and macOS sh compares mtimes at one-second resolution, so
+## a page the render wrote in the stamp's own second read as stale (measured:
+## stamp and index.html both 15:10:45, a false red). The proof is now that the
+## page did not exist before the render: both are removed first, and both must
+## exist after it. No mtime comparison is left.
 guide-render-gate: build-vcx
-	@mkdir -p deps/cx-core-code/vcx/target
-	@rm -f deps/cx-core-code/vcx/target/.guide-render-gate.stamp
-	@touch deps/cx-core-code/vcx/target/.guide-render-gate.stamp
+	@rm -f docs/guide/index.html docs/guide/codec-xml.html
 	@$(MAKE) --no-print-directory guide GUIDE_SKIP_CX_BUILD=1
 	@for p in docs/guide/index.html docs/guide/codec-xml.html; do \
 	  if [ ! -f "$$p" ]; then \
-	    echo "guide-render-gate: FAILED — the render exited 0 but $$p does not exist"; exit 1; \
-	  fi; \
-	  if [ ! "$$p" -nt deps/cx-core-code/vcx/target/.guide-render-gate.stamp ]; then \
-	    echo "guide-render-gate: FAILED — $$p is older than the pre-render stamp; this run did not write it (a stale site from an earlier render is not a passing render)"; exit 1; \
+	    echo "guide-render-gate: FAILED — the render exited 0 but $$p does not exist; it was removed before the render, so this run did not write it"; exit 1; \
 	  fi; \
 	done
-	@rm -f deps/cx-core-code/vcx/target/.guide-render-gate.stamp
 	@echo "guide-render-gate OK — the generator rendered docs/guide/, index page and the synthesized codec-xml module page both written by THIS run"
 
 # Directive + syntax reference drift gate — every code.md §4.1 registry
@@ -1651,7 +1659,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := check-no-ai-attribution check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := check-no-ai-attribution check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose

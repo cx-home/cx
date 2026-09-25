@@ -1,0 +1,75 @@
+name: Site
+
+# cxhome.org — the ONE site, built from this repository's own tree and deployed
+# by GitHub Pages (RULED: RS-28 / D57a, D58a; RS-30; D86b). `make site`
+# assembles site/ (scripts/gen_site/site.mk) and `make site-check` lists it
+# against docs-src/site/manifest.cxd before anything is uploaded.
+#
+# It runs in cx-home/cx only. The same file sits in cx-private, whose tree the
+# public cx is filtered from, and the `if:` below keeps it from ever running
+# there. Pages must be pointed at this workflow once (Settings → Pages →
+# Source: GitHub Actions, i.e. build_type=workflow); until then Pages keeps
+# serving main:/docs, where the tracked landing page docs/index.html already is.
+#
+# The runner is Apple Silicon because the bootstrap is a RELEASED cx and the
+# release assets are arm64 only: `make deps-sync` runs the pin transport
+# (scripts/deps_sync.cx) with a cx that exists before this tree has built one
+# (the Makefile's deps-cx step names ~/.local/bin/cx, where docs/install puts
+# it). Nothing else here differs from a developer's first build (README.md).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.repository == 'cx-home/cx'
+    runs-on: macos-14
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build the vendored V toolchain
+        run: make -C third_party/v
+
+      - name: Install a released cx (the pin transport's bootstrap)
+        run: sh docs/install
+
+      - name: Fetch the pinned repositories
+        run: make deps-sync
+
+      - name: Build cx
+        run: make build-vcx
+
+      - name: Assemble the site
+        run: make site
+
+      - name: List the site against its manifest
+        run: make site-check
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    if: github.repository == 'cx-home/cx'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
