@@ -8257,6 +8257,8 @@ against the binary each time this file is generated.
 **Effects are deny-by-default** — reading a file with no grant is an ordinary
 error value naming the flag that would allow it:
 
+<sub>Generated from the corpus case `io-001-read-file-cap-denied` (`cx-core-code`, `conformance/stdlib/io.cxd`), replayed by `make docs` — do not edit here.</sub>
+
 `prog.cx`
 ```cx
 [?lib 'cx-stdlib/io']
@@ -8270,6 +8272,8 @@ $ cx prog.cx
 
 **Errors are values** — a captured `[err]` propagates out of any element built
 from it, with no `try` and no exception:
+
+<sub>Generated from the corpus case `program-construction-err-004-captured-err-propagates` (`cx-core-code`, `conformance/code.cxd`), replayed by `make docs` — do not edit here.</sub>
 
 `prog.cx`
 ```cx
