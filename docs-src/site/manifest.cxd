@@ -1,0 +1,261 @@
+[site-manifest
+  [doc [#
+docs-src/site/manifest.cxd — what cxhome.org serves (RULED: RS-28, D57a, D58a, D51d).
+
+Read by scripts/gen_site/site_build.cx (`make site-index`, and `make docs` /
+`make docs-check`: renders docs/index.html from [page]) and by
+scripts/gen_site/site_assemble.cx (`make site`, `make site-check`). Declares:
+
+  [site]    the site's own repository (the front door, `repo=`), the published
+            base URL, and the output directory `make site` assembles
+  [page]    the landing page: its Markdown source and the tracked, generated
+            HTML it renders to
+  [suites]  the conformance suites the landing page may cite with
+            {{EXAMPLE:<id> …}}, spelled as docs-src/llm/manifest.cxd spells
+            them (a pinned suite as deps/<repo>/conformance/…)
+  [files]   THE SITE: every file the assembled output directory holds, one
+            path per line, relative to the site root, grouped by where it comes
+            from. `make site-check` lists the assembled tree against the union
+            of these blocks: a file missing from the tree, or present in it and
+            claimed by no line, fails the step by name.
+
+Where each group comes from is the map scripts/publish.sh applied before it
+retired with the allowlist mirror (RULED: RS-11), now `make site`'s:
+docs/guide/'s contents at the root, except the guide's own index.html, which
+becomes guide.html (the root's index.html is the landing page); docs/llm/ under
+llm/, with llms.txt and llms-full.txt copied to the root as well (D51d: the
+assembly step copies them, untracked); docs/dev/ under dev/; docs/install and
+docs/CNAME at the root; an empty .nojekyll.
+
+Adding a guide section, a stdlib module (its reference page is lib-<name>.html)
+or a docs/llm/ output adds its line here in the same change. The playground's
+wasm/ bundle is absent: it needs emcc, which neither this box nor a GitHub
+runner has by default; the change that stages it adds its files here.
+#]]
+
+  [site repo=cx base='https://cxhome.org/' out=site]
+
+  [page src='docs-src/site/index.md' out='docs/index.html'
+        title='CX — one language for your data and your code']
+
+  [suites [#
+deps/cx-core-code/conformance/code
+llm/antipatterns
+../deps/cx-core-data/conformance/table
+deps/cx-core-code/conformance/stdlib/json
+deps/cx-core-code/conformance/stdlib/io
+deps/cx-core-code/conformance/stdlib/re
+deps/cx-platform-store/conformance/platform/store
+deps/cx-platform-agent/conformance/x/mcp
+#]]
+
+  [files from=landing [#
+index.html
+#]]
+
+  [files from=guide-home [#
+guide.html
+#]]
+
+  [; the rendered guide (make guide, docs/guide/), at the root; the lib- pages
+     are projected from the [module-doc]/[fn-doc] blocks of the pinned
+     repositories' stdlib/*.cx and x/*.cx (82 bundled modules: the eleven the x/
+     tier graduated keep that path in cx-platform-agent and cx-platform-ux,
+     RULED: D45a, D63a), the codec- pages from the synthesized codecs ]
+  [files from=guide [#
+about.html
+analytics.html
+assets/cx-logo.png
+assets/cx-logo.svg
+bindings.html
+capabilities.html
+choosing.html
+code-tooling.html
+code.html
+codec-cx.html
+codec-md.html
+codec-toml.html
+codec-xml.html
+codec-yaml.html
+commands-effects.html
+comparison.html
+computation-identity.html
+consistency.html
+data-language.html
+data-tooling.html
+directives.html
+downloads.html
+event-evolution.html
+faq.html
+glossary.html
+highlight/highlight.js
+identity.html
+intro.html
+lib-a2a-xap.html
+lib-a2a.html
+lib-adjudicate.html
+lib-array.html
+lib-audit.html
+lib-authz-store.html
+lib-authz.html
+lib-bus.html
+lib-bytes.html
+lib-connector.html
+lib-crypto.html
+lib-csv.html
+lib-diagram.html
+lib-did-web.html
+lib-did.html
+lib-email.html
+lib-env.html
+lib-fabric.html
+lib-flow.html
+lib-format.html
+lib-fp.html
+lib-ft.html
+lib-geo.html
+lib-graphql.html
+lib-hash.html
+lib-html.html
+lib-http-client.html
+lib-http.html
+lib-i18n.html
+lib-imap.html
+lib-io.html
+lib-journal.html
+lib-json.html
+lib-jsonrpc.html
+lib-jsonschema.html
+lib-live.html
+lib-llm.html
+lib-locale.html
+lib-log.html
+lib-map.html
+lib-math.html
+lib-mcp-server.html
+lib-mcp.html
+lib-mime.html
+lib-net.html
+lib-oidc.html
+lib-path.html
+lib-process.html
+lib-prof.html
+lib-random.html
+lib-re.html
+lib-run.html
+lib-saml.html
+lib-sasl.html
+lib-sched.html
+lib-scim.html
+lib-session.html
+lib-similar.html
+lib-smtp.html
+lib-soap.html
+lib-sso.html
+lib-store.html
+lib-strings.html
+lib-supervise.html
+lib-tar.html
+lib-term.html
+lib-test.html
+lib-time.html
+lib-tools.html
+lib-url.html
+lib-uuid.html
+lib-ux-tui.html
+lib-ux-web.html
+lib-ux.html
+lib-validate.html
+lib-vc-revocation.html
+lib-vc.html
+lib-ws.html
+lib-xap.html
+lib-xsp-auth.html
+lib-xsp.html
+lib-zip.html
+migration.html
+operations.html
+playground.html
+playground/jspi_probe.html
+playground/playground.css
+playground/playground.examples.js
+playground/playground.js
+playground/vendor/LICENSE-mermaid.txt
+playground/vendor/mermaid.min.js
+quickstart.html
+rings.html
+runtime-representation.html
+schema.html
+search-index.js
+search/search.js
+store.html
+style.css
+surfaces.html
+syntax.html
+time.html
+tooling.html
+tour-data.html
+tour-programs.html
+ux-capability.html
+value-model.html
+xap-d1.html
+xap-d2.html
+xap-d3.html
+xap-d4.html
+xap-distribution.html
+xap.html
+#]]
+
+  [; docs/llm/ (make docs), under llm/ — the primer, the references, the
+     contributor front door, the llmstxt.org pair ]
+  [files from=llm [#
+llm/contributor-architecture.md
+llm/contributor-design.md
+llm/contributor-implementation.md
+llm/contributor-test.md
+llm/contributor.md
+llm/llms-full.txt
+llm/llms.txt
+llm/model-customization.md
+llm/playbook-xap.md
+llm/primer.md
+llm/reference-cli.md
+llm/reference-code-language.md
+llm/reference-data-language.md
+llm/reference-platform.md
+llm/reference-stdlib.md
+#]]
+
+  [; the llmstxt.org convention: the pair at the SITE ROOT as well (D51d) ]
+  [files from=llms [#
+llms-full.txt
+llms.txt
+#]]
+
+  [; docs/dev/, under dev/ ]
+  [files from=dev [#
+dev/README.md
+dev/client-and-views.md
+dev/features-authoring.md
+dev/features-consuming.md
+dev/marketplace.md
+dev/oriel-guide.md
+dev/registry-consuming.md
+dev/registry-setup.md
+dev/store-embedded.md
+dev/store-management.md
+dev/store-security.md
+dev/store-service.md
+dev/studio-guide.md
+dev/v0130-capabilities.md
+dev/xap-quickstart.md
+#]]
+
+  [; the installer the README's one-liner fetches, the custom-domain binding,
+     and the marker that stops Pages running the tree through Jekyll ]
+  [files from=root [#
+.nojekyll
+CNAME
+install
+#]]
+]

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CX — one language for your data and your code</title>
+<meta name="description" content="CX is one bracketed syntax for documents, queries, programs and the compiler's own tree — exact decimals, deny-by-default effects, errors as values, a content-addressed store.">
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=0.18.0-pre.1">
+<style>
+body.site-home { grid-template-columns: 1fr; }
+body.site-home header.sheet-bar, body.site-home main, body.site-home footer.title-block { grid-column: 1; }
+body.site-home main { max-width: 920px; margin: 0 auto; }
+</style>
+</head>
+<body class="site-home">
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · cxhome.org</span><span class="sb-title">Home</span></div>
+  <div class="sb-right"><a href="guide.html">Guide</a><a href="llm/primer.md">Primer</a><a href="downloads.html">Downloads</a><a href="https://github.com/cx-home/cx">GitHub</a><span class="sb-rev">v0.18.0-pre.1</span></div>
+</header>
+<main>
+<h1>CX — one language for your data and your code</h1>
+<p><b>TL;DR — reach for CX whenever the data is the point.</b> One bracketed syntax is the document, the query, the program and the compiler's own tree, so the file you read is the file you transform, validate, hash, store and serve — with no second language in between. Python set the bar a working language has to clear: readable on day one, batteries included, good for a script and for a system. CX holds itself to that bar and goes past it where data work hurts: exact decimals by default, effects you grant instead of inherit, errors that are values, regular expressions that cannot blow up, and a content-addressed store in the box.</p>
+<pre><code class="language-console">curl -sSL https://cxhome.org/install | sh
+cx primer</code></pre>
+<p>The installer resolves the latest release for your platform, checks its SHA-256 against the release's own checksum file and installs <code>cx</code> — or, where no prebuilt build exists, says so and points at the source build; <code>cx primer</code> then prints the manual for exactly the binary you installed. Every example on this page is a conformance fixture that was executed by <code>cx</code> 0.18.0-pre.1 when the page was generated, and the page is refused if one of them stops holding.</p>
+<h2>Why reach for CX</h2>
+<h3>The document and the program are the same shape</h3>
+<p>A query is a pattern over the document: "every <code>user</code> that has a <code>name</code> and an <code>email</code>". There is no object model to build first and no parser to call — the program reads the data in the form you wrote it.</p>
+<p><code>input.cx</code></p>
+<pre><code class="language-cx">[users
+  [user [name Alice] [email a@x.com]]
+  [user [name Bob] [email b@x.com]]]</code></pre>
+<p><code>prog.cx</code></p>
+<pre><code class="language-cx">[?for [user [name $n] [email $e]]
+       [yield [pair name=$n email=$e]]]</code></pre>
+<pre><code class="language-console">$ cx --data=input.cx prog.cx
+[pair name=Alice email='a@x.com']
+[pair name=Bob email='b@x.com']</code></pre>
+<h3>Exact numbers are the default</h3>
+<p>In Python, <code>0.1 + 0.2</code> is <code>0.30000000000000004</code> until you import <code>decimal</code>. In CX a fraction literal is an exact base-10 decimal, and mixing it with a binary float is refused out loud rather than rounded in silence — so money stays money.</p>
+<p><code>prog.cx</code></p>
+<pre><code class="language-cx">[?let [= $subtotal 19.99] [= $shipping 5.01] [total [+ $subtotal $shipping]]]</code></pre>
+<pre><code class="language-console">$ cx prog.cx
+[total 25.00]</code></pre>
+<h3>Every format lands in one value model</h3>
+<p>JSON parses into the same values the language computes with: a map is a map, whichever format it arrived in.</p>
+<p><code>prog.cx</code></p>
+<pre><code class="language-cx">[?lib 'cx-stdlib/json']
+[$json:parse "{\"a\": 1}"]</code></pre>
+<pre><code class="language-console">$ cx prog.cx
+{a: 1}</code></pre>
+<p>Typed tables are data, not a convention — the columns carry their types, which is what lets <code>cx</code> project a table to columnar formats without guessing:</p>
+<p><code>input.cx</code></p>
+<pre><code class="language-cx">[users [table[name::string age::int active::bool]]
+  alice 30 true
+  bob 25 false
+]</code></pre>
+<pre><code class="language-console">$ cx --from=cx --to=cx input.cx
+[users [table[name::string age::int active::bool]]
+  alice 30 true
+  bob 25 false
+]</code></pre>
+<h3>Effects are granted, never inherited</h3>
+<p>A Python script can read every file its process can. A CX program reads nothing until you grant it, and a denial is an ordinary value that names the flag which would allow it:</p>
+<p><code>prog.cx</code></p>
+<pre><code class="language-cx">[?lib 'cx-stdlib/io']
+[$io:read-file "/var/log/app.log"]</code></pre>
+<pre><code class="language-console">$ cx prog.cx
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)']</code></pre>
+<h3>Regular expressions that cannot blow up</h3>
+<p>Python's <code>re</code> is a backtracking engine, so a hostile pattern and input can run for as long as they like. CX's <code>re</code> is RE2: linear time on any input, and the constructs that would need backtracking are refused when the pattern compiles.</p>
+<p><code>prog.cx</code></p>
+<pre><code class="language-cx">[?lib 'cx-stdlib/re']
+[$re:matches [$re:compile "a+"] "aaa"]</code></pre>
+<pre><code class="language-console">$ cx prog.cx
+true</code></pre>
+<h3>State that outlives the program is two calls away</h3>
+<p>The store is content-addressed: <code>put-doc</code> answers a handle derived from the document's canonical bytes and <code>get-doc</code> answers the document. <code>mem://</code> needs no grant; a real URL talks to a served store with the same two calls.</p>
+<p><code>prog.cx</code></p>
+<pre><code class="language-cx">[?lib 'cx-platform/store']
+[?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:get-doc $s $h]]</code></pre>
+<pre><code class="language-console">$ cx prog.cx
+[doc [item 'hello']]</code></pre>
+<h3>Agent protocols are plain values</h3>
+<p>An MCP request is an ordinary CX value projected to its wire form — no bespoke serializer anywhere in the path.</p>
+<p><code>prog.cx</code></p>
+<pre><code class="language-cx">[?lib 'cx-platform/mcp' :as mcp]
+[?lib 'cx-stdlib/json' :as json]
+[$json:emit [$mcp:call-tool-request 1 "get_weather" {location: "NYC"}]]</code></pre>
+<pre><code class="language-console">$ cx prog.cx
+'{"id":1,"jsonrpc":"2.0","method":"tools/call","params":{"arguments":{"location":"NYC"},"name":"get_weather"}}'</code></pre>
+<h2>What is in the box — counted when this page was generated</h2>
+<ul>
+<li><b>83 shipped modules</b>, each declared once in <code>registry/modules.cxd</code> with its ring, its group and its home repository; the guide renders a reference page from each bundled module's own documentation.</li>
+<li><b>80 directives</b> — the whole normative set, projected from the specification into one table of the primer. If a directive is not in that table it does not exist.</li>
+<li><b>23 repositories</b>, each pinned by sha from the front door, which builds the four <code>cx</code> builds from those pins and grades them together (the map below).</li>
+<li><b>8 examples on this page</b>, each replayed against <code>cx</code> 0.18.0-pre.1 and compared with its fixture byte for byte.</li>
+</ul>
+<h2>Start here</h2>
+<ul>
+<li><a href="guide.html">The guide</a> — the language, ring by ring, from a first document to a served application, with a reference page for every bundled module.</li>
+<li><a href="quickstart.html">The quickstart</a> — install, a first file, a first conversion, a first query and a first schema.</li>
+<li><a href="llm/primer.md">The primer</a> — the one file an assistant loads before writing CX (the same text <code>cx primer</code> prints); <a href="llms.txt">llms.txt</a> indexes the rest of that layer, and <a href="llms-full.txt">llms-full.txt</a> is all of it in one fetch.</li>
+<li><a href="llm/contributor.md">The contributor's front door</a> — the rules for changing CX, each citing the decision behind it, and the shortest reading order for each kind of change.</li>
+<li><a href="downloads.html">Downloads</a> — the four builds of one binary: <code>data</code>, <code>embed</code>, <code>cli</code> and <code>platform</code>. Take the smallest one that answers your question.</li>
+</ul>
+<h2>The repositories</h2>
+<p>CX is built in two rings — Ring 0, the data format, which cannot execute anything, and Ring 1, the language — with the platform, the bindings and the ecosystem as groups above them. Imports point inward, never out, and the build enforces it. Each repository is thin — what it is, how to install it, what it pins — and this site, served from <code>cx</code>, carries the narrative for all of them.</p>
+<table>
+<thead><tr><th>group</th><th>repository</th><th>what it is</th><th>ships</th></tr></thead>
+<tbody>
+<tr><td>the front door</td><td><a href="https://github.com/cx-home/cx">cx</a></td><td>the front door: pins every repo, builds the four cx builds and libcx-core/libcx, holds the site, the release, the installer</td><td>binary</td></tr>
+<tr><td>the two cores</td><td><a href="https://github.com/cx-home/cx-core-data">cx-core-data</a></td><td>the data format: reader, writer, canonical form, schema, codecs, libcx-core, the data-only cx</td><td>binary</td></tr>
+<tr><td></td><td><a href="https://github.com/cx-home/cx-core-code">cx-core-code</a></td><td>the language: evaluator, stdlib, LSP, libcx, the cli and embed builds</td><td>binary</td></tr>
+<tr><td>the platform group</td><td><a href="https://github.com/cx-home/cx-platform-net">cx-platform-net</a></td><td>sockets, TLS, the HTTP server, the XSP transport bindings, ftp, sftp, file_surface</td><td>binary</td></tr>
+<tr><td></td><td><a href="https://github.com/cx-home/cx-platform-mail">cx-platform-mail</a></td><td>SMTP and IMAP, server and client cores, sasl</td><td>binary</td></tr>
+<tr><td></td><td><a href="https://github.com/cx-home/cx-platform-identity">cx-platform-identity</a></td><td>sessions, did:web, authz-store, vc-revocation</td><td>binary</td></tr>
+<tr><td></td><td><a href="https://github.com/cx-home/cx-platform-store">cx-platform-store</a></td><td>the storage engine, its substrates, journal/live/audit, ft, and the store server</td><td>binary</td></tr>
+<tr><td></td><td><a href="https://github.com/cx-home/cx-platform-db">cx-platform-db</a></td><td>external database access: $sql-*, $redis-*, the drivers</td><td>binary</td></tr>
+<tr><td></td><td><a href="https://github.com/cx-home/cx-platform-fabric">cx-platform-fabric</a></td><td>messaging and fabric-serve</td><td>binary</td></tr>
+<tr><td></td><td><a href="https://github.com/cx-home/cx-platform-xsp">cx-platform-xsp</a></td><td>the XAP Stream Protocol: the frame codec, the XSP-AUTH handshake, the protocol pages</td><td>binary</td></tr>
+<tr><td></td><td><a href="https://github.com/cx-home/cx-platform-xap">cx-platform-xap</a></td><td>the application host, compose, dist, schema, market, the reference deployments</td><td>binary</td></tr>
+<tr><td></td><td><a href="https://github.com/cx-home/cx-platform-flow">cx-platform-flow</a></td><td>workflow; its CLI verbs stay in the binary</td><td>package</td></tr>
+<tr><td></td><td><a href="https://github.com/cx-home/cx-platform-connector">cx-platform-connector</a></td><td>the connector kit and sync</td><td>package</td></tr>
+<tr><td></td><td><a href="https://github.com/cx-home/cx-platform-sso">cx-platform-sso</a></td><td>enterprise sign-on, the interop lane</td><td>package</td></tr>
+<tr><td></td><td><a href="https://github.com/cx-home/cx-platform-ux">cx-platform-ux</a></td><td>the web and terminal surfaces</td><td>package</td></tr>
+<tr><td></td><td><a href="https://github.com/cx-home/cx-platform-agent">cx-platform-agent</a></td><td>tools, mcp, mcp-server, a2a, a2a-xap, llm, run, adjudicate</td><td>package</td></tr>
+<tr><td>the bindings</td><td><a href="https://github.com/cx-home/cx-binding-python">cx-binding-python</a></td><td>cxlib for Python</td><td>pypi</td></tr>
+<tr><td></td><td><a href="https://github.com/cx-home/cx-binding-go">cx-binding-go</a></td><td>cxlib for Go</td><td>go-module</td></tr>
+<tr><td></td><td><a href="https://github.com/cx-home/cx-binding-rust">cx-binding-rust</a></td><td>cxlib for Rust</td><td>crate</td></tr>
+<tr><td></td><td><a href="https://github.com/cx-home/cx-binding-v">cx-binding-v</a></td><td>the native reference binding</td><td>v-module</td></tr>
+<tr><td>the ecosystem</td><td><a href="https://github.com/cx-home/cx-registry">cx-registry</a></td><td>the package index: the store, publisher keys, the publish program</td><td>none</td></tr>
+<tr><td></td><td><a href="https://github.com/cx-home/cx-decisions">cx-decisions</a></td><td>the ledger, the process specs, the standing rules, design texts</td><td>none</td></tr>
+<tr><td></td><td><a href="https://github.com/cx-home/cx-tooling">cx-tooling</a></td><td>vscode, neovim, tree-sitter, completions, syntax, the installer, diagram</td><td>editor</td></tr>
+</tbody></table>
+</main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>Home</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.18.0-pre.1</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
+<script src="highlight/highlight.js?v=0.18.0-pre.1" defer></script>
+</body>
+</html>
