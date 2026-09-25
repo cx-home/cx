@@ -791,6 +791,26 @@ const flow_serve_helpers = "
     [where [and [= [\$string \$b@kind] \"webhook\"] [= [\$string \$b@path] \$path]]]
     [yield \$b]]]]
 
+[; after the act, the run is DRIVEN ON (flow.md §4.6, §4.23; RULED: FW-1). One
+   `advance` is one effect (RULED: 1265-PB-6): an act that completes an OFFERED
+   step performs that step's own effect and stops, and the steps after it are
+   the law's NEXT effects — while the courier below ticks only the runs that
+   hold a pending timer, so a run whose offer carried no deadline would wait
+   for a turn nothing schedules. The ingress therefore advances the run with
+   courier ticks until it parks or terminates (the record stops changing), the
+   same drive `cx flow run` makes after `start`, and under the run's OWN
+   recorded basis — never the act's, whose authority was the performer's for
+   that one act (§4.5) — so the two faces append byte-identical transitions
+   (RULED: WF-28b). The bound is a safety net, not a stop condition. ]
+[?def fs--drive-on scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$doc \$id::string \$rec \$n::int)
+  [?if [< \$n 1] [then \$rec]
+    [else [?let [= \$next [\$cxflow:advance \$j \$id ()
+                   {env: \$e flow: \$doc actor: [\$string \$rec@actor] authority: [\$string \$rec@authority]}]]
+      [?match \$next
+        [case [err] \$rec]
+        [else [?if [= [\$cx:hash \$next] [\$cx:hash \$rec]] [then \$next]
+                [else [fs--drive-on \$j \$e \$doc \$id \$next [- \$n 1]]]]]]]]]]
+
 [; a CORRELATED ACT — the [act run= step= …] shape `advance` already takes. The
    run own pinned document is the one it advances against, which is why this
    path needs no binding row and works for a run of ANY document the runner
@@ -813,7 +833,7 @@ const flow_serve_helpers = "
                       {env: \$e flow: [\$first \$ds] actor: [\$string \$a@actor] authority: [\$string \$a@authority]}]]
                 [?match \$adv
                   [case [err @code=\$c @message=\$m] [fs--reply 400 [fs--err-text \$c \$m]]]
-                  [else [fs--reply 200 [\$cx:emit \$adv]]]]]]]]]]]]]]]
+                  [else [fs--reply 200 [\$cx:emit [fs--drive-on \$j \$e [\$first \$ds] \$id \$adv 256]]]]]]]]]]]]]]]]
 
 [?def fs--ingress scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$fs \$bs \$act-path::string \$req)
   [?let [= \$p [\$string \$req@path]]
