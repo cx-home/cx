@@ -113,9 +113,30 @@
                             [else [alloc file=$f repo=[$string $h@repo] key=[$string $h@key]]]]]]]]
     [= $used-keys [?for [in $a $allocs] [where [not [= [$string $a@key] ""]]] [yield [$string $a@key]]]]
     [= $rule-keys [?for [in $r $rules] [yield [$rule-key $r]]]]
+    # front-door detection (RS-8, D59a): the tree is cx-private iff some
+    # `repo=cx-private` rule is the FIRST match for a tracked file; otherwise
+    # it is the front door (`cx`), which holds only the `repo=cx` paths. In
+    # front-door mode a rule or repo row for any OTHER repository necessarily
+    # owns nothing here -- that is the shape of the filtered tree, not a
+    # stale rule -- so the dead-rule / empty-repo checks below narrow to `cx`
+    # alone in that mode; every other row is skipped, one line saying so
+    # printed by the caller from this verdict's `[mode]`. In cx-private mode
+    # nothing changes.
+    [= $mode [?if [$member "cx-private" [?for [in $a $allocs] [yield [$string $a@repo]]]]
+               [then "cx-private"] [else "front-door"]]]
+    [= $front-door [= $mode "front-door"]]
     [= $unallocated [?for [in $a $allocs] [where [= [$string $a@repo] ""]]
                       [yield [failure kind="unallocated" what=[$string $a@file]]]]]
+    # foreign file: front-door mode only -- a tracked file whose first match
+    # is a rule for anything other than `cx` is refused BY NAME, because a
+    # front-door checkout should hold no such file at all.
+    [= $foreign [?for [in $a $allocs]
+                  [where $front-door]
+                  [where [not [= [$string $a@repo] ""]]]
+                  [where [not [= [$string $a@repo] "cx"]]]
+                  [yield [failure kind="foreign file" what=[$concat [$string $a@file] " -> repo=" [$string $a@repo]]]]]]
     [= $dead [?for [in $r $rules] [where [not [$member [$rule-key $r] $used-keys]]]
+               [where [?if $front-door [then [= [$string $r@repo] "cx"]] [else true]]]
                [yield [failure kind="dead rule" what=[$concat [$rule-key $r] " -> " [$string $r@repo]]]]]]
     [= $dups [?for [in $k $rule-keys]
                [where [> [$count [?for [in $k2 $rule-keys] [where [= $k $k2]] [yield 1]]] 1]]
@@ -135,6 +156,7 @@
     # together mean an extraction is finished in this file or not started.
     [= $empty [?for [in $x $repos] [where [not [$member [$string $x@name] $filled]]]
                 [where [not [= [$string [?else $x@status ""]] "extracted"]]]
+                [where [?if $front-door [then [= [$string $x@name] "cx"]] [else true]]]
                 [yield [failure kind="empty repo" what=[$string $x@name]]]]]
     # …and the converse: an extracted repository that still claims a tracked
     # path is a half-done extraction, which reads as green under every check
@@ -201,6 +223,7 @@
       [failures [?for [in $x $unpinnable] [yield $x]]
                 [?for [in $x $self-pinned] [yield $x]]
                 [?for [in $x $unallocated] [yield $x]]
+                [?for [in $x $foreign] [yield $x]]
                 [?for [in $x $dead] [yield $x]]
                 [?for [in $x $dups] [yield $x]]
                 [?for [in $x $undeclared] [yield $x]]
@@ -208,7 +231,8 @@
                 [?for [in $x $extracted-claims] [yield $x]]
                 [?for [in $x $split-failures] [yield $x]]]
       [census [?for [in $c $census] [order-by $c@n desc] [yield $c]]]
-      [pins n=[$count $pins] of=[- [$count $repos] 1]]]]]
+      [pins n=[$count $pins] of=[- [$count $repos] 1]]
+      [mode name=$mode]]]]
 
 # -- the self-test: synthetic rules over a synthetic file list ---------------
 
@@ -219,6 +243,7 @@
         [repo name=a] [repo name=b] [repo name=ghost] [repo name=cx-core-code]
         [repo name=gone status=extracted]
         [repo name=halfgone status=extracted]
+        [repo name=cx-private]
         [path exact='x/one.md' repo=a]
         [path prefix='x/' repo=b]
         [path prefix='x/one' repo=a]
@@ -226,8 +251,14 @@
         [path exact='x/one.md' repo=b]
         [path exact='w/five.md' repo=halfgone]
         [path exact='c/core.v' repo=cx-core-code]
+        [path exact='v/six.md' repo=cx-private]
       ]"]]
-      [= $files ("x/one.md", "x/two.md", "y/three.md", "z/four.md", "w/five.md", "c/core.v")]
+      # v/six.md is the ONLY file this fixture allocates to cx-private -- it
+      # forces `check`'s mode to "cx-private" (RS-8, D59a) so this whole-tree
+      # fixture keeps exercising the UNCHANGED behavior (every row's dead-rule
+      # and empty-repo checks run); the front-door mode has its own fixture
+      # below.
+      [= $files ("x/one.md", "x/two.md", "y/three.md", "z/four.md", "w/five.md", "c/core.v", "v/six.md")]
       [= $mods [?for [in $m [$cx:parse "[r [module name=whole spec=x/one.md source=x/one.md code=none half=none] [module name=torn spec=x/one.md code=y/three.md source=none] [module name=halved spec=x/one.md source=x/one.md code=none half=x/two.md] [module name=ringone ring=1 spec=x/one.md source=x/one.md code=c/core.v half=none] [module name=platone ring=1 group=platform spec=x/one.md source=x/one.md code=c/core.v half=none]]"]//module] [yield $m]]]
       [= $v [$check [?for [in $r $reg//path] [yield $r]]
                     [?for [in $r $reg//repo] [yield $r]]
@@ -265,13 +296,58 @@
       [= $a-n [$first [?for [in $c $v/census/row] [where [= [$string $c@repo] "a"]] [yield [$string $c@n]]]]]
       [= $b-n [$first [?for [in $c $v/census/row] [where [= [$string $c@repo] "b"]] [yield [$string $c@n]]]]]
       [= $census-ok [?if [= $a-n "1"] [then [= $b-n "1"]] [else false]]]
-      [?if [?if [= [$count $missing] 0] [then [?if [= [$count $extra] 0] [then $census-ok] [else false]]] [else false]]
-        [then [?let [= $_ [$say "repos-allocation self-test OK -- unallocated, dead rule, duplicate, undeclared, empty repo, split module each caught once, and the split twice: a torn code= and a torn half= (#1609); an EXTRACTED repo that owns nothing is exempt and one that still claims a file is caught (RS-12); an unpinnable pin and a self-pin caught on the deps.cxd join (#1589 item 23); a whole module passes; census a=1 b=1 (y/ counted under the undeclared rule's repo, as it must)."]]
+      [= $mode-name [$string [$first $v/mode]@name]]
+      [= $mode-ok [= $mode-name "cx-private"]]
+
+      # -- the front-door fixture: a scratch tree holding only `repo=cx`
+      # files (RS-8, D59a). Before this gate learned the mode, a filtered
+      # front-door checkout read [dead rule] against `other`'s never-matched
+      # rule and [empty repo] against `other` itself, though the front door
+      # never carried those paths to begin with (MEASURED, 2026-09-25:
+      # repos-allocation-gate red on the six archived-binding rows and
+      # cx-private in exactly this shape). Red before this fixture existed:
+      # the old `check` had no mode at all and ran the whole-tree checks
+      # unconditionally.
+      [= $fd-reg [$cx:parse "[repo-allocation
+        [repo name=cx] [repo name=other]
+        [path prefix='a/' repo=cx]
+        [path prefix='lang/_archived/x/' repo=other]
+      ]"]]
+      [= $fd-rules [?for [in $r $fd-reg//path] [yield $r]]]
+      [= $fd-repos [?for [in $r $fd-reg//repo] [yield $r]]]
+      # case 1: only repo=cx files present -- passes clean; `other`'s rule is
+      # never a first match and `other` itself receives no file, and BOTH are
+      # skipped rather than reported, because this tree is the front door.
+      [= $fd-v1 [$check $fd-rules $fd-repos ("a/one.md") () ()]]
+      [= $fd-mode1 [$string [$first $fd-v1/mode]@name]]
+      [= $fd-fail1 [$count [?for [in $x $fd-v1/failures/failure] [yield $x]]]]
+      # case 2: the same tree plus one lang/_archived/ file -- still a
+      # front-door tree (no repo=cx-private file anywhere), and the file is
+      # refused BY NAME: its first match is `other`, not `cx`.
+      [= $fd-v2 [$check $fd-rules $fd-repos ("a/one.md", "lang/_archived/x/two.md") () ()]]
+      [= $fd-mode2 [$string [$first $fd-v2/mode]@name]]
+      [= $fd-kinds2 [?for [in $f $fd-v2/failures/failure] [yield [$concat [$string $f@kind] ":" [$string $f@what]]]]]
+      [= $fd-want2 ("foreign file:lang/_archived/x/two.md -> repo=other")]
+      [= $fd-missing2 [?for [in $w $fd-want2] [where [not [$member $w $fd-kinds2]]] [yield $w]]]
+      [= $fd-extra2   [?for [in $k $fd-kinds2] [where [not [$member $k $fd-want2]]] [yield $k]]]
+      [= $fd-ok [and [and [= $fd-mode1 "front-door"] [= $fd-fail1 0]]
+                     [and [= $fd-mode2 "front-door"]
+                          [and [= [$count $fd-missing2] 0] [= [$count $fd-extra2] 0]]]]]
+
+      [?if [?if [= [$count $missing] 0]
+             [then [?if [= [$count $extra] 0] [then [and $census-ok [and $mode-ok $fd-ok]]] [else false]]]
+             [else false]]
+        [then [?let [= $_ [$say "repos-allocation self-test OK -- unallocated, dead rule, duplicate, undeclared, empty repo, split module each caught once, and the split twice: a torn code= and a torn half= (#1609); an EXTRACTED repo that owns nothing is exempt and one that still claims a file is caught (RS-12); an unpinnable pin and a self-pin caught on the deps.cxd join (#1589 item 23); a whole module passes; census a=1 b=1 (y/ counted under the undeclared rule's repo, as it must); the v/six.md fixture forces cx-private mode so this whole-tree case is unchanged; the front-door case (repo=cx files only) passes clean with the other row's dead-rule/empty-repo checks skipped, and the same tree plus one lang/_archived/ file is refused by name (RS-8, D59a)."]]
                 [$env:exit 0]]]
         [else [?let [= $_ [$cry [$concat "repos-allocation self-test FAILED -- missing: "
                                           [$strings:join $missing "; "]
                                           " | unexpected: " [$strings:join $extra "; "]
-                                          " | census a=" $a-n " b=" $b-n]]]
+                                          " | census a=" $a-n " b=" $b-n
+                                          " | mode=" $mode-name
+                                          " | front-door case1 mode=" $fd-mode1 " failures=" [$string $fd-fail1]
+                                          " | front-door case2 mode=" $fd-mode2
+                                          " missing=" [$strings:join $fd-missing2 "; "]
+                                          " unexpected=" [$strings:join $fd-extra2 "; "]]]]
                 [$env:exit 1]]]]]]
   [else ""]]
 
@@ -302,16 +378,26 @@
              [then [?for [in $d [$cx:parse [$io:read-file "deps.cxd"]]//dep] [yield [$string $d@repo]]]]
              [else ()]]]
   [= $v [$check $rules $repos $files $modules $pins]]
+  [= $mode [$string [$first $v/mode]@name]]
   [= $failures [?for [in $f $v/failures/failure] [yield $f]]]
   [= $_census [?for [in $c $v/census/row]
                 [yield [$say [$concat [$strings:pad-start [$string $c@n] 6 " "] "  " [$string $c@repo]]]]]]
+  # the mode this run graded the tree as, and, in front-door mode, the one
+  # line saying the dead-rule / empty-repo checks for every row but `cx` are
+  # skipped (RS-8, D59a) -- registry/repos.cxd describes cx-private's whole
+  # tree, and a front-door checkout holds only the repo=cx paths.
+  [= $_mode [$say [$concat "repos-allocation: mode=" $mode
+                           [?if [= $mode "front-door"]
+                             [then " -- front-door tree: dead-rule/empty-repo checks for every row but cx are skipped"]
+                             [else " -- cx-private tree: whole-tree checks"]]]]]
   [= $_detail [?if [= [$string [$env:var-or-default "REPOS_DETAIL" ""]] ""] [then ()]
                 [else [?for [in $a [?for [in $f $files] [yield [?let [= $h [$first-rule $rules $f]] [d repo=[?match $h [case [miss] ""] [else [$string $h@repo]]] top=[$first [$strings:split $f "/"]]]]]]]
                          [group-by [$concat [$string $a@repo] "  " [$string $a@top]]]
                          [order-by $key]
                          [yield [$say [$concat "    " [$strings:pad-start [$string $count] 5 " "] "  " $key]]]]]]]
   [= $_total [$say [$concat [$strings:pad-start [$string [$count $files]] 6 " "] "  tracked files, "
-                             [$string [$count $rules]] " rules, " [$string [$count $repos]] " repos"]]]
+                             [$string [$count $rules]] " rules, " [$string [$count $repos]] " repos, mode="
+                             $mode]]]
   [; The pin census. deps.cxd holds only repositories that EXIST and have
      released, so this line is how many of the shape have been extracted --
      the roster's own count, minus `cx`, is the denominator. ]
