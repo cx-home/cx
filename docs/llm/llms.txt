@@ -13,6 +13,14 @@ Generated from the CX conformance corpus at the v0.18.0-pre.1 cut by scripts/gen
 - [Playbook: building a production XAP](https://cxhome.org/llm/playbook-xap.md): The full arc for a production feature deployment: authoring and composing feature grammars, derived nouns and deriver principals, the authority model, the *.xap.cxd deployment document and its [runtime] bindings, offline identity bootstrap, the deployment host, and the ux-web hypermedia surface — with what the rulings forbid stated as plainly as what they require.
 - [The customization model: what one tenant may change](https://cxhome.org/llm/model-customization.md): The question an adopter asks first and the layer answers in seven places: what a tenant may change, what must change for everyone, how a change reaches a fleet on both the surface and the grammar plane, and why behaviour is not tenant-customizable — the refusals stated as the promise they enforce rather than as friction.
 
+## Contributing to CX
+
+- [Contributor front door: the rules, and what to load](https://cxhome.org/llm/contributor.md): The second read after the primer, for changing CX rather than writing it: the rules for the best long-term change, each citing its decision and the step that holds it, the RS-n standing decisions in the ledger's own words, and the reading order that loads the least for each task.
+- [Contributor: architecture](https://cxhome.org/llm/contributor-architecture.md): The two rings and the groups above them, the repository map and the pins the front door builds from (both projected from the registry), the registration hooks that keep the core free of product names, and the two-repository modules.
+- [Contributor: design — a surface before its code](https://cxhome.org/llm/contributor-design.md): How a surface gets its decision, ring, group, registry row, spec and corpus before any code: the six-artifact order, the ring questions, the row's columns and where every row lives today, projected from registry/modules.cxd.
+- [Contributor: implementation](https://cxhome.org/llm/contributor-implementation.md): Writing V for CX: one V module per directory, imports downward only, the pub surface as the interface, the registration hooks, the front door's assembled build from the pins, and tooling written in CX.
+- [Contributor: test](https://cxhome.org/llm/contributor-test.md): Grading the corpus with cx corpus, choosing steps by the computed selection, the umbrellas and the census trio, the two runners, and the step roster the Makefile runs, projected from TEST_TARGETS.
+
 ## Reference
 
 - [Reference: the CX data language](https://cxhome.org/llm/reference-data-language.md): Elements, attributes, scalars and their auto-typing, collections, raw text, tables, identity anchors, and the format conversions the data reading offers.

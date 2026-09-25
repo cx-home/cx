@@ -1,0 +1,111 @@
+# CX contributor front door — design: a surface before its code
+
+> **GENERATED FILE.** Source: `docs-src/llm/contributor-design.md.tmpl` and
+> `registry/modules.cxd`, assembled by `scripts/gen_docs/primer_build.cx`.
+> The two tables are projections; the procedure is the rules, each citing its
+> decision. Edit the template or the registry, never this file.
+
+## TL;DR
+
+- A surface is DECLARED before it is written: its decision states its ring,
+  its group and its directories; its `registry/modules.cxd` row follows; then
+  the spec, the corpus, the bundled source, the V code — in that order
+  (RULED: OL-15, 1427-f).
+- The row is the single declaration. `make placement-gate` refuses a tree
+  where the spec directory, the corpus directory and header, the code
+  directory or the `[?lib]` namespace disagrees with it.
+- A structural change (tree, namespace, gates, ownership) is preceded by the
+  full option table across code, spec, conformance, gates, docs, lockfile and
+  tooling, on its issue, for the owner's decision — never executed one
+  dimension at a time (RULED: OL-15).
+- Placement mistakes are the most expensive CX has made; the procedure below
+  exists because each step was once skipped and cost a restructure.
+
+## 1. The procedure — six artifacts, one order
+
+| Step | Artifact | Where (Ring 1 / platform group) | Refused by |
+|---|---|---|---|
+| 1 | the DECISION: ring, group, directories, the option table | the issue, then a `ledger/` page citing `RULED: <id>` | `spec-freeze-gate` (a later spec+impl commit needs the id) |
+| 2 | the ROW | `registry/modules.cxd` — `status=planned` until every artifact exists | `placement-gate` |
+| 3 | the SPEC | `spec/03-approved/stdlib/<name>.md` / `spec/03-approved/platform/<name>.md`, in the owning repository | `spec-freeze-gate`, `check-code-spec-consistency` |
+| 4 | the CORPUS — fixtures first | `conformance/stdlib/<name>.cxd` / `conformance/platform/<name>.cxd`, its header's `ring=` the lane that grades it | the fixture graders; `check-fixture-shard-manifest` (a new file in no shard) |
+| 5 | the BUNDLED SOURCE with its `[module-doc]` | `stdlib/<name>.cx`, namespace `cx-stdlib/<name>` / `cx-platform/<name>` | `guide-check` (fn-doc examples match the corpus), `stdlib-catalog-gate` |
+| 6 | the V CODE, only where CX cannot express it | `vcx/code/` (the rings) / the product's `vcx/<vmodule>/` | `ring-import-gate`, `product-import-gate`, `check-no-stub-impl` |
+
+Then the catalog: `spec/03-approved/stdlib/README.md` or
+`spec/03-approved/platform/README.md` lists it, and the primer's module table
+picks it up from the row at the next `make docs` (RULED: 1427-f).
+
+## 2. Deciding the ring and the group
+
+| Question about the module | Answer | Decision |
+|---|---|---|
+| Is it pure, or purely local (a file, the clock, a subprocess)? | Ring 1, no group, `cx-stdlib/<name>` | RULED: RS-1, OL-14 |
+| Does it serve, or reach a store or a protocol? | `ring=1 group=platform`, `cx-platform/<name>` | RULED: RS-1 |
+| Is it a data-format surface synthesized by the codec registry? | Ring 0, `kind=codec` | RULED: RS-1 |
+| Does a platform module have a pure codec or client a Ring-1 consumer needs? | declare it in the row's `half=`; at its first Ring-1 consumer it becomes its own Ring-1 module (as `http-client` split from `http`) | RULED: 1427-d, 1427-e |
+| Is its only consumer one product? | its CX surface moves to that product; a pure V half stays in the core | RULED: RS-5, D76c |
+| Is it a shared codec with callers outside one product? | it stays in the language (saml, scim, oidc, soap, graphql, ws, email, http-client, similar) | RULED: RS-5 |
+
+The rule under all of it: **a module lives in the ring of its highest verb**
+(RULED: OL-14). The rings are frozen and change only by decision; a `ring=2`
+row is refused by name (RULED: RS-1).
+
+## 3. The row — `registry/modules.cxd`
+
+{{MODULE-COLUMNS}}
+
+What the columns mean (the file's own `[doc]` block is the full text):
+
+- `ring` is the DECISION, not a location — it never takes a `-to`; what moves
+  is the artifact. `group=platform` lets a module import the platform graph.
+- `repo=` names the repository that owns the artifacts when it is not the
+  front door; its `spec`/`corpus`/`source`/`code` then name the pinned
+  checkout `deps/<repo>/…` (RULED: RS-7, RS-12).
+- `status=planned` is NOT WRITTEN YET: the check holds the row to its ring and
+  directories but not to existence, and refuses it once every artifact is on
+  disk — so the declaration cannot outlive the writing.
+- A `<column>-to` is NOT MOVED YET: it names where a move puts the artifact
+  and exists only while the move is owed.
+- `code` on a product's row is reached through the builtin-dispatch registry
+  the product's own `init()` fills — never by name from `vcx/code`
+  (RULED: D71a).
+
+## 4. Where the rows live today
+
+{{MODULE-CENSUS}}
+
+## 5. Writing the spec
+
+- The spec is the only truth; there are no ADRs and no design notes that
+  override it (AGENTS.md rule 1, RULED: CFG-1; `check-no-adr-citations`).
+- A decision's design item may ADD spec text where its edit map is silent; it
+  may never move or delete a sentence the map does not name (RULED: RS-21).
+- Specs stay loosely coupled: a generated document carries no `§` numbers
+  into another page's prose (the primer drops them from the directive
+  registry for this reason; the owner's 1a of 2026-08-19,
+  `ledger/rulings_2026_08_19_787_guide_and_packaging.md`).
+- An effect is deny-by-default and named by the capability that grants it;
+  an error is a value with a registered `CXER` code (`cxer-registry-gate`
+  holds the registry to `spec/03-approved/process/governance.md`). Both are
+  pinned by corpus cases in `contributor.md` §2. A surface that throws, or
+  that reaches an effect with no capability, is a design defect before it is
+  a code defect.
+- A normative sentence has a corpus case beside it before any code moves:
+  the case is how a later reader knows the sentence still holds.
+
+## 6. The option table — what a structural decision shows
+
+Every structural change is posed on its issue as the full option table, for
+the owner's decision, before anything moves (RULED: OL-15); each option states
+its long-term consequence for CX. The table covers every dimension at once:
+
+| Dimension | What the option must say |
+|---|---|
+| code | which V module and directory; the imports it adds; the registration hook it uses |
+| spec | which page, which section, added or changed sentences |
+| conformance | which corpus file, which lane (`ring=`), which shard |
+| gates | which step refuses the wrong tree, and whether one is added (`check-selection-manifest` then) |
+| docs | which generated document moves (`make docs` in the same commit) |
+| lockfile / pins | which `deps.cxd` row or `[module]` row changes |
+| tooling | editors, completions, the migration tool (`cx --migrate-namespace`) |
