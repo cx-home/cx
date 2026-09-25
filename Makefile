@@ -391,6 +391,33 @@ sync-cmd-split:
 	for f in vcx/cmd/*.v; do \
 	  ln -sf "$(CURDIR)/$$f" "deps/cx-core-code/vcx/cmd/$$(basename $$f)"; \
 	done
+	@# Every artifact this recipe (or an ordinary build) leaves untracked in the
+	@# pin checkout -- the stay-file symlinks just made, this repository's own
+	@# nested deps/ mirror (already covered by the pin's OWN tracked .gitignore,
+	@# named here anyway so this file is a complete account), vcx/target/ (build
+	@# output; 0 files under it are ever tracked there) and a test's
+	@# __snapshots__/ -- goes in deps/cx-core-code/.git/info/exclude, a
+	@# per-checkout, never-committed ignore list (RULED: RS-7, RS-8). `git status`
+	@# of the pin is then clean by construction after this target runs, so
+	@# `deps-sync`'s checkout-drift refusal (which the spec's "has local changes"
+	@# means literally -- any uncommitted change, not only a tracked one, #1591's
+	@# Risks) never fires on the front door's OWN byproducts; a genuine edit to a
+	@# TRACKED file still shows in `git status` and still refuses, unchanged.
+	@if [ -d deps/cx-core-code/.git ]; then \
+	  exf=deps/cx-core-code/.git/info/exclude; \
+	  mkdir -p "$$(dirname "$$exf")"; \
+	  [ -f "$$exf" ] || : > "$$exf"; \
+	  awk '/^# BEGIN sync-cmd-split$$/{skip=1} /^# END sync-cmd-split$$/{skip=0; next} !skip' "$$exf" > "$$exf.tmp"; \
+	  { cat "$$exf.tmp"; \
+	    echo "# BEGIN sync-cmd-split"; \
+	    for f in vcx/cmd/*.v; do echo "vcx/cmd/$$(basename $$f)"; done; \
+	    echo "deps/"; \
+	    echo "vcx/target/"; \
+	    echo "__snapshots__/"; \
+	    echo "# END sync-cmd-split"; \
+	  } > "$$exf"; \
+	  rm -f "$$exf.tmp"; \
+	fi
 	@# cx-core-code's own test helpers (testenv.cx_bin() and friends) compute
 	@# "my own repo root" from @VMODROOT (correct: deps/cx-core-code is its own
 	@# git checkout) and then reach OTHER pins — deps/cx-core-data's corpus, most
