@@ -1638,7 +1638,7 @@ test-changed-dry:
 # `make test` (the release gate) instead of sitting dark until a cut.
 .PHONY: check-prod-build
 check-prod-build:
-	@$(MAKE) -s -C vcx check-prod
+	@$(MAKE) -s -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx check-prod
 
 # ── NO-LEGACY-TRY gate (SAP C3c) — the retired [?try]/[catch]/[on-error]
 # surfaces must not reappear in conformance/ + docs-src/ + examples/ + lang/.
@@ -2693,7 +2693,7 @@ endif
 # precedent) rather than being re-derived here; the harness independently
 # restates what libcx must then report. --no-print-directory: `make -C`
 # otherwise brackets the value with Entering/Leaving lines.
-MAKE_PRINT_VCX = $(shell $(MAKE) -s --no-print-directory -C vcx print-$(1) 2>/dev/null | tail -1 | tr -d '[:space:]')
+MAKE_PRINT_VCX = $(shell $(MAKE) -s --no-print-directory -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx print-$(1) 2>/dev/null | tail -1 | tr -d '[:space:]')
 abi-c-test: build-vcx build-lib-arrow
 	$(CC) -std=c11 -Wall -Wextra -Werror -g -O1 \
 	 -fsanitize=$(ABI_C_TEST_SAN) \
