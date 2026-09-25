@@ -42,3 +42,21 @@ that already state it.
   cut, which follows the transports (INT-3 addendum 2). #1498 depends on it and sits behind it.
 - The split's own timing. FW-2 decouples the tag from the split and says nothing about the K-steps'
   order or the forced push's hour; #1591's board owns both.
+
+## Note 2026-09-25 — W3's spec edits
+
+W3 (cx-home/cx-platform-flow#3, merged on `47e65ed92`, flow `main` at `d4d6ac87f`) carried three
+edits to `flow.md` beyond §3's status rows, raised as its RESULTS.md flag 4 and put to the owner as
+Letter 5 on cx-home/cx-private#1591:
+
+1. the effects row — `claim`, `release` and `reassign` declare `[effects [read] [write]]` (with
+   `[write]` alone each was refused CXER0271 at its own effect point over a file:// journal;
+   flow-106 is the fixture);
+2. §4.5's "Scope in this release" paragraph, rewritten for the arms W3 made reachable;
+3. §4.6's sentence carrying 1265-PW-3's own text.
+
+The owner answered, verbatim, "l5 whats the best long term for cx?", and the integrator's answer on
+#1591 was **(a)**: the three are accepted as inside W3's decision — the effects row is what the
+fixture proves, the §4.6 sentence is the ruling's own text, and the `[scope]` count is what the
+issue asked for. Nothing is reverted; this note is the record the letter named. Rejected: (b) keep
+the effects row and revert the two prose edits; (c) revert all three and file the defect.
