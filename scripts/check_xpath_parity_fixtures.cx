@@ -247,6 +247,7 @@
                 reason=[$concat "CX_BIN=" $envbin " is not an executable file"]]]]]
       [else
         [?let [= $cands ([$path:join $root "dist/bin/cx"],
+                         [$path:join $root "deps/cx-core-code/vcx/target/cx"],
                          [$path:join $root "vcx/target/cx"],
                          [$path:join $root "vcx/cx"])]
               [= $hits [?for [in $c $cands] [where [$executable-file $c]] [yield $c]]]

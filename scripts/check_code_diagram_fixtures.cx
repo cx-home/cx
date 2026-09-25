@@ -431,6 +431,7 @@
       [else
         [?let [= $root [$path:dirname [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]]
               [= $cands ([$path:join $root "dist/bin/cx"],
+                         [$path:join $root "deps/cx-core-code/vcx/target/cx"],
                          [$path:join $root "vcx/target/cx"],
                          [$path:join $root "vcx/cx"])]
               [= $hits [?for [in $c $cands] [where [$executable-file $c]] [yield $c]]]
@@ -703,7 +704,7 @@
     [flag name="verbose" short="v" type=bool]]]]
   [= $filter [$string [?else [$env:flag $args "filter"] ""]]]
   [= $fix-path [?let [= $fx [$string [?else [$env:flag $args "fixtures"] ""]]]
-    [?if [= $fx ""] [then "conformance/code_diagram.cxd"] [else $fx]]]]
+    [?if [= $fx ""] [then "deps/cx-core-code/conformance/code_diagram.cxd"] [else $fx]]]]
   [= $verbose [$env:flag $args "verbose"]]
   # RULED: 1170-d — the page-sync guard runs BEFORE any fixture work and exits
   # on its own; binding its verdict here is what forces it.
