@@ -52,8 +52,8 @@ ROOT=$(pwd)
 
 V=${V:-$ROOT/third_party/v/v}
 FLAGS="-cc cc -gc e -d cx_db_sqlite -d cx_db_redis ${FIXTURE_VFLAGS:-}"
-MANIFEST=vcx/tests/fixtures_grader/fixture_shards.cxd
-OUT=vcx/target/fixtures
+MANIFEST=deps/cx-core-code/vcx/tests/fixtures_grader/fixture_shards.cxd
+OUT=deps/cx-core-code/vcx/target/fixtures
 DRIVER=tests/code_eval_fixtures_test.v
 SELECTION=${FIXTURE_FILES:-}
 
@@ -66,7 +66,7 @@ SELECTION=${FIXTURE_FILES:-}
 # at RUN-START — the idle/loaded rule is about the box the run was taken on.
 # shellcheck source=/dev/null
 . "$ROOT/scripts/verification_timings_lib.sh"
-TIMINGS=$ROOT/vcx/target/verification_timings.cxd
+TIMINGS=$ROOT/deps/cx-core-code/vcx/target/verification_timings.cxd
 GRADER_T0=$(date -u '+%s')
 GRADER_LOAD=$(sample_load_1m)
 
@@ -159,7 +159,7 @@ fi
 pids=""
 for s in $steps; do
   log="$OUT/$(basename "$s" .v).out"
-  ( cd vcx && "$V" $FLAGS "$s" ) > "$log" 2>&1 &
+  ( cd deps/cx-core-code/vcx && "$V" $FLAGS "$s" ) > "$log" 2>&1 &
   pids="$pids $!:$s"
 done
 
