@@ -389,7 +389,7 @@
   [= $root [$path:dirname [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]]
   [= $fx-flag [$string [?else [$env:flag $args "fixtures"] ""]]]
   [= $fix-path [?if [= $fx-flag ""]
-    [then [$path:join $root "conformance/xpath_31_parity.cxd"]]
+    [then [$path:join $root "deps/cx-core-code/conformance/xpath_31_parity.cxd"]]
     [else $fx-flag]]]
   [= $gates-path [$path:join $root "conformance/gates.cxd"]]
   [= $_g1 [$need-file $fix-path "fixture file"]]

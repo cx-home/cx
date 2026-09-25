@@ -657,7 +657,7 @@
                 "check can no longer read it (RULED: 1170-d)"])]
         [else [?if [not [$io:is-file $src-path]]
           [then ([$concat "SEQ-4 page-sync: missing golden sidecar " $src-path
-                  " — run vcx/tools/regen_code_diagram_golden FROM THE REPO ROOT"])]
+                  " — run deps/cx-core-code/vcx/tools/regen_code_diagram_golden FROM THE REPO ROOT"])]
           [else
             [?let [= $want [$string [$json:parse $lit]]]
                   [= $have [$io:read-file $src-path]]
@@ -667,13 +667,13 @@
                         $key "` (" [$string [$strings:length $have]] " bytes on disk vs "
                         [$string [$strings:length $want]] " on the page). That pin promises the "
                         "page's own bytes. Re-sync the string in "
-                        "vcx/tools/regen_code_diagram_golden/main.v, regenerate, READ all the "
+                        "deps/cx-core-code/vcx/tools/regen_code_diagram_golden/main.v, regenerate, READ all the "
                         "moved goldens, and record a DR-8 mini-ruling in ledger/ in the SAME "
                         "landing (RULED: 1170-d)."])]]]]]]]]]]]
 
 [?def seq4-page-sync scope=public impure ()
   [?let [= $page "scripts/gen_guide/playground/playground.examples.js"]
-        [= $gdir [$path:join "vcx" "tests" "testdata" "code_diagram_golden"]]
+        [= $gdir [$path:join "deps" "cx-core-code" "vcx" "tests" "testdata" "code_diagram_golden"]]
         [= $pins ([pin id="pin-seq-let-bound-spine-pair"   key="171-seq-mid-producer-consumer"],
                   [pin id="pin-seq-let-bound-spine-fanout" key="172-seq-large-workers-with-backpressure"])]
     [?if [not [$io:is-file $page]]
