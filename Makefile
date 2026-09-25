@@ -408,6 +408,17 @@ sync-cmd-split:
 	    [ -e "deps/cx-core-code/deps/$$r" ] || ln -s "$(CURDIR)/deps/$$r" "deps/cx-core-code/deps/$$r"; \
 	  done; \
 	fi
+	@# extraction_gate_probe (and CX_CORPUS_MERGED below) walk ONE directory
+	@# recursively, no -path-style search list -- a MERGED view, symlinks only,
+	@# never the real conformance/ (other steps' `git ls-files`-based counts
+	@# must not see it): cx-core-code's moved corpus PLUS whatever conformance/
+	@# still carries directly.
+	@mkdir -p deps/cx-core-code/vcx/target/conformance-merged
+	@find deps/cx-core-code/vcx/target/conformance-merged -maxdepth 1 -type l -delete
+	@for e in conformance/*.cxd conformance/*.md conformance/llm deps/cx-core-code/conformance/*; do \
+	  [ -e "$$e" ] || continue; \
+	  ln -sf "$(CURDIR)/$$e" "deps/cx-core-code/vcx/target/conformance-merged/$$(basename $$e)"; \
+	done
 .PHONY: deps-present
 deps-present: sync-cmd-split
 	@missing=""; \
@@ -2150,13 +2161,13 @@ test-extraction-gate: build-vcx build-profile-data
 	@mkdir -p deps/cx-core-code/vcx/target/extraction_gate
 	@$(V) -n -w -cc cc $(CX_GC) -o deps/cx-core-code/vcx/target/extraction_gate/probe deps/cx-core-code/vcx/tests/runners/extraction_gate/probe/
 	@$(V) -n -w -cc cc $(CX_GC) -o deps/cx-core-code/vcx/target/extraction_gate/cli_gate deps/cx-core-code/vcx/tests/runners/extraction_gate/cli/
-	@deps/cx-core-code/vcx/target/extraction_gate/probe $(LIBCX_ART) conformance --min-cases=$(EXTRACTION_GATE_FLOOR) > deps/cx-core-code/vcx/target/extraction_gate/transcript_monolith.txt
-	@deps/cx-core-code/vcx/target/extraction_gate/probe $(LIBCX_CORE_ART) conformance --min-cases=$(EXTRACTION_GATE_FLOOR) > deps/cx-core-code/vcx/target/extraction_gate/transcript_core.txt
+	@deps/cx-core-code/vcx/target/extraction_gate/probe $(LIBCX_ART) deps/cx-core-code/vcx/target/conformance-merged --min-cases=$(EXTRACTION_GATE_FLOOR) > deps/cx-core-code/vcx/target/extraction_gate/transcript_monolith.txt
+	@deps/cx-core-code/vcx/target/extraction_gate/probe $(LIBCX_CORE_ART) deps/cx-core-code/vcx/target/conformance-merged --min-cases=$(EXTRACTION_GATE_FLOOR) > deps/cx-core-code/vcx/target/extraction_gate/transcript_core.txt
 	@cmp deps/cx-core-code/vcx/target/extraction_gate/transcript_monolith.txt deps/cx-core-code/vcx/target/extraction_gate/transcript_core.txt \
 	  && echo "extraction-gate ABI step OK — libcx-core transcript byte-identical to libcx ($$(wc -c < deps/cx-core-code/vcx/target/extraction_gate/transcript_monolith.txt | tr -d ' ') bytes)" \
 	  || { echo "extraction-gate ABI step FAILED — transcripts diverge (see deps/cx-core-code/vcx/target/extraction_gate/)"; exit 1; }
 	@deps/cx-core-code/vcx/target/extraction_gate/cli_gate --self-test
-	@deps/cx-core-code/vcx/target/extraction_gate/cli_gate deps/cx-core-code/vcx/target/cx deps/cx-core-code/vcx/target/profiles/data/cx conformance --min-cases=$(EXTRACTION_GATE_FLOOR) --jobs=$(EXTRACTION_GATE_JOBS)
+	@deps/cx-core-code/vcx/target/extraction_gate/cli_gate deps/cx-core-code/vcx/target/cx deps/cx-core-code/vcx/target/profiles/data/cx deps/cx-core-code/vcx/target/conformance-merged --min-cases=$(EXTRACTION_GATE_FLOOR) --jobs=$(EXTRACTION_GATE_JOBS)
 
 # ── ABI GC-LIVENESS GATE (remediation R3.8 discovery) — a dlopen'd libcx
 # built with -gc e must actually COLLECT: V only emitted vgc_init() in
