@@ -1008,7 +1008,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1265-pb-8` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md), [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) |
 | `1265-pc-2` | [bench_flow_w1e_anchored_reader_2026_09_06.md](bench_flow_w1e_anchored_reader_2026_09_06.md), [rulings_2026_09_06_flow_snapshot_interval_1265.md](rulings_2026_09_06_flow_snapshot_interval_1265.md), [rulings_2026_09_09_flow_activation_seq_1316c1.md](rulings_2026_09_09_flow_activation_seq_1316c1.md) |
 | `1265-pc-3` | [rulings_2026_09_04_flow_w1_map_scale_1265.md](rulings_2026_09_04_flow_w1_map_scale_1265.md) |
-| `1265-pw-3` | [rulings_2026_09_04_flow_w3_performers_1265.md](rulings_2026_09_04_flow_w3_performers_1265.md) |
+| `1265-pw-3` | [rulings_2026_09_04_flow_w3_performers_1265.md](rulings_2026_09_04_flow_w3_performers_1265.md), [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) |
 | `1266-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) |
 | `1269-q1` | [rulings_2026_09_05_xap_queue.md](rulings_2026_09_05_xap_queue.md) |
 | `1272-q1` | [rulings_2026_09_05_xap_queue.md](rulings_2026_09_05_xap_queue.md) |

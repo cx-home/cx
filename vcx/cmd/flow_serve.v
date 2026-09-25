@@ -568,6 +568,53 @@ fn flow_serve_fetch_doc(dir string, addr string) string {
 	return ''
 }
 
+// flow_serve_docs_rest answers the verbatim bytes of every OTHER flow document
+// the `[docs …]` store holds — every `.cx` file that parses to a `[flow …]`,
+// in file-name order, skipping the addresses a binding already fetched. They
+// are the documents a `flow=` step may reference (flow.md §4.20, RULED: WF-22):
+// a sub-flow's reference resolves through the executing environment's ONE
+// resolver (§4.1), and this runner's documents live in its `[docs …]` store
+// (RULED: 789-WF-30), so the store is where the resolver's document rows come
+// from. No address is claimed here: a document row's address IS its content
+// address, computed by the module from the bytes, so nothing can be named for
+// an address it does not have. A file that does not parse, or is not a flow,
+// is not a document of this store and is passed over, exactly as the
+// `start=` scan passes it over.
+fn flow_serve_docs_rest(dir string, have []string) []string {
+	if !os.is_dir(dir) {
+		return []string{}
+	}
+	mut names := os.ls(dir) or { return []string{} }
+	names.sort()
+	mut out := []string{}
+	for name in names {
+		if !name.ends_with('.cx') {
+			continue
+		}
+		p := os.join_path(dir, name)
+		if !os.is_file(p) {
+			continue
+		}
+		src := os.read_file(p) or { continue }
+		addr := cx.cx_text_hash(src) or { continue }
+		if addr in have {
+			continue
+		}
+		doc := cx.parse(src) or { continue }
+		mut is_flow := false
+		for n in doc.elements {
+			if n.is_element() {
+				is_flow = n.element().name == 'flow'
+				break
+			}
+		}
+		if is_flow {
+			out << src
+		}
+	}
+	return out
+}
+
 // ── the driver program ──────────────────────────────────────────────────────
 
 // flow_serve_bindings_element renders the resolved binding table as ONE CX
@@ -893,9 +940,18 @@ fn flow_serve_program(r FlowRunner, directives []string, acts []FlowCliAct, tick
       [= \$c [\$string [fs--courier \$j \$e \$fs]@n]]
       [= \$s [?sleep ${tick_ms}ms]]
       [fs--loop \$j \$e \$fs \$bs [?if [< \$n 0] [then -1] [else [- \$n 1]]] [+ \$done 1]]]]]]'
-	b << '[?let [= \$e ${flow_cli_resolver(acts)}]'
+	// THE RESOLVER CARRIES THE DOCUMENTS (flow.md §4.20, RULED: WF-22): a `flow=`
+	// step's reference resolves through the ONE resolver (§4.1), so beside the
+	// act rows the `--env` scan built it carries every flow document this runner
+	// holds. The data document is ONE element, `[runner-docs [bound …] [sub-flows
+	// …]]`: the bound documents, then the rest of the `[docs …]` store, so `$fs`
+	// — the bound set every binding, the ingress and the boot report read — is
+	// exactly the set it was, and the resolver carries both. A document row's address
+	// is its content address, computed by the module; nothing here names one.
+	b << '[?let [= \$e0 ${flow_cli_resolver(acts)}]'
+	b << '[= \$e [?element "resolver" [?splice \$e0/*] [?splice [\$cx:select \$doc "//runner-docs/*/flow"]]]]'
 	b << '[= \$j [\$cxjournal:open "${flow_cli_quote(r.journal)}" "${flow_cli_tenant}"]]'
-	b << '[= \$fs [\$cx:select \$doc "//flow"]]'
+	b << '[= \$fs [\$cx:select \$doc "//runner-docs/bound/flow"]]'
 	b << '[= \$bs ${flow_serve_bindings_element(r)}]'
 	// §4.15's restore half, at BOOT, once per distinct bound document: `rearm`
 	// takes ONE `opts.flow` because every registry entry it builds is a call to
@@ -986,11 +1042,22 @@ fn flow_cli_serve(o FlowCliOpts, for_ns i64) {
 		have << x.start
 		input << x.doc_src
 	}
+	// the rest of the store: the documents a `flow=` reference may name (§4.20),
+	// carried as data after the bound ones and never as program text — ONE
+	// root element, so the driver's selections read the same whatever the
+	// store holds (a multi-root data document and a single-root one answer a
+	// top-level path differently).
+	rest := flow_serve_docs_rest(docs_dir, have)
+	mut data := ['[runner-docs [bound']
+	data << input
+	data << '] [sub-flows'
+	data << rest
+	data << ']]'
 	directives, acts := flow_cli_env_scan(r.env)
 	tick_ms := r.courier_ns / 1_000_000
 	ticks := if for_ns <= 0 { i64(-1) } else { for_ns / r.courier_ns }
 	flow_cli_install_caps(o)
 	program := flow_serve_program(r, directives, acts, ticks, if tick_ms < 1 { i64(1) } else { tick_ms })
-	println(flow_cli_eval(input.join('\n'), program).trim_space())
+	println(flow_cli_eval(data.join('\n'), program).trim_space())
 	exit(0)
 }
