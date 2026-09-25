@@ -358,8 +358,11 @@
 
 # companion: a spec companion (grammar.ebnf, ast.md) where it is -- this tree,
 # or cx-core-data's pinned checkout, which the data-format pages left this tree
-# for (RULED: RS-7, RS-12). code.md stays here; its companions are read at the
-# pin, the version the build compiles.
+# for (RULED: RS-7, RS-12). $p must be the BARE front-door-relative path
+# (spec/03-approved/…) regardless of where code.md itself is read from now --
+# code.md left too (K7a), but grammar.ebnf/ast.md never moved with it; they
+# are still companions of the original spec/03-approved/ layout, read at
+# cx-core-data's pin, the version the build compiles.
 [?def companion scope=private impure [returns string] ($p::string)
   [?if [$io:is-file $p] [then $p] [else [$concat "deps/cx-core-data/" $p]]]]
 
@@ -407,12 +410,20 @@
         # gate 3 companions: current home first, then the legacy sibling.
         [= $spec-dir [$path:dirname $spec-path]]
         [= $formal-dir [$path:join [$path:dirname $spec-dir] "formal"]]
-        [= $grammar-path [?if [$io:is-file [$companion [$path:join $formal-dir "grammar.ebnf"]]]
-          [then [$companion [$path:join $formal-dir "grammar.ebnf"]]]
+        # spec-dir/formal-dir may themselves be a PIN root (deps/<repo>/…,
+        # K7a: code.md left too). grammar.ebnf/ast.md are companions of the
+        # ORIGINAL front-door spec/03-approved/ layout, not of wherever the
+        # citing document is pinned to now, so `companion` needs the bare
+        # path to find cx-core-data's pin correctly.
+        [= $DEPS-PIN-RX [$re:compile "^deps/[^/]+/"]]
+        [= $bare-formal-dir [$re:replace-first $DEPS-PIN-RX $formal-dir ""]]
+        [= $bare-spec-dir [$re:replace-first $DEPS-PIN-RX $spec-dir ""]]
+        [= $grammar-path [?if [$io:is-file [$companion [$path:join $bare-formal-dir "grammar.ebnf"]]]
+          [then [$companion [$path:join $bare-formal-dir "grammar.ebnf"]]]
           [else [$path:join $spec-dir "grammar.ebnf"]]]]
         [= $registry-list [$sorted-keys $registry-dirs]]
         [= $grammar-report [$audit-grammar $grammar-path $registry-list]]
-        [= $ast-report [$audit-ast [$companion [$path:join $spec-dir "ast.md"]]]]
+        [= $ast-report [$audit-ast [$companion [$path:join $bare-spec-dir "ast.md"]]]]
         [= $eval-path [$path:join $spec-dir "eval.md"]]
         [= $eval-report [$audit-eval $eval-path $registry-list]]
         [= $eval-ok [or [$map:get $eval-report "pass"]
