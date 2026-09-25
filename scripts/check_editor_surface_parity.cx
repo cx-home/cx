@@ -49,7 +49,7 @@
 [?const REGISTER 'deps/cx-tooling/tooling/EDITOR_SURFACE_PARITY.md']
 [; vcx/cx is cx-core-data's, read from its pinned checkout (RULED: RS-7, RS-12). ]
 [?const TOKENS   'deps/cx-core-data/vcx/cx/program_tokens.v']
-[?const LSP      'vcx/cmd/lsp_content.v']
+[?const LSP      'deps/cx-core-code/vcx/cmd/lsp_content.v']
 [?const TMLANG   'deps/cx-tooling/tooling/vscode/syntaxes/cx.tmLanguage.json']
 [?const SNIPPETS 'deps/cx-tooling/tooling/vscode/snippets/cx.json']
 [?const VIM      'deps/cx-tooling/tooling/neovim/syntax/cx.vim']
