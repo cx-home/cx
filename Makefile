@@ -2669,7 +2669,7 @@ MAKE_PRINT_VCX = $(shell $(MAKE) -s --no-print-directory -C vcx print-$(1) 2>/de
 abi-c-test: build-vcx build-lib-arrow
 	$(CC) -std=c11 -Wall -Wextra -Werror -g -O1 \
 	 -fsanitize=$(ABI_C_TEST_SAN) \
-	 -I include -I $(CXD)/vcx/arrow \
+	 -I deps/cx-core-code/include -I $(CXD)/vcx/arrow \
 	 deps/cx-core-code/tests/abi/c_abi_test.c \
 	 -L deps/cx-core-code/vcx/target -lcx -ldl \
 	 -o $(ABI_C_TEST_BIN)
