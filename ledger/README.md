@@ -1341,4 +1341,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*326 ledger pages; 685 ids declared, 384 cited only.*
+*327 ledger pages; 685 ids declared, 384 cited only.*
