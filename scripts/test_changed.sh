@@ -233,6 +233,9 @@ step_globs() {
     check-no-infix-range)          echo 'conformance/* stdlib/* docs-src/* examples/*' ;;
     check-no-cxl-token)            echo '*' ;;
     check-no-consumer-terms)       echo '*' ;;
+    # K13, RULED: D59a, RS-28: a whole-tree secret scan, like
+    # check-no-consumer-terms above — any change can add a secret.
+    secrets-scan)                  echo '*' ;;
     # RS-33: scans every commit message since the base AND every tracked file
     # — a whole-tree scan like check-no-consumer-terms above, so any change
     # (including a Makefile/scripts change, which escalates on its own) re-runs it.
