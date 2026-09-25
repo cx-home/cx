@@ -1,5 +1,8 @@
 [# Section 1 — Hello CX, design philosophy, how to read this guide.
-   Authored 2026-05-22.
+   Authored 2026-05-22. RS-30 (owner, 2026-09-23): the section opens with
+   the TL;DR of why to reach for CX, and every claim the voice pass added
+   stands beside a [fixture] the guide build replays against the running
+   cx.
    Cross-links use [[anchor]] form; the template renderer (Phase 6.12)
    resolves them at emit time. #]
 
@@ -7,10 +10,21 @@
 
   [child id=hello n=1.1 title='Hello, CX'
     [intro
-      """CX is one language for **data** and **code**. The same brackets, the
-         same sigils, the same evaluator. You don't pick a templating engine
-         for output, a query language for selection, or a config dialect for
-         deployment — there is one shape, and you write everything in it."""]
+      """**TL;DR — why reach for CX.** CX is one language for **data** and
+         **code**: the same brackets, the same sigils, the same evaluator.
+         You don't pick a templating engine for output, a query language for
+         selection, or a config dialect for deployment — there is one shape,
+         and you write everything in it. Python set the standard for a
+         language people are productive in on day one; CX is built to that
+         standard and past it where data work hurts
+         ([[cx-vs-python]] shows where, case by case). A query is a pattern
+         over the document it reads — here, every `user` that has a `name`
+         and an `email`:"""]
+
+    [fixture id=program-for-003-name-email-pair]
+
+    [body
+      """The smallest document is one element:"""]
 
     [example lang=cx
       """[hello greeting='world']"""]
@@ -81,12 +95,17 @@
          persistent-tree technique). Concurrency is safe by construction —
          no reader ever observes a half-modified tree."""]
 
+    [fixture id=program-modify-003-original-unchanged]
+
     [body
       """**4. Identity via canonical bytes plus SHA-256.** Two CX documents are
          equal iff their canonical bytes are equal, and the document's
          identifier is the SHA-256 of those bytes. This makes caching,
          deduplication, content-addressable storage, and cross-language
-         equality checks trivially correct. See [[identity]]."""]
+         equality checks trivially correct. See [[identity]]. The same value
+         written two ways is one identity:"""]
+
+    [fixture id=cx-025-hash-value-and-source-agree]
 
     [body
       """**5. One selector vocabulary everywhere.** CXPath is **the**
@@ -124,11 +143,11 @@
          application of a small rule set* — features compose without special
          cases. It is not the same as simplicity: a language can be small yet
          riddled with privileged built-ins user code cannot reproduce, or large
-         yet principled. The table below ranks CX against the languages CX binds
-         to, plus Lisp-1 and Scala, on this one axis. It is illustrative, not a
-         leaderboard — and orthogonality is only one axis. Where CX trades it
-         away (ecosystem maturity, library breadth) is the honest accounting in
-         [[comparison]]."""]
+         yet principled. The table below states CX's case on this one axis
+         against the languages CX binds to, plus Lisp-1 and Scala.
+         [[comparison]] states it against each data format, with Python as
+         the standard a general-purpose language is measured by
+         ([[cx-vs-python]])."""]
 
     [table
       [tr [th 'language'] [th 'tier'] [th 'why']]
@@ -138,7 +157,7 @@
       [tr [td 'Ruby'] [td 'High (uniform model)'] [td 'Smalltalk lineage — everything is an object, everything a message send, operators are methods. Uniform core, non-uniform surface (blocks vs procs vs lambdas, many sugars).']]
       [tr [td 'V'] [td 'Moderate'] [td 'Deliberately minimal, one canonical way to do things. Orthogonality by austerity; still carries privileged built-ins and a partial statement/expression split.']]
       [tr [td 'Kotlin'] [td 'Moderate'] [td 'Expression-oriented (if, when, try are expressions); operators by convention. Primitives-as-objects is a JVM fiction; much surface exists for Java interop.']]
-      [tr [td 'Python'] [td 'Moderate'] [td 'Real uniformity via the dunder protocol; but a hard statement/expression wall — def, class and import are statements, lambda is crippled.']]
+      [tr [td 'Python'] [td 'Moderate'] [td 'Real uniformity via the dunder protocol; but a hard statement/expression wall — def, class and import are statements, and a lambda is limited to a single expression.']]
       [tr [td 'Swift'] [td 'Moderate'] [td 'Genuine protocol-oriented uniformity, but a special-case-dense surface — optionals, guard, defer, property wrappers, result builders.']]
       [tr [td 'Rust'] [td 'Low–moderate'] [td 'Expression-oriented core, but a federation of subsystems with their own rules — ownership, lifetimes, traits plus coherence, a separate macro grammar, async, unsafe. Powerful is not orthogonal.']]
       [tr [td 'C#'] [td 'Low'] [td 'Multi-paradigm, accreted over many versions — LINQ, async, properties, events, pattern matching each a distinct syntax. Statement/expression divide.']]

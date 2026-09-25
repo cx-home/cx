@@ -4,14 +4,17 @@ docs-src/site/manifest.cxd — what cxhome.org serves (RULED: RS-28, D57a, D58a,
 
 Read by scripts/gen_site/site_build.cx (`make site-index`, and `make docs` /
 `make docs-check`: renders docs/index.html from [page]) and by
-scripts/gen_site/site_assemble.cx (`make site`, `make site-check`). Declares:
+scripts/gen_site/site_assemble.cx (`make site`, `make site-check`); its [suites]
+also by scripts/gen_guide/guide_build.cx (`make guide`). Declares:
 
   [site]    the site's own repository (the front door, `repo=`), the published
             base URL, and the output directory `make site` assembles
   [page]    the landing page: its Markdown source and the tracked, generated
             HTML it renders to
   [suites]  the conformance suites the landing page may cite with
-            {{EXAMPLE:<id> …}}, spelled as docs-src/llm/manifest.cxd spells
+            {{EXAMPLE:<id> …}} and a guide page with [fixture id=<id>] (the
+            guide build replays each, RULED: RS-30), spelled as
+            docs-src/llm/manifest.cxd spells
             them (a pinned suite as deps/<repo>/conformance/…)
   [files]   THE SITE: every file the assembled output directory holds, one
             path per line, relative to the site root, grouped by where it comes
@@ -65,6 +68,7 @@ llm/antipatterns
 deps/cx-core-code/conformance/stdlib/json
 deps/cx-core-code/conformance/stdlib/io
 deps/cx-core-code/conformance/stdlib/re
+deps/cx-core-code/conformance/stdlib/cx
 deps/cx-platform-store/conformance/platform/store
 deps/cx-platform-agent/conformance/x/mcp
 #]]
