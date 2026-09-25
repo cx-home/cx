@@ -86,12 +86,52 @@
               [?let [= $_x [$env:exit 2]] ""]]]
       [else [$string $r@stdout]]]]]
 
-# scan-commits: every hit in every commit message of `<base>..HEAD`, read one
-# commit at a time (`git log -1 --format=%B <sha>`) so a hit reports the exact
-# sha that carries it.
-[?def scan-commits scope=private impure ($dir::string $base::string)
+# ref-resolves: does $ref name a real commit in $dir? A plain `git
+# rev-parse --verify -q`, never run-git -- failing to resolve is the
+# ORDINARY case this check exists to tell apart from an environment fault.
+[?def ref-resolves scope=private impure ($dir::string $ref::string)
   [?let
-    [= $shas [$nonblank [$run-git $dir ("log", "--format=%H", [$cat ($base, "..HEAD")]) "log --format=%H"]]]
+    [= $r [$process:run ("git", "-C", $dir, "rev-parse", "--verify", "-q", [$cat ($ref, "^{commit}")])]]
+    [= [$string $r@exit-code] "0"]]]
+
+# resolve-base: the base this run scans `..HEAD` against, as [base ref=
+# mode=], mode one of "range" (scan $ref..HEAD) or "whole" (no ref resolves;
+# scan the whole reachable history from HEAD alone). $override is the BASE
+# environment variable, or "" when it is unset -- kept as a parameter rather
+# than read here so the self-test can drive every branch directly.
+#
+# Order: $override if given, else origin/release/0.18 if it resolves, else
+# origin/main if it resolves, else the whole reachable history. A fresh
+# clone of the filtered `cx` repository carries neither remote-tracking ref
+# (RS-33's neighbor, MEASURED 2026-09-25: `git log --format=%H` on
+# `origin/release/0.18..HEAD` failed exit 128, "ambiguous argument" -- there
+# was no such ref to be ambiguous about, and this gate had hard-coded it as
+# the only base).
+[?def resolve-base scope=private impure ($dir::string $override::string)
+  [?if [not [= $override ""]]
+    [then [base ref=$override mode="range"]]
+    [else [?if [$ref-resolves $dir "origin/release/0.18"]
+            [then [base ref="origin/release/0.18" mode="range"]]
+            [else [?if [$ref-resolves $dir "origin/main"]
+                    [then [base ref="origin/main" mode="range"]]
+                    [else [base ref="" mode="whole"]]]]]]]]
+
+# base-desc: the human-readable line naming which base a run used.
+[?def base-desc scope=private pure ($b)
+  [?if [= [$string $b@mode] "whole"]
+    [then "the whole reachable history from HEAD (no origin/release/0.18 or origin/main ref resolves)"]
+    [else [$string $b@ref]]]]
+
+# scan-commits: every hit in every commit message of the base's range, read
+# one commit at a time (`git log -1 --format=%B <sha>`) so a hit reports the
+# exact sha that carries it. $b is a [base ref= mode=] from resolve-base:
+# mode=range scans `$ref..HEAD`, mode=whole scans HEAD alone.
+[?def scan-commits scope=private impure ($dir::string $b)
+  [?let
+    [= $rangearg [?if [= [$string $b@mode] "whole"]
+                   [then "HEAD"]
+                   [else [$cat ([$string $b@ref], "..HEAD")]]]]
+    [= $shas [$nonblank [$run-git $dir ("log", "--format=%H", $rangearg) "log --format=%H"]]]
     [$fp:flat-map $shas [?fn ($sha)
       [?let
         [= $body [$run-git $dir ("log", "-1", "--format=%B", $sha) "log -1 --format=%B"]]
@@ -139,32 +179,94 @@
     [= $_c2 [$process:run ("git", "-C", $root, [?splice $ident], "commit", "-q", "-m", $msg)]]
     [scratch base=$base]]]
 
-[?def run-self-test scope=private impure ()
+# run-attribution-self-test: the original property -- the scratch repo's
+# attributed COMMIT and attributed FILE are both caught. Returns bool
+# (prints its own OK/FAILED line) rather than exiting, so run-self-test can
+# combine it with the base-resolution self-test below into one verdict.
+[?def run-attribution-self-test scope=private impure ()
   [?let
     [= $root [$io:temp-dir "cx-no-ai-attr-"]]
     [= $s [$make-scratch-repo $root]]
-    [= $base [$string $s@base]]
-    [= $commit-hits [$scan-commits $root $base]]
+    [= $b [base ref=[$string $s@base] mode="range"]]
+    [= $commit-hits [$scan-commits $root $b]]
     [= $file-hits [$scan-files $root]]
     [= $_rm [$io:remove-tree $root]]
     [?if [and [> [$count $commit-hits] 0] [> [$count $file-hits] 0]]
       [then [?let
-        [= $_ok [$say [$cat ("check-no-ai-attribution self-test OK — the scratch repo's attributed COMMIT (",
+        [= $_ok [$say [$cat ("check-no-ai-attribution attribution self-test OK — the scratch repo's attributed COMMIT (",
                              [$string [$count $commit-hits]], " line hit(s)) and its attributed FILE (",
                              [$string [$count $file-hits]], " line hit(s)) were both caught")]]]
-        [$env:exit 0]]]
+        true]]
       [else [?let
-        [= $_f [$cry [$cat ("check-no-ai-attribution self-test FAILED — commit-hits=",
+        [= $_f [$cry [$cat ("check-no-ai-attribution attribution self-test FAILED — commit-hits=",
                             [$string [$count $commit-hits]], " file-hits=", [$string [$count $file-hits]],
                             " (want both > 0)")]]]
-        [$env:exit 1]]]]]]
+        false]]]]]
+
+# make-plain-repo: a fresh git repository, one clean commit, no remotes at
+# all -- so neither origin/release/0.18 nor origin/main resolves in it. This
+# is the shape MEASURED 2026-09-25 in a fresh clone of the filtered `cx`
+# repository, where the hard-coded base crashed the gate (exit 128).
+[?def make-plain-repo scope=private impure ($root::string)
+  [?let
+    [= $ident ("-c", "user.name=selftest", "-c", "user.email=selftest@example.invalid", "-c", "commit.gpgsign=false")]
+    [= $_i [$process:run ("git", "init", "-q", $root)]]
+    [= $_f0 [$io:write-file [$cat ($root, "/README.md")] "seed\n"]]
+    [= $_a0 [$process:run ("git", "-C", $root, "add", "README.md")]]
+    [= $_c0 [$process:run ("git", "-C", $root, [?splice $ident], "commit", "-q", "-m", "seed")]]
+    $root]]
+
+# run-base-resolution-self-test: grows a case with NO origin/release/0.18
+# ref (red before this fix — a hard-coded `origin/release/0.18..HEAD` fails
+# `git log` with exit 128, "ambiguous argument", exactly the MEASURED
+# failure) and proves resolve-base falls back instead of crashing, that a
+# BASE override always wins, and that a present origin/release/0.18 ref is
+# preferred once it exists. Returns bool.
+[?def run-base-resolution-self-test scope=private impure ()
+  [?let
+    [= $root [$io:temp-dir "cx-no-ai-attr-base-"]]
+    [= $_mk [$make-plain-repo $root]]
+    # case 1: no BASE override, no origin/release/0.18, no origin/main ->
+    # whole reachable history, and scanning it must not crash the gate the
+    # way the hard-coded base did.
+    [= $b1 [$resolve-base $root ""]]
+    [= $ok1 [= [$string $b1@mode] "whole"]]
+    [= $hits1 [$scan-commits $root $b1]]
+    [= $ok1b [= [$count $hits1] 0]]
+    # case 2: a BASE override wins even when nothing resolves.
+    [= $b2 [$resolve-base $root "HEAD"]]
+    [= $ok2 [and [= [$string $b2@mode] "range"] [= [$string $b2@ref] "HEAD"]]]
+    # case 3: once origin/release/0.18 resolves, it is preferred over the
+    # whole-history fallback (a plain ref is enough; no real remote needed).
+    [= $_ur [$process:run ("git", "-C", $root, "update-ref", "refs/remotes/origin/release/0.18", "HEAD")]]
+    [= $b3 [$resolve-base $root ""]]
+    [= $ok3 [and [= [$string $b3@mode] "range"] [= [$string $b3@ref] "origin/release/0.18"]]]
+    [= $_rm [$io:remove-tree $root]]
+    [?if [and $ok1 [and $ok1b [and $ok2 $ok3]]]
+      [then [?let
+        [= $_ok [$say "check-no-ai-attribution base-resolution self-test OK — no origin/release/0.18 or origin/main ref resolves -> whole reachable history, scanned without crashing (MEASURED 2026-09-25's exit 128 fixed); a BASE override wins over everything; origin/release/0.18 is preferred once it resolves"]]
+        true]]
+      [else [?let
+        [= $_f [$cry [$cat ("check-no-ai-attribution base-resolution self-test FAILED — mode1=", [$string $b1@mode],
+                            " hits1=", [$string [$count $hits1]],
+                            " mode2=", [$string $b2@mode], " ref2=", [$string $b2@ref],
+                            " mode3=", [$string $b3@mode], " ref3=", [$string $b3@ref])]]]
+        false]]]]]
+
+[?def run-self-test scope=private impure ()
+  [?let
+    [= $r1 [$run-attribution-self-test]]
+    [= $r2 [$run-base-resolution-self-test]]
+    [?if [and $r1 $r2] [then [$env:exit 0]] [else [$env:exit 1]]]]]
 
 [?if [> [$count [?for [in $a [$env:argv]] [where [= $a "--self-test"]] [yield 1]]] 0]
   [then [$run-self-test]]
   [else
     [?let
-      [= $base [$string [$env:var-or-default "BASE" "origin/release/0.18"]]]
-      [= $commit-hits [$scan-commits "." $base]]
+      [= $override [$string [$env:var-or-default "BASE" ""]]]
+      [= $b [$resolve-base "." $override]]
+      [= $_pb [$say [$cat ("check-no-ai-attribution: base ", [$base-desc $b])]]]
+      [= $commit-hits [$scan-commits "." $b]]
       [= $file-hits [$scan-files "."]]
       [= $all-hits ([?splice $commit-hits], [?splice $file-hits])]
       [= $_p [?for [in $h $all-hits]
@@ -172,9 +274,9 @@
       [?if [> [$count $all-hits] 0]
         [then [?let
           [= $_s [$cry [$cat ("check-no-ai-attribution: FAILED — ", [$string [$count $all-hits]],
-                              " hit(s) — commit messages since ", $base, " and every tracked file.")]]]
+                              " hit(s) — commit messages since ", [$base-desc $b], " and every tracked file.")]]]
           [$env:exit 1]]]
         [else [?let
           [= $_ok [$say [$cat ("check-no-ai-attribution: clean — no AI attribution in commit messages since ",
-                               $base, " or in any tracked file")]]]
+                               [$base-desc $b], " or in any tracked file")]]]
           [$env:exit 0]]]]]]]

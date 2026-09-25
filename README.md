@@ -118,6 +118,8 @@ make promote-cli        # verify + install the CLI to /usr/local/bin
 cx --version
 ```
 
+A fresh clone's `git submodule update --init --recursive` must run WITHOUT `--depth` (`check-v-fork` walks the V fork's full ancestry), and `make build-vcx`'s own `make deps-sync` bootstrap step — which fetches this repository's pinned repositories — needs a released `cx` already on your `PATH`, or `CX_BIN=<path>` naming one.
+
 **One-line install** — once `cxhome.org`'s DNS is live, the hosted installer
 downloads the latest release for your platform, verifies its SHA-256, and
 installs to `~/.local` (override with `PREFIX=`):
