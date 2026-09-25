@@ -391,6 +391,23 @@ sync-cmd-split:
 	for f in vcx/cmd/*.v; do \
 	  ln -sf "$(CURDIR)/$$f" "deps/cx-core-code/vcx/cmd/$$(basename $$f)"; \
 	done
+	@# cx-core-code's own test helpers (testenv.cx_bin() and friends) compute
+	@# "my own repo root" from @VMODROOT (correct: deps/cx-core-code is its own
+	@# git checkout) and then reach OTHER pins — deps/cx-core-data's corpus, most
+	@# often — by walking UP AND BACK DOWN into "deps/<repo>/...", exactly the
+	@# nested layout a STANDALONE build of this repository has (its own deps.cxd
+	@# pins cx-core-data too). The front door's assembled build keeps every pin
+	@# as a SIBLING of deps/cx-core-code instead (one fetch, not two), so this
+	@# nested deps/ is populated with symlinks to those siblings -- never itself,
+	@# which would loop.
+	@if [ -d deps/cx-core-code ] && [ ! -L deps/cx-core-code/deps ]; then \
+	  mkdir -p deps/cx-core-code/deps; \
+	  for d in deps/*/; do \
+	    r=$$(basename "$$d"); \
+	    [ "$$r" = cx-core-code ] && continue; \
+	    [ -e "deps/cx-core-code/deps/$$r" ] || ln -s "$(CURDIR)/deps/$$r" "deps/cx-core-code/deps/$$r"; \
+	  done; \
+	fi
 .PHONY: deps-present
 deps-present: sync-cmd-split
 	@missing=""; \
