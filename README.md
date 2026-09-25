@@ -199,8 +199,8 @@ and registry setup/consumption for distributing features
 ## Embedding libcx
 
 CX ships as an embeddable C library: `make install` installs `libcx`, the
-[`include/cx.h`](include/cx.h) header, and a pkg-config file (generated from
-[`cx.pc.in`](cx.pc.in)) so `pkg-config --cflags --libs cx` works from any C
+[`include/cx.h`](https://github.com/cx-home/cx-core-code/blob/main/include/cx.h) header, and a pkg-config file (generated from
+[`cx.pc.in`](https://github.com/cx-home/cx-core-code/blob/main/cx.pc.in)) so `pkg-config --cflags --libs cx` works from any C
 consumer. The versioned C ABI contract — symbols, capability bits,
 memory/threading rules — is
 [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md), and every

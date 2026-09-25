@@ -319,7 +319,7 @@
       [body
         """`cx lint` runs the built-in rule set (CX-L001 and
            CX-L003 through CX-L008; the codes are registered in
-           [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md)
+           [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)
            §9.4/§9.5). Exit codes are the CLI convention: 0 = no
            findings at or above `--fail-on`, 1 = findings, 2 = I/O
            or parse failure. Per-project configuration lives in a
@@ -476,7 +476,7 @@
       [body
         """The full capability model lives at
            [[include-capabilities]] and in
-           [`spec/03-approved/core/security.md`](../../spec/03-approved/core/security.md).
+           [`spec/03-approved/core/security.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/security.md).
            The `cx_features()` bitmask exposes what the loaded libcx
            supports; the grant set gates what the runtime
            permits."""]]

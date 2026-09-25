@@ -4,7 +4,7 @@
 
 This document specifies how a CX release is cut and published. It is a
 **process/governance** specification. The release **gate** is normative in
-[`core/code.md §11.6/§11.7`](../core/code.md); the **versioning**
+[`core/code.md §11.6/§11.7`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md); the **versioning**
 axes are normative in [`process/governance.md §9`](governance.md);
 this document is the authoritative end-to-end *procedure* that ties them together.
 
@@ -114,7 +114,7 @@ also the body of the GitHub release (phase 5).
 
 ## 6 — Companion documents
 
-- [`core/code.md §11.3–§11.7`](../core/code.md) — the normative release gates + evidence/sign-off.
+- [`core/code.md §11.3–§11.7`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) — the normative release gates + evidence/sign-off.
 - [`process/governance.md §9`](governance.md) — the versioning axes.
 - [`process/v-dependency-management.md`](v-dependency-management.md) — the patched-V fork the build depends on.
 - `scripts/release.sh --help` — the executable procedure (§1/§2).

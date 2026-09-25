@@ -22,7 +22,7 @@ A spec section fails if:
 - Two reasonable engineers reading it could make different implementation choices that produce different observable behaviour.
 - It references a concept defined elsewhere without citing where.
 
-Every method signature in API-bearing specs ([`../misc/api.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/misc/api.md), [`../core/code.md`](../core/code.md), [`../misc/bindings.md`](../misc/bindings.md)) must specify:
+Every method signature in API-bearing specs ([`../misc/api.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/misc/api.md), [`../core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md), [`../misc/bindings.md`](../misc/bindings.md)) must specify:
 
 1. What it returns on success.
 2. What it returns when the target is absent (not an error).

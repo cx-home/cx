@@ -13,16 +13,16 @@ comprehensions, Go filter chains, Rust iterator combinators).
 
 ## Headline
 
-- **CXPath as first-class value kind** ([`spec/03-approved/core/code.md`](spec/03-approved/core/code.md))
+- **CXPath as first-class value kind** ([`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md))
   — `//user[@active=true]/@email` is an expression; usable directly
   in `[?for]`, `[?if]`, `[?match]`, `[?modify]`, and binding `select_all`.
   All 12 XPath 3.1 axes; value-comparison semantics on sigils
   `= != < <= > >=`; no keyword-comparison synonyms (sigils only).
-- **Multi-arm `[?match]`** ([`spec/03-approved/core/code.md`](spec/03-approved/core/code.md))
+- **Multi-arm `[?match]`** ([`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md))
   — `:case PAT :yield E` / `:when PRED :yield E` / `:else :yield E`.
   Scalar literal patterns. `_` wildcard. First-match-wins, top-down.
   CXER0100 still flags the single-arm-with-no-match for back-compat.
-- **`[?modify]` directive** ([`spec/03-approved/core/code.md`](spec/03-approved/core/code.md))
+- **`[?modify]` directive** ([`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md))
   — pure-functional updates via CXPath focus + action vocabulary.
   Eleven actions: `:set`, `:delete`, `:using`, `:rename`,
   `:set-attr`, `:delete-attr`, `:append`, `:prepend`,

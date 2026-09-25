@@ -172,7 +172,7 @@
          (`[?match]`), and update focus (`[?modify]`). XPath 3.1
          aligned with deliberate divergences (see the path-expression
          sections of
-         [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md))
+         [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md))
          and a value-kind. See [[cxpath]]."""]]
 
   [child id=g-data-bin title='data-bin'
@@ -218,7 +218,7 @@
          `[?match]`, `[?modify]`). Interpreted by the evaluator
          rather than carried as data. Around eighty normative
          directives — the closed registry in
-         [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md)
+         [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)
          §4.1. See [[directives]]."""]]
 
   [child id=g-doctype title='doctype'
@@ -542,7 +542,7 @@
       """The regular-expression dialect used by CX builtins. CX
          ships an RE2-backed engine; the string builtins that take
          patterns are specified in
-         [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md).
+         [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md).
          See [[string-builtins]]."""]]
 
   [child id=g-reserved-token title='reserved token'

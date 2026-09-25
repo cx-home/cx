@@ -93,7 +93,7 @@
          way to point at things — for reading (`select_all`), for iteration
          (`[?for]`), for type-tests in `[?match]`, and for update focus in
          `[?modify]`. It aligns with XPath 3.1 (see the CXPath sections
-         of [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md)
+         of [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)
          and the conformance corpus `conformance/xpath_31_parity.cxd`) so that
          developers coming from the XML ecosystem feel at home, with
          deliberate divergences to keep it safe and CX-shaped."""]
@@ -212,7 +212,7 @@
       """The normative grammar lives in
          [`spec/03-approved/formal/grammar.ebnf`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/formal/grammar.ebnf);
          the directive registry is in
-         [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md);
+         [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md);
          the C ABI surface is in
          [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md).
          This guide is curated learning

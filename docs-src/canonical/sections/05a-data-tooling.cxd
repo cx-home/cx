@@ -92,7 +92,7 @@
          least one match, 1 on an empty match set (grep-style),
          2 on error. A pure read — no capability grants accepted
          or needed. Contract:
-         [`spec/misc/cli.md`](../../spec/03-approved/misc/cli.md) §3.8."""]
+         [`spec/misc/cli.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/misc/cli.md) §3.8."""]
     [example lang=sh
       """$ cx select '//user[= $_@role admin]' users.cx
          [user name=Alice role=admin]
@@ -215,7 +215,7 @@
                 `element-added` has no `before`). The field is
                 **omitted**, not `null` — per the four-way
                 null/empty/missing distinction of
-                [`spec/core/code.md §8.13`](../../spec/03-approved/core/code.md)
+                [`spec/core/code.md §8.13`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)
                 this is *missing*."""]]]
 
     [child id=diff-git n='5a.8.4' title='Git integration'

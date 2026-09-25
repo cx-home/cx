@@ -423,7 +423,7 @@
            framed_back2 = cxa.read_ipc_file('orders.arrow')"""]
       [body
         """The `cx table dump FILE --to=arrow [--output=FILE]` CLI
-           subcommand ([`spec/misc/cli.md`](../../spec/03-approved/misc/cli.md))
+           subcommand ([`spec/misc/cli.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/misc/cli.md))
            writes the IPC stream form."""]]
 
     [child id=arrow-flight n=5.4.4 title='Arrow Flight (planned)'
@@ -581,7 +581,7 @@
          ([`spec/core/streaming.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/streaming.md))
          operates over CXCol chunks one at a time. The normative
          throughput gate is **≥ 200 MB/s sustained per streaming
-         shape** ([`spec/core/code.md`](../../spec/03-approved/core/code.md)
+         shape** ([`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)
          §11.4.4, gate 15). The gate is not green at this release:
          `[?for]` measures ~200 MB/s and `[?map]` 129.2 MB/s; closing
          the `[?map]` gap is tracked for the next cycle."""]
@@ -638,7 +638,7 @@
     [child id=streaming-perf n=5.6.2 title='Performance posture'
       [body
         """The gate protocol is fixed by
-           [`spec/core/code.md`](../../spec/03-approved/core/code.md)
+           [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)
            §11.4.4: every measured streaming shape must sustain a mean
            ≥ 200 MB/s with no single trial below 80% of the mean, and
            must demonstrably stream (more than one output chunk, the
@@ -791,7 +791,7 @@
     [list
       [item """**Streaming throughput.** Spec gate: mean ≥ 200 MB/s
               per streaming shape, no trial below 80% of the mean
-              ([`spec/core/code.md`](../../spec/03-approved/core/code.md)
+              ([`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)
               §11.4.4, gate 15; bench: `make bench-code-streaming`).
               Current status: not green — `[?for]` ~200 MB/s, `[?map]`
               129.2 MB/s measured; tracked for the next cycle."""]

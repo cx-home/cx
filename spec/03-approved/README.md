@@ -25,7 +25,7 @@ The CX language and its companion specifications, organised into five directorie
 
 ## `stdlib/` — the bundled standard library, Ring 1 (45 modules + README)
 
-The `cx-stdlib` module specs: the modules that are pure or purely local. See [`stdlib/README.md`](stdlib/README.md) for the per-module index.
+The `cx-stdlib` module specs: the modules that are pure or purely local. See [`stdlib/README.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/stdlib/README.md) for the per-module index.
 
 ## `platform/` — the bundled platform modules, the platform group (17 modules + README + `store/`)
 

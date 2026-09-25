@@ -10,7 +10,7 @@ Layer 1. Layer 1 is the conformance contract; Layer 2 is opt-in sugar.
 In-scope bindings: V (native reference), Python, Go, Rust.
 
 Companion specs: [`core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) (C ABI),
-[`core/code.md`](../core/code.md) (program surface),
+[`core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) (program surface),
 [`misc/api.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/misc/api.md) (Document API),
 [`misc/parity-matrix.md`](parity-matrix.md) (per-binding gates).
 
@@ -82,7 +82,7 @@ against every binding; drift on any fixture blocks the release.
 | `Doc.eval(code)` | Value | Evaluate CX code against this doc (wraps `cx_code_eval`) |
 | `Doc.select_all(cxpath)` | sequence | CXPath path-value evaluation |
 | `Doc.select(cxpath)` | optional Node | First match of `select_all` |
-| `Doc.modify(focus, action)` | Doc | Pure-functional update per [`core/code.md §8.10`](../core/code.md) |
+| `Doc.modify(focus, action)` | Doc | Pure-functional update per [`core/code.md §8.10`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) |
 | `Doc.diff(other)` | Doc | Structured semantic diff document (wraps `cx_diff`, see [`core/abi.md §2.17`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)) |
 | `Doc.lint(ruleset=None)` | Doc | Structured diagnostics document (wraps `cx_lint`, see [`core/abi.md §2.18`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)); `ruleset` is an optional `.cxs` Document for custom rules |
 | `Doc.find_first(name)` | optional Node | Name-only convenience (no CXPath parse); first match |
@@ -135,7 +135,7 @@ The bytes returned across the C ABI are identical across bindings.
 `Doc.modify(focus_cxpath, action)` returns a new Doc; the original is
 unchanged. Action is a typed struct (per host language) encoding one
 of the eleven actions of
-[`core/code.md §8.10`](../core/code.md).
+[`core/code.md §8.10`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md).
 
 | Action | Python constructor |
 |---|---|
@@ -161,14 +161,14 @@ new_doc = doc.modify("//price", cx.Using(lambda p: float(p) * 1.1))
 `[?fn]` lambda crossing the C ABI. Failure to produce a value raises
 `cx-err:CXER0104`. Legitimate kind-shift (returning a value of a
 different kind than the focus) is allowed per
-[`core/code.md §8.10`](../core/code.md) and does not raise.
+[`core/code.md §8.10`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) and does not raise.
 
 ### 2.4 Error handling
 
 All Layer 1 methods raise host-native exceptions on error carrying:
 
 - `code` — CX error code (`cx-err:CXERnnnn` per
-  [`core/code.md §9`](../core/code.md) and
+  [`core/code.md §9`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) and
   [`core/abi.md §2.16.1`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md))
 - `message` — human-readable
 - `position` — file / line / column when applicable
