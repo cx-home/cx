@@ -3,8 +3,9 @@
 # rule 6); it runs the real Makefile's `deps-cx` step, which is shell because it
 # is the one step that must work before any cx exists.
 #
-# A fresh worktree has no vcx/target/cx and cannot build one before deps/ exists
-# (the build embeds the pinned sources), so `deps-sync` must find a cx a
+# A fresh worktree has no deps/cx-core-code/vcx/target/cx and cannot build one
+# before deps/ exists (the build embeds the pinned sources), so `deps-sync`
+# must find a cx a
 # developer already has: CX_BIN= when given, this tree's build, the MAIN
 # checkout's build (the first row of `git worktree list`), a cx on PATH, then
 # ~/.local/bin/cx -- saying which it used -- and refuse by name only when there
@@ -64,7 +65,7 @@
     [= $root [$real-path $tmp]]
     [= $_t   [$make-trees $root]]
     [= $ws   [$strings:split-whitespace $places]]
-    [= $_1 [?if [$has-word "tree" $ws] [then [$fake-cx [$concat $root "/wt/vcx/target/cx"]]] [else ""]]]
+    [= $_1 [?if [$has-word "tree" $ws] [then [$fake-cx [$concat $root "/wt/deps/cx-core-code/vcx/target/cx"]]] [else ""]]]
     [= $_2 [?if [$has-word "main" $ws] [then [$fake-cx [$concat $root "/main/vcx/target/cx"]]] [else ""]]]
     [= $_3 [?if [$has-word "path" $ws] [then [$fake-cx [$concat $root "/bin/cx"]]] [else ""]]]
     [= $_4 [?if [$has-word "home" $ws] [then [$fake-cx [$concat $root "/home/.local/bin/cx"]]] [else ""]]]
@@ -91,7 +92,7 @@
       [c id=bad-given places='bad main' cxbin='<root>/given/cx'
          want='exit 2 | deps-sync: CX_BIN=<root>/given/cx is not an executable cx'],
       [c id=tree-first places='tree main path home' cxbin=''
-         want="exit 0 | deps-sync: using <root>/wt/vcx/target/cx (this tree's build)"],
+         want="exit 0 | deps-sync: using <root>/wt/deps/cx-core-code/vcx/target/cx (this tree's build)"],
       [c id=main-checkout places='main path home' cxbin=''
          want="exit 0 | deps-sync: using <root>/main/vcx/target/cx (the main checkout's build: git worktree list)"],
       [c id=on-path places='path home' cxbin=''
