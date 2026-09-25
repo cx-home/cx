@@ -42,6 +42,10 @@
 [?lib 'cx-stdlib/path'    as=path]
 [?lib 'cx-stdlib/strings' as=strings]
 
+# The raw-text reader the LLM layer uses for its own manifest (a [#…#] block is
+# opaque to [$text]; primer_build.cx serializes it and strips the delimiters).
+[?lib './scripts/gen_docs/primer_build.cx' as=pb]
+
 [?const MANIFEST "docs-src/site/manifest.cxd"]
 
 [?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
@@ -53,14 +57,11 @@
 [?def member scope=public ($seq $x)
   [> [$count [?for [in $y $seq] [where [= $y $x]] [yield 1]]] 0]]
 
-[?def raw-of scope=public ($rt)
-  [$strings:join [?for [in $c $rt/*] [yield [$string $c]]] ""]]
-
 # declared: every path the manifest's [files] blocks name.
 [?def declared scope=public impure ()
   [?for [in $k [$cx:parse [$io:read-file MANIFEST]]/*]
     [where [= [?else [$name $k] ""] "files"]]
-    [in $l [$strings:split-lines [$raw-of $k]]]
+    [in $l [$strings:split-lines [$pb:normalize [$pb:raw-of $k]]]]
     [where [not [= [$strings:trim $l] ""]]]
     [yield [$strings:trim $l]]]]
 
