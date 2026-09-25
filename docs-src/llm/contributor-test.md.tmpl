@@ -1,0 +1,105 @@
+# CX contributor front door — test
+
+> **GENERATED FILE.** Source: `docs-src/llm/contributor-test.md.tmpl`, the
+> Makefile's `TEST_TARGETS` and `DOC_TARGETS`, and the umbrella test files of
+> the pinned checkouts, assembled by `scripts/gen_docs/primer_build.cx`. The
+> two tables are projections; the procedure is the rules, each citing its
+> decision. Edit the template or the Makefile, never this file.
+
+## TL;DR
+
+- The corpus is the executable truth: a behaviour is a `[case …]` in a `.cxd`
+  file, graded against the binary; a fix lands its failing case first
+  (AGENTS.md rule 2, RULED: CFG-1).
+- `cx corpus FILE.cxd` grades any corpus file with the binary alone — the
+  same PASS/FAIL lines and summary as the in-tree graders (RULED: RS-16).
+- Run what your change selects, not everything: `scripts/test_changed.sh
+  <base> --dry-run` prints the steps whose inputs your diff touches; the full
+  `make test` union is the post-merge run's (RULED: RUN-1, INT-5).
+- A step that reads a file the tree derives it from refuses to vouch for an
+  empty derivation; a check over the empty set would pass forever.
+
+## 1. Grading the corpus
+
+```console
+$ cx corpus conformance/llm/antipatterns.cxd      # one file, this binary, its PASS/FAIL lines and summary
+$ cx corpus --quiet deps/cx-core-code/conformance/stdlib/json.cxd
+$ make fixtures                                    # every module corpus, sharded, one census line
+$ make fixtures FIXTURE_FILES="<file> …"            # just the files your branch touched
+```
+
+- A case is judged on `[out-text]`, `[out-multiset]` or `[out-err]` under its
+  own `grant=`, `argv=`, `tol=`; a case naming a pack this profile does not
+  carry is SKIPPED by name, never graded (`cx corpus --help`).
+- A case id in `conformance/code.cxd` uses a prefix registered for its
+  `level=` in `scripts/check_code_fixtures.cx`; `check-code-fixtures` grades
+  that file alone.
+- A new `.cxd` belongs to a shard (`fixture_shards.cxd`) or
+  `check-fixture-shard-manifest` refuses it.
+- A `ring=1` case is graded at EVERY profile, including the ones without the
+  platform packs; read a response's status as `$r@status`.
+- A changed fixture that a generated document cites carries its `make docs`
+  in the same commit — `docs-check` replays every cited case.
+
+## 2. Choosing the steps — the computed selection
+
+| Situation | What runs pre-merge | Decision |
+|---|---|---|
+| the diff touches ordinary inputs | `scripts/test_changed.sh <base> --dry-run` → the steps it lists, and the `test-vcx-suite` files it names | RULED: RUN-1 |
+| the diff touches the Makefile, `vcx/Makefile`, `scripts/`, `VERSION` or `devbox*` (ESCALATED) | the COMPUTED selection: the diff MINUS those paths as a `--changed-files` list, each selected step as its own row; the escalated union is the post-merge run's, never queued pre-merge | RULED: RUN-4, INT-5 |
+| the diff adds or edits a `scripts/*.cx` | `make reader-parity` as an own step (the computed selection strips `scripts/` before it is asked) | RULED: CXF-5 |
+| the diff adds a `TEST_TARGETS` step | `make check-selection-manifest`: every step has an input row in `scripts/test_changed.sh` | RULED: RUN-1 |
+| the diff touches only documentation | the doc pipeline (`make test-docs`, the steps marked below) is the post-merge run's; your own steps are unchanged | RULED: INT-10 |
+| a step fails at the same commit with no code change | a flaky test: a known one is retried once; a new one gets a flaky-test issue — never a loosened bound or a skipped case | RULED: DG-1 |
+
+A failed post-merge run names EVERY red step (`make test` runs its storm with
+`-k`), so the fix for a red head carries every class the log names
+(RULED: RUN-2).
+
+## 3. The umbrellas — where a test function goes
+
+Test files, not functions, are the compile cost: every `*_test.v` links the
+whole module graph. A new test is a function in the umbrella that owns the
+area; the roster is `scripts/consolidation/<area>.files` and
+`scripts/consolidate_tests.sh absorb <area>` folds a stray file in.
+
+{{UMBRELLAS}}
+
+A Ring-0 change (lexer, parser, evaluator, emitter, loader) runs, as its own
+steps, every umbrella that reads a module it touched
+(`grep -l '<module>' deps/*/vcx/tests/*_umbrella_test.v`) and those modules'
+`vcx/cx/*_test.v` (RULED: VERIFY-2); a code change runs its umbrellas the same
+way, with `make check-effect-alignment`.
+
+## 4. The census trio — a corpus file that gains or loses cases
+
+A branch that adds or removes cases in a top-level `conformance/*.cxd` moves
+three baselines together, deliberately, naming each id:
+
+| Baseline | Step | What moves it |
+|---|---|---|
+| the parser's full-corpus census | `vcx/tests/cxparse_full_corpus_diff_test.v` | every new `in-cx` input — bump its pinned count, naming the ids |
+| the headline rebless scope | `vcx/tests/cxparse_headline_rebless_scan_test.v` | regenerate with `CX_REBLESS_SCAN_WRITE=1`, commit the scope file |
+| the Tier-2 address baseline | `make address-baseline-gate` | an extraction or a case removal: `make address-baseline-capture`, the ids named in the commit |
+
+The ids are named because a count that moves silently hides a case that was
+lost with one that was added (RULED: RS-12).
+
+## 5. The two runners
+
+| Runner | Runs | Holds |
+|---|---|---|
+| pre-merge — the branch's own | its builds, lints, graders, umbrellas and docs checks, under its own `CX_BUILD_SLOT` through `scripts/build-slot.sh`; load-sensitive steps (memory gauges, bench, real-socket lanes) one at a time on the shared slot | the branch's own tree: every own step passed once on the final tree before merge (RULED: INT-8, OL-3) |
+| post-merge — the loop on each new head | `make test-changed BASE=<last passed head>`, escalating to the full union on an infra change; the full union daily on an idle runner | the integration branch: a failed run gets a fix, never a revert of the gate (RULED: RUN-1, RUN-3) |
+
+Read a status directly, never through an inner shell that `devbox run` wraps
+— that shape answers 0 for a program that failed; `check-exit-status-probe`
+holds the line.
+
+## 6. The step roster
+
+The union `make test` runs, in order. A step marked in the doc pipeline also
+runs in `make test-docs` (RULED: INT-10); the third column is where to start
+reading what the step checks.
+
+{{STEPS}}

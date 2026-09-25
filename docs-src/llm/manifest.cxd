@@ -16,8 +16,8 @@ Read by scripts/gen_docs/primer_build.cx (`make docs`). Declares:
   [doc]      this block — ignored by the generator.
   [output]   one output file per entry, in llms-full.txt concatenation
              order. `section=` files the entry under one of llms.txt's
-             headings — `start` | `build` | `reference` (default
-             `reference`). The vocabulary is CLOSED: an unknown `section=`
+             headings — `start` | `build` | `contribute` | `reference`
+             (default `reference`). The vocabulary is CLOSED: an unknown `section=`
              is a hard failure, because llms.txt IS the discovery surface
              and a document missing from it is a document nobody loads.
 
@@ -176,6 +176,61 @@ tenant-customizable — the refusals stated as the promise they enforce rather
 than as friction.
 #]]]
 
+  [; The contributor front door (RULED: K11a, RS-30, RS-28): the rules for
+     changing CX and the reading order, then one file per area. The facts in
+     them -- the repository map, the pins, the module census, the step
+     roster, the ledger's RS-n statements, the umbrellas -- are projected by
+     scripts/gen_docs/contributor_facts.cx from the files that declare them;
+     only the rules are written by hand, each citing its decision. ]
+  [output id=contributor out='contributor.md' template='contributor.md.tmpl'
+          section=contribute
+          title='Contributor front door: the rules, and what to load'
+    [summary [#
+The second read after the primer, for changing CX rather than writing it: the
+rules for the best long-term change, each citing its decision and the step that
+holds it, the RS-n standing decisions in the ledger's own words, and the
+reading order that loads the least for each task.
+#]]]
+
+  [output id=contributor-architecture out='contributor-architecture.md'
+          template='contributor-architecture.md.tmpl'
+          section=contribute
+          title='Contributor: architecture'
+    [summary [#
+The two rings and the groups above them, the repository map and the pins the
+front door builds from (both projected from the registry), the registration
+hooks that keep the core free of product names, and the two-repository modules.
+#]]]
+
+  [output id=contributor-design out='contributor-design.md'
+          template='contributor-design.md.tmpl'
+          section=contribute
+          title='Contributor: design — a surface before its code'
+    [summary [#
+How a surface gets its decision, ring, group, registry row, spec and corpus
+before any code: the six-artifact order, the ring questions, the row's columns
+and where every row lives today, projected from registry/modules.cxd.
+#]]]
+
+  [output id=contributor-implementation out='contributor-implementation.md'
+          template='contributor-implementation.md.tmpl'
+          section=contribute
+          title='Contributor: implementation'
+    [summary [#
+Writing V for CX: one V module per directory, imports downward only, the pub
+surface as the interface, the registration hooks, the front door's assembled
+build from the pins, and tooling written in CX.
+#]]]
+
+  [output id=contributor-test out='contributor-test.md'
+          template='contributor-test.md.tmpl'
+          section=contribute
+          title='Contributor: test'
+    [summary [#
+Grading the corpus with cx corpus, choosing steps by the computed selection,
+the umbrellas and the census trio, the two runners, and the step roster the
+Makefile runs, projected from TEST_TARGETS.
+#]]]
   [output id=platform out='reference-platform.md'
           template='reference-platform.md.tmpl'
           title='Reference: the platform and ecosystem rings'
