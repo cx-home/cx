@@ -1327,6 +1327,21 @@ export CX_V_SEARCH := $(CURDIR)/vcx|$(or $(CX_DEPS_VPATH),@vmodules|@vlib)
 export CX_NATIVE_DEFINES := -d cx_re2_lib_dir=$(CURDIR)/deps/cx-core-code/vcx/target -d cx_re2_static=$(CURDIR)/third_party/re2/obj/libre2.a -d cx_arrow_shim_lib=$(CURDIR)/deps/cx-core-code/vcx/target/libcx_arrow_shim.a
 export VFLAGS := -path "$(CX_V_SEARCH)" $(CX_NATIVE_DEFINES)
 
+# CX_GATES_CXD / CX_FRONT_DOOR_ROOT (K7a crossing 2a, RULED: D68a) —
+# conformance/gates.cxd, scripts/*.cx, examples/, tooling/ and VERSION are all
+# repo=cx; none of them travel with cx-core-code's pin. grader.v's
+# gates_path() and profile_gate.v's load_gate_policy() each read the former
+# through their own narrow env-var override (pre-existing convention); every
+# cx-core-code V test reaching for one of the latter reads
+# testenv.front_door_root(), which is CX_FRONT_DOOR_ROOT with an
+# @VMODROOT-relative fallback that only ever resolved correctly while vcx/
+# sat directly under this repository's own root (i.e. never once cx-core-code
+# became its own checkout) — set both so every V test/runner compiled against
+# the pin reaches this repository's real copies instead of a path under
+# deps/cx-core-code/ that does not exist.
+export CX_GATES_CXD := $(CURDIR)/conformance/gates.cxd
+export CX_FRONT_DOOR_ROOT := $(CURDIR)
+
 # BOTH END ON THE BUNDLED SOURCES (#1589 item 23): once the pins are fetched
 # or verified, scripts/bundle_check.cx judges every bundled CX module against
 # them — the table conformance/bundle_sources.cxd grades — and refuses a pinned
