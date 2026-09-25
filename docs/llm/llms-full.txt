@@ -8206,6 +8206,831 @@ vocabulary). The rulings behind the refusals: AD-10 (#1162) and 1161-Q1a in
 1255-b (`ledger/rulings_2026_09_08_grammar_plane_preflight_1255.md`).
 
 
+<!-- https://cxhome.org/llm/contributor.md -->
+
+# CX contributor front door — the rules, and what to load
+
+> **GENERATED FILE.** Source: `docs-src/llm/contributor.md.tmpl`, the ledger's
+> `RS-n` statements and two conformance fixtures, assembled by
+> `scripts/gen_docs/primer_build.cx`. `make docs-check` refuses this file when
+> it drifts from them. Edit the template, never this file.
+>
+> Read `cx primer` first — it teaches the language. This file teaches the
+> PROJECT: how CX is built, changed and graded, so a change you make is the
+> one a maintainer would have made.
+
+## TL;DR
+
+- CX is built so that a claim can be checked: the spec states it, a corpus
+  case pins it, a gate refuses the tree that breaks it. Contribute in that
+  order and nothing you write has to be taken on trust.
+- Two frozen rings (data, code) and product groups above them, each product
+  its own repository, pinned by sha. You change the smallest ring that owns
+  the behaviour and nothing above it moves.
+- Every rule below cites the decision (`RULED: <id>`) that made it; the
+  ledger (`ledger/README.md` indexes every id) is where to read the reason.
+- Load ONE area file for the task. The table in §1 is the whole routing.
+
+## 1. The reading order — load the least that answers the task
+
+| Task | Load, in order | Never load |
+|---|---|---|
+| Write or fix a CX program | `cx primer` → the one `reference-*.md` the primer's §11 names | the spec whole; `llms-full.txt` |
+| Add or move a module / surface | this file → `contributor-design.md` → the module's row in `registry/modules.cxd` → its spec's named section | `registry/repos.cxd`'s `why=` prose; other modules' specs |
+| Change V code (evaluator, a product) | this file → `contributor-implementation.md` → the one V module directory | `third_party/v/`; `deps/*/` trees other than the pin you change |
+| Know where something lives / who pins what | `contributor-architecture.md` | the repositories themselves, one by one |
+| Choose and run the tests for a change | `contributor-test.md` → `scripts/test_changed.sh <base> --dry-run` | `make test` (the post-merge union); the Makefile whole |
+| Cite or check a decision | `ledger/README.md` (the index) → the one page and heading it names | the ledger directory whole |
+| Write documentation | `contributor.md` §3 rule 17 → `scripts/gen_docs/README.md` | hand-copied examples from anywhere |
+| Read a failure | the run log's `STEP-START`/`STEP-END` lines and the failing step's own block | the whole interleaved log top to bottom |
+
+Size discipline: the language corpus (`deps/cx-core-code/conformance/code.cxd`)
+is the largest corpus file — find a case by id (`grep -n 'id=<id>'`),
+never read it. Find a step in the Makefile by `grep -n '^<step>:'`. A spec page
+is read by the section its decision names, never whole.
+
+## 2. What CX guarantees, pinned by the corpus
+
+Two properties every contribution preserves. Both are corpus cases, replayed
+against the binary each time this file is generated.
+
+**Effects are deny-by-default** — reading a file with no grant is an ordinary
+error value naming the flag that would allow it:
+
+<sub>Generated from the corpus case `io-001-read-file-cap-denied` (`cx-core-code`, `conformance/stdlib/io.cxd`), replayed by `make docs` — do not edit here.</sub>
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/io']
+[$io:read-file "/var/log/app.log"]
+```
+
+```console
+$ cx prog.cx
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)']
+```
+
+**Errors are values** — a captured `[err]` propagates out of any element built
+from it, with no `try` and no exception:
+
+<sub>Generated from the corpus case `program-construction-err-004-captured-err-propagates` (`cx-core-code`, `conformance/code.cxd`), replayed by `make docs` — do not edit here.</sub>
+
+`prog.cx`
+```cx
+[?let [= $e [err code='c' message='m']] [report $e]]
+```
+
+```console
+$ cx prog.cx
+[err code=c message=m]
+```
+
+A change that makes either of these false is refused by the corpus, whatever
+else it fixes.
+
+## 3. The rules for the best long-term change
+
+Each is a rule, the decision behind it, and the step that refuses a tree that
+breaks it. Where the ledger has the rule's own words, §4 prints them.
+
+| # | Rule | Decision | Held by |
+|---|---|---|---|
+| 1 | **The spec is the only truth.** Normative text is `spec/03-approved/`; no design note overrides it; never edit a spec to match an implementation shortfall. | AGENTS.md rule 1 (RULED: CFG-1) | `spec-freeze-gate`, `check-no-adr-citations` |
+| 2 | **A spec edit and its impl edit carry a recorded decision.** The `RULED:` id is on the ledger BEFORE a commit cites it. | the spec-freeze register (RULED: R4.1) | `spec-freeze-gate`, `ledger-index-check` |
+| 3 | **The corpus is the executable truth; the fixture comes before the fix.** A behaviour change lands its failing case first, then the code that passes it. | AGENTS.md rule 2 (RULED: CFG-1) | the fixture graders, `check-code-fixtures` |
+| 4 | **No stubs, no partial implementations, no silent scope cuts.** A seam with no live consumer is a partial implementation; what cannot be finished is said and stopped. | AGENTS.md rule 3 (RULED: CFG-1) | `check-no-stub-impl` |
+| 5 | **Two rings, then groups.** Ring 0 cannot execute; Ring 1 cannot reach a socket, a store or a protocol; everything else is a group with a declared, acyclic import graph. | RULED: RS-1 | `ring-import-gate`, `placement-gate` |
+| 6 | **A module lives in the ring of its highest verb**; a pure half a Ring-1 consumer needs becomes its own Ring-1 module. | RULED: OL-14 | `placement-gate` |
+| 7 | **Placement before code.** A new surface states its ring, group and directories in its decision, then its `registry/modules.cxd` row, then spec, corpus, code. | RULED: OL-15, 1427-f | `placement-gate`, `stdlib-catalog-gate` |
+| 8 | **One repository per product**, split where a person could own, release and explain it in one line. | RULED: RS-2, RS-3 | `repos-allocation-gate` |
+| 9 | **Consumers pull, producers never push.** Every repository pins what it builds on by sha in `deps.cxd`; `cx` is a migration lane, never a gate. | RULED: RS-7 | `test-deps-pins`, `make deps-sync` |
+| 10 | **The mover fixes what it breaks.** A lower repository keeps its specified surface compatible; an intentional break is a decision naming its consumers. | RULED: RS-8 | the consumer's own gate on the bump |
+| 11 | **A V product imports the rings and its pins, nothing else**; one V module per product, explicit `import`s, a `pub` surface per caller. | RULED: RS-24 | `product-import-gate` |
+| 12 | **Products register themselves.** A product adds its builtins and its CLI verbs from its own `init()`; the core knows no product by name. | RULED: D71a, D73a | the build of a profile without the product |
+| 13 | **The ring decides where code lives, not its only consumer.** A pure Ring-1 V half stays in the core even when one product calls it. | RULED: D76c, D84a | `repos-allocation-gate` |
+| 14 | **Tooling is written in CX.** Scripts, probes and bisects are CX programs; another language needs a filed `cx-gap` issue first. | RULED: CXF-1 | review; `reader-parity` holds every reader of the corpus files to one answer (RULED: CXF-5) |
+| 15 | **A CX surprise is filed the same hour, with its reproduction.** A small defect in a module you already touch is fixed in your branch, fixture first. | RULED: CXF-8, FIX-1 | the issue tracker |
+| 16 | **One vocabulary.** release/epic/issue/decision/spec; branch/worktree/integration branch/merge; step/pipeline/run/runner. | RULED: DG-1 | `spec/03-approved/process/delivery-grammar.md` |
+| 17 | **Docs follow the module and are generated.** A reference is projected from its corpus at release; an example no fixture backs is a liability. | RULED: RS-9, RS-28 | `docs-check`, `verify-doc-blocks` |
+| 18 | **CX's own voice.** Lead with why to reach for CX; state its case, never referee; a runnable example or a measured number beside every claim. | RULED: RS-30 | `docs-check` (the examples replay) |
+| 19 | **The version derives from `VERSION`.** No second copy of a version string anywhere. | AGENTS.md rule 5 (RULED: CFG-1) | `check-version-consistency` |
+| 20 | **No AI attribution, anywhere, ever** — no co-author trailer, no generated-by line, in any repository. | RULED: RS-33 | `check-no-ai-attribution` |
+| 21 | **No consumer's name in the tree.** Every artifact speaks CX-generic workload terms (users, tracked entities, events, deployments); the tree is published. | the owner's standing decision of 2026-07-24, under RULED: RS-11 | `check-no-consumer-terms` |
+| 22 | **Flags bind before the resource.** `cx [cx-flags] FILE [program-args]`. | AGENTS.md rule 4 (RULED: CFG-1) | the antipattern corpus |
+
+When two sources disagree: the owner's live word, then `AGENTS.md`, then the
+process specs, then the ledger (RULED: CFG-1). A harness template never
+overrides any of them.
+
+## 4. The standing decisions, in the ledger's own words
+
+The `RS-n` series is the repository-split decision set every contributor works
+inside. Each statement below is the ledger's bold lead or heading, verbatim;
+read the page for the reason and the options refused.
+
+<sub>Generated by `scripts/gen_docs/contributor_facts.cx` from the ledger pages' `RS-n` decision rows and headings, verbatim (36 rows) — do not edit here: change the source, run `make docs`.</sub>
+
+| id | the ledger's statement | page |
+|---|---|---|
+| `RS-1` | Two rings, then groups. | `ledger/rulings_2026_09_21_repo_split_1589.md` |
+| `RS-2` | Split by product, not by dependency graph. | `ledger/rulings_2026_09_21_repo_split_1589.md` |
+| `RS-3` | The shape: `cx` (front door and distribution), `cx-core-data` (Ring 0), `cx-core-code` (Ring 1, the stdlib inside it), `cx-platform-{net, mail, identity, store, db, fabric, xap}` (V, compiled into the full `cx`, release with it), `cx-platform-{flow, connector, sso, ux, agent}` (pure CX, registry packages, their own cadence), `cx-binding-{python, go, rust, v}` (active) and `cx-binding-{typescript, java, kotlin, csharp, swift, ruby}` (archived repositories at the ABI they were frozen with), `cx-registry`, `cx-decisions`, `cx-tooling`. | `ledger/rulings_2026_09_21_repo_split_1589.md` |
+| `RS-4` | Naming: `cx-<group>-<product>`; the bare `cx` is where a visitor starts. | `ledger/rulings_2026_09_21_repo_split_1589.md` |
+| `RS-5` | Stdlib membership moves, by the membership test (cx_partition.md §10) and by consumer. | `ledger/rulings_2026_09_21_repo_split_1589.md` |
+| `RS-6` | The store server authenticates through the Ring-1 trust primitives (did/vc verify, the authz decision) and its own `[grants]`, not through session tables. | `ledger/rulings_2026_09_21_repo_split_1589.md` |
+| `RS-7` | Consumers pull, producers never push. | `ledger/rulings_2026_09_21_repo_split_1589.md` |
+| `RS-8` | Break policy (owner, "1a"): within a release train a lower repository keeps its specified surface compatible; the repository that moved fixes what it breaks or ships the compatibility; an intentional break is a decision naming its consumers. | `ledger/rulings_2026_09_21_repo_split_1589.md` |
+| `RS-9` | Docs follow the module. | `ledger/rulings_2026_09_21_repo_split_1589.md` |
+| `RS-10` | Daemons stay subcommands of one `cx` (`store-serve`, `fabric-serve`, `flow serve`, the XAP host). | `ledger/rulings_2026_09_21_repo_split_1589.md` |
+| `RS-11` | Public or private is a setting per repository. | `ledger/rulings_2026_09_21_repo_split_1589.md` |
+| `RS-12` | Sequencing: the split starts now, during the suspension, and v0.18.0 ships from `cx` pinning the new repositories. | `ledger/rulings_2026_09_21_repo_split_1589.md` |
+| `RS-13` | `authz` splits along the store-auth design line (owner: D14a) | `ledger/rulings_2026_09_22_repo_split_followups.md` |
+| `RS-14` | did/vc's impure remainder gets modules named for what leaves (owner: D15b) | `ledger/rulings_2026_09_22_repo_split_followups.md` |
+| `RS-15` | the xsp `auth-*` defs become `cx-platform/xsp-auth` (owner: D16a) | `ledger/rulings_2026_09_22_repo_split_followups.md` |
+| `RS-16` | the `cx` binary grades a corpus file (owner: D13a) | `ledger/rulings_2026_09_22_repo_split_followups.md` |
+| `RS-17` | the `-gc e` per-case growth is fixed at the root (owner: D3b) | `ledger/rulings_2026_09_22_repo_split_followups.md` |
+| `RS-18` | builtin registration splits per family, before the db extracts (owner: D20a) | `ledger/rulings_2026_09_22_repo_split_followups.md` |
+| `RS-19` | mail claims its smtp/imap pure halves, as `sasl` already is (owner: D19a) | `ledger/rulings_2026_09_22_repo_split_followups.md` |
+| `RS-20` | flow's CLI verbs stay in the front door, and the act seam gets a row (owner: D21a) | `ledger/rulings_2026_09_22_repo_split_followups.md` |
+| `RS-21` | a decision's design item may ADD spec text where the edit map is silent (owner: D22b) | `ledger/rulings_2026_09_22_repo_split_followups.md` |
+| `RS-22` | `authz-store` and `vc-revocation` stay in `cx-platform-identity` (owner: D24a) | `ledger/rulings_2026_09_22_repo_split_followups.md` |
+| `RS-23` | the decision half gets a pure `open` over an in-memory trust store (owner: D25b) | `ledger/rulings_2026_09_22_repo_split_followups.md` |
+| `RS-24` | `vcx/platform` splits by product, one V module per V product (owner: D28a) | `ledger/rulings_2026_09_22_repo_split_followups.md` |
+| `RS-25` | the mock adapter is declared by the kit's own CX, and the compile-time gate retires (owner: D30d) | `ledger/rulings_2026_09_22_repo_split_followups.md` |
+| `RS-26` | RS-26…RS-31 — five spec-sentence authorizations, the afternoon letters, documentation and CI/CD, the documentation voice and the evening letters (owner, 2026-09-23, in session on dev2) | `ledger/rulings_2026_09_23_spec_sentence_letters.md` |
+| `RS-27` | the afternoon letters of 2026-09-23 (owner: D49a, D50a, D51d, D52a, D53a) | `ledger/rulings_2026_09_23_spec_sentence_letters.md` |
+| `RS-28` | one site, thin repositories, and cx created by the recipe (owner: D57a, D58a, D59a) | `ledger/rulings_2026_09_23_spec_sentence_letters.md` |
+| `RS-29` | CI/CD is cx flow, documentation included (owner: D60a) | `ledger/rulings_2026_09_23_spec_sentence_letters.md` |
+| `RS-30` | the documentation voice (owner, 2026-09-23 ~16:4xZ) | `ledger/rulings_2026_09_23_spec_sentence_letters.md` |
+| `RS-31` | the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) | `ledger/rulings_2026_09_23_spec_sentence_letters.md` |
+| `RS-32` | the front-door letters of 2026-09-24 (owner: D79a, D80a, D81a, D82a, D83a, D84a) | `ledger/rulings_2026_09_24_front_door_letters.md` |
+| `RS-33` | zero AI attribution anywhere in any repository, ever (owner: D87, D88b) | `ledger/rulings_2026_09_24_no_ai_attribution_rs33.md` |
+| `RS-34` | the letters of 2026-09-25 (owner: D89a, D90b) | `ledger/rulings_2026_09_25_llm_front_door_k11a.md` |
+| `RS-35` | the V fork under the zero-attribution rule: strip the fork's own range only (owner: Letter 2 = (a), 2026-09-25) | `ledger/rulings_2026_09_25_v_fork_rs35.md` |
+| `RS-36` | how a wave in a component repository lands after the split (owner, 2026-09-25, Letter 4 (a)) | `ledger/rulings_2026_09_25_component_waves_rs36.md` |
+
+## 5. The area files
+
+| File | Load it when | Generated parts |
+|---|---|---|
+| `contributor-architecture.md` | you need the repository map, the pins, the rings and groups, or the registration hooks | the repository map (`registry/repos.cxd`), the pins (`deps.cxd`) |
+| `contributor-design.md` | a surface needs a ring, a group, a row, a spec and a corpus before code | the module census and the row's columns (`registry/modules.cxd`) |
+| `contributor-implementation.md` | you are writing V: a module, an import, a registration, the front door's build | — (rules only; each cites its decision) |
+| `contributor-test.md` | you are choosing, running or reading steps | the step roster (the Makefile's `TEST_TARGETS`), the umbrella files (the pins) |
+
+
+<!-- https://cxhome.org/llm/contributor-architecture.md -->
+
+# CX contributor front door — architecture
+
+> **GENERATED FILE.** Source: `docs-src/llm/contributor-architecture.md.tmpl`,
+> `registry/repos.cxd` and `deps.cxd`, assembled by
+> `scripts/gen_docs/primer_build.cx`. The two tables are projections; the
+> prose is the rules, each citing its decision. Edit the template or the
+> registry, never this file.
+
+## TL;DR
+
+- Two rings, frozen: **Ring 0** the data format (`cx-core-data`), **Ring 1**
+  the language and its standard library (`cx-core-code`). Everything else is a
+  **group** — platform, binding, ecosystem, dist — importing the rings plus
+  what its row declares, acyclic (RULED: RS-1).
+- One repository per product; `cx` is the front door that pins every one by
+  sha and builds the binaries from the pins (RULED: RS-2, RS-3, RS-7).
+- The core names no product: products register their builtins and CLI verbs
+  from their own `init()` (RULED: D71a, D73a).
+- Where a thing lives is DATA: `registry/repos.cxd` allots every tracked path
+  to one repository; `registry/modules.cxd` declares every surface's ring and
+  group. Read the row, not a directory listing.
+
+## 1. Rings and groups — what each import contract buys
+
+| Layer | What it may import | What that buys | Decision |
+|---|---|---|---|
+| Ring 0 — data | nothing above itself | a document cannot execute: parsing a file is always safe | RULED: RS-1 |
+| Ring 1 — code | Ring 0 | a program cannot reach a socket, a store or a protocol without a platform module | RULED: RS-1 |
+| platform group (`ring=1 group=platform`) | the rings + the products its row pins | state that outlives the program: store, net, mail, identity, fabric, xsp, xap | RULED: RS-1, RS-24 |
+| binding / ecosystem / dist groups | the C ABI and the released binary | other languages, editors, the registry, the site | RULED: RS-1, RS-3 |
+
+A module lives in the ring of its **highest verb**: pure or purely local is
+Ring 1; serving, or reaching a store or a protocol, is the platform group
+(RULED: OL-14). The daemons (`store-serve`, `fabric-serve`, `flow serve`, the
+XAP host) stay subcommands of one `cx` (RULED: RS-10).
+
+## 2. The repository map
+
+`status=extracted` means the repository exists, owns its paths, and none of
+them is tracked in the front door any more; a blank status is a row that still
+allots paths here. `pins` is the import graph a V product may use (the
+`product-import-gate` holds it); `V module` names the one `vcx/<m>/` directory
+the product compiles from (RULED: RS-24).
+
+<sub>Generated by `scripts/gen_docs/contributor_facts.cx` from `registry/repos.cxd`'s `[repo]` rows; `at=` (the pinned sha) and `why=` stay in the file (30 rows) — do not edit here: change the source, run `make docs`.</sub>
+
+| repository | group | ring | ships | V module (`vcx/<m>/`) | pins | status | what it is |
+|---|---|---|---|---|---|---|---|
+| `cx` | dist | none | binary | — | — | — | the front door: pins every repo, builds the four cx builds and libcx-core/libcx, holds the site, the release, the installer |
+| `cx-private` | dist | none | none | — | — | — | the private orchestration repository: boards, evidence, runner configuration, briefs |
+| `cx-core-data` | core | 0 | binary | — | — | extracted | the data format: reader, writer, canonical form, schema, codecs, libcx-core, the data-only cx |
+| `cx-core-code` | core | 1 | binary | — | `cx-core-data` | extracted | the language: evaluator, stdlib, LSP, libcx, the cli and embed builds |
+| `cx-platform-net` | platform | none | binary | `cxnet` | `cx-core-code` | extracted | sockets, TLS, the HTTP server, the XSP transport bindings, ftp, sftp, file_surface |
+| `cx-platform-mail` | platform | none | binary | `mail` | `cx-platform-net` | extracted | SMTP and IMAP, server and client cores, sasl |
+| `cx-platform-identity` | platform | none | binary | `identity` | `cx-platform-store` `cx-platform-net` `cx-platform-xsp` | extracted | sessions, did:web, authz-store, vc-revocation |
+| `cx-platform-store` | platform | none | binary | `store` | `cx-core-code` `cx-platform-net` `cx-platform-xsp` | extracted | the storage engine, its substrates, journal/live/audit, ft, and the store server |
+| `cx-platform-db` | platform | none | binary | `cxdb` | `cx-core-code` | extracted | external database access: $sql-*, $redis-*, the drivers |
+| `cx-platform-fabric` | platform | none | binary | `fabric` | `cx-platform-store` `cx-platform-identity` `cx-platform-net` `cx-platform-xsp` | extracted | messaging and fabric-serve |
+| `cx-platform-xsp` | platform | none | binary | `xsp` | `cx-core-code` | extracted | the XAP Stream Protocol: the frame codec, the XSP-AUTH handshake, the protocol pages |
+| `cx-platform-xap` | platform | none | binary | `xap` | `cx-platform-net` `cx-platform-mail` `cx-platform-identity` `cx-platform-store` `cx-platform-db` `cx-platform-fabric` `cx-platform-xsp` | extracted | the application host, compose, dist, schema, market, the reference deployments |
+| `cx-platform-flow` | platform | none | package | — | — | extracted | workflow; its CLI verbs stay in the binary |
+| `cx-platform-connector` | platform | none | package | — | — | extracted | the connector kit and sync |
+| `cx-platform-sso` | platform | none | package | — | — | extracted | enterprise sign-on, the interop lane |
+| `cx-platform-ux` | platform | none | package | — | — | extracted | the web and terminal surfaces |
+| `cx-platform-agent` | platform | none | package | — | — | extracted | tools, mcp, mcp-server, a2a, a2a-xap, llm, run, adjudicate |
+| `cx-binding-python` | binding | none | pypi | — | — | extracted | cxlib for Python |
+| `cx-binding-go` | binding | none | go-module | — | — | extracted | cxlib for Go |
+| `cx-binding-rust` | binding | none | crate | — | — | extracted | cxlib for Rust |
+| `cx-binding-v` | binding | none | v-module | — | — | extracted | the native reference binding |
+| `cx-binding-typescript` | binding | none | archived | — | — | — | archived at the ABI it was frozen with; lang/_archived/README.md names the version |
+| `cx-binding-java` | binding | none | archived | — | — | — | archived at the ABI it was frozen with; lang/_archived/README.md names the version |
+| `cx-binding-kotlin` | binding | none | archived | — | — | — | archived at the ABI it was frozen with; lang/_archived/README.md names the version |
+| `cx-binding-csharp` | binding | none | archived | — | — | — | archived at the ABI it was frozen with; lang/_archived/README.md names the version |
+| `cx-binding-swift` | binding | none | archived | — | — | — | archived at the ABI it was frozen with; lang/_archived/README.md names the version |
+| `cx-binding-ruby` | binding | none | archived | — | — | — | archived at the ABI it was frozen with; lang/_archived/README.md names the version |
+| `cx-registry` | ecosystem | none | none | — | — | extracted | the package index: the store, publisher keys, the publish program |
+| `cx-decisions` | ecosystem | none | none | — | — | extracted | the ledger, the process specs, the standing rules, design texts |
+| `cx-tooling` | ecosystem | none | editor | — | — | extracted | vscode, neovim, tree-sitter, completions, syntax, the installer, diagram |
+
+## 3. The pins — how the front door is assembled
+
+<sub>Generated by `scripts/gen_docs/contributor_facts.cx` from `deps.cxd`'s `[dep]` rows; each row's `sha` and `v-fork` sha stay in the file (16 rows) — do not edit here: change the source, run `make docs`.</sub>
+
+| pinned repository | modules | V repository (carries `v-fork`) | the modules the pin provides |
+|---|---|---|---|
+| `cx-platform-agent` | 8 | no | `cx-platform/tools` `cx-platform/mcp` `cx-platform/mcp-server` `cx-platform/a2a` `cx-platform/a2a-xap` `cx-platform/llm` `cx-platform/run` `cx-platform/adjudicate` |
+| `cx-platform-ux` | 3 | no | `cx-platform/ux` `cx-platform/ux-web` `cx-platform/ux-tui` |
+| `cx-platform-sso` | 1 | no | `cx-platform/sso` |
+| `cx-platform-flow` | 1 | no | `cx-platform/flow` |
+| `cx-core-data` | 1 | yes | `cx-core-data` |
+| `cx-core-code` | 52 | yes | `cx-stdlib/array` `cx-stdlib/authz` `cx-stdlib/bus` `cx-stdlib/bytes` `cx-stdlib/crypto` `cx-stdlib/csv` `cx-stdlib/cx` `cx-stdlib/did` `cx-stdlib/email` `cx-stdlib/env` `cx-stdlib/format` `cx-stdlib/fp` `cx-stdlib/geo` `cx-stdlib/graphql` `cx-stdlib/hash` `cx-stdlib/html` `cx-stdlib/http-client` `cx-stdlib/i18n` `cx-stdlib/io` `cx-stdlib/json` `cx-stdlib/jsonrpc` `cx-stdlib/jsonschema` `cx-stdlib/locale` `cx-stdlib/log` `cx-stdlib/map` `cx-stdlib/math` `cx-stdlib/mime` `cx-stdlib/oidc` `cx-stdlib/path` `cx-stdlib/process` `cx-stdlib/prof` `cx-stdlib/random` `cx-stdlib/re` `cx-stdlib/saml` `cx-stdlib/sched` `cx-stdlib/scim` `cx-stdlib/similar` `cx-stdlib/soap` `cx-stdlib/strings` `cx-stdlib/supervise` `cx-stdlib/tar` `cx-stdlib/term` `cx-stdlib/test` `cx-stdlib/time` `cx-stdlib/url` `cx-stdlib/uuid` `cx-stdlib/validate` `cx-stdlib/vc` `cx-stdlib/ws` `cx-stdlib/xml` `cx-stdlib/zip` `term` |
+| `cx-platform-db` | 3 | yes | `db` `sql` `redis` |
+| `cx-platform-net` | 2 | yes | `cx-platform/net` `cx-platform/http` |
+| `cx-platform-mail` | 3 | yes | `cx-platform/imap` `cx-platform/smtp` `cx-stdlib/sasl` |
+| `cx-platform-store` | 5 | yes | `cx-platform/store` `cx-platform/journal` `cx-platform/live` `cx-platform/audit` `cx-stdlib/ft` |
+| `cx-platform-identity` | 4 | yes | `cx-platform/session` `cx-platform/authz-store` `cx-platform/did-web` `cx-platform/vc-revocation` |
+| `cx-platform-connector` | 2 | no | `cx-platform/connector` `cx-platform/sync` |
+| `cx-platform-fabric` | 1 | yes | `cx-platform/fabric` |
+| `cx-platform-xsp` | 2 | yes | `cx-stdlib/xsp` `cx-platform/xsp-auth` |
+| `cx-tooling` | 1 | no | `cx-stdlib/diagram` |
+| `cx-platform-xap` | 1 | yes | `cx-platform/xap` |
+
+- `deps.cxd` is the ONE place a pin lives: one `[dep]` row per repository,
+  its sha, the modules it provides, and the V-fork sha for a V repository
+  (RULED: RS-7; the format is `spec/03-approved/process/repository-dependency-pins.md`).
+- `make deps-sync` fetches each pin shallowly into the ignored `deps/<repo>/`
+  and **fails** on a stale pin or a drifted checkout — it never warns.
+- The build compiles every V module from its pinned checkout through `-path`:
+  `make build-vcx` runs the Ring-1 repository's own `vcx/` build
+  (`deps/cx-core-code/vcx`) with the front door's `deps.cxd` and `deps/` root,
+  so the binary is exactly the pinned set.
+- `cx` is a migration lane, never a gate: a repository that releases is tried
+  against the newest mutually green set; green advances its pin, red leaves
+  it and lands a finding on the repository that moved (RULED: RS-7, RS-8).
+
+## 4. The registration hooks — the core names no product
+
+| Hook | Where | A product does | Decision |
+|---|---|---|---|
+| builtin dispatch | `vcx/code/stdlib_builtin_registry.v` (`register_stdlib_builtin(family, f)`) | registers its `<family>_stdlib_builtin` from its own `init()`; a family registered twice panics naming both | RULED: D71a, RS-18 |
+| CLI verb table | `vcx/code/cli_verb_registry.v` (`register_cli_verb(v)`) | registers its verbs (`store-serve`, …) from its own `init()` | RULED: D73a |
+| the platform packs | `vcx/code/ring_registry.v` | registers its pack's dispatch entries from a `*_register.v` file of its own (`stdlib_session_register.v`, `sql_register.v`, …) | RULED: RS-18 |
+
+What the hooks buy: a binary built WITHOUT a product answers that product's
+names with the by-name refusal `CXER0136 E_NO_CALLABLE`, never a crash and never
+another family's answer — which is what the profile gate probes.
+
+## 5. Two-repository modules — the ring decides, not the consumer
+
+A module whose pure V half is Ring 1 keeps that half in `cx-core-code` even
+when its only consumer is one product; its CX surface, spec and corpus live
+with the product (RULED: D76c, D84a, D78a):
+
+| Module | V half (Ring 1, `cx-core-code`) | CX surface, spec, corpus |
+|---|---|---|
+| `sasl` | `vcx/code/stdlib_sasl.v` | `cx-platform-mail` |
+| `ft` | `vcx/code/stdlib_ft.v` (the tokenizer `similar` calls) | `cx-platform-store` |
+| `diagram` | the V diagram half | `cx-tooling` |
+
+## 6. Documentation follows the module
+
+Each repository generates its own reference fragment from its own corpus at
+release; `cx`'s build embeds the docs of exactly the module versions it
+compiles, and the one site in `cx` indexes every published fragment
+(`docs/llm/manifest-fragment.cxd` per repository; RULED: RS-9, RS-28). The
+component repositories stay thin: a README, CONTRIBUTING, the generated
+fragment (RULED: D58a).
+
+## 7. The public front door and the private working tree
+
+The public `cx` is filtered from the private orchestration repository's green
+heads by the extraction recipe: every `repo=cx` path except the orchestration
+set (runner evidence, per-tool scaffolding, the agent entry points), with the
+ledger and the process specs public because `cx`'s own gate reads them
+(RULED: D59a, D82a, D83a). A path's destination is its first-matching
+`[path]` rule in `registry/repos.cxd`; `repos-allocation-gate` refuses a
+tracked file no rule claims and a rule that claims nothing.
+
+
+<!-- https://cxhome.org/llm/contributor-design.md -->
+
+# CX contributor front door — design: a surface before its code
+
+> **GENERATED FILE.** Source: `docs-src/llm/contributor-design.md.tmpl` and
+> `registry/modules.cxd`, assembled by `scripts/gen_docs/primer_build.cx`.
+> The two tables are projections; the procedure is the rules, each citing its
+> decision. Edit the template or the registry, never this file.
+
+## TL;DR
+
+- A surface is DECLARED before it is written: its decision states its ring,
+  its group and its directories; its `registry/modules.cxd` row follows; then
+  the spec, the corpus, the bundled source, the V code — in that order
+  (RULED: OL-15, 1427-f).
+- The row is the single declaration. `make placement-gate` refuses a tree
+  where the spec directory, the corpus directory and header, the code
+  directory or the `[?lib]` namespace disagrees with it.
+- A structural change (tree, namespace, gates, ownership) is preceded by the
+  full option table across code, spec, conformance, gates, docs, lockfile and
+  tooling, on its issue, for the owner's decision — never executed one
+  dimension at a time (RULED: OL-15).
+- Placement mistakes are the most expensive CX has made; the procedure below
+  exists because each step was once skipped and cost a restructure.
+
+## 1. The procedure — six artifacts, one order
+
+| Step | Artifact | Where (Ring 1 / platform group) | Refused by |
+|---|---|---|---|
+| 1 | the DECISION: ring, group, directories, the option table | the issue, then a `ledger/` page citing `RULED: <id>` | `spec-freeze-gate` (a later spec+impl commit needs the id) |
+| 2 | the ROW | `registry/modules.cxd` — `status=planned` until every artifact exists | `placement-gate` |
+| 3 | the SPEC | `spec/03-approved/stdlib/<name>.md` / `spec/03-approved/platform/<name>.md`, in the owning repository | `spec-freeze-gate`, `check-code-spec-consistency` |
+| 4 | the CORPUS — fixtures first | `conformance/stdlib/<name>.cxd` / `conformance/platform/<name>.cxd`, its header's `ring=` the lane that grades it | the fixture graders; `check-fixture-shard-manifest` (a new file in no shard) |
+| 5 | the BUNDLED SOURCE with its `[module-doc]` | `stdlib/<name>.cx`, namespace `cx-stdlib/<name>` / `cx-platform/<name>` | `guide-check` (fn-doc examples match the corpus), `stdlib-catalog-gate` |
+| 6 | the V CODE, only where CX cannot express it | `vcx/code/` (the rings) / the product's `vcx/<vmodule>/` | `ring-import-gate`, `product-import-gate`, `check-no-stub-impl` |
+
+Then the catalog: `spec/03-approved/stdlib/README.md` or
+`spec/03-approved/platform/README.md` lists it, and the primer's module table
+picks it up from the row at the next `make docs` (RULED: 1427-f).
+
+## 2. Deciding the ring and the group
+
+| Question about the module | Answer | Decision |
+|---|---|---|
+| Is it pure, or purely local (a file, the clock, a subprocess)? | Ring 1, no group, `cx-stdlib/<name>` | RULED: RS-1, OL-14 |
+| Does it serve, or reach a store or a protocol? | `ring=1 group=platform`, `cx-platform/<name>` | RULED: RS-1 |
+| Is it a data-format surface synthesized by the codec registry? | Ring 0, `kind=codec` | RULED: RS-1 |
+| Does a platform module have a pure codec or client a Ring-1 consumer needs? | declare it in the row's `half=`; at its first Ring-1 consumer it becomes its own Ring-1 module (as `http-client` split from `http`) | RULED: 1427-d, 1427-e |
+| Is its only consumer one product? | its CX surface moves to that product; a pure V half stays in the core | RULED: RS-5, D76c |
+| Is it a shared codec with callers outside one product? | it stays in the language (saml, scim, oidc, soap, graphql, ws, email, http-client, similar) | RULED: RS-5 |
+
+The rule under all of it: **a module lives in the ring of its highest verb**
+(RULED: OL-14). The rings are frozen and change only by decision; a `ring=2`
+row is refused by name (RULED: RS-1).
+
+## 3. The row — `registry/modules.cxd`
+
+<sub>Generated by `scripts/gen_docs/contributor_facts.cx` from the attribute names `registry/modules.cxd`'s `[module]` rows carry, in first-use order (13 rows) — do not edit here: change the source, run `make docs`.</sub>
+
+| column | rows carrying it | its values (six or fewer), or how many |
+|---|---|---|
+| `name=` | 97 | 96 distinct values |
+| `ring=` | 97 | `1` `0` |
+| `ns=` | 97 | `cx-stdlib` `cx-platform` `none` |
+| `kind=` | 97 | `module` `natives` `backend` `design` `suite` `codec` |
+| `repo=` | 97 | 15 distinct values |
+| `spec=` | 97 | 95 distinct values |
+| `corpus=` | 97 | 93 distinct values |
+| `source=` | 97 | 86 distinct values |
+| `code=` | 97 | 74 distinct values |
+| `half=` | 97 | `none` |
+| `status=` | 97 | `current` `planned` |
+| `group=` | 41 | `platform` |
+| `suite-ring=` | 5 | `1` |
+
+What the columns mean (the file's own `[doc]` block is the full text):
+
+- `ring` is the DECISION, not a location — it never takes a `-to`; what moves
+  is the artifact. `group=platform` lets a module import the platform graph.
+- `repo=` names the repository that owns the artifacts when it is not the
+  front door; its `spec`/`corpus`/`source`/`code` then name the pinned
+  checkout `deps/<repo>/…` (RULED: RS-7, RS-12).
+- `status=planned` is NOT WRITTEN YET: the check holds the row to its ring and
+  directories but not to existence, and refuses it once every artifact is on
+  disk — so the declaration cannot outlive the writing.
+- A `<column>-to` is NOT MOVED YET: it names where a move puts the artifact
+  and exists only while the move is owed.
+- `code` on a product's row is reached through the builtin-dispatch registry
+  the product's own `init()` fills — never by name from `vcx/code`
+  (RULED: D71a).
+
+## 4. Where the rows live today
+
+<sub>Generated by `scripts/gen_docs/contributor_facts.cx` from `registry/modules.cxd`'s `[module]` rows, grouped by `repo=` (97 rows) — do not edit here: change the source, run `make docs`.</sub>
+
+| repository | rows | ring 0 | ring 1 | `group=platform` | `status=planned` | the rows (`name=`) |
+|---|---|---|---|---|---|---|
+| `cx-core-code` | 52 | 1 | 51 | 0 | 0 | authz, array, bus, bytes, crypto, csv, cx, did, email, env, format, fp, geo, graphql, hash, html, http-client, i18n, io, json, jsonrpc, jsonschema, locale, log, map, math, mime, oidc, path, process, prof, random, re, saml, sched, scim, similar, soap, strings, supervise, tar, term, test, time, url, uuid, validate, vc, ws, zip, term, xml |
+| `cx-tooling` | 1 | 0 | 1 | 0 | 0 | diagram |
+| `cx-platform-store` | 7 | 0 | 1 | 6 | 0 | ft, audit, journal, live, store, distributed_store, erasure_compliance |
+| `cx-platform-mail` | 3 | 0 | 1 | 2 | 0 | sasl, imap, smtp |
+| `cx-platform-xsp` | 2 | 0 | 1 | 1 | 0 | xsp, xsp-auth |
+| `cx-platform-identity` | 4 | 0 | 0 | 4 | 0 | authz-store, did-web, session, vc-revocation |
+| `cx-platform-connector` | 2 | 0 | 0 | 2 | 1 | connector, sync |
+| `cx-platform-flow` | 1 | 0 | 0 | 1 | 0 | flow |
+| `cx-platform-fabric` | 1 | 0 | 0 | 1 | 0 | fabric |
+| `cx-platform-net` | 4 | 0 | 0 | 4 | 2 | ftp, http, net, sftp |
+| `cx-platform-sso` | 1 | 0 | 0 | 1 | 0 | sso |
+| `cx-platform-xap` | 5 | 0 | 0 | 5 | 0 | xap, xap_dist, xap-compose, xap-schema, xap-on |
+| `cx-platform-agent` | 8 | 0 | 0 | 8 | 0 | a2a, a2a-xap, adjudicate, llm, mcp, mcp-server, run, tools |
+| `cx-platform-ux` | 3 | 0 | 0 | 3 | 0 | ux, ux-tui, ux-web |
+| `cx-platform-db` | 3 | 0 | 0 | 3 | 0 | redis, sql, db |
+
+## 5. Writing the spec
+
+- The spec is the only truth; there are no ADRs and no design notes that
+  override it (AGENTS.md rule 1, RULED: CFG-1; `check-no-adr-citations`).
+- A decision's design item may ADD spec text where its edit map is silent; it
+  may never move or delete a sentence the map does not name (RULED: RS-21).
+- Specs stay loosely coupled: a generated document carries no `§` numbers
+  into another page's prose (the primer drops them from the directive
+  registry for this reason; the owner's 1a of 2026-08-19,
+  `ledger/rulings_2026_08_19_787_guide_and_packaging.md`).
+- An effect is deny-by-default and named by the capability that grants it;
+  an error is a value with a registered `CXER` code (`cxer-registry-gate`
+  holds the registry to `spec/03-approved/process/governance.md`). Both are
+  pinned by corpus cases in `contributor.md` §2. A surface that throws, or
+  that reaches an effect with no capability, is a design defect before it is
+  a code defect.
+- A normative sentence has a corpus case beside it before any code moves:
+  the case is how a later reader knows the sentence still holds.
+
+## 6. The option table — what a structural decision shows
+
+Every structural change is posed on its issue as the full option table, for
+the owner's decision, before anything moves (RULED: OL-15); each option states
+its long-term consequence for CX. The table covers every dimension at once:
+
+| Dimension | What the option must say |
+|---|---|
+| code | which V module and directory; the imports it adds; the registration hook it uses |
+| spec | which page, which section, added or changed sentences |
+| conformance | which corpus file, which lane (`ring=`), which shard |
+| gates | which step refuses the wrong tree, and whether one is added (`check-selection-manifest` then) |
+| docs | which generated document moves (`make docs` in the same commit) |
+| lockfile / pins | which `deps.cxd` row or `[module]` row changes |
+| tooling | editors, completions, the migration tool (`cx --migrate-namespace`) |
+
+
+<!-- https://cxhome.org/llm/contributor-implementation.md -->
+
+# CX contributor front door — implementation
+
+> **GENERATED FILE.** Source: `docs-src/llm/contributor-implementation.md.tmpl`,
+> assembled by `scripts/gen_docs/primer_build.cx`. This file is rules only;
+> each cites its decision and the step that refuses the tree that breaks it.
+> The facts it relies on are projected in `contributor-architecture.md`.
+> Edit the template, never this file.
+
+## TL;DR
+
+- Write CX first. The implementation language of the evaluator and the
+  products is V; everything else — scripts, gates, generators, probes — is a
+  CX program run with `cx FILE` (RULED: CXF-1).
+- **A V module is one directory**, and V compiles it as one unit: a file move
+  across directories is an interface change, never a rename (RULED: RS-24).
+- **Imports point down only**: Ring 0 imports nothing above it; Ring 1 imports
+  Ring 0; a product imports the rings and exactly the products its row pins
+  (RULED: RS-1, RS-24).
+- **`pub` is per caller**: a symbol is exported when a caller in another
+  module needs it, and the product's `pub` surface IS its interface
+  (RULED: RS-24).
+- The core names no product: a product plugs in through the registration
+  hooks from its own `init()` (RULED: D71a, D73a).
+
+## 1. Where V code goes
+
+| The code is | Directory (in its repository) | `module` | It may import |
+|---|---|---|---|
+| Ring 0 — the reader, writer, canonical form, codecs | `vcx/cx/` (`cx-core-data`) | `cx` | vlib only |
+| Ring 1 — the evaluator, the stdlib natives, a platform module's declared pure half | `vcx/code/` (`cx-core-code`) | `code` | `cx`, vlib |
+| a V product (store, net, mail, identity, db, fabric, xsp, xap) | `vcx/<vmodule>/` (its product repository) | `<vmodule>` | `cx`, `code`, vlib, and the V modules of the repositories its row pins |
+| the front door's own verbs and grader | `vcx/cmd/`, `vcx/corpus/` (`cx`) | per directory | whatever the assembled build provides |
+
+The `vmodule=` and `pins=` of each product are in the repository map
+(`contributor-architecture.md` §2). `product-import-gate` refuses an import a
+product's pins do not name; `ring-import-gate` refuses a ring importing
+upward (RULED: RS-24, VC-22).
+
+## 2. The rules for a V change
+
+| # | Rule | Decision | Held by |
+|---|---|---|---|
+| 1 | A behaviour change lands its failing corpus case FIRST, in its own commit; the code that passes it follows. | AGENTS.md rule 2 (RULED: CFG-1) | the fixture graders |
+| 2 | No stub, no placeholder success, no seam with no live consumer. An effectful primitive that cannot be finished refuses; it never returns a synthetic shape. | AGENTS.md rule 3 (RULED: CFG-1) | `check-no-stub-impl` |
+| 3 | Errors travel as `[err code=cx-err:CXERnnnn …]` values with a registered code; an effect is refused with the capability that would allow it. | the CXER registry, `spec/03-approved/process/governance.md`; pinned by the corpus cases in `contributor.md` §2 | `cxer-registry-gate`, the corpus |
+| 4 | Move a file across modules only with its imports and its `pub` surface; a bare same-module call that crosses a repository line cannot compile alone. | RULED: RS-24 | `product-import-gate`, each product's own build |
+| 5 | A product registers its builtins with `register_stdlib_builtin(family, f)` and its CLI verbs with `register_cli_verb(v)` from its own `init()`. A family registered twice panics naming both. | RULED: D71a, D73a | the profile builds (a binary without the product refuses its names `CXER0136`) |
+| 6 | A pure Ring-1 V half stays in `vcx/code` even when one product is its only caller; its row names it in `half=` or re-allocates it to the core. | RULED: D76c, D84a | `placement-gate`, `repos-allocation-gate` |
+| 7 | A long-lived evaluator (a grader, a server loop) closes a finished env before the next program: per-case cost stays flat under `-gc e`. | RULED: RS-17 | review; the step timings `check-verification-budget` judges |
+| 8 | The V compiler is a pinned fork; a fork change lives in the fork's own repository and gets a register row. Never edit `third_party/`. | RULED: VC-1 | `check-v-fork` |
+| 9 | No version literal in code, a comment or a spec sentence: derive it from `VERSION`. | AGENTS.md rule 5 (RULED: CFG-1) | `check-version-consistency` |
+| 10 | A mover fixes every reader it missed — path scans, doc links, selection examples, baselines — in the same branch. | RULED: RS-8 | the post-merge union |
+
+Two operational rules from `CONTRIBUTING.md` (practice, not decisions): a new
+standalone `*_test.v` links the whole module graph on every run, so add test
+functions to the umbrella that owns the area (`contributor-test.md` §3); and
+the dev build accepts shapes the `-prod` checker refuses, so `check-prod-build`
+runs on every change set.
+
+## 3. The front door's build, from the pins
+
+The front door compiles nothing of its own but its verbs and grader; the
+binaries are assembled from the pinned checkouts:
+
+```console
+$ git submodule update --init --recursive        # the V fork and re2, at their gitlinks
+$ make -C third_party/v                          # the fork builds itself
+$ make deps-sync CX_BIN=<any cx>                 # every deps.cxd pin into deps/<repo>/, refusing a stale or drifted one
+$ make build-vcx                                 # deps/cx-core-code/vcx's build over the front door's deps.cxd and deps/
+$ deps/cx-core-code/vcx/target/cx --version      # names the commit and the V fork it was built from
+```
+
+- The build passes the pinned checkouts to V through `-path`; a direct
+  `v test` of anything importing `cx` needs the same flags, printed by
+  `make -s -C deps/cx-core-code/vcx print-VFLAGS`.
+- Four builds share one source: `data`, `embed`, `cli`, `platform`
+  (`make build-vcx` is the platform build). A `ring=1` corpus case is graded
+  in every profile, so a Ring-1 case may not lean on a platform pack
+  (RULED: RS-1; RS-23 is the precedent).
+- A `deps/<repo>/` checkout is a build INPUT, never a place to edit: a change a
+  product needs is made in that product's repository and reaches the front
+  door as a pin bump; a component repository's change is its own branch there,
+  pinned by sha in the front door's branch, and the union grades both (RULED: RS-7, RS-36).
+
+## 4. Tooling in CX
+
+- A new script is a CX program (`scripts/<name>.cx`) run with `cx FILE`,
+  imported by path (`[?lib './scripts/<name>.cx' as=x]`) when another program
+  needs it. Keep the logic PURE — text in, verdict out — and put the reads,
+  writes and exit in the program that calls it (`scripts/deps_pins.cx` is the
+  shape) (RULED: CXF-1).
+- Another language for a task needs a filed `cx-gap` issue — the task, the CX
+  attempt, the gap by kind — BEFORE it runs, for a probe as much as for a
+  checked-in tool (RULED: CXF-1).
+- A CX surprise — a silent wrong answer, a lint that passes what the run
+  refuses, a diagnostic that points elsewhere — is filed the same hour with
+  its reproduction (RULED: CXF-8).
+- A script that reads or writes the corpus is graded by `reader-parity`
+  against the other readers of the same files (RULED: CXF-5).
+- A check that derives its population from the tree refuses to vouch when the
+  derivation comes up empty or short — a check that runs over the empty set
+  passes forever (`check-selection-manifest` and this layer's generators hold
+  a row floor for that reason; RULED: 1350-b).
+
+
+<!-- https://cxhome.org/llm/contributor-test.md -->
+
+# CX contributor front door — test
+
+> **GENERATED FILE.** Source: `docs-src/llm/contributor-test.md.tmpl`, the
+> Makefile's `TEST_TARGETS` and `DOC_TARGETS`, and the umbrella test files of
+> the pinned checkouts, assembled by `scripts/gen_docs/primer_build.cx`. The
+> two tables are projections; the procedure is the rules, each citing its
+> decision. Edit the template or the Makefile, never this file.
+
+## TL;DR
+
+- The corpus is the executable truth: a behaviour is a `[case …]` in a `.cxd`
+  file, graded against the binary; a fix lands its failing case first
+  (AGENTS.md rule 2, RULED: CFG-1).
+- `cx corpus FILE.cxd` grades any corpus file with the binary alone — the
+  same PASS/FAIL lines and summary as the in-tree graders (RULED: RS-16).
+- Run what your change selects, not everything: `scripts/test_changed.sh
+  <base> --dry-run` prints the steps whose inputs your diff touches; the full
+  `make test` union is the post-merge run's (RULED: RUN-1, INT-5).
+- A step that reads a file the tree derives it from refuses to vouch for an
+  empty derivation; a check over the empty set would pass forever
+  (RULED: 1350-b).
+
+## 1. Grading the corpus
+
+```console
+$ cx corpus conformance/llm/antipatterns.cxd      # one file, this binary, its PASS/FAIL lines and summary
+$ cx corpus --quiet deps/cx-core-code/conformance/stdlib/json.cxd
+$ make fixtures                                    # every module corpus, sharded, one census line
+$ make fixtures FIXTURE_FILES="<file> …"            # just the files your branch touched
+```
+
+- A case is judged on `[out-text]`, `[out-multiset]` or `[out-err]` under its
+  own `grant=`, `argv=`, `tol=`; a case naming a pack this profile does not
+  carry is SKIPPED by name, never graded (`cx corpus --help`).
+- A case id in `conformance/code.cxd` uses a prefix registered for its
+  `level=` in `scripts/check_code_fixtures.cx`; `check-code-fixtures` grades
+  that file alone.
+- A new `.cxd` belongs to a shard (`fixture_shards.cxd`) or
+  `check-fixture-shard-manifest` refuses it.
+- A `ring=1` case is graded at EVERY profile, including the ones without the
+  platform packs; read a response's status as `$r@status`.
+- A changed fixture that a generated document cites carries its `make docs`
+  in the same commit — `docs-check` replays every cited case.
+
+## 2. Choosing the steps — the computed selection
+
+| Situation | What runs pre-merge | Decision |
+|---|---|---|
+| the diff touches ordinary inputs | `scripts/test_changed.sh <base> --dry-run` → the steps it lists, and the `test-vcx-suite` files it names | RULED: RUN-1 |
+| the diff touches the Makefile, `vcx/Makefile`, `scripts/`, `VERSION` or `devbox*` (ESCALATED) | the COMPUTED selection: the diff MINUS those paths as a `--changed-files` list, each selected step as its own row; the escalated union is the post-merge run's, never queued pre-merge | RULED: RUN-4, INT-5 |
+| the diff adds or edits a `scripts/*.cx` | `make reader-parity` as an own step (the computed selection strips `scripts/` before it is asked) | RULED: CXF-5 |
+| the diff adds a `TEST_TARGETS` step | `make check-selection-manifest`: every step has an input row in `scripts/test_changed.sh` | RULED: RUN-1 |
+| the diff touches only documentation | the doc pipeline (`make test-docs`, the steps marked below) is the post-merge run's; your own steps are unchanged | RULED: INT-10 |
+| a step fails at the same commit with no code change | a flaky test: a known one is retried once; a new one gets a flaky-test issue — never a loosened bound or a skipped case | RULED: DG-1 |
+
+A failed post-merge run names EVERY red step (`make test` runs its storm with
+`-k`), so the fix for a red head carries every class the log names
+(RULED: RUN-2).
+
+## 3. The umbrellas — where a test function goes
+
+Test files, not functions, are the compile cost: every `*_test.v` links the
+whole module graph. A new test is a function in the umbrella that owns the
+area; the roster is `scripts/consolidation/<area>.files` and
+`scripts/consolidate_tests.sh absorb <area>` folds a stray file in.
+
+<sub>Generated by `scripts/gen_docs/contributor_facts.cx` from the `*_umbrella_test.v` files in the front door and its pinned checkouts (26 rows) — do not edit here: change the source, run `make docs`.</sub>
+
+| umbrella (path in its repository) | repository |
+|---|---|
+| `vcx/tests/async_conc_umbrella_test.v` | `cx-core-code` |
+| `vcx/tests/canonical_umbrella_test.v` | `cx-core-code` |
+| `vcx/tests/cli_umbrella_test.v` | `cx-core-code` |
+| `vcx/tests/code_units_umbrella_test.v` | `cx-core-code` |
+| `vcx/tests/codecs_formats_umbrella_test.v` | `cx-core-code` |
+| `vcx/tests/cxparse_forks_umbrella_test.v` | `cx-core-code` |
+| `vcx/tests/diagram_umbrella_test.v` | `cx-core-code` |
+| `vcx/tests/eval_semantics_umbrella_test.v` | `cx-core-code` |
+| `vcx/tests/identity_umbrella_test.v` | `cx-core-code` |
+| `vcx/tests/lexicon_surface_umbrella_test.v` | `cx-core-code` |
+| `vcx/tests/lint_lsp_umbrella_test.v` | `cx-core-code` |
+| `vcx/tests/modules_umbrella_test.v` | `cx-core-code` |
+| `vcx/tests/node_units_umbrella_test.v` | `cx-core-code` |
+| `vcx/tests/numerics_temporal_umbrella_test.v` | `cx-core-code` |
+| `vcx/tests/parser_units_umbrella_test.v` | `cx-core-code` |
+| `vcx/tests/planar_umbrella_test.v` | `cx-core-code` |
+| `vcx/tests/stdlib_umbrella_test.v` | `cx-core-code` |
+| `vcx/tests/table_stream_umbrella_test.v` | `cx-core-code` |
+| `vcx/code/code_module_umbrella_test.v` | `cx-core-code` |
+| `vcx/tests/http_umbrella_test.v` | `cx-platform-net` |
+| `vcx/tests/net_umbrella_test.v` | `cx-platform-net` |
+| `vcx/tests/real_services_umbrella_test.v` | `cx-platform-net` |
+| `vcx/tests/store_core_umbrella_test.v` | `cx-platform-store` |
+| `vcx/tests/store_remote_umbrella_test.v` | `cx-platform-store` |
+| `vcx/tests/fabric_umbrella_test.v` | `cx-platform-fabric` |
+| `vcx/tests/xap_umbrella_test.v` | `cx-platform-xap` |
+
+A Ring-0 change (lexer, parser, evaluator, emitter, loader) runs, as its own
+steps, every umbrella that reads a module it touched
+(`grep -l '<module>' deps/*/vcx/tests/*_umbrella_test.v`) and those modules'
+`vcx/cx/*_test.v` (RULED: VERIFY-2); a code change runs its umbrellas the same
+way, with `make check-effect-alignment`.
+
+## 4. The census trio — a corpus file that gains or loses cases
+
+A branch that adds or removes cases in a top-level `conformance/*.cxd` moves
+three baselines together, deliberately, naming each id:
+
+| Baseline | Step | What moves it |
+|---|---|---|
+| the parser's full-corpus census | `vcx/tests/cxparse_full_corpus_diff_test.v` | every new `in-cx` input — bump its pinned count, naming the ids |
+| the headline rebless scope | `vcx/tests/cxparse_headline_rebless_scan_test.v` | regenerate with `CX_REBLESS_SCAN_WRITE=1`, commit the scope file |
+| the Tier-2 address baseline | `make address-baseline-gate` | an extraction or a case removal: `make address-baseline-capture`, the ids named in the commit |
+
+The ids are named because a count that moves silently hides a case that was
+lost with one that was added (RULED: RS-12).
+
+## 5. The two runners
+
+| Runner | Runs | Holds |
+|---|---|---|
+| pre-merge — the branch's own | its builds, lints, graders, umbrellas and docs checks, under its own `CX_BUILD_SLOT` through `scripts/build-slot.sh`; load-sensitive steps (memory gauges, bench, real-socket lanes) one at a time on the shared slot | the branch's own tree: every own step passed once on the final tree before merge (RULED: INT-8, OL-3) |
+| post-merge — the loop on each new head | `make test-changed BASE=<last passed head>`, escalating to the full union on an infra change; the full union daily on an idle runner | the integration branch: a failed run gets a fix, never a revert of the gate (RULED: RUN-1, RUN-3) |
+
+Read a status directly, never through an inner shell that `devbox run` wraps
+— that shape answers 0 for a program that failed; `check-exit-status-probe`
+holds the line (AGENTS.md, "Exit statuses"; RULED: CFG-1).
+
+## 6. The step roster
+
+The union `make test` runs, in order. A step marked in the doc pipeline also
+runs in `make test-docs` (RULED: INT-10); the third column is where to start
+reading what the step checks.
+
+<sub>Generated by `scripts/gen_docs/contributor_facts.cx` from the Makefile's `TEST_TARGETS` (in order), `DOC_TARGETS`, and each step's own rule (93 rows) — do not edit here: change the source, run `make docs`.</sub>
+
+| # | step | in the doc pipeline | the first program its recipe names |
+|---|---|---|---|
+| 1 | `check-no-ai-attribution` |  | `scripts/check_no_ai_attribution.cx` |
+| 2 | `check-vcache-soundness` |  | `scripts/vcache_soundness_gate.sh` |
+| 3 | `check-build-failure-classifier` |  | `scripts/classify_v_build_failure.sh` |
+| 4 | `test-vcx-timing` |  | `v test deps/cx-core-code/vcx/timing/` |
+| 5 | `check-conformance-coverage` |  | `scripts/check_conformance_coverage.sh` |
+| 6 | `check-shim-archives` |  | `scripts/check_archive_alignment.sh` |
+| 7 | `abi-c-test` |  | — |
+| 8 | `check-v-fork` |  | `scripts/check_v_fork_patches.cx` |
+| 9 | `check-portable-links` |  | `scripts/check_portable_links.cx` |
+| 10 | `check-serial-retry-rosters` |  | — |
+| 11 | `check-fixture-shard-manifest` |  | `scripts/check_fixture_shard_manifest.sh` |
+| 12 | `check-consolidation-manifests` |  | `scripts/consolidate_tests.sh` |
+| 13 | `test-vcx-suite` |  | `scripts/fixtures_census.sh` |
+| 14 | `test-vcx-code` |  | — |
+| 15 | `test-vcx-cmd` |  | `v test vcx/cmd/` |
+| 16 | `test-vcx-cx` |  | `v test deps/cx-core-data/vcx/fixtures/` |
+| 17 | `test-vcx-conform` |  | `make -C deps/cx-core-code/vcx conform-all` |
+| 18 | `test-vcx-columnar` |  | `make -C deps/cx-core-code/vcx arrow-shim` |
+| 19 | `test-vcx-sqlite` |  | `v test deps/cx-platform-store/vcx/store/store_sqlite_test.v` |
+| 20 | `check-prod-build` |  | `make -C deps/cx-core-code/vcx check-prod` |
+| 21 | `check-no-legacy-try` |  | `scripts/check_no_legacy_try.cx` |
+| 22 | `check-pipefail-pipes` |  | `scripts/pipefail_pipe_gate.sh` |
+| 23 | `check-exec-redirect` |  | `scripts/exec_redirect_gate.sh` |
+| 24 | `check-exit-status-probe` |  | `scripts/exit_status_probe_gate.sh` |
+| 25 | `check-bench-isolation` |  | `scripts/bench_isolation_selftest.sh` |
+| 26 | `check-no-infix-range` |  | `scripts/check_no_infix_range.cx` |
+| 27 | `check-no-cxl-token` |  | `scripts/check_no_cxl_token.cx` |
+| 28 | `check-no-consumer-terms` |  | `scripts/check_no_consumer_terms.sh` |
+| 29 | `secrets-scan` |  | `scripts/secrets_scan.cx` |
+| 30 | `check-version-consistency` | yes | `scripts/check_version_consistency.cx` |
+| 31 | `check-effect-alignment` |  | `v test deps/cx-core-code/vcx/tests/eval_semantics_umbrella_test.v` |
+| 32 | `check-null-absence-conflation` |  | `scripts/check_null_absence_conflation.cx` |
+| 33 | `check-docs-tier1-guardrail` |  | `scripts/check_docs_tier1_guardrail.cx` |
+| 34 | `check-no-adr-citations` |  | `scripts/check_no_adr_citations.cx` |
+| 35 | `check-no-stub-impl` |  | `scripts/check_no_stub_impl.cx` |
+| 36 | `check-completions-drift` |  | `scripts/check_completions_drift.cx` |
+| 37 | `check-editor-surface-parity` |  | `scripts/check_editor_surface_parity.cx` |
+| 38 | `guide-check` |  | `scripts/gen_guide/stdlib_docs_check.cx` |
+| 39 | `guide-render-gate` |  | — |
+| 40 | `directive-docs-check` |  | `scripts/gen_guide/directive_docs_check.cx` |
+| 41 | `verify-doc-blocks` | yes | `tools/verify-doc-blocks.sh` |
+| 42 | `verify-doc-links` | yes | `tools/verify-doc-links.sh` |
+| 43 | `verify-examples` |  | `tools/verify-examples.sh` |
+| 44 | `verify-playground-examples` |  | `scripts/gen_guide/playground/gen_examples.cx` |
+| 45 | `docs-check` | yes | `scripts/gen_docs/primer_build.cx` |
+| 46 | `primer-platform-check` | yes | `scripts/gen_docs/primer_platform.cx` |
+| 47 | `ring-import-gate` |  | `scripts/ring_import_gate.sh` |
+| 48 | `gates-manifest-gate` |  | `scripts/gates_manifest_gate.sh` |
+| 49 | `ring-tag-gate` |  | `scripts/ring_query.cx` |
+| 50 | `cxer-registry-gate` |  | `scripts/cxer_registry_report.sh` |
+| 51 | `spec-freeze-gate` | yes | `scripts/spec_freeze_gate.sh` |
+| 52 | `test-extraction-gate` |  | — |
+| 53 | `abi-gc-gate` |  | — |
+| 54 | `libcx-abi-gate` |  | `tools/libcx-abi-gate.sh` |
+| 55 | `test-profile-gate` |  | `make -C deps/cx-core-code/vcx test-profile-gate` |
+| 56 | `check-code-spec-consistency` |  | `scripts/check_code_spec_consistency.cx` |
+| 57 | `check-code-fixtures` |  | `scripts/check_code_fixtures.cx` |
+| 58 | `reader-parity` |  | `v test vcx/tests/reader_parity_test.v` |
+| 59 | `stdlib-catalog-gate` |  | `scripts/stdlib_catalog_gate.cx` |
+| 60 | `placement-gate` |  | `scripts/placement_gate.cx` |
+| 61 | `repos-allocation-gate` |  | `scripts/repos_allocation_gate.cx` |
+| 62 | `product-import-gate` |  | `scripts/product_import_gate.cx` |
+| 63 | `test-deps-pins` |  | `scripts/check_deps_pins_fixtures.cx` |
+| 64 | `test-bundle-sources` |  | `scripts/check_bundle_sources_fixtures.cx` |
+| 65 | `test-docs-fragment` |  | `scripts/check_docs_fragment_fixtures.cx` |
+| 66 | `test-migrate-namespace` |  | `scripts/check_migrate_namespace_fixtures.cx` |
+| 67 | `store-session-dep-gate` |  | `scripts/store_session_dep_gate.cx` |
+| 68 | `flow-vocabulary-gate` |  | `deps/cx-platform-flow/scripts/flow_vocabulary_gate.cx` |
+| 69 | `flow-dogfood-gate` |  | `deps/cx-platform-flow/scripts/flow_dogfood_gate.cx` |
+| 70 | `test-flow-umbrella` |  | — |
+| 71 | `address-baseline-gate` |  | `v run deps/cx-core-code/vcx/tests/runners/address_baseline/address_baseline.v` |
+| 72 | `tools-export-gate` |  | — |
+| 73 | `test-code-diagram` |  | `scripts/check_code_diagram_fixtures.cx` |
+| 74 | `test-playground-mermaid` |  | `scripts/test_playground_mermaid.mjs` |
+| 75 | `test-playground-nav` |  | `scripts/test_playground_nav.mjs` |
+| 76 | `test-oriel-lane` |  | `deps/cx-platform-ux/scripts/oriel_lane.sh` |
+| 77 | `test-agent-real-lanes` |  | — |
+| 78 | `test-connector-real-lanes` |  | — |
+| 79 | `test-sso-interop-lane` |  | `deps/cx-platform-sso/scripts/sso_interop_lane.sh` |
+| 80 | `test-xpath-parity-cx` |  | `scripts/check_xpath_parity_fixtures.cx` |
+| 81 | `corpus-audit` |  | `scripts/corpus_audit.sh` |
+| 82 | `repr-guard` |  | `bench/repr/run.sh` |
+| 83 | `check-inmodule-test-roster` |  | — |
+| 84 | `check-build-input-roster` |  | `make -C deps/cx-core-code/vcx check-build-input-roster` |
+| 85 | `check-selection-manifest` |  | `scripts/check_selection_manifest.sh` |
+| 86 | `fmt-sweep-gate` |  | `scripts/fmt_corpus_sweep.cx` |
+| 87 | `test-playground-wasm-traps` |  | `scripts/test_playground_wasm_traps.mjs` |
+| 88 | `ledger-index-check` | yes | `scripts/ledger_index.cx` |
+| 89 | `check-profile-gate-selection` |  | `scripts/profile_gate_selection_selftest.sh` |
+| 90 | `check-verification-budget` |  | `scripts/check_verification_budget.cx` |
+| 91 | `check-verification-budget-selftest` |  | `scripts/verification_budget_selftest.sh` |
+| 92 | `check-storm-keep-going` |  | `scripts/storm_keep_going_selftest.sh` |
+| 93 | `check-verification-timings` |  | `scripts/verification_timings_selftest.sh` |
+
+
 <!-- https://cxhome.org/llm/reference-platform.md -->
 
 # Reference: the platform and ecosystem rings — v0.18.0-pre.1

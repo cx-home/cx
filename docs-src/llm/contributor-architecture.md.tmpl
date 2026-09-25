@@ -1,0 +1,105 @@
+# CX contributor front door — architecture
+
+> **GENERATED FILE.** Source: `docs-src/llm/contributor-architecture.md.tmpl`,
+> `registry/repos.cxd` and `deps.cxd`, assembled by
+> `scripts/gen_docs/primer_build.cx`. The two tables are projections; the
+> prose is the rules, each citing its decision. Edit the template or the
+> registry, never this file.
+
+## TL;DR
+
+- Two rings, frozen: **Ring 0** the data format (`cx-core-data`), **Ring 1**
+  the language and its standard library (`cx-core-code`). Everything else is a
+  **group** — platform, binding, ecosystem, dist — importing the rings plus
+  what its row declares, acyclic (RULED: RS-1).
+- One repository per product; `cx` is the front door that pins every one by
+  sha and builds the binaries from the pins (RULED: RS-2, RS-3, RS-7).
+- The core names no product: products register their builtins and CLI verbs
+  from their own `init()` (RULED: D71a, D73a).
+- Where a thing lives is DATA: `registry/repos.cxd` allots every tracked path
+  to one repository; `registry/modules.cxd` declares every surface's ring and
+  group. Read the row, not a directory listing.
+
+## 1. Rings and groups — what each import contract buys
+
+| Layer | What it may import | What that buys | Decision |
+|---|---|---|---|
+| Ring 0 — data | nothing above itself | a document cannot execute: parsing a file is always safe | RULED: RS-1 |
+| Ring 1 — code | Ring 0 | a program cannot reach a socket, a store or a protocol without a platform module | RULED: RS-1 |
+| platform group (`ring=1 group=platform`) | the rings + the products its row pins | state that outlives the program: store, net, mail, identity, fabric, xsp, xap | RULED: RS-1, RS-24 |
+| binding / ecosystem / dist groups | the C ABI and the released binary | other languages, editors, the registry, the site | RULED: RS-1, RS-3 |
+
+A module lives in the ring of its **highest verb**: pure or purely local is
+Ring 1; serving, or reaching a store or a protocol, is the platform group
+(RULED: OL-14). The daemons (`store-serve`, `fabric-serve`, `flow serve`, the
+XAP host) stay subcommands of one `cx` (RULED: RS-10).
+
+## 2. The repository map
+
+`status=extracted` means the repository exists, owns its paths, and none of
+them is tracked in the front door any more; a blank status is a row that still
+allots paths here. `pins` is the import graph a V product may use (the
+`product-import-gate` holds it); `V module` names the one `vcx/<m>/` directory
+the product compiles from (RULED: RS-24).
+
+{{REPOS}}
+
+## 3. The pins — how the front door is assembled
+
+{{PINS}}
+
+- `deps.cxd` is the ONE place a pin lives: one `[dep]` row per repository,
+  its sha, the modules it provides, and the V-fork sha for a V repository
+  (RULED: RS-7; the format is `spec/03-approved/process/repository-dependency-pins.md`).
+- `make deps-sync` fetches each pin shallowly into the ignored `deps/<repo>/`
+  and **fails** on a stale pin or a drifted checkout — it never warns.
+- The build compiles every V module from its pinned checkout through `-path`:
+  `make build-vcx` runs the Ring-1 repository's own `vcx/` build
+  (`deps/cx-core-code/vcx`) with the front door's `deps.cxd` and `deps/` root,
+  so the binary is exactly the pinned set.
+- `cx` is a migration lane, never a gate: a repository that releases is tried
+  against the newest mutually green set; green advances its pin, red leaves
+  it and lands a finding on the repository that moved (RULED: RS-7, RS-8).
+
+## 4. The registration hooks — the core names no product
+
+| Hook | Where | A product does | Decision |
+|---|---|---|---|
+| builtin dispatch | `vcx/code/stdlib_builtin_registry.v` (`register_stdlib_builtin(family, f)`) | registers its `<family>_stdlib_builtin` from its own `init()`; a family registered twice panics naming both | RULED: D71a, RS-18 |
+| CLI verb table | `vcx/code/cli_verb_registry.v` (`register_cli_verb(v)`) | registers its verbs (`store-serve`, …) from its own `init()` | RULED: D73a |
+| the platform packs | `vcx/code/ring_registry.v` | registers its pack's dispatch entries from a `*_register.v` file of its own (`stdlib_session_register.v`, `sql_register.v`, …) | RULED: RS-18 |
+
+What the hooks buy: a binary built WITHOUT a product answers that product's
+names with the by-name refusal `CXER0136 E_NO_CALLABLE`, never a crash and never
+another family's answer — which is what the profile gate probes.
+
+## 5. Two-repository modules — the ring decides, not the consumer
+
+A module whose pure V half is Ring 1 keeps that half in `cx-core-code` even
+when its only consumer is one product; its CX surface, spec and corpus live
+with the product (RULED: D76c, D84a, D78a):
+
+| Module | V half (Ring 1, `cx-core-code`) | CX surface, spec, corpus |
+|---|---|---|
+| `sasl` | `vcx/code/stdlib_sasl.v` | `cx-platform-mail` |
+| `ft` | `vcx/code/stdlib_ft.v` (the tokenizer `similar` calls) | `cx-platform-store` |
+| `diagram` | the V diagram half | `cx-tooling` |
+
+## 6. Documentation follows the module
+
+Each repository generates its own reference fragment from its own corpus at
+release; `cx`'s build embeds the docs of exactly the module versions it
+compiles, and the one site in `cx` indexes every published fragment
+(`docs/llm/manifest-fragment.cxd` per repository; RULED: RS-9, RS-28). The
+component repositories stay thin: a README, CONTRIBUTING, the generated
+fragment (RULED: D58a).
+
+## 7. The public front door and the private working tree
+
+The public `cx` is filtered from the private orchestration repository's green
+heads by the extraction recipe: every `repo=cx` path except the orchestration
+set (runner evidence, per-tool scaffolding, the agent entry points), with the
+ledger and the process specs public because `cx`'s own gate reads them
+(RULED: D59a, D82a, D83a). A path's destination is its first-matching
+`[path]` rule in `registry/repos.cxd`; `repos-allocation-gate` refuses a
+tracked file no rule claims and a rule that claims nothing.

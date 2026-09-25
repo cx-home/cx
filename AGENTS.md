@@ -51,6 +51,16 @@ Those files are **generated** from the conformance corpus — see
 [`scripts/gen_docs/README.md`](scripts/gen_docs/README.md). Never hand-edit
 them.
 
+## Read this second, before changing CX
+
+[`docs/llm/contributor.md`](docs/llm/contributor.md) — the contributor's front
+door: the rules for the best long-term change, each citing its decision and
+the step that holds it, and the reading order that loads the least for each
+task, with one file per area (architecture, design, implementation, test).
+Its facts — the repository map, the pins, the module census, the step roster
+— are generated from the registries and the Makefile, like the primer from
+the corpus (RULED: K11a).
+
 ## The rules that do not bend
 
 1. **The spec is the only truth.** Normative text lives in
