@@ -1,50 +1,71 @@
 [# Section 0 — Quickstart. Front-matter; appears before the §1 intro.
    Authored 2026-05-22.
    Goal: a developer who has never seen CX is running CX in under five
-   minutes. Cross-links use [[anchor]] form; spec references use
-   ordinary markdown links. File extension .cxd — data-only source. #]
+   minutes. RS-30 (owner, 2026-09-23): the page opens with the TL;DR of
+   why to reach for CX, a claim the voice pass added stands beside a
+   [fixture] the guide build replays against the running cx, and the
+   install facts are what the release pipeline stages (scripts/release.sh)
+   and the latest release carries. Cross-links use [[anchor]] form; spec
+   references use ordinary markdown links. File extension .cxd — data-only
+   source. #]
 
 [section id=quickstart group='Start here' n=0 title='Quickstart — first 5 minutes with CX'
 
   [intro
-    """This is the shortest path from "I have never seen CX" to "I have
-       parsed, hashed, queried, and validated my first document, and
-       called CX from my host language." Eight steps, five minutes if
-       your toolchain is warm. If you only have time for one section,
-       read this one — then jump to [[next-steps]]."""]
+    """**TL;DR — why reach for CX.** One bracket form is your data, your
+       query and your program, so the first file you write is also the
+       first thing you query, validate, hash and serve. Python set the
+       standard for a language that is productive on day one; CX is built
+       to that standard and past it where data work hurts
+       ([[cx-vs-python]]). The whole idea in one replayed fixture — a
+       document, a query that is a pattern over it, and the live
+       output:"""]
+
+  [fixture id=program-for-002-active-emails]
+
+  [body
+    """The rest of this page is the shortest path from "I have never seen
+       CX" to "I have parsed, hashed, queried, and validated my first
+       document, and called CX from my host language." Eight steps, five
+       minutes if your toolchain is warm. If you only have time for one
+       section, read this one — then jump to [[next-steps]]."""]
 
   [child id=install n=0.1 title='Install'
     [intro
       """CX ships as a single self-contained binary `cx` plus a
-         shared library `libcx` for host-language bindings. On macOS
-         (Apple Silicon) the primary install path is the release
-         installer:"""]
+         shared library `libcx` for host-language bindings. Every
+         release publishes the four builds of it for macOS on Apple
+         Silicon and for Linux on arm64, and the installer picks the
+         one for your machine:"""]
 
     [example lang=shell
       """curl -sSL https://cxhome.org/install | sh
          cx --version"""]
 
     [body
-      """The installer resolves the latest release and installs the
-         `platform` profile by default; leaner compositions install
-         with `CX_PROFILE=data`, `CX_PROFILE=embed`, or
-         `CX_PROFILE=cli`. Every profile tarball is linked from the
-         guide's downloads page. Prebuilt tarballs currently cover
-         macOS (Apple Silicon) only; a Homebrew tap and a Docker
-         image are not published."""]
+      """The installer resolves the latest release, verifies the
+         tarball against the release's `SHA256SUMS.txt` and installs
+         the `platform` build under `~/.local` by default (`PREFIX=`
+         overrides); leaner builds install with `CX_PROFILE=data`,
+         `CX_PROFILE=embed`, or `CX_PROFILE=cli`. Every tarball is
+         linked from the guide's downloads page. On a machine with no
+         prebuilt build — Linux on x86_64, an Intel Mac, Windows — the
+         installer says so and points at the source build."""]
 
     [body
-      """**Build from source** — the alternative everywhere, and the
-         only path on Linux and Windows. devbox pins the host
-         toolchains (Python, Rust); the V toolchain comes from the
+      """**Build from source** — the V toolchain comes from the
          vendored fork at `third_party/v`, a git submodule, so clone
-         with `--recursive`:"""]
+         with `--recursive`. The build fetches its pinned repositories
+         with a released `cx`: `make deps-sync` finds one on `PATH` or
+         at `~/.local/bin/cx`, and `CX_BIN=` names another."""]
 
     [example lang=shell
       """git clone --recursive https://github.com/cx-home/cx
          cd cx
-         devbox run -- make build-vcx
-         devbox run -- make install-cli   [# → /usr/local/bin/cx; PREFIX= overrides #]
+         make -C third_party/v   # the vendored V toolchain, once
+         make deps-sync          # the pinned repositories, under deps/
+         make build-vcx          # libcx + cx, at deps/cx-core-code/vcx/target/cx
+         make install-cli        # /usr/local/bin/cx; PREFIX= overrides
          cx --version"""]
 
     [body
@@ -318,6 +339,10 @@
       [item """**Learn the code language.** [[code]] covers the
               directive registry, CXPath in depth, patterns, builtins,
               services / workers / async, and resilience."""]
+      [item """**Browse the modules.** CX ships {{COUNT:modules}}
+              modules, each declared once in `registry/modules.cxd`;
+              the nav lists every bundled one under the ring or group
+              that owns it."""]
       [item """**Wire a binding into a real project.** [[bindings]]
               has per-language quickstarts and the Layer-1 / Layer-2
               method set."""]
@@ -328,9 +353,11 @@
               covers prior-version migration and intake from
               JSON / YAML / TOML / XML."""]
       [item """**Compare against alternatives.** [[comparison]]
-              is the side-by-side against JSON, YAML, TOML, XML,
+              states CX's case against JSON, YAML, TOML, XML,
               Protobuf, MessagePack, Pkl, Dhall, Parquet, and
-              Arrow — including where CX is the wrong choice."""]
+              Arrow, starting beside Python — the
+              standard CX is built to meet and exceed
+              ([[cx-vs-python]])."""]
       [item """**Look up a term.** [[glossary]] defines every
               CX-specific term used in this guide; [[faq]] covers
               the first-week-of-CX questions."""]]
@@ -360,61 +387,63 @@
 
     [child id=install-status n=0.10.1 title='Release status'
       [body
-        """Every release publishes prebuilt macOS (Apple Silicon)
-           tarballs — one per profile (`platform`, `cli`, `embed`,
-           `data`) — plus the installer one-liner
-           `curl -sSL https://cxhome.org/install | sh`. Linux and
-           Windows have no prebuilts and build from source; a
-           Homebrew tap and a Docker image are not published.
-           Production users should pin to a release tag."""]]
+        """Every release publishes the four builds (`platform`, `cli`,
+           `embed`, `data`) as tarballs for macOS on Apple Silicon and
+           for Linux on arm64, plus a conformance bundle, the VS Code
+           extension and `SHA256SUMS.txt` over all of them; the
+           installer one-liner `curl -sSL https://cxhome.org/install | sh`
+           picks the tarball for your machine. A Homebrew tap and a
+           Docker image are not published. Production users should pin
+           to a release tag."""]]
 
     [child id=install-macos n=0.10.2 title='macOS'
       [example lang=shell
         """curl -sSL https://cxhome.org/install | sh"""]
       [body
-        """Installs the prebuilt Apple Silicon `platform` profile;
-           `CX_PROFILE=data|embed|cli` selects a leaner one. Source
-           builds work on Apple Silicon and Intel
-           (`devbox run -- make build-vcx && devbox run -- make install-cli`).
-           A Homebrew tap is not published."""]]
+        """Installs the prebuilt Apple Silicon `platform` build;
+           `CX_PROFILE=data|embed|cli` selects a leaner one. No Intel
+           build is published; on an Intel Mac the installer says so and
+           points at the source build (§0.10.6). A Homebrew tap is not
+           published."""]]
 
     [child id=install-linux n=0.10.3 title='Linux'
-      [body
-        """Build from source; the result is a static binary that
-           runs on any glibc-based distro. No prebuilt Linux tarball
-           is published."""]
       [example lang=shell
-        """git clone --recursive https://github.com/cx-home/cx && cd cx
-           devbox run -- make build-vcx && devbox run -- make install-cli"""]]
+        """curl -sSL https://cxhome.org/install | sh"""]
+      [body
+        """On arm64 the installer installs the prebuilt Linux build,
+           which the release pipeline compiles in ubuntu-22.04. No
+           x86_64 build is published; there, build from source
+           (§0.10.6)."""]]
 
     [child id=install-windows n=0.10.4 title='Windows'
       [body
-        """A static `cx.exe` is planned per release on
-           github.com/cx-home/cx/releases, but is not published yet
-           (the V toolchain's Windows support is still on the
-           roadmap — see [[faq]]); build from source in the
-           meantime. Drop the binary on PATH; no installer, no
-           dependencies."""]]
+        """No Windows build is published, and the installer refuses an
+           operating system other than macOS or Linux (the V toolchain's
+           Windows support is still on the roadmap — see [[faq]])."""]]
 
     [child id=install-wasm n=0.10.5 title='WebAssembly bundle'
       [body
         """The `libcx-wasm` bundle powers the live evaluator in
            the playground; it exports the
            `_cx_code_eval` family plus `_cx_code_diagram` and
-           `_cx_code_tree`. The bundle ships
-           alongside the `cx` binary on release tags."""]]
+           `_cx_code_tree`. It is not a release asset: `make guide-wasm`
+           builds it from source with emscripten (which `devbox.json`
+           pins) and renders the guide around it."""]]
 
     [child id=install-source n=0.10.6 title='Build from source'
       [example lang=shell
-        """git clone https://github.com/cx-home/cx
+        """git clone --recursive https://github.com/cx-home/cx
            cd cx
-           devbox run -- make build-vcx
-           devbox run -- make test"""]
+           make -C third_party/v   # the vendored V toolchain, once
+           make deps-sync          # the pinned repositories, under deps/
+           make build-vcx          # libcx + cx, at deps/cx-core-code/vcx/target/cx
+           make install-cli        # /usr/local/bin/cx; PREFIX= overrides"""]
       [body
-        """The build chain expects V on PATH or the `cx-home` V
-           fork at `third_party/v`; the Makefile auto-detects
-           either. Check out the latest release tag to build
-           a specific release."""]]
+        """The build compiles with the vendored V fork at
+           `third_party/v`, and `make deps-sync` fetches the
+           repositories `deps.cxd` pins with a released `cx` — one on
+           `PATH`, at `~/.local/bin/cx`, or named by `CX_BIN=`. Check out
+           the latest release tag to build a specific release."""]]
 
     [child id=install-verify n=0.10.7 title='Verify the install'
       [example lang=shell
