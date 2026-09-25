@@ -40,6 +40,19 @@
 # num: a run of digits the regex already vouched for, as an int.
 [?def num scope=private pure [returns int] ($s::string) [?else [$strings:to-number $s] 0]]
 
+# join-lines: `$strings:join` over a sequence LITERAL. A namespaced call head
+# beside a whitespace-delimited literal is read differently by the data reader
+# (#1536, reader-parity), so the literal goes through this local head instead.
+# The record shapes this file builds, each through one constructor: an
+# attribute computed in place (`id=[…]`) is a program-only form the data
+# reader refuses (reader-parity), a bound value is not.
+[?def mk-var   scope=private pure ($n $v) [var name=$n value=$v]]
+[?def mk-pick  scope=private pure ($at $text) [pick at=$at text=$text]]
+[?def mk-hit   scope=private pure ($id $text $page) [hit id=$id text=$text page=$page]]
+[?def mk-range scope=private pure ($lo $hi $text $page) [range lo=$lo hi=$hi text=$text page=$page]]
+
+[?def join-lines scope=private pure [returns string] ($xs $sep::string) [$strings:join $xs $sep]]
+
 [?def fp-cat scope=private pure ($ss) [?for [in $s $ss] [in $x $s] [yield $x]]]
 
 [?def max-of scope=private pure ($xs)
@@ -89,7 +102,7 @@
                       [$codes [$attr-or $r "pins" ""]] " | "
                       [$attr-or $r "status" "—"] " | "
                       [$cell [$attr-or $r "about" ""]] " |"]]]]
-    [$strings:join (
+    [$join-lines (
       [$provenance "`registry/repos.cxd`'s `[repo]` rows; `at=` (the pinned sha) and `why=` stay in the file" [$count $rs]],
       "",
       "| repository | group | ring | ships | V module (`vcx/<m>/`) | pins | status | what it is |",
@@ -107,7 +120,7 @@
                       [$string [$count $mods]] " | "
                       [?if [= [$attr-or $d "v-fork" ""] ""] [then "no"] [else "yes"]] " | "
                       [$strings:join [?for [in $m $mods] [yield [$concat "`" $m "`"]]] " "] " |"]]]]
-    [$strings:join (
+    [$join-lines (
       [$provenance "`deps.cxd`'s `[dep]` rows; each row's `sha` and `v-fork` sha stay in the file" [$count $ds]],
       "",
       "| pinned repository | modules | V repository (carries `v-fork`) | the modules the pin provides |",
@@ -134,7 +147,7 @@
       [yield [$concat "| `" $rp "` | " [$string [$count $mine]] " | " [$string $r0] " | "
                       [$string $r1] " | " [$string $pg] " | " [$string $planned] " | "
                       [$strings:join [?for [in $m $mine] [yield [$attr-or $m "name" ""]]] ", "] " |"]]]]
-    [$strings:join (
+    [$join-lines (
       [$provenance "`registry/modules.cxd`'s `[module]` rows, grouped by `repo=`" [$count $ms]],
       "",
       "| repository | rows | ring 0 | ring 1 | `group=platform` | `status=planned` | the rows (`name=`) |",
@@ -152,7 +165,7 @@
                       [?if [<= [$count $vals] 6]
                         [then [$strings:join [?for [in $v $vals] [where [not [= $v ""]]] [yield [$concat "`" $v "`"]]] " "]]
                         [else [$concat [$string [$count $vals]] " distinct values"]]] " |"]]]]
-    [$strings:join (
+    [$join-lines (
       [$provenance "the attribute names `registry/modules.cxd`'s `[module]` rows carry, in first-use order" [$count $names]],
       "",
       "| column | rows carrying it | its values (six or fewer), or how many |",
@@ -215,7 +228,7 @@
   [?for [in $l $lines]
     [= $m [$re:find [$re:compile "^([A-Z][A-Z0-9_]*) *:?= *([A-Za-z0-9_./-]*/[A-Za-z0-9_-]+)$"] $l]]
     [where [$matched $m]]
-    [yield [var name=[$re:group $m 1] value=[$re:group $m 2]]]]]
+    [yield [$mk-var [$re:group $m 1] [$re:group $m 2]]]]]
 
 [?def expand-vars scope=private pure [returns string] ($s::string $vars)
   [$fp:fold $vars $s
@@ -234,9 +247,9 @@
     [= $b [$re:find [$re:compile RX-VTEST] $l]]
     [= $c [$re:find [$re:compile RX-MAKE] $l]]
     [= $cands [$fp-cat (
-      [?if [$matched $a] [then ([pick at=$a@start text=[$concat "`" [$re:group $a 1] "`"]],)] [else ()]],
-      [?if [$matched $b] [then ([pick at=$b@start text=[$concat "`v " [$re:group $b 1] " " [$re:group $b 2] "`"]],)] [else ()]],
-      [?if [$matched $c] [then ([pick at=$c@start text=[$concat "`make -C " [$re:group $c 1] " " [$re:group $c 3] "`"]],)] [else ()]])]]
+      [?if [$matched $a] [then ([$mk-pick $a@start [$concat "`" [$re:group $a 1] "`"]],)] [else ()]],
+      [?if [$matched $b] [then ([$mk-pick $b@start [$concat "`v " [$re:group $b 1] " " [$re:group $b 2] "`"]],)] [else ()]],
+      [?if [$matched $c] [then ([$mk-pick $c@start [$concat "`make -C " [$re:group $c 1] " " [$re:group $c 3] "`"]],)] [else ()]])]]
     [?for [in $p $cands]
       [where [= [$count [?for [in $q $cands] [where [< $q@at $p@at]] [yield 1]]] 0]]
       [yield $p]]]]
@@ -252,7 +265,7 @@
 [?def step-rows scope=public pure [returns string] ($makefile::string $includes)
   [?let
     [= $mk [$strings:split-lines $makefile]]
-    [= $all [$strings:split-lines [$strings:join ($makefile, [$strings:join $includes "\n"]) "\n"]]]
+    [= $all [$strings:split-lines [$join-lines ($makefile, [$strings:join $includes "\n"]) "\n"]]]
     [= $steps [$var-words $mk "TEST_TARGETS"]]
     [= $docs [$var-words $mk "DOC_TARGETS"]]
     [= $vars [$simple-vars $all]]
@@ -262,7 +275,7 @@
       [= $prog [?if [= [$count $at] 0] [then "—"] [else [$program-of [$recipe-of $all [$first $at]] $vars]]]]
       [yield [$concat "| " [$string $i] " | `" $s "` | "
                       [?if [$member $s $docs] [then "yes"] [else ""]] " | " $prog " |"]]]]
-    [$strings:join (
+    [$join-lines (
       [$provenance "the Makefile's `TEST_TARGETS` (in order), `DOC_TARGETS`, and each step's own rule" [$count $steps]],
       "",
       "| # | step | in the doc pipeline | the first program its recipe names |",
@@ -289,30 +302,30 @@
                    [then [?let [= $s [$re:find [$re:compile "^\\s*(.+?\\.)(?:\\s|$)"] $rest]]
                            [?if [$matched $s] [then [$concat " " [$re:group $s 1]]] [else ""]]]]
                    [else ""]]]
-        ([hit id=[$re:group $m 1] text=[$concat $lead $more]],)]]]]]
+        ([$mk-hit [$re:group $m 1] [$concat $lead $more] ""],)]]]]]
 
 [?def heading-hit scope=private pure ($line::string)
   [?let [= $m [$re:find [$re:compile "^#{1,3} RS-([0-9]+) — (.+)$"] $line]]
     [?if [$matched $m]
-      [then ([hit id=[$re:group $m 1] text=[$re:group $m 2]],)]
+      [then ([$mk-hit [$re:group $m 1] [$re:group $m 2] ""],)]
       [else ()]]]]
 
 [?def range-hit scope=private pure ($line::string)
   [?let [= $m [$re:find [$re:compile "^#{1,3} RS-([0-9]+)…RS-([0-9]+) — (.+)$"] $line]]
     [?if [$matched $m]
-      [then ([range lo=[$re:group $m 1] hi=[$re:group $m 2]
-                    text=[$concat "RS-" [$re:group $m 1] "…RS-" [$re:group $m 2] " — " [$re:group $m 3]]],)]
+      [then ([$mk-range [$re:group $m 1] [$re:group $m 2]
+                    [$concat "RS-" [$re:group $m 1] "…RS-" [$re:group $m 2] " — " [$re:group $m 3]] ""],)]
       [else ()]]]]
 
-# ruling-rows: PAGES is a sequence of [page path= text=] elements.
+# ruling-rows: PAGES is a sequence of `page` elements, each with a path and a text attribute.
 [?def ruling-rows scope=public pure [returns string] ($pages)
   [?let
     [= $hits [?for [in $p $pages] [in $l [$strings:split-lines [$string $p@text]]]
                [in $h [$fp-cat ([$row-lead $l], [$heading-hit $l])]]
-               [yield [hit id=[$string $h@id] text=[$string $h@text] page=[$string $p@path]]]]]
+               [yield [$mk-hit [$string $h@id] [$string $h@text] [$string $p@path]]]]]
     [= $ranges [?for [in $p $pages] [in $l [$strings:split-lines [$string $p@text]]]
                  [in $h [$range-hit $l]]
-                 [yield [range lo=[$num [$string $h@lo]] hi=[$num [$string $h@hi]] text=[$string $h@text] page=[$string $p@path]]]]]
+                 [yield [$mk-range [$num [$string $h@lo]] [$num [$string $h@hi]] [$string $h@text] [$string $p@path]]]]]
     [= $ids [?for [in $h $hits] [yield [$num [$string $h@id]]]]]
     [= $top [?if [= [$count $ids] 0] [then 0] [else [$max-of $ids]]]]
     [= $body [?for [in $n [$range 1 $top]]
@@ -323,7 +336,7 @@
                          [else [hit text="MISSING-FROM-LEDGER" page="—"]]]]]]
       [yield [$concat "| `RS-" [$string $n] "` | " [$cell [$string $pick@text]] " | `ledger/"
                       [$string $pick@page] "` |"]]]]
-    [$strings:join (
+    [$join-lines (
       [$provenance "the ledger pages' `RS-n` decision rows and headings, verbatim" [$count $body]],
       "",
       "| id | the ledger's statement | page |",
@@ -345,7 +358,7 @@
       [= $repo [?if [$matched $m] [then [$re:group $m 1]] [else "cx"]]]
       [= $rel [?if [$matched $m] [then [$re:group $m 2]] [else $p]]]
       [yield [$concat "| `" $rel "` | `" $repo "` |"]]]]
-    [$strings:join (
+    [$join-lines (
       [$provenance "the `*_umbrella_test.v` files in the front door and its pinned checkouts" [$count $paths]],
       "",
       "| umbrella (path in its repository) | repository |",
