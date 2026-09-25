@@ -647,6 +647,32 @@
 [?def copy-if scope=public impure ($from $to)
   [?if [$io:exists $from] [then [$io:copy $from $to]] [else ()]]]
 
+[# member: is $x anywhere in $seq (linear scan; the lists this gates are the
+   guide's own page count, a few hundred at most — site_assemble.cx's
+   --check uses the same shape against the same order of magnitude). #]
+[?def member scope=public ($seq $x)
+  [> [$count [?for [in $y $seq] [where [= $y $x]] [yield 1]]] 0]]
+
+[# clean-stale-pages: docs/guide/ is never wiped between runs (the wasm reuse
+   this file's header describes only works because #1005's copy-if leaves the
+   directory alone), so a module that MOVES tiers or a page that is RENAMED
+   or RETIRED leaves its old file behind forever — nothing here ever deletes.
+   #1672 found docs/guide/x-term.html dated three days stale: `term` used to
+   glob as an x/ file and render x-term.html; once it was promoted to the
+   frozen stdlib packs (lib-term.html), the render kept writing the new page
+   and never removed the old one, so the main checkout's long-lived tree
+   carried both — and `site-check` (docs-src/site/manifest.cxd) correctly
+   refused to vouch for a page no current source produces. This sweeps every
+   top-level *.html this run does NOT intend to (re)write and removes it
+   before the write loop below, so `docs/guide/` — and `site/`, which copies
+   it verbatim — holds exactly what THIS run's sources justify, regardless of
+   what a previous run with different sources left there. #]
+[?def clean-stale-pages scope=public impure ($out $expected)
+  [?for [in $p [$io:glob [$cat ($out, '/*.html')]]]
+    [= $base [$strings:slice $p [+ [$strings:rfind $p '/'] 1] [$strings:length $p]]]
+    [where [not [$member $expected $base]]]
+    [yield [$io:remove $p]]]]
+
 [# ── asset cache-busting (#953) ───────────────────────────────────────────
    A returning visitor loading the site across a deploy got the NEW page HTML
    with their CACHED pre-release style.css: the sidebar styled from old rules
@@ -1066,7 +1092,18 @@
     [?let [= $d [$parse-or-die $m@srcpath]]
       [?for [in $c $d//child] [yield
         [anc name=$c@id slug=$m@slug frag=$c@id]]]]]]]
+  [; every top-level page THIS run writes — the fixed pages, one per section,
+     one per stdlib/x/synth module, one per XAP demo — is the ONLY set
+     `docs/guide/*.html` may hold once this run ends (#1672). ]
+  [= $expected-pages [$fp:flat-map (
+                         ('index.html', 'about.html', 'downloads.html',
+                          'directives.html', 'syntax.html', 'xap.html'),
+                         [?for [in $m $metas] [yield [$cat ($m@slug, '.html')]]],
+                         [?for [in $f $libfiles] [yield [$cat ([$module-page $f], '.html')]]],
+                         [?for [in $d [$xap-demos]] [yield [$cat ($d@slug, '.html')]]])
+                       [?fn ($g) $g]]]
   (
+    [$clean-stale-pages $out $expected-pages],
     [$io:make-dirs [$cat ($out, '/assets')]],
     [$io:make-dirs [$cat ($out, '/highlight')]],
     [$io:make-dirs [$cat ($out, '/search')]],
