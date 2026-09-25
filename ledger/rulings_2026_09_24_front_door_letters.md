@@ -77,6 +77,34 @@ two copies of the same code, the drift the split exists to remove. The consequen
 K9's env-aware hook branch is not built; the hook work folds into this branch as the ft rule and the
 store row instead (K9 stopped with the letter, replaced by this item).
 
+## D86b — cxhome.org may go dark when `cx`'s `main` is replaced; the docs epic brings it back
+
+**Status: RULED (owner, 2026-09-24 ~23:0xZ, in session, on
+[#1591](https://github.com/cx-home/cx-private/issues/1591)); recorded here late, by the docs epic's
+first branch, which cites it.** D86 was one of two letters from the front-door branch's flags, posted
+the same evening as the six above, because it gated the one forced update of D80a. It rode the board
+until now: the board recorded the answer ("Recorded: D86 = (b)") and every later comment cites D86b,
+but no ledger page carried it.
+
+**The letter, as posted** (the board, comment of 2026-09-24 21:12Z; one version number replaced by its bracketed description, since a version literal is refused in tracked text): "cxhome.org when `cx`'s `main` is
+replaced. 127 of the 153 published `docs/` files (`index.html`, the guide, the playground) are
+generated and not tracked in cx-private; `docs/install` and `CNAME` are. (a) before the push, preserve
+the site: the published `main`'s tree goes to a `site` branch of `cx-home/cx`, Pages is pointed at
+`site` (one settings change), `main` is replaced; the docs epic (RS-28/RS-30, after K11) moves Pages
+back to `main` when the generated site is tracked or built by a Pages workflow — no downtime, the old
+site frozen at [the previous release] until then. (b) push and let the site 404 until the docs epic —
+the front door dark for days. (c) hold the push until the site generator is ported into `cx` —
+couples the split to the docs epic. Recommend (a)."
+
+**The owner's word, verbatim:** "d86 not a problem for the side to go dark if that saves time".
+
+**What (b) authorized, and what it leaves.** The forced update of `cx-home/cx` `main` went ahead
+without preserving the site (2026-09-25 ~11:3xZ; Pages rebuilt from the new `main:/docs` with no index
+page, so cxhome.org went dark, as accepted). It leaves the docs epic (RS-28's D57a/D58a, RS-30's
+voice, after K11 per D89a) to bring the site back from `cx`'s own tree — generated, or built by a
+Pages workflow — which is the same end state (a) would have reached, without the interim `site`
+branch.
+
 ## Not decided here
 
 The cut's date is not fixed by this page: D79a's leave alone moves it to ~09-26/27, and the actual date
