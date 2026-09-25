@@ -38,7 +38,7 @@ fi
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-CX="${CX_BIN:-$ROOT/vcx/target/cx}"   # CX_BIN: the Makefile's spelling, for a worktree without a build
+CX="${CX_BIN:-$ROOT/deps/cx-core-code/vcx/target/cx}"   # CX_BIN: the Makefile's spelling, for a worktree without a build
 
 if [ ! -x "$CX" ]; then
   echo "WARN: cx binary not at $CX — building..."

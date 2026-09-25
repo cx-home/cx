@@ -10,7 +10,7 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-CX="$ROOT/vcx/target/cx"
+CX="$ROOT/deps/cx-core-code/vcx/target/cx"
 
 PASS=0
 FAIL=0

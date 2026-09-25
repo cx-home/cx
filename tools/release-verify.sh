@@ -56,7 +56,7 @@ section "Version consistency"
 check "VERSION file = $EXPECTED_VERSION" \
  "test \"\$(cat VERSION)\" = \"$EXPECTED_VERSION\""
 check "manifests + derived surfaces match VERSION" \
- "vcx/target/cx --allow-read --allow-write scripts/check_version_consistency.cx"
+ "deps/cx-core-code/vcx/target/cx --allow-read --allow-write scripts/check_version_consistency.cx"
 
 section "Working tree state"
 check "git working tree clean" \
@@ -161,7 +161,7 @@ check "make docs-check (primer example freshness + no drift)" \
 # foreign primer — flipping this row either way (#948, the unfinished half of
 # e47fe55ee, which converted RVLOG_DIR above but not this path).
 check "cx primer == docs/llm/primer.md (embed is fresh)" \
- "vcx/target/cx primer > $RVLOG_DIR/primer-embed.md && diff -q $RVLOG_DIR/primer-embed.md docs/llm/primer.md"
+ "deps/cx-core-code/vcx/target/cx primer > $RVLOG_DIR/primer-embed.md && diff -q $RVLOG_DIR/primer-embed.md docs/llm/primer.md"
 # Presence of the published doors. Negative guards cannot see a REQUIRED file
 # going missing, and the whole value of these is that a fixed path answers.
 check "llms.txt + llms-full.txt + AGENTS.md present and non-empty" \
@@ -221,7 +221,7 @@ check "no unresolved \"⚠\" in readiness rubric" \
 # deferred with a reason. Deferral is legitimate (both PRs resolve assets that
 # only exist once the release publishes) — the gate refuses SILENCE, not delay.
 check "editor distribution: external submissions accounted for" \
- "vcx/target/cx --allow-read --allow-write scripts/check_editor_distribution.cx"
+ "deps/cx-core-code/vcx/target/cx --allow-read --allow-write scripts/check_editor_distribution.cx"
 
 echo ""
 echo "═══════════════════════════════════════════════════════════════"
