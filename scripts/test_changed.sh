@@ -255,6 +255,11 @@ step_globs() {
     # itself, the canonical sources it reads, and the two module tiers whose
     # pages it projects (x/ included: an x/ module gets its own page).
     guide-render-gate)             echo 'scripts/gen_guide/* docs-src/* stdlib/*' ;;
+    # cxhome.org (RULED: RS-28, D57a): the assembled site, listed against
+    # docs-src/site/manifest.cxd. It renders the guide (its prerequisite is
+    # guide-render-gate) and copies the landing page, docs/llm/ and docs/dev/, and
+    # the guide projects the PINNED stdlib sources, so a pin bump moves it too.
+    site-check)                    echo 'docs-src/* docs/* scripts/gen_site/* scripts/gen_guide/* scripts/gen_docs/* deps.cxd registry/* VERSION' ;;
     directive-docs-check)          echo 'vcx/* docs-src/* spec/*' ;;
     verify-doc-blocks)             echo 'docs-src/* spec/* vcx/* stdlib/*' ;;
     # examples/ is graded per landing now, not only at a release cut. The row
@@ -271,7 +276,7 @@ step_globs() {
     # And the contributor front door's facts (RULED: K11a): the two registries,
     # the Makefile's step roster (and the files it includes) and the ledger's
     # RS-n statements are projected into docs/llm/contributor-*.md.
-    docs-check)                    echo 'docs-src/* docs/llm/* scripts/gen_docs/* scripts/docs_fragment.cx scripts/deps_pins.cx deps.cxd registry/* Makefile scripts/gen_guide/guide.mk ledger/* conformance/* spec/* stdlib/* vcx/* VERSION' ;;
+    docs-check)                    echo 'docs-src/* docs/llm/* docs/index.html scripts/gen_site/* scripts/gen_docs/* scripts/docs_fragment.cx scripts/deps_pins.cx deps.cxd registry/* Makefile scripts/gen_guide/guide.mk ledger/* conformance/* spec/* stdlib/* vcx/* VERSION' ;;
     ring-import-gate)              echo 'vcx/* scripts/ring_import_gate* registry/repos.cxd' ;;
     gates-manifest-gate)           echo 'conformance/* packages/* scripts/gates_manifest_gate* scripts/gates_register*' ;;
     ring-tag-gate)                 echo 'conformance/* scripts/*' ;;

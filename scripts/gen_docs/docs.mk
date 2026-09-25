@@ -48,7 +48,10 @@ endif
 ##                                   docs-src/llm/ templates + conformance fixtures.
 ##                                   Every cited fixture is EXECUTED and its output
 ##                                   re-recorded; a fixture the binary no longer
-##                                   reproduces fails the run by name.
+##                                   reproduces fails the run by name. The site's
+##                                   landing page, docs/index.html, regenerates
+##                                   with it (site-index, scripts/gen_site/site.mk;
+##                                   RULED: RS-28, RS-30).
 ##
 ## Rebuild `cx` afterwards (`make build-vcx`) so `cx primer` carries the new text —
 ## the subcommand $embed_file()s docs/llm/primer.md at compile time.
@@ -60,7 +63,7 @@ endif
 ## embedded the older text. `touch docs/llm/primer.md` then rebuild. Only
 ## tools/release-verify.sh's `cx primer == docs/llm/primer.md` row catches this
 ## otherwise — docs-check proves the FILE is fresh, never the EMBED.
-docs: $(DOCS_CX_DEP)
+docs: $(DOCS_CX_DEP) site-index
 	@CX_BIN="$(DOCS_CX_BIN)" $(DOCS_CX_BIN) $(DOCS_CAPS) $(DOCS_GEN)/primer_build.cx
 	# #954: refresh the README's self-reported CX-share badge alongside the
 	# docs layer (Linguist can't count CX until cx-tooling's tooling/linguist/ upstreams).
@@ -75,7 +78,10 @@ docs: $(DOCS_CX_DEP)
 ##                                   the freshness contract cannot reach). (a)/(b):
 ##                                   run `make docs` and commit the result in the
 ##                                   same change. (c): delete the file, or declare it.
-docs-check: $(DOCS_CX_DEP)
+##                                   The landing page docs/index.html is held the
+##                                   same way (site-index-check: its fixtures
+##                                   replayed, its links declared, no drift).
+docs-check: $(DOCS_CX_DEP) site-index-check
 	@CX_BIN="$(DOCS_CX_BIN)" $(DOCS_CX_BIN) $(DOCS_CAPS) $(DOCS_GEN)/primer_build.cx --check
 
 ## docs-diff    Preview what `make docs` would change under docs/llm/.
