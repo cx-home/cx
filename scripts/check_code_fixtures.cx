@@ -102,8 +102,8 @@
 # code-diagram; its pins are diagram.cxd 035..038 (cd-view-refused), read from
 # cx-tooling's pinned checkout since the corpus left with it (RULED: RS-12, D59a).
 [?const CROSS-SUITE (
-  [xs code='CXER0120' file='conformance/stdlib/cx.cxd'],
-  [xs code='CXER0273' file='vcx/tests/eval_semantics_umbrella_test.v'],
+  [xs code='CXER0120' file='deps/cx-core-code/conformance/stdlib/cx.cxd'],
+  [xs code='CXER0273' file='deps/cx-core-code/vcx/tests/eval_semantics_umbrella_test.v'],
   [xs code='CXER0275' file='deps/cx-platform-store/conformance/platform/store.cxd'],
   [xs code='CXER0282' file='deps/cx-tooling/conformance/stdlib/diagram.cxd'])]
 
