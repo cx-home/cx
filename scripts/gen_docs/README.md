@@ -83,6 +83,7 @@ primer.
 | `{{VERSION}}` | the repo-root `VERSION` contents |
 | `{{EXAMPLE:<id> block}}` | the whole worked example: input document (if any), program, the exact `$ cx …` invocation, and the live output |
 | `{{EXAMPLE:<id> code\|data\|out\|raw-out\|cmd}}` | one part of it |
+| `{{EXAMPLE:<id> cite}}` | the case id as inline code, for a prose claim that names its fixture — replayed and verified like the rest (RULED: RS-30) |
 | `{{PAIR:<wrong-id> <right-id>}}` | one anti-pattern entry: heading, the `[why]` prose, both halves as blocks, and the fixture provenance |
 | `{{DIRECTIVES}}` | the normative directive registry, projected from the spec's own §4.1 table |
 | `{{MODULES:stdlib}}` / `{{MODULES:x}}` | the bundle catalog, projected from each module's `[module-doc]` |
