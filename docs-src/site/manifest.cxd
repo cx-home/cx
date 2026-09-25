@@ -59,7 +59,9 @@ guide.html
 
   [; the rendered guide (make guide, docs/guide/), at the root; the lib- pages
      are projected from the [module-doc]/[fn-doc] blocks of the pinned
-     repositories' stdlib/*.cx, the codec- pages from the synthesized codecs ]
+     repositories' stdlib/*.cx and x/*.cx (82 bundled modules: the eleven the x/
+     tier graduated keep that path in cx-platform-agent and cx-platform-ux,
+     RULED: D45a, D63a), the codec- pages from the synthesized codecs ]
   [files from=guide [#
 about.html
 analytics.html
@@ -89,6 +91,9 @@ glossary.html
 highlight/highlight.js
 identity.html
 intro.html
+lib-a2a-xap.html
+lib-a2a.html
+lib-adjudicate.html
 lib-array.html
 lib-audit.html
 lib-authz-store.html
@@ -122,10 +127,13 @@ lib-json.html
 lib-jsonrpc.html
 lib-jsonschema.html
 lib-live.html
+lib-llm.html
 lib-locale.html
 lib-log.html
 lib-map.html
 lib-math.html
+lib-mcp-server.html
+lib-mcp.html
 lib-mime.html
 lib-net.html
 lib-oidc.html
@@ -134,6 +142,7 @@ lib-process.html
 lib-prof.html
 lib-random.html
 lib-re.html
+lib-run.html
 lib-saml.html
 lib-sasl.html
 lib-sched.html
@@ -150,8 +159,12 @@ lib-tar.html
 lib-term.html
 lib-test.html
 lib-time.html
+lib-tools.html
 lib-url.html
 lib-uuid.html
+lib-ux-tui.html
+lib-ux-web.html
+lib-ux.html
 lib-validate.html
 lib-vc-revocation.html
 lib-vc.html
