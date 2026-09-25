@@ -29,7 +29,7 @@ GUIDE_GEN := scripts/gen_guide
 # compile notices. Opt OUT of the rebuild check with
 # `make guide GUIDE_SKIP_CX_BUILD=1` (reuse the binary as-is); to force a fresh
 # optimized binary, run `make build-vcx` first.
-GUIDE_CX_BIN  := $(CURDIR)/vcx/target/cx
+GUIDE_CX_BIN  := $(CURDIR)/deps/cx-core-code/vcx/target/cx
 GUIDE_CX_SRCS := $(shell find $(CURDIR)/vcx/cx $(CURDIR)/vcx/code $(CURDIR)/vcx/cmd -name '*.v' 2>/dev/null)
 
 # The recipe has to build the FILE IT DECLARES. Since #1312 split the dev and
@@ -228,7 +228,7 @@ build-playground-wasm-for-guide:
 .PHONY: guide-http
 guide-http: guide
 	@echo "[guide-http] starting cx-guide-serve via cx"
-	@vcx/target/cx scripts/gen_guide/guide_serve.cx
+	@deps/cx-core-code/vcx/target/cx scripts/gen_guide/guide_serve.cx
 
 ## guide-diff   Preview what re-running the
 ##                                   target would change in docs/guide/.
@@ -246,7 +246,7 @@ guide-diff:
 endif
 	@stage="$$(mktemp -d -t cxguide-diff.XXXXXX)"; \
 	 cp -R $(GUIDE_OUT) "$$stage/before" 2>/dev/null || mkdir -p "$$stage/before"; \
-	 $(CURDIR)/vcx/target/cx --allow-read --allow-write --allow-subprocess $(GUIDE_GEN)/guide_build.cx >/dev/null; \
+	 $(CURDIR)/deps/cx-core-code/vcx/target/cx --allow-read --allow-write --allow-subprocess $(GUIDE_GEN)/guide_build.cx >/dev/null; \
 	 diff -ruN "$$stage/before" $(GUIDE_OUT) || true; \
 	 rm -rf "$$stage"
 
