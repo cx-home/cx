@@ -33,15 +33,33 @@
 #   --all-public          every public repository (registry/repos.cxd minus
 #                          cx-private) plus the V fork ("v")
 #   --dry-run              print the plan; clone, rewrite and verify nothing
+#   --repins-only          clone and rewrite nothing: print the re-pin list
+#                          from the mirrors and maps an earlier run left in
+#                          work= (a second run — the fork's — adds its map to
+#                          the first run's without redoing it)
 #   work=<dir>             where each <name>.git mirror and <name>.map land
 #                          (default: a fresh temp dir, printed)
 #   source:<name>=<path>   clone FROM <path> instead of the default
 #                          git@github.com:cx-home/<name>.git (a local mirror
 #                          path for testing, or an alternate remote)
+#   refs:<name>=<spec>     rewrite and verify only <spec> (git-filter-repo
+#                          `--refs`): a branch (`cx-patches-0.18`) or a
+#                          two-dot range (`<base>..cx-patches-0.18`); every
+#                          count, scan and tree check reads the same spec. A
+#                          mirror's other refs are left as they were
+#   verify-only:<name>     mirror <name> and count its hits over every ref;
+#                          rewrite nothing (a repository stripped at its
+#                          push, verified instead; added to the list if not
+#                          already in it)
+#   skip:<name>            drop <name> from the list (`--all-public` minus one)
 #
-# Exit 0 every named repository verified clean and count-preserving, 1 a
-# repository failed verification, 2 an environment fault (git, git-filter-repo,
-# a clone, or a rewrite failed).
+# Per rewritten repository the tool reports commits before -> after (equal),
+# hits before -> after (0), every ref's tree before = after, `git fsck --full`
+# clean, the tip before -> after and the map path.
+#
+# Exit 0 every named repository verified clean (and, where rewritten, count-,
+# tree- and fsck-preserving), 1 a repository failed verification, 2 an
+# environment fault (git, git-filter-repo, a clone, or a rewrite failed).
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
@@ -108,53 +126,119 @@
               [?let [= $_x [$env:exit 2]] ""]]]
       [else [$string $r@stdout]]]]]
 
-[?def commit-count scope=private impure ($dir::string)
-  [$strings:trim [$run-git $dir ("rev-list", "--count", "--all") "rev-list --count --all"]]]
+# A SCOPE is what one repository's rewrite and verification cover: "" is
+# every ref of the mirror (`--all`), anything else is a rev spec handed to
+# git-filter-repo's `--refs` — one branch (`cx-patches-0.18`) or a two-dot
+# range (`<base>..cx-patches-0.18`) — and every count, scan and tree check
+# below reads exactly that spec, so a branch-only rewrite is verified over the
+# history it rewrote and nothing else.
 
-# scan-all-messages: every hit over the WHOLE history (every ref), not a
-# base..HEAD range — the verification this tool runs after the rewrite, over
-# a bare mirror with no working tree, so only messages are in scope (the only
-# thing this tool ever touches).
-[?def scan-all-messages scope=private impure ($dir::string)
+# tip-of: the ref a scope ends at (the right side of a two-dot range).
+[?def tip-of scope=private pure [returns string] ($spec::string)
+  [?let [= $parts [$strings:split $spec ".."]]
+    [$nth $parts [$count $parts]]]]
+
+[?def scope-label scope=private pure [returns string] ($spec::string)
+  [?if [= $spec ""] [then "every ref"] [else [$cat ("refs ", $spec)]]]]
+
+[?def commit-count scope=private impure ($dir::string $spec::string)
+  [$strings:trim
+    [?if [= $spec ""]
+      [then [$run-git $dir ("rev-list", "--count", "--all") "rev-list --count --all"]]
+      [else [$run-git $dir ("rev-list", "--count", $spec) "rev-list --count <scope>"]]]]]
+
+# scan-messages: every hit over the scope's whole history — one `git log`
+# whose records are split on a sentinel line, not one process per commit (the
+# V fork's branch is tens of thousands of commits). Message text only: a bare
+# mirror has no working tree, and messages are the only thing this tool ever
+# touches.
+[?def scan-messages scope=private impure ($dir::string $spec::string)
   [?let
-    [= $shas [$nonblank [$run-git $dir ("log", "--all", "--format=%H") "log --all --format=%H"]]]
-    [$fp:flat-map $shas [?fn ($sha)
-      [?let
-        [= $body [$run-git $dir ("log", "-1", "--format=%B", $sha) "log -1 --format=%B"]]
-        [?for [in $l [$nonblank $body]]
-          [where [$line-hit $l]]
-          [yield [hit sha=$sha line=$l]]]]]]]]
+    [= $sep "::cx-strip-attribution-commit::"]
+    [= $fmt [$cat ("--format=", $sep, "%H%n%B")]]
+    [= $out [?if [= $spec ""]
+              [then [$run-git $dir ("log", "--all", $fmt) "log --all"]]
+              [else [$run-git $dir ("log", $spec, $fmt) "log <scope>"]]]]
+    [$fp:flat-map [$strings:split $out $sep] [?fn ($chunk)
+      [?let [= $kv [$strings:split-limit $chunk "\n" 1]]
+        [?if [< [$count $kv] 2]
+          [then ()]
+          [else [?let [= $sha [$strings:trim [$nth $kv 1]]]
+                  [?for [in $l [$nonblank [$nth $kv 2]]]
+                    [where [$line-hit $l]]
+                    [yield [hit sha=$sha line=$l]]]]]]]]]]]
+
+# ref-trees: "<ref> <tree>" per ref in scope, one text — equal before and
+# after is the proof that the rewrite touched messages and nothing else.
+[?def ref-trees scope=private impure ($dir::string $spec::string)
+  [?let
+    [= $refs [?if [= $spec ""]
+               [then [$nonblank [$run-git $dir ("for-each-ref", "--format=%(refname)") "for-each-ref"]]]
+               [else ([$tip-of $spec])]]]
+    [$strings:join
+      [?for [in $r $refs]
+        [yield [$cat ($r, " ", [$strings:trim [$run-git $dir ("rev-parse", [$cat ($r, "^{tree}")]) "rev-parse <ref>^{tree}"]])]]]
+      "\n"]]]
+
+[?def tip-sha scope=private impure ($dir::string $spec::string)
+  [$strings:trim [$run-git $dir ("rev-parse", [?if [= $spec ""] [then "HEAD"] [else [$tip-of $spec]]]) "rev-parse <tip>"]]]
+
+[?def fsck-clean scope=private impure [returns bool] ($dir::string)
+  [?let [= $r [?fallback [$process:run ("git", "-C", $dir, "fsck", "--full", "--no-progress")]
+                [recover-with null]]]
+    [?if [= $r null] [then false] [else [= [$string $r@exit-code] "0"]]]]]
 
 [?def default-source scope=private pure [returns string] ($name::string)
   [$cat ("git@github.com:cx-home/", $name, ".git")]]
 
 [?def source-for scope=private pure [returns string] ($name::string $overrides)
-  [?let [= $hit [?for [in $o $overrides] [where [= [$string $o@name] $name]] [yield [$string $o@source]]]]
+  [?let [= $hit [?for [in $o $overrides] [where [= [$string $o@name] $name]] [yield [$string $o@value]]]]
     [?if [= [$count $hit] 0] [then [$default-source $name]] [else [$first $hit]]]]]
 
-# -- the re-pin list ----------------------------------------------------------
-# every sha=/at=/v-fork= naming an OLD sha, in $path, printed with its NEW sha.
-[?def re-pins-in scope=private impure ($label::string $path::string $map)
-  [?let
-    [= $text [?fallback [$io:read-file $path] [recover-with ""]]]
-    [?if [= $text ""]
-      [then ()]
-      [else
-        [?let [= $rx [$re:compile "(sha|at|v-fork)=([0-9a-fA-F]{40})"]]
-          [?for
-            [in $m [$re:find-all $rx $text]]
-            [= $key [$re:group $m 1]]
-            [= $old [$strings:lower [$re:group $m 2]]]
-            [in $new [?for [in $pr $map] [where [= [$string $pr@old] $old]] [yield [$string $pr@new]]]]
-            [yield [repin label=$label file=$path key=$key old=$old new=$new]]]]]]]]
+[?def refs-for scope=private pure [returns string] ($name::string $refs)
+  [?let [= $hit [?for [in $o $refs] [where [= [$string $o@name] $name]] [yield [$string $o@value]]]]
+    [?if [= [$count $hit] 0] [then ""] [else [$first $hit]]]]]
 
-# try-show-deps: HEAD:deps.cxd out of a mirror, or "" — a repository with no
-# deps.cxd (a ships=package/binding/archived row) is not an environment
-# fault, just nothing to scan.
-[?def try-show-deps scope=private impure ($dir::string)
-  [?let [= $r [?fallback [$process:run ("git", "-C", $dir, "show", "HEAD:deps.cxd")]
+# -- the re-pin list ----------------------------------------------------------
+# every sha=/at=/v-fork=/upstream-base= naming an OLD sha in $text, and every
+# gitlink (mode 160000) naming one, printed with its NEW sha. A pin whose sha
+# the rewrite left unchanged (a commit older than the first attributed one)
+# needs no action and is not listed.
+[?def new-for scope=private pure ($old::string $map)
+  [?for [in $pr $map] [where [= [$string $pr@old] $old]] [where [not [= [$string $pr@new] $old]]] [yield [$string $pr@new]]]]
+
+[?def re-pins-text scope=private pure ($label::string $file::string $text::string $map)
+  [?if [= $text ""]
+    [then ()]
+    [else
+      [?let [= $rx [$re:compile "(sha|at|v-fork|upstream-base)=([0-9a-fA-F]{40})"]]
+        [?for
+          [in $m [$re:find-all $rx $text]]
+          [= $key [$re:group $m 1]]
+          [= $old [$strings:lower [$re:group $m 2]]]
+          [in $new [$new-for $old $map]]
+          [yield [repin label=$label file=$file key=$key old=$old new=$new]]]]]]]
+
+# gitlink-repins: `git ls-files -s` ("160000 <sha> 0<TAB><path>") or
+# `git ls-tree -r` ("160000 commit <sha><TAB><path>") text.
+[?def gitlink-repins scope=private pure ($label::string $text::string $map)
+  [?let [= $rx [$re:compile "160000 (?:commit )?([0-9a-f]{40})[^\t\n]*\t([^\n]+)"]]
+    [?for
+      [in $m [$re:find-all $rx $text]]
+      [= $old [$re:group $m 1]]
+      [= $path [$re:group $m 2]]
+      [in $new [$new-for $old $map]]
+      [yield [repin label=$label file=$path key=gitlink old=$old new=$new]]]]]
+
+# try-git: a git command's stdout, or "" — a repository with no deps.cxd (a
+# ships=package/binding/archived row) is not an environment fault, just
+# nothing to scan.
+[?def try-git scope=private impure ($dir::string $argv)
+  [?let [= $r [?fallback [$process:run ("git", "-C", $dir, [?splice $argv])]
                 [recover-with null]]]
     [?if [or [= $r null] [not [= [$string $r@exit-code] "0"]]] [then ""] [else [$string $r@stdout]]]]]
+
+[?def pin-files scope=private pure () ("deps.cxd", "registry/repos.cxd", "scripts/v_fork_register.cxd")]
 
 [?def read-map scope=private impure ($path::string)
   [?let [= $text [?fallback [$io:read-file $path] [recover-with ""]]]
@@ -168,53 +252,93 @@
 
 # -- one repository -----------------------------------------------------------
 
-[?def strip-one scope=private impure ($name::string $work::string $overrides $dry::bool)
+[?def dry-one scope=private impure ($name::string $source::string $mirror::string $map-path::string $spec::string $verify::bool)
+  [?let
+    [= $_p1 [$say [$cat ("[dry-run] ", $name, ": clone --mirror ", $source, " -> ", $mirror)]]]
+    [= $_p2 [?if $verify
+      [then [$say [$cat ("[dry-run] ", $name, ": verify-only -- count the attribution hits over every ref, rewrite nothing")]]]
+      [else [?let
+        [= $refs-arg [?if [= $spec ""] [then ""] [else [$cat (" --refs ", $spec)]]]]
+        [= $_a [$say [$cat ("[dry-run] ", $name, ": git-filter-repo --message-callback <RS-33 code> --force", $refs-arg)]]]
+        [= $_b [$say [$cat ("[dry-run] ", $name, ": verify over ", [$scope-label $spec], ": hits -> 0, rev-list --count unchanged, every tree unchanged, fsck --full clean")]]]
+        [$say [$cat ("[dry-run] ", $name, ": write ", $map-path, " from filter-repo's commit-map")]]]]]]
+    [ok name=$name clean=true]]]
+
+[?def clone-mirror scope=private impure ($name::string $source::string $mirror::string $work::string)
+  [?let
+    [= $_mk [$io:make-dirs $work]]
+    [= $cl [$process:run ("git", "clone", "--mirror", $source, $mirror)]]
+    [?if [not [= [$string $cl@exit-code] "0"]]
+      [then [?let [= $_e ([$cry [$cat ("strip-attribution: ", $name, ": git clone --mirror failed")]],
+                          [$cry [$string $cl@stderr]])]
+              [$env:exit 2]]]
+      [else ()]]]]
+
+[?def verify-one scope=private impure ($name::string $source::string $mirror::string $work::string)
+  [?let
+    [= $_c [$clone-mirror $name $source $mirror $work]]
+    [= $n [$commit-count $mirror ""]]
+    [= $hits [$scan-messages $mirror ""]]
+    [= $head [$tip-sha $mirror ""]]
+    [= $_r ([$say [$cat ($name, ": verify-only, ", $n, " commits over every ref, ",
+                         [$string [$count $hits]], " attribution hit(s), HEAD ", $head)]],
+            [?for [in $h $hits] [yield [$cry [$cat ("  HIT ", [$string $h@sha], ": ", [$string $h@line])]]]])]
+    [ok name=$name clean=[= [$count $hits] 0]]]]
+
+[?def rewrite-one scope=private impure ($name::string $source::string $mirror::string $map-path::string $work::string $spec::string)
+  [?let
+    [= $_c [$clone-mirror $name $source $mirror $work]]
+    [= $before [$commit-count $mirror $spec]]
+    [= $hits-before [$scan-messages $mirror $spec]]
+    [= $trees-before [$ref-trees $mirror $spec]]
+    [= $tip-before [$tip-sha $mirror $spec]]
+    [= $home [$string [$env:var-or-default "HOME" ""]]]
+    [= $gfr [$cat ($home, "/Library/Python/3.9/bin/git-filter-repo")]]
+    [= $_gfrchk [?if [not [$io:exists $gfr]]
+      [then [?let [= $_e [$cry [$cat ("strip-attribution: ", $gfr, " not found — install git-filter-repo")]]]
+              [$env:exit 2]]]
+      [else ()]]]
+    [= $code [$message-callback-code]]
+    [= $base-argv ($gfr, "--message-callback", $code, "--force", "--source", $mirror, "--target", $mirror)]
+    [= $fr-argv [?if [= $spec ""] [then $base-argv] [else ([?splice $base-argv], "--refs", $spec)]]]
+    [= $fr [$process:run $fr-argv]]
+    [= $_frchk [?if [not [= [$string $fr@exit-code] "0"]]
+      [then [?let [= $_e ([$cry [$cat ("strip-attribution: ", $name, ": git-filter-repo failed")]],
+                          [$cry [$string $fr@stderr]])]
+              [$env:exit 2]]]
+      [else ()]]]
+    [= $after [$commit-count $mirror $spec]]
+    [= $hits [$scan-messages $mirror $spec]]
+    [= $trees-after [$ref-trees $mirror $spec]]
+    [= $tip-after [$tip-sha $mirror $spec]]
+    [= $fsck-ok [$fsck-clean $mirror]]
+    [= $map-src [$cat ($mirror, "/filter-repo/commit-map")]]
+    [= $map-text [?fallback [$io:read-file $map-src] [recover-with ""]]]
+    [= $_wm [$io:write-file $map-path $map-text]]
+    [= $count-ok [= $before $after]]
+    [= $trees-ok [= $trees-before $trees-after]]
+    [= $clean [and $count-ok [and $trees-ok [and $fsck-ok [= [$count $hits] 0]]]]]
+    [= $_report ([$say [$cat ($name, ": ", [$scope-label $spec], ", ", $before, " -> ", $after, " commits (unchanged: ",
+                              [$string $count-ok], "), hits ", [$string [$count $hits-before]], " -> ",
+                              [$string [$count $hits]], ", trees unchanged: ", [$string $trees-ok],
+                              " (", [$string [$count [$nonblank $trees-before]]], " ref(s)), fsck clean: ",
+                              [$string $fsck-ok], ", tip ", $tip-before, " -> ", $tip-after,
+                              ", map ", $map-path)]],
+                 [?for [in $h $hits] [yield [$cry [$cat ("  RESIDUAL ", [$string $h@sha], ": ", [$string $h@line])]]]])]
+    [ok name=$name clean=$clean]]]
+
+[?def strip-one scope=private impure ($name::string $work::string $overrides $refs $verify-names $dry::bool)
   [?let
     [= $source [$source-for $name $overrides]]
+    [= $spec [$refs-for $name $refs]]
+    [= $verify [$member $name $verify-names]]
     [= $mirror [$cat ($work, "/", $name, ".git")]]
     [= $map-path [$cat ($work, "/", $name, ".map")]]
     [?if $dry
-      [then [?let
-        [= $_p1 [$say [$cat ("[dry-run] ", $name, ": clone --mirror ", $source, " -> ", $mirror)]]]
-        [= $_p2 [$say [$cat ("[dry-run] ", $name, ": git-filter-repo --message-callback <RS-33 code> --force")]]]
-        [= $_p3 [$say [$cat ("[dry-run] ", $name, ": verify zero hits + unchanged rev-list --count --all")]]]
-        [= $_p4 [$say [$cat ("[dry-run] ", $name, ": write ", $map-path, " from filter-repo's commit-map")]]]
-        [ok name=$name clean=true]]]
-      [else [?let
-        [= $_mk [$io:make-dirs $work]]
-        [= $_cl [$process:run ("git", "clone", "--mirror", $source, $mirror)]]
-        [= $_clchk [?if [not [= [$string $_cl@exit-code] "0"]]
-          [then [?let [= $_e ([$cry [$cat ("strip-attribution: ", $name, ": git clone --mirror failed")]],
-                              [$cry [$string $_cl@stderr]])]
-                  [$env:exit 2]]]
-          [else ()]]]
-        [= $before [$commit-count $mirror]]
-        [= $home [$string [$env:var-or-default "HOME" ""]]]
-        [= $gfr [$cat ($home, "/Library/Python/3.9/bin/git-filter-repo")]]
-        [= $_gfrchk [?if [not [$io:exists $gfr]]
-          [then [?let [= $_e [$cry [$cat ("strip-attribution: ", $gfr, " not found — install git-filter-repo")]]]
-                  [$env:exit 2]]]
-          [else ()]]]
-        [= $code [$message-callback-code]]
-        [= $_fr [$process:run ($gfr, "--message-callback", $code, "--force",
-                               "--source", $mirror, "--target", $mirror)]]
-        [= $_frchk [?if [not [= [$string $_fr@exit-code] "0"]]
-          [then [?let [= $_e ([$cry [$cat ("strip-attribution: ", $name, ": git-filter-repo failed")]],
-                              [$cry [$string $_fr@stderr]])]
-                  [$env:exit 2]]]
-          [else ()]]]
-        [= $after [$commit-count $mirror]]
-        [= $hits [$scan-all-messages $mirror]]
-        [= $map-src [$cat ($mirror, "/filter-repo/commit-map")]]
-        [= $map-text [?fallback [$io:read-file $map-src] [recover-with ""]]]
-        [= $_wm [$io:write-file $map-path $map-text]]
-        [= $count-ok [= $before $after]]
-        [= $clean [and $count-ok [= [$count $hits] 0]]]
-        [= $_report ([$say [$cat ($name, ": ", $before, " -> ", $after, " commits (unchanged: ",
-                                  [$string $count-ok], "), ", [$string [$count $hits]],
-                                  " residual attribution hit(s), map written to ", $map-path)]],
-                     [?for [in $h $hits] [yield [$cry [$cat ("  RESIDUAL ", [$string $h@sha], ": ", [$string $h@line])]]]])]
-        [ok name=$name clean=$clean]]]]]]
+      [then [$dry-one $name $source $mirror $map-path $spec $verify]]
+      [else [?if $verify
+              [then [$verify-one $name $source $mirror $work]]
+              [else [$rewrite-one $name $source $mirror $map-path $work $spec]]]]]]]
 
 
 # -- --all-public --------------------------------------------------------------
@@ -228,52 +352,66 @@
 # -- the header, the re-pin printer and the verdict (broken out of the final
 # ?let so each one's brackets are checkable on their own) --------------------
 
-[?def print-header scope=private impure ($names $work::string $dry::bool)
+[?def print-header scope=private impure ($names $work::string $mode::string)
   [?if [= [$count $names] 0]
     [then [?let [= $_ [$cry "strip-attribution: name a repository, or pass --all-public"]] [$env:exit 2]]]
     [else
       [?let
-        [= $suffix [?if $dry [then " (dry-run)"] [else ""]]]
+        [= $suffix [?if [= $mode ""] [then ""] [else [$cat (" (", $mode, ")")]]]]
         [= $plural [?if [= [$count $names] 1] [then "y"] [else "ies"]]]
         [$say [$cat ("strip-attribution: work=", $work, $suffix, " -- ",
-                     [$string [$count $names]], " repositor", $plural)]]]]]]
+                     [$string [$count $names]], " repositor", $plural, ": ",
+                     [$strings:join $names " "])]]]]]]
 
-# deps-repins-for: the re-pins in ONE mirrored repository's own deps.cxd (git
-# show HEAD:deps.cxd into a scratch file, then the same scan as this tree's).
-[?def deps-repins-for scope=private impure ($n::string $work::string $map)
+# repins-for-mirror: the re-pins in ONE mirrored repository's HEAD — its
+# pin files (git show HEAD:<file>) and its gitlinks (git ls-tree -r HEAD).
+[?def repins-for-mirror scope=private impure ($n::string $work::string $map)
   [?let
-    [= $dtxt [$try-show-deps [$cat ($work, "/", $n, ".git")]]]
-    [?if [= $dtxt ""]
-      [then ()]
-      [else
-        [?let
-          [= $tmp-path [$cat ($work, "/", $n, ".deps.cxd.tmp")]]
-          [= $_w [$io:write-file $tmp-path $dtxt]]
-          [$re-pins-in $n $tmp-path $map]]]]]]
+    [= $dir [$cat ($work, "/", $n, ".git")]]
+    [= $files [$fp:flat-map [$pin-files] [?fn ($f)
+                [$re-pins-text $n $f [$try-git $dir ("show", [$cat ("HEAD:", $f)])] $map]]]]
+    [= $links [$gitlink-repins $n [$try-git $dir ("ls-tree", "-r", "HEAD")] $map]]
+    ([?splice $files], [?splice $links])]]
 
 [?def print-repins scope=private impure ($names $work::string $map)
   [?let
-    [= $r1 [$re-pins-in "this tree" "deps.cxd" $map]]
-    [= $r2 [$re-pins-in "this tree" "registry/repos.cxd" $map]]
-    [= $r3 [$fp:flat-map $names [?fn ($n) [$deps-repins-for $n $work $map]]]]
+    [= $r1 [$fp:flat-map [$pin-files] [?fn ($f)
+             [$re-pins-text "this tree" $f [?fallback [$io:read-file $f] [recover-with ""]] $map]]]]
+    [= $r2 [$gitlink-repins "this tree" [$try-git "." ("ls-files", "-s")] $map]]
+    [= $r3 [$fp:flat-map $names [?fn ($n) [$repins-for-mirror $n $work $map]]]]
     [= $all-repins ([?splice $r1], [?splice $r2], [?splice $r3])]
+    [= $_n [$say [$cat ("strip-attribution: ", [$string [$count $all-repins]], " re-pin(s)")]]]
     [?for [in $rp $all-repins]
       [yield [$say [$cat ("re-pin  ", [$string $rp@label], " ", [$string $rp@file], ": ",
                           [$string $rp@key], "=", [$string $rp@old], " -> ", [$string $rp@new])]]]]]]
 
-[?def print-verdict scope=private impure ($bad $total::string $dry::bool)
-  [?if [and [not $dry] [> [$count $bad] 0]]
+[?def print-verdict scope=private impure ($bad $total::string $mode::string)
+  [?if [and [= $mode ""] [> [$count $bad] 0]]
     [then [?let
       [= $_ [$cry [$cat ("strip-attribution: FAILED — ", [$string [$count $bad]], " of ",
                          $total, " repositor(y/ies) did not verify clean")]]]
       [$env:exit 1]]]
     [else [?let
-      [= $_ [$say [?if $dry
+      [= $_ [$say [?if [= $mode "dry-run"]
                     [then "strip-attribution: dry-run OK — plan printed, nothing cloned or rewritten"]
-                    [else "strip-attribution: OK — every named repository verified clean and count-preserving"]]]]
+                    [else [?if [= $mode "repins-only"]
+                            [then "strip-attribution: re-pins printed from the existing mirrors and maps — nothing cloned or rewritten"]
+                            [else "strip-attribution: OK — every named repository verified clean (and, where rewritten, count-, tree- and fsck-preserving)"]]]]]]
       [$env:exit 0]]]]]
 
 # -- argv ----------------------------------------------------------------------
+
+[?def suffixes-of scope=private pure ($argv $prefix::string)
+  [?for [in $a $argv] [where [$strings:starts-with $a $prefix]]
+    [yield [$strings:slice $a [+ [$strings:length $prefix] 1] [$strings:length $a]]]]]
+
+# name=value pairs after a prefix (`source:`, `refs:`); the value may itself
+# contain `=` — only the first one splits.
+[?def pairs-of scope=private pure ($argv $prefix::string)
+  [?for [in $body [$suffixes-of $argv $prefix]]
+    [= $kv [$strings:split-limit $body "=" 1]]
+    [where [= [$count $kv] 2]]
+    [yield [pair name=[$nth $kv 1] value=[$nth $kv 2]]]]]
 
 [?let
   # $env:argv's first element is the script's own path (proven by probe, not
@@ -282,27 +420,33 @@
   [= $raw-argv [$env:argv]]
   [= $argv [?for [in $i [$range 2 [$count $raw-argv]]] [yield [$nth $raw-argv $i]]]]
   [= $dry [$member "--dry-run" $argv]]
+  [= $repins-only [$member "--repins-only" $argv]]
+  [= $mode [?if $dry [then "dry-run"] [else [?if $repins-only [then "repins-only"] [else ""]]]]]
   [= $all-public [$member "--all-public" $argv]]
-  [= $work-tok [?for [in $a $argv] [where [$strings:starts-with $a "work="]] [yield $a]]]
+  [= $work-tok [$suffixes-of $argv "work="]]
   [= $work [?if [= [$count $work-tok] 0]
              [then [$io:temp-dir "cx-strip-attr-"]]
-             [else [$strings:slice [$first $work-tok] 6 [$strings:length [$first $work-tok]]]]]]
-  [= $source-toks [?for [in $a $argv] [where [$strings:starts-with $a "source:"]] [yield $a]]]
-  [= $overrides [?for [in $t $source-toks]
-                  [= $body [$strings:slice $t 8 [$strings:length $t]]]
-                  [= $kv [$strings:split-limit $body "=" 2]]
-                  [where [= [$count $kv] 2]]
-                  [= $kn [$nth $kv 1]]
-                  [= $ks [$nth $kv 2]]
-                  [yield [src name=$kn source=$ks]]]]
-  [= $flag [?fn ($a) [or [= $a "--dry-run"] [or [= $a "--all-public"]
-              [or [$strings:starts-with $a "work="] [$strings:starts-with $a "source:"]]]]]]
+             [else [$first $work-tok]]]]
+  [= $overrides [$pairs-of $argv "source:"]]
+  [= $refs [$pairs-of $argv "refs:"]]
+  [= $verify-names [$suffixes-of $argv "verify-only:"]]
+  [= $skips [$suffixes-of $argv "skip:"]]
+  [= $flag [?fn ($a) [or [$member $a ("--dry-run", "--all-public", "--repins-only")]
+              [> [$count [?for [in $p ("work=", "source:", "refs:", "verify-only:", "skip:")]
+                           [where [$strings:starts-with $a $p]] [yield 1]]] 0]]]]
   [= $explicit [?for [in $a $argv] [where [not [$flag $a]]] [yield $a]]]
-  [= $names [?if $all-public [then [$all-public-names]] [else $explicit]]]
-  [= $_hdr [$print-header $names $work $dry]]
-  [= $results [?for [in $n $names] [yield [$strip-one $n $work $overrides $dry]]]]
-  [= $maps [?if $dry [then ()] [else [?for [in $n $names] [yield [$read-map [$cat ($work, "/", $n, ".map")]]]]]]]
-  [= $all-map ([?for [in $ms $maps] [in $p $ms] [yield $p]])]
+  [= $base [?if $all-public [then [$all-public-names]] [else $explicit]]]
+  [= $extra [?for [in $v $verify-names] [where [not [$member $v $base]]] [yield $v]]]
+  [= $names [?for [in $n ([?splice $base], [?splice $extra])] [where [not [$member $n $skips]]] [yield $n]]]
+  [= $_hdr [$print-header $names $work $mode]]
+  [= $results [?if $repins-only
+                [then [?for [in $n $names] [yield [ok name=$n clean=true]]]]
+                [else [?for [in $n $names] [yield [$strip-one $n $work $overrides $refs $verify-names $dry]]]]]]
+  # every map's pairs, one flat sequence: a [?for] that yields each map's
+  # sequence already adopts its members, so a second [in] over a "map" walked
+  # a [pair] element's (empty) children and every multi-repository run
+  # printed zero re-pins — the fixture's case A found it.
+  [= $all-map [?if $dry [then ()] [else [$fp:flat-map $names [?fn ($n) [$read-map [$cat ($work, "/", $n, ".map")]]]]]]]
   [= $_repins [?if $dry [then ()] [else [$print-repins $names $work $all-map]]]]
   [= $bad [?for [in $r $results] [where [not $r@clean]] [yield $r]]]
-  [$print-verdict $bad [$string [$count $results]] $dry]]
+  [$print-verdict $bad [$string [$count $results]] $mode]]
