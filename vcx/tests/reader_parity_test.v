@@ -586,7 +586,7 @@ const accepted_by_one_table = [
 	// follow deps/.
 	AcceptedByOne{'scripts/check_no_ai_attribution.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/strip_attribution.cx', .program, reason_1536},
-	// ── recorded exception — a computed attribute `name=[EXPR]` (24) ──
+	// ── recorded exception — a computed attribute `name=[EXPR]` (23) ──
 	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
 	// 21 -> 22: scripts/check_migrate_namespace_fixtures.cx, RS-4's sweep grader.
 	// 22 -> 26: the front door's bundled-source table, its tree check, and the two
@@ -600,6 +600,8 @@ const accepted_by_one_table = [
 	// 26 -> 24: examples/platform/scim/projection/no-leak.cx and
 	// examples/platform/scim/provisioning/provision.cx left with cx-core-code's
 	// extraction (RULED: RS-12, D68a).
+	// 22 -> 23: scripts/secrets_scan.cx, K13's secrets-scan gate (RULED: D59a,
+	// RS-28, CXF-1) -- its hit-record's computed `line=[…]`/`match=[…]` attributes.
 	AcceptedByOne{'examples/code-tour.cx', .program, reason_attr},
 	AcceptedByOne{'examples/cxpath-tour.cx', .program, reason_attr},
 	AcceptedByOne{'examples/match-multi.cx', .program, reason_attr},
@@ -622,6 +624,7 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/product_import_gate.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/repo_paths.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/ring_query.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/secrets_scan.cx', .program, reason_attr},
 	// ── recorded exception — a program document the data balancer cannot read (9) ──
 	// 8 -> 9: scripts/docs_fragment.cx, the RS-9 fragment contract (a `"#]"` literal).
 	// 9 -> 8: scripts/flow_vocabulary_gate.cx left with the flow extraction (RS-12).
