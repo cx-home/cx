@@ -55,7 +55,21 @@
 
 set -uo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# --root <path>: grade a DIFFERENT tree than the one this script ships in
+# (K13, RULED: D59a, RS-28) -- each component repository flips public after
+# its own check-no-consumer-terms run, and this script lives only in `cx`
+# (scripts/ is tracked in cx-private and reaches `cx` through the D83a
+# filter). Self-exclusion below stays keyed to this script's OWN
+# repo-relative path, which is correct in a foreign tree too: a tree that
+# does not carry scripts/check_no_consumer_terms.sh at all has nothing there
+# to exclude, and one that does (a future vendoring) is excluded the same
+# way `cx` is.
+if [ "${1:-}" = "--root" ]; then
+	ROOT="$2"
+	shift 2
+else
+	ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+fi
 cd "$ROOT"
 
 TERMS=(

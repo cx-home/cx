@@ -1645,7 +1645,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := check-no-ai-attribution check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := check-no-ai-attribution check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -1769,6 +1769,35 @@ check-no-cxl-token:
 .PHONY: check-no-consumer-terms
 check-no-consumer-terms:
 	@bash scripts/check_no_consumer_terms.sh
+
+# ── SECRETS-SCAN gate (K13, RULED: D59a, RS-28, CXF-1) — the other
+# public-flip precondition beside check-no-consumer-terms above: a component
+# repository flips public at the v0.18.0 cut only after its own scan for
+# private-key blocks, cloud/VCS/chat API tokens, key files and non-empty env
+# files finds nothing unallowlisted. --self-test is fixture-first and wired
+# in; scripts/secrets_scan_allow.cxd allowlists a known fixture by its exact
+# content fingerprint, never by path.
+#
+# TRACKED FILES ONLY by default, deliberately: this target runs on every
+# TEST_TARGETS selection, and --history walks every blob reachable from
+# main — MEASURED on this tree's own ~40k-blob history and on
+# cx-core-code's ~8k, minutes per run, growing without bound as history
+# grows. A per-commit gate that gets slower forever is wrong. `--history` is
+# still the tool's own flag, for the deep one-time audit a repository's
+# public-flip actually needs (K13 ran it directly against each frozen
+# clone, not through this target) — `make secrets-scan-history` below runs
+# it against THIS tree when someone deliberately wants that.
+.PHONY: secrets-scan
+secrets-scan: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+secrets-scan:
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-env scripts/secrets_scan.cx --self-test
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-env scripts/secrets_scan.cx --root .
+
+.PHONY: secrets-scan-history
+secrets-scan-history: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+secrets-scan-history:
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-env scripts/secrets_scan.cx --self-test
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-env scripts/secrets_scan.cx --root . --history
 
 # ── VERSION-CONSISTENCY gate — the repo-root VERSION file is the single source
 # of truth for the release version. Every static manifest must equal it and the
