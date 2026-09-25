@@ -65,7 +65,7 @@ breaks it. Where the ledger has the rule's own words, §4 prints them.
 | # | Rule | Decision | Held by |
 |---|---|---|---|
 | 1 | **The spec is the only truth.** Normative text is `spec/03-approved/`; no design note overrides it; never edit a spec to match an implementation shortfall. | AGENTS.md rule 1 (RULED: CFG-1) | `spec-freeze-gate`, `check-no-adr-citations` |
-| 2 | **A spec edit and its impl edit carry a recorded decision.** The `RULED:` id is on the ledger BEFORE a commit cites it. | R4.1 (RULED: R4.1) | `spec-freeze-gate`, `ledger-index-check` |
+| 2 | **A spec edit and its impl edit carry a recorded decision.** The `RULED:` id is on the ledger BEFORE a commit cites it. | the spec-freeze register (RULED: R4.1) | `spec-freeze-gate`, `ledger-index-check` |
 | 3 | **The corpus is the executable truth; the fixture comes before the fix.** A behaviour change lands its failing case first, then the code that passes it. | AGENTS.md rule 2 (RULED: CFG-1) | the fixture graders, `check-code-fixtures` |
 | 4 | **No stubs, no partial implementations, no silent scope cuts.** A seam with no live consumer is a partial implementation; what cannot be finished is said and stopped. | AGENTS.md rule 3 (RULED: CFG-1) | `check-no-stub-impl` |
 | 5 | **Two rings, then groups.** Ring 0 cannot execute; Ring 1 cannot reach a socket, a store or a protocol; everything else is a group with a declared, acyclic import graph. | RULED: RS-1 | `ring-import-gate`, `placement-gate` |

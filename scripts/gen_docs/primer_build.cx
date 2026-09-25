@@ -557,8 +557,8 @@
                            [$string [$fact-floor $kind]] ") — the source's shape moved; fix "
                            "scripts/gen_docs/contributor_facts.cx rather than shipping a short table"]]]
       [else [?if [$strings:contains $t "MISSING-FROM-LEDGER"]
-        [then [$die [$concat "{{" $kind "}}: an RS id in the series has no statement on any "
-                             "ledger page — record it, or say why the series skips it:\n"
+        [then [$die [$concat "{{" $kind "}}: an RS id a ledger heading names has no "
+                             "statement the reader found — record it in a shape the reader takes:\n"
                              [$strings:join [?for [in $l [$strings:split-lines $t]]
                                               [where [$strings:contains $l "MISSING-FROM-LEDGER"]]
                                               [yield [$concat "  " $l]]] "\n"]]]]

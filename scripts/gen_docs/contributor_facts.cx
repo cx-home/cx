@@ -288,7 +288,10 @@
 # is `**RS-n**` (the lead in bold is the rule; a lead that is not a whole
 # sentence takes the rest of its first sentence), and a heading `RS-n — <statement>`. An id with
 # neither is named by the range heading `RS-a…RS-b — …` that covers it. An id
-# the series skips is rendered MISSING-FROM-LEDGER, which primer_build.cx refuses.
+# no heading on any page names is not allocated on this ledger (ids are taken
+# on parallel branches and merge in any order) and is left out; an id a heading
+# names with neither shape is rendered MISSING-FROM-LEDGER, which primer_build.cx
+# refuses: the reader missed a statement the page carries.
 
 [?def row-lead scope=private pure ($line::string)
   [?let
@@ -326,11 +329,18 @@
     [= $ranges [?for [in $p $pages] [in $l [$strings:split-lines [$string $p@text]]]
                  [in $h [$range-hit $l]]
                  [yield [$mk-range [$num [$string $h@lo]] [$num [$string $h@hi]] [$string $h@text] [$string $p@path]]]]]
+    [= $named-re [$re:compile "RS-([0-9]+)"]]
+    [= $named [?for [in $p $pages] [in $l [$strings:split-lines [$string $p@text]]]
+                [where [$strings:starts-with $l "#"]]
+                [in $m [$re:find-all $named-re $l]]
+                [yield [$num [$re:group $m 1]]]]]
     [= $ids [?for [in $h $hits] [yield [$num [$string $h@id]]]]]
     [= $top [?if [= [$count $ids] 0] [then 0] [else [$max-of $ids]]]]
     [= $body [?for [in $n [$range 1 $top]]
       [= $own [?for [in $h $hits] [where [= [$num [$string $h@id]] $n]] [yield $h]]]
       [= $cover [?for [in $r $ranges] [where [and [<= $r@lo $n] [>= $r@hi $n]]] [yield $r]]]
+      [= $said [?for [in $x $named] [where [= $x $n]] [yield $x]]]
+      [where [or [> [$count $own] 0] [or [> [$count $cover] 0] [> [$count $said] 0]]]]
       [= $pick [?if [> [$count $own] 0] [then [$first $own]]
                  [else [?if [> [$count $cover] 0] [then [$first $cover]]
                          [else [hit text="MISSING-FROM-LEDGER" page="—"]]]]]]

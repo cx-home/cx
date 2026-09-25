@@ -42,7 +42,7 @@ upward (RULED: RS-24, VC-22).
 |---|---|---|---|
 | 1 | A behaviour change lands its failing corpus case FIRST, in its own commit; the code that passes it follows. | AGENTS.md rule 2 (RULED: CFG-1) | the fixture graders |
 | 2 | No stub, no placeholder success, no seam with no live consumer. An effectful primitive that cannot be finished refuses; it never returns a synthetic shape. | AGENTS.md rule 3 (RULED: CFG-1) | `check-no-stub-impl` |
-| 3 | Errors travel as `[err code=cx-err:CXERnnnn …]` values with a registered code; an effect is refused with the capability that would allow it. | the corpus cases in `contributor.md` §2 | `cxer-registry-gate`, the corpus |
+| 3 | Errors travel as `[err code=cx-err:CXERnnnn …]` values with a registered code; an effect is refused with the capability that would allow it. | the CXER registry, `spec/03-approved/process/governance.md`; pinned by the corpus cases in `contributor.md` §2 | `cxer-registry-gate`, the corpus |
 | 4 | Move a file across modules only with its imports and its `pub` surface; a bare same-module call that crosses a repository line cannot compile alone. | RULED: RS-24 | `product-import-gate`, each product's own build |
 | 5 | A product registers its builtins with `register_stdlib_builtin(family, f)` and its CLI verbs with `register_cli_verb(v)` from its own `init()`. A family registered twice panics naming both. | RULED: D71a, D73a | the profile builds (a binary without the product refuses its names `CXER0136`) |
 | 6 | A pure Ring-1 V half stays in `vcx/code` even when one product is its only caller; its row names it in `half=` or re-allocates it to the core. | RULED: D76c, D84a | `placement-gate`, `repos-allocation-gate` |
@@ -76,10 +76,11 @@ $ deps/cx-core-code/vcx/target/cx --version      # names the commit and the V fo
 - Four builds share one source: `data`, `embed`, `cli`, `platform`
   (`make build-vcx` is the platform build). A `ring=1` corpus case is graded
   in every profile, so a Ring-1 case may not lean on a platform pack
-  (RULED: RS-10).
+  (RULED: RS-1; RS-23 is the precedent).
 - A `deps/<repo>/` checkout is a build INPUT, never a place to edit: a change a
   product needs is made in that product's repository and reaches the front
-  door as a pin bump (RULED: RS-7).
+  door as a pin bump; a component repository's change is its own branch there,
+  pinned by sha in the front door's branch, and the union grades both (RULED: RS-7, RS-36).
 
 ## 4. Tooling in CX
 
@@ -99,4 +100,4 @@ $ deps/cx-core-code/vcx/target/cx --version      # names the commit and the V fo
 - A check that derives its population from the tree refuses to vouch when the
   derivation comes up empty or short — a check that runs over the empty set
   passes forever (`check-selection-manifest` and this layer's generators hold
-  a row floor for that reason).
+  a row floor for that reason; RULED: 1350-b).

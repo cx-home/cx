@@ -117,7 +117,8 @@ What the columns mean (the file's own `[doc]` block is the full text):
   may never move or delete a sentence the map does not name (RULED: RS-21).
 - Specs stay loosely coupled: a generated document carries no `§` numbers
   into another page's prose (the primer drops them from the directive
-  registry for this reason).
+  registry for this reason; the owner's 1a of 2026-08-19,
+  `ledger/rulings_2026_08_19_787_guide_and_packaging.md`).
 - An effect is deny-by-default and named by the capability that grants it;
   an error is a value with a registered `CXER` code (`cxer-registry-gate`
   holds the registry to `spec/03-approved/process/governance.md`). Both are

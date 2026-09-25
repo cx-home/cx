@@ -17,7 +17,8 @@
   <base> --dry-run` prints the steps whose inputs your diff touches; the full
   `make test` union is the post-merge run's (RULED: RUN-1, INT-5).
 - A step that reads a file the tree derives it from refuses to vouch for an
-  empty derivation; a check over the empty set would pass forever.
+  empty derivation; a check over the empty set would pass forever
+  (RULED: 1350-b).
 
 ## 1. Grading the corpus
 
@@ -123,7 +124,7 @@ lost with one that was added (RULED: RS-12).
 
 Read a status directly, never through an inner shell that `devbox run` wraps
 — that shape answers 0 for a program that failed; `check-exit-status-probe`
-holds the line.
+holds the line (AGENTS.md, "Exit statuses"; RULED: CFG-1).
 
 ## 6. The step roster
 
