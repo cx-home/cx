@@ -3010,7 +3010,7 @@ SUITE_SERIAL_RETRY := deps/cx-core-code/vcx/tests/env_retention_test.v \
 # rows above do; a `ships=package` repo carries no V toolchain of its own
 # (RS-25), so THE LANE MOVED AND THE STEP DID NOT (the test-sso-interop-lane
 # shape): `make test-connector-real-lanes` below runs it out of
-# deps/cx-platform-connector/deps/cx-core-code/vcx/tests/, against this tree's binary, with no
+# deps/cx-platform-connector/vcx/tests/, against this tree's binary, with no
 # serial-retry wrapper of its own (the sso/agent lane precedent).
 
 # ── The TIMING / EARLY EXIT UNDER LOAD class (#1432, RULED: 1432-a) ─────────
@@ -4037,7 +4037,7 @@ bench-streamed-alloc: build-vcx
 # but a gate that measures a build CX does not ship is not measuring the
 # threshold it claims to.
 bench-code-http: build-vcx deps-present
-	$(PATCHED_V) -enable-globals -prod run deps/cx-platform-net/deps/cx-core-code/vcx/tests/runners/code_http_throughput_bench.v
+	$(PATCHED_V) -enable-globals -prod run deps/cx-platform-net/vcx/tests/runners/code_http_throughput_bench.v
 
 # HTTP backend-direction isolation bench — settles whether the ~10k
 # req/s ceiling is transport-bound (net.http socket stack) or
@@ -4051,7 +4051,7 @@ bench-code-http: build-vcx deps-present
 # INTERPRETER leg specifically — so the unoptimised verdict is biased toward
 # the answer the bench is supposed to test for.
 bench-code-http-isolation: build-vcx deps-present
-	$(PATCHED_V) -enable-globals -prod run deps/cx-platform-net/deps/cx-core-code/vcx/tests/runners/code_http_isolation_bench.v
+	$(PATCHED_V) -enable-globals -prod run deps/cx-platform-net/vcx/tests/runners/code_http_isolation_bench.v
 
 # Gate 7 — concurrency soak. Loops a buffered send/receive workload
 # detecting deadlocks (per-iter wall-clock cap) and registry leaks
@@ -4662,8 +4662,8 @@ test-agent-real-lanes: build-vcx
 ##                  mock, the reference deployment) still resolves here.
 ##                  Refuses with exit 2 and names `make deps-sync` when the
 ##                  checkout is absent — never a skip.
-CONNECTOR_REAL_LANES := deps/cx-platform-connector/deps/cx-core-code/vcx/tests/connector_live_test.v \
-                        deps/cx-platform-connector/deps/cx-core-code/vcx/tests/connector_webhook_test.v
+CONNECTOR_REAL_LANES := deps/cx-platform-connector/vcx/tests/connector_live_test.v \
+                        deps/cx-platform-connector/vcx/tests/connector_webhook_test.v
 .PHONY: test-connector-real-lanes
 test-connector-real-lanes: build-vcx
 	@for t in $(CONNECTOR_REAL_LANES); do \
