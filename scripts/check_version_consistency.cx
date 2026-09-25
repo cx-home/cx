@@ -184,24 +184,24 @@
         # rows RETIRED the same way (RULED: RS-12, D59a): the VS Code extension left
         # with cx-tooling, which stamps its own manifest.
         [= $manifest-fails [?for [in $m (
-            [mf path='cx.pc.in'                          rx="(?m)^Version:[ \\t]*([^ \\t\\n]+)[ \\t]*$"],
-            [mf path='vcx/v.mod'                         rx="version:\\s*'([^']+)'"])]
+            [mf path='deps/cx-core-code/cx.pc.in'                          rx="(?m)^Version:[ \\t]*([^ \\t\\n]+)[ \\t]*$"],
+            [mf path='deps/cx-core-code/vcx/v.mod'                         rx="version:\\s*'([^']+)'"])]
           [= $f [$check-manifest [$string $m@path] [$string $m@rx] $version]]
           [where [not [$empty $f]]]
           [yield $f]]]
 
         # 2. Code surfaces — must DERIVE from the build define.
-        [= $derive-fails [?for [in $p ('deps/cx-core-data/vcx/cx/cabi.v', 'vcx/cmd/main.v')]
+        [= $derive-fails [?for [in $p ('deps/cx-core-data/vcx/cx/cabi.v', 'deps/cx-core-code/vcx/cmd/main.v')]
           [where [not [$strings:contains [$io:read-file $p] "$d('cx_version'"]]]
           [yield [$concat $p ": release version must derive via $d('cx_version'…), not a hardcoded literal"]]]]
 
         # 2b. The define must actually be PASSED to every shared-library
         # recipe, and LIB_BUILD_ID must carry what those defines stamp (#984).
-        [= $mk-lines [$strings:split-lines [$io:read-file "vcx/Makefile"]]]
+        [= $mk-lines [$strings:split-lines [$io:read-file "deps/cx-core-code/vcx/Makefile"]]]
         [= $lib-recipe-fails [?for [in $l $mk-lines]
           [where [$strings:contains $l "-shared -o "]]
           [where [not [$strings:contains $l "$(LIB_VERSION_DEFINES)"]]]
-          [yield [$concat "vcx/Makefile: a shared-library recipe passes no version defines — "
+          [yield [$concat "deps/cx-core-code/vcx/Makefile: a shared-library recipe passes no version defines — "
                           "libcx would report the unstamped fallback (add $(LIB_VERSION_DEFINES)): "
                           [$strings:trim $l]]]]]
         [= $lib-build-id-lines [?for [in $l $mk-lines]
@@ -209,18 +209,18 @@
           [yield $l]]]
         [= $lib-build-id-fails
           [?if [= [$count $lib-build-id-lines] 0]
-            [then ("vcx/Makefile: no LIB_BUILD_ID assignment found — the up-to-date guard's identity cannot be checked")]
+            [then ("deps/cx-core-code/vcx/Makefile: no LIB_BUILD_ID assignment found — the up-to-date guard's identity cannot be checked")]
             [else [?for [in $l $lib-build-id-lines]
               [in $v ("$(CX_VERSION)", "$(CX_RELEASE)")]
               [where [not [$strings:contains $l $v]]]
-              [yield [$concat "vcx/Makefile: LIB_BUILD_ID omits " $v
+              [yield [$concat "deps/cx-core-code/vcx/Makefile: LIB_BUILD_ID omits " $v
                               " — the library stamps it, so the relink guard could serve an "
                               "artifact whose version stamp no longer matches this tree"]]]]]]
 
         # 3. README version badges must equal VERSION.
         [= $badge [$concat "badge/version-v" $version "-blue"]]
         [= $badge-rx [$re:compile "badge/version-v([0-9A-Za-z.]+)-blue"]]
-        [= $badge-fails [?for [in $p ('README.md', 'vcx/README.md')]
+        [= $badge-fails [?for [in $p ('README.md', 'deps/cx-core-code/vcx/README.md')]
           [= $f [?match [$read-or $p]
             [case [missing] [$concat $p ": missing (expected the version badge)"]]
             [case $t
