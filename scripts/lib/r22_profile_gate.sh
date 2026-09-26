@@ -52,6 +52,16 @@ r22_vcx_target() {
   fi
 }
 
+# r22_include_dir — the same #1670 staleness, second instance: cx.h moved
+# with vcx/ into the cx-core-code pin (deps/cx-core-code/include/cx.h).
+r22_include_dir() {
+  if [ -f deps/cx-core-code/include/cx.h ]; then
+    echo deps/cx-core-code/include
+  else
+    echo include
+  fi
+}
+
 # r22_collect_platform_files — the platform-profile payload: the binary,
 # the shared lib under whichever extension this host produces, the public
 # header, and the vendored re2 license (#573, statically linked).
@@ -61,7 +71,7 @@ r22_collect_platform_files() {
   cp "$t/cx" "$dest/"
   cp "$t/libcx.dylib" "$dest/" 2>/dev/null || true
   cp "$t/libcx.so"   "$dest/" 2>/dev/null || true
-  cp include/cx.h "$dest/"
+  cp "$(r22_include_dir)/cx.h" "$dest/"
   cp third_party/re2/LICENSE "$dest/LICENSE-re2.txt"
 }
 
@@ -84,20 +94,20 @@ r22_tar_platform() {
 #   cli   — cx only (the binary is the deliverable)
 r22_stage_profiles() {
   local pubdir_rel="$1" plat="$2"
-  local pubdir prof pdir t
+  local pubdir prof pdir t inc
   pubdir="$(cd "$pubdir_rel" && pwd)"
-  t="$(r22_vcx_target)"
+  t="$(r22_vcx_target)"; inc="$(r22_include_dir)"
   for prof in data embed cli; do
     pdir="$pubdir/_prof_$prof"; rm -rf "$pdir"; mkdir -p "$pdir"
     cp "$t/profiles/$prof/cx" "$pdir/"
     cp third_party/re2/LICENSE "$pdir/LICENSE-re2.txt"
     case "$prof" in
       data)
-        cp include/cx.h "$pdir/"
+        cp "$inc/cx.h" "$pdir/"
         cp "$t/libcx-core.dylib" "$pdir/" 2>/dev/null || true
         cp "$t/libcx-core.so"   "$pdir/" 2>/dev/null || true ;;
       embed)
-        cp include/cx.h "$pdir/"
+        cp "$inc/cx.h" "$pdir/"
         cp "$t/profiles/embed/libcx.dylib" "$pdir/" 2>/dev/null || true
         cp "$t/profiles/embed/libcx.so"   "$pdir/" 2>/dev/null || true ;;
     esac
