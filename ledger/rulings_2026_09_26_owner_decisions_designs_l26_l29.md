@@ -199,3 +199,23 @@ internal boot-fault site — the host's runner answering no `[flow-host …]` at
 class as the four the ruling enumerated and answers CXER4907; the ruling's "ONE code for the host's
 internal boot faults" applies to every such site, enumerated or not. Rejected: leaving it CXER4965.
 Both land in one sonnet flow/xap branch after the window's reset.
+
+## Note 2026-09-26 — Letter 34 = (a)(a)(a): the seam is a continuation, two codes and one spelling written, and a transport consumes a secret without declassifying it
+
+The owner's word, in session on SEC-1 code's READY report (#1591, 17:0xZ): "34.1a 34.2a 34.3a".
+What that rules, under SEC-1: (1) the resolve seam's shape is `with-resolved` — a module-private
+`s--resolve` (a program naming it refuses CXER0216) reached only through a continuation that hands
+the secret to ONE operation and refuses when the answer carries it out; "alive for one operation at
+the effect point" is thereby enforced by the evaluator, and a language-level module-internal
+visibility is a later cx-gap, not a change of contract. (2) CXER7006 `E_SECRETS_PROVIDER_INVALID`
+(a provider row that cannot serve, the key-file mode check included) and CXER7007
+`E_SECRETS_VALUE_ESCAPES` (the value leaving `with-resolved`) are SEC-1's codes, registered; the
+`env` kind's variable is the handle's path upper-cased (`handle:os/home` → `HOME`), written into
+`secrets.md` §2.1 with its case id. (3) A transport's effect point CONSUMES a secret as a wire value
+— the http adapter writes the credential header from a `secret`-typed value inside the adapter and
+the taint never reaches a program value, as `crypto` consumes key inputs — and that is NOT a
+declassification: `secret-reveal` stays what cxdm.md §12 says it is. One sentence in cxdm.md §12.3
+states it with its fixture (a program that resolves a handle, sends it, and emits it still prints
+`‹redacted›` without `secret-reveal`); every `[secret-reveal]` effects row the SEC-1 code branch
+added to connector verbs, templates, scenarios and acme retires, and the scenario grants no
+`--allow-secret-reveal`. Rejected: merging as built; a per-handle reveal grant.
