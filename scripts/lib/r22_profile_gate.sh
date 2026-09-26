@@ -35,14 +35,32 @@
 # point 4 for why, and the ruling's closing note for the lib-content hole
 # that neither lane checks.
 
+# r22_vcx_target — where build-vcx actually lands its artifacts. RS-12's
+# extraction moved vcx/ itself into the cx-core-code pin (deps/cx-core-code/vcx,
+# populated by `make deps-sync`); this front door's own vcx/ stays only as an
+# EXTRA V search-path entry (Makefile's CX_V_SEARCH). release.sh's staging
+# had not been touched by the split (#1670 measurement) and copied from the
+# pre-extraction path, so a real cut here found nothing to stage. Preferring
+# the pinned location and falling back to the front-door path keeps this
+# working before AND after any future de-extraction, without a second copy
+# of the split's own migration logic.
+r22_vcx_target() {
+  if [ -d deps/cx-core-code/vcx/target ]; then
+    echo deps/cx-core-code/vcx/target
+  else
+    echo vcx/target
+  fi
+}
+
 # r22_collect_platform_files — the platform-profile payload: the binary,
 # the shared lib under whichever extension this host produces, the public
 # header, and the vendored re2 license (#573, statically linked).
 r22_collect_platform_files() {
-  local dest="$1"
-  cp vcx/target/cx "$dest/"
-  cp vcx/target/libcx.dylib "$dest/" 2>/dev/null || true
-  cp vcx/target/libcx.so   "$dest/" 2>/dev/null || true
+  local dest="$1" t
+  t="$(r22_vcx_target)"
+  cp "$t/cx" "$dest/"
+  cp "$t/libcx.dylib" "$dest/" 2>/dev/null || true
+  cp "$t/libcx.so"   "$dest/" 2>/dev/null || true
   cp include/cx.h "$dest/"
   cp third_party/re2/LICENSE "$dest/LICENSE-re2.txt"
 }
@@ -66,21 +84,22 @@ r22_tar_platform() {
 #   cli   — cx only (the binary is the deliverable)
 r22_stage_profiles() {
   local pubdir_rel="$1" plat="$2"
-  local pubdir prof pdir
+  local pubdir prof pdir t
   pubdir="$(cd "$pubdir_rel" && pwd)"
+  t="$(r22_vcx_target)"
   for prof in data embed cli; do
     pdir="$pubdir/_prof_$prof"; rm -rf "$pdir"; mkdir -p "$pdir"
-    cp "vcx/target/profiles/$prof/cx" "$pdir/"
+    cp "$t/profiles/$prof/cx" "$pdir/"
     cp third_party/re2/LICENSE "$pdir/LICENSE-re2.txt"
     case "$prof" in
       data)
         cp include/cx.h "$pdir/"
-        cp vcx/target/libcx-core.dylib "$pdir/" 2>/dev/null || true
-        cp vcx/target/libcx-core.so   "$pdir/" 2>/dev/null || true ;;
+        cp "$t/libcx-core.dylib" "$pdir/" 2>/dev/null || true
+        cp "$t/libcx-core.so"   "$pdir/" 2>/dev/null || true ;;
       embed)
         cp include/cx.h "$pdir/"
-        cp vcx/target/profiles/embed/libcx.dylib "$pdir/" 2>/dev/null || true
-        cp vcx/target/profiles/embed/libcx.so   "$pdir/" 2>/dev/null || true ;;
+        cp "$t/profiles/embed/libcx.dylib" "$pdir/" 2>/dev/null || true
+        cp "$t/profiles/embed/libcx.so"   "$pdir/" 2>/dev/null || true ;;
     esac
     ( cd "$pdir" && tar czf "$pubdir/cx-${prof}-${plat}.tar.gz" ./* )
     rm -rf "$pdir"
