@@ -82,3 +82,13 @@ The owner's answer to Letter 15 was **(a)**: the three stand as inside W4's deci
 1265-PW-2 for the inbox). Nothing is reverted; this note is the record the letter named. Letter 16
 (the synthetic journal clock behind `age=`) was answered (a) as a wave of its own, CLOCK-1, and is
 not W4's.
+
+## Note 2026-09-26 — Letter 22 = (a): `flow.md` §5 names `clock`
+
+CLOCK-1 (Letter 16 = (a)) made every journal append the runner performs carry the clock's
+instant, so `start` needs the `clock` capability, and `flow.md` §5 (Capability integration) did
+not name it beside the journal-bound tier. The owner's answer to Letter 22 (2026-09-26, on #1591,
+in session) was **(a)**: one sentence in §5 naming `clock` among `start`'s needs, with a lane case,
+written by the next flow-touching branch under this decision. Rejected: (b) leaving §5 with
+`clock` implied by the journal tier; (c) making `clock` optional. Letter 20 (R-1466's §4.6 spec
+pair) was withdrawn the same day: 1466-a had already ruled that pair verbatim.
