@@ -1115,10 +1115,16 @@ fn flow_cli_serve(o FlowCliOpts, for_ns i64) {
 	data << '] [sub-flows'
 	data << rest
 	data << ']]'
+	// The invocation's grants are installed BEFORE the module tree is scanned,
+	// as `cx flow validate` and `cx flow run` install them: the scan RESOLVES
+	// every `[?lib]` — a `pkg:` package read from its registry, a sibling
+	// file — and a deny-by-default process refuses those reads, so a scan run
+	// first found no act in an imported module and every step refused CXER4953
+	// (cx-home/cx-private#1671).
+	flow_cli_install_caps(o)
 	directives, acts := flow_cli_env_scan(r.env)
 	tick_ms := r.courier_ns / 1_000_000
 	ticks := if for_ns <= 0 { i64(-1) } else { for_ns / r.courier_ns }
-	flow_cli_install_caps(o)
 	program := flow_serve_program(r, directives, acts, ticks, if tick_ms < 1 { i64(1) } else { tick_ms })
 	println(flow_cli_eval(data.join('\n'), program).trim_space())
 	exit(0)
