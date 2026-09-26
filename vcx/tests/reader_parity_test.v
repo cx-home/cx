@@ -595,6 +595,14 @@ const accepted_by_one_table = [
 	// follow deps/.
 	AcceptedByOne{'scripts/check_no_ai_attribution.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/strip_attribution.cx', .program, reason_1536},
+	// 79 -> 80: #1669's scripts/public_history_replace.cx, the replace-text
+	// sibling pass -- the class's own shape (its `ensure-mirror`/`rewrite-one`
+	// duplicate strip_attribution.cx's `clone-mirror`/`run-git` helpers by the
+	// same no-shared-import convention that file's own header notes):
+	// `[$process:run ("git", "clone", "--mirror", $source, $mirror)]` and
+	// `[$process:run ("git", "-C", $dir, ...)]`, same as strip_attribution.cx
+	// and deps_cx_selftest.cx above (RULED: D83a, RS-33, CXF-8).
+	AcceptedByOne{'scripts/public_history_replace.cx', .program, reason_1536},
 	// ── recorded exception — a computed attribute `name=[EXPR]` (23) ──
 	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
 	// 21 -> 22: scripts/check_migrate_namespace_fixtures.cx, RS-4's sweep grader.
