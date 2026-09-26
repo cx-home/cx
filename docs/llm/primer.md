@@ -3033,15 +3033,15 @@ proposes (`[deployment [runtime [connectors [connector feature= [gateway …]
        [retry max=4 delay=250ms backoff=exponential jitter=full]
        [timeout per-attempt=10s]]
      [tenant name=tenant-north
-       [credential gateway=crm-api handle='secret:crm/sandbox/north-client']]]
+       [credential gateway=crm-api handle='handle:crm/sandbox/north-client']]]
    [connector feature=orders-db
      [gateway name=order-store backend='sql-db:orders-sandbox']
      [tenant name=tenant-north
-       [credential gateway=order-store handle='secret:orders/sandbox/north']]]
+       [credential gateway=order-store handle='handle:orders/sandbox/north']]]
    [connector feature=order-events
      [gateway name=order-bus fabric='mem://order-pipeline/bus']
      [tenant name=tenant-north
-       [credential gateway=order-bus handle='secret:bus/sandbox/north']]]]]]
+       [credential gateway=order-bus handle='handle:bus/sandbox/north']]]]]]
 ```
 
 and the distributed shape differs in exactly the deployment facts
@@ -3060,15 +3060,15 @@ different handle per tenant — plus the three carriers this page adds:
        [retry max=6 delay=500ms backoff=exponential jitter=decorrelated]
        [timeout per-attempt=20s]]
      [tenant name=tenant-north
-       [credential gateway=crm-api handle='secret:crm/production/north-client']]]
+       [credential gateway=crm-api handle='handle:crm/production/north-client']]]
    [connector feature=orders-db
      [gateway name=order-store backend='sql-db:orders-production']
      [tenant name=tenant-north
-       [credential gateway=order-store handle='secret:orders/production/north']]]
+       [credential gateway=order-store handle='handle:orders/production/north']]]
    [connector feature=order-events
      [gateway name=order-bus fabric='xsp://fabric.example.test:8450']
      [tenant name=tenant-north
-       [credential gateway=order-bus handle='secret:bus/production/north']]]]]]
+       [credential gateway=order-bus handle='handle:bus/production/north']]]]]]
 ```
 
 The flow document, the three feature documents and every `[gateway]`
