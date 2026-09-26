@@ -152,3 +152,37 @@ keeping the carve-out.
 SEC-1 (spec, then one code branch) → HOST-1…HOST-4 as one flow/xap batch → KIT-2, KIT-3, KIT-5,
 KIT-6 as one connector batch → XCO-1…XCO-5 as one wave → KIT-4 with the bulk-export connector. Every
 ruled sentence lands under RS-38 with its case id.
+
+## Note 2026-09-26 — Letters 30, 31 and 32 = (a): the SEC-1 spec's three questions, and the letter's details recorded
+
+The owner's word, in session on the SEC-1 spec branch's READY report (#1591, 14:2xZ):
+"recommendations accepted". What that rules, under SEC-1:
+
+- **Letter 30 (a) — the band.** SEC-1 keeps `CXER7000–CXER7099`; `cx-stdlib/set`'s allocation
+  from 1173-c (`CXER7000–7009`, never registered, the module unwritten) moves to
+  `CXER7100–CXER7109`, written into the registry when that module is. Rejected: renumbering
+  SEC-1; nesting set's codes inside secrets' band.
+- **Letter 31 (a) — the owning repository.** `cx-platform/secrets` lives in a new component
+  repository, `cx-home/cx-platform-secrets` (the extract recipe's shape, RS-36): the custody
+  boundary is a repository boundary a client inspects, forks or replaces. Rejected: the front
+  door; cx-platform-identity.
+- **Letter 32 (a) — the six questions of `secrets.md` §9.2, each answered; the code branch writes
+  the sentence under RS-38 with its case id:** (1) v0.18 ships `key-from=env:<VAR>` and
+  `key-from=file:<path>` (a client-held master-key file under `read`, mode 0600 checked); the
+  `keychain` kind arrives on the ladder's next rung together with its own capability row; (2) the
+  PEP request is `[authz-request actor=module:<namespace> action=secrets:resolve
+  resource=<handle>]` — the consumer MODULE is the actor, the handle the resource, grants in the
+  deployment's authz document with a glob on the resource, the exact grammar authz.md §3.4's;
+  (3) provider rows validate at boot (7004, 7005); at resolve the order is 7000 → 7002 → 7001 →
+  7003, and EVERY refused resolution writes the audit record with `refused=<code>`; (4)
+  `[secret-resolved …]` is the detail of an audit.md §2.1 `[audit module=secrets action=resolve]`
+  record — one audit stream; (5) a deployment is served when its process listens (`[$xap:serve]`,
+  the XAP host, `cx flow serve`); a one-shot `cx FILE`, `cx flow run` and `simulate` are
+  development; (6) the sealed file is one CX document `[sealed-store v=1 alg=aes-256-gcm [entry
+  handle= slot=active|next nonce= ct= …]…]`, each value sealed separately with the associated data
+  = the handle string + the slot, AES-256-GCM only; `cx secrets put <handle>` reads the value from
+  stdin or `--from-env <VAR>`, never an argument; `put` and `rotate` act on `sealed` only.
+- **The letter's details are SEC-1's.** The owner accepted Letter 28 whole; its frozen details
+  that the SEC-1 heading above abbreviates are ruled with it: the `sealed` kind's `path=` and
+  `key-from=` attributes, the cryptography as crypto.md §3.7's AEAD (AES-GCM), and the seam's
+  signature `resolve(handle, consumer) → secret | err`.

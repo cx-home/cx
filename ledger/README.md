@@ -742,6 +742,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `sea-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-2 — contract evolution gets the SEA-1 treatment (#1182) |
 | `sec-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | Owner decisions 2026-09-26 — the four designs of Letters 26–29: the connector kit (KIT-1…KIT-6), cross-company (XCO-1…XCO-5), the minimal keystore (SEC-1), the host's four choices (HOST-1…HOST-4) |
 | `sec-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | SEC-1 — the minimal keystore that expands without impact |
+| `sec-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | Note 2026-09-26 — Letters 30, 31 and 32 = (a): the SEC-1 spec's three questions, and the letter's details recorded |
 | `seq-1` | [rulings_2026_08_26_seq_classification.md](rulings_2026_08_26_seq_classification.md) | SEQ-1 — the filed mechanism is WRONG; this is not a port regression |
 | `seq-2` | [rulings_2026_08_26_seq_classification.md](rulings_2026_08_26_seq_classification.md) | SEQ-2 — the hole is a real contract violation, and the CONTRACT wins |
 | `seq-3` | [rulings_2026_08_26_seq_classification.md](rulings_2026_08_26_seq_classification.md) | SEQ-3 — golden movement: ZERO, and it is measured, not asserted |
@@ -1104,7 +1105,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `2026-mm` | [rulings_2026_09_09_xap_correction_taxonomy_1310.md](rulings_2026_09_09_xap_correction_taxonomy_1310.md) |
 | `2026-vs` | [rulings_2026_09_09_flow_activation_seq_1316c1.md](rulings_2026_09_09_flow_activation_seq_1316c1.md) |
 | `256-cbc` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) |
-| `256-gcm` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) |
+| `256-gcm` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md), [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) |
 | `587-era` | [rulings_2026_08_24_0170_campaign.md](rulings_2026_08_24_0170_campaign.md) |
 | `703-a` | [partition_I5_stream16_shape.md](partition_I5_stream16_shape.md) |
 | `728-ck-1` | [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md), [rulings_2026_09_08_flow_connector_seam_1334.md](rulings_2026_09_08_flow_connector_seam_1334.md) |
@@ -1145,7 +1146,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `789-wf-38` | [rulings_2026_09_08_flow_connector_seam_1334.md](rulings_2026_09_08_flow_connector_seam_1334.md) |
 | `789-wf-38a` | [rulings_2026_09_06_flow_resolver_idempotent_789.md](rulings_2026_09_06_flow_resolver_idempotent_789.md) |
 | `abi-14` | [partition_I1_rebless.md](partition_I1_rebless.md) |
-| `aes-256` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) |
+| `aes-256` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md), [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) |
 | `af-1` | [partition_I5_audit.md](partition_I5_audit.md), [partition_I5_exit_review_packet.md](partition_I5_exit_review_packet.md), [partition_I5_stream17_runtime.md](partition_I5_stream17_runtime.md) |
 | `af-10` | [partition_I5_audit.md](partition_I5_audit.md), [partition_corpus_audit.md](partition_corpus_audit.md) |
 | `af-11` | [partition_I5_audit.md](partition_I5_audit.md), [partition_I5_exit_review_packet.md](partition_I5_exit_review_packet.md) |
