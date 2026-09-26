@@ -949,6 +949,10 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `wf-7` | [rulings_2026_09_03_workflow_789.md](rulings_2026_09_03_workflow_789.md) | WF-7 — fleet observability (item 3) — RECOMMENDED: (a) |
 | `wf-8` | [rulings_2026_09_03_workflow_789.md](rulings_2026_09_03_workflow_789.md) | WF-8 — the cross-company profile (item 4) — RECOMMENDED: (a) |
 | `wf-9` | [rulings_2026_09_03_workflow_789.md](rulings_2026_09_03_workflow_789.md) | WF-9 — sequencing; what this track delivers now — RECOMMENDED: (a) |
+| `xap-1a` | [rulings_2026_09_26_xap_host_runner_xap1.md](rulings_2026_09_26_xap_host_runner_xap1.md) | XAP-1a, XAP-1b — the xap host embeds the flow runner (owner: Letter 14 = 1a 2b, 2026-09-26) |
+| `xap-1a` | [rulings_2026_09_26_xap_host_runner_xap1.md](rulings_2026_09_26_xap_host_runner_xap1.md) | XAP-1a — the deployment face serves schedule, intent and webhook |
+| `xap-1b` | [rulings_2026_09_26_xap_host_runner_xap1.md](rulings_2026_09_26_xap_host_runner_xap1.md) | XAP-1a, XAP-1b — the xap host embeds the flow runner (owner: Letter 14 = 1a 2b, 2026-09-26) |
+| `xap-1b` | [rulings_2026_09_26_xap_host_runner_xap1.md](rulings_2026_09_26_xap_host_runner_xap1.md) | XAP-1b — the host-side courier is a sched cadence on the boot fiber |
 | `xd-1` | [rulings_2026_08_21_x_tier_docs_and_domain_writes.md](rulings_2026_08_21_x_tier_docs_and_domain_writes.md) | XD-1 — the x/ tier is DOCUMENTED, and marked for what it is (#904) |
 | `xd-2` | [rulings_2026_08_21_x_tier_docs_and_domain_writes.md](rulings_2026_08_21_x_tier_docs_and_domain_writes.md) | XD-2 — domain data is journaled, and its authority is its own (#905) |
 
@@ -1331,6 +1335,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `wave-3` | [rulings_2026_08_26_seq_classification.md](rulings_2026_08_26_seq_classification.md) |
 | `wf-26a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
 | `wf-27a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
+| `xap-1` | [rulings_2026_09_26_xap_host_runner_xap1.md](rulings_2026_09_26_xap_host_runner_xap1.md) |
 | `xd-1a` | [rulings_2026_08_21_x_tier_docs_and_domain_writes.md](rulings_2026_08_21_x_tier_docs_and_domain_writes.md) |
 | `xd-1b` | [rulings_2026_08_21_x_tier_docs_and_domain_writes.md](rulings_2026_08_21_x_tier_docs_and_domain_writes.md) |
 | `xd-2a` | [rulings_2026_08_21_x_tier_docs_and_domain_writes.md](rulings_2026_08_21_x_tier_docs_and_domain_writes.md) |
@@ -1341,4 +1346,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*327 ledger pages; 685 ids declared, 384 cited only.*
+*328 ledger pages; 687 ids declared, 385 cited only.*
