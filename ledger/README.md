@@ -340,6 +340,14 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `192-gcm` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) | RULED: 1400-a, 1401-a — XML Encryption comes IN: `saml:verify` decrypts `EncryptedAssertion` / `EncryptedID` / `EncryptedAttribute` with `opts.decryption-keys`; `crypto` gains RSA key transport (OAEP, SHA-1 inside OAEP allowed; PKCS#1 v1.5 behind a loud opt-in with implicit rejection) and AES-CBC + AES-128/192-GCM; encryption is detected BEFORE the signature search |
 | `728-ck-4b` | [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) | RULED: 728-CK-4b — ingestion NEVER infers `idempotent=` — RULED: (a) under the standing letter-acceptance rule (owner veto open) |
 | `787-poc` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) | Ledger — #787 integration: the ONE rebase of impl/787-poc onto release/0.16.0 |
+| `aa-1` | [rulings_2026_09_26_automation_authoring_l40.md](rulings_2026_09_26_automation_authoring_l40.md) | Owner decisions 2026-09-26 — Letter 40, end-user automation authoring (#1498): AA-1…AA-6 |
+| `aa-1` | [rulings_2026_09_26_automation_authoring_l40.md](rulings_2026_09_26_automation_authoring_l40.md) | AA-1 — a skeleton is a CX document shipped as data (L40.1 = (a)) |
+| `aa-2` | [rulings_2026_09_26_automation_authoring_l40.md](rulings_2026_09_26_automation_authoring_l40.md) | AA-2 — four skeletons and one selection attribute (L40.2 = (a)) |
+| `aa-3` | [rulings_2026_09_26_automation_authoring_l40.md](rulings_2026_09_26_automation_authoring_l40.md) | AA-3 — one pure `fill`, two callers (L40.3 = (a)) |
+| `aa-4` | [rulings_2026_09_26_automation_authoring_l40.md](rulings_2026_09_26_automation_authoring_l40.md) | AA-4 — a fourth studio plane filled from closed pick-lists (L40.4 = (a)) |
+| `aa-5` | [rulings_2026_09_26_automation_authoring_l40.md](rulings_2026_09_26_automation_authoring_l40.md) | AA-5 — a published automation lives on the tenant's own automation stream (L40.5 = (a)) |
+| `aa-6` | [rulings_2026_09_26_automation_authoring_l40.md](rulings_2026_09_26_automation_authoring_l40.md) | Owner decisions 2026-09-26 — Letter 40, end-user automation authoring (#1498): AA-1…AA-6 |
+| `aa-6` | [rulings_2026_09_26_automation_authoring_l40.md](rulings_2026_09_26_automation_authoring_l40.md) | AA-6 — two grades, one fixture shape (L40.6 = (a)) |
 | `ad-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-1 — `[selection …]` binds every consumption point, through the one PEP (#1181) |
 | `ad-10` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-10 — instantiation is CONTRACT-LEVEL by design, and an unservable `[add]` refuses (#1162) |
 | `ad-2` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-2 — contract evolution gets the SEA-1 treatment (#1182) |
@@ -1381,4 +1389,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*331 ledger pages; 707 ids declared, 387 cited only.*
+*332 ledger pages; 713 ids declared, 387 cited only.*
