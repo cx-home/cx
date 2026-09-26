@@ -351,11 +351,14 @@ needs becomes its own Ring-1 module.
   [module name=net ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-net spec=deps/cx-platform-net/spec/03-approved/platform/net.md corpus=deps/cx-platform-net/conformance/platform/net.cxd source=deps/cx-platform-net/stdlib/net.cx code='deps/cx-platform-net/vcx/cxnet/stdlib_net.v deps/cx-platform-net/vcx/cxnet/stdlib_net_register.v' half=none status=current]
   [; secrets — the minimal keystore (RULED: SEC-1,
      ledger/rulings_2026_09_26_owner_decisions_designs_l26_l29.md): ring 1,
-     the platform group, the row BEFORE the spec (OL-15). Spec first: the
-     page is written and the owner reads it before the one code branch SEC-1
-     orders, so the row is `planned` and its corpus and code columns name
-     where that branch writes them. ]
-  [module name=secrets ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/secrets.md corpus=conformance/platform/secrets.cxd source=none code='vcx/platform/stdlib_secrets.v vcx/platform/stdlib_secrets_register.v' half=none status=planned]
+     the platform group, the row written BEFORE the spec (OL-15). Its code
+     branch landed it in its own component repository, cx-home/cx-platform-
+     secrets (SEC-1's note, Letter 31 (a): the custody boundary is a
+     repository boundary a client inspects, forks or replaces), as a pure-CX
+     package — the seam, the providers and the verbs are CX over authz,
+     crypto, audit, io and env, so `code=none`; the `cx secrets` verbs are
+     the binary's (vcx/cmd/secrets.v), the way `cx flow`'s are. ]
+  [module name=secrets ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-secrets spec=deps/cx-platform-secrets/spec/03-approved/platform/secrets.md corpus=deps/cx-platform-secrets/conformance/platform/secrets.cxd source=deps/cx-platform-secrets/stdlib/secrets.cx code=none half=none status=current]
   [module name=session ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-identity spec=deps/cx-platform-identity/spec/03-approved/platform/session.md corpus=deps/cx-platform-identity/conformance/platform/session.cxd source=deps/cx-platform-identity/stdlib/session.cx code='deps/cx-platform-identity/vcx/identity/stdlib_session.v deps/cx-platform-identity/vcx/identity/identity_connector_builtins.v deps/cx-platform-identity/vcx/identity/stdlib_session_register.v' half=none status=current]
   [module name=sftp ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-net spec=deps/cx-platform-net/spec/03-approved/platform/sftp.md corpus=deps/cx-platform-net/conformance/platform/sftp.cxd source=deps/cx-platform-net/stdlib/sftp.cx code=deps/cx-platform-net/vcx/cxnet/stdlib_sftp.v half=none status=planned]
   [module name=smtp ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-mail spec=deps/cx-platform-mail/spec/03-approved/platform/smtp.md corpus=deps/cx-platform-mail/conformance/platform/smtp.cxd source=deps/cx-platform-mail/stdlib/smtp.cx code='deps/cx-platform-mail/vcx/mail/stdlib_smtp_wire.v deps/cx-platform-mail/vcx/mail/stdlib_smtp_wire_register.v deps/cx-platform-mail/vcx/mail/stdlib_smtp.v deps/cx-platform-mail/vcx/mail/stdlib_smtp_server.v deps/cx-platform-mail/vcx/mail/stdlib_smtp_register.v' half=none status=current]
