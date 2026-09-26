@@ -161,6 +161,7 @@ mut:
 	env        string
 	bind       string
 	store      string // `[store url=…]` — the projected verbs' store slot (RULED: #728 CK-3)
+	authz      string // `[authz principal=…]` — the runner's own acting chain (RULED: HOST-4)
 	courier_ns i64
 	bindings   []FlowBinding
 }
@@ -436,7 +437,7 @@ fn flow_serve_parse(src string, path string) FlowRunner {
 	// this row fills — so the row is read here, and the refusal of a runner
 	// whose `[env …]` carries a feature package and no `[store]` is taken in
 	// flow_cli_serve, once the module tree is scanned (it names the package).
-	known := ['journal', 'docs', 'env', 'store', 'ingress', 'on', 'courier']
+	known := ['journal', 'docs', 'env', 'store', 'ingress', 'on', 'courier', 'authz']
 	for n in r.items {
 		if !n.is_element() {
 			continue
@@ -466,6 +467,18 @@ fn flow_serve_parse(src string, path string) FlowRunner {
 		out.store = sr.attr('url')
 		if out.store == '' {
 			flow_serve_refuse('[store …] carries no url=')
+		}
+	}
+	// RULED: HOST-4 — the runner-document `[authz principal=…]` row names the
+	// chain the standalone runner acts under; both faces then decide a
+	// feature verb the same way (the host already passes its runtime's
+	// authority store). A `[runner]` with no row behaves exactly as before —
+	// `opts.authz` stays unset and only a command that DECLARES [requires]
+	// is affected (flag 3 of the XAP-1 draft, closed here for this class).
+	if ar := flow_serve_child(r, 'authz') {
+		out.authz = ar.attr('principal')
+		if out.authz == '' {
+			flow_serve_refuse('[authz …] carries no principal=')
 		}
 	}
 	er := flow_serve_child(r, 'env') or {
@@ -1016,6 +1029,7 @@ fn flow_serve_program(r FlowRunner, directives []string, acts []FlowCliAct, tick
 	b << "[?lib 'cx-platform/flow' :as cxflow]"
 	b << "[?lib 'cx-platform/store' :as cxstore]"
 	b << "[?lib 'cx-platform/journal' :as cxjournal]"
+	b << "[?lib 'cx-platform/authz-store' :as cxauthzstore]"
 	// BOTH halves of http, because this driver is both (RULED: 1427-e). It
 	// SERVES — `cxhttp:serve` below — and it READS A MESSAGE, `body-text`,
 	// which is a pure codec verb and went to the Ring-1 `http-client` module
@@ -1076,9 +1090,22 @@ fn flow_serve_program(r FlowRunner, directives []string, acts []FlowCliAct, tick
 	// `[env …]` moves.
 	if r.store != '' {
 		b << '[= \$st [\$cxstore:open "${flow_cli_quote(r.store)}"]]'
-		b << '[= \$o {store: [host tenant="${flow_cli_quote(r.name)}" [store \$st] [journal \$j]]}]'
+		b << '[= \$o0 {store: [host tenant="${flow_cli_quote(r.name)}" [store \$st] [journal \$j]]}]'
 	} else {
-		b << '[= \$o {}]'
+		b << '[= \$o0 {}]'
+	}
+	// RULED: HOST-4 — a `[runner]` document naming `[authz principal=…]`
+	// opens the standalone runner's own authority store and hands it in as
+	// `opts.authz`, exactly as the deployment host hands `flow-perform` its
+	// runtime's (X2, RULED: 1265-WF-40b): both faces then decide a feature
+	// verb the SAME way — a principal actor is the root of its own chain
+	// either way, and an agent binder with no grant in the store is refused
+	// either way. A `[runner]` with no `[authz]` row hands in none, and
+	// `opts.authz` stays absent — today's behaviour, byte-identical.
+	b << if r.authz != '' {
+		'[= \$o [\$map-put \$o0 "authz" [\$cxauthzstore:store {tenant: "${flow_cli_quote(r.name)}"}]]]'
+	} else {
+		'[= \$o \$o0]'
 	}
 	// §4.15's restore half, at BOOT, once per distinct bound document: `rearm`
 	// takes ONE `opts.flow` because every registry entry it builds is a call to
