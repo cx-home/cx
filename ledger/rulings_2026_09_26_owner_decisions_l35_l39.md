@@ -1,13 +1,13 @@
-# Owner decisions 2026-09-26 (evening) — Letters 35, 38 and 39: the site token (SITE-1), shared-slot steps beside a selected run (RUN-5), #1498 stays in v0.18 (SD-2)
+# Owner decisions 2026-09-26 (evening) — Letters 35, 37, 38 and 39: the site token (SITE-1), the pace past the weekly meter (PACE-1), shared-slot steps beside a selected run (RUN-5), #1498 stays in v0.18 (SD-2)
 
 **Status: RULED (owner, 2026-09-26 ~23:00Z, in session, on the letters posted on
 [#1591](https://github.com/cx-home/cx-private/issues/1591) at 18:5xZ (L35) and 22:4xZ (L38, L39)).**
-Letter 37 (the pace past the weekly meter) is NOT ruled by this page: the owner asked for the plan
+Letter 37 was answered at 23:1xZ after the plan was posted (PACE-1 below); the owner first asked for the plan
 that keeps the post-split epic's finish at 2026-09-27 instead; that plan is the board's.
 
 ## The owner's word, verbatim
 
-"l35a", "l38a", "l39 1498 stays in v0.18."
+"l35a", "l38a", "l39 1498 stays in v0.18." — and, on Letter 37 after the plan post: "a".
 
 ## SITE-1 — the public site builds on GitHub's runner with a read-only token (Letter 35 = (a))
 
@@ -37,3 +37,14 @@ End-user automation authoring (#1498) remains in the v0.18 post-split epic. It h
 (the issue is filed "no decision yet"), so it lands as the other designs did: a design letter with
 lettered options on the board first, the owner's ruling on the ledger, then the implementation wave.
 Rejected: (a) moving it after the cut; (c) dropping it from v0.18.
+
+## PACE-1 — the post-split epic crosses the weekly meter on extra usage (Letter 37 = (a), 23:1xZ)
+
+The weekly limit binds about 04:00Z on 2026-09-27 at the epic's pace (eight agents, ~5–6 % of the
+weekly per hour). The owner's word is (a) of the plan post: past the meter the remaining items —
+KIT-4, #1467, #1472, #1498's implementation wave and K10 the cut — run on extra usage, estimated at
+4–5 M tokens ($100–250, the integrator's inference), so the epic finishes on 2026-09-27 as tabled on
+the board (fix green 00:45Z, union 1 02:00Z, union 2 04:00Z, union 3 09:00Z, the cut ~11:00Z). The
+standing rules stand otherwise: nothing running is cut short, every launch line states its cost, the
+hourly scorecard measures against the checkpoints and a miss is posted in the same hour. Rejected:
+(b) stopping launches at the meter until 2026-10-02 22:00Z.
