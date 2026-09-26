@@ -1,0 +1,161 @@
+# scripts/public_history_replace_selftest.cx — the fixture for
+# scripts/public_history_replace.cx (#1669, RULED: D83a, RS-33, CXF-8), beside
+# the script per AGENTS.md rule 2 (a fixture nothing runs is a liability) and
+# wired the way #1675's check-vcache-soundness-selftest was: its own Makefile
+# target `check-public-history-replace` (below), in TEST_TARGETS, classified
+# in scripts/test_changed.sh's step_globs(). A scratch world of real git
+# repositories under a fresh per-run `$io:temp-dir` root (removed at the end
+# of the run, success or failure — the same unconditional-cleanup idiom
+# _gate_evidence/pipeline_rs33_pass/strip_attribution_fixture.cx (K12b) used,
+# whose shape this fixture otherwise follows), run through the tool with the
+# real `cx` binary and the real `git-filter-repo`, each case checking exit
+# code and stdout/stderr text.
+#
+#   cx --allow-all scripts/public_history_replace_selftest.cx <abs cx> <abs tool> <abs strip-tool> <abs replacements-file>
+#   (the Makefile target below supplies all four; `make check-public-history-replace`)
+#
+# Exit 0 every case held, 1 a case failed (each case prints its own line).
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cat scope=private pure ($parts) [$strings:join $parts '']]
+
+[?def literal scope=private pure ()
+  [$cat ("ghp_", "abcdefghijklmnopqrstuvwxyz012345")]]
+
+[?def trailer scope=private pure ()
+  [$cat ("Co-Authored-By", ":", " Claude <", "noreply", "@", "anthropic.com>")]]
+
+[?def ident scope=private pure ()
+  ("-c", "user.name=fixture", "-c", "user.email=fixture@example.invalid",
+   "-c", "commit.gpgsign=false", "-c", "tag.gpgsign=false")]
+
+[?def git scope=private impure ($dir::string $argv)
+  [?let [= $r [$process:run ("git", "-C", $dir, [?splice [$ident]], [?splice $argv])]]
+    [$strings:trim [$string $r@stdout]]]]
+
+[?def write-commit scope=private impure ($root::string $file::string $content::string $msg::string)
+  [?let
+    [= $_w [$io:write-file [$cat ($root, "/", $file)] $content]]
+    [= $_a [$git $root ("add", $file)]]
+    [= $_c [$git $root ("commit", "-q", "-m", $msg)]]
+    [$git $root ("rev-parse", "HEAD")]]]
+
+[?def rm-commit scope=private impure ($root::string $file::string $msg::string)
+  [?let
+    [= $_r [$git $root ("rm", "-q", $file)]]
+    [= $_c [$git $root ("commit", "-q", "-m", $msg)]]
+    [$git $root ("rev-parse", "HEAD")]]]
+
+# world A/B: `src` — a seed commit, a HISTORICAL commit whose blob carries
+# the planted `ghp_` literal, then a commit that removes that file — so the
+# TIP's tree never names the affected blob and the rewrite's tree check
+# (equal before/after) has something real to prove.
+[?def world-ab scope=private impure ($root::string)
+  [?let
+    [= $src [$cat ($root, "/src")]]
+    [= $_i [$process:run ("git", "init", "-q", "-b", "main", $src)]]
+    [= $c1 [$write-commit $src "a.txt" "seed\n" "seed"]]
+    [= $c2 [$write-commit $src "secret.txt" [$cat ("token ", [$literal], " here\n")] "oops: a secret-shaped literal"]]
+    [= $c3 [$rm-commit $src "secret.txt" "remove it"]]
+    [w src=$src c1=$c1 c2=$c2 c3=$c3]]]
+
+# world C: a `src2` carrying BOTH an RS-33 attribution trailer (commit c2)
+# AND the planted literal (commit c3, later removed at the tip like world
+# A/B) — run through strip_attribution.cx first, into work=, then through
+# public_history_replace.cx over the SAME work= with no source: override,
+# proving the second pass reuses the first pass's mirror (the message strip
+# already applied) instead of re-cloning the untouched source.
+[?def world-c scope=private impure ($root::string)
+  [?let
+    [= $src [$cat ($root, "/src2")]]
+    [= $_i [$process:run ("git", "init", "-q", "-b", "main", $src)]]
+    [= $c1 [$write-commit $src "a.txt" "seed\n" "seed"]]
+    [= $c2 [$write-commit $src "b.txt" [$cat ("second\n\n", [$trailer])] "second"]]
+    [= $c3 [$write-commit $src "secret.txt" [$cat ("token ", [$literal], " here\n")] "oops"]]
+    [= $c4 [$rm-commit $src "secret.txt" "remove it"]]
+    [w src=$src c1=$c1 c2=$c2 c3=$c3 c4=$c4]]]
+
+[?def run-tool scope=private impure ($cx::string $tool::string $cwd::string $args)
+  [?let [= $r [$process:run ($cx, "--allow-all", $tool, [?splice $args]) cwd=$cwd]]
+    [out code=[$string $r@exit-code] text=[$cat ([$string $r@stdout], [$string $r@stderr])]]]]
+
+[?def has scope=private pure [returns bool] ($o $needles)
+  [= [$count [?for [in $n $needles] [where [not [$strings:contains [$string $o@text] $n]]] [yield 1]]] 0]]
+
+[?def check scope=private impure [returns bool] ($name::string $ok::bool $o)
+  [?let [= $_ [?if $ok
+                [then [$say [$cat ("fixture OK      ", $name)]]]
+                [else [$say [$cat ("fixture FAILED  ", $name, " (exit ", [$string $o@code], ")\n", [$string $o@text])]]]]]
+    $ok]]
+
+[?let
+  [= $raw [$env:argv]]
+  [= $cx [$nth $raw 2]]
+  [= $tool [$nth $raw 3]]
+  [= $strip-tool [$nth $raw 4]]
+  [= $repl-abs [$nth $raw 5]]
+  [= $replarg [$cat ("replacements:", $repl-abs)]]
+  [= $root [$io:temp-dir "cx-phr-fixture-"]]
+  [= $wab [$world-ab $root]]
+  [= $wc [$world-c $root]]
+  [= $srcarg [$cat ("source:src=", [$string $wab@src])]]
+  [= $w1 [$cat ($root, "/w1")]]
+
+  # A — RED FIRST: verify-only before the rewrite finds the planted literal
+  # (2 diff lines: the commit that adds it, the commit that removes it —
+  # git log -p counts lines, same as REFRESH-3's own `grep -cE` method).
+  [= $a [$run-tool $cx $tool $root ("src", [$cat ("verify-only:src")], [$cat ("work=", $w1)], $srcarg, $replarg)]]
+  [= $ok-a [$check "A verify-only pre-rewrite (RED): 2 shape hits, exit 1"
+             [and [= [$string $a@code] "1"] [$has $a ("src: verify-only, ", "2 shape hit(s)")]]
+             $a]]
+
+  # B — the rewrite (GREEN): hits 2 -> 0, commits/tree unchanged, fsck clean;
+  # the historical blob itself now reads the redacted shape, not the literal.
+  [= $b [$run-tool $cx $tool $root ("src", [$cat ("work=", $w1)], $replarg)]]
+  [= $ok-b-report [$check "B rewrite (GREEN): commits unchanged, tree unchanged, hits 2 -> 0, fsck clean"
+             [and [= [$string $b@code] "0"]
+                  [$has $b ("src: every ref, commits 3 -> 3 (unchanged: true)", "tree(s) 1 unchanged: true",
+                            "hits 2 -> 0", "fsck clean: true")]]
+             $b]]
+  # the rewrite gave the c2 commit a NEW sha (filter-repo rewrites every
+  # commit whose content or ancestry changed) — find it by the message the
+  # planted-literal commit still carries (messages are untouched by this
+  # pass) rather than the pre-rewrite sha, which no longer resolves.
+  [= $new-c2 [$strings:trim [$git [$cat ($w1, "/src.git")] ("log", "--all", "--format=%H", "--grep=oops: a secret-shaped literal")]]]
+  [= $blob [$git [$cat ($w1, "/src.git")] ("show", [$cat ($new-c2, ":secret.txt")])]]
+  [= $ok-b-blob [$check "B historical blob content: literal replaced by the redacted shape"
+             [and [not [$strings:contains $blob [$literal]]] [$strings:contains $blob "<redacted-test-shape>"]]
+             [out code="0" text=$blob]]]
+  [= $c [$run-tool $cx $tool $root ("src", [$cat ("verify-only:src")], [$cat ("work=", $w1)], $replarg)]]
+  [= $ok-c [$check "C verify-only post-rewrite (GREEN): 0 shape hits, exit 0"
+             [and [= [$string $c@code] "0"] [$has $c ("0 shape hit(s)")]]
+             $c]]
+
+  # D — chaining: strip_attribution.cx's message pass runs first into work=w2,
+  # then public_history_replace.cx over the SAME work=w2 with no source:
+  # override (its default source does not exist for this scratch repo) —
+  # it must reuse the mirror the strip pass left rather than fail to clone.
+  [= $w2 [$cat ($root, "/w2")]]
+  [= $srcarg2 [$cat ("source:src=", [$string $wc@src])]]
+  [= $strip-run [$run-tool $cx $strip-tool $root ("src", [$cat ("work=", $w2)], $srcarg2)]]
+  [= $ok-strip [$check "D0 strip_attribution.cx pass runs first, into the shared work="
+             [= [$string $strip-run@code] "0"]
+             $strip-run]]
+  [= $d [$run-tool $cx $tool $root ("src", [$cat ("work=", $w2)], $replarg)]]
+  [= $ok-d [$check "D public_history_replace.cx reuses the SAME work= mirror (no source: given) as its LAST pass"
+             [and [= [$string $d@code] "0"] [$has $d ("reusing existing mirror at", "commits 4 -> 4 (unchanged: true)", "hits 2 -> 0")]]
+             $d]]
+  [= $trailer-still-in-msg [$git [$cat ($w2, "/src.git")] ("log", "--all", "--format=%B")]]
+  [= $ok-d-msg [$check "D the message strip's own effect survived the second pass (no trailer in any message)"
+             [not [$strings:contains $trailer-still-in-msg [$trailer]]]
+             [out code="0" text=$trailer-still-in-msg]]]
+
+  [= $_rm [$io:remove-tree $root]]
+  [?if [and $ok-a [and $ok-b-report [and $ok-b-blob [and $ok-c [and $ok-strip [and $ok-d $ok-d-msg]]]]]]
+    [then [?let [= $_ [$say "public-history-replace fixture: 7/7 OK"]] [$env:exit 0]]]
+    [else [?let [= $_ [$say "public-history-replace fixture: FAILED"]] [$env:exit 1]]]]]
