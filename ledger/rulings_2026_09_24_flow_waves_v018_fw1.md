@@ -60,3 +60,25 @@ The owner answered, verbatim, "l5 whats the best long term for cx?", and the int
 fixture proves, the §4.6 sentence is the ruling's own text, and the `[scope]` count is what the
 issue asked for. Nothing is reverted; this note is the record the letter named. Rejected: (b) keep
 the effects row and revert the two prose edits; (c) revert all three and file the defect.
+
+## Note 2026-09-26 — W4's spec sentences
+
+W4 (cx-home/cx-platform-flow#4, `fleet`; flow branch `impl/w4-fleet` rebased onto W7's `main`
+`e7a6a3835`) carried three sentences in `flow.md` beyond §3's status-row flip, raised as its
+RESULTS.md flag 4 and put to the owner as Letter 15 on cx-home/cx-private#1591:
+
+1. §3's `fleet` bullet — the readout surface: the `[head-set …]` cut it was read at, `as-of=` as
+   `opts.now` or the clock, streams the caller may not read left out and counted as `withheld=N`,
+   `opts.store` for the checkpoints, `opts.lens` and `opts.flow`, CXER4965 for a malformed option,
+   and WF-32's "appends no transition and performs no act" (flow-114, flow-115, flow-116, flow-117,
+   flow-118, flow-121);
+2. §4.13 — the inbox lands as `fleet`'s `:inbox` lens: the steps no other actor has claimed, of a
+   run whose document the reader hands in, a role held exactly when the roster lists the actor
+   (flow-119);
+3. §4.17 — the fleet overlay is `fleet`'s `[steps …]` rows, keyed by construct `name=` as the record
+   is, so the node id joins them as it joins the run overlay's (flow-120).
+
+The owner's answer to Letter 15 was **(a)**: the three stand as inside W4's decision (WF-7, with
+1265-PW-2 for the inbox). Nothing is reverted; this note is the record the letter named. Letter 16
+(the synthetic journal clock behind `age=`) was answered (a) as a wave of its own, CLOCK-1, and is
+not W4's.

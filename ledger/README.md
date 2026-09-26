@@ -717,6 +717,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rs-34` | [rulings_2026_09_25_llm_front_door_k11a.md](rulings_2026_09_25_llm_front_door_k11a.md) | RS-34 — the letters of 2026-09-25 (owner: D89a, D90b) |
 | `rs-35` | [rulings_2026_09_25_v_fork_rs35.md](rulings_2026_09_25_v_fork_rs35.md) | RS-35 — the V fork under the zero-attribution rule: strip the fork's own range only (owner: Letter 2 = (a), 2026-09-25) |
 | `rs-36` | [rulings_2026_09_25_component_waves_rs36.md](rulings_2026_09_25_component_waves_rs36.md) | RS-36 — how a wave in a component repository lands after the split (owner, 2026-09-25, Letter 4 (a)) |
+| `rs-38` | [rulings_2026_09_26_fixture_backed_sentences_rs38.md](rulings_2026_09_26_fixture_backed_sentences_rs38.md) | RS-38 — a flow-ladder wave may state, inside its ruled section, the exact semantics its fixtures grade (owner: Letter 18 = (a), 2026-09-26) |
 | `run-1` | [rulings_2026_09_16_run_selection_run1.md](rulings_2026_09_16_run_selection_run1.md) | Owner decision 2026-09-16 ~05:05Z — the post-merge run tests what changed and what reads it (RULED: RUN-1) |
 | `run-2` | [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md) | Owner decisions 2026-09-19 ~04:45Z — a failed run reports every red class (RUN-2); the daily full union runs on an idle runner (RUN-3); an escalated branch runs the computed selection pre-merge (RUN-4); the run log carries step timing and the timings file (RUN-5); the two agents and their order (AGENTS-1); the budget step stays open until it measures (1562-a) |
 | `run-3` | [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md) | Owner decisions 2026-09-19 ~04:45Z — a failed run reports every red class (RUN-2); the daily full union runs on an idle runner (RUN-3); an escalated branch runs the computed selection pre-merge (RUN-4); the run log carries step timing and the timings file (RUN-5); the two agents and their order (AGENTS-1); the budget step stays open until it measures (1562-a) |
@@ -1008,6 +1009,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1265-pb-8` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md), [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) |
 | `1265-pc-2` | [bench_flow_w1e_anchored_reader_2026_09_06.md](bench_flow_w1e_anchored_reader_2026_09_06.md), [rulings_2026_09_06_flow_snapshot_interval_1265.md](rulings_2026_09_06_flow_snapshot_interval_1265.md), [rulings_2026_09_09_flow_activation_seq_1316c1.md](rulings_2026_09_09_flow_activation_seq_1316c1.md) |
 | `1265-pc-3` | [rulings_2026_09_04_flow_w1_map_scale_1265.md](rulings_2026_09_04_flow_w1_map_scale_1265.md) |
+| `1265-pw-2` | [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) |
 | `1265-pw-3` | [rulings_2026_09_04_flow_w3_performers_1265.md](rulings_2026_09_04_flow_w3_performers_1265.md), [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) |
 | `1266-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) |
 | `1269-q1` | [rulings_2026_09_05_xap_queue.md](rulings_2026_09_05_xap_queue.md) |
@@ -1147,6 +1149,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `choice-1` | [rulings_2026_08_21_array_separator.md](rulings_2026_08_21_array_separator.md), [rulings_2026_09_09_fmt_fingerprint_underscores_1347.md](rulings_2026_09_09_fmt_fingerprint_underscores_1347.md) |
 | `ck-4b` | [rulings_2026_09_14_connector_ingest_1430g.md](rulings_2026_09_14_connector_ingest_1430g.md), [rulings_2026_09_19_cited_ids_without_a_page_1447.md](rulings_2026_09_19_cited_ids_without_a_page_1447.md) |
 | `client-2` | [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md) |
+| `clock-1` | [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) |
 | `crc-32` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md), [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md), [rulings_2026_08_29_tar_module_1084.md](rulings_2026_08_29_tar_module_1084.md) |
 | `cve-2011` | [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md) |
 | `cxf-3` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_diagnostics_audit_1522.md](rulings_2026_09_17_diagnostics_audit_1522.md), [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md), [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md), [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md), [rulings_2026_09_18_owner_decisions_0440z.md](rulings_2026_09_18_owner_decisions_0440z.md) |
@@ -1341,4 +1344,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*327 ledger pages; 685 ids declared, 384 cited only.*
+*328 ledger pages; 686 ids declared, 386 cited only.*
