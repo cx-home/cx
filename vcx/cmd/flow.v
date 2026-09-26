@@ -50,6 +50,7 @@ module main
 
 import os
 import crypto.sha256
+import time
 import cx
 import code { grant_scope_install, grant_scope_root, opt_root, refuse_unenforced_grant_scope }
 
@@ -70,6 +71,12 @@ const flow_cli_usage = [
 	'       cx flow serve    RUNNER.cx [--for DURATION] [--allow-*]',
 	'       cx flow diagram  FLOW.cx [--level=min|compact|full]',
 	'       cx flow watch    FLOW.cx RUN-ID --journal URL [--level=RUNG] [--for D]',
+	'       cx flow cancel   FLOW.cx RUN-ID --env ENV.cx [--reason=TEXT] [--journal URL] [--allow-*]',
+	'       cx flow pause    FLOW.cx RUN-ID --env ENV.cx [--reason=TEXT] [--journal URL] [--allow-*]',
+	'       cx flow resume   FLOW.cx RUN-ID --env ENV.cx [--journal URL] [--allow-*]',
+	'       cx flow skip     FLOW.cx RUN-ID STEP --env ENV.cx [--reason=TEXT] [--journal URL] [--allow-*]',
+	'       cx flow retry-now FLOW.cx RUN-ID --env ENV.cx [--journal URL] [--allow-*]',
+	'       cx flow resolve  FLOW.cx RUN-ID RESOLUTION.cx --env ENV.cx [--journal URL] [--allow-*]',
 	'',
 	'The local profile of cx-platform/flow (platform/flow.md §4.15) and its STANDALONE',
 	'RUNNER (§4.23). `run` is a journal, never a service: there is no engine to',
@@ -127,15 +134,24 @@ const flow_cli_usage = [
 	'byte-identical transitions for the same flow and the same acts (§4.23).',
 	'',
 	'`serve` binds two ingress inputs and no third: the RESERVED path',
-	'`/.cx/flow/act` takes a correlated act ([act run= step= …]), a declared',
+	'`/.cx/flow/act` takes a correlated act ([act run= step= …]) or an operator',
+	'act on the run ([cancel|pause|resume|skip|retry-now|resolve run= …]), a declared',
 	'[on kind=webhook path=…] row takes that binding\'s delivery, anything else is',
 	'404. It serves FOUR of §4.24\'s five kinds — schedule, intent, webhook, file;',
 	'a fold binding refuses CXER4965 naming its landing.',
 	'',
+	'The OPERATOR ACTS (§4.21) — cancel, pause, resume, skip, retry-now, resolve —',
+	'are acts on a run a previous invocation left in the journal, under --actor and',
+	'--authority (the operator, never the run\'s recorded basis). Each takes the',
+	'run\'s FLOW.cx and --env, because the act drives the run on: a cancel unwinds',
+	'through the run\'s own compensators, a skip or a resume activates what follows.',
+	'A state the act does not admit is CXER4966 on stderr, exit 1.',
+	'',
 	'Output: the record (or [valid …] / [simulation …]) in canonical CX on stdout;',
 	'a refusal is the [err …] value on stderr.',
-	'Exit: 0 a terminal :done run (or valid / simulated / found); 1 a run that',
-	'parked or ended in a failure state, and every refusal; 2 usage.',
+	'Exit: 0 a terminal :done run (or valid / simulated / found / an operator act',
+	'answered); 1 a run that parked or ended in a failure state, and every',
+	'refusal; 2 usage.',
 ]
 
 fn flow_cli_die(msg string) {
@@ -463,7 +479,7 @@ fn flow_cli_answer(rendered string, want_done bool) {
 // ── argv ─────────────────────────────────────────────────────────────────────
 
 const flow_cli_known_flags = ['--env', '--journal', '--actor', '--authority', '--stream', '--for',
-	'--level']
+	'--level', '--reason']
 
 struct FlowCliOpts {
 mut:
@@ -480,6 +496,9 @@ mut:
 	// `diagram` only: the detail rung (min | compact | full). Absent is
 	// `compact`, which the module's own ladder also defaults to.
 	level     string
+	// the operator acts only (`cancel`, `pause`, `skip`): the act's reason, carried
+	// as the transition's `[reason …]` (flow.md §4.21). Absent is no reason.
+	reason    string
 	args      [][]string
 	positional []string
 	allow_all    bool
@@ -568,6 +587,7 @@ fn flow_cli_set(mut o FlowCliOpts, key string, val string) {
 		'stream' { o.stream = val }
 		'for' { o.for_spec = val }
 		'level' { o.level = val }
+		'reason' { o.reason = val }
 		else { flow_cli_die('unknown flag `--${key}`') }
 	}
 }
@@ -627,7 +647,7 @@ fn flow_cli_opts_map(o FlowCliOpts, nonce string, with_flow bool) string {
 
 fn run_flow(args []string) {
 	if args.len == 0 {
-		flow_cli_die('needs a verb: run | validate | simulate | status | serve | diagram | watch')
+		flow_cli_die('needs a verb: run | validate | simulate | status | serve | diagram | watch | cancel | pause | resume | skip | retry-now | resolve')
 	}
 	verb := args[0]
 	mut o := flow_cli_parse(args[1..])
@@ -661,8 +681,9 @@ fn run_flow(args []string) {
 		'serve' { flow_cli_serve(o, for_ns) }
 		'diagram' { flow_cli_diagram(o) }
 		'watch' { flow_cli_watch(o, for_ns) }
+		'cancel', 'pause', 'resume', 'skip', 'retry-now', 'resolve' { flow_cli_op(o, verb) }
 		else {
-			flow_cli_die('unknown verb `${verb}` (run | validate | simulate | status | serve | diagram | watch)')
+			flow_cli_die('unknown verb `${verb}` (run | validate | simulate | status | serve | diagram | watch | cancel | pause | resume | skip | retry-now | resolve)')
 		}
 	}
 }
@@ -941,14 +962,22 @@ const flow_cli_watch_line_budget = 1_000_000
 
 // The terminal run statuses, from §2.2's closed set. A run that reaches one
 // will never transition again, so the loop ends rather than holding a
-// subscription open on a finished run. `:cancelled` is deliberately ABSENT:
-// `cancel` is a named landing with no wave assigned (flow.md §4.21), so no
-// record can carry it, and listing it here would be a claim this build cannot
-// keep.
+// subscription open on a finished run. `:cancelled` is one of them since the
+// operator acts landed (flow.md §4.21, RULED: WF-19; W7): a cancelled run is
+// over. `:paused` and `:cancelling` are not — the one waits on `resume`, the
+// other is an unwind still in progress.
+//
+// THE STATUS IS COMPARED WITH ITS SIGIL. `[$string]` renders an atom WITHOUT
+// its `:` (`:done` → `done`), and the loop reads the status that way off each
+// paint, so the image is normalized to carry the sigil before it is looked up
+// — measured: before this, a watch with no `--for` never ended on ANY
+// terminal status, `:done` included (`done` never equals `':done'`), and
+// every existing test bounded it with `--for`.
 fn flow_cli_watch_defs() string {
 	return r"[?def fw--terminal pure [returns bool] ($s::string)
-  [$exists [$first [?for [in $x (':done', ':compensated', ':incomplete', ':conflict', ':failed')]
-    [where [= $x $s]] [yield 1]]]]]
+  [?let [= $k [?if [$str-starts-with $s ':'] [then $s] [else [$concat ':' $s]]]]
+    [$exists [$first [?for [in $x (':done', ':compensated', ':incomplete', ':conflict', ':failed', ':cancelled')]
+      [where [= $x $k]] [yield 1]]]]]]
 
 [; a batch is a PAINT: the record is the fold at head, so one paint after a
    batch says exactly what several paints inside it would. An empty batch
@@ -1025,4 +1054,80 @@ fn flow_cli_status(o FlowCliOpts) {
 		'  [\$cxflow:status \$j "${flow_cli_quote(id)}" ${sopts}]]',
 	].join('\n')
 	flow_cli_answer(flow_cli_eval('', program), false)
+}
+
+// flow_cli_op is the local profile's face on the OPERATOR ACTS (flow.md §4.21,
+// §4.8; RULED: WF-19, WF-25, 1265-PB-8): `cancel`, `pause`, `resume`, `skip`,
+// `retry-now` and `resolve`, each ONE call to the module verb of the same name
+// and nothing else — the admission, the transition, the cascade, the timer
+// remainders and the drive that follows are all the module's, so this face
+// and `cx flow serve`'s reserved act path append the same bytes for the same
+// act (RULED: WF-28b). The act is the OPERATOR's: `--actor` / `--authority`
+// are who acts (the CLI's defaults are the OS user and `cli`), never the
+// run's recorded basis, which the drive the act sets in motion runs under.
+//
+// The verbs need the run's DOCUMENT and its resolver — a cancel unwinds
+// through the run's own compensators, a skip or a resume drives the run on —
+// so they take FLOW.cx and `--env ENV.cx` exactly as `run` does; `advance`
+// refuses a document the run did not pin. `resolve` takes the
+// `[resolution …]` as a file, RESOLUTION.cx, the DATA document beside the
+// flow (the `simulate` shape).
+//
+// `pause` records each armed timer's REMAINING duration, measured from the
+// act's own instant: the module verb reads no clock (its `[effects]` are
+// `[read] [write]`), so this face hands it the invocation's instant as
+// `opts.at`, exactly as a fired timer carries `at=` from the clock that armed
+// it (RULED: 1358-e).
+//
+// Output: the record on stdout, exit 0 — the act was admitted (or found the
+// run already where it would put it); a refusal is the `[err …]` on stderr,
+// exit 1; a usage miss is exit 2.
+fn flow_cli_op(o FlowCliOpts, verb string) {
+	want := match verb {
+		'skip', 'resolve' { 3 }
+		else { 2 }
+	}
+	if o.positional.len != want {
+		operand := match verb {
+			'skip' { 'FLOW.cx, RUN-ID and STEP' }
+			'resolve' { 'FLOW.cx, RUN-ID and RESOLUTION.cx' }
+			else { 'FLOW.cx and RUN-ID' }
+		}
+		flow_cli_die('${verb} takes ${operand}')
+	}
+	if o.env == '' {
+		flow_cli_die('${verb} needs --env ENV.cx (the program whose module tree the run\'s acts resolve through)')
+	}
+	flow_cli_install_caps(o)
+	flow_src := flow_cli_read(o.positional[0], 'the flow document')
+	id := o.positional[1]
+	mut data := flow_src
+	if verb == 'resolve' {
+		data += '\n' + flow_cli_read(o.positional[2], 'the resolution')
+	}
+	directives, acts := flow_cli_env_scan(o.env)
+	url := if o.journal != '' { o.journal } else { flow_cli_journal_default }
+	reason := if o.reason != '' { '[reason "${flow_cli_quote(o.reason)}"]' } else { '{}' }
+	mut opts := flow_cli_opts_map(o, '', true)
+	if verb == 'pause' {
+		opts = opts.all_before_last('}') + ' at: "${time.utc().format_rfc3339()}"}'
+	}
+	qid := '"${flow_cli_quote(id)}"'
+	call := match verb {
+		'cancel' { '[\$cxflow:cancel \$j ${qid} ${reason} ${opts}]' }
+		'pause' { '[\$cxflow:pause \$j ${qid} ${reason} ${opts}]' }
+		'resume' { '[\$cxflow:resume \$j ${qid} ${opts}]' }
+		'skip' { '[\$cxflow:skip \$j ${qid} "${flow_cli_quote(o.positional[2])}" ${reason} ${opts}]' }
+		'retry-now' { '[\$cxflow:retry-now \$j ${qid} ${opts}]' }
+		else { '[\$cxflow:resolve \$j ${qid} [\$first [\$cx:select \$doc "//resolution"]] ${opts}]' }
+	}
+	program := [
+		flow_cli_prelude(true),
+		directives.join('\n'),
+		'[?let [= \$fl [\$first [\$cx:select \$doc "//flow"]]]',
+		'[= \$e ${flow_cli_resolver(acts)}]',
+		'[= \$j [\$cxjournal:open "${flow_cli_quote(url)}" "${flow_cli_tenant}"]]',
+		'  ${call}]',
+	].join('\n')
+	flow_cli_answer(flow_cli_eval(data, program), false)
 }
