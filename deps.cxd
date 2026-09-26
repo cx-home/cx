@@ -48,5 +48,5 @@ organisation moves.
   [dep repo=cx-platform-fabric sha=51ba1841c4d307427cf878c862c0d40302f22325 module='cx-platform/fabric' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-xsp sha=cbc09ecbc2613ed46eff3c4e114811ab6c0430c0 module='cx-stdlib/xsp cx-platform/xsp-auth' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-tooling sha=ad5ac9d787862616d67744d90f07828c50887bcb module='cx-stdlib/diagram']
-  [dep repo=cx-platform-xap sha=46db852e6d9652eff53677352925d93ff7fc6204 module='cx-platform/xap' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
+  [dep repo=cx-platform-xap sha=34d5c6f2f093636a3a928f96530018b6f0cb7974 module='cx-platform/xap' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
 ]
