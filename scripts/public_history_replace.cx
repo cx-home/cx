@@ -1,0 +1,351 @@
+# scripts/public_history_replace.cx — the #1669 public-history replace-text
+# pass (RULED: D83a, RS-33, CXF-8).
+#
+# A sibling of scripts/strip_attribution.cx, not a pass folded into it:
+# that tool's own header calls itself "the RS-33 history strip tool" and
+# says, twice, that messages are the only thing it ever touches ("message
+# text only ... no path, author or date is touched" / "messages are the
+# only thing this tool ever touches") — a stated one-purpose contract this
+# tool would break by also rewriting blob content. So #1669 lands here
+# instead, run as the LAST pass over the SAME work repo a strip_attribution.cx
+# run already produced (this tool reuses an existing `<work>/<name>.git`
+# mirror in place rather than re-cloning from source — re-cloning would
+# start from the unstripped history and undo the message pass).
+#
+# Given repository names (or `--all-public`, exactly as strip_attribution.cx
+# takes it), for each one: ensure a mirror at `<work>/<name>.git` (reuse it if
+# already there — the strip's output — else clone --mirror fresh, for a
+# standalone run such as the fixture below), run `git filter-repo
+# --replace-text <replacements file> --force` over it (the same invocation
+# REFRESH-3 ran by hand: `git filter-repo --force --replace-text
+# extract-cx7/strip2/replacements.txt`), and print, per repository: commits
+# before -> after (unchanged), the scope's ref tree(s) before -> after
+# (unchanged — the three expressions this tool ships with hit only
+# historical blobs, never a tracked file at any tip), and hits before ->
+# after from a whole-scope blob scan (`git log <scope> -p`, counting lines
+# that contain one of the expressions' left-hand sides — the same method
+# REFRESH-3's flag used: `git log -p --all | grep -cE '...'`).
+#
+# It PUSHES NOTHING — same contract as strip_attribution.cx.
+#
+# The expressions file is `scripts/public_history_replacements.txt` by
+# default (`replacements:<path>` overrides it): the three lines of
+# extract-cx7/strip2/replacements.txt, byte-identical. THAT FILE CARRIES NO
+# HEADER COMMENT — git-filter-repo's `--replace-text` reader
+# (FilteringOptions.get_replace_text) has no comment form: unlike
+# --paths-from-file, it does not skip a line starting with `#`, so a `#`
+# line there would itself become a literal search-and-replace pattern. The
+# warning that a changed byte changes every downstream sha and stops the
+# next refresh from fast-forwarding lives here and in that file's own
+# tracked-file commit, not inside the file.
+#
+# Usage (run from the checkout root; needs `git-filter-repo` — resolved on
+# PATH first (`command -v git-filter-repo`), falling back to
+# ~/Library/Python/3.9/bin on a box where it was installed there instead):
+#   cx --allow-read --allow-write --allow-subprocess --allow-env \
+#     scripts/public_history_replace.cx cx-platform-fabric work=/path/to/work
+#   cx ... scripts/public_history_replace.cx --all-public work=/path/to/work --dry-run
+#
+# Flags (the same single-token key=value idiom as strip_attribution.cx):
+#   --all-public          every public repository (registry/repos.cxd minus
+#                          cx-private) plus the V fork ("v")
+#   --dry-run              print the plan; touch no mirror
+#   work=<dir>             where each <name>.git mirror lives (default: a
+#                          fresh temp dir, printed) — pass the SAME work= a
+#                          strip_attribution.cx run used to chain onto it
+#   replacements:<path>    the expressions file (default:
+#                          scripts/public_history_replacements.txt)
+#   source:<name>=<path>   clone FROM <path> instead of the default
+#                          git@github.com:cx-home/<name>.git, when no mirror
+#                          already exists at work/<name>.git
+#   refs:<name>=<spec>     rewrite and verify only <spec> (git-filter-repo
+#                          `--refs`): a branch or a two-dot range. A mirror's
+#                          other refs are left as they were
+#   verify-only:<name>     scan <name>'s mirror (existing, or cloned fresh)
+#                          over every ref for the three shapes; rewrite
+#                          nothing
+#   skip:<name>            drop <name> from the list (`--all-public` minus one)
+#
+# Exit 0 every named repository verified clean (commit-count-, tree- and
+# fsck-preserving, hits 0 unless verify-only), 1 a repository failed
+# verification, 2 an environment fault (git, git-filter-repo, a clone, the
+# replacements file, or a rewrite failed).
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/fp'      as=fp]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def cat scope=private pure ($parts) [$strings:join $parts '']]
+
+[?def default-replacements-path scope=private pure [returns string] ()
+  "scripts/public_history_replacements.txt"]
+
+[?def nonblank scope=private pure ($text::string)
+  [?for [in $l [$strings:split-lines $text]]
+    [where [not [= [$strings:trim $l] ""]]]
+    [yield [$strings:trim $l]]]]
+
+[?def member scope=private pure [returns bool] ($x $xs)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+# -- the tracked expressions --------------------------------------------------
+# parse-replacements: each non-blank line of the expressions file is
+# "old==>new" (git-filter-repo's own --replace-text format: no `regex:` /
+# `glob:` prefix in our tracked file, so every line is a literal). Only the
+# "old" side is needed here, to scan blob content for it; the file itself is
+# handed to git filter-repo unparsed for the actual rewrite.
+[?def parse-old-sides scope=private impure [returns [sequence string]] ($path::string)
+  [?let
+    [= $text [?fallback [$io:read-file $path]
+               [recover-with [?let [= $_e [$cry [$cat ("public-history-replace: cannot read ", $path)]]]
+                               [$env:exit 2]]]]]
+    [?for [in $l [$nonblank $text]]
+      [where [$strings:contains $l "==>"]]
+      [= $kv [$strings:split-limit $l "==>" 1]]
+      [yield [$nth $kv 1]]]]]
+
+[?def line-hit scope=private pure [returns bool] ($l::string $olds)
+  [> [$count [?for [in $o $olds] [where [$strings:contains $l $o]] [yield 1]]] 0]]
+
+# -- git / filter-repo plumbing (duplicated from strip_attribution.cx by the
+# same convention its own header notes: no CX import-from-script exists yet
+# to share a helper across scripts/*.cx) --------------------------------------
+
+[?def run-git scope=private impure ($dir::string $argv $what::string)
+  [?let
+    [= $full ("git", "-C", $dir, [?splice $argv])]
+    [= $r [?fallback [$process:run $full]
+            [recover-with ([$cry [$cat ("public-history-replace: cannot run git (", $what, ")")]],
+                           [$env:exit 2], null)]]]
+    [?if [not [= [$string $r@exit-code] "0"]]
+      [then [?let [= $_f ([$cry [$cat ("public-history-replace: git ", $what, " failed (exit ",
+                                       [$string $r@exit-code], ")")]],
+                          [$cry [$string $r@stderr]])]
+              [?let [= $_x [$env:exit 2]] ""]]]
+      [else [$string $r@stdout]]]]]
+
+[?def tip-of scope=private pure [returns string] ($spec::string)
+  [?let [= $parts [$strings:split $spec ".."]]
+    [$nth $parts [$count $parts]]]]
+
+[?def scope-label scope=private pure [returns string] ($spec::string)
+  [?if [= $spec ""] [then "every ref"] [else [$cat ("refs ", $spec)]]]]
+
+[?def commit-count scope=private impure ($dir::string $spec::string)
+  [$strings:trim
+    [?if [= $spec ""]
+      [then [$run-git $dir ("rev-list", "--count", "--all") "rev-list --count --all"]]
+      [else [$run-git $dir ("rev-list", "--count", $spec) "rev-list --count <scope>"]]]]]
+
+# scan-blobs: every diff line, across the scope's whole history, containing
+# one of the expressions' old sides — one `git log -p` (or `--all`), not one
+# process per commit or per blob (the V fork's branch is tens of thousands of
+# commits). This is REFRESH-3's own flag method (`git log -p --all | grep
+# -cE '...'`), just counted in CX instead of piped to grep.
+[?def scan-blobs scope=private impure ($dir::string $spec::string $olds)
+  [?let
+    [= $out [?if [= $spec ""]
+              [then [$run-git $dir ("log", "--all", "-p") "log -p --all"]]
+              [else [$run-git $dir ("log", $spec, "-p") "log -p <scope>"]]]]
+    [$count [?for [in $l [$strings:split-lines $out]] [where [$line-hit $l $olds]] [yield 1]]]]]
+
+# ref-trees: "<ref> <tree>" per ref in scope, one text — equal before and
+# after is the proof the pass touched blob content in HISTORICAL commits
+# only, never a tip a ref still points at.
+[?def ref-trees scope=private impure ($dir::string $spec::string)
+  [?let
+    [= $refs [?if [= $spec ""]
+               [then [$nonblank [$run-git $dir ("for-each-ref", "--format=%(refname)") "for-each-ref"]]]
+               [else ([$tip-of $spec])]]]
+    [$strings:join
+      [?for [in $r $refs]
+        [yield [$cat ($r, " ", [$strings:trim [$run-git $dir ("rev-parse", [$cat ($r, "^{tree}")]) "rev-parse <ref>^{tree}"]])]]]
+      "\n"]]]
+
+[?def tip-sha scope=private impure ($dir::string $spec::string)
+  [$strings:trim [$run-git $dir ("rev-parse", [?if [= $spec ""] [then "HEAD"] [else [$tip-of $spec]]]) "rev-parse <tip>"]]]
+
+[?def fsck-clean scope=private impure [returns bool] ($dir::string)
+  [?let [= $r [?fallback [$process:run ("git", "-C", $dir, "fsck", "--full", "--no-progress")]
+                [recover-with null]]]
+    [?if [= $r null] [then false] [else [= [$string $r@exit-code] "0"]]]]]
+
+[?def default-source scope=private pure [returns string] ($name::string)
+  [$cat ("git@github.com:cx-home/", $name, ".git")]]
+
+[?def source-for scope=private pure [returns string] ($name::string $overrides)
+  [?let [= $hit [?for [in $o $overrides] [where [= [$string $o@name] $name]] [yield [$string $o@value]]]]
+    [?if [= [$count $hit] 0] [then [$default-source $name]] [else [$first $hit]]]]]
+
+[?def refs-for scope=private pure [returns string] ($name::string $refs)
+  [?let [= $hit [?for [in $o $refs] [where [= [$string $o@name] $name]] [yield [$string $o@value]]]]
+    [?if [= [$count $hit] 0] [then ""] [else [$first $hit]]]]]
+
+[?def ensure-mirror scope=private impure ($name::string $source::string $mirror::string $work::string)
+  [?if [$io:exists $mirror]
+    [then [$say [$cat ($name, ": reusing existing mirror at ", $mirror, " (the strip pass's output)")]]]
+    [else [?let
+      [= $_mk [$io:make-dirs $work]]
+      [= $cl [$process:run ("git", "clone", "--mirror", $source, $mirror)]]
+      [?if [not [= [$string $cl@exit-code] "0"]]
+        [then [?let [= $_e ([$cry [$cat ("public-history-replace: ", $name, ": git clone --mirror failed")]],
+                            [$cry [$string $cl@stderr]])]
+                [$env:exit 2]]]
+        [else ()]]]]]]
+
+[?def verify-one scope=private impure ($name::string $source::string $mirror::string $work::string $olds)
+  [?let
+    [= $_c [$ensure-mirror $name $source $mirror $work]]
+    [= $n [$commit-count $mirror ""]]
+    [= $hits [$scan-blobs $mirror "" $olds]]
+    [= $head [$tip-sha $mirror ""]]
+    [= $_r [$say [$cat ($name, ": verify-only, ", $n, " commits over every ref, ",
+                        [$string $hits], " shape hit(s), HEAD ", $head)]]]
+    [ok name=$name clean=[= $hits 0]]]]
+
+[?def rewrite-one scope=private impure ($name::string $source::string $mirror::string $work::string $spec::string $repl-path::string $olds)
+  [?let
+    [= $_c [$ensure-mirror $name $source $mirror $work]]
+    [= $before [$commit-count $mirror $spec]]
+    [= $hits-before [$scan-blobs $mirror $spec $olds]]
+    [= $trees-before [$ref-trees $mirror $spec]]
+    [= $tip-before [$tip-sha $mirror $spec]]
+    [= $home [$string [$env:var-or-default "HOME" ""]]]
+    [= $gfr-which [$process:run ("sh", "-c", "command -v git-filter-repo")]]
+    [= $gfr-on-path [?if [= [$string $gfr-which@exit-code] "0"]
+                      [then [$strings:trim [$string $gfr-which@stdout]]]
+                      [else ""]]]
+    [= $gfr-fallback [$cat ($home, "/Library/Python/3.9/bin/git-filter-repo")]]
+    [= $gfr-found [or [not [= $gfr-on-path ""]] [$io:exists $gfr-fallback]]]
+    [= $gfr [?if [not [= $gfr-on-path ""]] [then $gfr-on-path] [else $gfr-fallback]]]
+    [= $_gfrchk [?if [not $gfr-found]
+      [then [?let [= $_e [$cry [$cat ("public-history-replace: git-filter-repo not found on PATH (command -v) or at ", $gfr-fallback, " — install git-filter-repo")]]]
+              [$env:exit 2]]]
+      [else ()]]]
+    [= $_rpchk [?if [not [$io:exists $repl-path]]
+      [then [?let [= $_e [$cry [$cat ("public-history-replace: ", $repl-path, " not found")]]]
+              [$env:exit 2]]]
+      [else ()]]]
+    [= $base-argv ($gfr, "--replace-text", $repl-path, "--force", "--source", $mirror, "--target", $mirror)]
+    [= $fr-argv [?if [= $spec ""] [then $base-argv] [else ([?splice $base-argv], "--refs", $spec)]]]
+    [= $fr [$process:run $fr-argv]]
+    [= $_frchk [?if [not [= [$string $fr@exit-code] "0"]]
+      [then [?let [= $_e ([$cry [$cat ("public-history-replace: ", $name, ": git-filter-repo failed")]],
+                          [$cry [$string $fr@stderr]])]
+              [$env:exit 2]]]
+      [else ()]]]
+    [= $after [$commit-count $mirror $spec]]
+    [= $hits [$scan-blobs $mirror $spec $olds]]
+    [= $trees-after [$ref-trees $mirror $spec]]
+    [= $tip-after [$tip-sha $mirror $spec]]
+    [= $fsck-ok [$fsck-clean $mirror]]
+    [= $count-ok [= $before $after]]
+    [= $trees-ok [= $trees-before $trees-after]]
+    [= $clean [and $count-ok [and $trees-ok [and $fsck-ok [= $hits 0]]]]]
+    [= $_report [$say [$cat ($name, ": ", [$scope-label $spec], ", commits ", $before, " -> ", $after,
+                             " (unchanged: ", [$string $count-ok], "), tree(s) ",
+                             [$string [$count [$nonblank $trees-before]]], " unchanged: ", [$string $trees-ok],
+                             ", hits ", [$string $hits-before], " -> ", [$string $hits],
+                             ", fsck clean: ", [$string $fsck-ok], ", tip ", $tip-before, " -> ", $tip-after)]]]
+    [ok name=$name clean=$clean]]]
+
+[?def dry-one scope=private impure ($name::string $source::string $mirror::string $spec::string $repl-path::string $verify::bool)
+  [?let
+    [= $_p1 [$say [$cat ("[dry-run] ", $name, ": mirror ", $mirror, " (reused if present, else --mirror ", $source, ")")]]]
+    [= $_p2 [?if $verify
+      [then [$say [$cat ("[dry-run] ", $name, ": verify-only -- count the shape hits over every ref, rewrite nothing")]]]
+      [else [?let
+        [= $refs-arg [?if [= $spec ""] [then ""] [else [$cat (" --refs ", $spec)]]]]
+        [$say [$cat ("[dry-run] ", $name, ": git-filter-repo --replace-text ", $repl-path, " --force", $refs-arg)]]]]]]
+    [ok name=$name clean=true]]]
+
+[?def strip-one scope=private impure ($name::string $work::string $overrides $refs $verify-names $repl-path::string $olds $dry::bool)
+  [?let
+    [= $source [$source-for $name $overrides]]
+    [= $spec [$refs-for $name $refs]]
+    [= $verify [$member $name $verify-names]]
+    [= $mirror [$cat ($work, "/", $name, ".git")]]
+    [?if $dry
+      [then [$dry-one $name $source $mirror $spec $repl-path $verify]]
+      [else [?if $verify
+              [then [$verify-one $name $source $mirror $work $olds]]
+              [else [$rewrite-one $name $source $mirror $work $spec $repl-path $olds]]]]]]]
+
+# -- --all-public --------------------------------------------------------------
+
+[?def all-public-names scope=private impure ()
+  [?let
+    [= $reg [$cx:parse [$io:read-file "registry/repos.cxd"]]]
+    [= $names [?for [in $r $reg//repo] [where [not [= [$string $r@name] "cx-private"]]] [yield [$string $r@name]]]]
+    ([?splice $names], "v")]]
+
+[?def print-header scope=private impure ($names $work::string $repl-path::string $mode::string)
+  [?if [= [$count $names] 0]
+    [then [?let [= $_ [$cry "public-history-replace: name a repository, or pass --all-public"]] [$env:exit 2]]]
+    [else
+      [?let
+        [= $suffix [?if [= $mode ""] [then ""] [else [$cat (" (", $mode, ")")]]]]
+        [= $plural [?if [= [$count $names] 1] [then "y"] [else "ies"]]]
+        [$say [$cat ("public-history-replace: work=", $work, ", replacements=", $repl-path, $suffix, " -- ",
+                     [$string [$count $names]], " repositor", $plural, ": ",
+                     [$strings:join $names " "])]]]]]]
+
+[?def print-verdict scope=private impure ($bad $total::string $mode::string)
+  [?if [and [= $mode ""] [> [$count $bad] 0]]
+    [then [?let
+      [= $_ [$cry [$cat ("public-history-replace: FAILED — ", [$string [$count $bad]], " of ",
+                         $total, " repositor(y/ies) did not verify clean")]]]
+      [$env:exit 1]]]
+    [else [?let
+      [= $_ [$say [?if [= $mode "dry-run"]
+                    [then "public-history-replace: dry-run OK — plan printed, nothing cloned or rewritten"]
+                    [else "public-history-replace: OK — every named repository verified clean (and, where rewritten, count- and tree-preserving, fsck clean)"]]]]
+      [$env:exit 0]]]]]
+
+# -- argv ----------------------------------------------------------------------
+
+[?def suffixes-of scope=private pure ($argv $prefix::string)
+  [?for [in $a $argv] [where [$strings:starts-with $a $prefix]]
+    [yield [$strings:slice $a [+ [$strings:length $prefix] 1] [$strings:length $a]]]]]
+
+[?def pairs-of scope=private pure ($argv $prefix::string)
+  [?for [in $body [$suffixes-of $argv $prefix]]
+    [= $kv [$strings:split-limit $body "=" 1]]
+    [where [= [$count $kv] 2]]
+    [yield [pair name=[$nth $kv 1] value=[$nth $kv 2]]]]]
+
+[?let
+  [= $raw-argv [$env:argv]]
+  [= $argv [?for [in $i [$range 2 [$count $raw-argv]]] [yield [$nth $raw-argv $i]]]]
+  [= $dry [$member "--dry-run" $argv]]
+  [= $mode [?if $dry [then "dry-run"] [else ""]]]
+  [= $all-public [$member "--all-public" $argv]]
+  [= $work-tok [$suffixes-of $argv "work="]]
+  [= $work [?if [= [$count $work-tok] 0]
+             [then [$io:temp-dir "cx-public-history-replace-"]]
+             [else [$first $work-tok]]]]
+  [= $repl-tok [$suffixes-of $argv "replacements:"]]
+  [= $repl-path [?if [= [$count $repl-tok] 0]
+                   [then [$default-replacements-path]]
+                   [else [$first $repl-tok]]]]
+  [= $overrides [$pairs-of $argv "source:"]]
+  [= $refs [$pairs-of $argv "refs:"]]
+  [= $verify-names [$suffixes-of $argv "verify-only:"]]
+  [= $skips [$suffixes-of $argv "skip:"]]
+  [= $flag [?fn ($a) [or [$member $a ("--dry-run", "--all-public")]
+              [> [$count [?for [in $p ("work=", "source:", "refs:", "verify-only:", "skip:", "replacements:")]
+                           [where [$strings:starts-with $a $p]] [yield 1]]] 0]]]]
+  [= $explicit [?for [in $a $argv] [where [not [$flag $a]]] [yield $a]]]
+  [= $base [?if $all-public [then [$all-public-names]] [else $explicit]]]
+  [= $extra [?for [in $v $verify-names] [where [not [$member $v $base]]] [yield $v]]]
+  [= $names [?for [in $n ([?splice $base], [?splice $extra])] [where [not [$member $n $skips]]] [yield $n]]]
+  [= $olds [$parse-old-sides $repl-path]]
+  [= $_hdr [$print-header $names $work $repl-path $mode]]
+  [= $results [?for [in $n $names] [yield [$strip-one $n $work $overrides $refs $verify-names $repl-path $olds $dry]]]]
+  [= $bad [?for [in $r $results] [where [not $r@clean]] [yield $r]]]
+  [$print-verdict $bad [$string [$count $results]] $mode]]
