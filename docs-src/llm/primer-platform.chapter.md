@@ -427,14 +427,23 @@ Each row is a defect of this page under COMP-1, recorded rather than hidden.
 **§3.9. The scaffold**
 
 `cx xap scaffold <pattern>` emits one pattern of §3 as a DECLARATION SKELETON
-(RULED: COMP-1). The contract is four sentences.
+(RULED: COMP-1), and `cx xap scaffold <skeleton>` one automation skeleton of
+§3.10 (RULED: AA-3). The contract is four sentences.
 
-**Input** is a pattern name and nothing else: one member of the closed set
-named by §3.1-§3.7, taken as a slug. **Output** is the declaration documents
+**Input** is a name: one member of the closed set named by §3.1-§3.7, or of
+§3.10's closed sub-set of four skeletons, taken as a slug — and, for a skeleton
+only, `--answers FILE`, an `[answers [<slot> <value>]…]` document, in which case
+the command calls `fill` (§3.10) and emits what `fill` returns: the flow
+document and its `[on …]` row with no slot open, or `fill`'s one refusal
+(RULED: AA-3; comp-001). **Output** is the declaration documents
 that pattern states — the flow document, the feature and gateway declarations,
 and the deployment binding — plus a README carrying the pattern's need, its
 modules, the §2 rows it crosses, the reference example that grades it, and the
-list below. Every emitted document parses.
+list below. Every emitted document parses. **The bodies are data:** the seven
+patterns' bodies and the four skeletons are CX documents shipped as data in
+cx-platform-flow, and the scaffold, the generated primer chapter and the
+studio read those same documents — the command carries no copy of a body of
+its own (RULED: AA-1).
 
 **The TODO rule.** What the pattern STATES becomes a declaration; what it does
 not state becomes an authoring TODO, never a guess — the discipline
@@ -442,16 +451,70 @@ not state becomes an authoring TODO, never a guess — the discipline
 emits (RULED: 1430-g), applied here to a composition instead of to an OpenAPI
 document. The feature names, the thresholds, the routes, the nouns, the verbs,
 every idempotency claim and every deployment fact are TODOs, and each says why
-it is one. The command is pure — a pattern name in, a skeleton out, with no
-network, no clock and nothing read from the tree.
+it is one; in a skeleton each TODO is a typed, named `[slot …]` (§3.10). The
+command is pure — a name and, for a skeleton, the answers file named on its
+command line in; a skeleton or a filled document out — with no network, no
+clock and nothing else read from the tree; it never writes into a deployment
+document (RULED: AA-3).
 
 **The refusal.** A name outside the closed set is refused with the seven
-named, never with the nearest one: a composition an adopter needs that is not
+patterns and the four skeletons named, never with the nearest one
+(RULED: AA-3; comp-002): a composition an adopter needs that is not
 one of the seven is a decision for the owner, not a variation to improvise,
 and a scaffold that answered with something near it would hide that decision
 rather than raise it. The skeleton does not run as generated, and says so —
 `cx xap init` scaffolds a project that composes unedited because a project has
 a working shape, and a composition pattern is a shape.
+
+**§3.10. Automation skeletons (RULED: AA-1, AA-2, AA-3, AA-6)**
+
+**The need.** A person who is not a developer says "when this happens, do
+that" — from the studio or from `cx xap scaffold` — and gets a flow document and
+its binding without writing either by hand. The engine already runs such an
+automation; what this section closes is the AUTHORING.
+
+**What a skeleton is.** An automation skeleton is a flow document plus one
+`[on …]` row (`flow.md` §4.24), in which each TODO is a typed, named
+slot, `[slot name= kind=act|field|role|principal|duration|value]`. It is shipped
+as data in cx-platform-flow, which owns the vocabulary it uses, and it is
+content-addressed and pinnable like any document (RULED: AA-1). The set is a
+closed sub-set of its own, not an eighth pattern: exactly the four below, named
+`<trigger>-<shape>`, using only the binding kinds the XAP host serves
+(`flow.md` §4.24) and vocabulary already built (RULED: AA-2).
+
+| Skeleton | The trigger | The shape | Reference example |
+|---|---|---|---|
+| `on-change-act` | an `intent` row selected by `act=` (`flow.md` §4.24) | a committed act leads to `:runner` steps: assign, then notify | its reference `[answers …]` document — flow-180 |
+| `on-change-approve` | an `intent` row selected by `act=` | a `:principal` step with `to=role:`, `deadline=`, `[escalate]` and an optional `quorum=`, then the act | its reference `[answers …]` document — flow-181 |
+| `on-change-check` | an `intent` row selected by `act=` | a `:runner` step on a connector verb, a `when=` on its recorded result, then the act | its reference `[answers …]` document — flow-182 |
+| `on-schedule-act` | a `schedule` row | `:runner` steps | its reference `[answers …]` document — flow-183 |
+
+The value test of a change ("changed to done") is a `when=` guard over `$args`
+(`flow.md` §4.4), never a second attribute on the row (RULED: AA-2). **Not
+in the set:** `webhook` (a `path=` is a deployment fact, and §3.4 covers
+webhooks for adopters), `fold` (a named landing on both faces), and `map` or
+`until` bodies (an end user has no recorded set to fan out over) (RULED: AA-2).
+No skeleton carries `pivot=true`, `by=:agent`, `by=:peer`, `flow=` or
+`[compute …]`, so a step a non-developer may not compose is absent by
+construction rather than refused after the fact (RULED: AA-4; flow-185).
+
+**`fill` — one pure def, two callers.** `fill` takes a skeleton and
+`[answers [<slot> <value>]…]` and returns the flow document and its `[on …]`
+row with no slot left open, or refuses, naming EVERY slot that is unanswered or
+answered with a value of the wrong kind in one refusal — never the first alone,
+never a silent partial (RULED: AA-3; flow-184). `cx xap scaffold <skeleton>
+--answers FILE` (§3.9) calls it, and the studio's automations plane calls the
+same def on the host (`ux.md` P0-130), so the two cannot produce different
+documents from the same answers (RULED: AA-3).
+
+**Graded by.** Each skeleton's case (flow-180 … flow-183) takes its reference
+`[answers …]` document and expects `fill`'s output byte for byte, then a clean
+`validate`, then `simulate` (`flow.md` §3) over a declared result table
+reaching `:done` and each skipped or refused path; a host-lane case,
+`case-host-automation`, then starts the run from a committed act on the real
+host and expects the folded run record (`flow.md` §4.23) (RULED: AA-6).
+Until those cases exist the four skeletons are ungraded, which under COMP-1 is
+a defect of this page, owed by **#1498**'s code wave.
 
 ### 12.5 The four runtimes — deployment-topology.md §1
 
