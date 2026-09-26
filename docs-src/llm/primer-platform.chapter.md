@@ -587,7 +587,10 @@ page's — §4.6 states `base-url=` for `kind=http` and `kind=soap`, a backend
 handle for `kind=db` and, for an operator's own kind, whatever its adapter
 declared — so `backend=` on the `kind=db` gateway and the fabric URL on the
 `kind=bus` gateway are written above under that rule, at the names the adapter
-owns. When §4.6 fixes the spelling, this section follows it.
+owns. `connector.md` §4.6 has since fixed the credential spelling (RULED:
+1466-a): a credential's `handle=` attribute carries a value in the
+`handle:<provider>/<path>` grammar (`spec/03-approved/platform/connector.md`
+§4.6), and the blocks above cite that ruling rather than proposing their own.
 
 ### 12.7 The carrier rule — deployment-topology.md §3
 
