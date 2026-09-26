@@ -34,9 +34,9 @@ PUB="dist/_precut_public"
 
 printf '\n== R2.2 pre-cut profile gate (%s) ==\n' "$PUB_PLAT"
 
-echo "-- building the cut's artifacts (-prod: build-vcx + vcx build-profiles)"
+echo "-- building the cut's artifacts (-prod: build-vcx + build-profiles)"
 devbox run -- make build-vcx
-devbox run -- make -C vcx build-profiles
+devbox run -- make build-profiles
 
 echo "-- staging the four tarballs the cut stages → $PUB/"
 rm -rf "$PUB"; mkdir -p "$PUB"
@@ -46,6 +46,11 @@ r22_tar_platform "$SRC" "$ROOT/$PUB" "$PUB_PLAT"
 rm -rf "$SRC"
 r22_stage_profiles "$PUB" "$PUB_PLAT"
 ls -1 "$PUB"/cx-*.tar.gz | sed 's/^/   /'
+
+# #1670 — same placement as release.sh: ahead of R2.2's install verification,
+# which extracts-and-probes but never reads a Mach-O/ELF dependency graph.
+echo "-- running the release-asset-links gate (#1670: no /nix/store dependency)"
+devbox run -- "$(r22_vcx_target)/cx" --allow-all scripts/release_asset_links_gate.cx --dir "$PUB"
 
 echo "-- running the BLOCKING gate (extract installer-style + profile probe)"
 r22_profile_gate "$PUB" "$PUB_PLAT" /precut
