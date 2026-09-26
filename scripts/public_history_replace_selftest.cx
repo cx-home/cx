@@ -1,12 +1,18 @@
-# _gate_evidence/pipeline_1669/public_history_replace_fixture.cx — the
-# fixture for scripts/public_history_replace.cx (#1669, RULED: D83a, RS-33,
-# CXF-8), in the shape of
-# _gate_evidence/pipeline_rs33_pass/strip_attribution_fixture.cx (K12b): a
-# scratch world of real git repositories, run through the tool with the
+# scripts/public_history_replace_selftest.cx — the fixture for
+# scripts/public_history_replace.cx (#1669, RULED: D83a, RS-33, CXF-8), beside
+# the script per AGENTS.md rule 2 (a fixture nothing runs is a liability) and
+# wired the way #1675's check-vcache-soundness-selftest was: its own Makefile
+# target `check-public-history-replace` (below), in TEST_TARGETS, classified
+# in scripts/test_changed.sh's step_globs(). A scratch world of real git
+# repositories under a fresh per-run `$io:temp-dir` root (removed at the end
+# of the run, success or failure — the same unconditional-cleanup idiom
+# _gate_evidence/pipeline_rs33_pass/strip_attribution_fixture.cx (K12b) used,
+# whose shape this fixture otherwise follows), run through the tool with the
 # real `cx` binary and the real `git-filter-repo`, each case checking exit
 # code and stdout/stderr text.
 #
-#   cx --allow-all _gate_evidence/pipeline_1669/public_history_replace_fixture.cx <abs cx> <abs tool> <abs strip-tool>
+#   cx --allow-all scripts/public_history_replace_selftest.cx <abs cx> <abs tool> <abs strip-tool> <abs replacements-file>
+#   (the Makefile target below supplies all four; `make check-public-history-replace`)
 #
 # Exit 0 every case held, 1 a case failed (each case prints its own line).
 

@@ -603,6 +603,13 @@ const accepted_by_one_table = [
 	// `[$process:run ("git", "-C", $dir, ...)]`, same as strip_attribution.cx
 	// and deps_cx_selftest.cx above (RULED: D83a, RS-33, CXF-8).
 	AcceptedByOne{'scripts/public_history_replace.cx', .program, reason_1536},
+	// 80 -> 81: #1669's own scripts/public_history_replace_selftest.cx (moved
+	// beside the script per AGENTS.md rule 2, wired like
+	// check-vcache-soundness-selftest) -- the fixture's `git`/`run-tool`
+	// helpers carry the same `[$process:run (...)]` shape as
+	// strip_attribution_fixture.cx (K12b) did before it, unexempted only
+	// because that fixture was never wired into scripts/ or this scan.
+	AcceptedByOne{'scripts/public_history_replace_selftest.cx', .program, reason_1536},
 	// ── recorded exception — a computed attribute `name=[EXPR]` (23) ──
 	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
 	// 21 -> 22: scripts/check_migrate_namespace_fixtures.cx, RS-4's sweep grader.

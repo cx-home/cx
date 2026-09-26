@@ -1700,7 +1700,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := check-no-ai-attribution check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -2098,6 +2098,25 @@ check-no-ai-attribution: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 check-no-ai-attribution:
 	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-env scripts/check_no_ai_attribution.cx --self-test
 	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-env scripts/check_no_ai_attribution.cx
+
+# ── check-public-history-replace (#1669, RULED: D83a, RS-33, CXF-8) ──────────
+# The red-then-green fixture for scripts/public_history_replace.cx: a scratch
+# bare repo, a planted `ghp_`-shaped literal in a HISTORICAL blob (removed
+# before the tip, so the tip's tree has something real to prove unchanged),
+# run through verify-only (RED: the hit is found) then the real rewrite
+# (GREEN: hits -> 0, commits/tree unchanged, fsck clean, the historical blob
+# itself redacted), and chained onto a strip_attribution.cx pass over the SAME
+# work= mirror (this tool's own LAST-pass contract) — all under a fresh
+# per-run scratch root removed at the end of the run. Beside
+# check-vcache-soundness-selftest's shape (#1675): its own Makefile target,
+# in TEST_TARGETS, classified in scripts/test_changed.sh's step_globs().
+.PHONY: check-public-history-replace
+check-public-history-replace: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+check-public-history-replace: build-vcx
+	@"$(CX_BIN)" --allow-all scripts/public_history_replace_selftest.cx \
+	  "$(CX_BIN)" "$(CURDIR)/scripts/public_history_replace.cx" \
+	  "$(CURDIR)/scripts/strip_attribution.cx" \
+	  "$(CURDIR)/scripts/public_history_replacements.txt"
 
 # ── RING IMPORT GATE (partition spec §3, phase I0) — the ring import contract,
 # enforced grep-level, zero-tolerance. Lands BEFORE any code moves so the seam
