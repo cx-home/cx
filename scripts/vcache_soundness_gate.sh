@@ -55,6 +55,19 @@
 #        decided the verdict. It no longer can: the primitives are portable and
 #        every mutation asserts it applied.)
 # Env:   CX_V=<path to fork v>   VCACHE_GATE_WORK=<workdir>
+#
+# WORK is a per-run scratch root (#1675): with VCACHE_GATE_WORK unset, `mktemp
+# -d` makes a fresh directory for THIS invocation and an EXIT trap removes it
+# — the 2026-09-16 rule that a run leaves nothing under the temp dir — so two
+# concurrent invocations on the same box never share a path. Measured on
+# release/0.18 e29b5d153 (2026-09-26 14:38Z): the old fixed root,
+# /tmp/cx-vcache-gate, let an agent's own `make check-vcache-soundness`
+# collide with the post-merge run's and scribble its h7 fixture mid-probe —
+# `FATAL - mutate: no such file: /tmp/cx-vcache-gate/h7/mymod/extra.h` —
+# turning a head that touched no build input red. VCACHE_GATE_WORK= still
+# overrides the root for a caller that wants a stable/inspectable path; when
+# set, the trap does NOT remove it on exit — an explicit override is the
+# caller's own directory to manage, not this script's.
 
 set -u
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -64,7 +77,18 @@ V=${CX_V:-$REPO/third_party/v/v}
 # root changes module identity — fixture symbols pick up path-derived module
 # prefixes and $tmpl derives generated names from the v.mod-relative path —
 # which breaks the fixtures in ways unrelated to the cache under test.
-WORK=${VCACHE_GATE_WORK:-/tmp/cx-vcache-gate}
+if [ -n "${VCACHE_GATE_WORK:-}" ]; then
+  WORK=$VCACHE_GATE_WORK
+else
+  # TMPDIR carries a trailing slash on macOS (/var/folders/.../T/); left in,
+  # the H7 fixture's #include path gets a doubled slash and V's C-include
+  # quote check refuses it (measured: "error: including C files should use
+  # either \"header_file.h\" or <header_file.h> quoting" on an otherwise
+  # sound tree) — a real probe regression, not a cache result. Strip it.
+  _tmpdir=${TMPDIR:-/tmp}; _tmpdir=${_tmpdir%/}
+  WORK=$(mktemp -d "$_tmpdir/cx-vcache-gate.XXXXXX")
+  trap 'rm -rf "$WORK"' EXIT
+fi
 MODE=${1:-}
 
 if [ ! -x "$V" ]; then
