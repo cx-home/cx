@@ -32,7 +32,7 @@ a question the default already answers correctly, and it would rot the day the
 organisation moves.
 #]]
 
-  [dep repo=cx-platform-agent sha=c2fb6626a84b17a84b0db7f17da4f27cbaa684d3 module='cx-platform/tools cx-platform/mcp cx-platform/mcp-server cx-platform/a2a cx-platform/a2a-xap cx-platform/llm cx-platform/run cx-platform/adjudicate']
+  [dep repo=cx-platform-agent sha=ac81a2563106aa283437acb27499b151c3db43b5 module='cx-platform/tools cx-platform/mcp cx-platform/mcp-server cx-platform/a2a cx-platform/a2a-xap cx-platform/llm cx-platform/run cx-platform/adjudicate']
   [dep repo=cx-platform-ux sha=7f75fa22f4f4ba87b43f81fa9ed659adb6eb890a module='cx-platform/ux cx-platform/ux-web cx-platform/ux-tui']
   [dep repo=cx-platform-sso sha=c43dc5cd9c804dc3d34e3e1a5a1e4fa6969b5598 module='cx-platform/sso']
   [dep repo=cx-platform-flow sha=ad1dc5d623f31256dc5fc83a3bfcb3a061b85440 module='cx-platform/flow']
@@ -43,7 +43,7 @@ organisation moves.
   [dep repo=cx-platform-mail sha=5af05c9b5527d53a792b771b551c5b910dd24be1 module='cx-platform/imap cx-platform/smtp cx-stdlib/sasl' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-store sha=2c04a76860e99c1804b23d3df0cec3412f8eba46 module='cx-platform/store cx-platform/journal cx-platform/live cx-platform/audit cx-stdlib/ft' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-identity sha=7a9a4095354c81c1d85ce8fd1408690e5ae96c2f module='cx-platform/session cx-platform/authz-store cx-platform/did-web cx-platform/vc-revocation' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
-  [dep repo=cx-platform-connector sha=69fc7fb27286bb32c52fe225a81e7ecea3f20a33 module='cx-platform/connector cx-platform/sync']
+  [dep repo=cx-platform-connector sha=0ef12cd5f2084d1faed52588b175390bac573287 module='cx-platform/connector cx-platform/sync']
   [dep repo=cx-platform-fabric sha=51ba1841c4d307427cf878c862c0d40302f22325 module='cx-platform/fabric' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-xsp sha=cbc09ecbc2613ed46eff3c4e114811ab6c0430c0 module='cx-stdlib/xsp cx-platform/xsp-auth' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-tooling sha=3083d4edf08d903d4f84b3329521d84234cb1598 module='cx-stdlib/diagram']
