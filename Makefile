@@ -1943,9 +1943,14 @@ flow-dogfood-gate: build-vcx
 # contract, so a lane the checkout lacks refuses with exit 2 naming
 # `make deps-sync` — a skip and a pass would be the same line. Real sockets
 # (the serve lane binds 18700..19499): the shared runner's step.
+# One lane case needs a SECOND binary: `fleet` refuses CXER4964 in a build
+# without the `live` pack (cx-platform-flow flow.md §4.12a), which only a
+# build without the platform group can show — the cli PROFILE, named to the
+# lanes as CX_NOLIVE_BIN, which is why the step builds the profile matrix
+# (guarded: a current artifact is not relinked, #1449).
 FLOW_LANES := racing_advancers_lane.cx flow_cli_lane.cx flow_serve_lane.cx
 .PHONY: test-flow-umbrella
-test-flow-umbrella: build-vcx
+test-flow-umbrella: build-vcx build-profiles-dev
 	@for t in $(FLOW_LANES); do \
 	  test -f deps/cx-platform-flow/lanes/$$t || { \
 	    echo "test-flow-umbrella: deps/cx-platform-flow/lanes/$$t is not there — the lanes live in the pinned repository (RULED: RS-12, RS-31); run \`make deps-sync\`" >&2; \
@@ -1953,7 +1958,7 @@ test-flow-umbrella: build-vcx
 	done
 	@cd deps/cx-platform-flow && st=0; \
 	for t in $(FLOW_LANES); do \
-	  CX_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/cx" "$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-all lanes/$$t || st=1; \
+	  CX_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/cx" CX_NOLIVE_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/profiles/cli/cx" "$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-all lanes/$$t || st=1; \
 	done; exit $$st
 
 # ── check-code-fixtures (gate 4; repaired + wired by the #805 gate-truth
@@ -4707,7 +4712,7 @@ test-agent-real-lanes: build-vcx
 	done
 	@cd deps/cx-platform-agent && st=0; \
 	for t in $(AGENT_REAL_LANES); do \
-	  CX_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/cx" "$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-all lanes/$$t || st=1; \
+	  CX_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/cx" CX_NOLIVE_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/profiles/cli/cx" "$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-all lanes/$$t || st=1; \
 	done; exit $$st
 
 ## test-connector-real-lanes  The connector kit's two real-socket lanes as
