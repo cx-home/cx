@@ -261,11 +261,16 @@ step_globs() {
     # the guide projects the PINNED stdlib sources, so a pin bump moves it too.
     site-check)                    echo 'docs-src/* docs/* scripts/gen_site/* scripts/gen_guide/* scripts/gen_docs/* deps.cxd registry/* VERSION' ;;
     directive-docs-check)          echo 'vcx/* docs-src/* spec/*' ;;
-    verify-doc-blocks)             echo 'docs-src/* spec/* vcx/* stdlib/*' ;;
+    # The reference connectors' design document and packages are read from the
+    # cx-platform-connector pin (RULED: 1430-f, RS-12), so the pin moves them.
+    verify-doc-blocks)             echo 'docs-src/* spec/* vcx/* stdlib/* deps.cxd deps/cx-platform-connector/reference/*' ;;
     # examples/ is graded per landing now, not only at a release cut. The row
     # is wide because a platform scenario RUNS the toolchain: a `cx flow` or
     # `cx xap` change moves a recorded transcript, and so does a stdlib one.
-    verify-examples)               echo "examples/* tools/verify-examples.sh stdlib/* $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED" ;;
+    # The second scenario root is the reference connectors in the
+    # cx-platform-connector pin (RULED: 1430-f): a pin bump is deps.cxd, which
+    # $RING_EMBED already carries; the root itself names the pinned paths.
+    verify-examples)               echo "examples/* tools/verify-examples.sh stdlib/* deps/cx-platform-connector/reference/connectors/* $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED" ;;
     verify-playground-examples)    echo 'docs-src/* examples/* vcx/*' ;;
     # docs-check (#938) regenerates the LLM layer from the templates, the
     # conformance corpus, the spec's directive registry, the stdlib bundle's
@@ -491,7 +496,7 @@ step_globs() {
     check-editor-surface-parity)   echo 'vcx/cx/* vcx/cmd/* deps.cxd scripts/check_editor_surface_parity.cx' ;;
     # INT-11 (#1475): the four document sets the recipe walks — docs-src/,
     # spec/03-approved/, the root prose files, and the generated LLM layer.
-    verify-doc-links)              echo 'docs-src/* spec/* docs/llm/* tools/verify-doc-links.sh README.md CONTRIBUTING.md ROADMAP.md SECURITY.md CODE_OF_CONDUCT.md CHANGELOG.md RELEASE_NOTES_v AGENTS.md CLAUDE.md AGENT-STANDING-RULES.md' ;;
+    verify-doc-links)              echo 'docs-src/* spec/* docs/llm/* tools/verify-doc-links.sh README.md CONTRIBUTING.md ROADMAP.md SECURITY.md CODE_OF_CONDUCT.md CHANGELOG.md RELEASE_NOTES_v AGENTS.md CLAUDE.md AGENT-STANDING-RULES.md deps.cxd deps/cx-platform-connector/reference/*' ;;
     # COMP-1 part 4: the chapter is GENERATED from the two platform spec pages,
     # and the generator runs under the built binary.
     primer-platform-check)         echo "spec/03-approved/platform/composition.md spec/03-approved/platform/deployment-topology.md docs-src/llm/primer-platform.chapter.md scripts/gen_docs/primer_platform.cx $RING_LIB $RING_SUP" ;;

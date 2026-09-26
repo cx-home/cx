@@ -13,7 +13,7 @@
 # `cx fmt` (a parse error, a crash) still fails this step.
 #
 # Usage:
-#   tools/verify-doc-blocks.sh                 # default: spec/ docs-src/ docs/ README.md
+#   tools/verify-doc-blocks.sh                 # default: spec/ docs-src/ docs/ corpus/ README.md, and the connector pin's reference/
 #   tools/verify-doc-blocks.sh README.md
 #   tools/verify-doc-blocks.sh docs/ spec/
 #
@@ -53,8 +53,16 @@ fi
 # `[?for $n :in 1 to 30 :yield …]` next to a file that says
 # `[?for [in $n [$range 1 30]] …]`. Nothing checked them, so the flagship
 # teaching material taught a surface that no longer exists.
+#
+# The reference connectors joined too (RULED: 1430-f; reference/connectors/
+# README.md §5.1 item 3): the design document and each package's docs carry
+# ```cx blocks — the deployment documents, the feature, the two defs — and
+# nothing read them but the branch that wrote them. They live in the
+# cx-platform-connector pin's tree (RULED: RS-12), so the target is that
+# checkout's reference/.
 if [ $# -eq 0 ]; then
-  set -- "$ROOT/spec" "$ROOT/docs-src" "$ROOT/docs" "$ROOT/corpus" "$ROOT/README.md"
+  set -- "$ROOT/spec" "$ROOT/docs-src" "$ROOT/docs" "$ROOT/corpus" "$ROOT/README.md" \
+    "$ROOT/deps/cx-platform-connector/reference"
 fi
 
 TARGETS=()
@@ -70,7 +78,7 @@ for arg in "$@"; do
 done
 
 if [ ${#TARGETS[@]} -eq 0 ]; then
-  echo "Usage: $0 [FILE.md|DIR ...]   (default: spec/ docs-src/ docs/ README.md)"
+  echo "Usage: $0 [FILE.md|DIR ...]   (default: spec/ docs-src/ docs/ corpus/ README.md deps/cx-platform-connector/reference/)"
   exit 2
 fi
 

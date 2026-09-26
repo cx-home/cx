@@ -8,7 +8,7 @@
 #   2. every gate= AND default= value — bare, single- or double-quoted —
 #      is in the enum {enforced, advisory, pending, skip};
 #   3. every [suite name=S] names a KNOWN suite (code, stdlib, packages,
-#      xpath-31-parity); an unknown/typo'd suite name used to skip all
+#      connectors, xpath-31-parity); an unknown/typo'd suite name used to skip all
 #      module-row validation under it silently (#721, M36);
 #   4. every [module name=X] row resolves to a real fixture, per its
 #      enclosing [suite name=S] block:
@@ -16,6 +16,9 @@
 #                              gate-policy suite, four directories since
 #                              #1427-c put a module's corpus in its ring's
 #        S=packages        -> packages/X/X.test.cxd
+#        S=connectors      -> deps/cx-platform-connector/reference/connectors/X/X.test.cxd
+#                              — the reference connectors, a package corpus in
+#                              the cx-platform-connector pin (RULED: 1430-f)
 #        S=code            -> (no module rows; the suite default governs code.cxd)
 #        S=xpath-31-parity -> (no module rows; the suite default governs
 #                              conformance/xpath_31_parity.cxd — RULED: VC-7, #945)
@@ -28,7 +31,7 @@
 #      conformance/gates_register.cxd, is graded first with `cx corpus`.
 #
 # The runtime consumers (vcx/tests/code_eval_fixtures_test.v for code/stdlib/
-# packages; scripts/check_xpath_parity_fixtures.cx for xpath-31-parity) are
+# packages/connectors; scripts/check_xpath_parity_fixtures.cx for xpath-31-parity) are
 # deny-by-default, so a typo'd VALUE fails closed there — but a typo'd
 # SUITE or MODULE name silently drops policy rows, which only this gate
 # can catch.
@@ -40,7 +43,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GATES="$ROOT/conformance/gates.cxd"
 CXBIN="${CX_BIN:-$ROOT/deps/cx-core-code/vcx/target/cx}"
 
-KNOWN_SUITES="code stdlib packages xpath-31-parity"
+KNOWN_SUITES="code stdlib packages connectors xpath-31-parity"
 
 fail=0
 
@@ -132,6 +135,7 @@ while IFS= read -r line; do
     case "$cur_suite" in
       stdlib)   [ -f "$ROOT/deps/cx-core-code/conformance/stdlib/$mod.cxd" ] || [ -f "$ROOT/conformance/stdlib/$mod.cxd" ] || [ -f "$ROOT/conformance/platform/$mod.cxd" ] || [ -f "$ROOT/conformance/x/$mod.cxd" ] || [ -f "$ROOT/conformance/xap/$mod.cxd" ] || { echo "GATE-DANGLING: stdlib module '$mod' has no corpus under deps/cx-core-code/conformance/stdlib/$mod.cxd or conformance/{stdlib,platform,x,xap}/$mod.cxd (RULED: 1427-c, K7a — Ring 1's stdlib corpus now lives in the pinned cx-core-code checkout)"; fail=1; } ;;
       packages) [ -f "$ROOT/packages/$mod/$mod.test.cxd" ] || { echo "GATE-DANGLING: packages module '$mod' has no packages/$mod/$mod.test.cxd"; fail=1; } ;;
+      connectors) [ -f "$ROOT/deps/cx-platform-connector/reference/connectors/$mod/$mod.test.cxd" ] || { echo "GATE-DANGLING: connectors module '$mod' has no deps/cx-platform-connector/reference/connectors/$mod/$mod.test.cxd"; fail=1; } ;;
       code)     echo "GATE-UNEXPECTED: module row '$mod' under suite 'code' (code.cxd uses the suite default, no module rows)"; fail=1 ;;
       xpath-31-parity) echo "GATE-UNEXPECTED: module row '$mod' under suite 'xpath-31-parity' (xpath_31_parity.cxd uses the suite default, no module rows)"; fail=1 ;;
       "")       echo "GATE-ORPHAN: module row '$mod' with no enclosing [suite]"; fail=1 ;;
