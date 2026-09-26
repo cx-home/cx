@@ -61,11 +61,11 @@ row is refused by name (RULED: RS-1).
 | `ring=` | 98 | `1` `0` |
 | `ns=` | 98 | `cx-stdlib` `cx-platform` `none` |
 | `kind=` | 98 | `module` `natives` `backend` `design` `suite` `codec` |
-| `repo=` | 97 | 16 distinct values |
+| `repo=` | 98 | 16 distinct values |
 | `spec=` | 98 | 96 distinct values |
 | `corpus=` | 98 | 94 distinct values |
-| `source=` | 98 | 86 distinct values |
-| `code=` | 98 | 75 distinct values |
+| `source=` | 98 | 87 distinct values |
+| `code=` | 98 | 74 distinct values |
 | `half=` | 98 | `none` |
 | `status=` | 98 | `current` `planned` |
 | `group=` | 42 | `platform` |
@@ -103,7 +103,7 @@ What the columns mean (the file's own `[doc]` block is the full text):
 | `cx-platform-flow` | 1 | 0 | 0 | 1 | 0 | flow |
 | `cx-platform-fabric` | 1 | 0 | 0 | 1 | 0 | fabric |
 | `cx-platform-net` | 4 | 0 | 0 | 4 | 2 | ftp, http, net, sftp |
-| `none` | 1 | 0 | 0 | 1 | 1 | secrets |
+| `cx-platform-secrets` | 1 | 0 | 0 | 1 | 0 | secrets |
 | `cx-platform-sso` | 1 | 0 | 0 | 1 | 0 | sso |
 | `cx-platform-xap` | 5 | 0 | 0 | 5 | 0 | xap, xap_dist, xap-compose, xap-schema, xap-on |
 | `cx-platform-agent` | 8 | 0 | 0 | 8 | 0 | a2a, a2a-xap, adjudicate, llm, mcp, mcp-server, run, tools |

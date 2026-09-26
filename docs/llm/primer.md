@@ -1921,6 +1921,7 @@ visible in the import line.
 | `journal` | An append-only, hash-chained, tenant-partitioned event log and the deterministic projection of that log into state. |
 | `live` | The live modes over the one planar comprehension: the same quoted `[?for]` that runs once as a query is also a delta feed. |
 | `net` | Transport-level (L4) networking: opening and accepting stream connections (TCP, Unix-stream, TLS), exchanging datagrams (UDP, Unix-datagram, DTLS), name resolution, and TLS upgrade or termination. |
+| `secrets` | The minimal keystore: the one place a credential's value is reached. |
 | `session` | The server-held (principal, tenant) session for a web app. |
 | `smtp` | Both halves of ESMTP on one wire grammar: the submission client a CX program sends mail with (RFC 6409) and the receive server core it accepts mail with (RFC 5321 §4). |
 | `sso` | The enterprise-SSO deployment surface: the half of enterprise single sign-on that RECEIVES a request. |
