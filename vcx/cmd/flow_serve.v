@@ -572,18 +572,19 @@ fn flow_serve_fetch_doc(dir string, addr string) string {
 	return ''
 }
 
-// flow_serve_docs_rest answers the verbatim bytes of every OTHER flow document
-// the `[docs …]` store holds — every `.cx` file that parses to a `[flow …]`,
-// in file-name order, skipping the addresses a binding already fetched. They
-// are the documents a `flow=` step may reference (flow.md §4.20, RULED: WF-22):
-// a sub-flow's reference resolves through the executing environment's ONE
-// resolver (§4.1), and this runner's documents live in its `[docs …]` store
-// (RULED: 789-WF-30), so the store is where the resolver's document rows come
-// from. No address is claimed here: a document row's address IS its content
-// address, computed by the module from the bytes, so nothing can be named for
-// an address it does not have. A file that does not parse, or is not a flow,
-// is not a document of this store and is passed over, exactly as the
-// `start=` scan passes it over.
+// flow_serve_docs_rest answers the verbatim bytes of every OTHER document the
+// `[docs …]` store holds — every `.cx` file that parses to a `[flow …]` or a
+// `[business-calendar …]`, in file-name order, skipping the addresses a binding
+// already fetched. They are the documents a `flow=` step may reference
+// (flow.md §4.20, RULED: WF-22) and the calendars a `calendar=` may name
+// (flow.md §4.22, RULED: WF-24): both resolve through the executing
+// environment's ONE resolver (§4.1), and this runner's documents live in its
+// `[docs …]` store (RULED: 789-WF-30), so the store is where the resolver's
+// document rows come from. No address is claimed here: a document row's
+// address IS its content address, computed by the module from the bytes, so
+// nothing can be named for an address it does not have. A file that does not
+// parse, or is neither, is not a document of this store and is passed over,
+// exactly as the `start=` scan passes it over.
 fn flow_serve_docs_rest(dir string, have []string) []string {
 	if !os.is_dir(dir) {
 		return []string{}
@@ -605,14 +606,14 @@ fn flow_serve_docs_rest(dir string, have []string) []string {
 			continue
 		}
 		doc := cx.parse(src) or { continue }
-		mut is_flow := false
+		mut is_doc := false
 		for n in doc.elements {
 			if n.is_element() {
-				is_flow = n.element().name == 'flow'
+				is_doc = n.element().name in ['flow', 'business-calendar']
 				break
 			}
 		}
-		if is_flow {
+		if is_doc {
 			out << src
 		}
 	}
@@ -658,6 +659,34 @@ const flow_serve_helpers = "
 [?def fs--doc-by scope=private pure [returns any] (\$fs \$addr::string)
   [?to-sequence [?for [in \$f \$fs] [where [= [\$cx:hash \$f] \$addr]] [yield \$f]]]]
 
+[; ── THE INSTANT a calendar document is driven from (flow.md §4.22, RULED:
+   WF-24, 1358-e). flow keeps no clock of its own, so its open-time durations
+   are measured from the instant the RUNNER states — and this process is the
+   runner: every start, courier tick and delivered act of a document that
+   names a `calendar=` carries this clock's instant (`opts.at` on a start, the
+   event's `at=` on an advance). A document with no calendar is driven exactly
+   as before, which is what keeps its transitions byte-identical under
+   `cx flow run` and `cx flow serve` (RULED: WF-28b). ]
+[?def fs--has-cal scope=private pure [returns bool] (\$fl)
+  [\$exists [\$cx:select \$fl \"//*[@calendar]\"]]]
+
+[?def fs--now scope=private impure [effects [clock]] [returns string] ()
+  [\$string [\$time-now]]]
+
+[?def fs--at-opts scope=private impure [effects [clock]] [returns map] (\$fl \$o::map)
+  [?if [fs--has-cal \$fl] [then [\$map-put \$o \"at\" [fs--now]]] [else \$o]]]
+
+[?def fs--tick-for scope=private impure [effects [clock]] [returns any] (\$fl)
+  [?if [fs--has-cal \$fl] [then [tick at=[fs--now]]] [else ()]]]
+
+[; a delivered act of a calendar document that states no instant is given
+   this runner's — rebuilt through its canonical text, the one form that
+   carries every attribute and child it arrived with. ]
+[?def fs--act-at scope=private impure [effects [clock]] [returns any] (\$fl \$a)
+  [?if [or [not [fs--has-cal \$fl]] [\$exists \$a@at]] [then \$a]
+    [else [?let [= \$s [\$str-trim [\$cx:serialize \$a]]]
+      [\$cx:parse [\$concat \"[act at=\\\"\" [fs--now] \"\\\"\" [\$str-slice \$s 5 [\$str-length \$s]]]]]]]]
+
 [?def fs--no-doc scope=private pure [returns element] (\$addr::string)
   [err code='cx-err:CXER4965'
     message=[\$concat \"E_COORD_ARG_INVALID: this runner holds no bound document at the address \" \$addr]]]
@@ -699,7 +728,7 @@ const flow_serve_helpers = "
         [; a bad delivery arrives here as an [err …] \$args and short-circuits
            this call to itself — the refusal surfaces without a guard. ]
         [\$cxflow:start \$j \$fl \$args
-          {env: \$e flow: \$fl actor: [\$string \$b@as] authority: [\$string \$b@as] nonce: \$nonce}]]]]]]
+          [fs--at-opts \$fl {env: \$e flow: \$fl actor: [\$string \$b@as] authority: [\$string \$b@as] nonce: \$nonce}]]]]]]]
 
 [; ── the four served kinds (RULED: WF-36) ────────────────────────────────── ]
 
@@ -820,7 +849,7 @@ const flow_serve_helpers = "
       [= \$ds [fs--doc-by \$fs [\$string \$rec@flow]]]
       [?if [\$empty \$ds]
         [then [skipped run=\$id reason=\"unbound-document\"]]
-        [else [?match [\$cxflow:advance \$j \$id ()
+        [else [?match [\$cxflow:advance \$j \$id [fs--tick-for [\$first \$ds]]
                 {env: \$e flow: [\$first \$ds] actor: [\$string \$rec@actor] authority: [\$string \$rec@authority]}]
           [case [err @code=\$c] [skipped run=\$id reason=[\$string \$c]]]
           [else [ticked run=\$id]]]]]]]]]
@@ -855,7 +884,7 @@ const flow_serve_helpers = "
    (RULED: WF-28b). The bound is a safety net, not a stop condition. ]
 [?def fs--drive-on scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$doc \$id::string \$rec \$n::int)
   [?if [< \$n 1] [then \$rec]
-    [else [?let [= \$next [\$cxflow:advance \$j \$id ()
+    [else [?let [= \$next [\$cxflow:advance \$j \$id [fs--tick-for \$doc]
                    {env: \$e flow: \$doc actor: [\$string \$rec@actor] authority: [\$string \$rec@authority]}]]
       [?match \$next
         [case [err] \$rec]
@@ -938,7 +967,7 @@ const flow_serve_helpers = "
             [?if [\$empty \$ds]
               [then [fs--refuse 400 \"CXER4956\"
                       \"E_COORD_RUN_NOT_FOUND: this runner holds no bound document at the address this run pins\"]]
-              [else [?let [= \$adv [\$cxflow:advance \$j \$id \$a
+              [else [?let [= \$adv [\$cxflow:advance \$j \$id [fs--act-at [\$first \$ds] \$a]
                       {env: \$e flow: [\$first \$ds] actor: [\$string \$a@actor] authority: [\$string \$a@authority]}]]
                 [?match \$adv
                   [case [err @code=\$c @message=\$m] [fs--reply 400 [fs--err-text \$c \$m]]]
@@ -1009,9 +1038,11 @@ fn flow_serve_program(r FlowRunner, directives []string, acts []FlowCliAct, tick
 	// …]]`: the bound documents, then the rest of the `[docs …]` store, so `$fs`
 	// — the bound set every binding, the ingress and the boot report read — is
 	// exactly the set it was, and the resolver carries both. A document row's address
-	// is its content address, computed by the module; nothing here names one.
+	// is its content address, computed by the module; nothing here names one. The
+	// store's `[business-calendar …]` documents join it the same way, for the
+	// `calendar=` addresses a document names (flow.md §4.22, RULED: WF-24).
 	b << '[?let [= \$e0 ${flow_cli_resolver(acts)}]'
-	b << '[= \$e [?element "resolver" [?splice \$e0/*] [?splice [\$cx:select \$doc "//runner-docs/*/flow"]]]]'
+	b << '[= \$e [?element "resolver" [?splice \$e0/*] [?splice [\$cx:select \$doc "//runner-docs/*/flow"]] [?splice [\$cx:select \$doc "//runner-docs/*/business-calendar"]]]]'
 	b << '[= \$j [\$cxjournal:open "${flow_cli_quote(r.journal)}" "${flow_cli_tenant}"]]'
 	b << '[= \$fs [\$cx:select \$doc "//runner-docs/bound/flow"]]'
 	b << '[= \$bs ${flow_serve_bindings_element(r)}]'

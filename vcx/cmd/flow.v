@@ -638,6 +638,26 @@ fn flow_cli_actor_default() string {
 	return 'principal:' + if name != '' { name } else { 'unknown' }
 }
 
+// flow_cli_now — the instant this invocation STATES (flow.md §4.22, RULED:
+// WF-24): flow keeps no clock of its own (RULED: 1358-e), so a document that
+// names a `calendar=` is started with `opts.at`, the instant its open-time
+// durations are measured from, and the command line is the runner process
+// that holds the clock. It is the wall clock's UTC instant to the second —
+// the clock `sched` arms against under `:wall` (RULED: 1358-c).
+fn flow_cli_now() string {
+	t := time.utc()
+	return '${t.year:04}-${t.month:02}-${t.day:02}T${t.hour:02}:${t.minute:02}:${t.second:02}Z'
+}
+
+// flow_cli_at_opts wraps an opts-map expression so that a document naming a
+// `calendar=` anywhere (`//*[@calendar]`: the head or any construct) carries
+// `at:` and every other document carries exactly the map it always did —
+// which is what keeps a calendar-free run's transitions byte-identical under
+// `cx flow run` and `cx flow serve` (RULED: WF-28b).
+fn flow_cli_at_opts(opts string) string {
+	return '[?if [\$exists [\$cx:select \$fl "//*[@calendar]"]] [then [\$map-put ${opts} "at" "${flow_cli_now()}"]] [else ${opts}]]'
+}
+
 fn flow_cli_opts_map(o FlowCliOpts, nonce string, with_flow bool) string {
 	mut b := '{env: \$e'
 	if with_flow {
@@ -735,7 +755,10 @@ struct FlowCliDocs {
 // module computes from the bytes — and every document stays DATA: FLOW.cx and
 // the store travel as the data document, never as program text, so nothing
 // needs escaping. Without `--docs` the data document and both bindings are
-// exactly what they were, and a `flow=` reference refuses CXER4967.
+// exactly what they were, and a `flow=` reference refuses CXER4967. A
+// `calendar=` address resolves the same way (flow.md §4.22, RULED: WF-24):
+// the store's `[business-calendar …]` documents join the resolver beside its
+// flows, and without them a calendar address refuses CXER4968.
 fn flow_cli_docs(o FlowCliOpts, flow_src string, acts []FlowCliAct) FlowCliDocs {
 	if o.docs == '' {
 		return FlowCliDocs{
@@ -757,7 +780,7 @@ fn flow_cli_docs(o FlowCliOpts, flow_src string, acts []FlowCliAct) FlowCliDocs 
 		binds: [
 			'[?let [= \$fl [\$first [\$cx:select \$doc "//flow-cli-main/flow"]]]',
 			'[= \$e0 ${flow_cli_resolver(acts)}]',
-			'[= \$e [?element "resolver" [?splice \$e0/*] \$fl [?splice [\$cx:select \$doc "//flow-cli-docs/flow"]]]]',
+			'[= \$e [?element "resolver" [?splice \$e0/*] \$fl [?splice [\$cx:select \$doc "//flow-cli-docs/flow"]] [?splice [\$cx:select \$doc "//flow-cli-docs/business-calendar"]]]]',
 		].join('\n')
 	}
 }
@@ -853,7 +876,7 @@ fn flow_cli_run(o FlowCliOpts) {
 		'             [then ()]',
 		'             [else [?sleep 1ms]]]]',
 		'[= \$a ${args_src}]',
-		'  [\$cxflow:start \$j \$fl \$a ${flow_cli_opts_map(o, flow_cli_nonce(args_src), true)}]]',
+		'  [\$cxflow:start \$j \$fl \$a ${flow_cli_at_opts(flow_cli_opts_map(o, flow_cli_nonce(args_src), true))}]]',
 	].join('\n')
 	flow_cli_answer(flow_cli_eval(docs.input, program), true)
 }
@@ -1083,13 +1106,14 @@ fn flow_cli_simulate(o FlowCliOpts) {
 	}
 	args_src := flow_cli_args(o.args, flow_cli_arg_types(flow_src))
 	docs := flow_cli_docs(o, flow_src, acts)
+	sim_opts := flow_cli_at_opts('{env: \$e}')
 	program := [
 		flow_cli_prelude(false),
 		directives.join('\n'),
 		docs.binds,
 		'[= \$rs [\$first [\$cx:select \$doc "//results"]]]',
 		'[= \$a ${args_src}]',
-		'  [\$cxflow:simulate \$fl \$a \$rs {env: \$e}]]',
+		'  [\$cxflow:simulate \$fl \$a \$rs ${sim_opts}]]',
 	].join('\n')
 	flow_cli_answer(flow_cli_eval(docs.input + '\n' + results_src, program), false)
 }
@@ -1170,6 +1194,10 @@ fn flow_cli_op(o FlowCliOpts, verb string) {
 	mut opts := flow_cli_opts_map(o, '', true)
 	if verb == 'pause' {
 		opts = opts.all_before_last('}') + ' at: "${time.utc().format_rfc3339()}"}'
+	} else {
+		// an act that may activate a step of a calendar document states the
+		// instant it is measured from (flow.md §4.22, RULED: WF-24, 1358-e)
+		opts = flow_cli_at_opts(opts)
 	}
 	qid := '"${flow_cli_quote(id)}"'
 	call := match verb {
