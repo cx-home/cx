@@ -55,8 +55,12 @@
 //   `/.cx/flow/act`   a CORRELATED ACT — the `[act run= step= …]` shape
 //                     `advance` already takes, which is what lets a
 //                     `:principal` or `:peer` step complete against a runner
-//                     with no UX face of its own. The path is RESERVED: an
-//                     `[on …]` row claiming it refuses CXER4965 (§8).
+//                     with no UX face of its own — or an OPERATOR ACT on
+//                     the run, `[cancel|pause|resume|skip|retry-now|resolve
+//                     run= actor= authority= …]` (§4.21), the module verb of
+//                     that name under the act's own basis. The path is
+//                     RESERVED: an `[on …]` row claiming it refuses
+//                     CXER4965 (§8).
 //   a declared `path=` a webhook DELIVERY for that row's binding.
 //   anything else      404.
 //
@@ -891,11 +895,69 @@ const flow_serve_helpers = "
    run own pinned document is the one it advances against, which is why this
    path needs no binding row and works for a run of ANY document the runner
    holds. ]
+[; an OPERATOR ACT (flow.md §4.21, §4.8; RULED: WF-19, WF-25, 1265-PB-8) —
+   `[cancel …]`, `[pause …]`, `[resume …]`, `[skip … step=]`, `[retry-now …]`,
+   `[resolve … [resolution …]]`, each carrying `run=`, `actor=`, `authority=`
+   and, where the verb takes one, its `[reason …]` — is the other thing the
+   reserved path carries: an act on the RUN, which a runner with no UX face
+   of its own must take exactly as it takes a correlated act on a step. It is
+   ONE call to the module verb of the same name, under the ACT's actor and
+   authority (the operator's, never the run's, never a binding row's), with
+   the run's own pinned document; the verb admits it, records it, and drives
+   the run on — so the record answered here is the one `cx flow <verb>`
+   answers for the same act (RULED: WF-28b). `pause` measures each armed
+   timer's remainder from the act's instant, which is this runner's clock
+   when the act arrives (the verb itself reads none). ]
+[?def fs--op-word scope=private pure [returns bool] (\$w::string)
+  [\$str-contains \" cancel pause resume skip retry-now resolve \" [\$concat \" \" \$w \" \"]]]
+
+[; the body IS the act: `\$cx:parse` answers the one element a body carries,
+   and an operator act is told apart by that element's own head — never by a
+   descendant, so a correlated act whose [result …] happens to hold a child
+   named like a verb is still the correlated act it is. ]
+[?def fs--op-of scope=private pure [returns any] (\$text::string)
+  [?match [\$cx:parse \$text]
+    [case [err] ()]
+    [else [?let [= \$d [\$cx:parse \$text]]
+      [?if [not [\$str-starts-with [\$str-trim [\$cx:serialize \$d]] \"[\"]] [then ()]
+        [else [?if [fs--op-word [\$name \$d]] [then (\$d)] [else ()]]]]]]]]
+
+[?def fs--kid-of scope=private pure [returns any] (\$a \$n::string \$none)
+  [?let [= \$ks [?to-sequence [?for [in \$k \$a/*] [where [= [\$name \$k] \$n]] [yield \$k]]]]
+    [?if [\$empty \$ks] [then \$none] [else [\$first \$ks]]]]]
+
+[?def fs--ingress-op scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$fs \$a)
+  [?let [= \$id [\$string \$a@run]]
+    [?match [\$cxflow:status \$j \$id {}]
+      [case [err @code=\$c @message=\$m] [fs--reply 400 [fs--err-text \$c \$m]]]
+      [else [?let [= \$rec [\$cxflow:status \$j \$id {}]]
+        [= \$ds [fs--doc-by \$fs [\$string \$rec@flow]]]
+        [?if [\$empty \$ds]
+          [then [fs--refuse 400 \"CXER4956\"
+                  \"E_COORD_RUN_NOT_FOUND: this runner holds no bound document at the address this run pins\"]]
+          [else [?let [= \$o {env: \$e flow: [\$first \$ds] actor: [\$string \$a@actor] authority: [\$string \$a@authority] at: [\$time-now]}]
+            [= \$why [\$fs--kid-of \$a \"reason\" {}]]
+            [= \$r [?match [\$name \$a]
+                     [case \"cancel\"    [\$cxflow:cancel \$j \$id \$why \$o]]
+                     [case \"pause\"     [\$cxflow:pause \$j \$id \$why \$o]]
+                     [case \"resume\"    [\$cxflow:resume \$j \$id \$o]]
+                     [case \"skip\"      [\$cxflow:skip \$j \$id [\$string \$a@step] \$why \$o]]
+                     [case \"retry-now\" [\$cxflow:retry-now \$j \$id \$o]]
+                     [else              [\$cxflow:resolve \$j \$id [\$fs--kid-of \$a \"resolution\" [resolution]] \$o]]]]
+            [?match \$r
+              [case [err @code=\$c @message=\$m] [fs--reply 400 [fs--err-text \$c \$m]]]
+              [else [fs--reply 200 [\$cx:emit \$r]]]]]]]]]]]]
+
 [?def fs--ingress-act scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$fs \$text::string)
+  [?let [= \$ops [fs--op-of \$text]]
+    [?if [\$empty \$ops] [then [fs--ingress-step-act \$j \$e \$fs \$text]]
+      [else [fs--ingress-op \$j \$e \$fs [\$first \$ops]]]]]]
+
+[?def fs--ingress-step-act scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$fs \$text::string)
   [?let [= \$acts [\$cx:select [\$cx:parse \$text] \"//act\"]]
     [?if [\$empty \$acts]
       [then [fs--refuse 400 \"CXER4965\"
-              \"E_COORD_ARG_INVALID: the reserved ingress path carries a correlated act - [act run= step= …], the shape advance already takes\"]]
+              \"E_COORD_ARG_INVALID: the reserved ingress path carries a correlated act - [act run= step= …], the shape advance already takes - or an operator act on the run - [cancel|pause|resume|skip|retry-now|resolve run= actor= authority= …]\"]]
       [else [?let [= \$a [\$first \$acts]]
         [= \$id [\$string \$a@run]]
         [?match [\$cxflow:status \$j \$id {}]
