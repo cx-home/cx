@@ -1942,8 +1942,10 @@ flow-dogfood-gate: build-vcx
 # deps/cx-core-code/vcx/target/cx, which it starts for every process. The lane names are the
 # contract, so a lane the checkout lacks refuses with exit 2 naming
 # `make deps-sync` — a skip and a pass would be the same line. Real sockets
-# (the serve lane binds 18700..19499): the shared runner's step.
-FLOW_LANES := racing_advancers_lane.cx flow_cli_lane.cx flow_serve_lane.cx
+# (the serve and host lanes bind 18700..19499): the shared runner's step. The
+# host lane is the one-law gate's host arm (RULED: XAP-1a, XAP-1b, WF-28b):
+# a deployment host and `cx flow serve` over two journals, byte-identical.
+FLOW_LANES := racing_advancers_lane.cx flow_cli_lane.cx flow_serve_lane.cx flow_host_lane.cx
 .PHONY: test-flow-umbrella
 test-flow-umbrella: build-vcx
 	@for t in $(FLOW_LANES); do \
