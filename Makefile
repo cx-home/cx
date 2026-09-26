@@ -1942,13 +1942,15 @@ flow-dogfood-gate: build-vcx
 # deps/cx-core-code/vcx/target/cx, which it starts for every process. The lane names are the
 # contract, so a lane the checkout lacks refuses with exit 2 naming
 # `make deps-sync` — a skip and a pass would be the same line. Real sockets
-# (the serve lane binds 18700..19499): the shared runner's step.
+# (the serve and host lanes bind 18700..19499): the shared runner's step. The
+# host lane is the one-law gate's host arm (RULED: XAP-1a, XAP-1b, WF-28b):
+# a deployment host and `cx flow serve` over two journals, byte-identical.
 # One lane case needs a SECOND binary: `fleet` refuses CXER4964 in a build
 # without the `live` pack (cx-platform-flow flow.md §4.12a), which only a
 # build without the platform group can show — the cli PROFILE, named to the
 # lanes as CX_NOLIVE_BIN, which is why the step builds the profile matrix
 # (guarded: a current artifact is not relinked, #1449).
-FLOW_LANES := racing_advancers_lane.cx flow_cli_lane.cx flow_serve_lane.cx
+FLOW_LANES := racing_advancers_lane.cx flow_cli_lane.cx flow_serve_lane.cx flow_host_lane.cx
 .PHONY: test-flow-umbrella
 test-flow-umbrella: build-vcx build-profiles-dev
 	@for t in $(FLOW_LANES); do \

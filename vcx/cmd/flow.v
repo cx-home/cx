@@ -304,6 +304,33 @@ fn flow_cli_env_scan(path string) ([]string, []FlowCliAct) {
 	return directives, acts
 }
 
+// flow_cli_env_feature_pkgs answers the `pkg:` references ENV.cx imports whose
+// module is a FEATURE package — one carrying the §1.2 contract entry point
+// `apply` that a projected command def calls (RULED: #728 CK-3). A reference
+// that does not resolve is not answered here: the driver carries the same
+// `[?lib]` span and refuses it with the loader's own CXER.
+fn flow_cli_env_feature_pkgs(path string) []string {
+	src := flow_cli_read(path, 'the --env program')
+	spans := code.module_loader_scan_spans(src) or { return [] }
+	mut table := code.new_module_table()
+	code.register_bundled_stdlib(mut table)
+	mut out := []string{}
+	for sp in spans {
+		if sp.kind != .lib {
+			continue
+		}
+		ln := cx.parse_lib(sp.text) or { continue }
+		if !ln.resolver_source.starts_with('pkg:') {
+			continue
+		}
+		m := code.resolve_lib(ln, mut table) or { continue }
+		if 'apply' in m.public_def_names() {
+			out << ln.resolver_source
+		}
+	}
+	return out
+}
+
 // flow_cli_resolver renders the `[resolver [act …]…]` element (flow.md §4.1 —
 // the executing environment's ONE resolver; the rows are the same
 // `[act name= resolved= idempotent=?]` shape `validate` answers with).
