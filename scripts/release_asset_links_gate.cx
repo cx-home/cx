@@ -1,0 +1,231 @@
+[; scripts/release_asset_links_gate.cx -- the release ASSET portability gate
+   (#1670).
+
+   WHY THIS EXISTS. v0.17.0's shipped darwin-arm64 asset loaded a Nix-store
+   sqlite by absolute path:
+
+     /nix/store/dbgh5dmm0w2ya1rjwm7by3vb91chgkij-sqlite-3.53.3/lib/libsqlite3.dylib
+
+   which exists only on the build machine, so `cx --version` aborted (dyld,
+   exit 134) on every machine that installed the asset off cxhome.org. The
+   defect had already been fixed at link time and scripts/check_portable_links.cx
+   already makes the CLASS impossible to reintroduce in a fresh build --
+   but that gate reads `vcx/target/` directly, and nothing reads the actual
+   STAGED release assets (`dist/public/*.tar.gz`, what a user's `curl | sh`
+   really extracts) before a cut ships them. v0.17.0 was tagged BEFORE
+   check_portable_links.cx existed at all (#1102, 2026-08-29 landing, two
+   days after the v0.17.0 tag) -- the R2.2 install gate never saw the class
+   because nothing in the release PIPELINE asked the question.
+
+   THIS gate closes that: it scans every asset in a release staging
+   directory -- the darwin tarballs by Mach-O load path (`otool -L`/`otool -D`,
+   same two invariants as check_portable_links.cx: every dependency resolves
+   under /usr/lib or /System, and every dylib's own install name is
+   @rpath/<basename>) and the linux tarballs by ELF dynamic section
+   (`readelf -d`: NEEDED entries are bare sonames, RPATH/RUNPATH carries no
+   `/nix/store` segment) -- refusing any asset that names a `/nix/store` path
+   anywhere in its dependency graph, on either platform.
+
+   SCOPE is what a release SHIPS: the tarballs under a staging directory
+   (default `dist/public`), platform + the three lean profiles, both
+   platforms. It is deliberately a SEPARATE gate from check_portable_links.cx
+   rather than a shared implementation with a directory argument bolted on:
+   that gate answers "did the BUILD produce a portable artifact", scoped to
+   `vcx/target/`, run by every `make check`; this one answers "does the
+   STAGED, TARBALLED asset a user actually downloads carry the defect",
+   scoped to the release pipeline, and it is ELF-aware where the other
+   deliberately is not (linux was out of scope there -- "SKIP", by design,
+   since v0.17.0's linux asset was measured clean; #1670 asks this gate to
+   MEASURE that claim on every cut rather than assume it forever).
+
+   Wired into scripts/release.sh's R2.2 stage (scripts/lib/r22_profile_gate.sh)
+   immediately after staging and before the per-profile install verification:
+   the cut does not proceed on a refusal. Also `make check-release-asset-links`
+   (TEST_TARGETS), which runs it against whatever is currently staged, and the
+   self-test (scripts/release_asset_links_selftest.sh, #1672 files the shell
+   gap for the download half) which proves it RED on the real v0.17.0 darwin
+   asset and GREEN on this tree's own build. ]
+
+[?lib 'cx-stdlib/io']
+[?lib 'cx-stdlib/env']
+[?lib 'cx-stdlib/process']
+[?lib 'cx-stdlib/strings']
+[?lib 'cx-stdlib/array']
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+# flag-value: the argument after --<name>, or $d when it is not given.
+[?def flag-value scope=private pure [returns string] ($argv $name::string $d::string)
+  [?let [= $n [$count $argv]]
+        [= $hits [?for [in $i [$range 1 $n]]
+                   [where [= [$nth $argv $i] [$concat "--" $name]]]
+                   [where [< $i $n]]
+                   [yield [$nth $argv [+ $i 1]]]]]
+    [?if [= [$count $hits] 0] [then $d] [else [$first $hits]]]]]
+
+[?def has-flag scope=private pure [returns bool] ($argv $name::string)
+  [$or [$not [= [$flag-value $argv $name "\u0000absent"] "\u0000absent"]]
+       [$strings:contains [$strings:join $argv " "] [$concat "--" $name]]]]
+
+[?def path-of scope=private pure [returns string] ($line::string)
+  [$first [$strings:split [$strings:trim $line] " "]]]
+
+[?def is-portable scope=private pure [returns bool] ($p::string)
+  [$or [$not [$strings:starts-with $p "/"]]
+       [$or [$strings:starts-with $p "/usr/lib/"]
+            [$strings:starts-with $p "/System/"]]]]
+
+# -- darwin: same two invariants as check_portable_links.cx, over an
+# EXTRACTED tarball directory rather than vcx/target. ---------------------
+
+[?def load-paths scope=private pure [returns [sequence string]] ($out::string)
+  [?for [in $l [$strings:split-lines $out]]
+        [= $t [$strings:trim $l]]
+        [where [$and [$not [= $t ""]] [$not [$strings:ends-with $t ":"]]]]
+    [yield [$path-of $t]]]]
+
+[?def darwin-findings-for scope=private pure [returns string] ($art::string $id-out::string $dep-out::string)
+  [?let [= $id [$first [$load-paths $id-out]]]
+        [= $is-dylib [$strings:ends-with $art ".dylib"]]
+        [= $want [$concat "@rpath/" [$last [$strings:split $art "/"]]]]
+        [= $deps [$strings:join
+                   [?for [in $p [$load-paths $dep-out]]
+                         [where [$and [$not [$is-portable $p]]
+                                      [$not [$and $is-dylib [= $p $id]]]]]
+                     [yield [$concat "  " $art " loads " $p]]]
+                   "\n"]]
+        [= $id-bad [?if [$and $is-dylib [$not [= $id $want]]]
+                     [then [$concat "  " $art " has install name " $id
+                                    " -- a redistributable dylib needs " $want]]
+                     [else ""]]]
+    [?if [= $deps ""]
+      [then $id-bad]
+      [else [?if [= $id-bad ""] [then $deps] [else [$concat $deps "\n" $id-bad]]]]]]]
+
+[?def darwin-check scope=private impure [returns string] ($dir::string)
+  [?let [= $candidates [$array:flatten (
+            [$io:glob [$concat $dir "/cx"]],
+            [$io:glob [$concat $dir "/libcx*.dylib"]],
+            [$io:glob [$concat $dir "/libcx-core*.dylib"]])]]
+        [= $artifacts [?for [in $a $candidates] [where [$io:exists $a]] [yield $a]]]
+    [$strings:join
+      [?for [in $art $artifacts]
+            [= $r [$darwin-findings-for $art
+                    [$process:run ("otool", "-D", $art)]@stdout
+                    [$process:run ("otool", "-L", $art)]@stdout]]
+            [where [$not [= $r ""]]]
+        [yield $r]]
+      "\n"]]]
+
+# -- linux: ELF dynamic section. NEEDED entries are bare sonames by
+# construction (dpkg-provided libsqlite3.so.0 et al.) -- the risk is a
+# RUNPATH/RPATH baking in a build-machine path. `readelf -d` is preferred;
+# where it is absent (this gate itself may run on a darwin box measuring a
+# linux asset -- release.sh cuts darwin-side) the fallback is the same
+# `/nix/store` string scan the redteam measurement used: a NEEDED soname
+# never spells a directory, so any `/nix/store` byte string anywhere in the
+# artifact IS a load path (RUNPATH/RPATH) or an interpreter/comment leak,
+# not a false positive. Reported explicitly as a DEGRADED probe so a run
+# missing readelf is not silently equivalent to one that had it. ]
+[?def linux-findings-for scope=private pure [returns string] ($art::string $dyn-out::string $has-readelf::bool $nix-hits::int)
+  [?if $has-readelf
+    [then
+      [$strings:join
+        [?for [in $l [$strings:split-lines $dyn-out]]
+              [= $t [$strings:trim $l]]
+              [where [$strings:contains $t "/nix/store"]]
+          [yield [$concat "  " $art ": " $t]]]
+        "\n"]]
+    [else
+      [?if [> $nix-hits 0]
+        [then [$concat "  " $art ": " [$string $nix-hits]
+                " occurrence(s) of /nix/store in the artifact bytes (readelf unavailable -- strings-scan fallback)"]]
+        [else ""]]]]]
+
+[?def linux-check scope=private impure [returns string] ($dir::string)
+  [?let [= $candidates [$array:flatten (
+            [$io:glob [$concat $dir "/cx"]],
+            [$io:glob [$concat $dir "/libcx*.so"]],
+            [$io:glob [$concat $dir "/libcx-core*.so"]])]]
+        [= $artifacts [?for [in $a $candidates] [where [$io:exists $a]] [yield $a]]]
+        [= $has-readelf [$io:exists "/usr/bin/readelf"]]
+    [$strings:join
+      [?for [in $art $artifacts]
+            [= $dyn [?if $has-readelf
+                      [then [$process:run ("readelf", "-d", $art)]@stdout]
+                      [else ""]]]
+            [= $nix-hits [?if $has-readelf
+                           [then 0]
+                           [else [$count [$strings:split
+                                   [$string [$process:run ("strings", $art)]@stdout]
+                                   "/nix/store"]]]]]
+            [= $r [$linux-findings-for $art $dyn $has-readelf [- $nix-hits 1]]]
+            [where [$not [= $r ""]]]
+        [yield $r]]
+      "\n"]]]
+
+# -- one staged tarball: extract to a scratch dir, run the matching check,
+# clean up. `plat` decides darwin vs linux by the substring in its own name
+# (release.sh/release_linux.sh both spell platforms this way already:
+# darwin-arm64, linux-arm64, linux-x86_64). ]
+[?def check-one-tarball scope=private impure [returns string] ($tarball::string)
+  [?let [= $base [$last [$strings:split $tarball "/"]]]
+        [= $is-darwin [$strings:contains $base "darwin"]]
+        [= $is-linux [$strings:contains $base "linux"]]
+    [?if [$not [$or $is-darwin $is-linux]]
+      [then [$concat "  " $tarball ": unrecognised platform in filename (neither darwin nor linux) -- cannot pick a checker"]]
+      [else
+        [?let [= $dir [$io:temp-dir "cx-release-asset-links-"]]
+              [= $x [$process:run ("tar", "xzf", $tarball, "-C", $dir)]]
+          [?if [$not [= $x@exit-code 0]]
+            [then [$concat "  " $tarball ": does not extract (" [$string $x@stderr] ")"]]
+            [else [?if $is-darwin [then [$darwin-check $dir]] [else [$linux-check $dir]]]]]]]]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $dir [$flag-value $argv "dir" "dist/public"]]
+  [= $file [$flag-value $argv "check-file" ""]]
+
+  [?if [$not [= $file ""]]
+    [; --check-file PATH: the self-test's RED-proof entry point -- one
+       already-downloaded tarball, outside any staging directory (a
+       historical release asset). Same per-tarball check as the staging
+       scan, applied to exactly one file. ]
+    [then
+      [?let [= $r [$check-one-tarball $file]]
+        [?if [= $r ""]
+          [then
+            [?let [= $_ [$say [$concat "release-asset-links-gate OK -- " $file
+                          ": no /nix/store reference on either invariant."]]]
+              [$env:exit 0]]]
+          [else
+            [?let [= $_ [$cry [$concat "release-asset-links-gate FAILED -- " $file
+                          " will not load off the build machine (#1670):\n" $r]]]
+              [$env:exit 1]]]]]]
+    [else
+      [?let
+        [= $tarballs [?for [in $t [$io:glob [$concat $dir "/*.tar.gz"]]] [yield $t]]]
+        [?if [= [$count $tarballs] 0]
+          [then
+            [?let [= $_ [$say [$concat "release-asset-links-gate: SKIP -- no *.tar.gz staged under " $dir
+                          " (run the staging phase first, or pass --dir)"]]]
+              [$env:exit 0]]]
+          [else
+            [?let
+              [= $report [$strings:join
+                           [?for [in $t $tarballs]
+                                 [= $r [$check-one-tarball $t]]
+                                 [where [$not [= $r ""]]]
+                             [yield $r]]
+                           "\n"]]
+              [?if [= $report ""]
+                [then
+                  [?let [= $_ [$say [$concat "release-asset-links-gate OK -- " [$string [$count $tarballs]]
+                                " staged asset(s) under " $dir ": no /nix/store reference on any darwin or linux artifact."]]]
+                    [$env:exit 0]]]
+                [else
+                  [?let [= $_ [$cry [$concat "release-asset-links-gate FAILED (#1670) -- these staged assets will not load off the build machine:\n" $report
+                                "\n  the fix is at LINK time (scripts/portable_links.sh / vcx's sqlite decision, RESULTS.md _gate_evidence/pipeline_1670/); a staged asset failing here means the class was reintroduced upstream of packaging."]]]
+                    [$env:exit 1]]]]]]]]]]
+]

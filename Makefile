@@ -550,12 +550,24 @@ build-vcx-dev: check-gate-lock deps-present
 # and the matrix never write the data artifacts concurrently (the #1449 rule).
 PROFILE_BUILD_JOBS ?= 5
 PROFILE_BUILD_J = $(if $(findstring jobserver,$(MAKEFLAGS)),,-j$(PROFILE_BUILD_JOBS))
-.PHONY: build-profile-data build-profiles-dev
+.PHONY: build-profile-data build-profiles-dev build-profiles
 build-profile-data: build-vcx
 	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx $(PROFILE_BUILD_J) build-data-dev
 
 build-profiles-dev: build-profile-data
 	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx $(PROFILE_BUILD_J) build-profiles-dev
+
+# build-profiles (PROD, no -dev) — release.sh phase 2 (R2.2 staging) calls
+# this to produce the data/embed/cli release profile tarballs alongside the
+# platform default. #1670 measurement: this target did not exist here (only
+# its -dev sibling did) and release.sh still spelled the call as `make -C vcx
+# build-profiles`, a path RS-12's extraction removed (vcx/ itself has no
+# Makefile any more; the sub-make lives at deps/cx-core-code/vcx). A cut run
+# on this tree would have failed at this exact step before ever reaching R2.2's
+# per-profile install verification -- named here rather than silently patched
+# only in release.sh, since the -dev/non-dev pair should stay symmetric.
+build-profiles: build-vcx
+	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx $(PROFILE_BUILD_J) build-profiles
 
 # v0.7.5 — build libcx.wasm + libcx.js (emscripten
 # loader) + cxlib.js (hand-written wrapper). Produces dist/wasm/.
@@ -1152,6 +1164,22 @@ check-portable-links: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 check-portable-links: build-vcx
 	@"$(CX_BIN)" --allow-all scripts/check_portable_links.cx
 
+# check-release-asset-links (#1670) — the staged-tarball sibling of
+# check-portable-links above: that gate reads vcx/target/ (the build), this
+# one reads whatever is currently staged under dist/public/ (the actual
+# tarballs a `curl | sh` extracts), darwin AND linux. It is a normal
+# TEST_TARGETS member so a plain `make check`/`make test-changed` always
+# runs it — SKIPping cleanly when nothing is staged (the common case outside
+# a release), and blocking for real inside scripts/release.sh's R2.2 phase
+# and scripts/release_profile_gate.sh (both call it directly; this target
+# is the ad hoc / CI entry point onto the same script). See RESULTS.md
+# _gate_evidence/pipeline_1670 for the red proof against v0.17.0's real
+# darwin asset and the green proof against this tree's own staged build.
+.PHONY: check-release-asset-links
+check-release-asset-links: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+check-release-asset-links: build-vcx
+	@"$(CX_BIN)" --allow-all scripts/release_asset_links_gate.cx
+
 .PHONY: stdlib-catalog-gate
 stdlib-catalog-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 stdlib-catalog-gate: build-vcx
@@ -1664,7 +1692,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := check-no-ai-attribution check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := check-no-ai-attribution check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose

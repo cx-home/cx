@@ -11,11 +11,27 @@ name: Site
 # Source: GitHub Actions, i.e. build_type=workflow); until then Pages keeps
 # serving main:/docs, where the tracked landing page docs/index.html already is.
 #
-# The runner is Apple Silicon because the bootstrap is a RELEASED cx and the
-# release assets are arm64 only: `make deps-sync` runs the pin transport
-# (scripts/deps_sync.cx) with a cx that exists before this tree has built one
-# (the Makefile's deps-cx step names ~/.local/bin/cx, where docs/install puts
-# it). Nothing else here differs from a developer's first build (README.md).
+# #1670: this used to bootstrap by installing a RELEASED cx (`sh docs/install`)
+# and running `make deps-sync` with it before `make build-vcx` — cheap, but it
+# made cxhome.org depend on a release existing and being loadable, and
+# v0.17.0 was neither (its darwin asset dyld-aborted before main, #1102/#1670).
+# The chicken-and-egg #1670 measured: `make build-vcx` refuses without deps/
+# present (`deps-present`; RS-12's extraction moved vcx/ itself into the
+# cx-core-code pin, and its stdlib_bundle.v `$embed_file()`s bundled sources
+# straight out of `deps/<repo>/` at compile time — no cx, however small,
+# builds without deps/ first), and `make deps-sync` is itself a CX program
+# that needs a cx to run. scripts/deps_bootstrap.sh breaks the cycle with a
+# plain git clone of each deps.cxd pin (no cx involved — see its header for
+# why that is shell, not CX): deps/ populated -> `make build-vcx` succeeds
+# with nothing installed -> the cx it just built runs `make deps-sync` for
+# real (verifies every pin, `bundle_check.cx`'s half too) -> the rest is a
+# developer's first build (README.md). Proved end-to-end on a clean clone
+# with /nix hidden from PATH — see _gate_evidence/pipeline_1670/RESULTS.md.
+#
+# The runner stays Apple Silicon for parity with the release build this same
+# tree cuts (scripts/release.sh); nothing here depends on a released asset
+# any more, so an ubuntu runner would work too if org runner allocation ever
+# needs it split by cost — not changed here, out of #1670's scope.
 
 on:
   push:
@@ -44,14 +60,14 @@ jobs:
       - name: Build the vendored V toolchain
         run: make -C third_party/v
 
-      - name: Install a released cx (the pin transport's bootstrap)
-        run: sh docs/install
+      - name: Bootstrap deps/ with no cx (#1670)
+        run: sh scripts/deps_bootstrap.sh
 
-      - name: Fetch the pinned repositories
-        run: make deps-sync
-
-      - name: Build cx
+      - name: Build cx (deps/ present, no release needed)
         run: make build-vcx
+
+      - name: Sync + verify the pinned repositories with the cx just built
+        run: make deps-sync CX_BIN=deps/cx-core-code/vcx/target/cx
 
       - name: Assemble the site
         run: make site

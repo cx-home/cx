@@ -579,6 +579,10 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/gen_site/site_build.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/gen_guide/snippet_check.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/lang_stats.cx', .program, reason_1536},
+	// 23 -> 24: #1670's scripts/release_asset_links_gate.cx, the same shape as
+	// check_portable_links.cx above (`[$array:flatten (…)]`) -- the release
+	// staging directory scan reuses its glob-then-flatten idiom verbatim.
+	AcceptedByOne{'scripts/release_asset_links_gate.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/run_bench_json.cx', .program, reason_1536},
 	// 21 -> 23: RS-33's K12 branch, scripts/check_no_ai_attribution.cx and
 	// scripts/strip_attribution.cx -- the class's own shape,
