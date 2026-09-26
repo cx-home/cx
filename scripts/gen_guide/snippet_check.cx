@@ -66,8 +66,11 @@
            exits nonzero — still a PASS per this gate's contract (the
            denial is environmental). Nonzero exit is OK iff the output
            carries a CXER0271 denial; any OTHER cx-err still fails. ]
-        [= $denial [not [< [$strings:find $out 'cx-err:CXER0271'] 0]]]
-        [= $ok [and [< [$strings:find $clean 'cx-err:'] 0]
+        [; strings:find answers absence (not -1) for a miss since #1177's 1-based
+           index space, so a miss is read with [$present], never compared
+           with 0 — the [< … 0] form read EVERY snippet as failing. ]
+        [= $denial [$present [$strings:find $out 'cx-err:CXER0271']]]
+        [= $ok [and [not [$present [$strings:find $clean 'cx-err:']]]
                     [?if [= $r@exit-code 0] [then true] [else $denial]]]]
     [?if $ok [then ()]
       [else [fail file=$file head=[$first-line $code]
