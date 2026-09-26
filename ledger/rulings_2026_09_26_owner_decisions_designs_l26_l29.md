@@ -186,3 +186,16 @@ The owner's word, in session on the SEC-1 spec branch's READY report (#1591, 14:
   that the SEC-1 heading above abbreviates are ruled with it: the `sealed` kind's `path=` and
   `key-from=` attributes, the cryptography as crypto.md §3.7's AEAD (AES-GCM), and the seam's
   signature `resolve(handle, consumer) → secret | err`.
+
+## Note 2026-09-26 — Letter 33 = (a): the runner's principal seeds a root grant; the fifth boot-fault site takes the host-fault code
+
+The owner's word, in session on the HOST batch's READY report (#1591, 16:1xZ): "L33a". What that
+rules: (1) under HOST-4, the `[runner]` document's `[authz principal=…]` row SEEDS the runner's
+authz store with the named principal as an explicit root grant — the document states who the
+standalone runner acts as and that statement is the first grant, byte-identical with a host whose
+deployment grants the same root; fixture first (the SERVE PEP case's counterpart over a seeded
+store). Rejected: an empty store with grants authored elsewhere. (2) Under HOST-2, the fifth
+internal boot-fault site — the host's runner answering no `[flow-host …]` at boot — is the same
+class as the four the ruling enumerated and answers CXER4907; the ruling's "ONE code for the host's
+internal boot faults" applies to every such site, enumerated or not. Rejected: leaving it CXER4965.
+Both land in one sonnet flow/xap branch after the window's reset.
