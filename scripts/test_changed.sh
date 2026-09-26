@@ -240,6 +240,11 @@ step_globs() {
     # — a whole-tree scan like check-no-consumer-terms above, so any change
     # (including a Makefile/scripts change, which escalates on its own) re-runs it.
     check-no-ai-attribution)       echo '*' ;;
+    # #1669: the tool, its own selftest, the tracked expressions it reads by
+    # default, and the strip pass it chains onto (its own LAST-pass contract
+    # reuses that pass's mirror) — beside check-vcache-soundness-selftest's
+    # row above it in the Makefile.
+    check-public-history-replace)  echo 'scripts/public_history_replace.cx scripts/public_history_replace_selftest.cx scripts/public_history_replacements.txt scripts/strip_attribution.cx' ;;
     check-version-consistency)     echo '*' ;;
     check-effect-alignment)        echo 'vcx/* spec/*' ;;
     check-null-absence-conflation) echo 'vcx/* registry/repos.cxd' ;;
