@@ -39,8 +39,9 @@
 # next refresh from fast-forwarding lives here and in that file's own
 # tracked-file commit, not inside the file.
 #
-# Usage (run from the checkout root; needs `git-filter-repo` from
-# ~/Library/Python/3.9/bin on this box):
+# Usage (run from the checkout root; needs `git-filter-repo` — resolved on
+# PATH first (`command -v git-filter-repo`), falling back to
+# ~/Library/Python/3.9/bin on a box where it was installed there instead):
 #   cx --allow-read --allow-write --allow-subprocess --allow-env \
 #     scripts/public_history_replace.cx cx-platform-fabric work=/path/to/work
 #   cx ... scripts/public_history_replace.cx --all-public work=/path/to/work --dry-run
@@ -215,9 +216,15 @@
     [= $trees-before [$ref-trees $mirror $spec]]
     [= $tip-before [$tip-sha $mirror $spec]]
     [= $home [$string [$env:var-or-default "HOME" ""]]]
-    [= $gfr [$cat ($home, "/Library/Python/3.9/bin/git-filter-repo")]]
-    [= $_gfrchk [?if [not [$io:exists $gfr]]
-      [then [?let [= $_e [$cry [$cat ("public-history-replace: ", $gfr, " not found — install git-filter-repo")]]]
+    [= $gfr-which [$process:run ("sh", "-c", "command -v git-filter-repo")]]
+    [= $gfr-on-path [?if [= [$string $gfr-which@exit-code] "0"]
+                      [then [$strings:trim [$string $gfr-which@stdout]]]
+                      [else ""]]]
+    [= $gfr-fallback [$cat ($home, "/Library/Python/3.9/bin/git-filter-repo")]]
+    [= $gfr-found [or [not [= $gfr-on-path ""]] [$io:exists $gfr-fallback]]]
+    [= $gfr [?if [not [= $gfr-on-path ""]] [then $gfr-on-path] [else $gfr-fallback]]]
+    [= $_gfrchk [?if [not $gfr-found]
+      [then [?let [= $_e [$cry [$cat ("public-history-replace: git-filter-repo not found on PATH (command -v) or at ", $gfr-fallback, " — install git-filter-repo")]]]
               [$env:exit 2]]]
       [else ()]]]
     [= $_rpchk [?if [not [$io:exists $repl-path]]
