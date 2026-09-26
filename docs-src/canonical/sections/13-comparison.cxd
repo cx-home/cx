@@ -1,25 +1,91 @@
 [# Section 13 — Comparison to alternatives. Back-matter; appears
    after §12 FAQ. Authored 2026-05-22.
 
-   The goal is to help an evaluator decide whether to adopt CX. Be
-   honest where CX loses — ecosystem maturity, library breadth,
-   tooling familiarity — and concrete where it wins. Cross-links use
-   [[anchor]] form. File extension .cxd — data-only source. #]
+   RS-30 (owner, 2026-09-23): this section states CX's case — it does not
+   referee. It leads with a TL;DR of why to reach for CX, names Python as
+   the standard CX is built to equal and exceed (never a target to
+   replace), and every claim it adds stands beside a [fixture] the guide
+   build replays against the running cx, so the case is checkable. The
+   per-format tables below predate RS-30 and are unchanged by it.
+   Cross-links use [[anchor]] form. File extension .cxd — data-only
+   source. #]
 
 [section id=comparison group='Reference' n=13 title='Comparison to alternatives'
 
   [intro
-    """CX is one of many serialization / config / wire formats. This
-       section is the honest side-by-side: what CX brings, where the
-       incumbents are better, and which workloads should pick which
-       tool. Each comparison covers feature parity, performance,
-       ecosystem, learning curve, schema, identity / hash, and
-       round-trip lossiness, with a closing "when to pick X"
-       sentence."""]
+    """**TL;DR — reach for CX for nearly every data-format job and for
+       most general-purpose programs.** One syntax carries the document,
+       the query, the transform and the program, so the layers other
+       stacks glue together are one surface here. This section states
+       CX's case: first beside Python — the standard CX is built to meet
+       and exceed ([[cx-vs-python]]) — then against each format, covering
+       feature parity, performance, ecosystem, learning curve, schema,
+       identity / hash and round-trip lossiness, with a closing "when to
+       reach for X" for the cases where one layer is the whole
+       problem."""]
 
-  [child id=when-to-use n=13.1 title='When to use CX'
+  [child id=cx-vs-python n='13.0' title='CX and Python — the standard to meet and exceed'
     [intro
-      """The decision tree. Top-to-bottom, first match wins:"""]
+      """Python is not what CX sets out to replace. It is the standard CX
+         measures itself against: readable on day one, batteries included,
+         as good for a ten-line script as for a system. CX is built to
+         meet that standard and to go past it where data work hurts. Each
+         claim below stands beside a conformance case this guide's `cx`
+         replayed when the page was built."""]
+
+    [body
+      """**Exact numbers by default.** In Python a fraction is a binary
+         float until you import `decimal`. In CX a fraction literal is an
+         exact base-10 decimal, and arithmetic keeps it one:"""]
+    [fixture id=ap-decimal-float-mix-right]
+    [body
+      """Mixing a decimal with a binary float is refused out loud, naming
+         the one bridge between them, rather than rounded in silence:"""]
+    [fixture id=ap-decimal-float-mix-wrong]
+
+    [body
+      """**Effects are granted, never inherited.** A Python script can
+         read every file its process can. A CX program reads nothing until
+         you grant it, and the refusal is an ordinary value that names the
+         flag which would allow it:"""]
+    [fixture id=io-001-read-file-cap-denied]
+
+    [body
+      """**Regular expressions that do not backtrack.** Python's `re` is a
+         backtracking engine. CX's `re` is RE2: a construct that would
+         need backtracking, such as a backreference, is refused when the
+         pattern compiles:"""]
+    [fixture id=re-003-compile-backreference-unsupported]
+
+    [body
+      """**Errors are values.** An error flows out of anything built from
+         it, so a failure is a value you can inspect where it surfaces,
+         not an exception unwinding past you:"""]
+    [fixture id=program-construction-err-004-captured-err-propagates]
+
+    [body
+      """**Updates never mutate.** `[?modify]` answers a new document; the
+         one it started from is unchanged:"""]
+    [fixture id=program-modify-003-original-unchanged]
+
+    [body
+      """**One value model for every format.** JSON parses into the same
+         values the language computes with, and a map is a map whatever
+         order its entries were written in:"""]
+    [fixture id=json-007-parse-object-map]
+    [fixture id=program-map-115-equality-order-independent]
+
+    [body
+      """**Identity is built in.** A value's SHA-256 is taken over its
+         canonical bytes, so the same value written two ways hashes
+         alike:"""]
+    [fixture id=cx-025-hash-value-and-source-agree]]
+
+  [child id=when-to-use n=13.1 title='When to reach for CX'
+    [intro
+      """CX is the default for data, config and interchange. The
+         specialists further down this list are the cases where one layer
+         is the whole problem. Top to bottom, first match wins:"""]
 
     [list
       [item """**You need one syntax for data and code** (config that
@@ -391,16 +457,15 @@
       [tr [td 'Arrow'] [td 'Zero-copy in-memory columnar'] [td 'No document semantics, no identity'] [td 'You want Arrow plus CX semantics (use the bridge — they coexist)']]]
 
     [body
-      """**The honest summary.** CX wins on **unification**:
-         data + code + schema + identity in one syntax. It
-         loses on **ecosystem maturity** — JSON, YAML, and
-         Protobuf all have decades of library / editor / CDN
-         depth. The question for an evaluator is whether the
-         unification value exceeds the ecosystem-depth gap for
-         your specific workload. For workloads in §13.1's
-         "otherwise" bucket, the answer in 2026 is increasingly
-         yes; for the niches above the "otherwise" line, pick
-         the specialist."""]
+      """**CX's case, in one paragraph.** CX wins on **unification**:
+         the document, the transform, the value model and the identity
+         are one syntax — [[cx-vs-python]] shows each, replayed: the
+         update that leaves its original unchanged, JSON arriving as a
+         CX map, the hash over canonical bytes. Where one layer IS the
+         whole problem — a browser-only JSON consumer, a Kubernetes
+         manifest, a terabyte Parquet scan — reach for the specialist,
+         and read its format into CX where the rest of the system
+         lives. Everywhere else, CX is the default."""]
 
     [note
       """If you have a workload that does not match any row of
@@ -583,6 +648,6 @@
          agent interface is something you already have, not something
          you build."""]
     [body
-      """Pick a specialist when one layer IS the whole problem — this
-         page names those cases honestly. Pick CX when you would
-         otherwise be gluing the specialists together."""]]]
+      """Reach for a specialist when one layer IS the whole problem —
+         §13.1 names those cases. Reach for CX when you would otherwise
+         be gluing the specialists together."""]]]

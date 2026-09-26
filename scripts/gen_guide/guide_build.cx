@@ -37,6 +37,13 @@
 [?lib 'cx-stdlib/fp']
 [?lib 'cx-stdlib/env']
 [?lib 'cx-stdlib/process']
+[?lib 'cx-stdlib/map']
+[; RS-30: the primer's fixture index, replay and freshness check, and the
+   landing page's registry counts — imported, never read a second time (see
+   "fixture-backed examples" below). Neither file's top-level run executes on
+   import. ]
+[?lib './scripts/gen_docs/primer_build.cx' as=pb]
+[?lib './scripts/gen_site/site_build.cx' as=sb]
 
 [# ── string helpers ──────────────────────────────────────────────────── #]
 
@@ -204,18 +211,105 @@
    scalar-only — D2/E211 — so header labels and cells are child elements,
    never a columns=(…) attribute). Rows whose cells are [th] go to <thead>,
    the rest to <tbody>, so the style.css thead/tbody rules apply. #]
+[# ── fixture-backed examples (RULED: RS-30) ─────────────────────────────
+   RS-30 holds the guide to the primer's discipline: a claim keeps a runnable
+   corpus example or a measured number beside it. A section writes
+   [fixture id=<case>] where a claim needs its example, and the guide home
+   names its own cases in HOME-FIXTURES. Every such case is REPLAYED against
+   the running cx when the guide is built, through primer_build.cx's own
+   index, replay and freshness check (pb) — so a page can only show an output
+   this binary produces, and a case whose output moved stops the render,
+   naming it. The suites a case may come from are docs-src/site/manifest.cxd's
+   [suites]: the site's one list, which the landing page cites from too.
+
+   Numbers: a {{COUNT:modules}}, {{COUNT:directives}} or {{COUNT:repositories}}
+   in section prose (and on the guide home) is counted, when the guide is
+   built, from the file that declares it by site_build.cx's own count-of (sb),
+   so the guide and the landing page cannot print two different counts. #]
+[?const SITE-MANIFEST 'docs-src/site/manifest.cxd']
+[?const HOME-FIXTURES ('program-for-002-active-emails', 'ap-decimal-float-mix-right',
+                       'io-001-read-file-cap-denied', 'program-modify-003-original-unchanged',
+                       'mcp-001-call-tool-request-shape')]
+
+[?def guide-die scope=public impure ($s)
+  ([$io:write-line [$env:stderr] [$cat ('guide_build: ', $s)]], [$env:exit 1])]
+
+[?def site-manifest scope=public impure () [$cx:parse [$io:read-file SITE-MANIFEST]]]
+[?def site-suites scope=public impure ()
+  [$fp:flat-map [$sb:child-named [$site-manifest] 'suites'] [?fn ($k) [$sb:raw-lines $k]]]]
+[?def site-self scope=public impure ()
+  [$string [$first [$sb:child-named [$site-manifest] 'site']]@repo]]
+
+[?def fixture-ids-in scope=public ($doc)
+  [?for [in $f $doc//fixture] [yield [$string $f@id]]]]
+
+[# load-fixtures: index the site's suites, then replay and verify every case
+   the guide home and the sections cite, once each. The replay scratch lives
+   under the output directory and is removed before the pages are written. #]
+[?def load-fixtures scope=public impure ($metas $out)
+  [?let [= $index [$pb:load-index [$site-suites]]]
+        [= $ids [$distinct [$pb:cat-seqs (HOME-FIXTURES,
+                  [$fp:flat-map $metas [?fn ($m) [$fixture-ids-in [$parse-or-die $m@srcpath]]]])]]]
+        [= $missing [?for [in $id $ids] [where [not [$map:contains $index $id]]] [yield $id]]]
+        [= $_m [?if [$empty $missing] [then 0]
+                 [else [$guide-die [$cat ('unknown fixture id(s) ', [$strings:join $missing ' '],
+                                          ' — cite a case from a suite that the [suites] block of ', SITE-MANIFEST,
+                                          ' declares, or declare its suite there')]]]]]
+        [= $tmp [$cat ($out, '/.fixture-replay')]]
+        [= $_md [$io:make-dirs $tmp]]
+        [= $replays [$fp:fold $ids {}
+          [?fn ($acc $id) [$pb:add-replay $acc $id $index [$env:executable-path] $tmp]]]]
+        [= $_rm [$io:remove-tree $tmp]]
+    {index: $index, replays: $replays}]]
+
+[# fixture-block: one replayed case as the page shows it — its document and
+   program when it has them, the exact invocation with the LIVE output, and
+   where the case lives. #]
+[?def fixture-block scope=public impure ($fx $id)
+  [?let [= $sec [$map:get [$map:get $fx 'index'] $id]]
+        [= $rep [$map:get [$map:get $fx 'replays'] $id]]
+        [= $data [?else [$map:get $sec 'in-cx'] '[empty]']]
+        [= $code [?else [$map:get $sec 'in-code'] '']]
+        [= $parts [$pb:cat-seqs (
+          [?if [= $data '[empty]'] [then ()]
+            [else ([p class='fixture-file' [code 'input.cx']], [pre [code lang=cx $data]])]],
+          [?if [= $code ''] [then ()]
+            [else ([p class='fixture-file' [code 'prog.cx']], [pre [code lang=cx $code]])]],
+          ([pre class='sample-output' [code [$cat ('$ ', [$string $rep@cmd], '\n', [$string $rep@out])]]],
+           [p class='fixture-src' 'Fixture ' [code $id] ' in ' [code [$string [$map:get $sec 'suite']]]
+              ' — replayed against this cx when the page was built.']))]]
+    [div class='fixture' [?splice $parts]]]]
+[?def fixture-html scope=public impure ($fx $id)
+  [$post-body [$xml:emit [$fixture-block $fx $id]]]]
+
+[# expand-counts: every {{COUNT:<what>}} in a rendered page, counted. An
+   unclosed one is refused, never printed. #]
+[?def expand-counts scope=public impure ($html $self)
+  [?let [= $chunks [$strings:split $html '{{COUNT:']]
+        [= $n [$count $chunks]]
+    [$strings:join (
+      [$first $chunks],
+      [$strings:join [?for [in $i [$range 2 $n]]
+        [= $ch [$nth $chunks $i]]
+        [= $j [$strings:find $ch '}}']]
+        [yield [?if [not [$present $j]]
+          [then [$guide-die 'an unclosed {{COUNT: in a guide page']]
+          [else [$cat ([$sb:count-of [$strings:slice $ch 1 [- $j 1]] $self 0],
+                       [$strings:slice $ch [+ $j 2] [$strings:length $ch]])]]]]] '']) '']]]
+
 [?def heading scope=public ($depth $title)
   [?if [<= $depth 2] [then [h2 $title]]
     [else [?if [= $depth 3] [then [h3 $title]]
       [else [?if [= $depth 4] [then [h4 $title]]
         [else [?if [= $depth 5] [then [h5 $title]] [else [h6 $title]]]]]]]]]]
-[?def render-block scope=public impure ($c $depth)
+[?def render-block scope=public impure ($c $depth $fx)
   [?match $c
     [case [intro] [?modify $c //intro [rename p]]]
     [case [body]  [?modify $c //body  [rename p]]]
     [case [note]  [?modify $c //note  [set-attr class 'note'] [rename p]]]
     [case [output $t] [pre class="sample-output" [code $t]]]
     [case [example $code] [pre [code lang=$c@lang $code]]]
+    [case [fixture] [$fixture-block $fx [$string $c@id]]]
     [case [list]
       [ul [?for [in $i $c/*] [yield
         [?match $i [case [item] [?modify $i //item [rename li]]] [else ()]]]]]]
@@ -228,15 +322,15 @@
     [case [child]
       [section id=$c@id
         [$heading $depth $c@title]
-        [?for [in $k $c/*] [yield [$render-block $k [+ $depth 1]]]]]]
+        [?for [in $k $c/*] [yield [$render-block $k [+ $depth 1] $fx]]]]]
     [else [p class="unhandled" "[unhandled directive]"]]]]
-[?def render-section scope=public impure ($s)
+[?def render-section scope=public impure ($s $fx)
   [$post-body [$xml:emit
     [section id=$s@id
       [h1 $s@title]
-      [?for [in $c $s/*] [yield [$render-block $c 2]]]]]]]
-[?def render-doc scope=public impure ($doc)
-  [$render-section $doc//section]]
+      [?for [in $c $s/*] [yield [$render-block $c 2 $fx]]]]]]]
+[?def render-doc scope=public impure ($doc $fx)
+  [$render-section $doc//section $fx]]
 
 [# ── chrome ──────────────────────────────────────────────────────────── #]
 
@@ -492,14 +586,14 @@
       [?fn ($acc $a) [$anchor-sub $acc $cur $a]]]
     '<span class="xref-unresolved">$0</span>']]
 
-[# ring-figure: the landing page's Fig. 1 — the four rings drawn as an
+[# ring-figure: the guide home's Fig. 1 — the two rings and the groups drawn as an
    engineering section view (inline SVG, pure hand-authored geometry).
    Concentric rings with a hatched section cut, center-line construction,
    leader-line labels, the one-directional import arrows, a dimension line,
    and the inspection stamp. All coordinates live in one 540×500 viewBox. #]
 [?def ring-figure scope=public ()
   [$cat (
-    '<svg viewBox="0 0 540 500" role="img" aria-label="The four rings of CX with the one-directional import contract">\n',
+    '<svg viewBox="0 0 540 500" role="img" aria-label="The two rings of CX and the groups above them, with the one-directional import contract">\n',
     '<defs>\n',
     '<pattern id="rf-hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="7" stroke="#1a1812" stroke-width="0.7" opacity="0.45"/></pattern>\n',
     '<marker id="rf-arr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#1a1812"/></marker>\n',
@@ -521,7 +615,7 @@
     '<g stroke="#b3400f" stroke-width="1.5"><line x1="303" y1="358" x2="321" y2="378"/><line x1="321" y1="358" x2="303" y2="378"/></g>\n',
     '<text x="330" y="432" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.3" fill="#b3400f">NEVER OUTWARD</text>\n',
     '<g stroke="#1a1812" stroke-width="0.8"><line x1="230" y1="255" x2="52" y2="255" marker-end="url(#rf-arr)"/><line x1="52" y1="245" x2="52" y2="265"/></g>\n',
-    '<text x="76" y="244" font-family="IBM Plex Mono, monospace" font-size="8.5" letter-spacing="1.1" fill="#1a1812">R = 4 RINGS</text>\n',
+    '<text x="76" y="244" font-family="IBM Plex Mono, monospace" font-size="8.5" letter-spacing="1.1" fill="#1a1812">2 RINGS + GROUPS</text>\n',
     '<g stroke="#1a1812" stroke-width="0.7" fill="#1a1812">\n',
     '<circle cx="230" cy="63" r="2.2"/><line x1="230" y1="63" x2="386" y2="42"/>\n',
     '<circle cx="337" cy="152" r="2.2"/><line x1="337" y1="152" x2="396" y2="112"/>\n',
@@ -529,8 +623,8 @@
     '<circle cx="269" cy="230" r="2.2"/><line x1="269" y1="230" x2="416" y2="250"/>\n',
     '</g>\n',
     '<g font-family="IBM Plex Mono, monospace" fill="#1a1812">\n',
-    '<text x="392" y="38" font-size="11" font-weight="600" letter-spacing="1.2">RING 3</text><text x="392" y="51" font-size="8.5" fill="#8a8371" letter-spacing="1">ecosystem</text>\n',
-    '<text x="402" y="108" font-size="11" font-weight="600" letter-spacing="1.2">RING 2</text><text x="402" y="121" font-size="8.5" fill="#8a8371" letter-spacing="1">platform</text>\n',
+    '<text x="392" y="38" font-size="11" font-weight="600" letter-spacing="1.2">GROUPS</text><text x="392" y="51" font-size="8.5" fill="#8a8371" letter-spacing="1">bindings · ecosystem</text>\n',
+    '<text x="402" y="108" font-size="11" font-weight="600" letter-spacing="1.2">PLATFORM</text><text x="402" y="121" font-size="8.5" fill="#8a8371" letter-spacing="1">group</text>\n',
     '<text x="412" y="178" font-size="11" font-weight="600" letter-spacing="1.2">RING 1</text><text x="412" y="191" font-size="8.5" fill="#8a8371" letter-spacing="1">code</text>\n',
     '<text x="422" y="246" font-size="11" font-weight="600" letter-spacing="1.2">RING 0</text><text x="422" y="259" font-size="8.5" fill="#8a8371" letter-spacing="1">data</text>\n',
     '</g>\n',
@@ -541,36 +635,64 @@
     '</g>\n',
     '</svg>\n')]]
 
-[# index-body: the landing page (docs/guide/index.html) body — the hero
-   ("Four rings. One contract." + the Fig. 1 ring figure + the ring ladder),
-   then the grouped table of contents (reusing nav-group), source note. #]
-[?def index-body scope=public impure ($metas $libfiles $ver)
+[# index-body: the guide home (docs/guide/index.html, the site's guide.html)
+   body — the hero (the TL;DR of why to reach for CX, the ring ladder, the
+   Fig. 1 ring figure), then "what you can do with it": HOME-FIXTURES, each
+   replayed when the guide is built, and the registry counts beside them
+   (RULED: RS-30); then the grouped table of contents (reusing nav-group),
+   source note. #]
+[?def proof-item scope=public impure ($fx $title $claim $id)
+  [$cat ('<h3>', $title, '</h3>\n<p>', $claim, '</p>\n', [$fixture-html $fx $id], '\n')]]
+[?def index-body scope=public impure ($metas $libfiles $ver $fx)
   [$cat (
     '<div class="hero">\n',
     '<div class="hero-text">\n',
-    '<div class="hero-eyebrow">Sheet 01 · The ring model</div>\n',
+    '<div class="hero-eyebrow">Sheet 01 · Why reach for CX</div>\n',
     '<div class="hero-head">\n',
     '  <svg class="hero-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>\n',
-    '  <h1>Four rings.<br>One contract.<br><span class="accent">Agentic ready.</span></h1>\n',
+    '  <h1>One syntax.<br>Data to platform.<br><span class="accent">Agentic ready.</span></h1>\n',
     '</div>\n',
-    '<p class="lede"><b>CX is one language for data and code</b> — the same ',
-    'bracket form is a document, a schema, a query, and a program. How much of ',
-    'it you take on is a <b>ring</b>: Ring&nbsp;0 is a data format that cannot ',
-    'execute anything, each ring outward adds exactly one commitment, and ',
-    'imports point inward, never out. The contract is machine-checked.</p>\n',
+    '<p class="lede"><b>TL;DR — reach for CX whenever the data is the point.</b> ',
+    'One bracket form is the document, the schema, the query and the program, so ',
+    'the file you read is the file you transform, validate, hash, store and serve. ',
+    'Python set the standard a working language has to meet: readable on day one, ',
+    'batteries included, as good for a script as for a system. CX is built to that ',
+    'standard and past it where data work hurts. Every claim on this page stands ',
+    'beside a conformance fixture this <code>cx</code> replayed when the page was ',
+    'built.</p>\n',
     '<div class="ring-ladder">\n',
-    '<div class="rr"><span class="rn">R0</span><span class="rt">Data</span><span class="rd">documents · schemas · values</span></div>\n',
+    '<div class="rr"><span class="rn">R0</span><span class="rt">Data</span><span class="rd">documents · schemas · values — nothing executes</span></div>\n',
     '<div class="rr"><span class="rn">R1</span><span class="rt">Code</span><span class="rd">evaluation · deny-by-default capabilities</span></div>\n',
-    '<div class="rr"><span class="rn">R2</span><span class="rt">Platform</span><span class="rd">the store · transports · live surfaces</span></div>\n',
-    '<div class="rr"><span class="rn">R3</span><span class="rt">Ecosystem</span><span class="rd">tooling · packs · the catalog</span></div>\n',
+    '<div class="rr"><span class="rn">G</span><span class="rt">Platform</span><span class="rd">the store · transports · live surfaces</span></div>\n',
+    '<div class="rr"><span class="rn">G</span><span class="rt">Ecosystem</span><span class="rd">bindings · tooling · the registry</span></div>\n',
     '</div>\n',
     '<div class="hero-cta"><a href="choosing.html">CHOOSE YOUR RING <span class="arr">—&gt;</span></a></div>\n',
     '</div>\n',
     '<div class="hero-fig">\n',
     [$ring-figure],
-    '<div class="fig-caption">Fig. 1 — four rings, one-directional import contract</div>\n',
+    '<div class="fig-caption">Fig. 1 — two rings, the groups above them, one-directional imports</div>\n',
     '</div>\n',
     '</div>\n',
+    '<section class="proof"><h2>What you can do with it</h2>\n',
+    [$proof-item $fx 'Query a document by its shape'
+      'A query is a pattern over the document — every <code>user</code> whose <code>active</code> is true, and its <code>email</code>. There is no object model to build first and no parser to call.'
+      'program-for-002-active-emails'],
+    [$proof-item $fx 'Keep exact numbers exact'
+      'In Python a fraction is a binary float until you import <code>decimal</code>. In CX a fraction literal is an exact decimal, and mixing one with a float is refused out loud rather than rounded in silence.'
+      'ap-decimal-float-mix-right'],
+    [$proof-item $fx 'Grant effects instead of inheriting them'
+      'A program reads nothing it was not granted, and the refusal is an ordinary value that names the flag which would allow it.'
+      'io-001-read-file-cap-denied'],
+    [$proof-item $fx 'Update without mutation'
+      '<code>[?modify]</code> answers a new document; the one it started from is unchanged, so no reader ever sees a half-updated tree.'
+      'program-modify-003-original-unchanged'],
+    [$proof-item $fx 'Speak an agent protocol as plain values'
+      'An MCP request is an ordinary CX value projected to its wire form — no bespoke serializer anywhere in the path.'
+      'mcp-001-call-tool-request-shape'],
+    '<p class="note"><b>{{COUNT:modules}} shipped modules</b> · <b>{{COUNT:directives}} directives</b> · ',
+    '<b>{{COUNT:repositories}} repositories</b> — counted from <code>registry/modules.cxd</code>, the ',
+    "specification's directive registry and <code>registry/repos.cxd</code> when this page was built.</p>\n",
+    '</section>\n',
     '<section class="toc-groups"><h2>Table of contents</h2>\n',
     [$nav-section 'Start here' [$group-nav-items $metas 'Start here' '']],
     [$nav-section 'Ring 0 — Data'
@@ -602,42 +724,54 @@
 
 [# downloads-body: the Downloads page (ruled 2026-08-20: prebuilt profile
    tarballs land in the docs, top-nav slot between Playground and About).
-   The profile matrix IS the ring model as artifacts — the same cx binary
-   name, a profile-decided surface — so the page presents downloads as
-   "choose your ring". Links use releases/latest/download stable names
-   (scripts/release.sh stages exactly these); darwin-only per RW-CUT.1,
-   other platforms build from source. #]
+   The build matrix IS the ring model as artifacts — the same cx binary name,
+   a build-decided surface. What a release carries is what scripts/release.sh
+   stages: the four builds for darwin-arm64 (Phase 2) and for linux-arm64
+   (Phase 2b, release_linux.sh, default-on; x86_64 only with
+   RELEASE_LINUX_AMD64=1), the conformance bundle, the VS Code extension
+   (RULED: CO-20) and SHA256SUMS.txt — the asset list of the latest release
+   read with `gh release view` said exactly that on 2026-09-25 (RULED: RS-30;
+   the measurement is _gate_evidence/pipeline_docs_voice/release_assets.txt).
+   No playground wasm bundle is a release asset. Links use the
+   releases/latest/download stable names. #]
+[?def dl-link scope=public ($name)
+  [$cat ('<a href="https://github.com/cx-home/cx/releases/latest/download/', $name, '">', $name, '</a>')]]
+[?def dl-row scope=public ($build $rings $surface $stem)
+  [$cat ('<tr><td><code>', $build, '</code></td><td>', $rings, '</td><td>', $surface, '</td><td>',
+         [$dl-link [$cat ($stem, 'darwin-arm64.tar.gz')]], '</td><td>',
+         [$dl-link [$cat ($stem, 'linux-arm64.tar.gz')]], '</td></tr>\n')]]
 [?def downloads-body scope=public ($ver)
   [$cat (
     '<section id="downloads">\n',
     '<h1>Downloads</h1>\n',
-    '<p class="lede">Prebuilt profiles for macOS (Apple Silicon). A profile is the ring model as an artifact — the same <code>cx</code> binary name with a profile-decided surface, so you install only as much of CX as you take on. Other platforms build from source below.</p>\n',
+    '<p class="lede">Every release ships the four builds of one <code>cx</code> — <code>data</code>, <code>embed</code>, <code>cli</code> and <code>platform</code> — for macOS on Apple Silicon and for Linux on arm64. A build is the ring model as an artifact: the same binary name with a build-decided surface, so you install only as much of CX as you take on.</p>\n',
     '<h2>Install</h2>\n',
-    '<p>The installer resolves the latest release and installs the <code>platform</code> profile by default:</p>\n',
+    '<p>The installer resolves the latest release for your OS and architecture, verifies the tarball against <code>SHA256SUMS.txt</code> from the same release and installs under <code>~/.local</code> (<code>PREFIX=</code> overrides); the <code>platform</code> build is the default:</p>\n',
     '<pre><code class="language-shell">curl -sSL https://cxhome.org/install | sh</code></pre>\n',
-    '<p>Leaner compositions install with <code>CX_PROFILE=</code>:</p>\n',
+    '<p>A leaner build installs with <code>CX_PROFILE=</code>:</p>\n',
     '<pre><code class="language-shell">curl -sSL https://cxhome.org/install | CX_PROFILE=data sh</code></pre>\n',
-    '<h2>Profiles</h2>\n',
+    '<h2>Builds</h2>\n',
     '<table>\n',
-    '<thead><tr><th>Profile</th><th>Rings</th><th>Surface</th><th>Tarball</th></tr></thead>\n',
+    '<thead><tr><th>Build</th><th>Rings</th><th>Surface</th><th>macOS (Apple Silicon)</th><th>Linux (arm64)</th></tr></thead>\n',
     '<tbody>\n',
-    '<tr><td><code>platform</code> (default)</td><td>0–2</td><td>evaluator + local-effect stdlib + store/fabric/XAP daemons; ships <code>libcx</code> + <code>cx.h</code></td><td><a href="https://github.com/cx-home/cx/releases/latest/download/cx-darwin-arm64.tar.gz">cx-darwin-arm64.tar.gz</a></td></tr>\n',
-    '<tr><td><code>cli</code></td><td>0–1</td><td>evaluator + local-effect stdlib packs + http client; no servers — the binary is the deliverable</td><td><a href="https://github.com/cx-home/cx/releases/latest/download/cx-cli-darwin-arm64.tar.gz">cx-cli-darwin-arm64.tar.gz</a></td></tr>\n',
-    '<tr><td><code>embed</code></td><td>0–1 core</td><td>evaluator only, no local-effect packs; ships the embed-shape <code>libcx</code> + <code>cx.h</code></td><td><a href="https://github.com/cx-home/cx/releases/latest/download/cx-embed-darwin-arm64.tar.gz">cx-embed-darwin-arm64.tar.gz</a></td></tr>\n',
-    '<tr><td><code>data</code></td><td>0</td><td>parse / convert / canonical / hash / diff / validate — cannot execute programs (no evaluator in the artifact); ships <code>libcx-core</code> + <code>cx.h</code></td><td><a href="https://github.com/cx-home/cx/releases/latest/download/cx-data-darwin-arm64.tar.gz">cx-data-darwin-arm64.tar.gz</a></td></tr>\n',
+    [$dl-row 'platform' '0–1 + the platform group' 'evaluator + local-effect stdlib + store/fabric/XAP daemons; ships <code>libcx</code> + <code>cx.h</code>' 'cx-'],
+    [$dl-row 'cli' '0–1' 'evaluator + local-effect stdlib packs + http client; no servers — the binary is the deliverable' 'cx-cli-'],
+    [$dl-row 'embed' '0–1 core' 'evaluator only, no local-effect packs; ships the embed-shape <code>libcx</code> + <code>cx.h</code>' 'cx-embed-'],
+    [$dl-row 'data' '0' 'parse / convert / canonical / hash / diff / validate — cannot execute programs (no evaluator in the artifact); ships <code>libcx-core</code> + <code>cx.h</code>' 'cx-data-'],
     '</tbody></table>\n',
     '<h2>Verify</h2>\n',
-    '<p>Every release carries a <code>SHA256SUMS.txt</code> over all tarballs and the conformance bundle:</p>\n',
+    '<p>Every release carries a <code>SHA256SUMS.txt</code> over all of its assets:</p>\n',
     '<pre><code class="language-shell">shasum -a 256 -c SHA256SUMS.txt --ignore-missing</code></pre>\n',
     '<h2>Also on every release</h2>\n',
     '<ul>\n',
     '<li><b>Conformance bundle</b> — <code>cx-conformance-v', $ver, '.zip</code>: the full fixture corpus, for independent implementations and audits.</li>\n',
-    '<li><b>WebAssembly bundle</b> — <code>libcx-wasm</code> powers the <a href="playground.html">playground</a> and ships alongside the binaries on release tags.</li>\n',
+    '<li><b>VS Code extension</b> — <code>cx-language-', $ver, '.vsix</code>: <code>code --install-extension cx-language-', $ver, '.vsix</code>.</li>\n',
     '<li><b>All releases</b> — <a href="https://github.com/cx-home/cx/releases">github.com/cx-home/cx/releases</a>, each with notes and checksums.</li>\n',
     '</ul>\n',
+    '<p>The WebAssembly engine of the <a href="playground.html">playground</a> is not a release asset; <code>make guide-wasm</code> builds it from source.</p>\n',
     '<h2>Other platforms</h2>\n',
-    '<p>Linux and Windows build from source (a static binary on any glibc-based distro; Windows is on the roadmap):</p>\n',
-    '<pre><code class="language-shell">git clone https://github.com/cx-home/cx && cd cx\ndevbox run -- make build && devbox run -- make install</code></pre>\n',
+    '<p>No prebuilt build is published for Linux on x86_64, for Intel Macs or for Windows; the installer says so and points at the source build. A source build fetches its pinned repositories with a released <code>cx</code> (<code>make deps-sync</code> finds one on <code>PATH</code> or at <code>~/.local/bin/cx</code>; <code>CX_BIN=</code> names another):</p>\n',
+    '<pre><code class="language-shell">git clone --recursive https://github.com/cx-home/cx && cd cx\nmake -C third_party/v     # the vendored V toolchain, once\nmake deps-sync            # the pinned repositories, under deps/\nmake build-vcx            # libcx + cx, at deps/cx-core-code/vcx/target/cx\nmake promote-cli          # verify, then install to /usr/local/bin (PREFIX= overrides)</code></pre>\n',
     '<p class="note">See the <a href="quickstart.html#install">quickstart install section</a> for per-platform detail.</p>\n',
     '</section>\n')]]
 
@@ -646,6 +780,32 @@
    own build steps). #]
 [?def copy-if scope=public impure ($from $to)
   [?if [$io:exists $from] [then [$io:copy $from $to]] [else ()]]]
+
+[# member: is $x anywhere in $seq (linear scan; the lists this gates are the
+   guide's own page count, a few hundred at most — site_assemble.cx's
+   --check uses the same shape against the same order of magnitude). #]
+[?def member scope=public ($seq $x)
+  [> [$count [?for [in $y $seq] [where [= $y $x]] [yield 1]]] 0]]
+
+[# clean-stale-pages: docs/guide/ is never wiped between runs (the wasm reuse
+   this file's header describes only works because #1005's copy-if leaves the
+   directory alone), so a module that MOVES tiers or a page that is RENAMED
+   or RETIRED leaves its old file behind forever — nothing here ever deletes.
+   #1672 found docs/guide/x-term.html dated three days stale: `term` used to
+   glob as an x/ file and render x-term.html; once it was promoted to the
+   frozen stdlib packs (lib-term.html), the render kept writing the new page
+   and never removed the old one, so the main checkout's long-lived tree
+   carried both — and `site-check` (docs-src/site/manifest.cxd) correctly
+   refused to vouch for a page no current source produces. This sweeps every
+   top-level *.html this run does NOT intend to (re)write and removes it
+   before the write loop below, so `docs/guide/` — and `site/`, which copies
+   it verbatim — holds exactly what THIS run's sources justify, regardless of
+   what a previous run with different sources left there. #]
+[?def clean-stale-pages scope=public impure ($out $expected)
+  [?for [in $p [$io:glob [$cat ($out, '/*.html')]]]
+    [= $base [$strings:slice $p [+ [$strings:rfind $p '/'] 1] [$strings:length $p]]]
+    [where [not [$member $expected $base]]]
+    [yield [$io:remove $p]]]]
 
 [# ── asset cache-busting (#953) ───────────────────────────────────────────
    A returning visitor loading the site across a deploy got the NEW page HTML
@@ -1060,13 +1220,28 @@
                    [$synth-libfiles])
                  [?fn ($g) $g]]]
   [= $ver [$strings:trim [$io:read-file 'VERSION']]]
+  [; RS-30: every fixture the guide home and the sections cite, replayed and
+     verified once, before any page is written (a moved output stops here). ]
+  [= $fx [$load-fixtures $metas $out]]
+  [= $self [$site-self]]
   [= $sec-ancs [?for [in $m $metas] [yield
     [anc name=$m@id slug=$m@slug frag='']]]]
   [= $child-ancs [$fp:flat-map $metas [?fn ($m)
     [?let [= $d [$parse-or-die $m@srcpath]]
       [?for [in $c $d//child] [yield
         [anc name=$c@id slug=$m@slug frag=$c@id]]]]]]]
+  [; every top-level page THIS run writes — the fixed pages, one per section,
+     one per stdlib/x/synth module, one per XAP demo — is the ONLY set
+     `docs/guide/*.html` may hold once this run ends (#1672). ]
+  [= $expected-pages [$fp:flat-map (
+                         ('index.html', 'about.html', 'downloads.html',
+                          'directives.html', 'syntax.html', 'xap.html'),
+                         [?for [in $m $metas] [yield [$cat ($m@slug, '.html')]]],
+                         [?for [in $f $libfiles] [yield [$cat ([$module-page $f], '.html')]]],
+                         [?for [in $d [$xap-demos]] [yield [$cat ($d@slug, '.html')]]])
+                       [?fn ($g) $g]]]
   (
+    [$clean-stale-pages $out $expected-pages],
     [$io:make-dirs [$cat ($out, '/assets')]],
     [$io:make-dirs [$cat ($out, '/highlight')]],
     [$io:make-dirs [$cat ($out, '/search')]],
@@ -1113,14 +1288,14 @@
     [$copy-if 'dist/wasm/libcx.js'            [$cat ($out, '/wasm/libcx.js')]],
     [$copy-if 'dist/wasm/libcx.wasm'          [$cat ($out, '/wasm/libcx.wasm')]],
     [$io:write-file [$cat ($out, '/index.html')]
-      [$wrap-page 'CX Guide' 'index' $metas $libfiles $ver [$index-body $metas $libfiles $ver]]],
+      [$wrap-page 'CX Guide' 'index' $metas $libfiles $ver [$expand-counts [$index-body $metas $libfiles $ver $fx] $self]]],
     [$io:write-file [$cat ($out, '/about.html')]
       [$wrap-page 'About' 'about' $metas $libfiles $ver [$io:read-file [$cat ($src, '/about.html')]]]],
     [$io:write-file [$cat ($out, '/downloads.html')]
       [$wrap-page 'Downloads' 'downloads' $metas $libfiles $ver [$downloads-body $ver]]],
     [?for [in $m $metas] [yield
       [?let [= $doc [$parse-or-die $m@srcpath]]
-            [= $raw [$render-doc $doc]]
+            [= $raw [$expand-counts [$render-doc $doc $fx] $self]]
             [= $body [$resolve-anchors $raw $m@slug $sec-ancs $child-ancs]]
             [= $page [$wrap-page $m@title $m@slug $metas $libfiles $ver $body]]
         [$io:write-file [$cat ($out, '/', $m@slug, '.html')] $page]]]],
