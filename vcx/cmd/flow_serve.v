@@ -1102,8 +1102,22 @@ fn flow_serve_program(r FlowRunner, directives []string, acts []FlowCliAct, tick
 	// either way, and an agent binder with no grant in the store is refused
 	// either way. A `[runner]` with no `[authz]` row hands in none, and
 	// `opts.authz` stays absent — today's behaviour, byte-identical.
+	//
+	// RULED: HOST-4's Letter 33 note — the row SEEDS the freshly opened store
+	// with the named principal as an explicit root grant, self-issued (`from`
+	// and `to` both `principal=`, which `authz.md`'s attenuation rule reads as
+	// principal-rooted with no parent to check): the document's OWN statement
+	// of who the runner acts as becomes the store's first recorded delegation,
+	// exactly as a host's deployment granting the same root would record one,
+	// rather than leaving the store silently empty of the one fact the
+	// document already states. It carries no `[capabilities]` of its own —
+	// this driver is generic over every feature a `[runner]` might load, so it
+	// names no feature's verbs; a feature's own dial issues the capability-
+	// bearing delegations that attenuate FROM this root later.
 	b << if r.authz != '' {
-		'[= \$o [\$map-put \$o0 "authz" [\$cxauthzstore:store {tenant: "${flow_cli_quote(r.name)}"}]]]'
+		'[= \$az [\$cxauthzstore:store {tenant: "${flow_cli_quote(r.name)}"}]]' +
+			'\n[= \$az-root [\$cxauthzstore:delegate \$az [delegation runner-root [tenant "${flow_cli_quote(r.name)}"] [from [principal "${flow_cli_quote(r.authz)}"]] [to [principal "${flow_cli_quote(r.authz)}"]] [capabilities] [over "/"] [assurance :t1] [signature "runner-authz"]]]]' +
+			'\n[= \$o [\$map-put \$o0 "authz" \$az]]'
 	} else {
 		'[= \$o \$o0]'
 	}
