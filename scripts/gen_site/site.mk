@@ -44,7 +44,7 @@ site: guide
 
 site-check: guide-render-gate
 	@$(SITE_CX_BIN) --allow-read --allow-write $(SITE_GEN)/site_assemble.cx
-	@$(SITE_CX_BIN) --allow-read --allow-write $(SITE_GEN)/site_assemble.cx --check
+	@$(SITE_CX_BIN) --allow-read --allow-write --allow-env $(SITE_GEN)/site_assemble.cx --check
 
 site-index: $(SITE_CX_DEP)
 	@CX_BIN="$(SITE_CX_BIN)" $(SITE_CX_BIN) $(SITE_CAPS) $(SITE_GEN)/site_build.cx

@@ -1,10 +1,31 @@
 # CX
 
 [![Version](https://img.shields.io/badge/version-v0.18.0-pre.1-blue.svg)](#status)
-[![CX](https://img.shields.io/badge/CX-54.7%25_of_source-1a1a17.svg)](#status)
+[![CX](https://img.shields.io/badge/CX-55.7%25_of_source-1a1a17.svg)](#status)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
-[![Docs](https://img.shields.io/badge/docs-cx--home.github.io%2Fcx-brightgreen.svg)](https://cx-home.github.io/cx/)
+[![Docs](https://img.shields.io/badge/docs-cxhome.org-brightgreen.svg)](https://cxhome.org/)
 [![Status](https://img.shields.io/badge/status-pre--1.0_experimental-orange.svg)](#status)
+
+**TL;DR — reach for CX whenever the data is the point.** One bracketed syntax
+is the document, the query, the program and the compiler's own tree, so the
+file you read is the file you transform, validate, hash, store and serve.
+Python set the standard a working language has to meet — readable on day one,
+batteries included — and CX is built to that standard and past it where data
+work hurts. Each line below names the conformance fixture that
+[cxhome.org](https://cxhome.org/) replays for it when the site is built:
+
+- a query is a pattern over the document, not code over an object model
+  (`program-for-003-name-email-pair`);
+- a fraction literal is an exact decimal, and mixing one with a binary float
+  is refused out loud (`ap-decimal-float-mix-right`);
+- a program reads nothing it was not granted, and the denial is a value that
+  names the flag (`io-001-read-file-cap-denied`);
+- regular expressions are RE2: a construct that would need backtracking is
+  refused when the pattern compiles (`re-003-compile-backreference-unsupported`);
+- state that outlives the program is two calls to a content-addressed store
+  (`store-rt-001-round-trip-get`);
+- an agent protocol message is an ordinary value projected to its wire form
+  (`mcp-001-call-tool-request-shape`).
 
 > **One concise syntax for data *and* code.** Configs, structured documents,
 > tabular data, queries, transforms, and the programs that tie them together —
@@ -35,13 +56,20 @@ every other node. That's the homoiconic property, and it's why CX is one
 product, not "a format plus a separate language."
 
 > ⚠️ **Not production-ready — experimental, pre-1.0.** CX is already
-> full-featured, but it's still hardening. Expect rough edges: single-core
-> performance is strong (~135k HTTP requests/second) while multi-core scaling
-> is still in progress, and a couple of build dependencies are on the way out.
-> Pin a version, kick the tires, and file issues — but don't put it in front
-> of customers yet.
+> full-featured, but it's still hardening. Expect rough edges: multi-core
+> scaling is still in progress, and a couple of build dependencies are on the
+> way out. Pin a version, kick the tires, and file issues — but don't put it
+> in front of customers yet.
 
 ## Compared to
+
+**Beside Python** — Python is the standard a general-purpose language is
+measured by, and the one CX is built to meet and exceed, not a language CX sets
+out to replace. The guide's
+[CX and Python](https://cxhome.org/comparison.html#cx-vs-python) section shows
+each difference — exact decimals, granted effects, RE2, errors as values,
+updates that never mutate, one value model, built-in identity — beside the
+fixture it replays.
 
 **Data formats** — CX converts to and from JSON, YAML, TOML, XML, and
 CSV/TSV/PSV, and adds typed scalars, native tables, and a bracketed directive
@@ -93,36 +121,9 @@ transforms, then services. Same syntax all the way.
 
 ## Install
 
-**Prebuilt binary** — download the tarball for your platform from the
-[latest GitHub release](https://github.com/cx-home/cx/releases/latest)
-(currently `cx-darwin-arm64.tar.gz` for macOS on Apple silicon; it contains
-the `cx` CLI plus `libcx.dylib` and `cx.h` for embedders), then put `cx` on
-your `PATH`:
-
-```sh
-tar -xzf cx-darwin-arm64.tar.gz
-sudo install -m 755 cx /usr/local/bin/cx
-cx --version
-```
-
-**Build from source** — needs `make`, a C compiler, and git. The patched V
-toolchain CX compiles with is vendored as a submodule, so clone with
-`--recursive`:
-
-```sh
-git clone --recursive https://github.com/cx-home/cx
-cd cx
-make -C third_party/v   # one-time: build the vendored V toolchain
-make build-vcx          # libcx + the cx CLI (staged at vcx/target/cx)
-make promote-cli        # verify + install the CLI to /usr/local/bin
-cx --version
-```
-
-A fresh clone's `git submodule update --init --recursive` must run WITHOUT `--depth` (`check-v-fork` walks the V fork's full ancestry), and `make build-vcx`'s own `make deps-sync` bootstrap step — which fetches this repository's pinned repositories — needs a released `cx` already on your `PATH`, or `CX_BIN=<path>` naming one.
-
-**One-line install** — once `cxhome.org`'s DNS is live, the hosted installer
-downloads the latest release for your platform, verifies its SHA-256, and
-installs to `~/.local` (override with `PREFIX=`):
+**One-line install** — the hosted installer resolves the latest release for
+your OS and architecture, verifies the tarball against the release's
+`SHA256SUMS.txt`, and installs to `~/.local` (override with `PREFIX=`):
 
 ```sh
 curl -sSL https://cxhome.org/install | sh
@@ -144,6 +145,41 @@ curl -sSL https://cxhome.org/install | CX_PROFILE=data sh
 | `embed` | Rings 0–1 core: evaluator only, no local-effect packs; ships the embed-shape `libcx` |
 | `data` | Ring 0: parse/convert/canonical/hash/diff/validate — cannot execute programs (no evaluator in the artifact) |
 
+**Prebuilt tarballs** — every
+[release](https://github.com/cx-home/cx/releases/latest) carries the four
+profiles for macOS on Apple silicon and for Linux on arm64:
+`cx-darwin-arm64.tar.gz` and `cx-linux-arm64.tar.gz` (the `platform` profile:
+the `cx` CLI plus `libcx` and `cx.h` for embedders) and
+`cx-<profile>-<os>-arm64.tar.gz` for the other three, beside a conformance
+bundle, the VS Code extension and `SHA256SUMS.txt`. No build is published for
+x86_64 or for Windows. To install one by hand, put `cx` on your `PATH`:
+
+```sh
+tar -xzf cx-darwin-arm64.tar.gz
+sudo install -m 755 cx /usr/local/bin/cx
+cx --version
+```
+
+**Build from source** — needs `make`, a C compiler, git, and a released `cx`
+to fetch the pinned repositories with. The patched V toolchain CX compiles
+with is vendored as a submodule, so clone with `--recursive`:
+
+```sh
+git clone --recursive https://github.com/cx-home/cx
+cd cx
+make -C third_party/v   # one-time: build the vendored V toolchain
+make deps-sync          # fetch the pinned repositories into deps/
+make build-vcx          # libcx + the cx CLI (staged at deps/cx-core-code/vcx/target/cx)
+make promote-cli        # verify + install the CLI to /usr/local/bin
+cx --version
+```
+
+A fresh clone's `git submodule update --init --recursive` must run WITHOUT
+`--depth` (`check-v-fork` walks the V fork's full ancestry), and
+`make deps-sync` runs on a released `cx`: the one on your `PATH`, the one the
+installer put at `~/.local/bin/cx`, or the one `CX_BIN=<path>` names;
+`make build-vcx` refuses to start until `deps/` holds every pinned module.
+
 V users — the native V binding lives in its own
 [`cx-home/cx-v`](https://github.com/cx-home/cx-v) repo so V's package manager
 can install it directly:
@@ -160,16 +196,18 @@ cx demo
 
 ## Documentation
 
-The full documentation — overview, install, quickstart, tutorial, the data and
-code tours, the standard-library reference, cookbook, every binding, and the
-interactive playground — lives at:
+The site — the landing page with its replayed examples, the guide (the
+language ring by ring, the quickstart, the comparison, a reference page for
+every bundled module), the LLM primer and the contributor's front door —
+lives at:
 
-**→ [cx-home.github.io/cx](https://cx-home.github.io/cx/)**
+**→ [cxhome.org](https://cxhome.org/)**
 
 It is the canonical user-facing surface; this README is the one-screen intro.
-Reading offline? The guide is generated build output: run `make guide` first,
-then open `docs/guide/index.html` in a browser — it is a static bundle and
-works under `file://` with no server.
+Reading offline? The site is generated build output: run `make site` and open
+`site/index.html` in a browser (`make guide` alone renders the guide to
+`docs/guide/`) — it is a static bundle and works under `file://` with no
+server. `cx primer` prints the primer for exactly the binary you run.
 
 ## Platform
 
@@ -219,7 +257,7 @@ forward-compatible.
 What's in each release — new surface, fixes, and any migration notes — lives in
 [`CHANGELOG.md`](CHANGELOG.md) and the per-release `RELEASE_NOTES_v*.md` files;
 the latest of those is the authoritative release surface. Full language and
-stdlib reference is on the [docs site](https://cx-home.github.io/cx/).
+stdlib reference is on the [docs site](https://cxhome.org/).
 
 A formal external security review and the multi-core performance work are
 still ahead (in-repo fuzz harnesses exist — see
