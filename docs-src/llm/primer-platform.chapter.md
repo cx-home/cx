@@ -298,7 +298,13 @@ an adopter without `flow` orders the same three verbs from a script or a surface
 
 **Seams crossed.** S-1, S-6, S-10; R-1 (the three verbs stand alone).
 
-**Graded by.** No reference example — §3.8.
+**Graded by.** `bulk-export` — **#1492**
+(`reference/connectors/bulk-export/`,
+cases `bulk-export-001-job-state-transitions` … `-008-a-deadline-expiry-refuses-loud`),
+which grades the three verbs over a real socket ordered by a script and the
+flow document's `until` — its iterations, its durable `every=` wait and its
+deadline — over the verbs' recorded answers. The flow run over the socket is
+§3.8's row.
 
 **§3.4. Inbound webhook**
 
@@ -422,7 +428,7 @@ Each row is a defect of this page under COMP-1, recorded rather than hidden.
 | Pattern | What is ungraded | The issue that owes it |
 |---|---|---|
 | §3.1 poll–transform–sink | The poll and the sink are graded by **#1467** and **#1472**; the TRANSFORM is graded by no reference example — the `order-pipeline` document carries no `[compute …]` step, and the transform step's own conformance cases are advisory until the runner code lands (`flow.md` §4.4a, RULED: WF-42) | **#1472** — the one example whose document already orders two features' verbs, and so the one that can carry the mapping between them |
-| §3.3 async bulk export | The pattern named by `connector.md` §12.3 as the case that looks like a dependency on `flow` is demonstrated by none of the seven reference examples, and is not among the coverage gaps that document states (`../../../reference/connectors/README.md` §1.4) | **none** — no issue owes it today |
+| §3.3 async bulk export | The flow document's RUN over a real socket: a step's act runs under the runner's own declared effects, so the connector verb's `net` is refused `CXER0271` whatever the process grant (`flow.md` §5); `bulk-export` grades the verbs over the socket from a script and the document over their recorded answers | **cx-home/cx-platform-flow#12** |
 
 **§3.9. The scaffold**
 
