@@ -393,6 +393,22 @@ pre.sample-output::before {
   user-select: none;
 }
 
+/* A replayed conformance fixture (RULED: RS-30): its files, the invocation
+   with the live output, and where the case lives. */
+.fixture { margin: 0.8rem 0 1.4rem; }
+.fixture p.fixture-file {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  margin: 0.7rem 0 0.2rem;
+}
+.fixture p.fixture-src {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin: 0.3rem 0 0;
+}
+.proof { margin-top: 1.6rem; }
+.proof h3 { margin-top: 1.4rem; }
+
 /* ── engineering tables: heavy head rule, hairline rows ─────────────── */
 table {
   border-collapse: collapse;

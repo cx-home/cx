@@ -24,6 +24,9 @@
 #   {{EXAMPLE:<id> out}}        the LIVE output, fenced as a console block
 #   {{EXAMPLE:<id> raw-out}}    the LIVE output, unfenced (for tables)
 #   {{EXAMPLE:<id> cmd}}        the invocation line, unfenced
+#   {{EXAMPLE:<id> cite}}       the case id alone, as inline code — for a claim
+#                               in prose that names its fixture (RULED: RS-30):
+#                               the case is replayed and verified like any other
 #   {{PAIR:<wrong-id> <right-id>}}   one anti-pattern entry: heading, the
 #                               `[why]` prose, then both halves as blocks
 #   {{DIRECTIVES}}              the NORMATIVE directive registry, projected
@@ -589,7 +592,8 @@
   [?let [= $id [$strings:slice [$first $parts] 9 [$strings:length [$first $parts]]]]
         [= $field [?if [>= [$count $parts] 2] [then [$nth $parts 2]] [else 'block']]]
         [= $sec [$lookup $index $id $where]]
-    [$render-field $field $sec [$map:get $replays $id] $where]]]
+    [?if [= $field 'cite'] [then [$concat "`" $id "`"]]
+      [else [$render-field $field $sec [$map:get $replays $id] $where]]]]]
 
 [?def expand-pair scope=public impure ($parts $index $replays $where)
   [?let [= $wid [$strings:slice [$first $parts] 6 [$strings:length [$first $parts]]]]
