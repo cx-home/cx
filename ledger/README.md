@@ -551,6 +551,12 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `grader-1` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | Integrator decisions, 2026-09-17 — the Ring 0 rulings owed (1363-b, 1387-a, FMT-2, GRADER-1, 1150-a, 1250-b) |
 | `hc-1` | [rulings_2026_09_04_host_context_1210.md](rulings_2026_09_04_host_context_1210.md) | HC-1 — the shape of "a journal beside the store" — RECOMMENDED: (a) |
 | `hc-1` | [rulings_2026_09_05_xap_queue.md](rulings_2026_09_05_xap_queue.md) | 1210 HC-1), `xap.md` §3.1.1, `std-lib/journal.md`. |
+| `host-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | Owner decisions 2026-09-26 — the four designs of Letters 26–29: the connector kit (KIT-1…KIT-6), cross-company (XCO-1…XCO-5), the minimal keystore (SEC-1), the host's four choices (HOST-1…HOST-4) |
+| `host-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | HOST-1 — a projected command def's parameters are the intent list verbatim |
+| `host-2` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | HOST-2 — one code for the host's internal boot faults |
+| `host-3` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | HOST-3 — an act on an auth-enabled host is the session's |
+| `host-4` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | Owner decisions 2026-09-26 — the four designs of Letters 26–29: the connector kit (KIT-1…KIT-6), cross-company (XCO-1…XCO-5), the minimal keystore (SEC-1), the host's four choices (HOST-1…HOST-4) |
+| `host-4` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | HOST-4 — both faces decide a feature verb the same way |
 | `hyg-1` | [rulings_2026_08_20_hygiene_695.md](rulings_2026_08_20_hygiene_695.md) | Ruling HYG-1 (2026-08-20) — #695 stale-inventory reconciliation (pre-cut hygiene sweep) |
 | `int-1` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) | INT-1 — why |
 | `int-1` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) | INT-1 — the §6 reading |
@@ -570,6 +576,14 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1.3 — #898: `[err …]` in the source contaminates the injected image |
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1.4 — #899: the `/Name` → `//Name` source rewrite RETIRES |
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1.5 — #894: the missing comma in an array literal |
+| `kit-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | Owner decisions 2026-09-26 — the four designs of Letters 26–29: the connector kit (KIT-1…KIT-6), cross-company (XCO-1…XCO-5), the minimal keystore (SEC-1), the host's four choices (HOST-1…HOST-4) |
+| `kit-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | KIT-1 — a reference connector declares one verb per kit mechanism it proves |
+| `kit-2` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | KIT-2 — a tool is named by the composition-qualified verb |
+| `kit-3` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | KIT-3 — the fold example runs |
+| `kit-4` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | KIT-4 — a reference scenario runs under the real XAP host |
+| `kit-5` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | KIT-5 — the binding's values are live |
+| `kit-6` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | Owner decisions 2026-09-26 — the four designs of Letters 26–29: the connector kit (KIT-1…KIT-6), cross-company (XCO-1…XCO-5), the minimal keystore (SEC-1), the host's four choices (HOST-1…HOST-4) |
+| `kit-6` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | KIT-6 — the design pages tell the truth |
 | `lim-1` | [rulings_2026_08_20_limits_second_half.md](rulings_2026_08_20_limits_second_half.md) | 876 closes: LIM-1 (spec home) + LIM-2 (this ruling) cover both halves. |
 | `lim-1` | [rulings_2026_08_20_limits_spec.md](rulings_2026_08_20_limits_spec.md) | Ruling LIM-1 (2026-08-20) — limits spec home (#876, first half) |
 | `lim-2` | [rulings_2026_08_20_limits_second_half.md](rulings_2026_08_20_limits_second_half.md) | Ruling LIM-2 (2026-08-20) — no blanket caps; amplification is a gated property (#876 second half, owner "2a") |
@@ -726,6 +740,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `sd-1` | [rulings_2026_09_15_views_group_vg3_schema_sd1.md](rulings_2026_09_15_views_group_vg3_schema_sd1.md) | Owner letters 2026-09-15 ~01:20Z — the fourth clause of `[views]`, and the schema-as-data feature kind (RULED: VG-3, SD-1) |
 | `sea-1` | [rulings_2026_08_20_schema_evolution_automation.md](rulings_2026_08_20_schema_evolution_automation.md) | SEA-1 — the four automation gaps close; sound-refusal-first everywhere |
 | `sea-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-2 — contract evolution gets the SEA-1 treatment (#1182) |
+| `sec-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | Owner decisions 2026-09-26 — the four designs of Letters 26–29: the connector kit (KIT-1…KIT-6), cross-company (XCO-1…XCO-5), the minimal keystore (SEC-1), the host's four choices (HOST-1…HOST-4) |
+| `sec-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | SEC-1 — the minimal keystore that expands without impact |
 | `seq-1` | [rulings_2026_08_26_seq_classification.md](rulings_2026_08_26_seq_classification.md) | SEQ-1 — the filed mechanism is WRONG; this is not a port regression |
 | `seq-2` | [rulings_2026_08_26_seq_classification.md](rulings_2026_08_26_seq_classification.md) | SEQ-2 — the hole is a real contract violation, and the CONTRACT wins |
 | `seq-3` | [rulings_2026_08_26_seq_classification.md](rulings_2026_08_26_seq_classification.md) | SEQ-3 — golden movement: ZERO, and it is measured, not asserted |
@@ -954,6 +970,13 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xap-1a` | [rulings_2026_09_26_xap_host_runner_xap1.md](rulings_2026_09_26_xap_host_runner_xap1.md) | XAP-1a — the deployment face serves schedule, intent and webhook |
 | `xap-1b` | [rulings_2026_09_26_xap_host_runner_xap1.md](rulings_2026_09_26_xap_host_runner_xap1.md) | XAP-1a, XAP-1b — the xap host embeds the flow runner (owner: Letter 14 = 1a 2b, 2026-09-26) |
 | `xap-1b` | [rulings_2026_09_26_xap_host_runner_xap1.md](rulings_2026_09_26_xap_host_runner_xap1.md) | XAP-1b — the host-side courier is a sched cadence on the boot fiber |
+| `xco-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | Owner decisions 2026-09-26 — the four designs of Letters 26–29: the connector kit (KIT-1…KIT-6), cross-company (XCO-1…XCO-5), the minimal keystore (SEC-1), the host's four choices (HOST-1…HOST-4) |
+| `xco-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | XCO-1 — a did:web ack is verified under the key the session resolved at attach |
+| `xco-2` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | XCO-2 — a tier-2 ack is a co-signature set over one claim |
+| `xco-3` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | XCO-3 — the counterparty half lives in the XAP host |
+| `xco-4` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | XCO-4 — the host is the initiator's session holder too |
+| `xco-5` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | Owner decisions 2026-09-26 — the four designs of Letters 26–29: the connector kit (KIT-1…KIT-6), cross-company (XCO-1…XCO-5), the minimal keystore (SEC-1), the host's four choices (HOST-1…HOST-4) |
+| `xco-5` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | XCO-5 — a host may be did:web |
 | `xd-1` | [rulings_2026_08_21_x_tier_docs_and_domain_writes.md](rulings_2026_08_21_x_tier_docs_and_domain_writes.md) | XD-1 — the x/ tier is DOCUMENTED, and marked for what it is (#904) |
 | `xd-2` | [rulings_2026_08_21_x_tier_docs_and_domain_writes.md](rulings_2026_08_21_x_tier_docs_and_domain_writes.md) | XD-2 — domain data is journaled, and its authority is its own (#905) |
 
@@ -1349,4 +1372,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*329 ledger pages; 688 ids declared, 387 cited only.*
+*330 ledger pages; 704 ids declared, 387 cited only.*
