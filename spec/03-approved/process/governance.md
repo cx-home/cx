@@ -461,7 +461,7 @@ and is not duplicated here.
 | `CXER3000–CXER3003` | `cx-stdlib/math` | `spec/03-approved/stdlib/math.md` |
 | `CXER3100–CXER3106` | `cx-stdlib/json` | `spec/03-approved/stdlib/json.md` |
 | `CXER3200–CXER3203` | `cx-stdlib/re` | `spec/03-approved/stdlib/re.md` |
-| `CXER3300–CXER3349` | `cx-stdlib/time` (3300–3305 core; 3320–3349 recurrence rules, 3306–3319 reserved) | `spec/03-approved/stdlib/time.md` |
+| `CXER3300–CXER3349` | `cx-stdlib/time` (3300–3305 core; 3306–3308 business calendars, RULED: WF-24; 3320–3349 recurrence rules, 3309–3319 reserved) | `spec/03-approved/stdlib/time.md` |
 | `CXER3400–CXER3412` | `cx-stdlib/io` | `spec/03-approved/stdlib/io.md` |
 | `CXER3450–CXER3459` | `cx-stdlib/term` (3450–3451 shipped; rest reserved) | `spec/03-approved/stdlib/term.md` |
 | `CXER3500–CXER3504` | `cx-stdlib/locale` | `spec/03-approved/stdlib/locale.md` |

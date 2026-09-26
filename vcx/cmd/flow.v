@@ -63,10 +63,10 @@ const flow_cli_tenant = 'cx-flow'
 const flow_cli_journal_default = 'file://.cx/flow/'
 
 const flow_cli_usage = [
-	'Usage: cx flow run      FLOW.cx --env ENV.cx [--journal URL | --ephemeral] [--<arg>=VALUE]...',
-	'                                [--actor=ID] [--authority=ID] [--stream=NAME] [--allow-*]',
-	'       cx flow validate FLOW.cx --env ENV.cx',
-	'       cx flow simulate FLOW.cx RESULTS.cx [--env ENV.cx] [--<arg>=VALUE]...',
+	'Usage: cx flow run      FLOW.cx --env ENV.cx [--docs DIR] [--journal URL | --ephemeral]',
+	'                                [--<arg>=VALUE]... [--actor=ID] [--authority=ID] [--stream=NAME] [--allow-*]',
+	'       cx flow validate FLOW.cx --env ENV.cx [--docs DIR]',
+	'       cx flow simulate FLOW.cx RESULTS.cx [--env ENV.cx] [--docs DIR] [--<arg>=VALUE]...',
 	'       cx flow status   --journal URL RUN-ID [--stream=NAME] [--allow-*]',
 	'       cx flow serve    RUNNER.cx [--for DURATION] [--allow-*]',
 	'       cx flow diagram  FLOW.cx [--level=min|compact|full]',
@@ -98,6 +98,11 @@ const flow_cli_usage = [
 	'                 is named `alias/def`, its own def is named `def`. Relative',
 	'                 [?lib] paths resolve against the working directory, exactly',
 	'                 as under `cx ENV.cx`.',
+	'  --docs DIR     run, validate and simulate: the directory a `flow=` step\'s',
+	'                 reference resolves from — serve\'s [docs url=], locally.',
+	'                 Every .cx file directly in DIR that parses to a [flow …]',
+	'                 joins the resolver under its own content address; without',
+	'                 it a `flow=` reference refuses CXER4967.',
 	'  --journal URL  the run\'s journal (default file://.cx/flow/ — gitignored)',
 	'  --ephemeral    mem:// instead: process-lifetime, nothing persists',
 	'  --<arg>=VALUE  one field of the run\'s [args …] record, typed by the flow\'s',
@@ -479,11 +484,15 @@ fn flow_cli_answer(rendered string, want_done bool) {
 // ── argv ─────────────────────────────────────────────────────────────────────
 
 const flow_cli_known_flags = ['--env', '--journal', '--actor', '--authority', '--stream', '--for',
-	'--level', '--reason']
+	'--level', '--reason', '--docs']
 
 struct FlowCliOpts {
 mut:
 	env       string
+	// `run` / `validate` / `simulate` only: the directory a `flow=` step's
+	// reference resolves from (cli.md §3.10, RULED: WF-22) — the local
+	// profile's mirror of `serve`'s `[docs url=…]`.
+	docs      string
 	journal   string
 	ephemeral bool
 	actor     string
@@ -581,6 +590,7 @@ fn flow_cli_parse(args []string) FlowCliOpts {
 fn flow_cli_set(mut o FlowCliOpts, key string, val string) {
 	match key {
 		'env' { o.env = val }
+		'docs' { o.docs = val }
 		'journal' { o.journal = val }
 		'actor' { o.actor = val }
 		'authority' { o.authority = val }
@@ -663,6 +673,9 @@ fn run_flow(args []string) {
 		}
 		o.journal = 'mem://cx-flow'
 	}
+	if o.docs != '' && verb !in ['run', 'validate', 'simulate'] {
+		flow_cli_die('--docs is the document source of `run`, `validate` and `simulate`; `${verb}` takes none (`serve` reads its [runner]\'s own [docs url=…] row)')
+	}
 	mut for_ns := i64(0)
 	if o.for_spec != '' {
 		if verb !in ['serve', 'watch'] {
@@ -703,6 +716,52 @@ fn flow_cli_prelude(with_journal bool) string {
 	return b.join('\n')
 }
 
+// FlowCliDocs is what `--docs DIR` contributes to a driver program: the DATA
+// document it evaluates over, and the two opening bindings — `$fl`, the flow
+// being run, and `$e`, the resolver.
+struct FlowCliDocs {
+	input string
+	binds string
+}
+
+// flow_cli_docs reads `--docs DIR` (cli.md §3.10, RULED: WF-22). A `flow=`
+// step's reference resolves through the executing environment's ONE resolver
+// (flow.md §4.20, §4.1), and `serve` fills that resolver with every flow
+// document its `[docs …]` store holds (RULED: 789-WF-30); this is the SAME
+// store read, on the local profile, from the SAME function
+// (flow_serve_docs_rest): every `.cx` file directly in DIR that parses to a
+// `[flow …]`, in file-name order, except FLOW.cx's own address. No address is
+// claimed here — a document row's address is its content address, which the
+// module computes from the bytes — and every document stays DATA: FLOW.cx and
+// the store travel as the data document, never as program text, so nothing
+// needs escaping. Without `--docs` the data document and both bindings are
+// exactly what they were, and a `flow=` reference refuses CXER4967.
+fn flow_cli_docs(o FlowCliOpts, flow_src string, acts []FlowCliAct) FlowCliDocs {
+	if o.docs == '' {
+		return FlowCliDocs{
+			input: flow_src
+			binds: '[?let [= \$fl [\$first [\$cx:select \$doc "//flow"]]]\n[= \$e ${flow_cli_resolver(acts)}]'
+		}
+	}
+	if !os.is_dir(o.docs) {
+		eprintln('cx flow: --docs `${o.docs}` is not a directory (it names the directory a `flow=` reference resolves from)')
+		exit(1)
+	}
+	own := cx.cx_text_hash(flow_src) or { '' }
+	rest := flow_serve_docs_rest(o.docs, if own == '' { []string{} } else { [own] })
+	// ONE root per part, so a selection reads the same whatever the store
+	// holds: FLOW.cx under [flow-cli-main], the store under [flow-cli-docs].
+	input := ['[flow-cli-main', flow_src, ']', '[flow-cli-docs', rest.join('\n'), ']'].join('\n')
+	return FlowCliDocs{
+		input: input
+		binds: [
+			'[?let [= \$fl [\$first [\$cx:select \$doc "//flow-cli-main/flow"]]]',
+			'[= \$e0 ${flow_cli_resolver(acts)}]',
+			'[= \$e [?element "resolver" [?splice \$e0/*] \$fl [?splice [\$cx:select \$doc "//flow-cli-docs/flow"]]]]',
+		].join('\n')
+	}
+}
+
 fn flow_cli_run(o FlowCliOpts) {
 	if o.positional.len != 1 {
 		flow_cli_die('run takes exactly one FLOW.cx')
@@ -715,11 +774,11 @@ fn flow_cli_run(o FlowCliOpts) {
 	directives, acts := flow_cli_env_scan(o.env)
 	args_src := flow_cli_args(o.args, flow_cli_arg_types(flow_src))
 	url := if o.journal != '' { o.journal } else { flow_cli_journal_default }
+	docs := flow_cli_docs(o, flow_src, acts)
 	program := [
 		flow_cli_prelude(true),
 		directives.join('\n'),
-		'[?let [= \$fl [\$first [\$cx:select \$doc "//flow"]]]',
-		'[= \$e ${flow_cli_resolver(acts)}]',
+		docs.binds,
 		'[= \$j [\$cxjournal:open "${flow_cli_quote(url)}" "${flow_cli_tenant}"]]',
 		// §4.15's LOCAL POSTURE, and it was unimplemented (RULED: 789-WF-27a,
 		// the surviving half of #1313 after that ruling deleted its premise).
@@ -796,7 +855,7 @@ fn flow_cli_run(o FlowCliOpts) {
 		'[= \$a ${args_src}]',
 		'  [\$cxflow:start \$j \$fl \$a ${flow_cli_opts_map(o, flow_cli_nonce(args_src), true)}]]',
 	].join('\n')
-	flow_cli_answer(flow_cli_eval(flow_src, program), true)
+	flow_cli_answer(flow_cli_eval(docs.input, program), true)
 }
 
 fn flow_cli_validate(o FlowCliOpts) {
@@ -809,14 +868,14 @@ fn flow_cli_validate(o FlowCliOpts) {
 	flow_cli_install_caps(o)
 	flow_src := flow_cli_read(o.positional[0], 'the flow document')
 	directives, acts := flow_cli_env_scan(o.env)
+	docs := flow_cli_docs(o, flow_src, acts)
 	program := [
 		flow_cli_prelude(false),
 		directives.join('\n'),
-		'[?let [= \$fl [\$first [\$cx:select \$doc "//flow"]]]',
-		'[= \$e ${flow_cli_resolver(acts)}]',
+		docs.binds,
 		'  [\$cxflow:validate \$fl \$e]]',
 	].join('\n')
-	flow_cli_answer(flow_cli_eval(flow_src, program), false)
+	flow_cli_answer(flow_cli_eval(docs.input, program), false)
 }
 
 // flow_cli_diagram is the local profile's face on flow.md §4.17's derived
@@ -1023,16 +1082,16 @@ fn flow_cli_simulate(o FlowCliOpts) {
 		directives, acts = flow_cli_env_scan(o.env)
 	}
 	args_src := flow_cli_args(o.args, flow_cli_arg_types(flow_src))
+	docs := flow_cli_docs(o, flow_src, acts)
 	program := [
 		flow_cli_prelude(false),
 		directives.join('\n'),
-		'[?let [= \$fl [\$first [\$cx:select \$doc "//flow"]]]',
+		docs.binds,
 		'[= \$rs [\$first [\$cx:select \$doc "//results"]]]',
-		'[= \$e ${flow_cli_resolver(acts)}]',
 		'[= \$a ${args_src}]',
 		'  [\$cxflow:simulate \$fl \$a \$rs {env: \$e}]]',
 	].join('\n')
-	flow_cli_answer(flow_cli_eval(flow_src + '\n' + results_src, program), false)
+	flow_cli_answer(flow_cli_eval(docs.input + '\n' + results_src, program), false)
 }
 
 fn flow_cli_status(o FlowCliOpts) {
