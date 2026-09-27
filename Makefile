@@ -2007,8 +2007,11 @@ flow-dogfood-gate: build-vcx
 # without the `live` pack (cx-platform-flow flow.md §4.12a), which only a
 # build without the platform group can show — the cli PROFILE, named to the
 # lanes as CX_NOLIVE_BIN, which is why the step builds the profile matrix
-# (guarded: a current artifact is not relinked, #1449).
-FLOW_LANES := racing_advancers_lane.cx flow_cli_lane.cx flow_serve_lane.cx flow_host_lane.cx
+# (guarded: a current artifact is not relinked, #1449). The cross-company
+# lane is both halves of a delegated step on two deployment hosts across a
+# real socket (RULED: XCO-3, XCO-4, XCO-5): a did:web domain over TLS, an
+# XSP-AUTH attach, a handle-held identity key.
+FLOW_LANES := racing_advancers_lane.cx flow_cli_lane.cx flow_serve_lane.cx flow_host_lane.cx flow_xco_lane.cx
 .PHONY: test-flow-umbrella
 test-flow-umbrella: build-vcx build-profiles-dev
 	@for t in $(FLOW_LANES); do \
