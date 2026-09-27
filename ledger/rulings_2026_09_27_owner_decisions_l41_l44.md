@@ -1,4 +1,4 @@
-# Owner decisions 2026-09-27 — Letters 41–44 (from #1467, R-1492 and #1463): the graded orders-db partial merges (ODB-1); L41, L43, L44 pending
+# Owner decisions 2026-09-27 — Letters 41–45: the call spread (SPREAD-1), the orders-db partial (ODB-1), R-1492 as graded (BEX-1), the bus audit subject (BUS-1), no new agents (PACE-2)
 
 **Status: RULED (owner, 2026-09-27 ~00:4xZ and ~00:5xZ, in session, on the letters posted on
 [#1591](https://github.com/cx-home/cx-private/issues/1591) at 00:2xZ–00:3xZ).** All four are ruled here;
@@ -46,3 +46,14 @@ L44.1 (a): the record's own `subject=` carries the bus subject or queue; the det
 the bus cases (#1683). L44.2 (a): `ack=on-process` acknowledges after the kit's walk has taken the
 batch; landing a message is the consumer's `[on …]` binding's job, not the kit's. Rejected: a new
 attribute word (`topic=`); an exemption from audit.md §3.5; the kit appending to the caller's journal.
+
+## PACE-2 — no new agent from this session; the switch to the other account when reasonable (owner, 01:1xZ, on Letter 45)
+
+The owner's word: "launch no new agents. we'll switch to a new account when reasonable." — and, on
+the integrator's handoff timing: "don't wreck any current or in progress work." In effect: the six
+agents running at 01:1xZ (#1463, R-1492, flow#10b, XCO, the #1498 spec branch, #1686) finish under
+this session as their relay; the integrator merges what turns green (the manifest fix 2, union 2)
+and posts the HANDOFF after union 2 has landed and graded green; nothing running is stopped, and the
+next session (the other account) launches the kit's remaining items. Letter 45's (a)/(b)/(c) are
+superseded by this word; the integrator's withdrawal and reinstatement of L45 on its own (01:11Z,
+01:12Z) were errors — a numbered letter is the owner's to answer.
