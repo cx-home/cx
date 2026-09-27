@@ -65,7 +65,7 @@ row is refused by name (RULED: RS-1).
 | `spec=` | 98 | 96 distinct values |
 | `corpus=` | 98 | 94 distinct values |
 | `source=` | 98 | 87 distinct values |
-| `code=` | 98 | 74 distinct values |
+| `code=` | 98 | 73 distinct values |
 | `half=` | 98 | `none` |
 | `status=` | 98 | `current` `planned` |
 | `group=` | 42 | `platform` |
