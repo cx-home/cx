@@ -686,6 +686,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pq-8` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-8 — diagram validity is a gate, driven from the shipped files |
 | `pq-9` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-9 — an operator-headed element's NAME is its head (owner feedback) |
 | `ps-1` | [rulings_2026_08_20_postfix_uniformity.md](rulings_2026_08_20_postfix_uniformity.md) | PS-1 — every program-position bracketed form's closing bracket takes the [135a] compact-step postfix |
+| `pubfix-1` | [rulings_2026_09_27_owner_decisions_l56.md](rulings_2026_09_27_owner_decisions_l56.md) | Owner decision 2026-09-27 (afternoon) — Letter 56: the public-history replacements file must survive its own pass (PUBFIX-1) |
+| `pubfix-1` | [rulings_2026_09_27_owner_decisions_l56.md](rulings_2026_09_27_owner_decisions_l56.md) | PUBFIX-1 — fix first, then REFRESH-5 (L56 = (a)) |
 | `pw-1` | [rulings_2026_09_04_flow_w3_performers_1265.md](rulings_2026_09_04_flow_w3_performers_1265.md) | PW-1 — how a composed-grammar verb declares its compensator — RULED (a) |
 | `pw-2` | [rulings_2026_09_04_flow_w3_performers_1265.md](rulings_2026_09_04_flow_w3_performers_1265.md) | PW-2 — the inbox before `fleet` — RULED (a) |
 | `pw-3` | [rulings_2026_09_04_flow_w3_performers_1265.md](rulings_2026_09_04_flow_w3_performers_1265.md) | PW-3 — how an `[approval]` correlates to a run and step — RULED (a) |
@@ -1437,4 +1439,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*336 ledger pages; 741 ids declared, 388 cited only.*
+*337 ledger pages; 742 ids declared, 388 cited only.*
