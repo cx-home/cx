@@ -43,7 +43,7 @@ organisation moves.
   [dep repo=cx-platform-mail sha=80d899d34bc81a0e08c77de951de417a0671330c module='cx-platform/imap cx-platform/smtp cx-stdlib/sasl' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-store sha=d5892dfbaebe4a42a9cfca2d33cbf82bc67702d2 module='cx-platform/store cx-platform/journal cx-platform/live cx-platform/audit cx-stdlib/ft' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-identity sha=44d55cb26ec27cecceed8e733183905042894bd6 module='cx-platform/session cx-platform/authz-store cx-platform/did-web cx-platform/vc-revocation' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
-  [dep repo=cx-platform-connector sha=84a817c3f0d2be33c945fa326ebd34334e3b5125 module='cx-platform/connector cx-platform/sync']
+  [dep repo=cx-platform-connector sha=0dd3bd4d4aa37dec5ffc4506319a75345964e058 module='cx-platform/connector cx-platform/sync']
   [dep repo=cx-platform-secrets sha=c1af69f3236c2ba2c4aaa3c8e678161349f75f43 module='cx-platform/secrets']
   [dep repo=cx-platform-fabric sha=f923a927dacbc8f628d6ad4aa523d8687280d9a5 module='cx-platform/fabric' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-xsp sha=e99ead7d3bde882cae1c99e51c5760cfce68caea module='cx-stdlib/xsp cx-platform/xsp-auth' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
