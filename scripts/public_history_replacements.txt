@@ -1,3 +1,3 @@
-<redacted-test-shape>==><redacted-test-shape>
-<redacted-test-shape>==><redacted-test-shape>
-<redacted-test-shape>==><redacted-test-shape>
+regex:xoxb-12345\x367890-1234567890123-abcdefghij\x6blmnopqrstuvwx==><redacted-test-shape>
+regex:AKIAABCDEF\x47HIJKLMNOP==><redacted-test-shape>
+regex:ghp_\x61bcdefghijklmnop\x71rstuvwxyz012345==><redacted-test-shape>
