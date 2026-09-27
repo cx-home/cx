@@ -82,3 +82,13 @@ cx-platform-xap `6cebdc286`, cx-platform-flow `d29772ca6`, cx-platform-ux `bfd8f
 lands (both move the flow and xap mains; one spec commit rebases and re-pins), and the two code waves
 of AA-1…9 (wave 1: the skeleton data, `fill`, the scaffold; wave 2: `act=`, the host's binding
 union, the automations plane) launch from the kit.
+
+## PACE-3 — this session runs the kit overnight (owner, 2026-09-27 ~04:2xZ: "a")
+
+The owner will be asleep and the account switch needs the owner, so PACE-2's "no new agents" is
+lifted for THIS session only: it runs the kit in order — KIT-4, flow#12, #1472 now; SEED-1, HOSTB-1
+and #1498 wave 1 after XCO and the spec branch merge; wave 2 after wave 1 — under the standing rules
+(merges per gap, verdicts posted, letters numbered on the board before they are asked, nothing
+re-litigated), stops launching when the weekly meter is spent or a letter blocks the next item, and
+posts the HANDOFF for the morning. Rejected: holding after XCO and the spec branch until the owner
+wakes (six idle hours).
