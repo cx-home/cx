@@ -366,6 +366,9 @@ step_globs() {
     # the pin document, its format module, its grader and the spec page it
     # implements -- nothing else changes what the corpus asserts.
     test-deps-pins)                echo 'conformance/deps_pins.cxd scripts/check_deps_pins_fixtures.cx scripts/deps_pins.cx scripts/deps_sync.cx deps.cxd spec/03-approved/process/repository-dependency-pins.md' ;;
+    # SITE-1: the bootstrap script and its own selftest -- nothing else
+    # changes what this step grades.
+    check-deps-bootstrap-token)    echo 'scripts/deps_bootstrap.sh scripts/deps_bootstrap_selftest.sh' ;;
     # the bundled-source table and the grader that reads it -- the corpus is
     # pure described trees, so nothing else changes what it asserts (#1589 item 23).
     test-bundle-sources)           echo 'conformance/bundle_sources.cxd scripts/check_bundle_sources_fixtures.cx scripts/bundle_sources.cx spec/03-approved/process/repository-dependency-pins.md' ;;
