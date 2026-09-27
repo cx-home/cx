@@ -620,6 +620,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `nt-7` | [rulings_2026_08_26_diagram_nested_tables_1031.md](rulings_2026_08_26_diagram_nested_tables_1031.md) | NT-7 — golden movement, adjudicated (DR-8) |
 | `nt-8` | [rulings_2026_08_26_diagram_nested_tables_1031.md](rulings_2026_08_26_diagram_nested_tables_1031.md) | NT-8 — the validity gate is the floor, and it grows to cover the new shapes |
 | `nt-9` | [rulings_2026_08_26_diagram_nested_tables_1031.md](rulings_2026_08_26_diagram_nested_tables_1031.md) | NT-9 — open questions, recorded not decided |
+| `odb-1` | [rulings_2026_09_27_owner_decisions_l41_l44.md](rulings_2026_09_27_owner_decisions_l41_l44.md) | Owner decisions 2026-09-27 — Letters 41–44 (from #1467, R-1492 and #1463): the graded orders-db partial merges (ODB-1); L41, L43, L44 pending |
+| `odb-1` | [rulings_2026_09_27_owner_decisions_l41_l44.md](rulings_2026_09_27_owner_decisions_l41_l44.md) | ODB-1 — the graded orders-db partial merges now; #1467 finishes after L41's fix and #1434's code (Letter 42 = (a)) |
 | `ol-14` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) | Addendum, ~05:20Z — OL-14 and OL-15 (owner: "recommendations accepted for the library and repo plan"; "we can't keep making these big organization mistakes that cause refactoring and restructuring. its been very costly.") |
 | `ol-15` | [rulings_2026_09_12_audit_sink_1422.md](rulings_2026_09_12_audit_sink_1422.md) | 1. Placement, stated before any spec or code (OL-15) |
 | `ol-15` | [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md) | §4. Placement (OL-15) |
@@ -1389,4 +1391,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*332 ledger pages; 713 ids declared, 387 cited only.*
+*333 ledger pages; 714 ids declared, 387 cited only.*
