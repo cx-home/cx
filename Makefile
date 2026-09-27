@@ -2007,8 +2007,11 @@ flow-dogfood-gate: build-vcx
 # without the `live` pack (cx-platform-flow flow.md §4.12a), which only a
 # build without the platform group can show — the cli PROFILE, named to the
 # lanes as CX_NOLIVE_BIN, which is why the step builds the profile matrix
-# (guarded: a current artifact is not relinked, #1449).
-FLOW_LANES := racing_advancers_lane.cx flow_cli_lane.cx flow_serve_lane.cx flow_host_lane.cx
+# (guarded: a current artifact is not relinked, #1449). The cross-company
+# lane is both halves of a delegated step on two deployment hosts across a
+# real socket (RULED: XCO-3, XCO-4, XCO-5): a did:web domain over TLS, an
+# XSP-AUTH attach, a handle-held identity key.
+FLOW_LANES := racing_advancers_lane.cx flow_cli_lane.cx flow_serve_lane.cx flow_host_lane.cx flow_xco_lane.cx
 .PHONY: test-flow-umbrella
 test-flow-umbrella: build-vcx build-profiles-dev
 	@for t in $(FLOW_LANES); do \
@@ -4794,14 +4797,19 @@ test-agent-real-lanes: build-vcx
 	  CX_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/cx" CX_NOLIVE_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/profiles/cli/cx" "$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-all lanes/$$t || st=1; \
 	done; exit $$st
 
-## test-connector-real-lanes  The connector kit's two real-socket lanes as
+## test-connector-real-lanes  The connector kit's three live lanes as
 ##                  their own step (RULED: RS-12, RS-8, RS-27; #1591 item
 ##                  K3): connector_live_test.v boots `reference/acme/
 ##                  acme.mock.cx` — an in-tree [?http-service] — and drives
 ##                  the example connector against it (connector.md §10,
 ##                  §13.3); connector_webhook_test.v opens a deployment whose
 ##                  only gateway is `kind=webhook` and drives real deliveries
-##                  at it (connector.md §3.10). Both are V test files that
+##                  at it (connector.md §3.10); connector_bus_test.v (#1463)
+##                  drives a `kind=bus` deployment over the EMBEDDED fabric
+##                  — no socket, no net grant — through publish, the
+##                  on-process walk, a second group, the dead-letter bound
+##                  and the transient plane (connector.md §3.18). All three
+##                  are V test files that
 ##                  left cx-private whole with the extraction — byte-
 ##                  identical, into the pinned repository's own deps/cx-core-code/vcx/tests/ —
 ##                  because they are the ONLY thing that grades the connector
@@ -4811,14 +4819,15 @@ test-agent-real-lanes: build-vcx
 ##                  RS-16, over a released cx). THE LANE MOVED AND THE STEP
 ##                  DID NOT (RULED: RS-12, #1591 item 11, the test-sso-
 ##                  interop-lane shape): a `ships=package` repo carries no V
-##                  toolchain of its own (RS-25), so `v test` runs the two
+##                  toolchain of its own (RS-25), so `v test` runs the three
 ##                  files straight out of the pinned checkout, from THIS
 ##                  tree's root, so every relative path inside them (the
 ##                  mock, the reference deployment) still resolves here.
 ##                  Refuses with exit 2 and names `make deps-sync` when the
 ##                  checkout is absent — never a skip.
 CONNECTOR_REAL_LANES := deps/cx-platform-connector/vcx/tests/connector_live_test.v \
-                        deps/cx-platform-connector/vcx/tests/connector_webhook_test.v
+                        deps/cx-platform-connector/vcx/tests/connector_webhook_test.v \
+                        deps/cx-platform-connector/vcx/tests/connector_bus_test.v
 .PHONY: test-connector-real-lanes
 test-connector-real-lanes: build-vcx
 	@for t in $(CONNECTOR_REAL_LANES); do \
