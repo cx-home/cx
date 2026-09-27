@@ -73,3 +73,12 @@ agree. #1686 merges as graded.
 The static repo-map README DOCS-3 prepared (`_gate_evidence/pipeline_docs3/org-profile/README.md`)
 is pushed by the integrator to `cx-home/.github` as the organisation profile (D57a), announced on the
 board first.
+
+## AA-10 — the #1498 spec branch is approved (owner, 2026-09-27 ~04:0xZ: "specs approved")
+
+SD-2's read gate is passed: the owner read and approved `impl/cx-F-1498-spec` (graded `c1aba750f`;
+cx-platform-xap `6cebdc286`, cx-platform-flow `d29772ca6`, cx-platform-ux `bfd8fefa9`, cx-core-code
+`35078275b`, each `impl/1498-spec`) with AA-7…9 folded in as ruled. The branch merges after XCO
+lands (both move the flow and xap mains; one spec commit rebases and re-pins), and the two code waves
+of AA-1…9 (wave 1: the skeleton data, `fill`, the scaffold; wave 2: `act=`, the host's binding
+union, the automations plane) launch from the kit.

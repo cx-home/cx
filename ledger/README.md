@@ -342,6 +342,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `787-poc` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) | Ledger — #787 integration: the ONE rebase of impl/787-poc onto release/0.16.0 |
 | `aa-1` | [rulings_2026_09_26_automation_authoring_l40.md](rulings_2026_09_26_automation_authoring_l40.md) | Owner decisions 2026-09-26 — Letter 40, end-user automation authoring (#1498): AA-1…AA-6 |
 | `aa-1` | [rulings_2026_09_26_automation_authoring_l40.md](rulings_2026_09_26_automation_authoring_l40.md) | AA-1 — a skeleton is a CX document shipped as data (L40.1 = (a)) |
+| `aa-10` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | AA-10 — the #1498 spec branch is approved (owner, 2026-09-27 ~04:0xZ: "specs approved") |
 | `aa-2` | [rulings_2026_09_26_automation_authoring_l40.md](rulings_2026_09_26_automation_authoring_l40.md) | AA-2 — four skeletons and one selection attribute (L40.2 = (a)) |
 | `aa-3` | [rulings_2026_09_26_automation_authoring_l40.md](rulings_2026_09_26_automation_authoring_l40.md) | AA-3 — one pure `fill`, two callers (L40.3 = (a)) |
 | `aa-4` | [rulings_2026_09_26_automation_authoring_l40.md](rulings_2026_09_26_automation_authoring_l40.md) | AA-4 — a fourth studio plane filled from closed pick-lists (L40.4 = (a)) |
@@ -1415,4 +1416,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*334 ledger pages; 725 ids declared, 388 cited only.*
+*334 ledger pages; 726 ids declared, 388 cited only.*
