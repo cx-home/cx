@@ -92,3 +92,13 @@ and #1498 wave 1 after XCO and the spec branch merge; wave 2 after wave 1 — un
 re-litigated), stops launching when the weekly meter is spent or a letter blocks the next item, and
 posts the HANDOFF for the morning. Rejected: holding after XCO and the spec branch until the owner
 wakes (six idle hours).
+
+## PIVOT-1 — a read-only step before the pivot needs no compensator (Letter 51 = (a), owner ~06:1xZ)
+
+flow.md §4.7 gains the rule: a step whose act is an `effect=observe` verb (a read) may precede the
+pivot without declaring a compensator — there is nothing to undo — while every pre-pivot act that
+writes keeps §4.7's compensator requirement. order-pipeline (#1472) moves back to its designed order
+(pull-contacts and enrich-orders before commit-order), fixture first (case 007 flips from the
+refusal to the run; a new case refuses a pre-pivot WRITE without a compensator so the rule stays
+sharp). One sentence in §4.7 with its case ids (RS-38). Rejected: keeping the built order; do-nothing
+compensator verbs on crm-rest and orders-db.

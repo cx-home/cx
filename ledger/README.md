@@ -670,6 +670,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pgc-1` | [rulings_2026_08_22_gate_hygiene.md](rulings_2026_08_22_gate_hygiene.md) | PGC-1 — the gate checks the payload a profile PROMISES (#915) |
 | `pgl-1` | [rulings_2026_08_22_profile_gate_lane.md](rulings_2026_08_22_profile_gate_lane.md) | PGL-1 — one implementation, reachable from a pre-cut lane |
 | `pgl-1a` | [rulings_2026_08_22_profile_gate_lane.md](rulings_2026_08_22_profile_gate_lane.md) | PGL-1a — AMENDMENT: the gate was BROKEN, and the lane proved it on its first run |
+| `pivot-1` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | PIVOT-1 — a read-only step before the pivot needs no compensator (Letter 51 = (a), owner ~06:1xZ) |
 | `pq-1` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-1 — the ERD row comment carries a VALUE, and the `@` sigil is retired |
 | `pq-2` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-2 — every ERD column token is forced to a valid ATTRIBUTE_WORD |
 | `pq-3` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-3 — golden movement, adjudicated (DR-8) |
@@ -1417,4 +1418,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*334 ledger pages; 727 ids declared, 388 cited only.*
+*334 ledger pages; 728 ids declared, 388 cited only.*
