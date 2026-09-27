@@ -27,6 +27,25 @@
 [?def literal scope=private pure ()
   [$cat ("ghp_", "abcdefghijklmnopqrstuvwxyz012345")]]
 
+# The other two shapes scripts/public_history_replacements.txt carries,
+# needed by world-d below (PUBFIX-1's self-match regression) to prove the
+# real file still redacts all three after the fix, not only the ghp_ one
+# `literal` above already exercised. Split the same way `literal` is (and the
+# way scripts/check_no_ai_attribution.cx's own patterns are, per that
+# comment): this .cx file is itself a tracked, scanned file, and a whole
+# shape sitting contiguously in ITS OWN source would trip secrets-scan the
+# moment it looked at this fixture. `xoxb-` is its own argument so the
+# literal "xoxb-" text is never immediately followed, in this file's own
+# bytes, by ten-or-more characters `[A-Za-z0-9-]` (`rx-slack`'s own
+# threshold in scripts/secrets_scan.cx) — the digits/letters that make up
+# the rest of the shape can sit in the next argument unsplit, because the
+# pattern can never anchor there without the "xoxb-" immediately before it.
+[?def akia-literal scope=private pure ()
+  [$cat ("AKIA", "ABCDEFGHIJKLMNOP")]]
+
+[?def xoxb-literal scope=private pure ()
+  [$cat ("xoxb-", "1234567890-1234567890123-abcdefghijklmnopqrstuvwx")]]
+
 [?def trailer scope=private pure ()
   [$cat ("Co-Authored-By", ":", " Claude <", "noreply", "@", "anthropic.com>")]]
 
@@ -37,6 +56,13 @@
 [?def git scope=private impure ($dir::string $argv)
   [?let [= $r [$process:run ("git", "-C", $dir, [?splice [$ident]], [?splice $argv])]]
     [$strings:trim [$string $r@stdout]]]]
+
+# git-raw: same, but UNTRIMMED — `git` above trims (fine for a sha or a
+# count), but PUBFIX-1's own byte-identical assertion needs the exact blob,
+# trailing newline and all; trimming it would let a trailing-byte drift pass.
+[?def git-raw scope=private impure ($dir::string $argv)
+  [?let [= $r [$process:run ("git", "-C", $dir, [?splice [$ident]], [?splice $argv])]]
+    [$string $r@stdout]]]
 
 [?def write-commit scope=private impure ($root::string $file::string $content::string $msg::string)
   [?let
@@ -79,6 +105,30 @@
     [= $c3 [$write-commit $src "secret.txt" [$cat ("token ", [$literal], " here\n")] "oops"]]
     [= $c4 [$rm-commit $src "secret.txt" "remove it"]]
     [w src=$src c1=$c1 c2=$c2 c3=$c3 c4=$c4]]]
+
+# world-d: PUBFIX-1's own regression (Letter 56 = (a), 2026-09-27; D83a,
+# RS-33, #1669, CXF-8) — a repo whose history TRACKS the REAL, shipped
+# scripts/public_history_replacements.txt (read from $repl-abs, the exact
+# file the Makefile hands this fixture, not a synthetic stand-in), proving
+# the expressions file survives its own pass byte-identical, and a SEPARATE
+# blob carrying all three shapes, proving the pass still redacts every one
+# of them in the same run. Run against the head as it stood before the fix,
+# this is RED (REFRESH-4's measurement, reproduced): the tracked
+# replacements file's own historical blob comes back rewritten, not
+# byte-identical, because each of its three literal rows is, tautologically,
+# present verbatim in that very row's own tracked bytes.
+[?def world-d scope=private impure ($root::string $repl-abs::string)
+  [?let
+    [= $src [$cat ($root, "/src3")]]
+    [= $_i [$process:run ("git", "init", "-q", "-b", "main", $src)]]
+    [= $repl-content [$io:read-file $repl-abs]]
+    [= $c1 [$write-commit $src "a.txt" "seed\n" "seed"]]
+    [= $c2 [$write-commit $src "public_history_replacements.txt" $repl-content
+             "carry the real replacements file into history (PUBFIX-1 self-match regression)"]]
+    [= $planted [$cat ("xoxb: ", [$xoxb-literal], "\nakia: ", [$akia-literal], "\nghp: ", [$literal], "\n")]]
+    [= $c3 [$write-commit $src "secret.txt" $planted "oops: all three shapes"]]
+    [= $c4 [$rm-commit $src "secret.txt" "remove it"]]
+    [w src=$src c1=$c1 c2=$c2 c3=$c3 c4=$c4 repl-content=$repl-content]]]
 
 [?def run-tool scope=private impure ($cx::string $tool::string $cwd::string $args)
   [?let [= $r [$process:run ($cx, "--allow-all", $tool, [?splice $args]) cwd=$cwd]]
@@ -155,7 +205,40 @@
              [not [$strings:contains $trailer-still-in-msg [$trailer]]]
              [out code="0" text=$trailer-still-in-msg]]]
 
+  # E/F/G — world-d: PUBFIX-1's own regression. A repo that TRACKS the real
+  # scripts/public_history_replacements.txt ($repl-abs, not a stand-in) at
+  # one commit and carries all three shapes in a separate, later-removed
+  # blob at another. Before the fix this is RED at E-selfmatch (the tracked
+  # file's own historical blob comes back rewritten); after, every one of
+  # E/F/G holds.
+  [= $wd [$world-d $root $repl-abs]]
+  [= $w3 [$cat ($root, "/w3")]]
+  [= $srcarg3 [$cat ("source:src=", [$string $wd@src])]]
+  [= $e [$run-tool $cx $tool $root ("src", [$cat ("work=", $w3)], $srcarg3, $replarg)]]
+  [= $ok-e [$check "E rewrite over a repo that TRACKS the real replacements file: commits unchanged, fsck clean"
+             [and [= [$string $e@code] "0"]
+                  [$has $e ("src: every ref, commits 4 -> 4 (unchanged: true)", "fsck clean: true")]]
+             $e]]
+  [= $new-c2 [$strings:trim [$git [$cat ($w3, "/src.git")] ("log", "--all", "--format=%H",
+                                                            "--grep=carry the real replacements file")]]]
+  [= $blob-e [$git-raw [$cat ($w3, "/src.git")] ("show", [$cat ($new-c2, ":public_history_replacements.txt")])]]
+  [= $ok-e-selfmatch [$check "F the tracked replacements file's own blob is BYTE-IDENTICAL after the pass (no self-match)"
+             [= $blob-e [$string $wd@repl-content]]
+             [out code="0" text=$blob-e]]]
+  [= $new-c3 [$strings:trim [$git [$cat ($w3, "/src.git")] ("log", "--all", "--format=%H",
+                                                            "--grep=oops: all three shapes")]]]
+  [= $blob-secret [$git [$cat ($w3, "/src.git")] ("show", [$cat ($new-c3, ":secret.txt")])]]
+  [= $ok-e-redact [$check "G another blob: all three shapes still redacted (no literal survives, three redacted markers)"
+             [and [not [$strings:contains $blob-secret [$xoxb-literal]]]
+                  [and [not [$strings:contains $blob-secret [$akia-literal]]]
+                       [and [not [$strings:contains $blob-secret [$literal]]]
+                            [= [$strings:count $blob-secret "<redacted-test-shape>"] 3]]]]
+             [out code="0" text=$blob-secret]]]
+
   [= $_rm [$io:remove-tree $root]]
-  [?if [and $ok-a [and $ok-b-report [and $ok-b-blob [and $ok-c [and $ok-strip [and $ok-d $ok-d-msg]]]]]]
-    [then [?let [= $_ [$say "public-history-replace fixture: 7/7 OK"]] [$env:exit 0]]]
+  [= $checks ($ok-a, $ok-b-report, $ok-b-blob, $ok-c, $ok-strip, $ok-d, $ok-d-msg,
+              $ok-e, $ok-e-selfmatch, $ok-e-redact)]
+  [= $all-ok [= [$count [?for [in $x $checks] [where [not $x]] [yield 1]]] 0]]
+  [?if $all-ok
+    [then [?let [= $_ [$say "public-history-replace fixture: 10/10 OK"]] [$env:exit 0]]]
     [else [?let [= $_ [$say "public-history-replace fixture: FAILED"]] [$env:exit 1]]]]]
