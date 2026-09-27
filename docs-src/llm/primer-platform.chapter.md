@@ -443,7 +443,7 @@ Each row is a defect of this page under COMP-1, recorded rather than hidden.
 only, `--answers FILE`, an `[answers [<slot> <value>]…]` document, in which case
 the command calls `fill` (§3.10) and emits what `fill` returns: the flow
 document and its `[on …]` row with no slot open, or `fill`'s one refusal
-(RULED: AA-3; comp-001). **Output** is the declaration documents
+(RULED: AA-3; comp-001). With `--answers` the command also requires `--as <principal>` and refuses without it; the emitted row's `as=` is that principal, as `cx flow run` names its actor (RULED: AA-8; comp-003). **Output** is the declaration documents
 that pattern states — the flow document, the feature and gateway declarations,
 and the deployment binding — plus a README carrying the pattern's need, its
 modules, the §2 rows it crosses, the reference example that grades it, and the
@@ -510,7 +510,7 @@ construction rather than refused after the fact (RULED: AA-4; flow-185).
 `[answers [<slot> <value>]…]` and returns the flow document and its `[on …]`
 row with no slot left open, or refuses, naming EVERY slot that is unanswered or
 answered with a value of the wrong kind in one refusal — never the first alone,
-never a silent partial (RULED: AA-3; flow-184). `cx xap scaffold <skeleton>
+never a silent partial (RULED: AA-3; flow-184). `fill` is a pure def of `cx-platform/flow`, beside the skeleton data, and that one refusal is a code in flow's band (`flow.md` §8) (RULED: AA-7; flow-184). `cx xap scaffold <skeleton>
 --answers FILE` (§3.9) calls it, and the studio's automations plane calls the
 same def on the host (`ux.md` P0-130), so the two cannot produce different
 documents from the same answers (RULED: AA-3).
