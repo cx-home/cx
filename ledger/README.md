@@ -675,6 +675,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pgl-1` | [rulings_2026_08_22_profile_gate_lane.md](rulings_2026_08_22_profile_gate_lane.md) | PGL-1 — one implementation, reachable from a pre-cut lane |
 | `pgl-1a` | [rulings_2026_08_22_profile_gate_lane.md](rulings_2026_08_22_profile_gate_lane.md) | PGL-1a — AMENDMENT: the gate was BROKEN, and the lane proved it on its first run |
 | `pivot-1` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | PIVOT-1 — a read-only step before the pivot needs no compensator (Letter 51 = (a), owner ~06:1xZ) |
+| `pivot-2` | [rulings_2026_09_27_integrator_decisions_l57.md](rulings_2026_09_27_integrator_decisions_l57.md) | Integrator decision 2026-09-27 (afternoon), under the owner's delegation — Letter 57: a verb's `effect=` reaches both faces from the feature (PIVOT-2) |
+| `pivot-2` | [rulings_2026_09_27_integrator_decisions_l57.md](rulings_2026_09_27_integrator_decisions_l57.md) | PIVOT-2 — both faces copy a verb's `effect=` from the feature it came from (L57 = (b)) |
 | `pq-1` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-1 — the ERD row comment carries a VALUE, and the `@` sigil is retired |
 | `pq-2` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-2 — every ERD column token is forced to a valid ATTRIBUTE_WORD |
 | `pq-3` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-3 — golden movement, adjudicated (DR-8) |
@@ -1439,4 +1441,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*337 ledger pages; 742 ids declared, 388 cited only.*
+*338 ledger pages; 743 ids declared, 388 cited only.*
