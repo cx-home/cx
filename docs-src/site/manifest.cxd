@@ -261,6 +261,7 @@ wasm/libcx-sync.js
   [; docs/llm/ (make docs), under llm/ — the primer, the references, the
      contributor front door, the llmstxt.org pair ]
   [files from=llm [#
+llm/connector-reference.md
 llm/contributor-architecture.md
 llm/contributor-design.md
 llm/contributor-implementation.md
@@ -276,6 +277,7 @@ llm/reference-code-language.md
 llm/reference-data-language.md
 llm/reference-platform.md
 llm/reference-stdlib.md
+llm/sync-reference.md
 #]]
 
   [; the llmstxt.org convention: the pair at the SITE ROOT as well (D51d) ]
