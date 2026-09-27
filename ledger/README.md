@@ -823,6 +823,17 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `spread-2` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | SPREAD-2 — the call spread's three readings (L50 = (a), (a), (a)) |
 | `sse-1` | [rulings_2026_08_20_sse_downstream.md](rulings_2026_08_20_sse_downstream.md) | Ruling SSE-1 (2026-08-20) — the v1 web binding's SSE downstream: negotiated XSP-envelope carriage (owner "1b") |
 | `sup-1` | [rulings_2026_08_20_supervise.md](rulings_2026_08_20_supervise.md) | SUP-1 — graduate the contract AND implement pre-cut |
+| `sync-1` | [rulings_2026_09_27_owner_decisions_l55.md](rulings_2026_09_27_owner_decisions_l55.md) | Owner decisions 2026-09-27 (afternoon) — Letter 55: the code phase of the sync module, SYNC-1…SYNC-9 |
+| `sync-1` | [rulings_2026_09_27_owner_decisions_l55.md](rulings_2026_09_27_owner_decisions_l55.md) | SYNC-1 — the source is pure CX in the connector package, with a bench bound (L55.1 = (a)) |
+| `sync-2` | [rulings_2026_09_27_owner_decisions_l55.md](rulings_2026_09_27_owner_decisions_l55.md) | SYNC-2 — the engine is the spec's pure defs plus one `run` over the kit (L55.2 = (a)) |
+| `sync-3` | [rulings_2026_09_27_owner_decisions_l55.md](rulings_2026_09_27_owner_decisions_l55.md) | SYNC-3 — `[capture]` is one core element in feature.cxs (L55.3 = (a)) |
+| `sync-4` | [rulings_2026_09_27_owner_decisions_l55.md](rulings_2026_09_27_owner_decisions_l55.md) | SYNC-4 — the watermark is a per-source journal stream committed by compare-and-swap (L55.4 = (a)) |
+| `sync-5` | [rulings_2026_09_27_owner_decisions_l55.md](rulings_2026_09_27_owner_decisions_l55.md) | SYNC-5 — the dedup key is `(source, identity, address)` (L55.5 = (a)) |
+| `sync-6` | [rulings_2026_09_27_owner_decisions_l55.md](rulings_2026_09_27_owner_decisions_l55.md) | SYNC-6 — the host arms the cadence from a `[sync]` row (L55.6 = (a)) |
+| `sync-7` | [rulings_2026_09_27_owner_decisions_l55.md](rulings_2026_09_27_owner_decisions_l55.md) | SYNC-7 — log-based capture stays out of this phase (L55.7 = (a)) |
+| `sync-8` | [rulings_2026_09_27_owner_decisions_l55.md](rulings_2026_09_27_owner_decisions_l55.md) | SYNC-8 — orders-db-005/006/008 flip to enforced in wave 1 (L55.8 = (a)) |
+| `sync-9` | [rulings_2026_09_27_owner_decisions_l55.md](rulings_2026_09_27_owner_decisions_l55.md) | Owner decisions 2026-09-27 (afternoon) — Letter 55: the code phase of the sync module, SYNC-1…SYNC-9 |
+| `sync-9` | [rulings_2026_09_27_owner_decisions_l55.md](rulings_2026_09_27_owner_decisions_l55.md) | SYNC-9 — two waves (L55.9 = (a)) |
 | `ta-1` | [rulings_2026_08_21_surface_closeout.md](rulings_2026_08_21_surface_closeout.md) | TA-1 — the type annotation is GLUED, and the reader enforces it (#911) |
 | `td-1` | [rulings_2026_08_26_playground_tree_detail_1001.md](rulings_2026_08_26_playground_tree_detail_1001.md) | TD-1 — the defect, restated as measured |
 | `td-2` | [rulings_2026_08_26_playground_tree_detail_1001.md](rulings_2026_08_26_playground_tree_detail_1001.md) | TD-2 — the fix reads the contract THROUGH the function the tables already use |
@@ -1426,4 +1437,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*335 ledger pages; 732 ids declared, 388 cited only.*
+*336 ledger pages; 741 ids declared, 388 cited only.*
