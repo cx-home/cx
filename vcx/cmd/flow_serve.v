@@ -111,7 +111,8 @@
 // admitted at the PEP against the RUN's recorded basis, never the runner's, so
 // a step whose act needs a capability this process was not granted is denied at
 // the act's own effect point (CXER0271) naming the run's basis. `authority=` is
-// the `as=` binder's identity; the runner contributes none (§4.5).
+// the `as=` binder's identity unless the row names a `cap:` basis (RULED:
+// SEED-1); the runner contributes none (§4.5).
 
 module main
 
@@ -139,7 +140,8 @@ struct FlowBinding {
 mut:
 	kind     string
 	start    string // the flow's Tier-1 address — `start=`
-	binder   string // `as=` — the actor of the start AND its authority basis
+	binder   string // `as=` — the actor of the start, and its authority basis unless the row names one
+	authority string // the run's recorded basis: `authority=cap:…` when the row names one, else the binder (RULED: SEED-1)
 	path     string // webhook
 	glob     string // file — the source pattern, kept for the refusal text
 	dir      string // file — the literal directory the glob names
@@ -162,6 +164,7 @@ mut:
 	bind       string
 	store      string // `[store url=…]` — the projected verbs' store slot (RULED: #728 CK-3)
 	authz      string // `[authz principal=…]` — the runner's own acting chain (RULED: HOST-4)
+	authz_caps []string // `[authz capabilities=…]` — the capabilities seeded beside the root grant (RULED: SEED-1)
 	courier_ns i64
 	bindings   []FlowBinding
 }
@@ -335,10 +338,23 @@ fn flow_serve_row(e cx.Element) FlowBinding {
 	if binder == '' {
 		flow_serve_refuse('an [on kind=${kind} …] row carries no as=; as= is the BINDER, whose own act the start is admitted as (flow.md §4.9, X2)')
 	}
+	// RULED: SEED-1 — a row may name the run's recorded basis as the `cap:`
+	// address of a delegation (`authority=cap:…`, flow.md §4.24), which the
+	// flow PEP then decides a `[requires]` step against — the delegation the
+	// `[authz principal=… capabilities=…]` row seeds, typically. Absent, the
+	// basis is the `as=` binder, as before; `cap:` is the ONE spelling of a
+	// trust input (core/commands_effects.md §6), so anything else refuses.
+	mut authority := e.attr('authority')
+	if authority == '' {
+		authority = binder
+	} else if !authority.starts_with('cap:') {
+		flow_serve_refuse('an [on kind=${kind} …] row carries authority=`${authority}`; authority= names the run\'s recorded basis by the `cap:` address of a delegation — `authority=cap:…` (flow.md §4.24, RULED: SEED-1) — and is left off when the binder\'s own basis is meant')
+	}
 	mut b := FlowBinding{
-		kind:   kind
-		start:  start
-		binder: binder
+		kind:      kind
+		start:     start
+		binder:    binder
+		authority: authority
 	}
 	match kind {
 		'schedule' {
@@ -480,6 +496,10 @@ fn flow_serve_parse(src string, path string) FlowRunner {
 		if out.authz == '' {
 			flow_serve_refuse('[authz …] carries no principal=')
 		}
+		// RULED: SEED-1 — the capabilities the runner acts with, seeded
+		// beside the root grant (flow_serve_program); space-separated, the
+		// names a `[requires cap:…]` clause asks for.
+		out.authz_caps = ar.attr('capabilities').fields()
 	}
 	er := flow_serve_child(r, 'env') or {
 		flow_serve_refuse('the [runner …] document names no [env …]; a flow document names its acts and the runner must be TOLD where they live (flow.md §4.1, §4.23)')
@@ -640,7 +660,7 @@ fn flow_serve_bindings_element(r FlowRunner) string {
 	mut b := []string{}
 	b << '[bindings'
 	for x in r.bindings {
-		mut row := '  [b kind=${x.kind} addr="${flow_cli_quote(x.start)}" as="${flow_cli_quote(x.binder)}"'
+		mut row := '  [b kind=${x.kind} addr="${flow_cli_quote(x.start)}" as="${flow_cli_quote(x.binder)}" authority="${flow_cli_quote(x.authority)}"'
 		match x.kind {
 			// MILLISECONDS: `$mod` reduces through f64 and an ns epoch instant is
 			// past 2^53, so a ns bucket is not exact — see fs--tick-schedule.
@@ -748,8 +768,9 @@ const flow_serve_helpers = "
   [\$concat \"[err code=\" [\$string \$c] \" message=\" [\$string \$m] \"]\"]]
 
 [; one start, with the nonce its own event derives. Every input `start` puts
-   verbatim into the :started transition is fixed by §4.25: the actor and the
-   authority basis are the as= binder (the runner contributes none, §4.5), the
+   verbatim into the :started transition is fixed by §4.25: the actor is the
+   as= binder and the authority basis the authority= of the row - the binder unless
+   the row names a cap: basis (RULED: SEED-1; the runner contributes none, §4.5), the
    nonce is the event content address, and `stream` defaults to the run id
    (1265-PB-3) — which is what makes this face transitions comparable with
    `cx flow run` byte for byte. ]
@@ -761,7 +782,7 @@ const flow_serve_helpers = "
         [; a bad delivery arrives here as an [err …] \$args and short-circuits
            this call to itself — the refusal surfaces without a guard. ]
         [\$cxflow:start \$j \$fl \$args
-          [fs--at-opts \$fl [fs--with \$o {env: \$e flow: \$fl actor: [\$string \$b@as] authority: [\$string \$b@as] nonce: \$nonce}]]]]]]]]
+          [fs--at-opts \$fl [fs--with \$o {env: \$e flow: \$fl actor: [\$string \$b@as] authority: [\$string \$b@authority] nonce: \$nonce}]]]]]]]]
 
 [; ── the four served kinds (RULED: WF-36) ────────────────────────────────── ]
 
@@ -1110,14 +1131,29 @@ fn flow_serve_program(r FlowRunner, directives []string, acts []FlowCliAct, tick
 	// of who the runner acts as becomes the store's first recorded delegation,
 	// exactly as a host's deployment granting the same root would record one,
 	// rather than leaving the store silently empty of the one fact the
-	// document already states. It carries no `[capabilities]` of its own —
-	// this driver is generic over every feature a `[runner]` might load, so it
-	// names no feature's verbs; a feature's own dial issues the capability-
-	// bearing delegations that attenuate FROM this root later.
+	// document already states. The root carries no `[capabilities]` of its
+	// own — this driver is generic over every feature a `[runner]` might load,
+	// so it names no feature's verbs.
+	//
+	// RULED: SEED-1 (Letter 48 = (a)) — BESIDE the root, the row's
+	// `capabilities=` are seeded as a second self-issued delegation,
+	// `runner-caps`, the same principal to itself over exactly those names.
+	// Its Tier-1 address is what a binding row names as the run's basis
+	// (`authority=cap:…`, flow.md §4.24), so a `[requires cap:…]` step by the
+	// root resolves against the seeded store; the deployment host seeds the
+	// SAME two values from the same row (xap_flow_seed_src), so the address
+	// agrees across faces. A row naming no capability seeds the root alone —
+	// byte-identical with the store before SEED-1.
 	b << if r.authz != '' {
-		'[= \$az [\$cxauthzstore:store {tenant: "${flow_cli_quote(r.name)}"}]]' +
-			'\n[= \$az-root [\$cxauthzstore:delegate \$az [delegation runner-root [tenant "${flow_cli_quote(r.name)}"] [from [principal "${flow_cli_quote(r.authz)}"]] [to [principal "${flow_cli_quote(r.authz)}"]] [capabilities] [over "/"] [assurance :t1] [signature "runner-authz"]]]]' +
-			'\n[= \$o [\$map-put \$o0 "authz" \$az]]'
+		t := flow_cli_quote(r.name)
+		p := flow_cli_quote(r.authz)
+		mut seed := '[= \$az [\$cxauthzstore:store {tenant: "${t}"}]]' +
+			'\n[= \$az-root [\$cxauthzstore:delegate \$az [delegation runner-root [tenant "${t}"] [from [principal "${p}"]] [to [principal "${p}"]] [capabilities] [over "/"] [assurance :t1] [signature "runner-authz"]]]]'
+		if r.authz_caps.len > 0 {
+			cs := r.authz_caps.map('"${flow_cli_quote(it)}"').join(' ')
+			seed += '\n[= \$az-caps [\$cxauthzstore:delegate \$az [delegation runner-caps [tenant "${t}"] [from [principal "${p}"]] [to [principal "${p}"]] [capabilities ${cs}] [over "/"] [assurance :t1] [signature "runner-authz"]]]]'
+		}
+		seed + '\n[= \$o [\$map-put \$o0 "authz" \$az]]'
 	} else {
 		'[= \$o \$o0]'
 	}
