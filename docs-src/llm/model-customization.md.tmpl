@@ -44,11 +44,11 @@ Two planes, and they behave differently. Keep them apart:
 
 ## 1. What you build once, and what a tenant may change
 
-### 1.1 The surface plane — exactly three planes, each a document
+### 1.1 The surface plane — exactly four planes, each a document
 
 `ux.md:1861` is normative and worth quoting exactly:
 
-> **[P0-114] Everything a studio edits is one of exactly three planes, and
+> **[P0-114] Everything a studio edits is one of exactly four planes, and
 > each plane is a document — never code, never markup.**
 
 | Plane | The document | The commands a tenant issues |
@@ -56,6 +56,7 @@ Two planes, and they behave differently. Keep them apart:
 | **Arrangement** | a `[ux:layout]` base document + its journaled command stream | `ux:move` · `ux:wrap` · `ux:place` · `ux:remove` |
 | **Presentation & content** | the same layout document (hint and param children) | `ux:set-hint` · `ux:set-param` |
 | **Look and feel** | the theme token document | the theme write (`ux.md:521`, `[P0-112]`) |
+| **Automations** | the tenant's automation stream — a skeleton, its answers and the filled flow document by address | `ux:automate` · `ux:retire-automation` (`ux.md` §18.8, `[P0-130]`) |
 
 What is deliberately **not** a plane: *"markup, CSS, and component internals"*
 (`ux.md:1870`). And nothing is stored flattened — `ux.md:1878` — *"The
