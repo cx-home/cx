@@ -388,8 +388,10 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `bc-3` | [rulings_2026_08_22_bug_campaign.md](rulings_2026_08_22_bug_campaign.md) | BC-3 (order, owner-corrected) — #925 is the first MAJOR; #923 alone cuts ahead as prio:high-ASAP |
 | `bc-4` | [rulings_2026_08_22_bug_campaign.md](rulings_2026_08_22_bug_campaign.md) | Ruling 2026-08-22 — the bug campaign to cut-readiness (BC-1..BC-4) |
 | `bc-4` | [rulings_2026_08_22_bug_campaign.md](rulings_2026_08_22_bug_campaign.md) | BC-4 (4a) — the v0.16.0 cut WAITS on this campaign |
+| `bex-1` | [rulings_2026_09_27_owner_decisions_l41_l44.md](rulings_2026_09_27_owner_decisions_l41_l44.md) | BEX-1 — R-1492 merges as graded; the socket-driven flow follows cx-platform-flow#12 (Letter 43 = (a)) |
 | `bp-1` | [rulings_2026_08_20_binding_axes.md](rulings_2026_08_20_binding_axes.md) | BP-1 — binding paths carry the value-meaningful compact steps only |
 | `bp-1` | [rulings_2026_08_20_call_result_steps.md](rulings_2026_08_20_call_result_steps.md) | CRS-1a rider — code.md §6.2 trued to BP-1 |
+| `bus-1` | [rulings_2026_09_27_owner_decisions_l41_l44.md](rulings_2026_09_27_owner_decisions_l41_l44.md) | BUS-1 — the bus audit record's subject (Letter 44 = (a)) |
 | `ca-1` | [rulings_2026_09_03_canonical_act_form_1260.md](rulings_2026_09_03_canonical_act_form_1260.md) | CA-1 — the canonical act form — RECOMMENDED: (a) |
 | `ca-1` | [rulings_2026_09_03_workflow_789.md](rulings_2026_09_03_workflow_789.md) | 1260 CA-1..CA-4 were ruled. Branch |
 | `ca-2` | [rulings_2026_09_03_canonical_act_form_1260.md](rulings_2026_09_03_canonical_act_form_1260.md) | CA-2 — how a flow step carries its act — RECOMMENDED: (a) |
@@ -789,6 +791,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `spr-3` | [rulings_2026_08_20_spec_tree_reshape.md](rulings_2026_08_20_spec_tree_reshape.md) | SPR-3 (owner 3a) — both spec/01-new cxstore files STAY at 01-new |
 | `spr-4` | [rulings_2026_08_20_spec_tree_reshape.md](rulings_2026_08_20_spec_tree_reshape.md) | SPR-4 (owner "1b", same day, spec-review session) — set-identity sketch RETIRED, precedent made normative |
 | `spr-5` | [rulings_2026_08_20_spec_tree_reshape.md](rulings_2026_08_20_spec_tree_reshape.md) | SPR-5 (owner "2a 3a", spec-review session) — xap_architecture split-and-settled; the U1 letter archived |
+| `spread-1` | [rulings_2026_09_27_owner_decisions_l41_l44.md](rulings_2026_09_27_owner_decisions_l41_l44.md) | SPREAD-1 — a call spread in the language (Letter 41 = (a); #1686) |
 | `sse-1` | [rulings_2026_08_20_sse_downstream.md](rulings_2026_08_20_sse_downstream.md) | Ruling SSE-1 (2026-08-20) — the v1 web binding's SSE downstream: negotiated XSP-envelope carriage (owner "1b") |
 | `sup-1` | [rulings_2026_08_20_supervise.md](rulings_2026_08_20_supervise.md) | SUP-1 — graduate the contract AND implement pre-cut |
 | `ta-1` | [rulings_2026_08_21_surface_closeout.md](rulings_2026_08_21_surface_closeout.md) | TA-1 — the type annotation is GLUED, and the reader enforces it (#911) |
@@ -1391,4 +1394,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*333 ledger pages; 714 ids declared, 387 cited only.*
+*333 ledger pages; 717 ids declared, 387 cited only.*

@@ -61,6 +61,8 @@ jobs:
         run: make -C third_party/v
 
       - name: Bootstrap deps/ with no cx (#1670)
+        env:
+          CX_DEPS_TOKEN: ${{ secrets.CX_DEPS_TOKEN }}
         run: sh scripts/deps_bootstrap.sh
 
       - name: Build cx (deps/ present, no release needed)

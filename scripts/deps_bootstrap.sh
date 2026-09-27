@@ -28,16 +28,43 @@
 # `url=` wins, otherwise this repository's own origin with its final path
 # segment replaced by the pinned repo's name (spec §2.2) — so no row here
 # needs one and nothing is inferred from a name beyond that substitution.
+#
+# CX_DEPS_TOKEN (SITE-1, ledger/rulings_2026_09_26_owner_decisions_l35_l39.md,
+# RULED: SITE-1, D83a, RS-33): the pinned component repositories are private,
+# so a fresh clone on a runner with no SSH identity (cx-home/cx's Site
+# workflow) cannot fetch them. When CX_DEPS_TOKEN is set and non-empty, every
+# git invocation below that fetches or clones a pin is given
+# `-c url."https://x-access-token:${CX_DEPS_TOKEN}@github.com/".insteadOf=https://github.com/`
+# so github.com fetches are transparently rewritten to carry the token — the
+# URL RULE above (spec §2.2) is unchanged, only the transport gains
+# credentials for the one host that needs them. The token itself is never
+# placed in a variable this script prints, echoes, or otherwise puts on a log
+# line: `$auth_cfg` is passed straight as `git` arguments and never captured,
+# `set -x` stays off, and every message this script emits below names the
+# repo/sha/url as before — never the credentialed form. Unset (dev2, SSH),
+# behaviour is byte-identical to before this change.
 set -eu
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+
+if [ "${1:-}" = "--selftest" ]; then
+  exec sh "$ROOT/scripts/deps_bootstrap_selftest.sh"
+fi
 
 DEPS_CXD="${1:-deps.cxd}"
 DEPS_DIR="${2:-deps}"
 
 origin="$(git remote get-url origin)"
 bare="${origin%.git}"
+
+# auth_cfg: the extra `git -c ...` argument, built once, used verbatim by every
+# fetch/init below and by nothing that logs. Empty when CX_DEPS_TOKEN is unset
+# or blank, so an unset token is a no-op — byte-identical to before this change.
+auth_cfg=""
+if [ -n "${CX_DEPS_TOKEN:-}" ]; then
+  auth_cfg="url.https://x-access-token:${CX_DEPS_TOKEN}@github.com/.insteadOf=https://github.com/"
+fi
 
 mkdir -p "$DEPS_DIR"
 
@@ -46,7 +73,14 @@ mkdir -p "$DEPS_DIR"
 grep -oE '\[dep [^]]*\]' "$DEPS_CXD" | while IFS= read -r row; do
   repo="$(printf '%s\n' "$row" | grep -oE 'repo=[^ ]+' | sed 's/^repo=//')"
   sha="$(printf '%s\n' "$row" | grep -oE 'sha=[0-9a-f]+' | sed 's/^sha=//')"
-  own_url="$(printf '%s\n' "$row" | grep -oE "url='[^']*'|url=[^ ]+" | sed "s/^url=//; s/^'//; s/'\$//" || true)"
+  # FIX (found while wiring CX_DEPS_TOKEN's own fixture, #1670 lineage, this
+  # branch): the unquoted alternative was `url=[^ ]+`, which is POSIX
+  # leftmost-LONGEST, not first-alternative-wins — for a quoted `url='…'`
+  # immediately followed by the row's closing `]` (no space), it swallowed
+  # the closing quote and the `]` into the match. Excluding `'` from the
+  # unquoted alternative's char class removes the overlap: only the quoted
+  # alternative can start on a quote.
+  own_url="$(printf '%s\n' "$row" | grep -oE "url='[^']*'|url=[^ ']+" | sed "s/^url=//; s/^'//; s/'\$//" || true)"
 
   [ -n "$repo" ] && [ -n "$sha" ] || { echo "deps_bootstrap: row with no repo= or sha= — $row" >&2; exit 2; }
 
@@ -67,8 +101,28 @@ grep -oE '\[dep [^]]*\]' "$DEPS_CXD" | while IFS= read -r row; do
 
   echo "deps_bootstrap: fetching $repo @ $sha from $url"
   rm -rf "$dest"
-  git init -q "$dest"
-  git -C "$dest" fetch --depth 1 -q "$url" "$sha"
+  if [ -n "$auth_cfg" ]; then
+    # A transport error here can otherwise name the insteadOf-rewritten URL
+    # (credentials included) — the rule is that the token appears in NO log
+    # line, so with auth_cfg set, git's own stderr is captured and never
+    # relayed; a failure is reported as a plain repo/sha refusal instead.
+    fetch_err="$DEPS_DIR/.bootstrap_fetch_err.$$"
+    set +e
+    git -c "$auth_cfg" init -q "$dest" 2>"$fetch_err" \
+      && git -c "$auth_cfg" -C "$dest" fetch --depth 1 -q "$url" "$sha" 2>>"$fetch_err"
+    fetch_status=$?
+    set -e
+    rm -f "$fetch_err"
+    if [ "$fetch_status" -ne 0 ]; then
+      echo "deps_bootstrap: fetch refused for $repo @ $sha" >&2
+      exit "$fetch_status"
+    fi
+  else
+    # No token: byte-identical to before this change — git's own stderr
+    # flows straight through, uncaptured.
+    git init -q "$dest"
+    git -C "$dest" fetch --depth 1 -q "$url" "$sha"
+  fi
   git -C "$dest" checkout -q FETCH_HEAD
 done
 
