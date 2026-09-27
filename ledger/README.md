@@ -356,6 +356,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `aa-9` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | AA-9 — the boot check counts the automation stream (L47.3 = (a)) |
 | `ack-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | Owner decisions 2026-09-27 (afternoon) — Letters 52, 53 and 54: XCO's two readings (ACK-1, RT-1), a list verb through the host walks every page (WALK-1), the vendor budget is per process (BUDGET-1) |
 | `ack-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | ACK-1 — `by=` on the `:peer` step's ack is a space-separated list of DIDs (L52.1 = (a)) |
+| `ackr-1` | [rulings_2026_09_27_owner_decisions_l59.md](rulings_2026_09_27_owner_decisions_l59.md) | Owner decision 2026-09-27 (evening) — Letter 59: the host's ack stays a receipt (ACKR-1) |
+| `ackr-1` | [rulings_2026_09_27_owner_decisions_l59.md](rulings_2026_09_27_owner_decisions_l59.md) | ACKR-1 — an act's answer is read from the record, not carried by the ack (L59 = (a)) |
 | `ad-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-1 — `[selection …]` binds every consumption point, through the one PEP (#1181) |
 | `ad-10` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-10 — instantiation is CONTRACT-LEVEL by design, and an unservable `[add]` refuses (#1162) |
 | `ad-2` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-2 — contract evolution gets the SEA-1 treatment (#1182) |
@@ -1452,4 +1454,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*341 ledger pages; 747 ids declared, 388 cited only.*
+*342 ledger pages; 748 ids declared, 388 cited only.*
