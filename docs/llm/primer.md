@@ -2784,7 +2784,7 @@ wait).
 ```cx
 [flow name="async-bulk-export" stall-after=1d
   [args [tenant::string]]
-  [step name="submit" [do 'acme/submit-export' [tenant $args/tenant]]]
+  [step name="submit" pivot=true [do 'acme/submit-export' [tenant $args/tenant]]]
   [until name="await-export" needs="submit" when="$steps/poll-export/result/@ready"
          attempts=20 every=1m
     [step name="poll-export"
@@ -2805,7 +2805,9 @@ an adopter without `flow` orders the same three verbs from a script or a surface
 cases `bulk-export-001-job-state-transitions` … `-008-a-deadline-expiry-refuses-loud`),
 which grades the three verbs over a real socket ordered by a script and the
 flow document's `until` — its iterations, its durable `every=` wait and its
-deadline — over the verbs' recorded answers. The flow run over the socket is
+deadline — over the verbs' recorded answers. The skeleton above is itself a
+document `flow` validates, its submit the pivot because a job cannot be
+withdrawn (`xap-compose-178`; RULED: BEX-1). The flow run over the socket is
 §3.8's row.
 
 **§3.4. Inbound webhook**
