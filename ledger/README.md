@@ -353,6 +353,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `aa-7` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | AA-7 — `fill` lives in `cx-platform/flow` (L47.1 = (a)) |
 | `aa-8` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | AA-8 — the CLI names the binder (L47.2 = (a)) |
 | `aa-9` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | AA-9 — the boot check counts the automation stream (L47.3 = (a)) |
+| `ack-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | Owner decisions 2026-09-27 (afternoon) — Letters 52, 53 and 54: XCO's two readings (ACK-1, RT-1), a list verb through the host walks every page (WALK-1), the vendor budget is per process (BUDGET-1) |
+| `ack-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | ACK-1 — `by=` on the `:peer` step's ack is a space-separated list of DIDs (L52.1 = (a)) |
 | `ad-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-1 — `[selection …]` binds every consumption point, through the one PEP (#1181) |
 | `ad-10` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-10 — instantiation is CONTRACT-LEVEL by design, and an unservable `[add]` refuses (#1162) |
 | `ad-2` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-2 — contract evolution gets the SEA-1 treatment (#1182) |
@@ -397,6 +399,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `bex-1` | [rulings_2026_09_27_owner_decisions_l41_l44.md](rulings_2026_09_27_owner_decisions_l41_l44.md) | BEX-1 — R-1492 merges as graded; the socket-driven flow follows cx-platform-flow#12 (Letter 43 = (a)) |
 | `bp-1` | [rulings_2026_08_20_binding_axes.md](rulings_2026_08_20_binding_axes.md) | BP-1 — binding paths carry the value-meaningful compact steps only |
 | `bp-1` | [rulings_2026_08_20_call_result_steps.md](rulings_2026_08_20_call_result_steps.md) | CRS-1a rider — code.md §6.2 trued to BP-1 |
+| `budget-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | Owner decisions 2026-09-27 (afternoon) — Letters 52, 53 and 54: XCO's two readings (ACK-1, RT-1), a list verb through the host walks every page (WALK-1), the vendor budget is per process (BUDGET-1) |
+| `budget-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | BUDGET-1 — the vendor budget is per process under one host per tenant; §4.3 says so (L54 = (a)) |
 | `bus-1` | [rulings_2026_09_27_owner_decisions_l41_l44.md](rulings_2026_09_27_owner_decisions_l41_l44.md) | Owner decisions 2026-09-27 — Letters 41–45: the call spread (SPREAD-1), the orders-db partial (ODB-1), R-1492 as graded (BEX-1), the bus audit subject (BUS-1), no new agents (PACE-2) |
 | `bus-1` | [rulings_2026_09_27_owner_decisions_l41_l44.md](rulings_2026_09_27_owner_decisions_l41_l44.md) | BUS-1 — the bus audit record's subject (Letter 44 = (a)) |
 | `ca-1` | [rulings_2026_09_03_canonical_act_form_1260.md](rulings_2026_09_03_canonical_act_form_1260.md) | CA-1 — the canonical act form — RECOMMENDED: (a) |
@@ -764,6 +768,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rs-35` | [rulings_2026_09_25_v_fork_rs35.md](rulings_2026_09_25_v_fork_rs35.md) | RS-35 — the V fork under the zero-attribution rule: strip the fork's own range only (owner: Letter 2 = (a), 2026-09-25) |
 | `rs-36` | [rulings_2026_09_25_component_waves_rs36.md](rulings_2026_09_25_component_waves_rs36.md) | RS-36 — how a wave in a component repository lands after the split (owner, 2026-09-25, Letter 4 (a)) |
 | `rs-38` | [rulings_2026_09_26_fixture_backed_sentences_rs38.md](rulings_2026_09_26_fixture_backed_sentences_rs38.md) | RS-38 — a flow-ladder wave may state, inside its ruled section, the exact semantics its fixtures grade (owner: Letter 18 = (a), 2026-09-26) |
+| `rt-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | Owner decisions 2026-09-27 (afternoon) — Letters 52, 53 and 54: XCO's two readings (ACK-1, RT-1), a list verb through the host walks every page (WALK-1), the vendor budget is per process (BUDGET-1) |
+| `rt-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | RT-1 — the `[runtime …]` rows' sentence and the delegated-intent frame are written in the host rounds, fixture-backed (L52.2 = (a)) |
 | `run-1` | [rulings_2026_09_16_run_selection_run1.md](rulings_2026_09_16_run_selection_run1.md) | Owner decision 2026-09-16 ~05:05Z — the post-merge run tests what changed and what reads it (RULED: RUN-1) |
 | `run-2` | [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md) | Owner decisions 2026-09-19 ~04:45Z — a failed run reports every red class (RUN-2); the daily full union runs on an idle runner (RUN-3); an escalated branch runs the computed selection pre-merge (RUN-4); the run log carries step timing and the timings file (RUN-5); the two agents and their order (AGENTS-1); the budget step stays open until it measures (1562-a) |
 | `run-3` | [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md) | Owner decisions 2026-09-19 ~04:45Z — a failed run reports every red class (RUN-2); the daily full union runs on an idle runner (RUN-3); an escalated branch runs the computed selection pre-merge (RUN-4); the run log carries step timing and the timings file (RUN-5); the two agents and their order (AGENTS-1); the budget step stays open until it measures (1562-a) |
@@ -944,6 +950,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `vg-2` | [rulings_2026_09_04_view_grammar.md](rulings_2026_09_04_view_grammar.md) | VG-2 — durable per-viewer view preferences (RULED: VG-2 = a) |
 | `vg-2` | [rulings_2026_09_04_view_grammar.md](rulings_2026_09_04_view_grammar.md) | VG-2 — durable per-viewer view preferences (RULED: VG-2 = a) |
 | `vg-3` | [rulings_2026_09_15_views_group_vg3_schema_sd1.md](rulings_2026_09_15_views_group_vg3_schema_sd1.md) | Owner letters 2026-09-15 ~01:20Z — the fourth clause of `[views]`, and the schema-as-data feature kind (RULED: VG-3, SD-1) |
+| `walk-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | Owner decisions 2026-09-27 (afternoon) — Letters 52, 53 and 54: XCO's two readings (ACK-1, RT-1), a list verb through the host walks every page (WALK-1), the vendor budget is per process (BUDGET-1) |
+| `walk-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | WALK-1 — a list verb performed by the host walks every page (L53 = (a)) |
 | `we-1` | [rulings_2026_08_26_wasm_eval_sweep.md](rulings_2026_08_26_wasm_eval_sweep.md) | WE-1 — the harness must be a real browser; the cheap one is dishonest |
 | `we-2` | [rulings_2026_08_26_wasm_eval_sweep.md](rulings_2026_08_26_wasm_eval_sweep.md) | WE-2 — the mechanism, and why the marker set is what it is |
 | `we-3` | [rulings_2026_08_26_wasm_eval_sweep.md](rulings_2026_08_26_wasm_eval_sweep.md) | WE-3 — a marker must be JUSTIFIED, in both directions |
@@ -1418,4 +1426,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*334 ledger pages; 728 ids declared, 388 cited only.*
+*335 ledger pages; 732 ids declared, 388 cited only.*
