@@ -28,6 +28,8 @@ Generated from the CX conformance corpus at the v0.18.0-pre.1 cut by scripts/gen
 - [Reference: the standard library](https://cxhome.org/llm/reference-stdlib.md): The bundled module catalog, the [?lib] import form, and the capability each effectful pack requires.
 - [Reference: the cx command line](https://cxhome.org/llm/reference-cli.md): The run surface, the convert surface, the subcommand catalog, and the capability grant flags — including the flag-placement rule that silently denies capabilities when broken.
 - [Reference: the platform and ecosystem rings](https://cxhome.org/llm/reference-platform.md): The platform group (store, journal, HTTP, XAP host) and the bindings and ecosystem groups (agent interop, feature distribution, language bindings) — what is reachable and how.
+- [cx-platform/connector](https://cxhome.org/llm/connector-reference.md): The connector engine every connector feature runs on: the capability check at the effect point, the open handle registry, the token cache, the spend ledger and handle resolution. A pure-CX package (RULED: RS-25, no V code of its own) -- source stdlib/connector.cx, corpus conformance/platform/connector.cxd.
+- [cx-platform/sync](https://cxhome.org/llm/sync-reference.md): Incremental sync: the cursor/watermark contract and the three ways a source is captured, reaching store, journal, sched and the connector engine -- source stdlib/sync.cx, corpus conformance/platform/sync.cxd.
 
 ## Optional
 
