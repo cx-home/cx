@@ -63,7 +63,7 @@
          future query-engine product and does not refer to the file
          format. Throughout this guide, CXCol is the format; `.cxbin` is
          the file extension (`.cxcol` is a deprecated alias, recognized
-         read-only — [`spec/process/governance.md`](../../spec/03-approved/process/governance.md)
+         read-only — [`spec/process/governance.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/process/governance.md)
          §12.2); the `cx_table_*` prefix appears on the C ABI streaming
          identifiers ([`spec/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) §2.10)."""]]
 

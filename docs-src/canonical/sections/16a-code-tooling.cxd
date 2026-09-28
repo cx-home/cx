@@ -179,7 +179,7 @@
       [body
         """A plugin model for user-defined checks is planned
            (previously rejected; the question is reopened in
-           [`ROADMAP.md`](../../ROADMAP.md) "Later"). Currently,
+           [`ROADMAP.md`](https://github.com/cx-home/cx/blob/main/ROADMAP.md) "Later"). Currently,
            extending the check set means contributing a check to
            `vcx/cx/lint.v` upstream. Schema-violation checks are a
            separate path — they layer in automatically as the schema
@@ -329,7 +329,7 @@
          under `vcx/tests/runners/`) and per-binding bench scripts
          that exercise the FFI path. Binding-level performance budgets
          are governed by the performance-SLA policy in
-         [`spec/03-approved/process/governance.md §6`](../../spec/03-approved/process/governance.md)."""]
+         [`spec/03-approved/process/governance.md §6`](https://github.com/cx-home/cx/blob/main/spec/03-approved/process/governance.md)."""]
 
     [child id=profile-eval n='16a.6.1' title='In-program profiling'
       [body
@@ -400,7 +400,7 @@
         """Two tracking planes. The **binding-level budgets** —
            `loads` and `select` latencies per input size — are
            normative in
-           [`spec/03-approved/process/governance.md §6.1`](../../spec/03-approved/process/governance.md):
+           [`spec/03-approved/process/governance.md §6.1`](https://github.com/cx-home/cx/blob/main/spec/03-approved/process/governance.md):
            regressions beyond the threshold against a recorded
            baseline fail CI (`make bench-compare`, default threshold
            30%, `STRICT=1` for 10%). The **V-core streaming gate**

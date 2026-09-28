@@ -321,9 +321,9 @@
          bit-identical across bindings. Parsing and several emitters
          are implemented natively per binding and held to parity by
          the conformance corpus: the Layer-1 parity gate in
-         [`spec/03-approved/misc/bindings.md`](../../spec/03-approved/misc/bindings.md),
+         [`spec/03-approved/misc/bindings.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/bindings.md),
          tracked per binding in
-         [`spec/03-approved/misc/parity-matrix.md`](../../spec/03-approved/misc/parity-matrix.md)."""]]
+         [`spec/03-approved/misc/parity-matrix.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/parity-matrix.md)."""]]
 
   [child id=next-steps n=0.8 title='Where to go next'
     [intro

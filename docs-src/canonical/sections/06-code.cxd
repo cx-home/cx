@@ -60,7 +60,7 @@
     [intro
       """There are currently **eighty normative directives**.
          Adding or removing any directive requires a governance change per
-         [`spec/process/governance.md`](../../spec/03-approved/process/governance.md). The
+         [`spec/process/governance.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/process/governance.md). The
          authoritative registry lives in
          [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §4.1; this
          subsection is an at-a-glance grouping of the directives this
@@ -162,7 +162,7 @@
          yet. V (the native reference) carries the spec-conformant
          implementation; Tier-2 bindings (Python, Go, Rust)
          follow per the parity matrix in
-         [`spec/misc/parity-matrix.md`](../../spec/03-approved/misc/parity-matrix.md). Where
+         [`spec/misc/parity-matrix.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/parity-matrix.md). Where
          a feature is spec'd-but-not-shipped this guide says so
          explicitly."""]]
 
@@ -339,7 +339,7 @@
         """**Status note.** CXPath value-kind at non-`[?for]`
            positions is production-ready in V; full Tier-2 binding parity is
            tracked in
-           [`spec/misc/parity-matrix.md`](../../spec/03-approved/misc/parity-matrix.md)."""]]
+           [`spec/misc/parity-matrix.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/parity-matrix.md)."""]]
 
     [child id=cxpath-divergences n=6.3.6 title='Deliberate divergences from XPath 3.1'
       [body
@@ -683,7 +683,7 @@
         """**Status.** Multi-arm `[?match]` is fully spec'd.
            V's evaluator carries the production-ready
            implementation; Tier-2 binding parity is per
-           [`spec/misc/parity-matrix.md`](../../spec/03-approved/misc/parity-matrix.md)."""]]
+           [`spec/misc/parity-matrix.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/parity-matrix.md)."""]]
 
     [child id=if n=6.6.3 title='[?if] — boolean branch (with EBV)'
       [body
@@ -861,7 +861,7 @@
         """**Status.** `[?modify]` is fully spec'd.
            The V evaluator carries the production-ready
            implementation. Tier-2 binding parity is tracked in
-           [`spec/misc/parity-matrix.md`](../../spec/03-approved/misc/parity-matrix.md)."""]]
+           [`spec/misc/parity-matrix.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/parity-matrix.md)."""]]
 
     [child id=pipe n=6.6.6 title='Pipelines and composition'
       [body
@@ -1526,7 +1526,7 @@
         """**Status.** Async/await is stable in V.
            Tier-2 binding parity (Python `asyncio`, Go
            `chan`, Rust `tokio`) ships per
-           [`spec/misc/parity-matrix.md`](../../spec/03-approved/misc/parity-matrix.md)."""]]]
+           [`spec/misc/parity-matrix.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/parity-matrix.md)."""]]]
 
   [child id=resilience n=6.10 title='Resilience directives'
     [intro
@@ -1973,7 +1973,7 @@
          covers the current ranges; the normative registry is
          [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)
          §9.4/§9.5, with the governance rules for code allocation in
-         [`spec/process/governance.md`](../../spec/03-approved/process/governance.md)
+         [`spec/process/governance.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/process/governance.md)
          §9.6."""]
 
     [child id=errors-security n=6.13.1 title='Capability and runtime caps'
