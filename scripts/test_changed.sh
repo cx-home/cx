@@ -166,6 +166,16 @@ RING_EMBED='stdlib/* deps.cxd docs/llm/* VERSION'
 # vcx/tests, vcx/cmd and vcx/cli, and no further.
 RING_LIB="$RING0 $RING_STORE $RING1 $RING_LEAF $RING2"
 
+# PRIVMK-1: a step that flows/private.mk defines carries its row there, as a
+# `<step>.globs := <globs>` line. The rows above never name one. The public
+# tree has no such file, so the lookup answers empty there, which is exactly
+# right: that tree does not list the step either (STEPS below).
+PRIVATE_MK=flows/private.mk
+private_globs() {
+  [ -f "$PRIVATE_MK" ] || return 0
+  sed -n "/^$1\\.globs := /{s///p;q;}" "$PRIVATE_MK"
+}
+
 step_globs() {
   case "$1" in
     abi-c-test)                    echo "$RING_LIB $RING_SUP include/* lang/*" ;;
@@ -397,13 +407,9 @@ step_globs() {
     # move the vocabulary or the three subcommands it drives them through (the
     # flow module is the pin's; `cx flow` is this tree's binary).
     docs-flow-gate)                echo 'docs-src/flow/* scripts/docs_flow_gate.cx deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
-    # RULED: RFLOW-1 — the CI/CD flow documents' one gate, per document: the
-    # flows/ tree (the documents, the one acts module and env, the load rows,
-    # the case and simulate tables), the gate, and what can move the vocabulary
-    # or the subcommands it drives them through; premerge's also reads the
-    # Makefile (the load rows name its targets) and runs the selection script.
-    merge-flow-gate)               echo 'flows/* scripts/ci_flow_gate.cx deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
-    premerge-flow-gate)            echo 'flows/* scripts/ci_flow_gate.cx scripts/test_changed.sh scripts/build-slot.sh Makefile deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
+    # The private flow gates' rows (merge-flow-gate, premerge-flow-gate, and
+    # the ones added after them) live in flows/private.mk, beside their
+    # targets (RULED: PRIVMK-1). The catch-all below reads them from there.
     # the pinned flow lanes (RS-31, D54c): CX programs run by this tree's
     # binary, so the pin and everything that builds the binary.
     test-flow-umbrella)            echo 'deps.cxd registry/modules.cxd vcx/* stdlib/*' ;;
@@ -551,7 +557,7 @@ step_globs() {
     # #1065: the rosters live in vcx/Makefile and are re-derived from the module
     # set each artifact compiles, so any vcx/ module moving is an input.
     check-build-input-roster)      echo 'vcx/Makefile vcx/*' ;;
-    *)                             echo '' ;; # unknown step → ALWAYS RUN
+    *)                             private_globs "$1" ;; # a flows/private.mk row, else unknown → ALWAYS RUN
   esac
 }
 
@@ -914,13 +920,18 @@ esac
 INFRA_HIT=0
 while IFS= read -r f; do
   case "$f" in
-    Makefile|vcx/Makefile|devbox.json|devbox.lock|VERSION|scripts/*) INFRA_HIT=1; break ;;
+    Makefile|flows/private.mk|vcx/Makefile|devbox.json|devbox.lock|VERSION|scripts/*) INFRA_HIT=1; break ;;
   esac
 done < "$TC_TMP/changed"
 
 # The authoritative step list comes from the Makefile so the manifest can
 # never silently miss a NEW step (an unlisted step always runs).
 STEPS=$(grep -m1 '^TEST_TARGETS :=' Makefile | sed 's/^TEST_TARGETS := //')
+# ...and the private flow steps flows/private.mk adds with `TEST_TARGETS +=`
+# (RULED: PRIVMK-1), when this tree carries that file.
+if [ -f "$PRIVATE_MK" ]; then
+  STEPS="$STEPS $(sed -n 's/^TEST_TARGETS += //p' "$PRIVATE_MK" | tr '\n' ' ')"
+fi
 
 # Serial pre-build BEFORE any parallel fan-out — the same guard `make test`
 # carries (Makefile's `test` recipe): every step's recursive build then hits
