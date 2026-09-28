@@ -149,6 +149,14 @@ jobs:
       - name: The assembled site in headless Chrome — the engine loads, the page prints on load, every primer example answers as its fixture records
         run: make test-playground-primer PLAYGROUND_ROOT=site
 
+      # DOCS-45: every external link of the assembled site, fetched once
+      # (scripts/gen_site/check_external_links.cx; docs-src/site/links.cxd is
+      # the allowlist). Not a pre-merge step — it needs the network — so it
+      # lives here, after the docs flow's offline checks (site-check's
+      # internal-link walk) and the playground gates, before the upload.
+      - name: Fetch every external link
+        run: make site-links-external
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

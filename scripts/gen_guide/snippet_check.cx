@@ -124,6 +124,20 @@
   [= $total [$fp:fold $per 0 [?fn ($a $c) [+ $a $c@total]]]]
   [= $optout [$fp:fold $per 0 [?fn ($a $c) [+ $a $c@optout]]]]
   [= $nfail [$count $fails]]
+  [; DOCS-47: the fixture-citation ratchet. Every example on a new or
+     re-voiced page is a [fixture id=] citation (one) or a [pair wrong= right=]
+     panel (two, both halves replayed); docs-src/site/voice.cxd's [fixtures
+     floor=] is the count the sections carry, and a wave may not lower it. ]
+  [= $cited [$fp:fold $files 0 [?fn ($a $f)
+              [?match [$cx:parse [$io:read-file $f]]
+                [case [err $e] $a]
+                [else [+ $a [+ [$count [$cx:parse [$io:read-file $f]]//fixture]
+                               [* 2 [$count [$cx:parse [$io:read-file $f]]//pair]]]]]]]]]
+  [= $floor [?let [= $v [$cx:parse [$io:read-file 'docs-src/site/voice.cxd']]]
+              [?match $v
+                [case [err $e] 0]
+                [else [$fp:fold [?for [in $k $v//fixtures] [yield [$strings:to-number [$string $k@floor]]]] 0
+                                [?fn ($a $n) $n]]]]]]
   [= $done (
     [?if [$empty $files]
       [then ([$cry 'snippet-check: no section files found — run from the repo root'],
@@ -142,6 +156,15 @@
                  [$string [- [- $total $optout] $nfail]], ' pass, ',
                  [$string $optout], ' opt-out (check=none), ',
                  [$string $nfail], ' fail')]],
+    [$say [$cat ('snippet-check: ', [$string $cited], ' fixture citations in the sections ([fixture] one, [pair] two); ',
+                 'the floor in docs-src/site/voice.cxd is ', [$string $floor],
+                 [?if [> $cited $floor] [then ' — above it: raise the floor in the same change (DOCS-47)'] [else '']])]],
+    [?if [< $cited $floor]
+      [then ([$cry [$cat ('snippet-check: FAIL — the sections cite ', [$string $cited],
+                          ' fixtures, below the floor of ', [$string $floor],
+                          ' in docs-src/site/voice.cxd; a wave may not lower it (DOCS-47)')]],
+             [$env:exit 1])]
+      [else ()]],
     [?if [> $nfail 0] [then [$env:exit 1]] [else ()]]
   )]
   [?if false [then '']]]]]

@@ -1,0 +1,112 @@
+[# Section 0a — Why CX. Authored 2026-09-28 (RULED: DOCS-49 wave 1, DOCS-47,
+   RS-30). The case for CX in eight claims, each stated in our own voice and
+   each proved by a before/after panel: a [pair wrong= right=] block names two
+   cases of conformance/llm/antipatterns.cxd that the guide build replays
+   against the running cx — the form that fails on the left, the CX form on
+   the right — so nothing on this page is a hand-typed "before", and a claim
+   whose evidence moves stops the build by name.
+
+   The docs speak for CX (the docs-voice rule): first person plural, no
+   third-party voice, no comparison to a language this page does not need.
+   Cross-links use [[anchor]] form. File extension .cxd — data-only source. #]
+
+[section id=why group='Start here' n='0a' title='Why CX'
+
+  [intro
+    """**TL;DR — we built CX so that the data is the program's own shape.**
+       One bracketed syntax is the document, the query, the program and the
+       compiler's own tree, and everything we promise below follows from
+       holding that line: numbers that stay exact, effects you grant rather
+       than inherit, errors and absence that are values, patterns that cannot
+       blow up, dispatch on the shape of the data. Each claim on this page is
+       a pair of conformance cases this guide's `cx` replayed when the page
+       was built — the form that fails on the left, ours on the right. If a
+       claim ever stops holding, this page stops building."""]
+
+  [child id=why-exact n=0a.1 title='We keep exact numbers exact'
+    [body
+      """A fraction literal is a decimal — exact, base-10, arbitrary precision —
+         and arithmetic keeps it one. Money stays money. Mixing a decimal with
+         a binary float is refused out loud, naming the one bridge between
+         them, rather than rounded in silence into a column that was never
+         supposed to round."""]
+    [pair wrong=ap-decimal-float-mix-wrong right=ap-decimal-float-mix-right]]
+
+  [child id=why-effects n=0a.2 title='We grant effects; nothing is inherited'
+    [body
+      """A program reads nothing, writes nothing, dials nothing and reads no
+         clock until the command line grants it. The refusal is an ordinary
+         value that names the flag which would allow the effect — not a
+         crash, not a silent empty result — so the same program is safe to
+         run first and to trust second. See [[capabilities]] for the whole
+         grant surface."""]
+    [pair wrong=ap-effect-ungranted-wrong right=ap-effect-granted-right]]
+
+  [child id=why-errors n=0a.3 title='Our errors are values you match on'
+    [body
+      """There is no `try`. An `[err]` is a value that flows out of whatever
+         is built from it, and the shape you wanted is a pattern you match
+         against: the single-arm `[?match]` destructures or refuses with the
+         language's own diagnostic, so a bespoke error code and its wording
+         stop being yours to maintain. The multi-arm form is for genuinely
+         several shapes, not for one shape and a safety net."""]
+    [pair wrong=ap-match-else-rethrow-wrong right=ap-match-else-rethrow-right]]
+
+  [child id=why-absence n=0a.4 title='Absence is a value we can ask about'
+    [body
+      """A missing key, an out-of-range read, an empty match set — each has a
+         defined, distinguishable answer, and absence is not emptiness.
+         `[$present]` asks whether something is there at all; `[$exists]`
+         asks whether it has contents. A guard that confuses the two takes
+         the wrong branch at exit 0 with nothing printed, which is the one
+         outcome we refuse to ship; the right predicate makes the question
+         explicit."""]
+    [pair wrong=ap-exists-as-presence-wrong right=ap-exists-as-presence-right]]
+
+  [child id=why-regex n=0a.5 title='Our regular expressions cannot blow up'
+    [body
+      """`re` is RE2: a pattern that compiles runs in time linear in its
+         input, whatever the input. The constructs that would need
+         backtracking — a backreference, a lookaround — are refused when the
+         pattern compiles, so a hostile string can never turn a match into a
+         denial of service. The nested quantifier that kills a backtracking
+         engine answers here in linear time."""]
+    [pair wrong=ap-regex-backtracking-wrong right=ap-regex-linear-right]]
+
+  [child id=why-shape n=0a.6 title='We dispatch on the shape of the data'
+    [body
+      """A closed set of values is declared where it travels, in a schema, and
+         a `[?match]` over it says so with `[of TypeName]`: the linter then
+         names a missing member, an out-of-set value refuses at the boundary,
+         and `[else]` goes back to meaning only what it says. Bare strings and
+         a catch-all arm report a member you forgot as `unknown`, at exit 0,
+         forever."""]
+    [pair wrong=ap-open-string-dispatch-wrong right=ap-open-string-dispatch-right]]
+
+  [child id=why-flat n=0a.7 title='We bind flat — readable on day one'
+    [body
+      """`[?let]` is sequential: each binding sees the ones before it, so
+         three dependent bindings are one form, not three nested scopes. The
+         two halves below are output-identical; the flat one is the house
+         form, and it is the one a reader parses at a glance."""]
+    [pair wrong=ap-nested-let-wrong right=ap-nested-let-right]]
+
+  [child id=why-operators n=0a.8 title='Our operators are values — batteries included'
+    [body
+      """An operator with holes is the operator's value: `[+ _ _]` goes
+         wherever a callable goes — a `[using …]` clause, a higher-order
+         standard-library parameter, an entry in an operator table a runtime
+         token looks up. Nothing stands between the operator and the slot, and
+         the arity is visible in the holes. The adapter lambda is pure
+         ceremony, and we do not make you write it."""]
+    [pair wrong=ap-adapter-lambda-wrong right=ap-adapter-lambda-right]]
+
+  [child id=why-next n=0a.9 title='Where this leads'
+    [body
+      """Every module we ship is declared once, with its ring and its
+         repository, in a registry the build holds the tree to — the figure
+         on [[rings]] is drawn from that registry when the page is built, and
+         so are the counts on the front page. From here: [[quickstart]] runs a
+         first file, a first conversion, a first query and a first schema in
+         five minutes; [[rings]] says how much of CX you have to take on;
+         [[choosing]] routes you by task."""]]]

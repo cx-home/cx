@@ -108,6 +108,7 @@ about.html
 analytics.html
 assets/cx-logo.png
 assets/cx-logo.svg
+assets/rings.svg
 bindings.html
 capabilities.html
 choosing.html
@@ -242,6 +243,7 @@ tour-data.html
 tour-programs.html
 ux-capability.html
 value-model.html
+why.html
 xap-d1.html
 xap-d2.html
 xap-d3.html
@@ -263,8 +265,14 @@ wasm/libcx-sync.js
 
   [; docs/llm/ (make docs), under llm/ — the primer, the references, the
      contributor front door, the llmstxt.org pair ]
+  [; llm/index.html is the LLM door (RULED: DOCS-46), rendered by
+     scripts/gen_site/llm_index.cx from docs-src/llm/manifest.cxd at assembly;
+     assets/rings.svg above is the ring figure (RULED: DOCS-42), rendered by
+     scripts/gen_site/ring_svg.cx from the registries at `make guide`; both
+     untracked, like the guide. ]
   [files from=llm [#
 llm/connector-reference.md
+llm/index.html
 llm/contributor-architecture.md
 llm/contributor-design.md
 llm/contributor-implementation.md

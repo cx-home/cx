@@ -595,6 +595,16 @@ const accepted_by_one_table = [
 	// follow deps/.
 	AcceptedByOne{'scripts/check_no_ai_attribution.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/strip_attribution.cx', .program, reason_1536},
+	// DOCS-4 wave 1 (RULED: DOCS-42, DOCS-44, DOCS-45, DOCS-46): four new
+	// generators under scripts/gen_site/ and the site assembler's new link walk
+	// -- the class's own shape again, `[$fp:fold … {} [?fn …]]` (ring_svg.cx),
+	// `[$strings:join (…) ""]` (llm_index.cx), `[$fp:flat-map (…) [?fn …]]`
+	// (check_external_links.cx) and `[$pb:cat-seqs ($acc, ($p,))]`
+	// (site_assemble.cx, the same fold site_build.cx above folds with).
+	AcceptedByOne{'scripts/gen_site/ring_svg.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/gen_site/llm_index.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/gen_site/check_external_links.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/gen_site/site_assemble.cx', .program, reason_1536},
 	// 79 -> 80: #1669's scripts/public_history_replace.cx, the replace-text
 	// sibling pass -- the class's own shape (its `ensure-mirror`/`rewrite-one`
 	// duplicate strip_attribution.cx's `clone-mirror`/`run-git` helpers by the
@@ -649,6 +659,11 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/repo_paths.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/ring_query.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/secrets_scan.cx', .program, reason_attr},
+	// DOCS-4 wave 1 (RULED: DOCS-42, DOCS-43): the plug-in figure's
+	// `height=[- ROW-H 4]` and the voice step's `path=[$attr $p "path" ""]`,
+	// both computed attributes on a constructed row.
+	AcceptedByOne{'scripts/gen_site/plugs_svg.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/gen_site/docs_voice_check.cx', .program, reason_attr},
 	// ── recorded exception — a program document the data balancer cannot read (9) ──
 	// 8 -> 9: scripts/docs_fragment.cx, the RS-9 fragment contract (a `"#]"` literal).
 	// 9 -> 8: scripts/flow_vocabulary_gate.cx left with the flow extraction (RS-12).

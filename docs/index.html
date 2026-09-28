@@ -14,6 +14,9 @@
 body.site-home { grid-template-columns: 1fr; }
 body.site-home header.sheet-bar, body.site-home main, body.site-home footer.title-block { grid-column: 1; }
 body.site-home main { max-width: 920px; margin: 0 auto; }
+.site-fig { max-width: 520px; margin: 1.2rem auto; }
+.site-fig svg { width: 100%; height: auto; display: block; }
+ul.tldr { margin: 0.4rem 0 1rem; }
 </style>
 </head>
 <body class="site-home">
@@ -23,10 +26,534 @@ body.site-home main { max-width: 920px; margin: 0 auto; }
 </header>
 <main>
 <h1>CX — one language for your data and your code</h1>
-<p><b>TL;DR — reach for CX whenever the data is the point.</b> One bracketed syntax is the document, the query, the program and the compiler's own tree, so the file you read is the file you transform, validate, hash, store and serve — with no second language in between. Python set the bar a working language has to clear: readable on day one, batteries included, good for a script and for a system. CX holds itself to that bar and goes past it where data work hurts: exact decimals by default, effects you grant instead of inherit, errors that are values, regular expressions that cannot blow up, and a content-addressed store in the box.</p>
+<p><b>TL;DR — reach for CX whenever the data is the point.</b> One bracketed syntax is the document, the query, the program and the compiler's own tree, so the file you read is the file you transform, validate, hash, store and serve — with no second language in between.</p>
+<p>We hold ourselves to a standard we can state in one line — <b>readable on day one, batteries included, exact by default, and effects you grant rather than inherit</b> — and we prove each term of it with a conformance case this page replayed when it was built:</p>
+<ul>
+<li>a query is a pattern over the document, not code over an object model — <code>program-for-003-name-email-pair</code>;</li>
+<li>a fraction literal is an exact decimal, and mixing one with a binary float is refused out loud rather than rounded in silence — <code>ap-decimal-float-mix-right</code>;</li>
+<li>an error is a value that propagates out of whatever is built from it — no exception unwinds past you — <code>program-construction-err-004-captured-err-propagates</code>;</li>
+<li>a program reads nothing it was not granted, and the denial is a value naming the flag that would allow it — <code>io-001-read-file-cap-denied</code>;</li>
+<li>a regular expression cannot backtrack, so no input can make it run for as long as it likes — <code>re-003-compile-backreference-unsupported</code>;</li>
+<li>state that outlives the program is two calls to a content-addressed store — <code>store-rt-001-round-trip-get</code>;</li>
+<li>an agent-protocol message is an ordinary value projected to its wire form — <code>mcp-001-call-tool-request-shape</code>.</li>
+</ul>
 <pre><code class="language-console">curl -sSL https://cxhome.org/install | sh
 cx primer</code></pre>
 <p>The installer resolves the latest release for your platform, checks its SHA-256 against the release's own checksum file and installs <code>cx</code> — or, where no prebuilt build exists, says so and points at the source build; <code>cx primer</code> then prints the manual for exactly the binary you installed. Every example on this page is a conformance fixture that was executed by <code>cx</code> 0.18.0-pre.1 when the page was generated, and the page is refused if one of them stops holding.</p>
+<h2>Two rings, and the groups above them</h2>
+<p>We build CX in two rings — Ring 0, the data format, which cannot execute anything, and Ring 1, the language — with the platform, the bindings and the ecosystem as groups above them. Imports point inward, never out, and the build enforces it. The figure is drawn from the module and repository registries when this page is generated, so it cannot drift from the tree it describes; <a href="rings.html">the rings page</a> reads it from the centre out, and <a href="why.html">the why page</a> states our case in eight before/after panels.</p>
+<div class="hero-fig site-fig"><a href="rings.html" aria-label="The rings, page"><svg viewBox="0 0 720 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The two rings of CX and the groups above them, drawn from the registry: 85 modules in 24 repositories, imports pointing inward">
+  <defs>
+    <marker id="rf-arr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#b3400f"/>
+    </marker>
+  </defs>
+  <line x1="360" y1="14" x2="360" y2="706" stroke="#1a1812" stroke-width="0.5" stroke-dasharray="14 4 2 4" opacity="0.35"/>
+  <line x1="14" y1="360" x2="706" y2="360" stroke="#1a1812" stroke-width="0.5" stroke-dasharray="14 4 2 4" opacity="0.35"/>
+  <circle cx="360" cy="360" r="318" fill="none" stroke="#1a1812" stroke-width="0.8" stroke-dasharray="4 5" opacity="0.7"/>
+  <circle cx="360" cy="360" r="290" fill="none" stroke="#1a1812" stroke-width="1.4"/>
+  <circle cx="360" cy="360" r="198" fill="none" stroke="#1a1812" stroke-width="1.1"/>
+  <circle cx="360" cy="360" r="168" fill="#f7f4ea" stroke="#1a1812" stroke-width="1.4"/>
+  <circle cx="360" cy="360" r="84" fill="none" stroke="#1a1812" stroke-width="1.1"/>
+  <circle cx="360" cy="360" r="64" fill="#efe9d8" stroke="#1a1812" stroke-width="1.6"/>
+  <text x="360" y="352" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12" font-weight="600" letter-spacing="3" fill="#1a1812">DATA</text>
+  <text x="360" y="366" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" letter-spacing="1.4" fill="#6b6552">RING 0 · CANNOT EXECUTE</text>
+  <text x="360" y="380" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="6.8" letter-spacing="1" fill="#8a8371">codec: xml</text>
+  <text x="360" y="272" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="8.5" font-weight="600" letter-spacing="1.6" fill="#1a1812">RING 1 · CODE</text>
+  <text x="360" y="158" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="8.5" font-weight="600" letter-spacing="1.6" fill="#1a1812">THE PLATFORM GROUP</text>
+  <g class="rf-ring1">
+    <g class="rf-r1">
+      <line x1="360.0" y1="197.0" x2="360.0" y2="192.0" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="360.0" y="203.6" transform="rotate(-90 360.0 201.0)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">array</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="378.9" y1="198.1" x2="379.5" y2="193.1" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="378.5" y="204.7" transform="rotate(-83 378.5 202.1)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">authz</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="397.6" y1="201.4" x2="398.7" y2="196.5" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="396.7" y="207.9" transform="rotate(-77 396.7 205.3)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">bus</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="415.7" y1="206.8" x2="417.5" y2="202.1" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="414.4" y="213.2" transform="rotate(-70 414.4 210.6)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">bytes</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="433.2" y1="214.3" x2="435.4" y2="209.9" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="431.4" y="220.5" transform="rotate(-63 431.4 217.9)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">crypto</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="449.6" y1="223.8" x2="452.3" y2="219.6" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="447.4" y="229.8" transform="rotate(-57 447.4 227.2)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">csv</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="464.8" y1="235.1" x2="468.0" y2="231.3" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="462.2" y="240.8" transform="rotate(-50 462.2 238.2)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">cx</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="478.6" y1="248.1" x2="482.2" y2="244.7" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="475.7" y="253.5" transform="rotate(-43 475.7 250.9)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">diagram</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="490.7" y1="262.7" x2="494.8" y2="259.7" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="487.5" y="267.7" transform="rotate(-37 487.5 265.1)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">did</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="501.2" y1="278.5" x2="505.5" y2="276.0" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="497.7" y="283.1" transform="rotate(-30 497.7 280.5)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">email</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="509.7" y1="295.4" x2="514.3" y2="293.5" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="506.0" y="299.6" transform="rotate(-23 506.0 297.0)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">env</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="516.2" y1="313.3" x2="520.9" y2="311.8" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="512.3" y="317.0" transform="rotate(-17 512.3 314.4)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">format</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="520.5" y1="331.7" x2="525.4" y2="330.8" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="516.6" y="335.0" transform="rotate(-10 516.6 332.4)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">fp</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="522.7" y1="350.5" x2="527.7" y2="350.2" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="518.7" y="353.4" transform="rotate(-3 518.7 350.8)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">ft</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="522.7" y1="369.5" x2="527.7" y2="369.8" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="518.7" y="371.8" transform="rotate(3 518.7 369.2)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">geo</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="520.5" y1="388.3" x2="525.4" y2="389.2" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="516.6" y="390.2" transform="rotate(10 516.6 387.6)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">graphql</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="516.2" y1="406.7" x2="520.9" y2="408.2" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="512.3" y="408.2" transform="rotate(17 512.3 405.6)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">hash</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="509.7" y1="424.6" x2="514.3" y2="426.5" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="506.0" y="425.6" transform="rotate(23 506.0 423.0)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">html</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="501.2" y1="441.5" x2="505.5" y2="444.0" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="497.7" y="442.1" transform="rotate(30 497.7 439.5)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">http-client</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="490.7" y1="457.3" x2="494.8" y2="460.3" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="487.5" y="457.5" transform="rotate(37 487.5 454.9)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">i18n</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="478.6" y1="471.9" x2="482.2" y2="475.3" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="475.7" y="471.7" transform="rotate(43 475.7 469.1)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">io</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="464.8" y1="484.9" x2="468.0" y2="488.7" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="462.2" y="484.4" transform="rotate(50 462.2 481.8)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">json</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="449.6" y1="496.2" x2="452.3" y2="500.4" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="447.4" y="495.4" transform="rotate(57 447.4 492.8)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">jsonrpc</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="433.2" y1="505.7" x2="435.4" y2="510.1" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="431.4" y="504.7" transform="rotate(63 431.4 502.1)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">jsonschema</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="415.7" y1="513.2" x2="417.5" y2="517.9" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="414.4" y="512.0" transform="rotate(70 414.4 509.4)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">locale</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="397.6" y1="518.6" x2="398.7" y2="523.5" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="396.7" y="517.3" transform="rotate(77 396.7 514.7)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">log</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="378.9" y1="521.9" x2="379.5" y2="526.9" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="378.5" y="520.5" transform="rotate(83 378.5 517.9)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">map</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="360.0" y1="523.0" x2="360.0" y2="528.0" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="360.0" y="521.6" transform="rotate(90 360.0 519.0)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">math</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="341.1" y1="521.9" x2="340.5" y2="526.9" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="341.5" y="520.5" transform="rotate(277 341.5 517.9)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">mime</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="322.4" y1="518.6" x2="321.3" y2="523.5" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="323.3" y="517.3" transform="rotate(283 323.3 514.7)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">oidc</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="304.3" y1="513.2" x2="302.5" y2="517.9" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="305.6" y="512.0" transform="rotate(290 305.6 509.4)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">path</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="286.8" y1="505.7" x2="284.6" y2="510.1" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="288.6" y="504.7" transform="rotate(297 288.6 502.1)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">process</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="270.4" y1="496.2" x2="267.7" y2="500.4" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="272.6" y="495.4" transform="rotate(303 272.6 492.8)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">prof</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="255.2" y1="484.9" x2="252.0" y2="488.7" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="257.8" y="484.4" transform="rotate(310 257.8 481.8)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">random</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="241.4" y1="471.9" x2="237.8" y2="475.3" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="244.3" y="471.7" transform="rotate(317 244.3 469.1)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">re</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="229.3" y1="457.3" x2="225.2" y2="460.3" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="232.5" y="457.5" transform="rotate(323 232.5 454.9)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">saml</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="218.8" y1="441.5" x2="214.5" y2="444.0" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="222.3" y="442.1" transform="rotate(330 222.3 439.5)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">sasl</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="210.3" y1="424.6" x2="205.7" y2="426.5" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="214.0" y="425.6" transform="rotate(337 214.0 423.0)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">sched</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="203.8" y1="406.7" x2="199.1" y2="408.2" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="207.7" y="408.2" transform="rotate(343 207.7 405.6)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">scim</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="199.5" y1="388.3" x2="194.6" y2="389.2" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="203.4" y="390.2" transform="rotate(350 203.4 387.6)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">similar</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="197.3" y1="369.5" x2="192.3" y2="369.8" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="201.3" y="371.8" transform="rotate(357 201.3 369.2)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">soap</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="197.3" y1="350.5" x2="192.3" y2="350.2" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="201.3" y="353.4" transform="rotate(363 201.3 350.8)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">strings</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="199.5" y1="331.7" x2="194.6" y2="330.8" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="203.4" y="335.0" transform="rotate(370 203.4 332.4)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">supervise</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="203.8" y1="313.3" x2="199.1" y2="311.8" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="207.7" y="317.0" transform="rotate(377 207.7 314.4)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">tar</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="210.3" y1="295.4" x2="205.7" y2="293.5" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="214.0" y="299.6" transform="rotate(383 214.0 297.0)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">term</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="218.8" y1="278.5" x2="214.5" y2="276.0" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="222.3" y="283.1" transform="rotate(390 222.3 280.5)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">test</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="229.3" y1="262.7" x2="225.2" y2="259.7" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="232.5" y="267.7" transform="rotate(397 232.5 265.1)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">time</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="241.4" y1="248.1" x2="237.8" y2="244.7" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="244.3" y="253.5" transform="rotate(403 244.3 250.9)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">url</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="255.2" y1="235.1" x2="252.0" y2="231.3" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="257.8" y="240.8" transform="rotate(410 257.8 238.2)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">uuid</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="270.4" y1="223.8" x2="267.7" y2="219.6" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="272.6" y="229.8" transform="rotate(417 272.6 227.2)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">validate</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="286.8" y1="214.3" x2="284.6" y2="209.9" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="288.6" y="220.5" transform="rotate(423 288.6 217.9)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">vc</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="304.3" y1="206.8" x2="302.5" y2="202.1" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="305.6" y="213.2" transform="rotate(430 305.6 210.6)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">ws</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="322.4" y1="201.4" x2="321.3" y2="196.5" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="323.3" y="207.9" transform="rotate(437 323.3 205.3)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">xsp</text>
+    </g>
+    <g class="rf-r1">
+      <line x1="341.1" y1="198.1" x2="340.5" y2="193.1" stroke="#1a1812" stroke-width="0.9"/>
+      <text x="341.5" y="204.7" transform="rotate(443 341.5 202.1)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.4" fill="#1a1812" font-style="normal">zip</text>
+    </g>
+  </g>
+  <g class="rf-platform-group">
+    <g class="rf-platform" data-repo="cx-platform-net">
+      <line x1="348.9" y1="162.3" x2="343.7" y2="70.5" stroke="#1a1812" stroke-width="0.5"/>
+      <text x="410.4" y="66.3" transform="rotate(10 410.4 63.3)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="600" letter-spacing="1.2" fill="#b3400f">cx-platform-net</text>
+      <g class="rf-planned">
+        <line x1="360.0" y1="75.0" x2="360.0" y2="70.0" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="360.0" y="81.6" transform="rotate(-90 360.0 79.0)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#8a8371" font-style="italic">ftp (planned)</text>
+      </g>
+      <g class="rf-module">
+        <line x1="391.9" y1="76.8" x2="392.5" y2="71.8" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="391.5" y="83.4" transform="rotate(-84 391.5 80.8)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">http</text>
+      </g>
+      <g class="rf-module">
+        <line x1="423.4" y1="82.1" x2="424.5" y2="77.3" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="422.5" y="88.6" transform="rotate(-77 422.5 86.0)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">net</text>
+      </g>
+      <g class="rf-planned">
+        <line x1="454.1" y1="91.0" x2="455.8" y2="86.3" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="452.8" y="97.4" transform="rotate(-71 452.8 94.8)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#8a8371" font-style="italic">sftp (planned)</text>
+      </g>
+    </g>
+    <g class="rf-platform" data-repo="cx-platform-mail">
+      <line x1="455.8" y1="186.7" x2="500.3" y2="106.2" stroke="#1a1812" stroke-width="0.5"/>
+      <text x="534.2" y="117.5" transform="rotate(35 534.2 114.5)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="600" letter-spacing="1.2" fill="#b3400f">cx-platform-mail</text>
+      <g class="rf-module">
+        <line x1="511.6" y1="118.7" x2="514.3" y2="114.4" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="509.5" y="124.7" transform="rotate(-58 509.5 122.1)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">imap</text>
+      </g>
+      <g class="rf-module">
+        <line x1="537.7" y1="137.2" x2="540.8" y2="133.3" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="535.2" y="142.9" transform="rotate(-51 535.2 140.3)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">smtp</text>
+      </g>
+    </g>
+    <g class="rf-platform" data-repo="cx-platform-identity">
+      <line x1="507.6" y1="228.1" x2="576.2" y2="166.8" stroke="#1a1812" stroke-width="0.5"/>
+      <text x="623.4" y="217.4" transform="rotate(61 623.4 214.4)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="600" letter-spacing="1.2" fill="#b3400f">cx-platform-identity</text>
+      <g class="rf-module">
+        <line x1="582.8" y1="182.3" x2="586.7" y2="179.2" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="579.7" y="187.4" transform="rotate(-39 579.7 184.8)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">authz-store</text>
+      </g>
+      <g class="rf-module">
+        <line x1="601.3" y1="208.4" x2="605.6" y2="205.7" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="597.9" y="213.1" transform="rotate(-32 597.9 210.5)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">did-web</text>
+      </g>
+      <g class="rf-module">
+        <line x1="616.8" y1="236.3" x2="621.3" y2="234.2" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="613.2" y="240.7" transform="rotate(-26 613.2 238.1)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">session</text>
+      </g>
+      <g class="rf-module">
+        <line x1="629.0" y1="265.9" x2="633.7" y2="264.2" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="625.2" y="269.8" transform="rotate(-19 625.2 267.2)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">vc-revocation</text>
+      </g>
+    </g>
+    <g class="rf-platform" data-repo="cx-platform-store">
+      <line x1="555.2" y1="326.8" x2="645.9" y2="311.4" stroke="#1a1812" stroke-width="0.5"/>
+      <text x="656.7" y="413.4" transform="rotate(-80 656.7 410.4)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="600" letter-spacing="1.2" fill="#b3400f">cx-platform-store</text>
+      <g class="rf-module">
+        <line x1="643.2" y1="328.1" x2="648.2" y2="327.5" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="639.2" y="331.1" transform="rotate(-6 639.2 328.5)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">audit</text>
+      </g>
+      <g class="rf-row">
+        <line x1="645.0" y1="360.0" x2="650.0" y2="360.0" stroke="#8a8371" stroke-width="0.6"/>
+        <text x="641.0" y="362.6" transform="rotate(0 641.0 360.0)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#8a8371" font-style="normal">distributed_store</text>
+      </g>
+      <g class="rf-row">
+        <line x1="643.2" y1="391.9" x2="648.2" y2="392.5" stroke="#8a8371" stroke-width="0.6"/>
+        <text x="639.2" y="394.1" transform="rotate(6 639.2 391.5)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#8a8371" font-style="normal">erasure_compliance</text>
+      </g>
+      <g class="rf-module">
+        <line x1="637.9" y1="423.4" x2="642.7" y2="424.5" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="634.0" y="425.1" transform="rotate(13 634.0 422.5)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">journal</text>
+      </g>
+      <g class="rf-module">
+        <line x1="629.0" y1="454.1" x2="633.7" y2="455.8" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="625.2" y="455.4" transform="rotate(19 625.2 452.8)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">live</text>
+      </g>
+      <g class="rf-module">
+        <line x1="616.8" y1="483.7" x2="621.3" y2="485.8" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="613.2" y="484.5" transform="rotate(26 613.2 481.9)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">store</text>
+      </g>
+    </g>
+    <g class="rf-platform" data-repo="cx-platform-db">
+      <line x1="521.5" y1="474.6" x2="596.5" y2="527.8" stroke="#1a1812" stroke-width="0.5"/>
+      <text x="572.8" y="575.8" transform="rotate(-45 572.8 572.8)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="600" letter-spacing="1.2" fill="#b3400f">cx-platform-db</text>
+      <g class="rf-row">
+        <line x1="582.8" y1="537.7" x2="586.7" y2="540.8" stroke="#8a8371" stroke-width="0.6"/>
+        <text x="579.7" y="537.8" transform="rotate(39 579.7 535.2)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#8a8371" font-style="normal">db</text>
+      </g>
+      <g class="rf-row">
+        <line x1="561.5" y1="561.5" x2="565.1" y2="565.1" stroke="#8a8371" stroke-width="0.6"/>
+        <text x="558.7" y="561.3" transform="rotate(45 558.7 558.7)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#8a8371" font-style="normal">redis</text>
+      </g>
+      <g class="rf-row">
+        <line x1="537.7" y1="582.8" x2="540.8" y2="586.7" stroke="#8a8371" stroke-width="0.6"/>
+        <text x="535.2" y="582.3" transform="rotate(51 535.2 579.7)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#8a8371" font-style="normal">sql</text>
+      </g>
+    </g>
+    <g class="rf-platform" data-repo="cx-platform-fabric">
+      <line x1="455.8" y1="533.3" x2="500.3" y2="613.8" stroke="#1a1812" stroke-width="0.5"/>
+      <text x="490.6" y="634.2" transform="rotate(-26 490.6 631.2)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="600" letter-spacing="1.2" fill="#b3400f">cx-platform-fabric</text>
+      <g class="rf-module">
+        <line x1="483.7" y1="616.8" x2="485.8" y2="621.3" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="481.9" y="615.8" transform="rotate(64 481.9 613.2)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">fabric</text>
+      </g>
+    </g>
+    <g class="rf-platform" data-repo="cx-platform-xsp">
+      <line x1="414.8" y1="550.3" x2="440.3" y2="638.7" stroke="#1a1812" stroke-width="0.5"/>
+      <text x="427.0" y="656.5" transform="rotate(-13 427.0 653.5)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="600" letter-spacing="1.2" fill="#b3400f">cx-platform-xsp</text>
+      <g class="rf-module">
+        <line x1="423.4" y1="637.9" x2="424.5" y2="642.7" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="422.5" y="636.6" transform="rotate(77 422.5 634.0)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">xsp-auth</text>
+      </g>
+    </g>
+    <g class="rf-platform" data-repo="cx-platform-xap">
+      <line x1="371.1" y1="557.7" x2="376.3" y2="649.5" stroke="#1a1812" stroke-width="0.5"/>
+      <text x="293.0" y="656.5" transform="rotate(13 293.0 653.5)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="600" letter-spacing="1.2" fill="#b3400f">cx-platform-xap</text>
+      <g class="rf-module">
+        <line x1="360.0" y1="645.0" x2="360.0" y2="650.0" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="360.0" y="643.6" transform="rotate(90 360.0 641.0)" text-anchor="end" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">xap</text>
+      </g>
+      <g class="rf-row">
+        <line x1="328.1" y1="643.2" x2="327.5" y2="648.2" stroke="#8a8371" stroke-width="0.6"/>
+        <text x="328.5" y="641.8" transform="rotate(276 328.5 639.2)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#8a8371" font-style="normal">xap-compose</text>
+      </g>
+      <g class="rf-row">
+        <line x1="296.6" y1="637.9" x2="295.5" y2="642.7" stroke="#8a8371" stroke-width="0.6"/>
+        <text x="297.5" y="636.6" transform="rotate(283 297.5 634.0)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#8a8371" font-style="normal">xap-on</text>
+      </g>
+      <g class="rf-row">
+        <line x1="265.9" y1="629.0" x2="264.2" y2="633.7" stroke="#8a8371" stroke-width="0.6"/>
+        <text x="267.2" y="627.8" transform="rotate(289 267.2 625.2)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#8a8371" font-style="normal">xap-schema</text>
+      </g>
+      <g class="rf-row">
+        <line x1="236.3" y1="616.8" x2="234.2" y2="621.3" stroke="#8a8371" stroke-width="0.6"/>
+        <text x="238.1" y="615.8" transform="rotate(296 238.1 613.2)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#8a8371" font-style="normal">xap_dist</text>
+      </g>
+    </g>
+    <g class="rf-platform" data-repo="cx-platform-flow">
+      <line x1="245.4" y1="521.5" x2="192.2" y2="596.5" stroke="#1a1812" stroke-width="0.5"/>
+      <text x="172.3" y="598.3" transform="rotate(39 172.3 595.3)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="600" letter-spacing="1.2" fill="#b3400f">cx-platform-flow</text>
+      <g class="rf-module">
+        <line x1="182.3" y1="582.8" x2="179.2" y2="586.7" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="184.8" y="582.3" transform="rotate(309 184.8 579.7)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">flow</text>
+      </g>
+    </g>
+    <g class="rf-platform" data-repo="cx-platform-connector">
+      <line x1="212.4" y1="491.9" x2="143.8" y2="553.2" stroke="#1a1812" stroke-width="0.5"/>
+      <text x="114.5" y="537.2" transform="rotate(55 114.5 534.2)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="600" letter-spacing="1.2" fill="#b3400f">cx-platform-connector</text>
+      <g class="rf-module">
+        <line x1="137.2" y1="537.7" x2="133.3" y2="540.8" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="140.3" y="537.8" transform="rotate(321 140.3 535.2)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">connector</text>
+      </g>
+      <g class="rf-module">
+        <line x1="118.7" y1="511.6" x2="114.4" y2="514.3" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="122.1" y="512.1" transform="rotate(328 122.1 509.5)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">sync</text>
+      </g>
+    </g>
+    <g class="rf-platform" data-repo="cx-platform-secrets">
+      <line x1="177.1" y1="435.8" x2="92.1" y2="471.0" stroke="#1a1812" stroke-width="0.5"/>
+      <text x="75.9" y="462.4" transform="rotate(71 75.9 459.4)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="600" letter-spacing="1.2" fill="#b3400f">cx-platform-secrets</text>
+      <g class="rf-module">
+        <line x1="91.0" y1="454.1" x2="86.3" y2="455.8" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="94.8" y="455.4" transform="rotate(341 94.8 452.8)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">secrets</text>
+      </g>
+    </g>
+    <g class="rf-platform" data-repo="cx-platform-sso">
+      <line x1="164.8" y1="393.2" x2="74.1" y2="408.6" stroke="#1a1812" stroke-width="0.5"/>
+      <text x="60.9" y="396.7" transform="rotate(84 60.9 393.7)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="600" letter-spacing="1.2" fill="#b3400f">cx-platform-sso</text>
+      <g class="rf-module">
+        <line x1="76.8" y1="391.9" x2="71.8" y2="392.5" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="80.8" y="394.1" transform="rotate(354 80.8 391.5)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">sso</text>
+      </g>
+    </g>
+    <g class="rf-platform" data-repo="cx-platform-ux">
+      <line x1="162.3" y1="348.9" x2="70.5" y2="343.7" stroke="#1a1812" stroke-width="0.5"/>
+      <text x="66.5" y="296.0" transform="rotate(283 66.5 293.0)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="600" letter-spacing="1.2" fill="#b3400f">cx-platform-ux</text>
+      <g class="rf-module">
+        <line x1="76.8" y1="328.1" x2="71.8" y2="327.5" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="80.8" y="331.1" transform="rotate(366 80.8 328.5)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">ux</text>
+      </g>
+      <g class="rf-module">
+        <line x1="82.1" y1="296.6" x2="77.3" y2="295.5" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="86.0" y="300.1" transform="rotate(373 86.0 297.5)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">ux-tui</text>
+      </g>
+      <g class="rf-module">
+        <line x1="91.0" y1="265.9" x2="86.3" y2="264.2" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="94.8" y="269.8" transform="rotate(379 94.8 267.2)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">ux-web</text>
+      </g>
+    </g>
+    <g class="rf-platform" data-repo="cx-platform-agent">
+      <line x1="186.7" y1="264.2" x2="106.2" y2="219.7" stroke="#1a1812" stroke-width="0.5"/>
+      <text x="185.8" y="117.5" transform="rotate(325 185.8 114.5)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="600" letter-spacing="1.2" fill="#b3400f">cx-platform-agent</text>
+      <g class="rf-module">
+        <line x1="118.7" y1="208.4" x2="114.4" y2="205.7" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="122.1" y="213.1" transform="rotate(392 122.1 210.5)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">a2a</text>
+      </g>
+      <g class="rf-module">
+        <line x1="137.2" y1="182.3" x2="133.3" y2="179.2" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="140.3" y="187.4" transform="rotate(399 140.3 184.8)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">a2a-xap</text>
+      </g>
+      <g class="rf-module">
+        <line x1="158.5" y1="158.5" x2="154.9" y2="154.9" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="161.3" y="163.9" transform="rotate(405 161.3 161.3)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">adjudicate</text>
+      </g>
+      <g class="rf-module">
+        <line x1="182.3" y1="137.2" x2="179.2" y2="133.3" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="184.8" y="142.9" transform="rotate(411 184.8 140.3)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">llm</text>
+      </g>
+      <g class="rf-module">
+        <line x1="208.4" y1="118.7" x2="205.7" y2="114.4" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="210.5" y="124.7" transform="rotate(418 210.5 122.1)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">mcp</text>
+      </g>
+      <g class="rf-module">
+        <line x1="236.3" y1="103.2" x2="234.2" y2="98.7" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="238.1" y="109.4" transform="rotate(424 238.1 106.8)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">mcp-server</text>
+      </g>
+      <g class="rf-module">
+        <line x1="265.9" y1="91.0" x2="264.2" y2="86.3" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="267.2" y="97.4" transform="rotate(431 267.2 94.8)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">run</text>
+      </g>
+      <g class="rf-module">
+        <line x1="296.6" y1="82.1" x2="295.5" y2="77.3" stroke="#1a1812" stroke-width="0.9"/>
+        <text x="297.5" y="88.6" transform="rotate(437 297.5 86.0)" text-anchor="start" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" fill="#1a1812" font-style="normal">tools</text>
+      </g>
+    </g>
+  </g>
+  <g class="rf-edge">
+    <text x="85.0" y="148.1" transform="rotate(-52 85.0 145.1)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="8.5" font-weight="600" letter-spacing="1.2" fill="#1a1812">BINDINGS</text>
+    <g>
+      <circle cx="45.1" cy="315.7" r="2" fill="#1a1812"/>
+      <text x="28.3" y="316.4" transform="rotate(-82 28.3 313.4)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="500" letter-spacing="1.2" fill="#8a8371">cx-binding-python</text>
+    </g>
+    <g>
+      <circle cx="79.2" cy="210.7" r="2" fill="#1a1812"/>
+      <text x="64.2" y="205.7" transform="rotate(-62 64.2 202.7)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="500" letter-spacing="1.2" fill="#8a8371">cx-binding-go</text>
+    </g>
+    <g>
+      <circle cx="147.2" cy="123.7" r="2" fill="#1a1812"/>
+      <text x="135.8" y="114.0" transform="rotate(-42 135.8 111.0)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="500" letter-spacing="1.2" fill="#8a8371">cx-binding-rust</text>
+    </g>
+    <g>
+      <circle cx="240.9" cy="65.2" r="2" fill="#1a1812"/>
+      <text x="234.5" y="52.4" transform="rotate(-22 234.5 49.4)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="500" letter-spacing="1.2" fill="#8a8371">cx-binding-v</text>
+    </g>
+  </g>
+  <g class="rf-edge">
+    <text x="635.0" y="148.1" transform="rotate(52 635.0 145.1)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="8.5" font-weight="600" letter-spacing="1.2" fill="#1a1812">ECOSYSTEM</text>
+    <g>
+      <circle cx="479.1" cy="65.2" r="2" fill="#1a1812"/>
+      <text x="485.5" y="52.4" transform="rotate(22 485.5 49.4)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="500" letter-spacing="1.2" fill="#8a8371">cx-registry</text>
+    </g>
+    <g>
+      <circle cx="610.6" cy="164.2" r="2" fill="#1a1812"/>
+      <text x="624.0" y="156.8" transform="rotate(52 624.0 153.8)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="500" letter-spacing="1.2" fill="#8a8371">cx-decisions</text>
+    </g>
+    <g>
+      <circle cx="674.9" cy="315.7" r="2" fill="#1a1812"/>
+      <text x="691.7" y="316.4" transform="rotate(82 691.7 313.4)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.2" font-weight="500" letter-spacing="1.2" fill="#8a8371">cx-tooling</text>
+    </g>
+  </g>
+  <line x1="627.9" y1="569.3" x2="432.5" y2="416.6" stroke="#f7f4ea" stroke-width="7" opacity="0.85"/>
+  <line x1="627.9" y1="569.3" x2="432.5" y2="416.6" stroke="#b3400f" stroke-width="1.5" marker-end="url(#rf-arr)"/>
+  <text x="651.8" y="556.8" transform="rotate(-56 651.8 556.8)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="8.5" letter-spacing="1.3" fill="#b3400f">IMPORTS POINT INWARD</text>
+  <g stroke="#b3400f" stroke-width="1.5">
+    <line x1="514.3" y1="543.9" x2="537.8" y2="544.2"/>
+    <line x1="524.6" y1="556.1" x2="526.7" y2="532.6"/>
+  </g>
+  <text x="526.2" y="572.8" transform="rotate(-52 526.2 572.8)" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7.5" letter-spacing="1.2" fill="#b3400f">NEVER OUTWARD</text>
+  <g transform="rotate(-6 604 668)">
+    <rect x="514" y="646" width="180" height="44" fill="#f7f4ea" stroke="#b3400f" stroke-width="1.7"/>
+    <text x="604" y="664" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9.5" font-weight="600" letter-spacing="2" fill="#b3400f">85 MODULES · 24 REPOSITORIES</text>
+    <text x="604" y="680" text-anchor="middle" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7" letter-spacing="1.2" fill="#b3400f">80 DIRECTIVES · MACHINE-CHECKED IMPORTS</text>
+  </g>
+  <text x="24" y="700" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7" letter-spacing="1" fill="#8a8371">DRAWN FROM registry/modules.cxd AND registry/repos.cxd WHEN THIS PAGE WAS BUILT</text>
+</svg></a><div class="fig-caption">Fig. 1 — two rings, the groups above them, drawn from the registry when this page was built · <a href="rings.html">the rings page</a></div></div>
 <h2>Why reach for CX</h2>
 <h3>The document and the program are the same shape</h3>
 <p>A query is a pattern over the document: "every <code>user</code> that has a <code>name</code> and an <code>email</code>". There is no object model to build first and no parser to call — the program reads the data in the form you wrote it.</p>
@@ -41,7 +568,7 @@ cx primer</code></pre>
 [pair name=Alice email='a@x.com']
 [pair name=Bob email='b@x.com']</code></pre>
 <h3>Exact numbers are the default</h3>
-<p>In Python, <code>0.1 + 0.2</code> is <code>0.30000000000000004</code> until you import <code>decimal</code>. In CX a fraction literal is an exact base-10 decimal, and mixing it with a binary float is refused out loud rather than rounded in silence — so money stays money.</p>
+<p>A fraction literal is an exact base-10 decimal, and arithmetic keeps it one; mixing it with a binary float is refused out loud rather than rounded in silence — so money stays money.</p>
 <p><code>prog.cx</code></p>
 <pre><code class="language-cx">[?let [= $subtotal 19.99] [= $shipping 5.01] [total [+ $subtotal $shipping]]]</code></pre>
 <pre><code class="language-console">$ cx prog.cx
@@ -65,14 +592,14 @@ cx primer</code></pre>
   bob 25 false
 ]</code></pre>
 <h3>Effects are granted, never inherited</h3>
-<p>A Python script can read every file its process can. A CX program reads nothing until you grant it, and a denial is an ordinary value that names the flag which would allow it:</p>
+<p>A program reads nothing until you grant it, and a denial is an ordinary value that names the flag which would allow it:</p>
 <p><code>prog.cx</code></p>
 <pre><code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:read-file "/var/log/app.log"]</code></pre>
 <pre><code class="language-console">$ cx prog.cx
 [err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)']</code></pre>
 <h3>Regular expressions that cannot blow up</h3>
-<p>Python's <code>re</code> is a backtracking engine, so a hostile pattern and input can run for as long as they like. CX's <code>re</code> is RE2: linear time on any input, and the constructs that would need backtracking are refused when the pattern compiles.</p>
+<p>Our <code>re</code> is RE2: linear time on any input, and the constructs that would need backtracking are refused when the pattern compiles, so no hostile string can turn a match into a denial of service.</p>
 <p><code>prog.cx</code></p>
 <pre><code class="language-cx">[?lib 'cx-stdlib/re']
 [$re:matches [$re:compile "a+"] "aaa"]</code></pre>
@@ -95,21 +622,23 @@ true</code></pre>
 '{"id":1,"jsonrpc":"2.0","method":"tools/call","params":{"arguments":{"location":"NYC"},"name":"get_weather"}}'</code></pre>
 <h2>What is in the box — counted when this page was generated</h2>
 <ul>
-<li><b>85 shipped modules</b>, each declared once in <code>registry/modules.cxd</code> with its ring, its group and its home repository; the guide renders a reference page from each bundled module's own documentation.</li>
+<li><b>85 shipped modules</b>, each declared once in <code>registry/modules.cxd</code> with its ring, its group and its home repository; the guide renders a reference page from each bundled module's own documentation, and the figure above draws every one of them.</li>
 <li><b>80 directives</b> — the whole normative set, projected from the specification into one table of the primer. If a directive is not in that table it does not exist.</li>
 <li><b>24 repositories</b>, each pinned by sha from the front door, which builds the four <code>cx</code> builds from those pins and grades them together (the map below).</li>
-<li><b>8 examples on this page</b>, each replayed against <code>cx</code> 0.18.0-pre.1 and compared with its fixture byte for byte.</li>
+<li><b>10 examples on this page</b>, each replayed against <code>cx</code> 0.18.0-pre.1 and compared with its fixture byte for byte.</li>
 </ul>
 <h2>Start here</h2>
 <ul>
+<li><a href="why.html">Why CX</a> — our case in eight claims, each a before/after panel from a pair of conformance cases.</li>
+<li><a href="rings.html">The rings</a> — how much of CX you have to take on, and the gate that holds the import contract.</li>
 <li><a href="guide.html">The guide</a> — the language, ring by ring, from a first document to a served application, with a reference page for every bundled module.</li>
 <li><a href="quickstart.html">The quickstart</a> — install, a first file, a first conversion, a first query and a first schema.</li>
-<li><a href="llm/primer.md">The primer</a> — the one file an assistant loads before writing CX (the same text <code>cx primer</code> prints); <a href="llms.txt">llms.txt</a> indexes the rest of that layer, and <a href="llms-full.txt">llms-full.txt</a> is all of it in one fetch.</li>
+<li><a href="llm/index.html">The LLM front door</a> — <a href="llm/primer.md">the primer</a> an assistant loads before writing CX (the same text <code>cx primer</code> prints), the references, and <a href="llms.txt">llms.txt</a> indexing that layer with <a href="llms-full.txt">llms-full.txt</a> as one fetch.</li>
 <li><a href="llm/contributor.md">The contributor's front door</a> — the rules for changing CX, each citing the decision behind it, and the shortest reading order for each kind of change.</li>
 <li><a href="downloads.html">Downloads</a> — the four builds of one binary: <code>data</code>, <code>embed</code>, <code>cli</code> and <code>platform</code>. Take the smallest one that answers your question.</li>
 </ul>
 <h2>The repositories</h2>
-<p>CX is built in two rings — Ring 0, the data format, which cannot execute anything, and Ring 1, the language — with the platform, the bindings and the ecosystem as groups above them. Imports point inward, never out, and the build enforces it. Each repository is thin — what it is, how to install it, what it pins — and this site, served from <code>cx</code>, carries the narrative for all of them.</p>
+<p>Each repository is thin — what it is, how to install it, what it pins — and this site, served from <code>cx</code>, carries the narrative for all of them. A row links to that repository's page of this site where one exists, and to the repository on GitHub otherwise; the pages arrive in the next waves of this documentation, eight at a time, and a row switches over the day its page is served.</p>
 <table>
 <thead><tr><th>group</th><th>repository</th><th>what it is</th><th>ships</th></tr></thead>
 <tbody>

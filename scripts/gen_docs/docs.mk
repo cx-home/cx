@@ -80,8 +80,10 @@ docs:
 ##                                   (primer_build.cx) and the README badge.
 ##                                   Run it alone only to regenerate without the
 ##                                   checks; `make docs` is the process.
+##                                   DOCS-42: ring-svg, the ring figure from the
+##                                   registries, is the generate step's too.
 .PHONY: docs-generate
-docs-generate: $(DOCS_CX_DEP) primer-platform site-index
+docs-generate: $(DOCS_CX_DEP) primer-platform ring-svg site-index
 	@CX_BIN="$(DOCS_CX_BIN)" $(DOCS_CX_BIN) $(DOCS_CAPS) $(DOCS_GEN)/primer_build.cx
 	@# PLAY-1: the playground picker is the primer's own fixtures, projected
 	@# from the same template and corpus (scripts/gen_guide/playground/

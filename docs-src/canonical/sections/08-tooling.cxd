@@ -229,7 +229,7 @@
       [note
         """A dedicated JetBrains plugin (richer than the LSP-only
            path) is planned; tracked in
-           [`ROADMAP.md`](../../ROADMAP.md)."""]]
+           [`ROADMAP.md`](https://github.com/cx-home/cx/blob/main/ROADMAP.md)."""]]
 
     [child id=editor-sublime n=8.2.5 title='Sublime / Zed / other LSP clients'
       [body
@@ -286,7 +286,7 @@
       [list
         [item """`CXER` **prefix** — runtime / parse errors from the V core.
                 The namespace registry is
-                [`spec/03-approved/process/governance.md`](../../spec/03-approved/process/governance.md)
+                [`spec/03-approved/process/governance.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/process/governance.md)
                 §9.6; the language-core sub-blocks live in
                 [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)
                 §9.4."""]

@@ -29,6 +29,10 @@
 #                               the case is replayed and verified like any other
 #   {{PAIR:<wrong-id> <right-id>}}   one anti-pattern entry: heading, the
 #                               `[why]` prose, then both halves as blocks
+#   {{TLDR}}                    the one TL;DR of why to reach for CX, from
+#                               docs-src/site/tldr.cxd: its lead, its standard,
+#                               one bullet per clause citing the case the page
+#                               replays for it (RULED: DOCS-49)
 #   {{DIRECTIVES}}              the NORMATIVE directive registry, projected
 #                               from the spec's own §4.1 table (name +
 #                               category; § references deliberately dropped)
@@ -569,6 +573,61 @@
                                               [where [$strings:contains $l "MISSING-FROM-LEDGER"]]
                                               [yield [$concat "  " $l]]] "\n"]]]]
         [else $t]]]]]]
+# ── the one TL;DR (RULED: DOCS-49; the design's voice rule 2) ───────────
+#
+# docs-src/site/tldr.cxd is the one place the TL;DR of why to reach for CX is
+# written: a [lead] paragraph, the [standard] we hold ourselves to, and one
+# [clause fixture=<id>] per term of it. It is projected here into Markdown
+# (`{{TLDR}}` in the primer's §0 and in the landing page's source) and into
+# HTML (the guide home, through tldr-html), and every clause's fixture is
+# replayed by the page that shows it — refs-of-directive below counts them
+# as citations — so the three pages that open with the TL;DR carry one text
+# and one set of verified cases.
+[?const TLDR-PATH "docs-src/site/tldr.cxd"]
+
+[?def tldr-doc scope=public impure () [$cx:parse [$io:read-file TLDR-PATH]]]
+
+[?def tldr-part scope=public impure ($what)
+  [$strings:join [?for [in $k [$tldr-doc]/*] [where [= [?else [$name $k] ""] $what]]
+                   [yield [$normalize [$raw-of $k]]]] ""]]
+
+[?def tldr-clauses scope=public impure ()
+  [?for [in $k [$tldr-doc]/*] [where [= [?else [$name $k] ""] "clause"]]
+    [yield [clause fixture=[$string $k@fixture] text=[$normalize [$raw-of $k]]]]]]
+
+[?def tldr-ids scope=public impure ()
+  [?for [in $c [$tldr-clauses]] [yield [$string $c@fixture]]]]
+
+# tldr-md: the lead, the standard, then one bullet per clause citing its case.
+[?def tldr-md scope=public impure ()
+  [$strings:join (
+    [$tldr-part "lead"],
+    "",
+    [$tldr-part "standard"],
+    "",
+    [?let [= $cs [$tldr-clauses]] [= $n [$count $cs]]
+      [$strings:join [?for [in $i [$range 1 $n]] [= $c [$nth $cs $i]]
+        [yield [$concat "- " [$string $c@text] " — `" [$string $c@fixture] "`"
+                        [?if [= $i $n] [then "."] [else ";"]]]]] "\n"]]) "\n"]]
+
+# tldr-html: the same text as HTML — the two inline forms the source uses,
+# **bold** and `code`, rendered and nothing else.
+[?def tldr-inline scope=public impure ($s)
+  [$re:replace [$re:compile "`([^`]+)`"]
+    [$re:replace [$re:compile "\\*\\*([^*]+)\\*\\*"]
+      [$strings:replace [$strings:replace [$strings:replace $s "&" "&amp;"] "<" "&lt;"] ">" "&gt;"]
+      "<b>$1</b>"]
+    "<code>$1</code>"]]
+
+[?def tldr-html scope=public impure ()
+  [$strings:join (
+    [$concat "<p class=\"lede\">" [$tldr-inline [$tldr-part "lead"]] "</p>"],
+    [$concat "<p>" [$tldr-inline [$tldr-part "standard"]] "</p>"],
+    "<ul class=\"tldr\">",
+    [$strings:join [?for [in $c [$tldr-clauses]]
+      [yield [$concat "<li>" [$tldr-inline [$string $c@text]] " — <code>" [$string $c@fixture] "</code></li>"]]] "\n"],
+    "</ul>") "\n"]]
+
 # ── placeholder expansion ───────────────────────────────────────────────
 
 # lookup: the case's section map, or a hard failure naming the template.
@@ -612,6 +671,7 @@
         [= $kind [?if [$empty $parts] [then ""] [else [$first $parts]]]]
     [?match $kind
       [when [= $kind "VERSION"] $version]
+      [when [= $kind "TLDR"] [$tldr-md]]
       [when [= $kind "PLATFORM-CHAPTER"] [$io:read-file PLATFORM-CHAPTER-PATH]]
       [when [= $kind "CXHELP"]  [$cx-help $cxbin]]
       [when [= $kind "DIRECTIVES"] [$directive-rows]]
@@ -643,21 +703,24 @@
 
 # refs-of-directive: the fixture ids ONE `{{…}}` body cites. `EXAMPLE:` cites
 # its own id and nothing else (the second word is a field name, not an id);
-# `PAIR:` cites both halves. Anything else cites nothing.
-[?def refs-of-directive scope=public ($body)
+# `PAIR:` cites both halves; `TLDR` cites every clause's fixture. Anything
+# else cites nothing.
+[?def refs-of-directive scope=public impure ($body)
   [?let [= $parts [$strings:split-whitespace $body]]
         [= $kind [?if [$empty $parts] [then ""] [else [$first $parts]]]]
     [?if [$strings:starts-with $kind "EXAMPLE:"]
       [then ([$strings:slice $kind 9 [$strings:length $kind]],)]
+      [else [?if [= $kind "TLDR"]
+      [then [$tldr-ids]]
       [else [?if [$strings:starts-with $kind "PAIR:"]
         [then [?if [>= [$count $parts] 2]
                 [then ([$strings:slice $kind 6 [$strings:length $kind]],
                        [$nth $parts 2])]
                 [else ([$strings:slice $kind 6 [$strings:length $kind]],)]]]
-        [else ()]]]]]]
+        [else ()]]]]]]]]
 
 # refs-in: every fixture id a template cites (so only those get replayed).
-[?def refs-in scope=public ($tmpl)
+[?def refs-in scope=public impure ($tmpl)
   [?let [= $chunks [$strings:split $tmpl "{{"]]
         [= $n [$count $chunks]]
     [?for [in $i [$range 2 $n]]

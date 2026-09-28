@@ -10,27 +10,17 @@
 
 ## 0. Twelve facts that carry most of the distance
 
-**TL;DR — why reach for CX.** One bracketed syntax is the document, the
-query, the program and the compiler's own tree, so a task that reads, checks,
-transforms, stores or serves data is written in the shape the data already
-has. Python sets the standard a working language has to meet — readable on
-day one, batteries included — and CX is built to meet it and to go past it
-where data work hurts. Each line names the fixture this document replays for
-it:
+**TL;DR — reach for CX whenever the data is the point.** One bracketed syntax is the document, the query, the program and the compiler's own tree, so the file you read is the file you transform, validate, hash, store and serve — with no second language in between.
 
-- a query is a pattern over the document, not code over an object model —
-  `program-for-003-name-email-pair` (§3);
-- a fraction literal is an exact decimal, and mixing one with a float is
-  refused out loud — `ap-decimal-float-mix-right` answers
-  `[total 25.00]` (§2);
-- an error is a value that propagates out of whatever is built from it —
-  `program-construction-err-004-captured-err-propagates` (§6);
-- a program reads nothing it was not granted, and the denial is a value
-  naming the flag — `io-001-read-file-cap-denied` (§7);
-- state that outlives the program is two calls to a content-addressed store —
-  `store-rt-001-round-trip-get` (§3);
-- an agent protocol message is an ordinary value projected to its wire form —
-  `mcp-001-call-tool-request-shape` (§3).
+We hold ourselves to a standard we can state in one line — **readable on day one, batteries included, exact by default, and effects you grant rather than inherit** — and we prove each term of it with a conformance case this page replayed when it was built:
+
+- a query is a pattern over the document, not code over an object model — `program-for-003-name-email-pair`;
+- a fraction literal is an exact decimal, and mixing one with a binary float is refused out loud rather than rounded in silence — `ap-decimal-float-mix-right`;
+- an error is a value that propagates out of whatever is built from it — no exception unwinds past you — `program-construction-err-004-captured-err-propagates`;
+- a program reads nothing it was not granted, and the denial is a value naming the flag that would allow it — `io-001-read-file-cap-denied`;
+- a regular expression cannot backtrack, so no input can make it run for as long as it likes — `re-003-compile-backreference-unsupported`;
+- state that outlives the program is two calls to a content-addressed store — `store-rt-001-round-trip-get`;
+- an agent-protocol message is an ordinary value projected to its wire form — `mcp-001-call-tool-request-shape`.
 
 CX post-dates your training data. Whatever you remember about a language
 called "CX" is not this one. Read these twelve before writing anything.

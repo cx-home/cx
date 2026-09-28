@@ -44,6 +44,10 @@
    import. ]
 [?lib './scripts/gen_docs/primer_build.cx' as=pb]
 [?lib './scripts/gen_site/site_build.cx' as=sb]
+[; DOCS-42: the ring figure and the plug-in figures, rendered from the
+   registries — inlined by a [figure name=…] block and on the guide home, and
+   written untracked as assets/rings.svg. ]
+[?lib './scripts/gen_site/ring_svg.cx' as=rs]
 
 [# ── string helpers ──────────────────────────────────────────────────── #]
 
@@ -241,14 +245,16 @@
   [$string [$first [$sb:child-named [$site-manifest] 'site']]@repo]]
 
 [?def fixture-ids-in scope=public ($doc)
-  [?for [in $f $doc//fixture] [yield [$string $f@id]]]]
+  [$pb:cat-seqs ([?for [in $f $doc//fixture] [yield [$string $f@id]]],
+                 [?for [in $p $doc//pair] [yield [$string $p@wrong]]],
+                 [?for [in $p $doc//pair] [yield [$string $p@right]]])]]
 
 [# load-fixtures: index the site's suites, then replay and verify every case
    the guide home and the sections cite, once each. The replay scratch lives
    under the output directory and is removed before the pages are written. #]
 [?def load-fixtures scope=public impure ($metas $out)
   [?let [= $index [$pb:load-index [$site-suites]]]
-        [= $ids [$distinct [$pb:cat-seqs (HOME-FIXTURES,
+        [= $ids [$distinct [$pb:cat-seqs (HOME-FIXTURES, [$pb:tldr-ids],
                   [$fp:flat-map $metas [?fn ($m) [$fixture-ids-in [$parse-or-die $m@srcpath]]]])]]]
         [= $missing [?for [in $id $ids] [where [not [$map:contains $index $id]]] [yield $id]]]
         [= $_m [?if [$empty $missing] [then 0]
@@ -282,6 +288,37 @@
 [?def fixture-html scope=public impure ($fx $id)
   [$post-body [$xml:emit [$fixture-block $fx $id]]]]
 
+[# pair-block: a before/after panel from an anti-pattern PAIR of
+   conformance/llm/antipatterns.cxd (the primer's {{PAIR:}} brought to the
+   guide, RULED: DOCS-47): the wrong half's [title] as the panel's heading,
+   both halves replayed side by side, the wrong one labelled as the form that
+   fails. The claim it illustrates is the section's own prose; the fixture
+   pair is the evidence, never the other way round. #]
+[?def pair-block scope=public impure ($fx $wid $rid)
+  [?let [= $wsec [$map:get [$map:get $fx 'index'] $wid]]
+        [= $rsec [$map:get [$map:get $fx 'index'] $rid]]
+    [div class='pair'
+      [div class='pair-half pair-before'
+        [p class='pair-label' 'Before — the form that fails']
+        [p class='pair-title' [?else [$map:get $wsec 'title'] $wid]]
+        [$fixture-block $fx $wid]]
+      [div class='pair-half pair-after'
+        [p class='pair-label' 'After — the CX form']
+        [p class='pair-title' [?else [$map:get $rsec 'title'] $rid]]
+        [$fixture-block $fx $rid]]]]]
+
+[# expand-figures: every @@FIGURE:<name>@@ token a page carries, replaced by
+   the figure (DOCS-42). An unknown figure name is refused, never printed. #]
+[?def expand-figures scope=public impure ($html)
+  [?if [not [$present [$strings:find $html '@@FIGURE:']]] [then $html]
+    [else [?let [= $rings [$cat ('<figure class="ring-figure"><a href="assets/rings.svg" aria-label="The ring figure, as an SVG file">',
+                                 [$rs:ring-svg],
+                                 '</a><figcaption class="fig-caption">Fig. 1 — two rings, the groups above them, one-directional imports · drawn from <code>registry/modules.cxd</code> and <code>registry/repos.cxd</code> when this page was built</figcaption></figure>\n')]]
+                [= $out [$strings:replace $html '<div class="ring-fig">@@FIGURE:rings@@</div>' $rings]]
+      [?if [$present [$strings:find $out '@@FIGURE:']]
+        [then [$guide-die 'a [figure name=…] block names a figure this build does not draw (the one figure is rings)']]
+        [else $out]]]]]]
+
 [# expand-counts: every {{COUNT:<what>}} in a rendered page, counted. An
    unclosed one is refused, never printed. #]
 [?def expand-counts scope=public impure ($html $self)
@@ -310,6 +347,14 @@
     [case [output $t] [pre class="sample-output" [code $t]]]
     [case [example $code] [pre [code lang=$c@lang $code]]]
     [case [fixture] [$fixture-block $fx [$string $c@id]]]
+    [; DOCS-42: a figure rendered from the registries rides through [$xml:emit]
+       as a token (raw SVG would be escaped there) and is placed by
+       expand-figures once the page is a string. ]
+    [case [figure] [div class='ring-fig' [$cat ('@@FIGURE:', [$string $c@name], '@@')]]]
+    [; DOCS-47 / the design's §3: a before/after panel — two replayed cases,
+       the form that fails on the left and the CX form on the right, never a
+       hand-typed "before". ]
+    [case [pair] [$pair-block $fx [$string $c@wrong] [$string $c@right]]]
     [case [list]
       [ul [?for [in $i $c/*] [yield
         [?match $i [case [item] [?modify $i //item [rename li]]] [else ()]]]]]]
@@ -586,54 +631,13 @@
       [?fn ($acc $a) [$anchor-sub $acc $cur $a]]]
     '<span class="xref-unresolved">$0</span>']]
 
-[# ring-figure: the guide home's Fig. 1 — the two rings and the groups drawn as an
-   engineering section view (inline SVG, pure hand-authored geometry).
-   Concentric rings with a hatched section cut, center-line construction,
-   leader-line labels, the one-directional import arrows, a dimension line,
-   and the inspection stamp. All coordinates live in one 540×500 viewBox. #]
-[?def ring-figure scope=public ()
-  [$cat (
-    '<svg viewBox="0 0 540 500" role="img" aria-label="The two rings of CX and the groups above them, with the one-directional import contract">\n',
-    '<defs>\n',
-    '<pattern id="rf-hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="7" stroke="#1a1812" stroke-width="0.7" opacity="0.45"/></pattern>\n',
-    '<marker id="rf-arr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#1a1812"/></marker>\n',
-    '<marker id="rf-arrR" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#b3400f"/></marker>\n',
-    '</defs>\n',
-    '<line x1="230" y1="18" x2="230" y2="482" stroke="#1a1812" stroke-width="0.5" stroke-dasharray="14 4 2 4" opacity="0.45"/>\n',
-    '<line x1="14" y1="255" x2="446" y2="255" stroke="#1a1812" stroke-width="0.5" stroke-dasharray="14 4 2 4" opacity="0.45"/>\n',
-    '<circle cx="230" cy="255" r="208" fill="none" stroke="#1a1812" stroke-width="1" stroke-dasharray="4 5" opacity="0.8"/>\n',
-    '<circle cx="230" cy="255" r="195" fill="none" stroke="#1a1812" stroke-width="1.6"/>\n',
-    '<circle cx="230" cy="255" r="148" fill="none" stroke="#1a1812" stroke-width="1.3"/>\n',
-    '<circle cx="230" cy="255" r="101" fill="none" stroke="#1a1812" stroke-width="1.3"/>\n',
-    '<circle cx="230" cy="255" r="54" fill="#efe9d8" stroke="#1a1812" stroke-width="1.6"/>\n',
-    '<path d="M230,255 m0,-148 a148,148 0 0 1 148,148 l-47,0 a101,101 0 0 0 -101,-101 z" fill="url(#rf-hatch)" stroke="none"/>\n',
-    '<text x="230" y="252" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12.5" font-weight="600" letter-spacing="3" fill="#1a1812">DATA</text>\n',
-    '<text x="230" y="267" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="7.5" letter-spacing="1.4" fill="#6b6552">CANNOT EXECUTE</text>\n',
-    '<line x1="118" y1="98" x2="196" y2="200" stroke="#b3400f" stroke-width="1.5" marker-end="url(#rf-arrR)"/>\n',
-    '<text x="44" y="80" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.3" fill="#b3400f">IMPORTS POINT INWARD</text>\n',
-    '<line x1="282" y1="326" x2="342" y2="410" stroke="#b3400f" stroke-width="1.2" stroke-dasharray="6 4"/>\n',
-    '<g stroke="#b3400f" stroke-width="1.5"><line x1="303" y1="358" x2="321" y2="378"/><line x1="321" y1="358" x2="303" y2="378"/></g>\n',
-    '<text x="330" y="432" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.3" fill="#b3400f">NEVER OUTWARD</text>\n',
-    '<g stroke="#1a1812" stroke-width="0.8"><line x1="230" y1="255" x2="52" y2="255" marker-end="url(#rf-arr)"/><line x1="52" y1="245" x2="52" y2="265"/></g>\n',
-    '<text x="76" y="244" font-family="IBM Plex Mono, monospace" font-size="8.5" letter-spacing="1.1" fill="#1a1812">2 RINGS + GROUPS</text>\n',
-    '<g stroke="#1a1812" stroke-width="0.7" fill="#1a1812">\n',
-    '<circle cx="230" cy="63" r="2.2"/><line x1="230" y1="63" x2="386" y2="42"/>\n',
-    '<circle cx="337" cy="152" r="2.2"/><line x1="337" y1="152" x2="396" y2="112"/>\n',
-    '<circle cx="309" cy="197" r="2.2"/><line x1="309" y1="197" x2="406" y2="182"/>\n',
-    '<circle cx="269" cy="230" r="2.2"/><line x1="269" y1="230" x2="416" y2="250"/>\n',
-    '</g>\n',
-    '<g font-family="IBM Plex Mono, monospace" fill="#1a1812">\n',
-    '<text x="392" y="38" font-size="11" font-weight="600" letter-spacing="1.2">GROUPS</text><text x="392" y="51" font-size="8.5" fill="#8a8371" letter-spacing="1">bindings · ecosystem</text>\n',
-    '<text x="402" y="108" font-size="11" font-weight="600" letter-spacing="1.2">PLATFORM</text><text x="402" y="121" font-size="8.5" fill="#8a8371" letter-spacing="1">group</text>\n',
-    '<text x="412" y="178" font-size="11" font-weight="600" letter-spacing="1.2">RING 1</text><text x="412" y="191" font-size="8.5" fill="#8a8371" letter-spacing="1">code</text>\n',
-    '<text x="422" y="246" font-size="11" font-weight="600" letter-spacing="1.2">RING 0</text><text x="422" y="259" font-size="8.5" fill="#8a8371" letter-spacing="1">data</text>\n',
-    '</g>\n',
-    '<g transform="rotate(-8 428 462)">\n',
-    '<rect x="356" y="442" width="144" height="40" fill="none" stroke="#b3400f" stroke-width="1.7"/>\n',
-    '<text x="428" y="459" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" font-weight="600" letter-spacing="2" fill="#b3400f">MACHINE-CHECKED</text>\n',
-    '<text x="428" y="473" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="7" letter-spacing="1.2" fill="#b3400f">IMPORT GATES · RING TAGS</text>\n',
-    '</g>\n',
-    '</svg>\n')]]
+[# ring-figure RETIRED (RULED: DOCS-42): the guide home's Fig. 1 was 540×500 of
+   hand-authored geometry reading nothing from the registry, and its colours
+   were spelled here rather than read from style.css. The figure is now
+   scripts/gen_site/ring_svg.cx's — every module a tick in its ring, drawn
+   from registry/modules.cxd and registry/repos.cxd when the guide is built,
+   the colours read from the stylesheet's tokens — inlined here and on
+   rings.html and written as assets/rings.svg. #]
 
 [# index-body: the guide home (docs/guide/index.html, the site's guide.html)
    body — the hero (the TL;DR of why to reach for CX, the ring ladder, the
@@ -652,33 +656,31 @@
     '  <svg class="hero-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>\n',
     '  <h1>One syntax.<br>Data to platform.<br><span class="accent">Agentic ready.</span></h1>\n',
     '</div>\n',
-    '<p class="lede"><b>TL;DR — reach for CX whenever the data is the point.</b> ',
-    'One bracket form is the document, the schema, the query and the program, so ',
-    'the file you read is the file you transform, validate, hash, store and serve. ',
-    'Python set the standard a working language has to meet: readable on day one, ',
-    'batteries included, as good for a script as for a system. CX is built to that ',
-    'standard and past it where data work hurts. Every claim on this page stands ',
-    'beside a conformance fixture this <code>cx</code> replayed when the page was ',
-    'built.</p>\n',
+    [; the one TL;DR, from docs-src/site/tldr.cxd (RULED: DOCS-49): the same
+       text the landing page and the primer's §0 open with; its clauses'
+       cases are replayed by this build like every fixture on the page. ]
+    [$pb:tldr-html],
+    '<p class="note">Every claim on this page stands beside a conformance fixture this <code>cx</code> replayed when the page was built.</p>\n',
     '<div class="ring-ladder">\n',
     '<div class="rr"><span class="rn">R0</span><span class="rt">Data</span><span class="rd">documents · schemas · values — nothing executes</span></div>\n',
     '<div class="rr"><span class="rn">R1</span><span class="rt">Code</span><span class="rd">evaluation · deny-by-default capabilities</span></div>\n',
     '<div class="rr"><span class="rn">G</span><span class="rt">Platform</span><span class="rd">the store · transports · live surfaces</span></div>\n',
     '<div class="rr"><span class="rn">G</span><span class="rt">Ecosystem</span><span class="rd">bindings · tooling · the registry</span></div>\n',
     '</div>\n',
-    '<div class="hero-cta"><a href="choosing.html">CHOOSE YOUR RING <span class="arr">—&gt;</span></a></div>\n',
+    '<div class="hero-cta"><a href="why.html">WHY CX <span class="arr">—&gt;</span></a> &nbsp;·&nbsp; <a href="choosing.html">CHOOSE YOUR RING <span class="arr">—&gt;</span></a></div>\n',
     '</div>\n',
     '<div class="hero-fig">\n',
-    [$ring-figure],
-    '<div class="fig-caption">Fig. 1 — two rings, the groups above them, one-directional imports</div>\n',
+    '<a href="rings.html" aria-label="The rings, page">', [$rs:ring-svg], '</a>\n',
+    '<div class="fig-caption">Fig. 1 — two rings, the groups above them, one-directional imports · drawn from the registry when this page was built · <a href="rings.html">read it</a></div>\n',
     '</div>\n',
     '</div>\n',
     '<section class="proof"><h2>What you can do with it</h2>\n',
+    '<p>Five things we promise, each with the conformance case that proves it; <a href="why.html">the why page</a> states the case in eight before/after panels.</p>\n',
     [$proof-item $fx 'Query a document by its shape'
       'A query is a pattern over the document — every <code>user</code> whose <code>active</code> is true, and its <code>email</code>. There is no object model to build first and no parser to call.'
       'program-for-002-active-emails'],
     [$proof-item $fx 'Keep exact numbers exact'
-      'In Python a fraction is a binary float until you import <code>decimal</code>. In CX a fraction literal is an exact decimal, and mixing one with a float is refused out loud rather than rounded in silence.'
+      'A fraction literal is an exact decimal and arithmetic keeps it one; mixing it with a binary float is refused out loud rather than rounded in silence, so money stays money.'
       'ap-decimal-float-mix-right'],
     [$proof-item $fx 'Grant effects instead of inheriting them'
       'A program reads nothing it was not granted, and the refusal is an ordinary value that names the flag which would allow it.'
@@ -1251,6 +1253,8 @@
     [$io:copy [$cat ($gen, '/highlight/highlight.js')] [$cat ($out, '/highlight/highlight.js')]],
     [$io:copy [$cat ($gen, '/search/search.js')]       [$cat ($out, '/search/search.js')]],
     [$io:copy [$cat ($src, '/../assets/cx-logo.svg')]  [$cat ($out, '/assets/cx-logo.svg')]],
+    [; DOCS-42: the ring figure as a file, untracked, from the registries ]
+    [$io:write-file [$cat ($out, '/assets/rings.svg')] [$rs:ring-svg]],
     [$copy-if [$cat ($src, '/../assets/cx-logo.png')]  [$cat ($out, '/assets/cx-logo.png')]],
     [$copy-if [$cat ($gen, '/playground/playground.js')]          [$cat ($out, '/playground/playground.js')]],
     [$copy-if [$cat ($gen, '/playground/playground.examples.js')] [$cat ($out, '/playground/playground.examples.js')]],
@@ -1299,7 +1303,7 @@
       [$wrap-page 'Downloads' 'downloads' $metas $libfiles $ver [$downloads-body $ver]]],
     [?for [in $m $metas] [yield
       [?let [= $doc [$parse-or-die $m@srcpath]]
-            [= $raw [$expand-counts [$render-doc $doc $fx] $self]]
+            [= $raw [$expand-figures [$expand-counts [$render-doc $doc $fx] $self]]]
             [= $body [$resolve-anchors $raw $m@slug $sec-ancs $child-ancs]]
             [= $page [$wrap-page $m@title $m@slug $metas $libfiles $ver $body]]
         [$io:write-file [$cat ($out, '/', $m@slug, '.html')] $page]]]],

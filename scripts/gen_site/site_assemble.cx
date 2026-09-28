@@ -35,7 +35,18 @@
 # --check lists the assembled tree against the union of the manifest's [files]
 # blocks: a declared file the tree does not hold is MISSING, a file the tree
 # holds that no line declares is EXTRA, and either fails the step by name.
-# Exit: 0 green; 1 a missing source, a missing or extra file.
+# Then (RULED: DOCS-44) it walks EVERY LINK of the tree: every href and src of
+# every assembled .html, and every relative Markdown link of every served .md,
+# resolved against the tree — the file must be there (a declared optional file,
+# the playground's wasm, counts as there) and, when the link carries a
+# #fragment, the target page must carry that id (an HTML id= or name=; a
+# Markdown heading's slug). External (http, https, mailto, data) links are the
+# external-link step's (check_external_links.cx, DOCS-45), not this one's.
+# A listing graded through SITE_CHECK_LIST has no file contents to walk, so
+# that mode grades the file set only and says so.
+# The assembly also writes llm/index.html, the LLM door (RULED: DOCS-46),
+# rendered by llm_index.cx from docs-src/llm/manifest.cxd.
+# Exit: 0 green; 1 a missing source, a missing or extra file, a dead link.
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
@@ -47,6 +58,11 @@
 # The raw-text reader the LLM layer uses for its own manifest (a [#…#] block is
 # opaque to [$text]; primer_build.cx serializes it and strips the delimiters).
 [?lib './scripts/gen_docs/primer_build.cx' as=pb]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/map'     as=map]
+# The LLM door, llm/index.html, rendered from docs-src/llm/manifest.cxd
+# (RULED: DOCS-46) into the assembled tree.
+[?lib './scripts/gen_site/llm_index.cx' as=li]
 
 [?const MANIFEST "docs-src/site/manifest.cxd"]
 
@@ -124,6 +140,8 @@
     [= $llm [?for [in $rel [$files-under "docs/llm"]]
               [= $_c [$place $out [$path:join "docs/llm" $rel] [$path:join "llm" $rel]]]
               [yield $rel]]]
+    [= $_ix [$io:write-file [$path:join $out "llm/index.html"]
+              [$li:llm-index-html [$strings:trim [$io:read-file "VERSION"]]]]]
     [= $_l1 [$place $out "docs/llm/llms.txt" "llms.txt"]]
     [= $_l2 [$place $out "docs/llm/llms-full.txt" "llms-full.txt"]]
     [= $dev [?for [in $rel [$files-under "docs/dev"]]
@@ -139,7 +157,7 @@
                                   "playground.html would ship without the engine it loads (site-check fails it MISSING under CX_SITE_REQUIRE_WASM=1)"]]]
              [else 0]]]
     [$say [$concat "site_assemble: " $out "/ — " [$string [$count $guide]] " guide files (index.html as guide.html), "
-                   "the landing page, " [$string [$count $llm]] " llm/ files and the llms.txt pair at the root, "
+                   "the landing page, " [$string [$count $llm]] " llm/ files, the LLM door llm/index.html and the llms.txt pair at the root, "
                    [$string [$count $dev]] " dev/ files, install, CNAME, .nojekyll"]]]]
 
 # report: the shared verdict over a LISTING $have (a sequence of paths,
@@ -178,10 +196,112 @@
         [= $_d [?for [in $f $dupes] [yield [$cry [$concat "  TWICE:   " $f]]]]]
         [$env:exit 1]]]]]]
 
+# ── the link walk (RULED: DOCS-44) ──────────────────────────────────────
+
+[; two patterns rather than one alternation: [$re:group] refuses a group the
+   other branch left unmatched (CXER3202), so each quoting style is its own
+   pass. ]
+[?def attr-rx scope=public impure () [$re:compile "(?:href|src)=\"([^\"]*)\""]]
+[?def attr-rx-sq scope=public impure () [$re:compile "(?:href|src)='([^']*)'"]]
+[?def md-rx scope=public impure () [$re:compile "\\]\\(([^) ]+)\\)"]]
+[?def id-rx scope=public impure () [$re:compile "(?:id|name)=\"([^\"]*)\""]]
+[?def md-head-rx scope=public impure () [$re:compile "(?m)^#{1,6} +(.+)$"]]
+
+[?def external scope=public ($t)
+  [or [$strings:starts-with $t "http://"] [or [$strings:starts-with $t "https://"]
+      [or [$strings:starts-with $t "mailto:"] [or [$strings:starts-with $t "data:"]
+          [or [$strings:starts-with $t "javascript:"] [$strings:starts-with $t "//"]]]]]]]
+
+# markup-only: a page with its <pre>, <code> and <script> regions blanked —
+# an example's `href="/orders"` is text the page SHOWS, not a link it makes,
+# and a script's string is not markup either.
+[?def markup-only scope=public impure ($text)
+  [$re:replace [$re:compile "(?s)<script[^>]*>.*?</script>"]
+    [$re:replace [$re:compile "(?s)<code[^>]*>.*?</code>"]
+      [$re:replace [$re:compile "(?s)<pre[^>]*>.*?</pre>"] $text " "] " "] " "]]
+
+# links-of: every link target one file names — attribute links in an .html
+# (its markup only), Markdown links in a .md — less the external ones and
+# the empty ones.
+[?def links-of scope=public impure ($rel $text)
+  [?let [= $html [?if [$strings:ends-with $rel ".html"] [then [$markup-only $text]] [else ""]]]
+        [= $raw [?if [$strings:ends-with $rel ".html"]
+                  [then [$pb:cat-seqs ([?for [in $m [$re:find-all [$attr-rx] $html]] [yield [$re:group $m 1]]],
+                                       [?for [in $m [$re:find-all [$attr-rx-sq] $html]] [yield [$re:group $m 1]]])]]
+                  [else [?for [in $m [$re:find-all [$md-rx] $text]] [yield [$re:group $m 1]]]]]]
+    [$distinct [?for [in $t $raw]
+                 [= $t2 [$strings:trim-end-chars [$first [$strings:split $t "?"]] ""]]
+                 [where [not [= $t2 ""]]]
+                 [where [not [$external $t2]]]
+                 [yield $t2]]]]]
+
+# resolve: a relative target against the directory of $rel, "." and ".."
+# folded, as a path relative to the site root.
+[?def resolve scope=public ($rel $target)
+  [?let [= $dir [?if [$present [$strings:find $rel "/"]]
+                  [then [$strings:slice $rel 1 [- [$strings:rfind $rel "/"] 1]]] [else ""]]]
+        [= $joined [?if [$strings:starts-with $target "/"] [then [$strings:slice $target 2 [$strings:length $target]]]
+                     [else [?if [= $dir ""] [then $target] [else [$concat $dir "/" $target]]]]]]
+        [= $parts [$fp:fold [$strings:split $joined "/"] ()
+                    [?fn ($acc $p)
+                      [?if [or [= $p "."] [= $p ""]] [then $acc]
+                        [else [?if [= $p ".."]
+                          [then [?for [in $i [$range 1 [- [$count $acc] 1]]] [yield [$nth $acc $i]]]]
+                          [else [$pb:cat-seqs ($acc, ($p,))]]]]]]]]
+    [$strings:join $parts "/"]]]
+
+# slug: a Markdown heading as the fragment a renderer gives it — lower case,
+# punctuation dropped, spaces to hyphens.
+[?def slug scope=public impure ($h)
+  [$strings:replace [$re:replace [$re:compile "[^a-z0-9 _-]"] [$strings:lower [$strings:trim $h]] ""] " " "-"]]
+
+[?def has-fragment scope=public impure ($path $text $frag)
+  [?if [$strings:ends-with $path ".html"]
+    [then [> [$count [?for [in $m [$re:find-all [$id-rx] $text]] [where [= [$re:group $m 1] $frag]] [yield 1]]] 0]]
+    [else [> [$count [?for [in $m [$re:find-all [$md-head-rx] $text]] [where [= [$slug [$re:group $m 1]] $frag]] [yield 1]]] 0]]]]
+
+# dead-links: every link of every page that does not resolve — as
+# "<page> → <target>: <why>" lines.
+[?def dead-links scope=public impure ($out $have)
+  [?let [= $optional [$declared-lines "true"]]
+        [= $pages [?for [in $f $have] [where [or [$strings:ends-with $f ".html"] [$strings:ends-with $f ".md"]]] [yield $f]]]
+    [?for [in $p $pages]
+      [= $text [$io:read-file [$path:join $out $p]]]
+      [in $t [$links-of $p $text]]
+      [= $file-part [$first [$strings:split $t "#"]]]
+      [= $frag [?if [$present [$strings:find $t "#"]] [then [$strings:slice $t [+ [$strings:find $t "#"] 1] [$strings:length $t]]] [else ""]]]
+      [= $target [?if [= $file-part ""] [then $p] [else [$resolve $p $file-part]]]]
+      [= $dir-index [?if [or [= $target ""] [$strings:ends-with $target "/"]] [then [$concat $target "index.html"]] [else $target]]]
+      [= $present-file [or [$member $have $dir-index] [$member $optional $dir-index]]]
+      [= $frag-ok [?if [or [= $frag ""] [not [$present-file]]] [then true]
+                    [else [?if [$member $have $dir-index]
+                            [then [$has-fragment $dir-index [$io:read-file [$path:join $out $dir-index]] $frag]]
+                            [else true]]]]]
+      [where [or [not $present-file] [not $frag-ok]]]
+      [yield [$concat "  DEAD:    " $p " → " $t
+                      [?if [not $present-file] [then [$concat " — no file " $dir-index " in the assembled tree"]]
+                        [else [$concat " — " $dir-index " carries no #" $frag]]]]]]]]
+
+[?def walk-links scope=public impure ($out $have)
+  [?let [= $dead [$dead-links $out $have]]
+        [= $npages [$count [?for [in $f $have] [where [or [$strings:ends-with $f ".html"] [$strings:ends-with $f ".md"]]] [yield 1]]]]
+    [?if [$empty $dead]
+      [then [$say [$concat "site-check: every internal href, src and Markdown link of the " [$string $npages]
+                           " served pages resolves in the tree, fragments included (DOCS-44)"]]]
+      [else [?let [= $_h [$cry [$concat "site-check: " [$string [$count $dead]] " dead internal link(s) in the assembled tree"]]]
+                  [= $_d [?for [in $l $dead] [yield [$cry $l]]]]
+              [$env:exit 1]]]]]]
+
 [?def check scope=public impure ($out)
   [?if [not [$io:is-directory $out]]
     [then [$die [$concat $out "/ is not there — run `make site` first"]]]
-    [else [$report [$concat $out "/"] [$files-under $out]]]]]
+    [else [?let [= $have [$files-under $out]]
+            [; the walk's own verdict is loud (exit 1 on a dead link); an err
+               VALUE out of it — a regex the engine refused, a file it could
+               not read — must not rest in a binding while the listing passes ]
+            [?match [$walk-links $out $have]
+              [case [err $e] [$die [$concat "the link walk failed before it could grade: " [$string $e@message]]]]
+              [else [$report [$concat $out "/"] $have]]]]]]]
 
 # check-list: the same verdict against a captured LISTING rather than a live
 # tree — one path per line, relative to the site root, exactly what
@@ -196,11 +316,20 @@
       [= $have [?for [in $l [$strings:split-lines [$io:read-file $list-path]]]
                  [where [not [= [$strings:trim $l] ""]]]
                  [yield [$strings:trim $l]]]]
-      [$report [$concat "the listing at " $list-path] $have]]]]]
+      [?let [= $_n [$say "site-check: a listing carries no file contents, so the link walk (DOCS-44) is not graded here — the file set only"]]
+        [$report [$concat "the listing at " $list-path] $have]]]]]]
 
 [?let [= $argv [$env:argv]]
-      [= $out [$string [$first [?for [in $k [$cx:parse [$io:read-file MANIFEST]]/*]
-                                 [where [= [?else [$name $k] ""] "site"]] [yield $k@out]]]]]
+      [= $declared-out [$string [$first [?for [in $k [$cx:parse [$io:read-file MANIFEST]]/*]
+                                          [where [= [?else [$name $k] ""] "site"]] [yield $k@out]]]]]
+      [; SITE_OUT names another assembled tree to grade — how the link walk is
+         proved red on a scratch copy with one link broken (DOCS-44). The
+         assemble run carries no env grant, so an ungranted read falls back
+         to the manifest's directory rather than resting as an [err] in $out
+         (an err reaching [?if] runs neither branch and the program would
+         exit 0 having done nothing — measured 2026-09-28). ]
+      [= $override [?fallback [$env:var-or-default "SITE_OUT" ""] [recover-with ""]]]
+      [= $out [?if [= $override ""] [then $declared-out] [else $override]]]
       [; SITE_CHECK_LIST names a captured file listing (one path per line,
          relative to the site root) to grade instead of walking $out/ live —
          how a tree this program must not touch, or must not copy, is graded
