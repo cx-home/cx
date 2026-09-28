@@ -1717,7 +1717,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := docs-voice-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := docs-voice-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -2691,7 +2691,7 @@ test-no-parallel: $(TEST_TARGETS)
 # a compiled test's outcome — two ledger-only heads and the docs half of a
 # third — for about two hours of the ONE post-merge runner. INT-10's answer is
 # this target: when the head's diff against the last head that PASSED is
-# confined to documentation, the runner runs THESE seven steps instead of the
+# confined to documentation, the runner runs THESE steps instead of the
 # whole TEST_TARGETS matrix.
 #
 # Which paths count is NOT decided here and not in the spec either — it is
@@ -2699,32 +2699,68 @@ test-no-parallel: $(TEST_TARGETS)
 # beside it, so the list has a test. This target only has to be the pipeline
 # that list selects.
 #
-# The seven steps are every TEST_TARGETS row that reads documentation, the
-# ledger, the approved spec tree or the version stamps — `verify-doc-links`
-# joined that list with INT-11 (#1475), so the full run grades what this run
-# grades — plus `verify-readme-blocks`, which the release gate runs and
-# TEST_TARGETS does not:
+# The steps are the DOCUMENTATION FLOW and the rows beside it (RULED: CICD-1).
+# Every doc check this pipeline used to list one by one — docs-check,
+# primer-platform-check, verify-doc-links, verify-doc-blocks,
+# verify-readme-blocks — is a target the flow's `check` step runs, beside
+# guide-check, and its `assemble` step runs site-check. `docs-flow` in
+# --mode=check (generate nothing, check everything, assemble and list the
+# site) is the same document `make docs` and the Site workflow run, so the
+# three callers can no longer grade three different lists. Beside it:
 #
-#   verify-doc-blocks        every fenced cx block in docs-src/ still runs
-#   verify-doc-links         every relative markdown link still resolves
-#   verify-readme-blocks     the README's own blocks still run
-#   docs-check               the generated docs/ layer is not stale
+#   docs-flow-gate           the flow document still validates and simulates
+#                            to every terminal status (its own fixture; a
+#                            TEST_TARGETS row too)
 #   spec-freeze-gate         a spec+impl commit carries its recorded ruling
 #   ledger-index-check       ledger/README.md still matches the decision store
 #   check-version-consistency  every stamped manifest still matches VERSION
 #
-# Four of them need the binary, so the serial `build-vcx` pre-build comes first
+# `docs-flow` needs the binary, so the serial `build-vcx` pre-build comes first
 # for the same reason it does in `test:` — concurrent sub-makes relinking
 # target/cx while a sibling step execs it is the v0.16.0 'Exec format error'
-# class.
+# class — and the flow's own nested makes run `-o build-vcx`
+# (docs-src/flow/docs-acts.cx's header).
 #
 # The LOCK is taken exactly the way `test` takes it. A doc run is still a
 # post-merge run: it holds the main checkout, it must not start inside another
 # gate, and check-gate-lock's stale detection (`kill -0` on the recorded pid)
 # is what releases a killed one. Nothing about INT-10 makes a doc run a second
 # concurrent gate.
-DOC_TARGETS := verify-doc-blocks verify-doc-links verify-readme-blocks docs-check \
-  spec-freeze-gate ledger-index-check check-version-consistency primer-platform-check
+DOC_TARGETS := docs-flow docs-flow-gate spec-freeze-gate ledger-index-check \
+  check-version-consistency
+
+# ── docs-flow — the documentation flow (RULED: CICD-1) ──────────────────────
+# docs-src/flow/docs.flow.cx — generate → check → assemble — run by `cx flow
+# run` from the repository root (the env's [?lib] path is relative to it).
+# ONE target for its three callers: `make docs` (DOCS_FLOW_MODE=write), the
+# doc pipeline above and .github/workflows/site.yml (the default, check).
+# --ephemeral: the run id derives from (document, actor, args), so under the
+# checkout's durable journal a second identical run would answer [deduped …]
+# and do nothing. The record prints; the exit is the CLI's (0 = :done).
+# --allow-read: the env's path-form [?lib] charges read (#1539);
+# --allow-write: the acts' progress lines; --allow-subprocess: every act is a
+# make target underneath.
+DOCS_FLOW      := docs-src/flow/docs.flow.cx
+DOCS_FLOW_ENV  := docs-src/flow/docs.env.cx
+DOCS_FLOW_MODE ?= check
+DOCS_FLOW_CAPS := --allow-read --allow-write --allow-subprocess
+
+.PHONY: docs-flow
+docs-flow: build-vcx
+	@"$(CURDIR)/deps/cx-core-code/vcx/target/cx" flow run $(DOCS_FLOW) --env $(DOCS_FLOW_ENV) \
+	  --ephemeral --mode=$(DOCS_FLOW_MODE) $(DOCS_FLOW_CAPS)
+
+# ── docs-flow-gate — the documentation flow's own fixture (RULED: CICD-1) ────
+# scripts/docs_flow_gate.cx reads the REAL document through this tree's binary
+# — `cx flow validate`, `cx flow simulate` over docs-src/flow/sim/, and one
+# `cx flow run` of the generate act's own refusal — in flow-dogfood-gate's
+# shape: a corpus case embeds its document inline, so it cannot catch this
+# one rotting. It runs no make target (the flow's acts are the doc pipeline's
+# steps; running them here would nest the doc pipeline inside `make test`).
+.PHONY: docs-flow-gate
+docs-flow-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+docs-flow-gate: build-vcx
+	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/docs_flow_gate.cx
 
 .PHONY: test-docs
 test-docs: export CX_GATE_OWNER := $(shell echo $$PPID)
@@ -3742,6 +3778,19 @@ check-selection-manifest:
 docs-voice-check: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 docs-voice-check: build-vcx
 	@"$(CX_BIN)" --allow-read --allow-write scripts/gen_site/docs_voice_check.cx
+
+# ── ring-svg (RULED: DOCS-42, CICD-1) — the ring figure as a served file ─────
+# The docs flow's generate step (docs-src/flow/docs.flow.cx → docs-generate)
+# renders the figure from the registries to docs/guide/assets/rings.svg, the
+# file the site serves and the READMEs may link; `make guide` writes the same
+# bytes again when it renders the pages that inline it. Untracked, like the
+# guide (the design's letter B, the owner's (a)).
+.PHONY: ring-svg
+ring-svg: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+ring-svg:
+	@mkdir -p docs/guide/assets
+	@"$(CX_BIN)" --allow-read --allow-write scripts/gen_site/ring_svg.cx > docs/guide/assets/rings.svg
+	@echo "ring-svg: docs/guide/assets/rings.svg rendered from registry/modules.cxd and registry/repos.cxd"
 
 # ── ring-svg-check (RULED: DOCS-42) — the generated figures' self-tests ──────
 # The ring figure (scripts/gen_site/ring_svg.cx) draws one tick per shipped

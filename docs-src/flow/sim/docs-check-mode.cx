@@ -1,0 +1,12 @@
+# --mode=check — the post-merge doc pipeline's and the Site workflow's run:
+# generate writes nothing and answers ran=false, the checks grade the
+# committed tree, the site is assembled and listed (RULED: CICD-1).
+#
+#   cx flow simulate docs-src/flow/docs.flow.cx docs-src/flow/sim/docs-check-mode.cx \
+#     --env docs-src/flow/docs.env.cx --allow-read=. --mode=check
+[results
+  [step name="generate" status=:done [result [generated ran=false reason='--mode=check']]]
+  [step name="check" status=:done
+        [result [checked count='1' [made target='docs-check' ok=true tail='no drift']]]]
+  [step name="assemble" status=:done
+        [result [assembled dir='site' tail='site-check: site/ holds exactly the required files']]]]

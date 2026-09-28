@@ -31,6 +31,15 @@
 #   registry/README.md  prose beside the registry — NOT registry/modules.cxd,
 #                       which declares every module's ring and is read by
 #                       placement-gate, ring-import-gate and ring-tag-gate
+#   docs-src/flow/…     the DOCUMENTATION FLOW — its document, env, acts and
+#                       simulate tables (RULED: CICD-1). The doc pipeline is
+#                       the one run that EXECUTES the flow (`docs-flow`) and
+#                       grades the document (`docs-flow-gate`); nothing in the
+#                       full matrix reads these files except that gate, which
+#                       the doc pipeline also runs — so a change to them costs
+#                       the doc run, and it is graded more there, not less.
+#                       The rest of docs-src/ is NOT admitted: the .cxd guide
+#                       sources and the LLM templates feed steps outside it
 #   *.md                anywhere EXCEPT spec/03-approved/ — an approved spec is
 #                       normative, read by spec-freeze-gate,
 #                       check-code-spec-consistency and the citation checker,
@@ -89,6 +98,7 @@ offenders=$(printf '%s\n' "$files" | while IFS= read -r f; do
 	case "$f" in
 		(ledger/*|docs/*|_gate_evidence/*) continue ;;
 		(registry/README.md)               continue ;;
+		(docs-src/flow/*)                  continue ;;
 		(spec/03-approved/*)               echo "$f" ;;  # normative, even as .md
 		(*.md)                             continue ;;
 		(*)                                echo "$f" ;;

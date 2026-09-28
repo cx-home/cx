@@ -71,11 +71,11 @@ jobs:
       - name: Sync + verify the pinned repositories with the cx just built
         run: make deps-sync CX_BIN=deps/cx-core-code/vcx/target/cx
 
-      - name: Assemble the site
-        run: make site
-
-      - name: List the site against its manifest
-        run: make site-check
+      # The documentation flow, docs-src/flow/docs.flow.cx, in --mode=check —
+      # the same document `make docs` and the post-merge doc pipeline run
+      # (RULED CICD-1).
+      - name: The docs flow — check every generated document, assemble and list site/
+        run: make docs-flow
 
       # DOCS-45: every external link of the assembled site, fetched once
       # (scripts/gen_site/check_external_links.cx; docs-src/site/links.cxd is

@@ -392,6 +392,11 @@ step_globs() {
     # what can is the PIN (`deps.cxd`, with `registry/modules.cxd` where the
     # pinned paths are declared) and the verbs RS-20 kept in vcx/cmd/.
     flow-dogfood-gate)             echo 'deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
+    # RULED: CICD-1 — the documentation flow's own fixture: the flow document,
+    # its env, acts and simulate tables, the gate that reads them, and what can
+    # move the vocabulary or the three subcommands it drives them through (the
+    # flow module is the pin's; `cx flow` is this tree's binary).
+    docs-flow-gate)                echo 'docs-src/flow/* scripts/docs_flow_gate.cx deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
     # the pinned flow lanes (RS-31, D54c): CX programs run by this tree's
     # binary, so the pin and everything that builds the binary.
     test-flow-umbrella)            echo 'deps.cxd registry/modules.cxd vcx/* stdlib/*' ;;

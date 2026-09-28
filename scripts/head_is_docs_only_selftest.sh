@@ -19,6 +19,9 @@
 #   I  a rename of a test file INTO docs/       → FULL   (--no-renames)
 #   J  base == tip, empty diff (the re-run flag) → FULL   (never a vacuous doc run)
 #   K  a base sha that is not a commit           → FULL   (fail-safe)
+#   N  docs-src/flow/ (the docs flow) + ledger/  → docs   (RULED: CICD-1 — the doc
+#                                                        pipeline runs the flow)
+#   O  docs-src/ OUTSIDE flow/ (a guide source)  → FULL   (only flow/ is admitted)
 #
 # Exit 0 and the count line only when every case matches.
 set -u
@@ -152,8 +155,24 @@ printf 'prose\n' >> ledger/seed.md
 git add -A && git commit -qm "K"
 check K full "deadbee"
 
+# N — the documentation flow (its document and its acts) + ledger/: docs
+KBASE=$(git rev-parse --short HEAD)
+mkdir -p docs-src/flow
+printf '[flow name="docs"]\n' > docs-src/flow/docs.flow.cx
+printf '[?def generate () [generated]]\n' > docs-src/flow/docs-acts.cx
+printf 'prose\n' >> ledger/seed.md
+git add -A && git commit -qm "N"
+check N docs "$KBASE"
+
+# O — a docs-src/ file OUTSIDE flow/ (a guide source feeds the guide steps)
+NBASE=$(git rev-parse --short HEAD)
+mkdir -p docs-src/canonical
+printf '[section]\n' > docs-src/canonical/page.cxd
+git add -A && git commit -qm "O"
+check O full "$NBASE"
+
 if [ "$fails" -ne 0 ]; then
 	echo "head_is_docs_only selftest: $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "head_is_docs_only selftest: 13/13 (docs A/D/H; full B/C/E/F/G/I/J/K and L/M, the #1427 stdlib/ + platform/ split)"
+echo "head_is_docs_only selftest: 15/15 (docs A/D/H/N; full B/C/E/F/G/I/J/K/O and L/M, the #1427 stdlib/ + platform/ split)"
