@@ -356,6 +356,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `aa-9` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | AA-9 — the boot check counts the automation stream (L47.3 = (a)) |
 | `ack-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | Owner decisions 2026-09-27 (afternoon) — Letters 52, 53 and 54: XCO's two readings (ACK-1, RT-1), a list verb through the host walks every page (WALK-1), the vendor budget is per process (BUDGET-1) |
 | `ack-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | ACK-1 — `by=` on the `:peer` step's ack is a space-separated list of DIDs (L52.1 = (a)) |
+| `ackr-1` | [rulings_2026_09_27_owner_decisions_l59.md](rulings_2026_09_27_owner_decisions_l59.md) | Owner decision 2026-09-27 (evening) — Letter 59: the host's ack stays a receipt (ACKR-1) |
+| `ackr-1` | [rulings_2026_09_27_owner_decisions_l59.md](rulings_2026_09_27_owner_decisions_l59.md) | ACKR-1 — an act's answer is read from the record, not carried by the ack (L59 = (a)) |
 | `ad-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-1 — `[selection …]` binds every consumption point, through the one PEP (#1181) |
 | `ad-10` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-10 — instantiation is CONTRACT-LEVEL by design, and an unservable `[add]` refuses (#1162) |
 | `ad-2` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-2 — contract evolution gets the SEA-1 treatment (#1182) |
@@ -411,6 +413,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ca-4` | [rulings_2026_09_03_canonical_act_form_1260.md](rulings_2026_09_03_canonical_act_form_1260.md) | CA-4 — sequencing the host cutover — RULED (a) BY OWNER 2026-09-03 |
 | `ca-4` | [rulings_2026_09_03_canonical_act_form_1260.md](rulings_2026_09_03_canonical_act_form_1260.md) | Edit map (ruling-gated; lands with the CA-4 landing, NOT this branch) |
 | `ca-4` | [rulings_2026_09_03_workflow_789.md](rulings_2026_09_03_workflow_789.md) | 1260 CA-1..CA-4 were ruled. Branch |
+| `capadr-1` | [rulings_2026_09_27_owner_decisions_l58.md](rulings_2026_09_27_owner_decisions_l58.md) | Owner decisions 2026-09-27 (evening) — Letter 58: a feature's gate is the feature's (GATE-1), the boot report names each seeded basis (CAPADR-1) |
+| `capadr-1` | [rulings_2026_09_27_owner_decisions_l58.md](rulings_2026_09_27_owner_decisions_l58.md) | CAPADR-1 — the boot report prints each seeded basis (L58.3 = (a)) |
 | `cfg-1` | [rulings_2026_09_13_claude_context_audit.md](rulings_2026_09_13_claude_context_audit.md) | RULED: CFG-1 — the agent-context layers get ONE stated precedence, the load-bearing agent rules become tracked repo content, and the stale config is removed |
 | `cg-1` | [rulings_2026_09_05_constraint_grammar_1308.md](rulings_2026_09_05_constraint_grammar_1308.md) | Rulings 2026-09-05 — #1308 the feature grammar as a CONSTRAINT grammar (CG-1..CG-7) |
 | `cg-1` | [rulings_2026_09_05_constraint_grammar_1308.md](rulings_2026_09_05_constraint_grammar_1308.md) | CG-1 — `kind=cardinality` (#1301) — RULED (a) |
@@ -562,7 +566,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `fw-1` | [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) | RULED: FW-1, FW-2 — every named landing of `flow.md` lands in v0.18, end-user automation authoring (#1498) with it, and the v0.18.0 tag waits for them while the repo split lands (owner, 2026-09-24, in session on dev2) |
 | `fw-2` | [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) | RULED: FW-1, FW-2 — every named landing of `flow.md` lands in v0.18, end-user automation authoring (#1498) with it, and the v0.18.0 tag waits for them while the repo split lands (owner, 2026-09-24, in session on dev2) |
 | `ga-1` | [rulings_2026_08_20_guest_attach.md](rulings_2026_08_20_guest_attach.md) | Ruling GA-1 (2026-08-20) — attach-guest: the anonymous-floor transport (#857, owner "857a") |
-| `gate-1` | [rulings_2026_09_27_owner_decisions_l58.md](rulings_2026_09_27_owner_decisions_l58.md) | Owner decisions 2026-09-27 (evening) — Letter 58: a feature's gate is the feature's (GATE-1), the boot report names each seeded basis (CAPADDR-1) |
+| `gate-1` | [rulings_2026_09_27_owner_decisions_l58.md](rulings_2026_09_27_owner_decisions_l58.md) | Owner decisions 2026-09-27 (evening) — Letter 58: a feature's gate is the feature's (GATE-1), the boot report names each seeded basis (CAPADR-1) |
 | `gate-1` | [rulings_2026_09_27_owner_decisions_l58.md](rulings_2026_09_27_owner_decisions_l58.md) | GATE-1 — the `[requires cap:…]` gate stays on `apply`, one per feature (L58.2 = (a)) |
 | `ge-0` | [rulings_2026_09_05_grammar_expression_env.md](rulings_2026_09_05_grammar_expression_env.md) | Rulings 2026-09-05 — the grammar-expression environment (GE-0..GE-3) |
 | `ge-0` | [rulings_2026_09_05_grammar_expression_env.md](rulings_2026_09_05_grammar_expression_env.md) | GE-0 — the caller-dependence is a DEFECT — RULED (a) |
@@ -585,6 +589,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `host-4` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | HOST-4 — both faces decide a feature verb the same way |
 | `host-4` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | Owner decisions 2026-09-27 — Letters 46–50 and the org profile: KIT-4's shape (KIT4-1…3), the #1498 spec gaps (AA-7…9), HOST-4's seed made real (SEED-1), the host act's basis (HOSTB-1), the call spread's readings (SPREAD-2), the org-profile push (ORG-1) |
 | `host-4` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | SEED-1 — HOST-4's seed made real (L48 = (a)) |
+| `hostac-1` | [rulings_2026_09_27_integrator_decisions_l61.md](rulings_2026_09_27_integrator_decisions_l61.md) | Integrator decision 2026-09-27 (evening), under the owner's delegation — Letter 61: the host refuses a claimed authority and stamps what it derives (HOSTAC-1) |
+| `hostac-1` | [rulings_2026_09_27_integrator_decisions_l61.md](rulings_2026_09_27_integrator_decisions_l61.md) | HOSTAC-1 — strict handling of a session act's claims (L61 = (a)) |
 | `hostb-1` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | Owner decisions 2026-09-27 — Letters 46–50 and the org profile: KIT-4's shape (KIT4-1…3), the #1498 spec gaps (AA-7…9), HOST-4's seed made real (SEED-1), the host act's basis (HOSTB-1), the call spread's readings (SPREAD-2), the org-profile push (ORG-1) |
 | `hostb-1` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | HOSTB-1 — a session principal's act runs under a basis the host derives (L49 = (a)) |
 | `hyg-1` | [rulings_2026_08_20_hygiene_695.md](rulings_2026_08_20_hygiene_695.md) | Ruling HYG-1 (2026-08-20) — #695 stale-inventory reconciliation (pre-cut hygiene sweep) |
@@ -1448,4 +1454,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*340 ledger pages; 745 ids declared, 388 cited only.*
+*342 ledger pages; 748 ids declared, 388 cited only.*
