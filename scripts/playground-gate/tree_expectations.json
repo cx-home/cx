@@ -285,7 +285,7 @@
       "rungs": {
         "min": {
           "placeholder": "",
-          "rows": 25,
+          "rows": 23,
           "chips": 0,
           "overflow": [],
           "names": [
@@ -295,7 +295,6 @@
             "o",
             "o",
             "o",
-            "?let",
             "=",
             "u-set",
             "u",
@@ -304,7 +303,6 @@
             "in",
             "yield",
             "joined",
-            "email",
             "?splice",
             "="
           ],
@@ -315,7 +313,7 @@
         },
         "compact": {
           "placeholder": "",
-          "rows": 24,
+          "rows": 22,
           "chips": 12,
           "overflow": [
             "(+1 more attr)",
@@ -329,7 +327,6 @@
             "o",
             "o",
             "o",
-            "?let",
             "=",
             "u-set",
             "u",
@@ -338,7 +335,6 @@
             "in",
             "yield",
             "joined",
-            "email",
             "?splice",
             "="
           ],
@@ -349,7 +345,7 @@
         },
         "full": {
           "placeholder": "",
-          "rows": 24,
+          "rows": 22,
           "chips": 15,
           "overflow": [],
           "names": [
@@ -359,7 +355,6 @@
             "o",
             "o",
             "o",
-            "?let",
             "=",
             "u-set",
             "u",
@@ -368,7 +363,6 @@
             "in",
             "yield",
             "joined",
-            "email",
             "?splice",
             "="
           ],

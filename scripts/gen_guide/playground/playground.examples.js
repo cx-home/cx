@@ -2079,6 +2079,7 @@
       tags:  ["eq", "for", "let", "lib"],
       section: "everyday/text",
       runnable: true,
+      wasmUnsupported: "The playground's wasm build links a stub for the RE2 shim (deps/cx-core-code/scripts/wasm/stubs/re2_shim.c): every pattern fails to compile, so `[$re:compile]` refuses with `CXER3201` here (#1701).",
     },
     "255-capture-groups-by-name": {
       label: "[255] capture groups, read by name",
@@ -2087,6 +2088,7 @@
       tags:  ["eq", "let", "lib"],
       section: "everyday/text",
       runnable: true,
+      wasmUnsupported: "The playground's wasm build links a stub for the RE2 shim (deps/cx-core-code/scripts/wasm/stubs/re2_shim.c): every pattern fails to compile, so `[$re:compile]` refuses with `CXER3201` here (#1701).",
     },
     "256-replace-with-a-capture": {
       label: "[256] replace, reusing the captures",
@@ -2095,6 +2097,7 @@
       tags:  ["cxpath", "eq", "let", "lib"],
       section: "everyday/text",
       runnable: true,
+      wasmUnsupported: "The playground's wasm build links a stub for the RE2 shim (deps/cx-core-code/scripts/wasm/stubs/re2_shim.c): every pattern fails to compile, so `[$re:compile]` refuses with `CXER3201` here (#1701).",
     },
     "257-split-and-join": {
       label: "[257] split a line, join it back",
@@ -2277,6 +2280,7 @@
       tags:  ["eq", "let", "lib", "splice", "str"],
       section: "everyday/process",
       runnable: true,
+      wasmUnsupported: "`[$env:exit]` ends the wasm runtime itself here (`Program terminated with exit(N)`), and a page has no process exit status to show; what a terminal prints is the `write-line` output above the exit.",
     },
     "279-format-a-date": {
       label: "[279] format a date \u2014 ISO, RFC 3339, a pattern",
@@ -2318,6 +2322,7 @@
       tags:  ["eq", "gt", "if", "let", "lib", "str"],
       section: "everyday/cli-errors",
       runnable: true,
+      wasmUnsupported: "`[$env:exit]` ends the wasm runtime itself here (`Program terminated with exit(N)`), and a page has no process exit status to show; what a terminal prints is the `write-line` output above the exit.",
     },
     "284-retry-once-then-give-up": {
       label: "[284] retry once, then give up \u2014 the railway",

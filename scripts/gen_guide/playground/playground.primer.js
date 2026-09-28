@@ -1495,7 +1495,7 @@ window.cxPlaygroundPrimer = {
       "exit": "",
       "runnable": true,
       "why": "",
-      "wasmUnsupported": "The wasm build links a stub for the RE2 shim (deps/cx-core-code/scripts/wasm/stubs/re2_shim.c: every pattern fails to compile), so [$re:compile] refuses with CXER3201 here."
+      "wasmUnsupported": "The wasm build links a stub for the RE2 shim (deps/cx-core-code/scripts/wasm/stubs/re2_shim.c: every pattern fails to compile), so [$re:compile] refuses with CXER3201 here (#1701)."
     },
     {
       "n": 84,
