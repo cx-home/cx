@@ -868,6 +868,11 @@ suite_files() {
       docs/llm/*|VERSION)
         # embedded in the binary, read only by its own doc/help surface.
         sel="$sel $SUITE_DIR/cli_umbrella_test.v $SUITE_DIR/cli_default_eval_test.v" ;;
+      # RULED: RFLOW-1 — the CI/CD flow documents, their acts and tables: CX
+      # programs `cx flow` runs and scripts/ci_flow_gate.cx grades (its own
+      # row), compiled into no test file of this step.
+      flows/*)
+        ;;
       spec/*|docs-src/*|docs/*|ledger/*|_gate_evidence/*|.github/*|*.md|.gitignore|.editorconfig|LICENSE)
         ;;
       *)

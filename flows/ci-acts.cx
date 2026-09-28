@@ -738,6 +738,13 @@
         [selection base=$base count=[$string [$count $all]] changed=[$string [$count $changed]]
           [?splice [?to-sequence [?for [in $t $all] [yield [item [target $t] [slot [$slot-for $t $sens]]]]]]]]]]]]]
 
+# BUILT: the make flags every selected step runs with. The build step — the
+# pivot — made both binaries; a step that re-made build-vcx would relink the
+# tree's cx for minutes each time (#1697), so each is run `-o` of both, and
+# of the docs targets' own cx builds, as docs-acts.cx runs its targets.
+[?const BUILT ('-o', 'build-vcx', '-o', 'build-vcx-dev',
+               'DOCS_SKIP_CX_BUILD=1', 'GUIDE_SKIP_CX_BUILD=1', 'SITE_SKIP_CX_BUILD=1')]
+
 # ── ci/make — one selected step, on the runner its item names ────────────────
 # A shared step re-reads the main checkout's last RUN line before it runs
 # (L98; rule 5 of 2026-09-24) and waits for the gap, then takes
@@ -753,7 +760,7 @@
       [else [?let [= $runner [?if [= $s 'shared'] [then [$shared-slot]] [else [$own-slot]]]]
                   [= $log [$concat $e '/steps/' [$re:replace [$re:compile '[^A-Za-z0-9_.-]+'] $t '_'] '.log']]
                   [= $_l [$log-line [$concat 'make ' $t ' (' $s ' runner)']]]
-                  [= $r [$slot-make $runner [$str-split-whitespace $t] $log]]
+                  [= $r [$slot-make $runner [$cat2 $BUILT [$str-split-whitespace $t]] $log]]
                   [= $row [row target=$t slot=$s exit=[$string $r@exit-code] log=$log]]
                   [= $_a [$io:append-file [$concat $e '/premerge-steps.cxd'] [$cx-serialize $row]]]
         [?if [$ok $r] [then [made target=$t slot=$s tail=[$log-tail $log 1]]]
