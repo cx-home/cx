@@ -33,6 +33,21 @@ name: Site
 # any more, so an ubuntu runner would work too if org runner allocation ever
 # needs it split by cost — not changed here, out of #1670's scope.
 
+# PLAY-1 (2026-09-28): the playground's wasm engine is a REQUIRED artifact of
+# this workflow. Run 36375144472 shipped 0 of its 5 files — emcc is not on
+# GitHub's macOS runner — so cxhome.org/playground loaded and answered 404 for
+# wasm/cxlib.js: a page with no engine. The job now installs the Emscripten
+# SDK at the version devbox.json pins (the one pin; the emsdk checkout is the
+# tag of that same version, cached per version), builds the engine with
+# `make guide-wasm` before `make site`, lists the site with the five wasm
+# files required (docs-src/site/manifest.cxd), and before uploading anything
+# loads the ASSEMBLED site in headless Chrome and runs every primer example
+# in the page (`make test-playground-primer PLAYGROUND_ROOT=site`).
+#
+# A dispatch on any other ref (`gh workflow run site.yml --ref <branch>`)
+# builds and tests exactly this and does NOT deploy: `deploy` runs only for
+# refs/heads/main.
+
 on:
   push:
     branches: [main]
@@ -51,7 +66,7 @@ jobs:
   build:
     if: github.repository == 'cx-home/cx'
     runs-on: macos-14
-    timeout-minutes: 90
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
         with:
@@ -71,18 +86,69 @@ jobs:
       - name: Sync + verify the pinned repositories with the cx just built
         run: make deps-sync CX_BIN=deps/cx-core-code/vcx/target/cx
 
+      - name: Read the pinned Emscripten version (devbox.json is the one pin)
+        id: emsdk
+        run: |
+          v="$(jq -r '.packages.emscripten' devbox.json)"
+          case "$v" in
+            ''|null|latest) echo "devbox.json pins no Emscripten version (got '$v')"; exit 1 ;;
+          esac
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the Emscripten SDK
+        uses: actions/cache@v4
+        with:
+          path: ~/emsdk
+          key: emsdk-${{ runner.os }}-${{ runner.arch }}-${{ steps.emsdk.outputs.version }}
+
+      - name: Install the pinned Emscripten SDK
+        env:
+          EMSDK_VERSION: ${{ steps.emsdk.outputs.version }}
+        run: |
+          set -eu
+          if [ ! -x "$HOME/emsdk/emsdk" ]; then
+            git clone --depth 1 --branch "$EMSDK_VERSION" https://github.com/emscripten-core/emsdk.git "$HOME/emsdk"
+          fi
+          "$HOME/emsdk/emsdk" install "$EMSDK_VERSION"
+          "$HOME/emsdk/emsdk" activate "$EMSDK_VERSION"
+          . "$HOME/emsdk/emsdk_env.sh"
+          emcc --version | head -1
+          echo "$HOME/emsdk" >> "$GITHUB_PATH"
+          echo "$HOME/emsdk/upstream/emscripten" >> "$GITHUB_PATH"
+          echo "EMSDK=$HOME/emsdk" >> "$GITHUB_ENV"
+          echo "EM_CONFIG=$HOME/emsdk/.emscripten" >> "$GITHUB_ENV"
+
+      - name: Build the playground's wasm engine and render the guide with it
+        run: make guide-wasm
+
       - name: Assemble the site
         run: make site
 
-      - name: List the site against its manifest
+      - name: List the site against its manifest (the five wasm files required)
         run: make site-check
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install the playground gates' dev dependency (jsdom)
+        run: npm --prefix scripts/playground-gate ci --no-audit --no-fund
+
+      - name: The page's navigation and readings (jsdom, the shipped page)
+        run: make test-playground-nav
+
+      - name: No primer or corpus example traps the engine (node)
+        run: make test-playground-wasm-traps
+
+      - name: The assembled site in headless Chrome — the engine loads, the page prints on load, every primer example answers as its fixture records
+        run: make test-playground-primer PLAYGROUND_ROOT=site
 
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
 
   deploy:
-    if: github.repository == 'cx-home/cx'
+    if: github.repository == 'cx-home/cx' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     environment:
