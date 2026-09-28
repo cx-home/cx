@@ -172,6 +172,16 @@
                     [= $got [$node-count $n]]
                     [yield [fig repo=$n want=$want got=$got]]]]
         [= $miss [?for [in $f $drawn] [where [not [= $f@want $f@got]]] [yield [$string $f@repo]]]]
+        [; a constant written bare in attribute position (`width=BOX-W`) is emitted
+           as its NAME, not its value — an SVG whose boxes have no width; every
+           attribute value that reads as a bare constant name is refused ]
+        [= $bare [?for [in $n $names]
+                   [where [or [= $n [$rs:site-self]] [= [$rs:attr [$repo-row $n] "status" ""] "extracted"]]]
+                   [where [not [$empty [$re:find-all [$re:compile "=\"[A-Z][A-Z0-9-]*\""] [$plugs-svg $n]]]]]
+                   [yield $n]]]
+        [= $_bare [?if [$empty $bare] [then 0]
+                    [else [$die [$concat "a bare constant name in attribute position of the figure for: "
+                                         [$strings:join $bare " "]]]]]]
     [?if [$empty $miss]
       [then [$say [$concat "plugs-svg-check: " [$string [$count $drawn]] " repository figures, each drawing exactly "
                            "1 + pins + pinned-by + modules nodes ("
