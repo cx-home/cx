@@ -1,0 +1,49 @@
+[external-links
+  [doc [#
+docs-src/site/links.cxd — the external-link check's allowlist (RULED: DOCS-45).
+
+scripts/gen_site/check_external_links.cx (`make site-links-external`) walks
+every assembled page and served Markdown file, collects every http(s) URL once,
+fetches each with cx-stdlib/http-client and refuses the run on any URL that
+does not answer. The step runs in the site workflow (.github/workflows/site.yml,
+after site-check) and in the CICD-1 flow's check step — never in TEST_TARGETS,
+because it needs the network (the design's letter E, the owner's (a)).
+
+  [skip host=<host> why='…']   a host the check does not fetch — one that
+                               refuses automated clients or answers
+                               unreliably, with the reason on the row
+  [expect url=<url> status=N why='…']
+                               a URL whose answer is known and accepted as
+                               it is — a repository not yet published, say —
+                               with the reason; the row is removed the day
+                               the URL answers normally
+  [expect prefix=<url-prefix> status=N why='…']
+                               the same for every URL under a prefix; a URL
+                               under it that answers normally is fine too,
+                               and the run says how many the row still covers,
+                               so the row is removed when that reaches zero
+
+A row without a `why=` is refused: the allowlist is evidence, not an excuse.
+#]]
+
+  [; cx-home/cx-platform-xsp does not exist on GitHub yet: the repository is
+     created and pushed by the integrator (RS-8; registry/repos.cxd's row says
+     "NOT YET PUSHED"), and the landing page's repository map links it because
+     the registry row is status=extracted. Measured 404 on 2026-09-28. ]
+  [expect url='https://github.com/cx-home/cx-platform-xsp' status=404
+          why='the repository is created by the integrator at the push (RS-8); its registry row is already status=extracted']
+
+  [; every other component repository exists and is PRIVATE until the release
+     cut flips it public (K13: secrets-scan and check-no-consumer-terms are
+     the flip's preconditions) — GitHub answers 404 to a client that is not
+     signed in. Measured 2026-09-28: 54 URLs under this prefix, every one
+     404; the front door itself (cx-home/cx) answers 200. ]
+  [expect prefix='https://github.com/cx-home/cx-' status=404
+          why='the component repositories are private until the release cut flips them public (K13); GitHub answers 404 to an unauthenticated client']
+
+  [; the two font origins are <link rel=preconnect> targets — an origin to
+     open a connection to, not a document; both answer 404 at the root while
+     the stylesheet URL under them answers 200. ]
+  [expect url='https://fonts.googleapis.com' status=404 why='a preconnect origin, not a document']
+  [expect url='https://fonts.gstatic.com' status=404 why='a preconnect origin, not a document']
+]

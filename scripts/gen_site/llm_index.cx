@@ -1,0 +1,122 @@
+# scripts/gen_site/llm_index.cx — the LLM door, llm/index.html, rendered from
+# the LLM layer's manifest (RULED: DOCS-46, K11, D51d, RS-30).
+#
+# https://cxhome.org/llm/ answered 404 (a directory with no index, measured
+# 2026-09-28) while the layer it fronts — the primer, the references, the
+# contributor pages, the llmstxt.org pair — was all there. This renders the
+# door: the manifest's tagline, its [output] entries grouped under the same
+# four headings llms.txt uses (start / build / contribute / reference), each
+# entry's title and summary linking its served file, the llms.txt pair at the
+# site root, and the two other doors (`cx primer`, AGENTS.md). Everything on
+# the page is a manifest row or a Makefile fact; the prose is the frame.
+#
+# It is written by site_assemble.cx into the assembled tree (untracked, like
+# the guide) and declared in docs-src/site/manifest.cxd as llm/index.html.
+# The page wears the site's stylesheet from the root, one directory up.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/fp'      as=fp]
+
+[?lib './scripts/gen_docs/primer_build.cx' as=pb]
+
+[?const LLM-MANIFEST "docs-src/llm/manifest.cxd"]
+
+[?def esc scope=public ($s)
+  [$strings:replace [$strings:replace [$strings:replace $s "&" "&amp;"] "<" "&lt;"] ">" "&gt;"]]
+
+[?def attr scope=public ($e $k $d)
+  [?let [= $hits [?for [in $a [$attrs $e]] [where [= [$string $a@name] $k]] [yield [$string $a]]]]
+    [?if [$empty $hits] [then $d] [else [$first $hits]]]]]
+
+# summary-of: an [output]'s [summary] raw text, reflowed to one line.
+[?def summary-of scope=public ($d)
+  [$pb:one-line [$strings:join [?for [in $k $d/*] [where [= [?else [$name $k] ""] "summary"]]
+                                 [yield [$pb:normalize [$pb:raw-of $k]]]] ""]]]
+
+[?def entries scope=public ($docs $section)
+  [?for [in $d $docs] [where [= [$attr $d "section" "reference"] $section]] [yield $d]]]
+
+[?def entry-html scope=public ($d)
+  [$strings:join (
+    "<li><a href=\"", [$esc [$attr $d "out" ""]], "\"><b>", [$esc [$attr $d "title" ""]], "</b></a>",
+    " — ", [$esc [$summary-of $d]],
+    "<span class=\"llm-file\"><code>llm/", [$esc [$attr $d "out" ""]], "</code></span></li>\n") ""]]
+
+[?def section-html scope=public ($docs $key $heading $lede)
+  [?let [= $es [$entries $docs $key]]
+    [?if [$empty $es] [then ""]
+      [else [$strings:join (
+        "<h2>", $heading, "</h2>\n<p>", $lede, "</p>\n<ul class=\"llm-index\">\n",
+        [$strings:join [?for [in $d $es] [yield [$entry-html $d]]] ""],
+        "</ul>\n") ""]]]]]
+
+# llm-index-html: the whole page.
+[?def llm-index-html scope=public impure ($ver)
+  [?let [= $m [$cx:parse [$io:read-file LLM-MANIFEST]]]
+        [= $tagline [$pb:one-line [$strings:join [?for [in $k $m/*] [where [= [?else [$name $k] ""] "tagline"]]
+                                                   [yield [$pb:normalize [$pb:raw-of $k]]]] ""]]]
+        [= $docs [?for [in $k $m/*] [where [= [?else [$name $k] ""] "output"]] [yield $k]]]
+        [= $n [$count $docs]]
+    [$strings:join (
+      "<!DOCTYPE html>",
+      "<html lang=\"en\">",
+      "<head>",
+      "<meta charset=\"utf-8\">",
+      "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
+      "<title>The LLM front door — CX</title>",
+      [$strings:join ("<meta name=\"description\" content=\"", [$esc $tagline], "\">") ""],
+      "<link rel=\"icon\" type=\"image/svg+xml\" href=\"../assets/cx-logo.svg\">",
+      "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">",
+      "<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>",
+      "<link href=\"https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap\" rel=\"stylesheet\">",
+      [$strings:join ("<link rel=\"stylesheet\" href=\"../style.css?v=", $ver, "\">") ""],
+      "<style>",
+      "body.site-home { grid-template-columns: 1fr; }",
+      "body.site-home header.sheet-bar, body.site-home main, body.site-home footer.title-block { grid-column: 1; }",
+      "body.site-home main { max-width: 920px; margin: 0 auto; }",
+      "ul.llm-index { list-style: none; padding-left: 0; }",
+      "ul.llm-index li { margin: 0.55rem 0; padding-left: 0.9rem; border-left: 2px solid var(--rule); }",
+      "ul.llm-index .llm-file { display: block; font-size: 0.85em; color: var(--faint); }",
+      "</style>",
+      "</head>",
+      "<body class=\"site-home\">",
+      "<header class=\"sheet-bar\">",
+      "  <div class=\"sb-left\"><span class=\"sb-brand\">CX · cxhome.org</span><span class=\"sb-title\">The LLM front door</span></div>",
+      [$strings:join ("  <div class=\"sb-right\"><a href=\"../index.html\">Home</a><a href=\"../guide.html\">Guide</a>",
+                      "<a href=\"../llms.txt\">llms.txt</a><a href=\"https://github.com/cx-home/cx\">GitHub</a>",
+                      "<span class=\"sb-rev\">v", $ver, "</span></div>") ""],
+      "</header>",
+      "<main>",
+      "<h1>The LLM front door</h1>",
+      [$strings:join ("<p class=\"lede\">", [$esc $tagline], " This directory is that context — ",
+                      [$string $n], " documents, every code example in them a conformance fixture whose output was ",
+                      "re-recorded by the <code>cx</code> that built them, so an assistant that loads them learns the ",
+                      "language the binary actually runs.</p>") ""],
+      "<h2>Three doors to one text</h2>",
+      "<ul>",
+      "<li><b><code>cx primer</code></b> — the door that cannot go stale: the installed binary prints the primer it was built with.</li>",
+      "<li><b><a href=\"../llms.txt\">/llms.txt</a></b> — the <a href=\"https://llmstxt.org\">llmstxt.org</a> index of this directory, and <a href=\"../llms-full.txt\">/llms-full.txt</a>, all of it in one fetch.</li>",
+      "<li><b><a href=\"https://github.com/cx-home/cx/blob/main/AGENTS.md\">AGENTS.md</a></b> — the vendor-neutral agent instructions at the root of the front door, which point here.</li>",
+      "</ul>",
+      [$section-html $docs "start" "Start here"
+        "The one file to load before writing CX."],
+      [$section-html $docs "build" "Building something"
+        "The arc from a feature grammar to a deployment, and the question an adopter asks first."],
+      [$section-html $docs "contribute" "Contributing to CX"
+        "The rules for changing CX, each citing its decision and the step that holds it; the facts projected from the registries."],
+      [$section-html $docs "reference" "Reference"
+        "One file per area, loaded only when the task needs it."],
+      "<p class=\"note\">Generated by <code>scripts/gen_docs/primer_build.cx</code> from <code>docs-src/llm/</code> and the conformance corpus; this door by <code>scripts/gen_site/llm_index.cx</code> from the same manifest. Never edit a file under <code>llm/</code> by hand — <code>make docs-check</code> refuses the drift.</p>",
+      "</main>",
+      "<footer class=\"title-block\">",
+      "  <div class=\"tb-cell tb-project\"><span>Project</span><b>CX — one language, data format to platform</b></div>",
+      "  <div class=\"tb-cell\"><span>Drawing</span><b>LLM front door</b></div>",
+      [$strings:join ("  <div class=\"tb-cell\"><span>Rev</span><b>", $ver, "</b></div>") ""],
+      "  <div class=\"tb-cell\"><span>Checked by</span><b class=\"tb-accent\">The compiler</b></div>",
+      "  <div class=\"tb-cell\"><span>Issued</span><b>cxhome.org</b></div>",
+      "</footer>",
+      "</body>",
+      "</html>",
+      "") "\n"]]]

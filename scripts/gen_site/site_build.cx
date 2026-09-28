@@ -26,13 +26,22 @@
 #   {{REPO-MAP}}              the repository map: the front door ([site repo=])
 #                             and every registry/repos.cxd row with
 #                             status=extracted, grouped by group=, each linked
-#                             to its repository, with what it ships and what it is
+#                             to its page of this site (repo-<name>.html) when
+#                             the manifest's [files] declare one and to its
+#                             repository on GitHub otherwise, with what it
+#                             ships and what it is
 #   {{COUNT:modules}}         registry/modules.cxd rows with kind=module that
 #                             are not status=planned — the shipped modules
 #   {{COUNT:directives}}      the rows of the normative directive registry
 #                             (the spec's §4.1 table, as the primer projects it)
 #   {{COUNT:repositories}}    the rows {{REPO-MAP}} shows
 #   {{COUNT:examples}}        the fixtures this page cites, replayed green
+#   {{TLDR}}                  the one TL;DR, from docs-src/site/tldr.cxd (the
+#                             primer's own placeholder; its clauses' cases are
+#                             replayed here too, RULED: DOCS-49)
+#   {{FIGURE:rings}}          the ring figure, rendered from the registries by
+#                             ring_svg.cx (RULED: DOCS-42), inlined in place
+#                             and linked to rings.html
 #
 # ── The Markdown it renders ─────────────────────────────────────────────────
 #
@@ -64,6 +73,12 @@
 # verification and placeholder expansion (every def there is scope=public; its
 # top-level run does not execute on import).
 [?lib './scripts/gen_docs/primer_build.cx' as=pb]
+
+# The rows the site counts (RULED: DOCS-42) — the figure prints the same ones.
+[?lib './scripts/gen_site/site_counts.cx' as=sc]
+# The ring figure, rendered from the registries (RULED: DOCS-42), inlined by
+# {{FIGURE:rings}}.
+[?lib './scripts/gen_site/ring_svg.cx' as=rs]
 
 [?const MANIFEST "docs-src/site/manifest.cxd"]
 
@@ -216,14 +231,11 @@
 [?const GROUP-TITLE {dist: "the front door", core: "the two cores", platform: "the platform group",
                      binding: "the bindings", ecosystem: "the ecosystem"}]
 
-[?def shown-repos scope=public impure ($self)
-  [?for [in $r [$cx:parse [$io:read-file "registry/repos.cxd"]]//repo]
-    [where [or [= [$string $r@name] $self] [= [$string [?else $r@status ""]] "extracted"]]]
-    [yield $r]]]
+[?def shown-repos scope=public impure ($self) [$sc:shown-repos $self]]
 
 [; A row whose group= is not one of GROUPS would silently drop off the map, so
    it is refused by name instead: a new group is a new heading here first. ]
-[?def repo-map scope=public impure ($self)
+[?def repo-map scope=public impure ($self $files)
   [?let [= $rs [$shown-repos $self]]
         [= $stray [?for [in $r $rs] [where [not [$pb:member GROUPS [$string $r@group]]]]
                     [yield [$string $r@name]]]]
@@ -237,24 +249,24 @@
         [= $mine [?for [in $r $rs] [where [= [$string $r@group] $g]] [yield $r]]]
         [in $i [$range 1 [$count $mine]]]
         [= $r [$nth $mine $i]]
+        [= $page [$concat "repo-" [$string $r@name] ".html"]]
         [yield [$concat "| " [?if [= $i 1] [then [$map:get GROUP-TITLE $g]] [else ""]]
-                        " | [" [$string $r@name] "](https://github.com/cx-home/" [$string $r@name] ")"
+                        " | [" [$string $r@name] "]("
+                        [?if [$pb:member $files $page] [then $page]
+                          [else [$concat "https://github.com/cx-home/" [$string $r@name]]]] ")"
                         " | " [$string $r@about]
                         " | " [$string $r@ships] " |"]]] "\n"]) "\n"]]]
 
-[?def count-of scope=public impure ($what $self $nrefs)
-  [?match $what
-    [case "modules"
-      [$string [$count [?for [in $m [$cx:parse [$io:read-file "registry/modules.cxd"]]//module]
-                         [where [= [$string [?else $m@kind "module"]] "module"]]
-                         [where [not [= [$string [?else $m@status ""]] "planned"]]]
-                         [yield 1]]]]]
-    [case "directives"
-      [$string [$count [?for [in $l [$strings:split-lines [$pb:directive-rows]]]
-                         [where [$strings:starts-with $l "| `[?"]] [yield 1]]]]]
-    [case "repositories" [$string [$count [$shown-repos $self]]]]
-    [case "examples" [$string $nrefs]]
-    [else [$die [$concat "unknown COUNT '" $what "' in " MANIFEST "'s page"]]]]]
+[?def count-of scope=public impure ($what $self $nrefs) [$sc:count-of $what $self $nrefs]]
+
+# The ring figure rides through the Markdown pass as a bare token (raw HTML
+# would be escaped there) and is substituted into the rendered page after it.
+[?const FIGURE-TOKEN "@@FIGURE:rings@@"]
+[?def place-figure scope=public impure ($html)
+  [$strings:replace $html [$concat "<p>" FIGURE-TOKEN "</p>\n"]
+    [$concat "<div class=\"hero-fig site-fig\"><a href=\"rings.html\" aria-label=\"The rings, page\">"
+             [$rs:ring-svg]
+             "</a><div class=\"fig-caption\">Fig. 1 — two rings, the groups above them, drawn from the registry when this page was built · <a href=\"rings.html\">the rings page</a></div></div>\n"]]]
 
 [?def page-link scope=public impure ($parts $files $where)
   [?let [= $target [$strings:slice [$first $parts] 6 [$strings:length [$first $parts]]]]
@@ -273,7 +285,8 @@
         [= $where [$map:get $ctx "where"]]
     [?match $kind
       [when [$strings:starts-with $kind "PAGE:"] [$page-link $parts [$map:get $ctx "files"] $where]]
-      [when [= $kind "REPO-MAP"] [$repo-map [$map:get $ctx "self"]]]
+      [when [= $kind "REPO-MAP"] [$repo-map [$map:get $ctx "self"] [$map:get $ctx "files"]]]
+      [when [= $kind "FIGURE:rings"] FIGURE-TOKEN]
       [when [$strings:starts-with $kind "COUNT:"]
         [$count-of [$strings:slice $kind 7 [$strings:length $kind]] [$map:get $ctx "self"] [$map:get $ctx "nrefs"]]]
       [else [$pb:expand-one $body [$map:get $ctx "index"] [$map:get $ctx "replays"]
@@ -316,6 +329,9 @@
     "body.site-home { grid-template-columns: 1fr; }",
     "body.site-home header.sheet-bar, body.site-home main, body.site-home footer.title-block { grid-column: 1; }",
     "body.site-home main { max-width: 920px; margin: 0 auto; }",
+    ".site-fig { max-width: 520px; margin: 1.2rem auto; }",
+    ".site-fig svg { width: 100%; height: auto; display: block; }",
+    "ul.tldr { margin: 0.4rem 0 1rem; }",
     "</style>",
     "</head>",
     "<body class=\"site-home\">",
@@ -366,7 +382,7 @@
   [= $ctx {index: $index, replays: $replays, version: $version, cxbin: $cxbin,
            where: $src, files: $files, self: $self, nrefs: [$count $refs]}]
   [= $md [$expand $tmpl $ctx]]
-  [= $html [$wrap [$string $page@title] $version [$markdown $md $src]]]
+  [= $html [$wrap [$string $page@title] $version [$place-figure [$markdown $md $src]]]]
   [?if $check
     [then [?let [= $old [?if [$io:is-file $out] [then [$io:read-file $out]] [else "absent"]]]
       [?if [= $old $html]

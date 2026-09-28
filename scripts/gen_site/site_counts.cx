@@ -1,0 +1,47 @@
+# scripts/gen_site/site_counts.cx — the rows the site counts, in one place
+# (RULED: RS-28, RS-30, DOCS-42).
+#
+# The landing page prints numbers — shipped modules, directives, repositories
+# — and the ring figure prints the same numbers in its inspection stamp. Both
+# read them HERE, from the files that declare them, so the two cannot print
+# two different counts: site_build.cx (the landing, {{COUNT:…}} and
+# {{REPO-MAP}}), guide_build.cx (the guide home and the sections' {{COUNT:…}})
+# and ring_svg.cx (the figure) all import this file. It imports only the
+# primer's generator (for the directive registry's rows), never the site
+# builder, which is what keeps the import graph acyclic.
+#
+#   [$sc:shown-repos SELF]         the front door (SELF, the manifest's site
+#                                  repo=) and every registry/repos.cxd row with
+#                                  status=extracted — the repository map's rows
+#   [$sc:count-of WHAT SELF NREFS] "modules" | "directives" | "repositories" |
+#                                  "examples" (NREFS), as the string printed
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?lib './scripts/gen_docs/primer_build.cx' as=pb]
+
+[?def die scope=public impure ($s)
+  [?let [= $_ [$io:write-line [$env:stderr] [$concat "site_counts: " $s]]]
+    [$env:exit 1]]]
+
+[?def shown-repos scope=public impure ($self)
+  [?for [in $r [$cx:parse [$io:read-file "registry/repos.cxd"]]//repo]
+    [where [or [= [$string $r@name] $self] [= [$string [?else $r@status ""]] "extracted"]]]
+    [yield $r]]]
+
+[?def count-of scope=public impure ($what $self $nrefs)
+  [?match $what
+    [case "modules"
+      [$string [$count [?for [in $m [$cx:parse [$io:read-file "registry/modules.cxd"]]//module]
+                         [where [= [$string [?else $m@kind "module"]] "module"]]
+                         [where [not [= [$string [?else $m@status ""]] "planned"]]]
+                         [yield 1]]]]]
+    [case "directives"
+      [$string [$count [?for [in $l [$strings:split-lines [$pb:directive-rows]]]
+                         [where [$strings:starts-with $l "| `[?"]] [yield 1]]]]]
+    [case "repositories" [$string [$count [$shown-repos $self]]]]
+    [case "examples" [$string $nrefs]]
+    [else [$die [$concat "unknown COUNT '" $what "'"]]]]]

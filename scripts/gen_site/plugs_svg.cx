@@ -1,0 +1,186 @@
+# scripts/gen_site/plugs_svg.cx — "what it plugs into": one small figure per
+# repository, drawn from registry/repos.cxd's pins= column (RULED: DOCS-42,
+# RS-24, RS-30, CXF-1).
+#
+# For a repository R the figure shows three columns: on the left the
+# repositories R builds on (its pins= row, in the registry's order), in the
+# middle R itself with the modules it ships as its face (registry/modules.cxd's
+# rows with repo=R), on the right the repositories whose pins= name R. The
+# front door (`cx`, the row the site manifest names as its own) carries no
+# pins= column — it pins every repository deps.cxd lists — so its left column
+# is deps.cxd's rows. Everything in the picture is a registry row; nothing is
+# hand geometry, and the colours are read from style.css's tokens the way
+# ring_svg.cx reads them.
+#
+# Consumers: the repository pages (waves 2–4 of DOCS-49) inline
+# [$plugs:plugs-svg <name>]; this wave ships the generator and its self-test.
+#
+# Run (from the repository root):
+#   cx --allow-read scripts/gen_site/plugs_svg.cx <repo>    the SVG on stdout
+#   cx --allow-read scripts/gen_site/plugs_svg.cx --check   the self-test: every
+#        pins= name is a repos.cxd row, no repository pins itself, and for every
+#        repository the figure's node count is 1 + pins + pinned-by + modules
+#   (or: make ring-svg-check, which runs both figure self-tests)
+#
+# Exit: 0 green; 1 an unknown repository, a pins= name with no row, a
+# self-pin, or a node-count miss.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/xml'     as=xml]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/strings' as=strings]
+
+# The ring figure's token reader and row helpers, reused rather than re-read.
+[?lib './scripts/gen_site/ring_svg.cx' as=rs]
+
+[?const REPOS "registry/repos.cxd"]
+[?const DEPS "deps.cxd"]
+
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def die scope=public impure ($s)
+  [?let [= $_ [$cry [$concat "plugs_svg: " $s]]] [$env:exit 1]]]
+
+[?def member scope=public ($seq $x)
+  [> [$count [?for [in $y $seq] [where [= $y $x]] [yield 1]]] 0]]
+
+# ── the rows ────────────────────────────────────────────────────────────
+
+[?def repo-names scope=public impure ()
+  [?for [in $r [$rs:repo-rows]] [yield [$string $r@name]]]]
+
+[?def repo-row scope=public impure ($name)
+  [?let [= $hits [?for [in $r [$rs:repo-rows]] [where [= [$string $r@name] $name]] [yield $r]]]
+    [?if [$empty $hits] [then [$die [$concat "no [repo name=" $name "] row in " REPOS]]]
+      [else [$first $hits]]]]]
+
+# pins-of: the repositories $name builds on. The front door's are deps.cxd's
+# rows; every other row's are its pins= column.
+[?def pins-of scope=public impure ($name)
+  [?if [= $name [$rs:site-self]]
+    [then [?for [in $d [$cx:parse [$io:read-file DEPS]]//dep] [yield [$string $d@repo]]]]
+    [else [$strings:split-whitespace [$rs:attr [$repo-row $name] "pins" ""]]]]]
+
+# pinned-by: the repositories whose pins= names $name, in registry order.
+[?def pinned-by scope=public impure ($name)
+  [?for [in $r [$rs:repo-rows]]
+    [where [$member [$strings:split-whitespace [$rs:attr $r "pins" ""]] $name]]
+    [yield [$string $r@name]]]]
+
+# face-of: the modules $name ships (kind=module rows, not planned), by name.
+[?def face-of scope=public impure ($name)
+  [?for [in $m [$rs:module-rows]]
+    [where [= [$rs:attr $m "repo" ""] $name]]
+    [where [$rs:is-module $m]]
+    [where [not [$rs:is-planned $m]]]
+    [order-by $m/@name]
+    [yield [$string $m@name]]]]
+
+# ── the drawing ─────────────────────────────────────────────────────────
+
+[?const W 640]
+[?const ROW-H 22]
+[?const BOX-W 168]
+[?const PAD 16]
+
+# A column of boxes: $names from the top at x=$x; each box carries a leader
+# point on the side facing the centre.
+[?def column scope=public ($names $x $y0 $ink $fill $faint)
+  [?for [in $i [$range 1 [$count $names]]]
+    [= $y [+ $y0 [* [- $i 1] ROW-H]]]
+    [yield [g class="pl-node"
+      [rect x=$x y=$y width=BOX-W height=[- ROW-H 4] fill=$fill stroke=$ink stroke-width="0.8"]
+      [text x=[+ $x 8] y=[+ $y 13] font-family=[$rs:font] font-size="9" fill=$ink [$nth $names $i]]]]]]
+
+[?def leader scope=public ($x1 $y1 $x2 $y2 $stroke)
+  [line x1=$x1 y1=$y1 x2=$x2 y2=$y2 stroke=$stroke stroke-width="1" marker-end="url(#pl-arr)"]]
+
+[?def figure scope=public impure ($name)
+  [?let [= $t [$rs:tokens]]
+        [= $ink [$rs:tok $t "ink"]]
+        [= $accent [$rs:tok $t "accent"]]
+        [= $panel [$rs:tok $t "paper-panel"]]
+        [= $paper [$rs:tok $t "paper"]]
+        [= $faint [$rs:tok $t "faint"]]
+        [= $muted [$rs:tok $t "muted"]]
+        [= $row [$repo-row $name]]
+        [= $pins [$pins-of $name]]
+        [= $by [$pinned-by $name]]
+        [= $face [$face-of $name]]
+        [= $rows [?let [= $n [$count $face]] [?if [< $n 1] [then 1] [else $n]]]]
+        [= $tall [?for [in $k ([$count $pins], [$count $by], [+ 1 [$count $face]])] [order-by $k desc] [yield $k]]]
+        [= $h [+ 64 [* [$first $tall] ROW-H]]]
+        [= $lx PAD]
+        [= $cx [- [/ W 2] [/ BOX-W 2]]]
+        [= $rx [- W [+ PAD BOX-W]]]
+        [= $y0 40]
+    [svg viewBox=[$concat "0 0 " [$string W] " " [$string $h]] xmlns="http://www.w3.org/2000/svg" role="img"
+         aria-label=[$concat "What " $name " plugs into: it builds on " [$string [$count $pins]]
+                             " repositories, " [$string [$count $by]] " build on it, and it ships "
+                             [$string [$count $face]] " modules"]
+      [defs [marker id="pl-arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"
+              [path d="M0,0 L6,3 L0,6 z" fill=$accent]]]
+      [text x=$lx y="22" font-family=[$rs:font] font-size="8" letter-spacing="1.6" fill=$muted "BUILDS ON"]
+      [text x=$cx y="22" font-family=[$rs:font] font-size="8" letter-spacing="1.6" fill=$muted "THIS REPOSITORY · SHIPS"]
+      [text x=$rx y="22" font-family=[$rs:font] font-size="8" letter-spacing="1.6" fill=$muted "BUILT ON BY"]
+      [; the pins, on the left ]
+      [?if [$empty $pins]
+        [then [text x=$lx y=[+ $y0 13] font-family=[$rs:font] font-size="8.5" font-style="italic" fill=$faint "nothing of CX — the root of the graph"]]
+        [else [g [?splice [$column $pins $lx $y0 $ink $paper $faint]]]]]
+      [; the repository itself, with its face below it ]
+      [g class="pl-self"
+        [rect x=$cx y=$y0 width=BOX-W height=[- ROW-H 4] fill=$panel stroke=$accent stroke-width="1.6"]
+        [text x=[+ $cx 8] y=[+ $y0 13] font-family=[$rs:font] font-size="9.5" font-weight="600" fill=$ink $name]
+        [?if [$empty $face]
+          [then [text x=[+ $cx 8] y=[+ $y0 [+ ROW-H 13]] font-family=[$rs:font] font-size="8.5" font-style="italic" fill=$faint "no bundled module — see its row"]]
+          [else [g [?splice [$column $face $cx [+ $y0 ROW-H] $ink $paper $faint]]]]]]
+      [; the arrows: imports point inward, so every arrow points at the pin ]
+      [?for [in $i [$range 1 [$count $pins]]]
+        [yield [$leader [- $cx 6] [+ $y0 9] [+ $lx [+ BOX-W 6]] [+ $y0 [+ 9 [* [- $i 1] ROW-H]]] $accent]]]
+      [?if [$empty $by]
+        [then [text x=$rx y=[+ $y0 13] font-family=[$rs:font] font-size="8.5" font-style="italic" fill=$faint "nothing pins it yet"]]
+        [else [g [?splice [$column $by $rx $y0 $ink $paper $faint]]]]]
+      [?for [in $i [$range 1 [$count $by]]]
+        [yield [$leader [- $rx 6] [+ $y0 [+ 9 [* [- $i 1] ROW-H]]] [+ $cx [+ BOX-W 6]] [+ $y0 9] $accent]]]
+      [text x=$lx y=[- $h 10] font-family=[$rs:font] font-size="7" letter-spacing="1" fill=$faint
+        [$concat "DRAWN FROM " REPOS "'s pins= COLUMN AND registry/modules.cxd WHEN THIS PAGE WAS BUILT"]]]]]
+
+[?def plugs-svg scope=public impure ($name)
+  [$re:replace [$re:compile " cx:attr-types=\"[^\"]*\""]
+    [$strings:replace [$strings:replace [$xml:emit [$figure $name]] "<>" ""] "</>" ""] ""]]
+
+# node-count: the boxes the figure draws for $name.
+[?def node-count scope=public impure ($name)
+  [$count [$re:find-all [$re:compile "<rect "] [$plugs-svg $name]]]]
+
+# ── self-test ───────────────────────────────────────────────────────────
+
+[?def check-all scope=public impure ()
+  [?let [= $names [$repo-names]]
+        [= $bad-pins [?for [in $r [$rs:repo-rows]]
+                       [in $p [$strings:split-whitespace [$rs:attr $r "pins" ""]]]
+                       [where [or [not [$member $names $p]] [= $p [$string $r@name]]]]
+                       [yield [$concat [$string $r@name] " pins " $p]]]]
+        [= $_b [?if [$empty $bad-pins] [then 0]
+                 [else [$die [$concat "pins= names with no row, or a self-pin: " [$strings:join $bad-pins "; "]]]]]]
+        [= $drawn [?for [in $n $names]
+                    [where [or [= $n [$rs:site-self]] [= [$rs:attr [$repo-row $n] "status" ""] "extracted"]]]
+                    [= $want [+ 1 [+ [$count [$pins-of $n]] [+ [$count [$pinned-by $n]] [$count [$face-of $n]]]]]]
+                    [= $got [$node-count $n]]
+                    [yield [fig repo=$n want=$want got=$got]]]]
+        [= $miss [?for [in $f $drawn] [where [not [= $f@want $f@got]]] [yield [$string $f@repo]]]]
+    [?if [$empty $miss]
+      [then [$say [$concat "plugs-svg-check: " [$string [$count $drawn]] " repository figures, each drawing exactly "
+                           "1 + pins + pinned-by + modules nodes ("
+                           [$string [$fp:fold $drawn 0 [?fn ($a $f) [+ $a $f@got]]]] " nodes in all)"]]]
+      [else [$die [$concat "figure node count off for: " [$strings:join $miss " "]]]]]]]
+
+[?let [= $argv [$env:argv]]
+  [?if [$member $argv "--check"]
+    [then [?let [= $_c [$check-all]] [$env:exit 0]]]
+    [else [?if [< [$count $argv] 2]
+      [then [$die "name a repository (a registry/repos.cxd row), or --check"]]
+      [else [?let [= $_p [$say [$plugs-svg [$nth $argv 2]]]] [$env:exit 0]]]]]]]

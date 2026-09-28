@@ -27,6 +27,25 @@
          answers one question: **how much of CX do you have to take on to
          get the thing you want?**"""]
 
+    [; DOCS-42: the figure is rendered from registry/modules.cxd and
+       registry/repos.cxd when the guide is built — every module in its
+       ring, the platform group clustered by repository, the bindings and
+       ecosystem groups at the rim, the counts the front page prints in the
+       stamp. It cannot drift from the registry, because it is the registry. ]
+    [figure name=rings]
+
+    [body
+      """Read it from the centre out. Ring 0, the data format, is the disc:
+         it parses, converts, hashes and validates, and it cannot execute —
+         there is no evaluator in it to switch off. Ring 1 is the ring of
+         named ticks around it: every bundled module a program can call
+         without leaving the two rings. The platform group is the outer
+         annulus, one sector per repository, holding everything that
+         serves, stores or speaks a protocol; the bindings and the ecosystem
+         sit at the rim. Every tick is a row of `registry/modules.cxd` and
+         every sector a row of `registry/repos.cxd`, drawn when this page
+         was built."""]
+
     [table
       [tr [th 'Ring / group'] [th 'What it is'] [th 'What it cannot do']]
       [tr [td '**0 — Data**'] [td 'the format: values, identity, schema, conversions']
@@ -147,8 +166,9 @@
 
     [body
       """What you can do with only the bindings and ecosystem groups: seal,
-         publish, and install features; consume packages; reach CX from Go,
-         Python, Rust, or V. See [[xap-distribution]], [[bindings]]."""]]
+         publish, and install features; consume packages; reach CX from the
+         four shipping host-language bindings. See [[xap-distribution]],
+         [[bindings]]."""]]
 
   [child id=rings-contract n=1a.6 title='The import contract'
     [body
@@ -171,7 +191,18 @@
       """This is the promise that makes the earlier sentences true. \"Ring 0
          cannot execute anything\" is not a statement about intent; it is a
          consequence of Ring 0 importing no evaluator, checked by the
-         build. \"Ring 1 cannot open a socket\" is the same kind of fact."""]]
+         build. \"Ring 1 cannot open a socket\" is the same kind of fact."""]
+
+    [body
+      """The gate that holds it: a module's ring and group are declared once,
+         in its `registry/modules.cxd` row, and `make placement-gate` refuses
+         a tree where the module's spec, corpus, source or V code sits
+         anywhere the row does not say, or where an artifact under a ring
+         directory has no row at all; `make ring-import-gate` and
+         `make product-import-gate` refuse an import that points outward or
+         a product import the repository's `pins=` row does not declare.
+         Both are steps of every pre-merge run, so the figure above and the
+         sentence before it are the same fact, checked twice."""]]
 
   [child id=rings-choosing n=1a.7 title='Where to go from here'
     [body

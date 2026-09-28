@@ -39,6 +39,15 @@
 # A docs run is one-shot by nature; its record is printed, and the exit code
 # is the CLI's (0 `:done`, 1 anything else).
 #
+# DOCS-4 (RULED: DOCS-42, DOCS-43, DOCS-44, DOCS-45): the generate step's
+# docs-generate renders the ring figure from the registries (ring-svg) beside
+# the landing page that inlines it; the check step carries docs-voice-check
+# (the docs speak for CX, DOCS-43) and ring-svg-check (the figure's module
+# ticks equal the registry's count); the internal link walk needs nothing here
+# — it is inside site-check (DOCS-44); the external-link fetch (DOCS-45) is
+# NOT a step of this document, which also runs pre-merge and post-merge
+# offline: it is the Site workflow's own step after this flow.
+#
 # PUBLISH IS NOT A STEP. The Site workflow deploys site/ with GitHub's Pages
 # actions (upload-pages-artifact, deploy-pages), which authenticate with the
 # job's OIDC token; an act cannot perform that deploy without re-implementing
@@ -50,6 +59,6 @@
         [do 'docs/generate' [mode $args/mode] [target 'docs-generate']]]
   [step name="check" needs="generate"
         [do 'docs/check'
-            [targets 'docs-check primer-platform-check guide-check verify-doc-links verify-doc-blocks verify-readme-blocks']]]
+            [targets 'docs-check primer-platform-check guide-check verify-doc-links verify-doc-blocks verify-readme-blocks docs-voice-check ring-svg-check']]]
   [step name="assemble" needs="check"
         [do 'docs/assemble' [target 'site-check']]]]

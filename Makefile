@@ -1717,7 +1717,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := docs-voice-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -3765,6 +3765,60 @@ check-build-input-roster:
 check-selection-manifest:
 	@bash scripts/check_selection_manifest.sh
 	@sh scripts/test_changed_selftest.sh
+
+# ── docs-voice-check (RULED: DOCS-43, RS-30) — the docs speak for CX ─────────
+# Counts the word "Python" (any case, whole word) in every served source —
+# the landing page, the guide sections and about page, the reference sources,
+# the LLM templates, the dev pages — and holds each file to its row in
+# docs-src/site/voice.cxd: no row means zero; a row is a ratchet (over OR
+# under the allowance fails, naming the new count). The three bridge pages
+# keep their rows; the rows carrying wave= are the floors DOCS-49's voice
+# waves take to zero. In TEST_TARGETS; a row in scripts/test_changed.sh.
+.PHONY: docs-voice-check
+docs-voice-check: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+docs-voice-check: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/gen_site/docs_voice_check.cx
+
+# ── ring-svg (RULED: DOCS-42, CICD-1) — the ring figure as a served file ─────
+# The docs flow's generate step (docs-src/flow/docs.flow.cx → docs-generate)
+# renders the figure from the registries to docs/guide/assets/rings.svg, the
+# file the site serves and the READMEs may link; `make guide` writes the same
+# bytes again when it renders the pages that inline it. Untracked, like the
+# guide (the design's letter B, the owner's (a)).
+.PHONY: ring-svg
+ring-svg: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+ring-svg:
+	@mkdir -p docs/guide/assets
+	@"$(CX_BIN)" --allow-read --allow-write scripts/gen_site/ring_svg.cx > docs/guide/assets/rings.svg
+	@echo "ring-svg: docs/guide/assets/rings.svg rendered from registry/modules.cxd and registry/repos.cxd"
+
+# ── ring-svg-check (RULED: DOCS-42) — the generated figures' self-tests ──────
+# The ring figure (scripts/gen_site/ring_svg.cx) draws one tick per shipped
+# module from registry/modules.cxd; the step asserts the ticks it draws equal
+# the registry's shipped-module count — the landing's {{COUNT:modules}} — so
+# the picture and the number cannot disagree. The plug-in figure
+# (plugs_svg.cx, one per repository from repos.cxd's pins= column) asserts
+# every pins= name is a row, no row pins itself, and each figure draws exactly
+# 1 + pins + pinned-by + modules nodes. In TEST_TARGETS; both read only the
+# registries and style.css, so the row is theirs.
+.PHONY: ring-svg-check
+ring-svg-check: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+ring-svg-check: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/gen_site/ring_svg.cx --check
+	@"$(CX_BIN)" --allow-read --allow-write scripts/gen_site/plugs_svg.cx --check
+
+# ── site-links-external (RULED: DOCS-45) — every external link, fetched ───────
+# Walks the assembled site/ (run `make site` first), collects every http(s)
+# URL an href, src or Markdown link names and fetches each once over
+# cx-stdlib/http-client; docs-src/site/links.cxd is the allowlist (a skipped
+# host, an expected status), each row with its reason. Deliberately NOT in
+# TEST_TARGETS and carrying no selection-manifest row: it needs the network.
+# It runs in .github/workflows/site.yml after site-check and in the CICD-1
+# flow's check step.
+.PHONY: site-links-external
+site-links-external: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+site-links-external:
+	@"$(CX_BIN)" --allow-read --allow-write --allow-net --allow-env scripts/gen_site/check_external_links.cx
 
 .PHONY: check-inmodule-test-roster
 check-inmodule-test-roster:

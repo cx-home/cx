@@ -80,8 +80,10 @@ docs:
 ##                                   (primer_build.cx) and the README badge.
 ##                                   Run it alone only to regenerate without the
 ##                                   checks; `make docs` is the process.
+##                                   DOCS-42: ring-svg, the ring figure from the
+##                                   registries, is the generate step's too.
 .PHONY: docs-generate
-docs-generate: $(DOCS_CX_DEP) primer-platform site-index
+docs-generate: $(DOCS_CX_DEP) primer-platform ring-svg site-index
 	@CX_BIN="$(DOCS_CX_BIN)" $(DOCS_CX_BIN) $(DOCS_CAPS) $(DOCS_GEN)/primer_build.cx
 	# #954: refresh the README's self-reported CX-share badge alongside the
 	# docs layer (Linguist can't count CX until cx-tooling's tooling/linguist/ upstreams).

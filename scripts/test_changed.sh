@@ -256,6 +256,13 @@ step_globs() {
     # completion file reaches this tree as a deps.cxd pin bump.
     check-completions-drift)       echo 'vcx/* deps.cxd scripts/check_completions_drift.cx' ;;
     guide-check)                   echo 'docs-src/* vcx/* stdlib/*' ;;
+    # docs-voice-check (RULED: DOCS-43): the served sources it counts, and its
+    # allowlist docs-src/site/voice.cxd (under docs-src/*).
+    docs-voice-check)              echo 'docs-src/* docs/dev/* scripts/gen_site/docs_voice_check.cx' ;;
+    # ring-svg-check (RULED: DOCS-42): the two figure generators, the registries
+    # they draw from, the stylesheet whose tokens they read, the site manifest
+    # (the front door's name) and the primer generator's directive projection.
+    ring-svg-check)                echo 'scripts/gen_site/* scripts/gen_docs/primer_build.cx scripts/gen_guide/style.css registry/* deps.cxd docs-src/site/manifest.cxd spec/*' ;;
     # #1412 — the RENDERER, not the doc graders. Its inputs are the generator
     # itself, the canonical sources it reads, and the two module tiers whose
     # pages it projects (x/ included: an x/ module gets its own page).
