@@ -129,8 +129,8 @@
         [= $c0 [$g-out $cl ('rev-parse', 'HEAD')]]
         [= $e5 [$commit-file $cl 'README' [$cat ($name, " 1\n")] [$cat ($name, ': the pinned change')]]]
         [= $c1 [$g-out $cl ('rev-parse', 'HEAD')]]
-    [comp name=$name c0=$c0 c1=$c1
-          errs=[$strings:join [?to-sequence [?for [in $x ($e1, $e2, $e3, $e4, $e5)] [where [not [= $x '']]] [yield $x]]] '; ']]]]
+        [= $errs [$strings:join [?to-sequence [?for [in $x ($e1, $e2, $e3, $e4, $e5)] [where [not [= $x '']]] [yield $x]]] '; ']]
+    [comp name=$name c0=$c0 c1=$c1 errs=$errs]]]
 
 # one READY branch: the pin bump (the graded commit) and its evidence on top.
 [?def ready-branch scope=public impure ($main $name $dir $pins $repos $file)
@@ -144,8 +144,8 @@
                  [$cat ("# evidence\n\nMERGE-READY ", $graded, "\n")] [$cat ($name, ': evidence')]]]
         [= $e4 [$need $main ('push', '-q', 'origin', $name)]]
         [= $e5 [$need $main ('checkout', '-q', 'release/gate')]]
-    [ready name=$name dir=$dir graded=$graded
-           errs=[$strings:join [?to-sequence [?for [in $x ($e1, $e0, $e2, $e3, $e4, $e5)] [where [not [= $x '']]] [yield $x]]] '; ']]]]
+        [= $errs [$strings:join [?to-sequence [?for [in $x ($e1, $e0, $e2, $e3, $e4, $e5)] [where [not [= $x '']]] [yield $x]]] '; ']]
+    [ready name=$name dir=$dir graded=$graded errs=$errs]]]
 
 # the world of one case: two components, a front door on release/gate at F0
 # pinning both at their first commit, branch b1 moving comp-a and branch b2
@@ -196,9 +196,10 @@
         [= $errs [?to-sequence [?for [in $x ([$string $a@errs], [$string $b@errs], $e1, $e2, $e3, $e4, $e5, $e6, $e7,
                                               [$string $b1@errs], [$string $b2@errs], $e8, $e9)]
                    [where [not [= $x '']]] [yield $x]]]]
-    [world root=$root f0=$f0 a0=[$string $a@c0] a1=[$string $a@c1] b0=[$string $b@c0] b1=[$string $b@c1]
-           t1=[$g-out $main ('rev-parse', 'origin/impl/b1')] t2=[$g-out $main ('rev-parse', 'origin/impl/b2')]
-           errs=[$strings:join $errs '; ']]]]
+        [= $a0 [$string $a@c0]] [= $a1 [$string $a@c1]] [= $b0 [$string $b@c0]] [= $b1 [$string $b@c1]]
+        [= $t1 [$g-out $main ('rev-parse', 'origin/impl/b1')]] [= $t2 [$g-out $main ('rev-parse', 'origin/impl/b2')]]
+        [= $all [$strings:join $errs '; ']]
+    [world root=$root f0=$f0 a0=$a0 a1=$a1 b0=$b0 b1=$b1 t1=$t1 t2=$t2 errs=$all]]]
 
 # what the world holds after the run, in the table's words.
 [?def observe scope=public impure ($w)
@@ -211,12 +212,13 @@
                         [$g-ok $front ('merge-base', '--is-ancestor', [$string $w@t2], $rel)]]]
         [= $deps [$g-out $front ('show', [$cat ($rel, ':deps.cxd')])]]
         [= $head [$g-out [$cat ($root, '/main')] ('rev-parse', 'HEAD')]]
-    [seen comp-a=[?if [= $am [$string $w@a1]] [then 'new'] [else [?if [= $am [$string $w@a0]] [then 'before'] [else $am]]]]
-          comp-b=[?if [= $bm [$string $w@b1]] [then 'new'] [else [?if [= $bm [$string $w@b0]] [then 'before'] [else $bm]]]]
-          release=[?if [= $rel [$string $w@f0]] [then 'unmoved'] [else [?if $merged [then 'merged'] [else 'moved']]]]
-          pins=[?if [and [$strings:contains $deps [$string $w@a1]] [$strings:contains $deps [$string $w@b1]]] [then 'both'] [else 'not-both']]
-          checkout=[?if [= $head $rel] [then 'synced'] [else 'behind']]
-          trial=[?if [$io:exists [$cat ($root, '/clones/union-tmp')]] [then 'present'] [else 'absent']]]]]
+        [= $ca [?if [= $am [$string $w@a1]] [then 'new'] [else [?if [= $am [$string $w@a0]] [then 'before'] [else $am]]]]]
+        [= $cb [?if [= $bm [$string $w@b1]] [then 'new'] [else [?if [= $bm [$string $w@b0]] [then 'before'] [else $bm]]]]]
+        [= $re [?if [= $rel [$string $w@f0]] [then 'unmoved'] [else [?if $merged [then 'merged'] [else 'moved']]]]]
+        [= $pn [?if [and [$strings:contains $deps [$string $w@a1]] [$strings:contains $deps [$string $w@b1]]] [then 'both'] [else 'not-both']]]
+        [= $co [?if [= $head $rel] [then 'synced'] [else 'behind']]]
+        [= $tr [?if [$io:exists [$cat ($root, '/clones/union-tmp')]] [then 'present'] [else 'absent']]]
+    [seen comp-a=$ca comp-b=$cb release=$re pins=$pn checkout=$co trial=$tr]]]
 
 [?def world-misses scope=public pure ($c $seen)
   [?to-sequence [?for [in $want $c/world] [in $k ('comp-a', 'comp-b', 'release', 'pins', 'checkout', 'trial')]
@@ -250,7 +252,8 @@
 
 [?def select-case scope=public impure ($c)
   [?let [= $dir [$io:temp-dir 'ci-flow-gate-select']]
-        [= $r [$ci:select evidence=$dir own=[$string $c@own]]]
+        [= $own [$string $c@own]]
+        [= $r [$ci:select evidence=$dir own=$own]]
         [= $out [$cat ('base=', [$string $r@base], ' count=', [$string $r@count], ' ',
                        [$strings:join [?to-sequence [?for [in $i $r/item]
                          [yield [$cat ([$string $i/target], '@', [$string $i/slot])]]]] ' '])]]
