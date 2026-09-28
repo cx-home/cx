@@ -3004,6 +3004,12 @@ No skeleton carries `pivot=true`, `by=:agent`, `by=:peer`, `flow=` or
 `[compute …]`, so a step a non-developer may not compose is absent by
 construction rather than refused after the fact (RULED: AA-4; flow-185).
 
+**The `ux:automate` claim is granted by the tenant's own root `[claims-map]`
+document** — `ux.md` §6.5's cascade, position tenant — the same document that
+grants `ux:edit`, and never a per-surface override: a session's `[rule …]`
+either names `[grant cap="ux:automate"]` at that root or the automations plane
+is closed to it (RULED: NAMES-1, AA-4; case ux-134).
+
 **`fill` — one pure def, two callers.** `fill` takes a skeleton and
 `[answers [<slot> <value>]…]` and returns the flow document and its `[on …]`
 row with no slot left open, or refuses, naming EVERY slot that is unanswered or
@@ -3019,8 +3025,16 @@ documents from the same answers (RULED: AA-3).
 reaching `:done` and each skipped or refused path; a host-lane case,
 `case-host-automation`, then starts the run from a committed act on the real
 host and expects the folded run record (`flow.md` §4.23) (RULED: AA-6).
-Until those cases exist the four skeletons are ungraded, which under COMP-1 is
-a defect of this page, owed by **#1498**'s code wave.
+Landed with **#1498**'s code wave: flow-180 … flow-185 and `case-host-automation`
+all exist and grade the four skeletons above (RULED: NAMES-1, AA-6).
+
+**The path table.** Each skeleton's data document carries a fourth part
+alongside `[flow]` and `[on]` — `[paths [path name= [args …] [results …]]…]`,
+the declared result table `simulate` runs at publish, slot-marked and filled
+from the same answers as the flow itself; a publish is refused unless its
+declared path reaches `:done`, and the studio shows that simulated overlay
+before the commit (`ux.md` P0-130). `on-change-act`'s own copy is graded by
+flow-180 (RULED: NAMES-1, AA-6).
 
 ### 12.5 The four runtimes — deployment-topology.md §1
 
