@@ -50,7 +50,7 @@
 [?const TEMPLATE "docs-src/llm/primer.md.tmpl"]
 [?const MANIFEST "docs-src/llm/manifest.cxd"]
 [?const OUT "scripts/gen_guide/playground/playground.primer.js"]
-[; what the wasm engine cannot reproduce, and why — graded by the gate ]
+# what the wasm engine cannot reproduce, and why — graded by the gate
 [?const DIFFERS "scripts/gen_guide/playground/primer_wasm.cxd"]
 
 [?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
@@ -70,17 +70,19 @@
   [?let [= $i [$strings:find $h2 ". "]]
     [?if [not [$present $i]] [then ""] [else [$strings:slice $h2 1 [- $i 1]]]]]]
 
-# heading-of: a template line as [h level=2|3 text=…], or [h level=0] when
-# the line is not a heading.
+# heading-of: a template line as {level: 2|3 text: …}, or {level: 0} when the
+# line is not a heading. (Maps, not elements: an element attribute is scalar-
+# only in the document reading, so a computed one is refused there — #1548's
+# reader parity.)
 [?def heading-of scope=public ($line)
   [?if [$strings:starts-with $line "### "]
-    [then [h level=3 text=[$plain [$strings:slice $line 5 [$strings:length $line]]]]]
+    [then {level: 3, text: [$plain [$strings:slice $line 5 [$strings:length $line]]]}]
     [else [?if [$strings:starts-with $line "## "]
-      [then [h level=2 text=[$plain [$strings:slice $line 4 [$strings:length $line]]]]]
-      [else [h level=0 text=""]]]]]]
+      [then {level: 2, text: [$plain [$strings:slice $line 4 [$strings:length $line]]]}]
+      [else {level: 0, text: ""}]]]]]
 
-# refs-on-line: every fixture a line cites, each as [ref id=… role=…] —
-# role `wrong`/`right` for the two halves of a PAIR, `` for an EXAMPLE.
+# refs-on-line: every fixture a line cites, each as {id: … role: …} — role
+# `wrong`/`right` for the two halves of a PAIR, "" for an EXAMPLE.
 [?def refs-on-line scope=public ($line)
   [?let [= $chunks [$strings:split $line "{{"]]
         [= $n [$count $chunks]]
@@ -92,10 +94,10 @@
       [where [not [$empty $parts]]]
       [= $kind [$first $parts]]
       [in $r [?if [$strings:starts-with $kind "EXAMPLE:"]
-               [then ([ref id=[$strings:slice $kind 9 [$strings:length $kind]] role=""],)]
+               [then ({id: [$strings:slice $kind 9 [$strings:length $kind]], role: ""},)]
                [else [?if [and [$strings:starts-with $kind "PAIR:"] [>= [$count $parts] 2]]
-                 [then ([ref id=[$strings:slice $kind 6 [$strings:length $kind]] role=wrong],
-                        [ref id=[$nth $parts 2] role=right])]
+                 [then ({id: [$strings:slice $kind 6 [$strings:length $kind]], role: "wrong"},
+                        {id: [$nth $parts 2], role: "right"})]
                  [else ()]]]]]
       [yield $r]]]]
 
@@ -103,24 +105,28 @@
 # sits in (`§5 Iterate with [?for]`, or the chapter itself before its first
 # sub-heading); a fixture cited twice is listed once, where it is first cited.
 [?def cited scope=public ($tmpl)
-  [?let [= $walk [$fp:fold [$strings:split-lines $tmpl] {h2: "" cur: "" refs: ()}
+  [?let [= $init {h2: "", cur: "", refs: ()}]
+        [= $walk [$fp:fold [$strings:split-lines $tmpl] $init
             [?fn ($acc $line)
               [?let [= $h [$heading-of $line]]
-                    [= $lv $h@level]
-                    [= $h2 [?if [= $lv 2] [then [$string $h@text]] [else [$map:get $acc "h2"]]]]
+                    [= $lv [$map:get $h "level"]]
+                    [= $text [$string [$map:get $h "text"]]]
+                    [= $h2 [?if [= $lv 2] [then $text] [else [$map:get $acc "h2"]]]]
                     [= $cur [?match $lv
-                              [case 2 [$strings:replace-first [$concat "§" [$string $h@text]] ". " " "]]
-                              [case 3 [$concat "§" [$chapter-of $h2] " " [$string $h@text]]]
+                              [case 2 [$strings:replace-first [$concat "§" $text] ". " " "]]
+                              [case 3 [$concat "§" [$chapter-of $h2] " " $text]]
                               [else [$map:get $acc "cur"]]]]
                     [= $new [?for [in $r [$refs-on-line $line]]
-                              [yield [ref id=[$string $r@id] role=[$string $r@role] heading=$cur]]]]
-                {h2: $h2 cur: $cur refs: [$fp:flat-map ([$map:get $acc "refs"], $new) [?fn ($x) $x]]}]]]]
+                              [yield [$map:put $r "heading" $cur]]]]
+                [$map:put [$map:put [$map:put $acc "h2" $h2] "cur" $cur]
+                          "refs" [?let [= $both ([$map:get $acc "refs"], $new)] [$pb:cat-seqs $both]]]]]]]
         [= $all [$map:get $walk "refs"]]
-    [$fp:fold $all ()
+        [= $none ()]
+    [$fp:fold $all $none
       [?fn ($acc $r)
-        [?if [$member [?for [in $a $acc] [yield [$string $a@id]]] [$string $r@id]]
+        [?if [$member [?for [in $a $acc] [yield [$map:get $a "id"]]] [$map:get $r "id"]]
           [then $acc]
-          [else [$fp:flat-map ($acc, ($r,)) [?fn ($x) $x]]]]]]]]
+          [else [?let [= $both ($acc, ($r,))] [$pb:cat-seqs $both]]]]]]]]
 
 # suite-label: a suite path as a reader names it — the repository and the file.
 [?def suite-label scope=public ($p)
@@ -138,7 +144,7 @@
 
 # entry: one picker row, as a JSON-ready map.
 [?def entry scope=public impure ($n $r $index $differs)
-  [?let [= $id [$string $r@id]]
+  [?let [= $id [$string [$map:get $r "id"]]]
         [= $sec [$pb:lookup $index $id TEMPLATE]]
         [= $code [?else [$map:get $sec "in-code"] ""]]
         [= $data0 [?else [$map:get $sec "in-cx"] "[empty]"]]
@@ -154,29 +160,30 @@
                   [else [?if [not [= $xml ""]]
                     [then "its input is an XML document, which the browser engine does not read"]
                     [else ""]]]]]
-    {n: $n
-     id: $id
-     suite: [$suite-label [$string [$map:get $sec "suite"]]]
-     heading: [$string $r@heading]
-     role: [$string $r@role]
-     title: [$string [?else [$map:get $sec "title"] ""]]
-     reading: [$reading-of $sec]
-     doc: [?if [= $xml ""] [then $data] [else $xml]]
-     src: $code
-     cmd: $cmd
-     expected: [$string $e@text]
-     match: [$string $e@mode]
-     exit: [$string [?else [$map:get $sec "exit-code"] ""]]
-     runnable: [= $why ""]
-     why: $why
+    {n: $n,
+     id: $id,
+     suite: [$suite-label [$string [$map:get $sec "suite"]]],
+     heading: [$string [$map:get $r "heading"]],
+     role: [$string [$map:get $r "role"]],
+     title: [$string [?else [$map:get $sec "title"] ""]],
+     reading: [$reading-of $sec],
+     doc: [?if [= $xml ""] [then $data] [else $xml]],
+     src: $code,
+     cmd: $cmd,
+     expected: [$string $e@text],
+     match: [$string $e@mode],
+     exit: [$string [?else [$map:get $sec "exit-code"] ""]],
+     runnable: [= $why ""],
+     why: $why,
      wasmUnsupported: [$string [?else [$map:get $differs $id] ""]]}]]
 
 [?def render scope=public ($entries)
+  [?let [= $out {examples: $entries}]
   [$concat
     "// GENERATED by scripts/gen_guide/playground/primer_examples.cx from\n"
     "// docs-src/llm/primer.md.tmpl and the conformance fixtures it cites.\n"
     "// Do not edit: change the template or the fixture, then run `make docs`.\n"
-    "window.cxPlaygroundPrimer = " [$json:emit-pretty {examples: $entries}] ";\n"]]
+    "window.cxPlaygroundPrimer = " [$json:emit-pretty $out] ";\n"]]]
 
 [?let
   [= $check [$member [$env:argv] "--check"]]
@@ -188,9 +195,11 @@
                [yield [$strings:trim $l]]]]] [?fn ($x) $x]]]
   [= $index [$pb:load-index $suites]]
   [= $refs [$cited [$io:read-file TEMPLATE]]]
-  [= $cited-ids [?for [in $r $refs] [yield [$string $r@id]]]]
-  [= $differs [$fp:fold [?for [in $d [$cx:parse [$io:read-file DIFFERS]]/*]
-                           [where [= [?else [$name $d] ""] "differs"]] [yield $d]] {}
+  [= $cited-ids [?for [in $r $refs] [yield [$string [$map:get $r "id"]]]]]
+  [= $none {}]
+  [= $rows [$cx:parse [$io:read-file DIFFERS]]]
+  [= $differs [$fp:fold [?for [in $d $rows/*]
+                           [where [= [?else [$name $d] ""] "differs"]] [yield $d]] $none
                 [?fn ($acc $d)
                   [?if [$member $cited-ids [$string $d@id]]
                     [then [$map:put $acc [$string $d@id] [$string $d@why]]]
