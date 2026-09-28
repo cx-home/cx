@@ -99,7 +99,7 @@ What the columns mean (the file's own `[doc]` block is the full text):
 | `cx-platform-mail` | 3 | 0 | 1 | 2 | 0 | sasl, imap, smtp |
 | `cx-platform-xsp` | 2 | 0 | 1 | 1 | 0 | xsp, xsp-auth |
 | `cx-platform-identity` | 4 | 0 | 0 | 4 | 0 | authz-store, did-web, session, vc-revocation |
-| `cx-platform-connector` | 2 | 0 | 0 | 2 | 1 | connector, sync |
+| `cx-platform-connector` | 2 | 0 | 0 | 2 | 0 | connector, sync |
 | `cx-platform-flow` | 1 | 0 | 0 | 1 | 0 | flow |
 | `cx-platform-fabric` | 1 | 0 | 0 | 1 | 0 | fabric |
 | `cx-platform-net` | 4 | 0 | 0 | 4 | 2 | ftp, http, net, sftp |
