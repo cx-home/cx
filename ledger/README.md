@@ -501,7 +501,9 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `cxf-8` | [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) | The traps become fixtures — two batch branches for the CXF-8 defects, and the one ruling they need (RULED: TRAP-1, 1527-a) |
 | `cxf-8` | [rulings_2026_09_27_integrator_decisions_l60.md](rulings_2026_09_27_integrator_decisions_l60.md) | 1690's agent; reversible by the owner's word. 1509-a, CXF-8, FIX-1, #1690.** |
 | `cxp-1` | [rulings_2026_08_20_cx_pragma_registry.md](rulings_2026_08_20_cx_pragma_registry.md) | Ruling CXP-1 (2026-08-20) — the [?cx] pragma key set closes (#879, owner "4a") |
+| `dblane-1` | [rulings_2026_09_28_owner_decisions_l89_l90.md](rulings_2026_09_28_owner_decisions_l89_l90.md) | DBLANE-1 — DBNUL-1 merges on sqlite's proof; a real-server lane grades every db case on postgres and mysql (L89 = (a)) |
 | `dbnul-1` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | DBNUL-1 — a kind=db parameter may be absent, and the kit binds NULL for a cursor on page one (L64 = (a)) |
+| `dbnul-1` | [rulings_2026_09_28_owner_decisions_l89_l90.md](rulings_2026_09_28_owner_decisions_l89_l90.md) | DBLANE-1 — DBNUL-1 merges on sqlite's proof; a real-server lane grades every db case on postgres and mysql (L89 = (a)) |
 | `df-1` | [rulings_2026_09_05_computed_fields.md](rulings_2026_09_05_computed_fields.md) | Rulings 2026-09-05 — computed field values, and how a slug is declared (DF-1, DF-2) |
 | `df-1` | [rulings_2026_09_05_computed_fields.md](rulings_2026_09_05_computed_fields.md) | DF-1 — may the grammar compute a field's value? — RULED (c): NO |
 | `df-2` | [rulings_2026_09_05_computed_fields.md](rulings_2026_09_05_computed_fields.md) | Rulings 2026-09-05 — computed field values, and how a slug is declared (DF-1, DF-2) |
@@ -530,6 +532,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `docs-47` | [rulings_2026_09_28_owner_decisions_l71_l79.md](rulings_2026_09_28_owner_decisions_l71_l79.md) | DOCS-47 — every example on a touched page is a fixture citation, with a ratchet (L77 = (a)) |
 | `docs-48` | [rulings_2026_09_28_owner_decisions_l71_l79.md](rulings_2026_09_28_owner_decisions_l71_l79.md) | DOCS-48 — the value map becomes the enterprise page, each item re-backed (L78 = (a)) |
 | `docs-49` | [rulings_2026_09_28_owner_decisions_l71_l79.md](rulings_2026_09_28_owner_decisions_l71_l79.md) | DOCS-49 — the generators and the front pages first, the repository pages next, the voice pass last (L79 = (a)) |
+| `docs-50` | [rulings_2026_09_28_owner_decisions_l85.md](rulings_2026_09_28_owner_decisions_l85.md) | DOCS-50 — the bindings page is a fourth allowed page for a host language's name, as a binding's target only (L85 = (a)) |
 | `dr-1` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) | DR-1 … DR-11 — the design letter's eleven sub-rulings |
 | `dr-10` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) | DR-10 consult log (spec-sufficiency probe register) |
 | `dr-11` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) | DR-1 … DR-11 — the design letter's eleven sub-rulings |
@@ -840,6 +843,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `sf-6` | [rulings_2026_09_02_standard_features.md](rulings_2026_09_02_standard_features.md) | SF-6 — the spec pointer |
 | `sf-7` | [rulings_2026_09_02_standard_features.md](rulings_2026_09_02_standard_features.md) | SF-7 — `retention`'s scope: it carries a sweep that actually erases |
 | `sha-1` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) | RULED: 1400-a, 1401-a — XML Encryption comes IN: `saml:verify` decrypts `EncryptedAssertion` / `EncryptedID` / `EncryptedAttribute` with `opts.decryption-keys`; `crypto` gains RSA key transport (OAEP, SHA-1 inside OAEP allowed; PKCS#1 v1.5 behind a loud opt-in with implicit rejection) and AES-CBC + AES-128/192-GCM; encryption is detected BEFORE the signature search |
+| `since-1` | [rulings_2026_09_28_owner_decisions_l89_l90.md](rulings_2026_09_28_owner_decisions_l89_l90.md) | SINCE-1 — an absent `:since` on a baseline sync run binds NULL, and it lands today (L90 = (a), today) |
 | `site-1` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | Owner decisions 2026-09-26 (evening) — Letters 35, 37, 38 and 39: the site token (SITE-1), the pace past the weekly meter (PACE-1), shared-slot steps beside a selected run (RUN-5), #1498 stays in v0.18 (SD-2) |
 | `site-1` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | SITE-1 — the public site builds on GitHub's runner with a read-only token (Letter 35 = (a)) |
 | `sk-1` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) | Ruling 2026-09-06 — #1324, a restored one-shot that came due while the process was down (SK-1) |
@@ -1295,7 +1299,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `dist-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) |
 | `dist-2` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md), [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) |
 | `docs-3` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) |
-| `docs-4` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) |
+| `docs-4` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md), [rulings_2026_09_28_owner_decisions_l85.md](rulings_2026_09_28_owner_decisions_l85.md) |
 | `dr-2` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) |
 | `dr-2a` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md), [rulings_2026_08_20_diagram_wave3.md](rulings_2026_08_20_diagram_wave3.md) |
 | `dr-3` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md), [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md) |
@@ -1484,4 +1488,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*346 ledger pages; 770 ids declared, 390 cited only.*
+*348 ledger pages; 773 ids declared, 390 cited only.*
