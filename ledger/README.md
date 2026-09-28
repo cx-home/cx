@@ -315,6 +315,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1503-b` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) | Integrator decisions, 2026-09-16 — the 1503-b addendum |
 | `1509-a` | [rulings_2026_09_18_owner_decisions_1220z.md](rulings_2026_09_18_owner_decisions_1220z.md) | Owner decisions 2026-09-18 ~12:20Z — "all recommendations": the work continues past the clock with umbrella steps for Ring 0 (VERIFY-2); the twelve open letters ruled (1563-a, 1559-a, 1515-a, 1566-c, 1534-a, 1552-a, 1556-a, 1540-a, 1551-b, 1544-b, 1509-a) and the integrator's 1559-d recorded |
 | `1509-a` | [rulings_2026_09_27_integrator_decisions_l60.md](rulings_2026_09_27_integrator_decisions_l60.md) | 1690's agent; reversible by the owner's word. 1509-a, CXF-8, FIX-1, #1690.** |
+| `1509-a` | [rulings_2026_09_28_owner_decisions_l80_l84.md](rulings_2026_09_28_owner_decisions_l80_l84.md) | LITER-1 — a `[?for]` contributes one item per `[yield]` in a `(…)` or array literal, as 1509-a says (L83 = (b)) |
 | `1515-a` | [rulings_2026_09_18_owner_decisions_1220z.md](rulings_2026_09_18_owner_decisions_1220z.md) | Owner decisions 2026-09-18 ~12:20Z — "all recommendations": the work continues past the clock with umbrella steps for Ring 0 (VERIFY-2); the twelve open letters ruled (1563-a, 1559-a, 1515-a, 1566-c, 1534-a, 1552-a, 1556-a, 1540-a, 1551-b, 1544-b, 1509-a) and the integrator's 1559-d recorded |
 | `1521-a` | [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md) | Owner decisions 2026-09-17 ~22:02Z — an unread err binding propagates (1537-a); the quote-opening rule becomes a lexicon sentence (1521-a) |
 | `1527-a` | [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) | The traps become fixtures — two batch branches for the CXF-8 defects, and the one ruling they need (RULED: TRAP-1, 1527-a) |
@@ -391,6 +392,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `atc-1` | [rulings_2026_08_20_authoring_toolchain.md](rulings_2026_08_20_authoring_toolchain.md) | ATC-1 — client.cxs authored; the surface derivation check graduates to `cx xap check-surface` |
 | `atc-2` | [rulings_2026_08_20_runnable_client.md](rulings_2026_08_20_runnable_client.md) | ATC-2 — `cx xap init --client` produces a RUNNABLE client |
 | `atc-2` | [rulings_2026_08_20_runnable_client.md](rulings_2026_08_20_runnable_client.md) | ATC-2 riders resolved at integration (parent session, same day) |
+| `bare-1` | [rulings_2026_09_28_owner_decisions_l80_l84.md](rulings_2026_09_28_owner_decisions_l80_l84.md) | BARE-1 — a bare head is data, namespaced or not; `$` is the only call sigil (L84 = (a)) |
 | `batch-1` | [rulings_2026_09_16_batch_branches_batch1.md](rulings_2026_09_16_batch_branches_batch1.md) | Integrator decision 2026-09-16 ~10:15Z — a batch branch carries several small bugs of one ring (RULED: BATCH-1) |
 | `bc-1` | [rulings_2026_08_22_bug_campaign.md](rulings_2026_08_22_bug_campaign.md) | Ruling 2026-08-22 — the bug campaign to cut-readiness (BC-1..BC-4) |
 | `bc-1` | [rulings_2026_08_22_bug_campaign.md](rulings_2026_08_22_bug_campaign.md) | BC-1 (1a) — #923: the program reading of a multi-dot bare attr value is the STRING, parity with the data reading |
@@ -416,6 +418,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `capadr-1` | [rulings_2026_09_27_owner_decisions_l58.md](rulings_2026_09_27_owner_decisions_l58.md) | Owner decisions 2026-09-27 (evening) — Letter 58: a feature's gate is the feature's (GATE-1), the boot report names each seeded basis (CAPADR-1) |
 | `capadr-1` | [rulings_2026_09_27_owner_decisions_l58.md](rulings_2026_09_27_owner_decisions_l58.md) | CAPADR-1 — the boot report prints each seeded basis (L58.3 = (a)) |
 | `capex-1` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | CAPEX-1 — `[capture]` is exempt from the connector's credential scan (L70 = (a)) |
+| `cbkey-1` | [rulings_2026_09_28_owner_decisions_l80_l84.md](rulings_2026_09_28_owner_decisions_l80_l84.md) | CBKEY-1 — a computed `name=` keys resilience state by its evaluated value (L82 = (a)) |
 | `cfg-1` | [rulings_2026_09_13_claude_context_audit.md](rulings_2026_09_13_claude_context_audit.md) | RULED: CFG-1 — the agent-context layers get ONE stated precedence, the load-bearing agent rules become tracked repo content, and the stale config is removed |
 | `cg-1` | [rulings_2026_09_05_constraint_grammar_1308.md](rulings_2026_09_05_constraint_grammar_1308.md) | Rulings 2026-09-05 — #1308 the feature grammar as a CONSTRAINT grammar (CG-1..CG-7) |
 | `cg-1` | [rulings_2026_09_05_constraint_grammar_1308.md](rulings_2026_09_05_constraint_grammar_1308.md) | CG-1 — `kind=cardinality` (#1301) — RULED (a) |
@@ -559,6 +562,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `en-4` | [rulings_2026_08_31_enum_campaign.md](rulings_2026_08_31_enum_campaign.md) | EN-4 — the one-page enum story: primer section + cxdm §2.6 rationale (#1157) |
 | `en-5` | [rulings_2026_08_31_enum_campaign.md](rulings_2026_08_31_enum_campaign.md) | EN-5 — the enum refusals register (#1158) |
 | `ent-1` | [rulings_2026_08_20_cx_pragma_registry.md](rulings_2026_08_20_cx_pragma_registry.md) | ENT-1 rider — attribute-position entity references (#878, corrected) |
+| `fabr-1` | [rulings_2026_09_28_owner_decisions_l80_l84.md](rulings_2026_09_28_owner_decisions_l80_l84.md) | FABR-1 — the host context carries the fabric the host built on the deployment's journal (L81 = (a)) |
+| `fdisp-1` | [rulings_2026_09_28_owner_decisions_l80_l84.md](rulings_2026_09_28_owner_decisions_l80_l84.md) | FDISP-1 — the host dispatches a verb through a feature→package map built at boot (L80 = (d)) |
 | `fe-1` | [rulings_2026_08_30_functional_ergonomics.md](rulings_2026_08_30_functional_ergonomics.md) | FE-1 — operator-form holes are the first-class-operator mechanism |
 | `fe-2` | [rulings_2026_08_30_functional_ergonomics.md](rulings_2026_08_30_functional_ergonomics.md) | FE-2 — single-arm `[?match]` honors grammar [136]; it is the destructuring bind form |
 | `fe-3` | [rulings_2026_08_30_functional_ergonomics.md](rulings_2026_08_30_functional_ergonomics.md) | FE-3 — `[?for]` pattern position extends to the full pattern grammar, refuse-on-miss |
@@ -639,6 +644,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `lim-1` | [rulings_2026_08_20_limits_spec.md](rulings_2026_08_20_limits_spec.md) | Ruling LIM-1 (2026-08-20) — limits spec home (#876, first half) |
 | `lim-2` | [rulings_2026_08_20_limits_second_half.md](rulings_2026_08_20_limits_second_half.md) | Ruling LIM-2 (2026-08-20) — no blanket caps; amplification is a gated property (#876 second half, owner "2a") |
 | `lim-2` | [rulings_2026_08_20_limits_second_half.md](rulings_2026_08_20_limits_second_half.md) | 876 closes: LIM-1 (spec home) + LIM-2 (this ruling) cover both halves. |
+| `liter-1` | [rulings_2026_09_28_owner_decisions_l80_l84.md](rulings_2026_09_28_owner_decisions_l80_l84.md) | LITER-1 — a `[?for]` contributes one item per `[yield]` in a `(…)` or array literal, as 1509-a says (L83 = (b)) |
 | `lt-1` | [rulings_2026_08_26_diagram_let_node_ids_1036.md](rulings_2026_08_26_diagram_let_node_ids_1036.md) | LT-1 — the defect |
 | `lt-2` | [rulings_2026_08_26_diagram_let_node_ids_1036.md](rulings_2026_08_26_diagram_let_node_ids_1036.md) | LT-2 — the fix is a threaded counter, because the alternatives do not cover siblings |
 | `lt-3` | [rulings_2026_08_26_diagram_let_node_ids_1036.md](rulings_2026_08_26_diagram_let_node_ids_1036.md) | LT-3 — the spelling is `lt1`, not a bare `lt` for the first |
@@ -1478,4 +1484,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*345 ledger pages; 765 ids declared, 390 cited only.*
+*346 ledger pages; 770 ids declared, 390 cited only.*
