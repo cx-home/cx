@@ -114,14 +114,23 @@ async function open(e) {
   return waitFor(s => s.pick === `primer:${e.id}` && s.match !== '', `the answer for ${e.id}`);
 }
 
-// (2) prints on load
+// (2) prints on load — an ANSWER, not a refusal: the page opens on the first
+// Program example a reader should write and the engine runs (not the wrong
+// half of an anti-pattern pair, not terminal-only, not marked wasm-unsupported,
+// and not a fixture whose recorded answer is itself an [err …] value).
 {
-  const first = EXAMPLES.find(e => e.reading === 'program');
+  const opening = (e) => e.reading === 'program' && e.role !== 'wrong' && e.runnable !== false
+    && !(typeof e.wasmUnsupported === 'string' && e.wasmUnsupported.trim())
+    && !/^\s*\[err\b/.test(e.expected || '');
+  const first = EXAMPLES.find(opening) || { id: '(none)', n: 0, expected: '' };
+  if (first.id === '(none)') fail('no primer Program example qualifies to open the page (every one is a wrong half, terminal-only, unsupported or an [err] answer)');
   const s = await waitFor(s => s.match !== '', 'the first run');
-  if (s.pick !== `primer:${first.id}`) fail(`on load the picker holds ${s.pick}, expected the first Program example primer:${first.id}`);
+  const before = failures.length;
+  if (s.pick !== `primer:${first.id}`) fail(`on load the picker holds ${s.pick}, expected the first Program example a reader should write, primer:${first.id}`);
   if (!s.cx.trim()) fail('on load the CX pane is empty — the page did not print an answer');
+  if (/^\s*\[err\b/.test(s.cx)) fail(`on load the page printed a refusal, not an answer: ${s.cx.split('\n')[0]}`);
   if (s.match !== 'yes') fail(`on load ${first.id} answered ${JSON.stringify(s.cx)}; the fixture records ${JSON.stringify(first.expected)}`);
-  else console.log(`  ok   prints on load: [${first.n}] ${first.id} → ${s.cx.split('\n')[0]}`);
+  else if (failures.length === before) console.log(`  ok   prints on load: [${first.n}] ${first.id} → ${s.cx.split('\n')[0]}`);
 }
 
 // (3, second half) every option names its fixture id

@@ -1893,7 +1893,20 @@
   // ── What the page opens on ──────────────────────────────
   // A link wins (#1375): #ex=<fixture id> opens that primer example,
   // #ex=<corpus key> a legacy one, #r=…&d=…&p=… the shared text. Otherwise
-  // the first Program example — the page prints an answer on load.
+  // the first Program example a reader should write and the engine runs —
+  // the page prints an ANSWER on load, not the wrong half of an anti-pattern
+  // pair, a terminal-only or wasm-unsupported fixture, or one whose recorded
+  // answer is itself an [err …] (test-playground-primer holds the same rule).
+  function openingEntry() {
+    const list = entriesOf('program');
+    const ok = (e) => {
+      const ex = e.ex || {};
+      return ex.role !== 'wrong' && ex.runnable !== false
+        && !(typeof ex.wasmUnsupported === 'string' && ex.wasmUnsupported.trim())
+        && !/^\s*\[err\b/.test(ex.expected || '');
+    };
+    return list.find(ok) || list[0];
+  }
   function openInitial() {
     const h = parseHash(location.hash);
     if (h && h.ex) {
@@ -1917,14 +1930,14 @@
       runProgram({ auto: true });
       return;
     }
-    const first = entriesOf('program')[0] || ALL_ENTRIES[0];
+    const first = openingEntry() || ALL_ENTRIES[0];
     if (first) loadExample(`${first.kind}:${first.key}`);
   }
   // Before the engine is ready the page still shows what it will run.
   (function preload() {
     const h = parseHash(location.hash);
     if (h && (h.r || h.ex)) { applyReading(h.r || 'program'); populatePicker(); return; }
-    const first = entriesOf('program')[0];
+    const first = openingEntry();
     applyReading('program');
     populatePicker();
     if (first) {
