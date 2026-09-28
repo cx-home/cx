@@ -143,6 +143,15 @@ pins. That copy is the stale-copy class #1589's Risks names, taken deliberately 
 cost stated: it is the price of the transport being a program rather than a verb of the binary,
 and a verb removes it. Nothing else in a component repository is a copy.
 
+The binary carries the program as its verb `cx deps sync [--check] [--verbose]`, which also
+takes the program's `--vpath`, `--deps FILE` and `--dir DIR`: the two files are embedded at
+build and run by the binary's own evaluator with every grant, so each line, refusal and exit
+status §3 names is the program's, and `cx deps` with no verb, an unknown flag or an argument is
+usage (exit 2). `make deps-sync` and `make deps-check` call the verb, and run the file itself
+only when the `cx` they found predates it (RULED: DEPSV-1; `vcx/tests/cli_umbrella_test.v`:
+`test_deps_verb_usage_and_help`, `test_deps_verb_sync_check_verbose_and_a_moved_pin`,
+`test_deps_verb_vpath_and_the_document_flags`).
+
 ## 4 — The union
 
 The front-door repository's `make union` synchronises its pins and then runs its own test

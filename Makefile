@@ -484,7 +484,7 @@ deps-present: sync-cmd-split
 	  done; \
 	done; \
 	if command -v "$(DEPS_CX)" >/dev/null 2>&1; then \
-	  cxv=$$("$(DEPS_CX)" --allow-all scripts/deps_sync.cx --vpath --dir "$(CURDIR)/deps" 2>/dev/null); \
+	  cxv=$$( { $(call DEPS_SYNC_RUN,--vpath --dir "$(CURDIR)/deps"); } 2>/dev/null); \
 	  if [ -n "$$cxv" ] && [ "$$cxv" != "$(CX_DEPS_VPATH)" ]; then \
 	    vbad="$$vbad~the V search path this Makefile derives [$(CX_DEPS_VPATH)] is not what \`cx deps sync --vpath\` answers [$$cxv] -- spec §3.3 read two ways"; \
 	  fi; \
@@ -1381,6 +1381,28 @@ deps-cx:
 
 DEPS_CX = $(if $(CX_BIN),$(CX_BIN),$(if $(wildcard $(CURDIR)/deps/cx-core-code/vcx/target/cx),$(CURDIR)/deps/cx-core-code/vcx/target/cx,cx))
 
+# THE VERB (RULED: DEPSV-1, RS-7, K7c). `cx deps sync [--check] [--verbose]` is
+# the program above as a verb of the binary: vcx/cmd/deps.v carries
+# scripts/deps_sync.cx and scripts/deps_pins.cx embedded and runs them with the
+# binary's own evaluator under the grants these targets gave the file
+# (--allow-all), so the lines and the exit status are the file's and the file
+# stays the one implementation. These targets are its thin callers.
+#
+# THE BOOTSTRAP STAYS HONEST. The cx these targets find is often not one this
+# tree built — a released one, the main checkout's, a sibling's — and the verb
+# is only in a cx built from a pin that carries its row. So DEPS_SYNC_RUN asks
+# the cx first (`cx deps --help` exits 0 only where the verb exists; an older
+# cx answers "unknown subcommand" or tries to read ./deps, non-zero either way)
+# and, when it has no verb, runs this checkout's scripts/deps_sync.cx with the
+# same flags and SAYS so on stderr — the same program, read from the disk
+# instead of from the binary. A box with no cx at all seeds deps/ with
+# scripts/deps_bootstrap.sh, builds, and syncs with the cx it built (#1673).
+# The verb runs the program the binary was BUILT with: an edit to
+# scripts/deps_sync.cx reaches `make deps-sync` at the next `make build-vcx`,
+# as an edit to docs/llm/primer.md reaches `cx primer`; test-deps-pins grades
+# the file itself, so a change is graded the day it is made.
+DEPS_SYNC_RUN = if "$(DEPS_CX)" deps --help >/dev/null 2>&1; then "$(DEPS_CX)" deps sync $(1); else echo "deps-sync: $(DEPS_CX) has no \`cx deps\` verb (it predates DEPSV-1) -- running this checkout's scripts/deps_sync.cx, the program the verb embeds" >&2; "$(DEPS_CX)" --allow-all scripts/deps_sync.cx $(1); fi
+
 # ── the V search path the pins produce (RULED: RS-7, RS-12) ─────────────────
 # RS-7: pins are "read by the V build via `-path`". CX_DEPS_VPATH is the value
 # `cx deps sync --vpath` prints for deps.cxd — deps/<repo>/vcx for every V
@@ -1449,11 +1471,11 @@ export CX_FRONT_DOOR_ROOT := $(CURDIR)
 # (`missing-pinned-source`), a row naming a repository deps.cxd does not pin
 # (`unpinned`), and a pinned source committed into this tree (`tracked-pin`).
 deps-sync: deps-cx
-	@"$(DEPS_CX)" --allow-all scripts/deps_sync.cx
+	@$(call DEPS_SYNC_RUN,)
 	@"$(DEPS_CX)" --allow-all scripts/bundle_check.cx
 
 deps-check: deps-cx
-	@"$(DEPS_CX)" --allow-all scripts/deps_sync.cx --check
+	@$(call DEPS_SYNC_RUN,--check)
 	@"$(DEPS_CX)" --allow-all scripts/bundle_check.cx
 
 # ── test-bundle-sources — the bundled-source table's corpus ───────────────

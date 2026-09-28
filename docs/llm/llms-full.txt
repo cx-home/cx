@@ -4931,6 +4931,7 @@ Subcommands (`cx <subcommand> --help` for details):
   xap                  XAP project tooling — scaffold a project (`init`), a composition pattern (`scaffold`), and check (`check-surface`).
   flow                 cx-platform/flow: the local profile (run / validate / simulate / status / diagram) and the standalone runner (serve).
   secrets              cx-platform/secrets: the keystore client verbs (put / rotate / list) — a value is never printed, never read from argv.
+  deps                 The repository dependency pins: sync deps/<repo>/ to each deps.cxd sha, or --check it — a stale pin or a drifted checkout is refused, never warned.
   demo                 Self-contained showcase (no file I/O, no network, < 1s).
   lock                 Generate / verify cx.lock from [?lib] directives.
   lsp                  Language server (LSP) on stdio.
@@ -8599,8 +8600,11 @@ the product compiles from (RULED: RS-24).
 - `deps.cxd` is the ONE place a pin lives: one `[dep]` row per repository,
   its sha, the modules it provides, and the V-fork sha for a V repository
   (RULED: RS-7; the format is `spec/03-approved/process/repository-dependency-pins.md`).
-- `make deps-sync` fetches each pin shallowly into the ignored `deps/<repo>/`
-  and **fails** on a stale pin or a drifted checkout — it never warns.
+- `cx deps sync` — the binary's verb, which `make deps-sync` calls — fetches each
+  pin shallowly into the ignored `deps/<repo>/` and **fails** on a stale pin or
+  a drifted checkout — it never warns; `cx deps sync --check` fetches nothing and
+  refuses a checkout that is not at its pin. The program is
+  `scripts/deps_sync.cx`, embedded in the binary (RULED: DEPSV-1).
 - The build compiles every V module from its pinned checkout through `-path`:
   `make build-vcx` runs the Ring-1 repository's own `vcx/` build
   (`deps/cx-core-code/vcx`) with the front door's `deps.cxd` and `deps/` root,
@@ -8875,7 +8879,13 @@ $ make -C third_party/v                          # the fork builds itself
 $ make deps-sync CX_BIN=<any cx>                 # every deps.cxd pin into deps/<repo>/, refusing a stale or drifted one
 $ make build-vcx                                 # deps/cx-core-code/vcx's build over the front door's deps.cxd and deps/
 $ deps/cx-core-code/vcx/target/cx --version      # names the commit and the V fork it was built from
+$ deps/cx-core-code/vcx/target/cx deps sync --check   # every checkout at its pin, nothing fetched
 ```
+
+- `make deps-sync` is a thin caller of the binary's verb `cx deps sync [--check]
+  [--verbose]`, which runs `scripts/deps_sync.cx` embedded in it; a `cx` older
+  than the verb runs the checkout's file instead and says so, and a box with no
+  `cx` at all seeds `deps/` with `scripts/deps_bootstrap.sh` first (RULED: DEPSV-1).
 
 - The build passes the pinned checkouts to V through `-path`; a direct
   `v test` of anything importing `cx` needs the same flags, printed by
