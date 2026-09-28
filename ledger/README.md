@@ -516,6 +516,15 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `dgx-2` | [rulings_2026_08_21_diagram_capabilities.md](rulings_2026_08_21_diagram_capabilities.md) | DGX-2 — `cd-erd-full`'s DOCUMENT box is POPULATED, and loses one row |
 | `dgx-2` | [rulings_2026_08_21_diagram_capabilities.md](rulings_2026_08_21_diagram_capabilities.md) | DGX-2 (the DOCUMENT box) — the movement, as adjudicated |
 | `diag-1` | [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md) | Owner decision 2026-09-18 ~02:00Z — an err value carries its position (1545-a); the diagnostics audit's fix batches are decided (DIAG-1) |
+| `docs-41` | [rulings_2026_09_28_owner_decisions_l71_l79.md](rulings_2026_09_28_owner_decisions_l71_l79.md) | DOCS-41 — one prose file per repository, every fact projected from the registries (L71 = (a)) |
+| `docs-42` | [rulings_2026_09_28_owner_decisions_l71_l79.md](rulings_2026_09_28_owner_decisions_l71_l79.md) | DOCS-42 — the ring SVG is rendered from the registry at build time, untracked (L72 = (a)) |
+| `docs-43` | [rulings_2026_09_28_owner_decisions_l71_l79.md](rulings_2026_09_28_owner_decisions_l71_l79.md) | DOCS-43 — Python confined to the bridge pages and held by a step (L73 = (a)) |
+| `docs-44` | [rulings_2026_09_28_owner_decisions_l71_l79.md](rulings_2026_09_28_owner_decisions_l71_l79.md) | DOCS-44 — the internal link step extends the site assembler's check (L74 = (a)) |
+| `docs-45` | [rulings_2026_09_28_owner_decisions_l71_l79.md](rulings_2026_09_28_owner_decisions_l71_l79.md) | DOCS-45 — external links are checked by a CX script in the site workflow, not pre-merge (L75 = (a)) |
+| `docs-46` | [rulings_2026_09_28_owner_decisions_l71_l79.md](rulings_2026_09_28_owner_decisions_l71_l79.md) | DOCS-46 — the LLM door is rendered and `docs/dev/` retires into the guide (L76 = (a)) |
+| `docs-47` | [rulings_2026_09_28_owner_decisions_l71_l79.md](rulings_2026_09_28_owner_decisions_l71_l79.md) | DOCS-47 — every example on a touched page is a fixture citation, with a ratchet (L77 = (a)) |
+| `docs-48` | [rulings_2026_09_28_owner_decisions_l71_l79.md](rulings_2026_09_28_owner_decisions_l71_l79.md) | DOCS-48 — the value map becomes the enterprise page, each item re-backed (L78 = (a)) |
+| `docs-49` | [rulings_2026_09_28_owner_decisions_l71_l79.md](rulings_2026_09_28_owner_decisions_l71_l79.md) | DOCS-49 — the generators and the front pages first, the repository pages next, the voice pass last (L79 = (a)) |
 | `dr-1` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) | DR-1 … DR-11 — the design letter's eleven sub-rulings |
 | `dr-10` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) | DR-10 consult log (spec-sufficiency probe register) |
 | `dr-11` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) | DR-1 … DR-11 — the design letter's eleven sub-rulings |
@@ -1266,7 +1275,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `arch-0916` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md), [rulings_2026_09_18_owner_decisions_1640z.md](rulings_2026_09_18_owner_decisions_1640z.md) |
 | `bf-1` | [partition_I2_extraction.md](partition_I2_extraction.md), [partition_I5_stream22_cleanroom.md](partition_I5_stream22_cleanroom.md) |
 | `choice-1` | [rulings_2026_08_21_array_separator.md](rulings_2026_08_21_array_separator.md), [rulings_2026_09_09_fmt_fingerprint_underscores_1347.md](rulings_2026_09_09_fmt_fingerprint_underscores_1347.md) |
-| `cicd-1` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) |
+| `cicd-1` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md), [rulings_2026_09_28_owner_decisions_l71_l79.md](rulings_2026_09_28_owner_decisions_l71_l79.md) |
 | `ck-4b` | [rulings_2026_09_14_connector_ingest_1430g.md](rulings_2026_09_14_connector_ingest_1430g.md), [rulings_2026_09_19_cited_ids_without_a_page_1447.md](rulings_2026_09_19_cited_ids_without_a_page_1447.md) |
 | `client-2` | [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md) |
 | `clock-1` | [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) |
@@ -1468,4 +1477,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*343 ledger pages; 755 ids declared, 391 cited only.*
+*344 ledger pages; 764 ids declared, 391 cited only.*
