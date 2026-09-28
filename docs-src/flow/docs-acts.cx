@@ -15,7 +15,7 @@
 # THE TOOLCHAIN IS THE CALLER'S. Every nested make runs with `-o build-vcx`
 # and the three *_SKIP_CX_BUILD switches: the caller (`make docs-flow`, which
 # depends on build-vcx, or the Site workflow's build step) built the binary
-# this flow runs under, and a relink under a running flow is the v0.16.0
+# this flow runs under, and a relink under a running flow is the
 # 'Exec format error' class — a step exec'ing the binary a sibling is
 # rewriting. It is not hypothetical here: every `build-vcx` on the head
 # relinks (#1697), so without these flags each check would relink cx for

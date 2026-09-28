@@ -268,11 +268,12 @@
 # runs is in the doc pipeline even though DOC_TARGETS names only the flow.
 # FLOW is the parsed document, or () where the tree carries none.
 [?def flow-targets scope=public pure ($flow)
-  [$fp:flat-map
-    ([?to-sequence [?for [in $t $flow//do/target] [yield [$strings:trim [$string $t]]]]],
-     [?to-sequence [?for [in $t $flow//do/targets]
-                     [in $w [$strings:split-whitespace [$string $t]]] [yield $w]]])
-    [?fn ($x) $x]]]
+  [?let [= $one [?to-sequence [?for [in $t $flow//do/target]
+                                [yield [$strings:trim [$string $t]]]]]]
+        [= $many [?to-sequence [?for [in $t $flow//do/targets]
+                                 [in $w [$strings:split-whitespace [$string $t]]] [yield $w]]]]
+        [= $both ($one, $many)]
+    [$fp:flat-map $both [?fn ($x) $x]]]]
 
 [?def step-rows scope=public pure [returns string] ($makefile::string $includes $flow)
   [?let
