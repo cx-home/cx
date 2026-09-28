@@ -90,7 +90,11 @@
            `:id 42` there is the slot named `id` bound to `42`. And
            if you wanted a type annotation, that is the double-colon
            glue: `[user::int 42]`."""]
-      [example lang=cx
+      [; check=none: an illustrative three-form panel, not a program — the
+         middle form is the labeled-slot SPELLING shown on a directive head
+         with an elided body (…), which the snippet gate cannot run
+         (measured 2026-09-28: the gate read it as a parse failure). ]
+      [example lang=cx check=none
         """[# Attribute — the id attribute is 42                      #]
            [user id=42 email='ada@example.com']
 

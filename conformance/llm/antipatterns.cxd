@@ -562,4 +562,93 @@ read
 #]]
   [exit-code [#0#]]
  ]
+
+ [; ── B1. an effect nobody granted (RULED: DOCS-47 — the why page's pair) ── ]
+
+ [case id=ap-effect-ungranted-wrong level=core
+  [title [#Reaching for a file with no grant on the command line#]]
+  [tags capability effect deny-by-default antipattern docs-4]
+  [why [#
+A CX program inherits no reach from its process. Every effect — a read, a
+write, a socket, the clock — is granted on the command line, and a program
+that reaches for one it was not granted does not crash and does not go
+quiet: the refusal is an ordinary `[err]` value, and its message names the
+flag that would allow the effect. Nothing about the program changes between
+the two halves below; the grant does.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?lib 'cx-stdlib/io' as=io]
+[probe exists=[$io:exists '/']]
+#]]
+  [out-text [#
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-exists; none granted (grant via --allow-read)']
+#]]
+  [exit-code [#1#]]
+ ]
+
+ [case id=ap-effect-granted-right level=core
+  [title [#The same program, the read granted before the file#]]
+  [tags capability effect deny-by-default docs-4]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?lib 'cx-stdlib/io' as=io]
+[probe exists=[$io:exists '/']]
+#]]
+  [cli-argv [#
+--allow-read
+%FILE%
+#]]
+  [out-text [#
+[probe exists=true]
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── B2. a regular expression that would need backtracking ─────────── ]
+
+ [case id=ap-regex-backtracking-wrong level=core
+  [title [#A backreference — the construct only a backtracking engine can run#]]
+  [tags re backtracking RE2 CXER3200 antipattern docs-4]
+  [why [#
+CX's `re` is RE2: every pattern it compiles runs in time linear in the input,
+so no input can make a match run for as long as it likes. The price is that
+the constructs which need backtracking — a backreference, a lookaround — are
+refused when the pattern compiles, out loud, rather than accepted and left
+to blow up on the one input that finds them. The right half shows the same
+nested quantifier without the backreference: it compiles, and the pathological
+input answers in linear time.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?lib 'cx-stdlib/re' as=re]
+[$re:compile '(a+)+\\1']
+#]]
+  [out-text [#
+[err code=cx-err:CXER3200 message='E_RE_FEATURE_UNSUPPORTED: CXER3200:E_RE_FEATURE_UNSUPPORTED: (a+)+\1']
+#]]
+  [exit-code [#1#]]
+ ]
+
+ [case id=ap-regex-linear-right level=core
+  [title [#The nested quantifier alone — linear on the input that kills a backtracker#]]
+  [tags re backtracking RE2 docs-4]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?lib 'cx-stdlib/re' as=re]
+[matched value=[$re:matches [$re:compile '^(a+)+$'] 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab']]
+#]]
+  [out-text [#
+[matched value=false]
+#]]
+  [exit-code [#0#]]
+ ]
 ]
