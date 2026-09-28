@@ -71,11 +71,8 @@ jobs:
       - name: Sync + verify the pinned repositories with the cx just built
         run: make deps-sync CX_BIN=deps/cx-core-code/vcx/target/cx
 
-      - name: Assemble the site
-        run: make site
-
-      - name: List the site against its manifest
-        run: make site-check
+      - name: The docs flow — check every generated document, assemble and list site/ (RULED: CICD-1)
+        run: make docs-flow
 
       - uses: actions/upload-pages-artifact@v3
         with:

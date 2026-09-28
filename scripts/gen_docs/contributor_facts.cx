@@ -16,7 +16,7 @@
 #   [$facts:pin-rows TEXT]               deps.cxd -> what the front door pins
 #   [$facts:module-census TEXT]          registry/modules.cxd -> rows per repository
 #   [$facts:module-columns TEXT]         registry/modules.cxd -> the row's columns
-#   [$facts:step-rows MAKEFILE INCLUDES] Makefile TEST_TARGETS -> the step roster
+#   [$facts:step-rows MAKEFILE INCLUDES FLOW] Makefile TEST_TARGETS -> the step roster
 #   [$facts:ruling-rows PAGES]           ledger pages -> RS-1…RS-n, the ledger's words
 #   [$facts:row-count TABLE]             how many body rows a fragment carries
 #
@@ -262,21 +262,36 @@
                 [yield $p]]]
     [?if [= [$count $picks] 0] [then "—"] [else [$string [$first $picks]@text]]]]]
 
-[?def step-rows scope=public pure [returns string] ($makefile::string $includes)
+# flow-targets: every make target the documentation flow's document names —
+# the `[target …]` and `[targets '…']` fields of its `[do …]` acts (RULED:
+# CICD-1). The doc pipeline runs those through `docs-flow`, so a step the flow
+# runs is in the doc pipeline even though DOC_TARGETS names only the flow.
+# FLOW is the parsed document, or () where the tree carries none.
+[?def flow-targets scope=public pure ($flow)
+  [$fp:flat-map
+    ([?to-sequence [?for [in $t $flow//do/target] [yield [$strings:trim [$string $t]]]]],
+     [?to-sequence [?for [in $t $flow//do/targets]
+                     [in $w [$strings:split-whitespace [$string $t]]] [yield $w]]])
+    [?fn ($x) $x]]]
+
+[?def step-rows scope=public pure [returns string] ($makefile::string $includes $flow)
   [?let
     [= $mk [$strings:split-lines $makefile]]
     [= $all [$strings:split-lines [$join-lines ($makefile, [$strings:join $includes "\n"]) "\n"]]]
     [= $steps [$var-words $mk "TEST_TARGETS"]]
     [= $docs [$var-words $mk "DOC_TARGETS"]]
+    [= $viaflow [?if [$member "docs-flow" $docs] [then [$flow-targets $flow]] [else ()]]]
     [= $vars [$simple-vars $all]]
     [= $body [?for [in $i [$range 1 [$count $steps]]]
       [= $s [$nth $steps $i]]
       [= $at [$rule-lines $all $s]]
       [= $prog [?if [= [$count $at] 0] [then "—"] [else [$program-of [$recipe-of $all [$first $at]] $vars]]]]
       [yield [$concat "| " [$string $i] " | `" $s "` | "
-                      [?if [$member $s $docs] [then "yes"] [else ""]] " | " $prog " |"]]]]
+                      [?if [$member $s $docs] [then "yes"]
+                        [else [?if [$member $s $viaflow] [then "yes, in the docs flow"] [else ""]]]]
+                      " | " $prog " |"]]]]
     [$join-lines (
-      [$provenance "the Makefile's `TEST_TARGETS` (in order), `DOC_TARGETS`, and each step's own rule" [$count $steps]],
+      [$provenance "the Makefile's `TEST_TARGETS` (in order), `DOC_TARGETS`, the targets `docs-src/flow/docs.flow.cx` names, and each step's own rule" [$count $steps]],
       "",
       "| # | step | in the doc pipeline | the first program its recipe names |",
       "|---|---|---|---|",
