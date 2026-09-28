@@ -147,6 +147,7 @@ mut:
 	dir      string // file — the literal directory the glob names
 	pat      string // file — the basename pattern as a regex
 	intent   string // intent — the committed intent's journal stream
+	act      string // intent — `act=`, the qualified intent name the row selects (RULED: AA-2); '' selects every entry
 	every_ns i64    // schedule
 	at_ns    i64    // schedule — the phase offset inside the period
 	doc_src  string // the resolved document's verbatim bytes
@@ -313,6 +314,28 @@ fn flow_serve_glob(pattern string) (string, string) {
 	return dir, re + '$'
 }
 
+// flow_serve_act_name_ok is the `act=` spelling (flow.md §4.24, RULED: AA-2):
+// a qualified intent name `ns/verb`, each side a lower-case name — the rule
+// `fill` holds an `act` slot's answer to (composition.md §3.10), so a row the
+// studio or the scaffold writes is one this runner reads.
+fn flow_serve_act_name_ok(s string) bool {
+	parts := s.split('/')
+	if parts.len != 2 {
+		return false
+	}
+	for p in parts {
+		if p == '' || p[0] < `a` || p[0] > `z` {
+			return false
+		}
+		for c in p {
+			if !((c >= `a` && c <= `z`) || (c >= `0` && c <= `9`) || c == `-` || c == `_`) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // flow_serve_row reads one `[on kind=<kind> …]` row. `kind=` is checked against
 // the CLOSED five FIRST and that kind's required attributes second (RULED:
 // WF-35) — so a misspelled `glob=` answers "kind `file` requires glob=" rather
@@ -384,6 +407,14 @@ fn flow_serve_row(e cx.Element) FlowBinding {
 			b.intent = e.attr('intent')
 			if b.intent == '' {
 				flow_serve_refuse('kind `intent` requires intent= (flow.md §4.24) — the committed intent\'s journal stream')
+			}
+			// RULED: AA-2 — `act=` SELECTS which committed acts start a run: the
+			// entry's qualified intent name, the do-form's string (KIT-2). A value
+			// that is no `ns/verb` would select nothing and never fire, so it
+			// refuses here rather than parse and stay inert (WF-35's rule).
+			b.act = e.attr('act')
+			if e.has_attr('act') && !flow_serve_act_name_ok(b.act) {
+				flow_serve_refuse('kind `intent` carries act=`${b.act}`; act= is the qualified intent name a committed entry carries — `act=\'ns/verb\'` (flow.md §4.24, RULED: AA-2) — and a selection naming no act would start nothing')
 			}
 		}
 		'webhook' {
@@ -665,7 +696,7 @@ fn flow_serve_bindings_element(r FlowRunner) string {
 			// MILLISECONDS: `$mod` reduces through f64 and an ns epoch instant is
 			// past 2^53, so a ns bucket is not exact — see fs--tick-schedule.
 			'schedule' { row += ' every="${x.every_ns / 1_000_000}" at="${x.at_ns / 1_000_000}"' }
-			'intent' { row += ' stream="${flow_cli_quote(x.intent)}"' }
+			'intent' { row += ' stream="${flow_cli_quote(x.intent)}"' + if x.act != '' { ' act="${flow_cli_quote(x.act)}"' } else { '' } }
 			'webhook' { row += ' path="${flow_cli_quote(x.path)}"' }
 			'file' { row += ' dir="${flow_cli_quote(x.dir)}" pat="${flow_cli_quote(x.pat)}"' }
 			else {}
@@ -837,9 +868,22 @@ const flow_serve_helpers = "
     [\$concat \$stream \":\" [\$string \$en@seq]]
     [fs--entry-args \$en]]]
 
+[; act= — a SELECTION, not a mapping (flow.md §4.24, RULED: AA-2): a row
+   naming act= starts a run only for a committed entry whose do-form names
+   that act — the entry's qualified intent name, the do-form's string (KIT-2)
+   — and every other entry on the stream starts none; a row without act= is
+   unchanged. The payload, the nonce and the when= value test are §4.25's. ]
+[?def fs--entry-act scope=private pure [returns string] (\$en)
+  [?let [= \$ds [\$cx:select \$en \"//do\"]]
+    [?if [\$empty \$ds] [then \"\"] [else [\$string [\$first [\$first \$ds]/node()]]]]]]
+
+[?def fs--selects scope=private pure [returns bool] (\$b \$en)
+  [?if [\$present \$b@act] [then [= [fs--entry-act \$en] [\$string \$b@act]]] [else true]]]
+
 [?def fs--tick-intent scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$o \$fs \$b)
   [?let [= \$s [\$string \$b@stream]]
     [ticked kind=intent n=[\$count [?to-sequence [?for [in \$en [\$cxjournal:since \$j 1 \$s]]
+      [where [fs--selects \$b \$en]]
       [yield [\$name [fs--tick-intent-one \$j \$e \$o \$fs \$b \$s \$en]]]]]]]]]
 
 [?def fs--tick-one scope=private impure [effects [read] [write] [clock]] [returns any] (\$j \$e \$o \$fs \$b)
