@@ -397,6 +397,13 @@ step_globs() {
     # move the vocabulary or the three subcommands it drives them through (the
     # flow module is the pin's; `cx flow` is this tree's binary).
     docs-flow-gate)                echo 'docs-src/flow/* scripts/docs_flow_gate.cx deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
+    # RULED: RFLOW-1 — the CI/CD flow documents' one gate, per document: the
+    # flows/ tree (the documents, the one acts module and env, the load rows,
+    # the case and simulate tables), the gate, and what can move the vocabulary
+    # or the subcommands it drives them through; premerge's also reads the
+    # Makefile (the load rows name its targets) and runs the selection script.
+    merge-flow-gate)               echo 'flows/* scripts/ci_flow_gate.cx deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
+    premerge-flow-gate)            echo 'flows/* scripts/ci_flow_gate.cx scripts/test_changed.sh scripts/build-slot.sh Makefile deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
     # the pinned flow lanes (RS-31, D54c): CX programs run by this tree's
     # binary, so the pin and everything that builds the binary.
     test-flow-umbrella)            echo 'deps.cxd registry/modules.cxd vcx/* stdlib/*' ;;
