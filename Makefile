@@ -1761,7 +1761,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := docs-voice-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := docs-voice-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate merge-flow-gate premerge-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -2805,6 +2805,45 @@ docs-flow: build-vcx
 docs-flow-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 docs-flow-gate: build-vcx
 	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/docs_flow_gate.cx
+
+# ── the CI/CD flow documents (RULED: RFLOW-1) ────────────────────────────────
+# flows/merge.flow.cx (the integrator's merge protocol) and
+# flows/premerge.flow.cx (a branch's pre-merge pipeline) over the ONE acts
+# module flows/ci-acts.cx, resolved through flows/ci.env.cx. Each document's
+# fixture is scripts/ci_flow_gate.cx over flows/sim/<doc>/cases.cxd, one
+# TEST_TARGETS row per document so a red names its document (L104): validate,
+# every terminal status simulated, one real run of an act's own refusal, the
+# pinned expectation count — and for merge a REAL run against throwaway bare
+# repositories under the system temp directory, removed before the gate
+# answers (#1511): landed, landing refused and every component push undone,
+# and the unpush itself refused (:conflict). --allow-env: the premerge acts
+# read HOME for the runner paths.
+CI_FLOW_ENV  := flows/ci.env.cx
+CI_FLOW_CAPS := --allow-read --allow-write --allow-subprocess --allow-env
+
+.PHONY: merge-flow-gate premerge-flow-gate
+merge-flow-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+merge-flow-gate: build-vcx
+	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" $(CI_FLOW_CAPS) scripts/ci_flow_gate.cx merge
+
+premerge-flow-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+premerge-flow-gate: build-vcx
+	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" $(CI_FLOW_CAPS) scripts/ci_flow_gate.cx premerge
+
+# ── premerge-flow — a branch's pre-merge pipeline (RULED: RFLOW-1) ───────────
+#   make premerge-flow EVIDENCE=_gate_evidence/pipeline_<x> [OWN='<targets>']
+# runs flows/premerge.flow.cx from this worktree's root under a COPY of this
+# tree's cx: the flow's build step (its pivot) relinks
+# deps/cx-core-code/vcx/target/cx, and a relink under the running flow is the
+# 'Exec format error' class docs-flow's header names. The copy is removed on
+# exit; the exit is the CLI's (0 = :done). OWN defaults to none.
+.PHONY: premerge-flow
+premerge-flow:
+	@test -n "$(EVIDENCE)" || { echo "premerge-flow: EVIDENCE=_gate_evidence/pipeline_<x> is required" >&2; exit 2; }
+	@test -x deps/cx-core-code/vcx/target/cx || $(MAKE) build-vcx
+	@d=$$(mktemp -d); cp deps/cx-core-code/vcx/target/cx "$$d/cx" && \
+	  "$$d/cx" flow run flows/premerge.flow.cx --env $(CI_FLOW_ENV) --ephemeral \
+	    --evidence=$(EVIDENCE) --own='$(or $(OWN),none)' $(CI_FLOW_CAPS); rc=$$?; rm -rf "$$d"; exit $$rc
 
 .PHONY: test-docs
 test-docs: export CX_GATE_OWNER := $(shell echo $$PPID)

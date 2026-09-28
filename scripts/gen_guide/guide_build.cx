@@ -48,6 +48,12 @@
    registries — inlined by a [figure name=…] block and on the guide home, and
    written untracked as assets/rings.svg. ]
 [?lib './scripts/gen_site/ring_svg.cx' as=rs]
+[; DOCS-41 / DOCS-49 waves 2–4: the repository pages — one prose file under
+   docs-src/repos/<name>.cxd, every fact projected from the registries by
+   repo_page.cx, the plug-in figure by plugs_svg.cx, rendered here as
+   repo-<name>.html with the guide's chrome. ]
+[?lib './scripts/gen_site/repo_page.cx'  as=rp]
+[?lib './scripts/gen_site/plugs_svg.cx'  as=plugs]
 
 [# ── string helpers ──────────────────────────────────────────────────── #]
 
@@ -252,10 +258,12 @@
 [# load-fixtures: index the site's suites, then replay and verify every case
    the guide home and the sections cite, once each. The replay scratch lives
    under the output directory and is removed before the pages are written. #]
-[?def load-fixtures scope=public impure ($metas $out)
+[?def load-fixtures scope=public impure ($metas $repos $out)
   [?let [= $index [$pb:load-index [$site-suites]]]
         [= $ids [$distinct [$pb:cat-seqs (HOME-FIXTURES, [$pb:tldr-ids],
-                  [$fp:flat-map $metas [?fn ($m) [$fixture-ids-in [$parse-or-die $m@srcpath]]]])]]]
+                  [$fp:flat-map $metas [?fn ($m) [$fixture-ids-in [$parse-or-die $m@srcpath]]]],
+                  [; the repository pages' one example each (DOCS-47) ]
+                  [$fp:flat-map $repos [?fn ($r) [$fixture-ids-in [$parse-or-die $r@path]]]])]]]
         [= $missing [?for [in $id $ids] [where [not [$map:contains $index $id]]] [yield $id]]]
         [= $_m [?if [$empty $missing] [then 0]
                  [else [$guide-die [$cat ('unknown fixture id(s) ', [$strings:join $missing ' '],
@@ -520,6 +528,7 @@
     '    <ul id="side-search-results" class="side-search-results" hidden></ul>\n',
     '  </div>\n',
     [$nav-section 'Start here' [$group-nav-items $metas 'Start here' $active]],
+    [$nav-section 'Repositories' [$repo-nav-items $active]],
     [$nav-section 'Ring 0 — Data'
       [$cat ([$group-nav-items $metas 'Ring 0 — Data' $active],
              [$lib-ring-items $libfiles 0 $active])]],
@@ -541,6 +550,72 @@
       [$cat ([$group-nav-items $metas 'Reference' $active],
              [$ref-nav-items $active])]],
     '</aside>\n')]]
+
+[# ── the repository pages (RULED: DOCS-41, DOCS-49 waves 2–4) ─────────────
+   One page per docs-src/repos/<name>.cxd: the prose is the file's, in the
+   guide's own block vocabulary; every fact on the page — what it ships, its
+   status, the pinned sha, what it builds on, where its spec and corpus live —
+   is repo_page.cx's projection of the registries; the one example is a
+   [fixture] replayed like every other citation; the plug-in figure is
+   plugs_svg.cx's, inlined the way the ring figure is. The page's shape is
+   fixed here (why → what it gives you → try it → status → links) so the
+   twenty-four pages read as one set. #]
+
+[# repo-nav-items: the sidebar group, one link per source, in name order. #]
+[?def repo-nav-items scope=public impure ($active)
+  [$strings:join [?for [in $r [$rp:repo-sources]]
+    [yield [$nav-link $r@slug $r@name '' $active]]] '']]
+
+[# repo-blocks: the source's children of the given names, in document order,
+   each rendered by render-block (a `gives`/`try`/`status` paragraph is a
+   body paragraph under another name). #]
+[?def repo-blocks scope=public impure ($doc $names $fx)
+  [?for [in $c $doc//repo/*]
+    [where [$plugs:member $names [?else [$name $c] '']]]
+    [yield [?match $c
+      [case [gives]  [?modify $c //gives  [rename p]]]
+      [case [try]    [?modify $c //try    [rename p]]]
+      [case [status] [?modify $c //status [rename p]]]
+      [else [$render-block $c 3 $fx]]]]]]
+
+[?const REPO-WHY ('intro', 'body', 'note', 'list', 'table', 'example')]
+
+[# render-repo-page: the page body for one source. The plug-in figure rides
+   through [$xml:emit] as a token and is placed once the page is a string,
+   exactly as the ring figure is. #]
+[?def render-repo-page scope=public impure ($r $fx $files)
+  [?let [= $name [$string $r@name]]
+        [= $slug [$string $r@slug]]
+        [= $doc [$parse-or-die [$string $r@path]]]
+        [= $row [$rp:row $name]]
+        [= $token [$cat ('@@FIGURE:plugs:', $name, '@@')]]
+        [= $html [$post-body [$xml:emit
+          [section id=$slug
+            [h1 $name]
+            [p class="lede" [$rs:attr $row "about" ""]]
+            [section id=[$cat ($slug, '-why')]
+              [h2 'Why reach for it']
+              [?splice [$repo-blocks $doc REPO-WHY $fx]]]
+            [section id=[$cat ($slug, '-gives')]
+              [h2 'What it gives you']
+              [?splice [$repo-blocks $doc ('gives',) $fx]]
+              [$rp:face-table $name $files]]
+            [section id=[$cat ($slug, '-try')]
+              [h2 'Try it']
+              [?splice [$repo-blocks $doc ('try',) $fx]]
+              [?splice [$repo-blocks $doc ('fixture',) $fx]]]
+            [section id=[$cat ($slug, '-status')]
+              [h2 'Status']
+              [?splice [$repo-blocks $doc ('status',) $fx]]
+              [$rp:status-table $name]
+              [div class="ring-fig" $token]]
+            [section id=[$cat ($slug, '-links')]
+              [h2 'Links']
+              [$rp:links $name]]]]]]
+        [= $figure [$cat ('<figure class="ring-figure plugs-figure">', [$plugs:plugs-svg $name],
+                          '<figcaption class="fig-caption">Fig. — what <code>', $name,
+                          '</code> plugs into: the repositories it builds on (left), the modules it ships (centre), the repositories that build on it (right) · drawn from <code>registry/repos.cxd</code>, <code>deps.cxd</code> and <code>registry/modules.cxd</code> when this page was built</figcaption></figure>\n')]]
+    [$strings:replace $html [$cat ('<div class="ring-fig">', $token, '</div>')] $figure]]]
 
 [# wrap-page: body fragment + chrome → full HTML document string.
    Drawing-office chrome (ruled 2026-08-20): Google Fonts (Archivo display,
@@ -697,6 +772,7 @@
     '</section>\n',
     '<section class="toc-groups"><h2>Table of contents</h2>\n',
     [$nav-section 'Start here' [$group-nav-items $metas 'Start here' '']],
+    [$nav-section 'Repositories' [$repo-nav-items '']],
     [$nav-section 'Ring 0 — Data'
       [$cat ([$group-nav-items $metas 'Ring 0 — Data' ''],
              [$lib-ring-items $libfiles 0 ''])]],
@@ -1222,9 +1298,18 @@
                    [$synth-libfiles])
                  [?fn ($g) $g]]]
   [= $ver [$strings:trim [$io:read-file 'VERSION']]]
-  [; RS-30: every fixture the guide home and the sections cite, replayed and
-     verified once, before any page is written (a moved output stops here). ]
-  [= $fx [$load-fixtures $metas $out]]
+  [; DOCS-41: the repository pages' sources, checked whole before any page is
+     written — each names a shown repository, cites one fixture, is declared
+     in the site manifest, links modules that have a reference page. ]
+  [= $repos [$rp:repo-sources]]
+  [= $_rc [?match [$rp:check]
+            [case [err $e] [$guide-die [$cat ("the repository pages' self-test failed before it could grade: ", [$string $e@message])]]]
+            [else 0]]]
+  [= $site-files [$sb:site-files [$site-manifest]]]
+  [; RS-30: every fixture the guide home, the sections and the repository
+     pages cite, replayed and verified once, before any page is written (a
+     moved output stops here). ]
+  [= $fx [$load-fixtures $metas $repos $out]]
   [= $self [$site-self]]
   [= $sec-ancs [?for [in $m $metas] [yield
     [anc name=$m@id slug=$m@slug frag='']]]]
@@ -1239,6 +1324,7 @@
                          ('index.html', 'about.html', 'downloads.html',
                           'directives.html', 'syntax.html', 'xap.html'),
                          [?for [in $m $metas] [yield [$cat ($m@slug, '.html')]]],
+                         [?for [in $r $repos] [yield [$cat ($r@slug, '.html')]]],
                          [?for [in $f $libfiles] [yield [$cat ([$module-page $f], '.html')]]],
                          [?for [in $d [$xap-demos]] [yield [$cat ($d@slug, '.html')]]])
                        [?fn ($g) $g]]]
@@ -1307,6 +1393,12 @@
             [= $body [$resolve-anchors $raw $m@slug $sec-ancs $child-ancs]]
             [= $page [$wrap-page $m@title $m@slug $metas $libfiles $ver $body]]
         [$io:write-file [$cat ($out, '/', $m@slug, '.html')] $page]]]],
+    [; DOCS-41: one page per repository source, the facts from the registries ]
+    [?for [in $r $repos] [yield
+      [?let [= $raw [$expand-figures [$expand-counts [$render-repo-page $r $fx $site-files] $self]]]
+            [= $body [$resolve-anchors $raw $r@slug $sec-ancs $child-ancs]]
+            [= $page [$wrap-page $r@name $r@slug $metas $libfiles $ver $body]]
+        [$io:write-file [$cat ($out, '/', $r@slug, '.html')] $page]]]],
     [?for [in $f $libfiles] [yield
       [?let [= $m [$stdlib-slug $f]]
             [= $slug [$module-page $f]]

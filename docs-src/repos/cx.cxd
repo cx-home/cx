@@ -1,0 +1,47 @@
+[# docs-src/repos/cx.cxd — the front door's page, repo-cx.html (RULED:
+   DOCS-41, DOCS-47, DOCS-49 wave 2). The prose is ours; every fact on the
+   page — what it pins, what builds on it, its links — is projected from
+   registry/repos.cxd, deps.cxd and registry/modules.cxd when the guide is
+   built (scripts/gen_site/repo_page.cx). One runnable example, from the
+   front door's own corpus (conformance/llm/), replayed byte-exact. #]
+
+[repo name=cx
+  [intro
+    """**TL;DR — we keep one front door.** `cx` is the tree that pins every
+       repository of CX at a sha, builds the four builds of one binary from
+       those pins, and serves this site. You install from it, you read from
+       it, and every change to CX arrives through it: a pin moves only when
+       the newer set is green together."""]
+  [body
+    """A pin is a sha, never a branch, and `deps.cxd` is the one place a pin
+       is written: `make deps-sync` fetches each pinned repository into
+       `deps/` and refuses a stale pin or a drifted checkout out loud
+       rather than warning. The status table below is that document read
+       back — what the front door builds on is the whole pin list, and the
+       figure's left column draws it."""]
+  [body
+    """From those pins we build the four builds of `cx` — `data`, `embed`,
+       `cli` and `platform` — the same binary name with a build-decided
+       surface, so you take on only as much of CX as you need
+       ([[rings]] is the map; the downloads page lists the four). The
+       release, the installer this site's one-liner fetches, the guide and
+       the primer are built here too, from the pinned corpora, so an example
+       on any page of this site was replayed against the binary the same
+       tree produced."""]
+  [gives
+    """No module of the language lives in the front door: every bundled
+       module is pinned in from the repository that owns it, which is why the
+       table below is empty and the plug-in figure's left column is long. What
+       the front door gives you is the assembled binary, the site, the release
+       and the installer — and one contract, that flags bind before the
+       file."""]
+  [try
+    """The run surface is `cx [flags] FILE [args…]`: everything before the
+       file is ours, everything after it belongs to the program. The case
+       below is the corpus's own statement of that rule — the grant before
+       the file, and the program reading what it was granted."""]
+  [fixture id=ap-flags-after-file-right]
+  [status
+    """The front door is not pinned by anyone — it is the root that pins the
+       rest. Its repository is public; the pins it names are private until the
+       release cut."""]]

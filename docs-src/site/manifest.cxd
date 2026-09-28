@@ -74,6 +74,11 @@ deps/cx-core-code/conformance/stdlib/re
 deps/cx-core-code/conformance/stdlib/cx
 deps/cx-platform-store/conformance/platform/store
 deps/cx-platform-agent/conformance/x/mcp
+deps/cx-platform-flow/conformance/platform/flow
+deps/cx-platform-xap/conformance/xap/xap-compose
+deps/cx-platform-connector/conformance/platform/connector
+deps/cx-platform-store/conformance/platform/journal
+deps/cx-platform-identity/conformance/platform/session
 #]]
 
   [files from=landing [#
@@ -82,6 +87,24 @@ index.html
 
   [files from=guide-home [#
 guide.html
+#]]
+
+  [; the repository pages (RULED: DOCS-41, DOCS-49 waves 2–4): one per
+     docs-src/repos/<name>.cxd, rendered by `make guide` with every fact
+     projected from registry/repos.cxd, registry/modules.cxd and deps.cxd
+     (scripts/gen_site/repo_page.cx) and the one example replayed; a line
+     here with no source is MISSING, a source with no line is EXTRA, and the
+     landing page's repository map links a row's page the day its line is
+     here. Wave 2: the front door, the two cores, five platform repositories. ]
+  [files from=repos [#
+repo-cx.html
+repo-cx-core-code.html
+repo-cx-core-data.html
+repo-cx-platform-connector.html
+repo-cx-platform-flow.html
+repo-cx-platform-identity.html
+repo-cx-platform-store.html
+repo-cx-platform-xap.html
 #]]
 
   [; the rendered guide (make guide, docs/guide/), at the root; the lib- pages

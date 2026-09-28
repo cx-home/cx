@@ -1,0 +1,42 @@
+[# docs-src/repos/cx-core-data.cxd — the data core's page, repo-cx-core-data.html
+   (RULED: DOCS-41, DOCS-47, DOCS-49 wave 2). Facts from the registries;
+   the one example from the repository's own corpus (its table suite). #]
+
+[repo name=cx-core-data
+  [intro
+    """**TL;DR — Ring 0 is the data format on its own.** `cx-core-data` reads,
+       writes, canonicalises, hashes, validates and converts CX documents,
+       and it cannot execute anything: there is no evaluator in the artifact
+       to switch off. It is the smallest piece of CX you can take on, and the
+       one every other piece is built over ([[rings]])."""]
+  [body
+    """What is in it: the reader and the writer for the full grammar; the two
+       canonical forms (lossless for `cx fmt`, strict for `cx canon` and
+       `cx hash`); the content hash that gives every document an identity
+       independent of its formatting ([[identity]]); schema validation
+       ([[schema-evolution]]); the codecs to and from JSON, XML, YAML, TOML,
+       Markdown and the delimited formats ([[surfaces]]); typed columnar
+       tables and their binary forms ([[analytics]]); `libcx-core`, the C
+       surface the bindings embed; and the `data` build of `cx`, which is
+       this repository and nothing above it."""]
+  [body
+    """That last fact is the product. A program is data too — a Ring-0
+       reader takes `[?for …]` as an inert tree, hashes it, converts it and
+       hands it on without any means of running it — so you can put the data
+       format where running someone else's code is not acceptable, and the
+       guarantee is structural rather than a promise to be careful."""]
+  [gives
+    """The data core's surface is the format itself, not a module a program
+       imports, so the table below is empty by design. What it gives you is
+       read on the data-language pages — [[data]], [[value-model]],
+       [[surfaces]], [[identity]] — and on the codec reference pages the
+       guide projects from the core's own documentation."""]
+  [try
+    """A typed table whose cells are maps, read by the data-only `cx` and
+       written back in its canonical form — the columns keep their names,
+       the cells keep their shape, and nothing was evaluated on the way."""]
+  [fixture id=tab-013-map-cells]
+  [status
+    """The data core was the first repository to leave the front door as a V
+       repository of its own; the front door compiles its V modules from the
+       pin and grades its data-language corpus from the same checkout."""]]

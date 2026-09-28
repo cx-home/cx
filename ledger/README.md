@@ -726,6 +726,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pq-7` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-7 — the engine staleness gate |
 | `pq-8` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-8 — diagram validity is a gate, driven from the shipped files |
 | `pq-9` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-9 — an operator-headed element's NAME is its head (owner feedback) |
+| `privmk-1` | [rulings_2026_09_28_owner_decisions_l105.md](rulings_2026_09_28_owner_decisions_l105.md) | PRIVMK-1 — the private flow gates and their rows live in `flows/private.mk`, pulled in by `-include` (L105 = (a)) |
 | `ps-1` | [rulings_2026_08_20_postfix_uniformity.md](rulings_2026_08_20_postfix_uniformity.md) | PS-1 — every program-position bracketed form's closing bracket takes the [135a] compact-step postfix |
 | `pubfix-1` | [rulings_2026_09_27_owner_decisions_l56.md](rulings_2026_09_27_owner_decisions_l56.md) | Owner decision 2026-09-27 (afternoon) — Letter 56: the public-history replacements file must survive its own pass (PUBFIX-1) |
 | `pubfix-1` | [rulings_2026_09_27_owner_decisions_l56.md](rulings_2026_09_27_owner_decisions_l56.md) | PUBFIX-1 — fix first, then REFRESH-5 (L56 = (a)) |
@@ -1357,7 +1358,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `imap-3` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `imap-4` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `imap-5` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
-| `int-10` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_16_run_selection_run1.md](rulings_2026_09_16_run_selection_run1.md), [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md), [rulings_2026_09_28_owner_direction_cicd1.md](rulings_2026_09_28_owner_direction_cicd1.md) |
+| `int-10` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_16_run_selection_run1.md](rulings_2026_09_16_run_selection_run1.md), [rulings_2026_09_28_owner_decisions_l105.md](rulings_2026_09_28_owner_decisions_l105.md), [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md), [rulings_2026_09_28_owner_direction_cicd1.md](rulings_2026_09_28_owner_direction_cicd1.md) |
 | `int-11` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-12` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-2` | [rulings_2026_09_12_audit_sink_1422.md](rulings_2026_09_12_audit_sink_1422.md), [rulings_2026_09_12_fmt_1384_1391.md](rulings_2026_09_12_fmt_1384_1391.md), [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md), [rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md](rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md), [rulings_2026_09_15_default_in_campaign_int17.md](rulings_2026_09_15_default_in_campaign_int17.md), [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md), [rulings_2026_09_15_owner_decisions_1145z.md](rulings_2026_09_15_owner_decisions_1145z.md) |
@@ -1413,9 +1414,9 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ring-1` | [batch_796_post_gate_defects.md](batch_796_post_gate_defects.md), [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
 | `ring-2` | [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
 | `rs-10` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) |
-| `rs-11` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md), [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) |
+| `rs-11` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md), [rulings_2026_09_28_owner_decisions_l105.md](rulings_2026_09_28_owner_decisions_l105.md), [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) |
 | `rs-2` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
-| `rs-3` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md), [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) |
+| `rs-3` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md), [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md), [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) |
 | `rs-4` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_23_x_graduation_d45a.md](rulings_2026_09_23_x_graduation_d45a.md) |
 | `rs-5` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
 | `rs-6` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
@@ -1491,4 +1492,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*349 ledger pages; 776 ids declared, 390 cited only.*
+*350 ledger pages; 777 ids declared, 390 cited only.*

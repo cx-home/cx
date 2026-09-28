@@ -1,0 +1,43 @@
+[# docs-src/repos/cx-platform-flow.cxd — the workflow repository's page,
+   repo-cx-platform-flow.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 2).
+   Facts from the registries; the one example from its own corpus. #]
+
+[repo name=cx-platform-flow
+  [intro
+    """**TL;DR — a workflow is an ordinary CX document.** `cx-platform-flow`
+       validates, simulates and runs a flow: steps with acts named by
+       qualified name, a pivot after which nothing is undone, compensation
+       for what came before it, and a run record that is a journal of
+       transitions rather than a status field. We run this site's own
+       documentation pipeline through it."""]
+  [body
+    """The document is the whole contract. `validate` answers the closed set
+       of vocabulary words the flow uses and the address every act resolved
+       to, so a reader knows what they must know and nothing else. The runner
+       law is pure — given the document, the folded record and one event it
+       yields the transitions to append and at most one side effect — which
+       is what makes `simulate` the same function as `advance`: a dry run over
+       a supplied result table is provably what the live run will do."""]
+  [body
+    """Every step contributes two transitions, `:running` when its act goes in
+       flight and its outcome after, so a crashed advancer's record says
+       exactly where it stopped and a racing one appends nothing. The record
+       is read, never assembled: what the run reached is a fold over its own
+       transitions. The documentation flow that generates, checks and
+       assembles this site is one such document, `docs-src/flow/docs.flow.cx`,
+       run by `make docs` — a generate pivot, then every check, then the
+       assembled site, each red target named in the record."""]
+  [gives
+    """One module, `cx-platform/flow`: validate, simulate, run and the record
+       readers. Its CLI verbs stay in the binary — `cx flow validate`,
+       `cx flow simulate`, `cx flow run` — so a flow document is checked from
+       the shell before any act exists."""]
+  [try
+    """A checkout flow validated against a resolver: the answer carries the
+       flow's content address, its step count, the exact vocabulary words the
+       document uses, and the address each act resolved to."""]
+  [fixture id=flow-001-validate-checkout]
+  [status
+    """The workflow repository ships as a package: its module is bundled into
+       the platform build from the pin, and its specification and corpus live
+       with it."""]]
