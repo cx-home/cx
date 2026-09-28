@@ -39,11 +39,24 @@ with `{{…}}` placeholders; `docs-src/llm/manifest.cxd` declares the output set
 and the conformance suites the templates may cite.
 
 ```
-make docs          regenerate docs/llm/
+make docs          the documentation flow, --mode=write: regenerate, check, assemble
+make docs-generate regenerate only (the flow's generate step)
 make docs-check    the DRIFT GATE — regenerate in memory, fail on any change
 make docs-diff     preview what regenerating would change
 make docs-clean    wipe docs/llm/
 ```
+
+**One process, three callers (RULED: CICD-1).** `make docs` runs the
+documentation flow, `docs-src/flow/docs.flow.cx`, through `cx flow run`:
+`generate` (the platform chapter, this layer, the landing page, the README
+badge) → `check` (docs-check, primer-platform-check, guide-check,
+verify-doc-links, verify-doc-blocks, verify-readme-blocks — every one runs,
+every red one is named) → `assemble` (site-check: the site rendered,
+assembled and listed). The post-merge doc pipeline (`make test-docs`) and the
+Site workflow run the SAME document in `--mode=check`, which generates
+nothing. Each step is a make target underneath; the flow is the order, the
+run record it prints, and the one place a failure is read. A red check fails
+`make docs` after regenerating — the files stay for you to read.
 
 After `make docs`, rebuild (`make build-vcx`) so `cx primer` carries the new
 text, then **verify the embed actually landed**:

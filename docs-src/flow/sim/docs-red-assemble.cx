@@ -1,0 +1,13 @@
+# A RED ASSEMBLY — the site does not list against its manifest. Post-pivot,
+# so `:incomplete incomplete=1` (§4.8), and the Site workflow uploads nothing
+# because its upload step follows a failed step (RULED: CICD-1).
+#
+#   cx flow simulate docs-src/flow/docs.flow.cx docs-src/flow/sim/docs-red-assemble.cx \
+#     --env docs-src/flow/docs.env.cx --allow-read=. --mode=check
+[results
+  [step name="generate" status=:done [result [generated ran=false reason='--mode=check']]]
+  [step name="check" status=:done
+        [result [checked count='1' [made target='docs-check' ok=true tail='no drift']]]]
+  [step name="assemble" status=:failed
+        [result [err code='cx-err:CXER0100'
+                     message='make site-check is RED (exit 1): a declared file is missing from site/']]]]

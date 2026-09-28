@@ -1,0 +1,140 @@
+# The acts of the documentation flow, docs-src/flow/docs.flow.cx (RULED:
+# CICD-1). ORDINARY command defs: the flow document names them by qualified
+# name, and this module is reached through docs-src/flow/docs.env.cx's
+# [?lib … :as docs], which is what makes them `docs/<def>` in the resolver
+# (flow.md §4.1; `cx flow --env`).
+#
+# Every act is a make target underneath, and that is the point, not a
+# shortcut: each generator and each check is already a cx program behind one
+# make target with its grants (scripts/gen_docs/docs.mk, scripts/gen_site/
+# site.mk, the Makefile's check rows), and the full post-merge run grades the
+# same targets as TEST_TARGETS rows. The flow adds what make did not have —
+# one order, one run record, one place to read a failure — and never a second
+# copy of a recipe.
+#
+# THE TOOLCHAIN IS THE CALLER'S. Every nested make runs with `-o build-vcx`
+# and the three *_SKIP_CX_BUILD switches: the caller (`make docs-flow`, which
+# depends on build-vcx, or the Site workflow's build step) built the binary
+# this flow runs under, and a relink under a running flow is the
+# 'Exec format error' class — a step exec'ing the binary a sibling is
+# rewriting. It is not hypothetical here: every `build-vcx` on the head
+# relinks (#1697), so without these flags each check would relink cx for
+# ~150 s while `cx flow run` itself is executing it.
+[?lib 'cx-stdlib/process' :as process]
+[?lib 'cx-stdlib/io' :as io]
+[?lib 'cx-stdlib/strings' :as strings]
+[?lib 'cx-stdlib/env' :as env]
+
+# say: one progress line to stderr, so a run that takes minutes is not
+# silent until its record prints.
+[?def say scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+# make-argv: the one make invocation every act uses (see the header).
+[?def make-argv scope=private pure [returns any] ($target)
+  ('make', '--no-print-directory', '-o', 'build-vcx',
+   'DOCS_SKIP_CX_BUILD=1', 'GUIDE_SKIP_CX_BUILD=1', 'SITE_SKIP_CX_BUILD=1',
+   $target)]
+
+# tail-of: the last $k non-blank lines of a text, joined — what a red step's
+# record carries, so the failure is read in the record, not in a log.
+[?def tail-of scope=private pure [returns string] ($text $k)
+  [?let [= $ls [?to-sequence [?for [in $l [$strings:split [$string $text] "\n"]]
+                 [where [not [= [$str-trim $l] '']]] [yield $l]]]]
+        [= $n [$count $ls]]
+        [= $d [?if [> $n $k] [then [- $n $k]] [else 0]]]
+    [$strings:join [?to-sequence [?drop $d $ls]] "\n"]]]
+
+# make-one: one target, run once. The answer is a [made …] row either way —
+# ok=true with the last line of its stdout (its summary line), ok=false with
+# its exit code and the tail of stdout and stderr together — so a caller
+# running several can report every red one.
+[?def make-one scope=private impure [returns element] ($target)
+  [?let [= $_ [$say [$concat 'docs flow: make ' $target]]]
+        [= $r [$process:run [$make-argv $target]]]
+        [= $out [$concat [$string $r@stdout] [$string $r@stderr]]]
+    [?if [= [$string $r@exit-code] '0']
+      [then [made target=$target ok=true
+                  tail=[$tail-of [?if [= [$str-trim [$string $r@stdout]] '']
+                                   [then $out] [else $r@stdout]] 1]]]
+      [else [made target=$target ok=false exit=[$string $r@exit-code]
+                  tail=[$tail-of $out 25]]]]]]
+
+# red: the err a red row becomes when it is the step's answer.
+[?def red scope=private pure [returns element] ($row)
+  [err code='cx-err:CXER0100'
+       message=[$concat 'make ' [$string $row@target] ' is RED (exit '
+                        [$string $row@exit] "):\n" [$string $row@tail]]]]
+
+# ── docs/generate — the pivot act (§4.7) ─────────────────────────────────
+# --mode=write runs its target, `make docs-generate`: the platform chapter, docs/llm/,
+# the landing page and the README badge. It is the flow's irreversible
+# point for the same reason the repo gate's toolchain build is: it
+# overwrites tracked files and no act puts the previous bytes back — a
+# `git checkout` would destroy an edit the developer has not committed —
+# and a red check after it must NOT un-generate, because the regenerated
+# bytes are exactly what the developer reads to fix it. So every step after
+# it is forward-only and a red one lands the run `:incomplete`.
+#
+# --mode=check generates nothing (the post-merge doc pipeline and the Site
+# workflow grade the committed tree and must not write it). That is an
+# ARGUMENT of the act, not a `when=` guard on the step: a guarded pivot
+# moves the compensation partition at run time while `validate` reads it
+# statically (flows/repo-gate.flow.cx's header measured it).
+[?def generate scope=public impure [effects [subprocess] [read] [write]]
+  [returns element] ($mode='' $target='')
+  [?let [= $m [$str-trim [$string $mode]]]
+        [= $t [$str-trim [$string $target]]]
+    [?match $m
+      [case 'check' [generated ran=false reason='--mode=check']]
+      [case 'write'
+        [?if [= $t '']
+          [then [err code='cx-err:CXER0100' message='docs/generate: no target named']]
+          [else [?let [= $row [$make-one $t]]
+            [?if [= [$string $row@ok] 'true']
+              [then [generated ran=true tail=[$string $row@tail]]]
+              [else [$red $row]]]]]]]
+      [else [err code='cx-err:CXER0100'
+                 message=[$concat 'docs/generate: --mode=' $m
+                                  ' is neither write nor check']]]]]]
+
+# ── docs/check — every check, each red one named ─────────────────────────
+# The targets are the document's own field, so the list is read in the flow
+# and nowhere else. They run in turn and ALL of them run: one red check
+# does not hide a second (the post-merge run's -k reading, RULED: RUN-2).
+# The answer is the rows when every one is green, and one err naming every
+# red target with its tail when any is not.
+[?def check scope=public impure [effects [subprocess] [read] [write]]
+  [returns element] ($targets='')
+  [?let [= $names [$str-split-whitespace [$string $targets]]]
+    [?if [= [$count $names] 0]
+      [then [err code='cx-err:CXER0100' message='docs/check: no targets named']]
+      [else [?let
+        [= $rows [?to-sequence [?for [in $t $names] [yield [$make-one $t]]]]]
+        [= $reds [?to-sequence [?for [in $w $rows]
+                   [where [not [= [$string $w@ok] 'true']]] [yield $w]]]]
+        [?if [= [$count $reds] 0]
+          [then [checked count=[$string [$count $rows]] [?splice $rows]]]
+          [else [err code='cx-err:CXER0100'
+                     message=[$concat [$string [$count $reds]] ' of '
+                               [$string [$count $rows]] ' checks RED: '
+                               [$strings:join [?to-sequence [?for [in $w $reds]
+                                 [yield [$concat [$string $w@target] ' (exit '
+                                                 [$string $w@exit] ')']]]] ', ']
+                               "\n\n"
+                               [$strings:join [?to-sequence [?for [in $w $reds]
+                                 [yield [$concat '── ' [$string $w@target] "\n"
+                                                 [$string $w@tail]]]]] "\n\n"]]]]]]]]]]
+
+# ── docs/assemble — the site, assembled and listed ───────────────────────
+# Its target, `make site-check`, renders the guide, assembles site/ and lists it against
+# docs-src/site/manifest.cxd — the assembly and its check in one target, so
+# the site is rendered once. site/ is what the Site workflow uploads.
+[?def assemble scope=public impure [effects [subprocess] [read] [write]]
+  [returns element] ($target='')
+  [?let [= $t [$str-trim [$string $target]]]
+    [?if [= $t '']
+      [then [err code='cx-err:CXER0100' message='docs/assemble: no target named']]
+      [else [?let [= $row [$make-one $t]]
+        [?if [= [$string $row@ok] 'true']
+          [then [assembled dir='site' tail=[$string $row@tail]]]
+          [else [$red $row]]]]]]]]
