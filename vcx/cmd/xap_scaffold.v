@@ -1,33 +1,44 @@
 module main
 
 import os
+import cx
+import code
 
-// `cx xap scaffold PATTERN [--dir D]` — emit one COMPOSITION PATTERN's
-// declaration skeleton (#1487, RULED: COMP-1).
+// `cx xap scaffold NAME [--dir D] [--answers FILE --as PRINCIPAL]` — emit one
+// COMPOSITION PATTERN's declaration skeleton (#1487, RULED: COMP-1) or one
+// AUTOMATION SKELETON (#1498, RULED: AA-1, AA-2, AA-3, AA-8), and, for a
+// skeleton with `--answers`, the flow document and its `[on …]` row that
+// `fill` makes of it.
 //
 // composition.md §3 states a closed set of seven patterns, each with the
 // enterprise need it answers, the modules it uses, a declaration skeleton
 // drawn from the specifications' own examples, and the §2 seam rows it
-// crosses. An adopter's agent that has read `cx primer`'s platform chapter
-// knows the set exists; this command is how it starts from one of them
-// without re-typing a skeleton out of a specification and without inventing
-// the parts the specification deliberately leaves open.
+// crosses; §3.10 states a closed sub-set of four automation skeletons, each a
+// flow document plus one `[on …]` row whose every TODO is a typed, named
+// `[slot name= kind=]`. The bodies of both are DATA shipped in
+// cx-platform-flow (xap_scaffold_templates.v embeds them): this command
+// carries no copy of a body of its own (RULED: AA-1).
 //
 // WHAT THE PATTERN STATES BECOMES A DECLARATION; WHAT IT DOES NOT BECOMES AN
 // AUTHORING TODO, NEVER A GUESS. That is the discipline connector.md §6.3
-// fixes for every skeleton the toolchain emits (RULED: 1430-g): an
-// undetectable pagination shape becomes a TODO on the verb, anything about
-// idempotency becomes a TODO per act verb, a security scheme outside the
-// closed set becomes a TODO rather than the nearest member of it. A scaffold
+// fixes for every skeleton the toolchain emits (RULED: 1430-g). A scaffold
 // that guessed would be worse than a blank page, because a plausible wrong
 // default is the kind an author does not re-read.
 //
-// It is PURE: fixture in — the pattern name — skeleton out. No network, no
-// clock, no registry, nothing read from the tree. Every emitted document
-// parses (`cx lint`), which is what the pattern's own test asserts for all
-// seven.
+// It is PURE: a name — and, for a skeleton, the answers file its command line
+// names — in; a skeleton or a filled document out. No network, no clock, no
+// registry, nothing else read from the tree, and it never writes into a
+// deployment document (RULED: AA-3). Every emitted document parses.
 //
-// UNLIKE `cx xap init`, THE RESULT DOES NOT RUN AS GENERATED, and says so in
+// `--answers FILE` calls `fill` (cx-platform/flow, RULED: AA-7) — the same
+// pure def the studio's automations plane calls on the host, so the two
+// cannot produce different documents from the same answers — and REQUIRES
+// `--as PRINCIPAL`: the emitted row's `as=` is that principal, as `cx flow
+// run` names its actor (RULED: AA-8). `fill`'s one refusal, naming every
+// unanswered or wrongly-kinded slot, is printed as it answers and nothing is
+// written.
+//
+// UNLIKE `cx xap init`, A PATTERN DOES NOT RUN AS GENERATED, and says so in
 // its README: a composition pattern is a shape, and the feature names, the
 // verbs, the thresholds, the routes and every deployment fact are the
 // author's. `cx xap init` scaffolds a project that composes unedited because
@@ -35,7 +46,7 @@ import os
 
 fn xap_scaffold_usage_lines() []string {
 	mut u := [
-		'Usage: cx xap scaffold PATTERN [--dir DIR]',
+		'Usage: cx xap scaffold NAME [--dir DIR] [--answers FILE --as PRINCIPAL]',
 		'',
 		"Emits one composition pattern's declaration skeleton — the flow",
 		'document, the feature and gateway declarations and the deployment',
@@ -47,7 +58,20 @@ fn xap_scaffold_usage_lines() []string {
 		u << '  ${p.slug:-24} ${p.section} ${p.title}'
 	}
 	u << ''
-	u << '  --dir DIR   where to create it (default: ./PATTERN)'
+	u << 'Or one automation skeleton — a flow document and its [on …] row, every'
+	u << 'TODO a typed, named [slot name= kind=] — from the closed sub-set of four'
+	u << '(composition.md §3.10):'
+	u << ''
+	for s in xap_scaffold_skeletons() {
+		u << '  ${s.name:-24} §3.10 ${s.trigger}: ${s.shape}'
+	}
+	u << ''
+	u << '  --dir DIR            where to create it (default: ./NAME)'
+	u << '  --answers FILE       a skeleton only: fill it from FILE\'s [answers …]'
+	u << '                       document and emit the flow document and its'
+	u << '                       [on …] row with no slot open'
+	u << '  --as PRINCIPAL       required with --answers: the binder, the emitted'
+	u << '                       row\'s as= (as `cx flow run` names its actor)'
 	u << ''
 	u << 'A composition an adopter needs that is not one of the seven is a'
 	u << 'decision for the owner, not a variation to improvise: this command'
@@ -115,8 +139,136 @@ fn xap_scaffold_readme(p XapScaffoldPattern, names []string) string {
 	return b.join('\n')
 }
 
+// xap_scaffold_skeleton_readme — what the skeleton is, its slots, and how to
+// fill it. Generated from the skeleton document itself, so it cannot drift
+// from the data beside it.
+fn xap_scaffold_skeleton_readme(s XapScaffoldSkeleton, names []string) string {
+	mut b := []string{}
+	b << '# ${s.name} — an automation skeleton'
+	b << ''
+	b << 'Emitted by `cx xap scaffold ${s.name}` from composition.md §3.10.'
+	b << ''
+	b << '**The shape.** ${s.shape}. **The trigger.** an `[on kind=${s.trigger} …]` row (flow.md §4.24).'
+	b << ''
+	b << '## What was emitted'
+	b << ''
+	for n in names {
+		b << '- `${n}`'
+	}
+	b << ''
+	b << 'The skeleton is a flow document plus one `[on …]` row in which every'
+	b << 'TODO is a typed, named `[slot name= kind=]`; the answers file is its'
+	b << 'reference `[answers …]` document, one child per slot. Edit the answers.'
+	b << ''
+	b << '## The slots'
+	b << ''
+	for sl in s.slots {
+		b << '- ${sl}'
+	}
+	b << ''
+	b << 'An `act` is `\'ns/verb\'`, a `field` a lower-case name, a `role`'
+	b << '`role:<name>`, a `principal` `principal:<id>`, a `duration` a literal'
+	b << 'such as `1d`, a `value` a scalar.'
+	b << ''
+	b << '## Fill it'
+	b << ''
+	b << '    cx xap scaffold ${s.name} --answers ${s.name}.answers.cxd --as principal:<id> --dir <new dir>'
+	b << ''
+	b << 'emits the flow document and its `[on …]` row with no slot open — the row'
+	b << 'carrying `start=`, the flow\'s address, and `as=`, the principal `--as`'
+	b << 'names — or one refusal naming every unanswered or wrongly-kinded slot.'
+	b << 'It never writes into a deployment document: add the row to yours.'
+	b << ''
+	b << 'The set of skeletons is CLOSED — on-change-act, on-change-approve,'
+	b << 'on-change-check, on-schedule-act (composition.md §3.10).'
+	b << ''
+	return b.join('\n')
+}
+
+fn xap_scaffold_filled_readme(s XapScaffoldSkeleton, names []string, principal string) string {
+	mut b := []string{}
+	b << '# ${s.name} — a filled automation'
+	b << ''
+	b << 'Emitted by `cx xap scaffold ${s.name} --answers FILE --as ${principal}`'
+	b << 'from composition.md §3.10: `fill` (cx-platform/flow) over the skeleton'
+	b << 'and the answers, with no slot left open.'
+	b << ''
+	b << '## What was emitted'
+	b << ''
+	for n in names {
+		b << '- `${n}`'
+	}
+	b << ''
+	b << 'The `[on …]` row\'s `start=` is the flow document\'s Tier-1 address and'
+	b << 'its `as=` is `${principal}`, whose own act each start is (flow.md §4.9).'
+	b << 'Nothing was written into a deployment document: add the row to your'
+	b << 'deployment\'s bindings and serve the flow document from its `[docs]`.'
+	b << ''
+	return b.join('\n')
+}
+
+// xap_scaffold_fill evaluates `fill` over the embedded skeleton and the
+// answers file, the documents as the DATA input so no document text is ever
+// embedded in program source. It answers the two documents' texts, or the
+// refusal as it was rendered.
+fn xap_scaffold_fill(s XapScaffoldSkeleton, answers_src string, principal string) !(string, string) {
+	input := [s.source, '[scaffold-answers', answers_src, ']', "[scaffold-as '${principal}']"].join('\n')
+	program := [
+		"[?lib 'cx-platform/flow' :as cxflow]",
+		'[?let [= \$r [\$cxflow:fill [\$first [\$cx:select \$doc "/skeleton"]] [\$first [\$cx:select \$doc "/scaffold-answers/*"]] {as: [\$string [\$first [\$cx:select \$doc "/scaffold-as"]]]}]]',
+		'  [?match \$r [case [err] \$r] [else [scaffold-filled [flow [\$cx:serialize [\$first \$r]]] [on [\$cx:serialize [\$first [\$tail \$r]]]]]]]]',
+	].join('\n')
+	out := code.eval_code(input, program, 'cx') or { return error(err.msg()) }
+	doc := cx.parse(out.trim_space()) or { return error(out.trim_space()) }
+	for n in doc.elements {
+		if !n.is_element() {
+			continue
+		}
+		e := n.element()
+		if e.name == 'scaffold-filled' {
+			mut flow_txt, mut on_txt := '', ''
+			for it in e.items {
+				if it.is_element() && it.element().name == 'flow' {
+					flow_txt = xap_scaffold_payload(it.element())
+				} else if it.is_element() && it.element().name == 'on' {
+					on_txt = xap_scaffold_payload(it.element())
+				}
+			}
+			return flow_txt, on_txt
+		}
+		break
+	}
+	return error(out.trim_space())
+}
+
+fn xap_scaffold_write(dir string, files map[string]string, readme string) []string {
+	os.mkdir_all(dir) or {
+		eprintln('cx xap scaffold: cannot create ${dir}: ${err}')
+		exit(1)
+	}
+	mut names := files.keys()
+	names.sort()
+	mut written := []string{}
+	for f in names {
+		p := os.join_path(dir, f)
+		os.write_file(p, files[f]) or {
+			eprintln('cx xap scaffold: cannot write ${p}: ${err}')
+			exit(1)
+		}
+		written << p
+	}
+	rp := os.join_path(dir, 'README.md')
+	os.write_file(rp, readme) or {
+		eprintln('cx xap scaffold: cannot write ${rp}: ${err}')
+		exit(1)
+	}
+	written << rp
+	return written
+}
+
 fn run_xap_scaffold(args []string) {
 	patterns := xap_scaffold_patterns()
+	skeletons := xap_scaffold_skeletons()
 	if args.len == 0 || args[0] in ['-h', '--help'] {
 		for l in xap_scaffold_usage_lines() {
 			println(l)
@@ -125,45 +277,74 @@ fn run_xap_scaffold(args []string) {
 	}
 	name := args[0]
 	mut chosen := XapScaffoldPattern{}
+	mut skeleton := XapScaffoldSkeleton{}
 	mut found := false
+	mut is_skeleton := false
 	for p in patterns {
 		if p.slug == name {
 			chosen = p
 			found = true
 		}
 	}
-	if !found {
-		// The refusal NAMES THE CLOSED SET. A pattern that is not one of the
-		// seven is the owner's decision, so the useful answer is the set, not
-		// a near-miss suggestion.
-		mut slugs := []string{}
-		for p in patterns {
-			slugs << p.slug
+	for s in skeletons {
+		if s.name == name {
+			skeleton = s
+			found = true
+			is_skeleton = true
 		}
-		eprintln('cx xap scaffold: `${name}` is not a composition pattern.')
+	}
+	if !found {
+		// The refusal NAMES THE CLOSED SETS. A composition that is not one of
+		// them is the owner's decision, so the useful answer is the sets, not
+		// a near-miss suggestion (composition.md §3.9; comp-002).
+		eprintln('cx xap scaffold: `${name}` is not a composition pattern or an automation skeleton.')
 		eprintln('The set is CLOSED (composition.md §3) — the seven are:')
 		for p in patterns {
 			eprintln('  ${p.slug:-24} ${p.section} ${p.title}')
+		}
+		eprintln('and the four automation skeletons (composition.md §3.10):')
+		for s in skeletons {
+			eprintln('  ${s.name:-24} §3.10 ${s.trigger}: ${s.shape}')
 		}
 		eprintln('A composition that is not one of them is a decision for the owner,')
 		eprintln('not a variation to improvise.')
 		exit(2)
 	}
 	mut dir := './${name}'
+	mut answers := ''
+	mut principal := ''
 	mut i := 1
 	for i < args.len {
 		match args[i] {
-			'--dir' {
+			'--dir', '--answers', '--as' {
 				if i + 1 >= args.len {
-					xap_scaffold_die('--dir needs a directory')
+					xap_scaffold_die('${args[i]} needs a value')
 				}
-				dir = args[i + 1]
+				match args[i] {
+					'--dir' { dir = args[i + 1] }
+					'--answers' { answers = args[i + 1] }
+					else { principal = args[i + 1] }
+				}
 				i += 2
 			}
 			else {
 				xap_scaffold_die('unknown flag `${args[i]}`')
 			}
 		}
+	}
+	if !is_skeleton && (answers != '' || principal != '') {
+		xap_scaffold_die('--answers and --as fill an automation skeleton (composition.md §3.10); `${name}` is a composition pattern')
+	}
+	if principal != '' && answers == '' {
+		xap_scaffold_die('--as names the binder of a FILLED skeleton; it needs --answers FILE')
+	}
+	if answers != '' && principal == '' {
+		// RULED: AA-8 — the CLI names the binder; a filled row with no binder
+		// is refused rather than completed at publish (comp-003).
+		xap_scaffold_die('--answers requires --as PRINCIPAL: the emitted [on …] row\'s as= is that principal, whose own act each start is, as `cx flow run` names its actor (composition.md §3.9, RULED: AA-8)')
+	}
+	if principal.contains("'") || principal.contains('\\') || principal.contains('\n') {
+		xap_scaffold_die('--as `${principal}` is not a principal — write principal:<id>')
 	}
 	if os.exists(dir) && os.ls(dir) or { [] }.len > 0 {
 		// Refuse rather than merge, the same rule `cx xap init` holds:
@@ -172,27 +353,56 @@ fn run_xap_scaffold(args []string) {
 		eprintln('cx xap scaffold: ${dir} already exists and is not empty')
 		exit(1)
 	}
-	os.mkdir_all(dir) or {
-		eprintln('cx xap scaffold: cannot create ${dir}: ${err}')
-		exit(1)
+	if is_skeleton && answers != '' {
+		src := os.read_file(answers) or {
+			eprintln('cx xap scaffold: cannot read the answers file ${answers}: ${err}')
+			exit(1)
+		}
+		flow_txt, on_txt := xap_scaffold_fill(skeleton, src, principal) or {
+			// fill's one refusal, as it answered; nothing is written.
+			eprintln(err.msg())
+			exit(1)
+		}
+		files := {
+			'${name}.flow.cx': flow_txt
+			'${name}.on.cxd':  on_txt
+		}
+		mut names := files.keys()
+		names.sort()
+		written := xap_scaffold_write(dir, files, xap_scaffold_filled_readme(skeleton, names,
+			principal))
+		for p in written {
+			println(p)
+		}
+		println('')
+		println('${name} filled — composition.md §3.10. The [on …] row names the flow by its')
+		println('address; add it to your deployment document yourself.')
+		println('')
+		println('Next: cx lint ${os.join_path(dir, names[0])}')
+		return
+	}
+	if is_skeleton {
+		files := {
+			'${name}.skeleton.cxd': skeleton.source
+			'${name}.answers.cxd':  skeleton.answers
+		}
+		mut names := files.keys()
+		names.sort()
+		written := xap_scaffold_write(dir, files, xap_scaffold_skeleton_readme(skeleton,
+			names))
+		for p in written {
+			println(p)
+		}
+		println('')
+		println('${name} — composition.md §3.10. README.md lists its slots; fill them with')
+		println('--answers FILE --as PRINCIPAL. Every slot is a TODO, never a guess.')
+		println('')
+		println('Next: cx lint ${os.join_path(dir, names[0])}')
+		return
 	}
 	mut names := chosen.files.keys()
 	names.sort()
-	mut written := []string{}
-	for f in names {
-		p := os.join_path(dir, f)
-		os.write_file(p, chosen.files[f]) or {
-			eprintln('cx xap scaffold: cannot write ${p}: ${err}')
-			exit(1)
-		}
-		written << p
-	}
-	readme := os.join_path(dir, 'README.md')
-	os.write_file(readme, xap_scaffold_readme(chosen, names)) or {
-		eprintln('cx xap scaffold: cannot write ${readme}: ${err}')
-		exit(1)
-	}
-	written << readme
+	written := xap_scaffold_write(dir, chosen.files, xap_scaffold_readme(chosen, names))
 	for p in written {
 		println(p)
 	}
