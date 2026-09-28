@@ -633,6 +633,11 @@
   [?let [= $l [$first [$nonblank-lines [$out [$git '.' ('worktree', 'list', '--porcelain') $GIT-MS]]]]]
     [$str-trim [$strings:replace-first [$string $l] 'worktree ' '']]]]
 
+# run-dir: where one run writes — <evidence>/premerge/, which .gitignore keeps
+# out of the tree (the step logs, the selection, the step table as data and as
+# markdown); RESULTS.md, the one file an agent commits, carries the table.
+[?def run-dir scope=private pure [returns string] ($e) [$concat [$str-trim [$string $e]] '/premerge']]
+
 [?def evidence-ok scope=private pure [returns bool] ($e)
   [$re:matches [$re:compile '^_gate_evidence/pipeline_[A-Za-z0-9_.-]+$'] [$str-trim [$string $e]]]]
 
@@ -666,7 +671,7 @@
                           '` is not _gate_evidence/pipeline_<x> — the evidence directory of this branch']]]
     [else [?let [= $base [$base-ref]]
                 [= $_f [$git '.' ('fetch', '-q', 'origin', [$strings:replace-first $base 'origin/' '']) $NET-MS]]
-                [= $_d [$io:make-dirs [$concat [$string $evidence] '/steps']]]
+                [= $_d [$io:make-dirs [$concat [$run-dir $evidence] '/steps']]]
                 [= $files [?to-sequence [?for [in $f [$nonblank-lines [$out [$git '.' ('diff', '--name-only', [$concat $base '...HEAD']) $GIT-MS]]]]
                             [where [and [or [$strings:ends-with $f '.cx'] [$strings:ends-with $f '.cxd']] [$io:is-file $f]]]
                             [yield $f]]]]
@@ -687,7 +692,7 @@
   ($evidence='')
   [?let [= $slot [$own-slot]]
         [= $rows [?to-sequence [?for [in $t ('build-vcx', 'build-vcx-dev')]
-                   [= $log [$concat [$string $evidence] '/steps/' $t '.log']]
+                   [= $log [$concat [$run-dir $evidence] '/steps/' $t '.log']]
                    [= $_l [$log-line [$concat 'make ' $t ' (own runner)']]]
                    [= $r [$slot-make $slot ($t) $log]]
                    [yield [made target=$t ok=[$string [$ok $r]] exit=[$string $r@exit-code] tail=[$log-tail $log 12]]]]]]
@@ -714,7 +719,8 @@
 [?def select scope=public impure [effects [read] [write] [subprocess] [env]] [returns element]
   ($evidence='' $own='')
   [?let [= $base [$base-ref]]
-        [= $e [$string $evidence]]
+        [= $e [$run-dir $evidence]]
+        [= $_d [$io:make-dirs $e]]
         [= $changed [?to-sequence [?for [in $f [$nonblank-lines [$out [$git '.' ('diff', '--name-only', [$concat $base '...HEAD']) $GIT-MS]]]]
                       [where [not [$found [$re:compile $INFRA] $f]]] [yield $f]]]]
         [= $cf [$concat $e '/changed_minus_infra.txt']]
@@ -753,7 +759,7 @@
 # counts, so every red is named (RUN-2) and none stops the rest.
 [?def make scope=public impure [effects [read] [write] [subprocess] [env]] [returns element]
   ($target='' $slot='' $evidence='')
-  [?let [= $t [$str-trim [$string $target]]] [= $s [$str-trim [$string $slot]]] [= $e [$string $evidence]]
+  [?let [= $t [$str-trim [$string $target]]] [= $s [$str-trim [$string $slot]]] [= $e [$run-dir $evidence]]
         [= $gap [?if [= $s 'shared'] [then [$gap-wait [$concat [$main-checkout] '/vcx/target/gate-loop.log'] 14400 true]]
                   [else [gap line='own runner']]]]
     [?if [not [= [$name $gap] 'gap']] [then $gap]
@@ -768,7 +774,7 @@
 
 # ── ci/verdict — the step table (never MERGE-READY: the agent commits that) ──
 [?def verdict scope=public impure [effects [read] [write]] [returns element] ($evidence='')
-  [?let [= $e [$string $evidence]]
+  [?let [= $e [$run-dir $evidence]]
         [= $doc [$cx-parse [$io:read-file [$concat $e '/premerge-steps.cxd']]]]
         [= $rows [?to-sequence [?for [in $r $doc] [where [= [$name $r] 'row']] [yield $r]]]]
         [= $reds [?to-sequence [?for [in $r $rows] [where [not [= [$string $r@exit] '0']]] [yield $r]]]]
