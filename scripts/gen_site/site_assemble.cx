@@ -21,10 +21,12 @@
 #                                              custom-domain binding)
 #   (empty)                 → .nojekyll       (Pages serves the tree as is)
 #
-# The playground's engine (docs/guide/wasm/, staged by `make guide` only when
-# dist/wasm/ exists, which needs emcc) is copied when present and REPORTED when
-# absent: a site without it is a site whose playground page cannot run, and the
-# run says so rather than shipping that silently.
+# The playground's engine (docs/guide/wasm/, which `make guide` copies from
+# dist/wasm/) is REQUIRED since PLAY-1: `make site` and `make site-check` build
+# it or prove it fresh first, and the manifest names its five files in a
+# required block, so `--check` fails a site without them MISSING. This program
+# also says so when it assembles without them — a site whose playground page
+# cannot run is never shipped silently.
 #
 #   cx --allow-read --allow-write scripts/gen_site/site_assemble.cx          assemble
 #   cx --allow-read --allow-write scripts/gen_site/site_assemble.cx --check  list it
@@ -121,7 +123,7 @@
     [= $_w [?if [$empty $wasm]
              [then [$cry [$concat "site_assemble: NOTE — no playground engine: docs/guide/wasm/ is absent "
                                   "(it needs dist/wasm/, built by `make guide-wasm` with emcc), so "
-                                  "playground.html ships without the engine it loads"]]]
+                                  "playground.html would ship without the engine it loads — site-check fails it MISSING"]]]
              [else 0]]]
     [$say [$concat "site_assemble: " $out "/ — " [$string [$count $guide]] " guide files (index.html as guide.html), "
                    "the landing page, " [$string [$count $llm]] " llm/ files and the llms.txt pair at the root, "
@@ -150,7 +152,7 @@
       [then [?let [= $_s [$say [$concat "site-check: " $label " holds exactly the "
                                         [$string [$count $required]] " required files " MANIFEST
                                         " declares, plus " [$string $opt-present] "/" [$string [$count $optional]]
-                                        " optional (wasm) files present"]]]
+                                        " optional files present"]]]
               [$env:exit 0]]]
       [else [?let
         [= $_h [$cry [$concat "site-check: " $label " does not match " MANIFEST " — "
