@@ -1271,32 +1271,40 @@
 
     [child id=pg-how n='8.11.1' title='How it works'
       [body
-        """The playground runs entirely in the browser. Pick a
-           starter example from the dropdown, edit it in the
-           Source pane, and the three output tabs underneath
-           show the canonical CX form, the JSON projection, and
-           the XML projection of the parsed tree. No server, no
-           signup. Twelve starter examples ship in the corpus
-           — three data shapes (atom, nested element, whole-shop)
-           and nine program snippets covering the
-           directive surface."""]]
+        """The playground runs entirely in the browser. Its
+           toolbar carries the three readings of the one syntax:
+           Document (the text is the value, shown as CX, JSON and
+           XML), Query (a program over a document, which is bound
+           as `$doc`) and Program. Beside them, a picker of the
+           primer's examples for that reading: every fixture
+           `cx primer` cites, filed under the primer section that
+           cites it, its fixture id and suite shown beside it —
+           the page and the primer cannot show two programs under
+           one id. The page opens on the first Program example and
+           runs it; picking an example runs it too."""]
+      [body
+        """Under the output sits the fixture's recorded answer and
+           whether the engine in the tab reproduced it. An error
+           is a value: a program the engine refuses prints an
+           `[err …]` element, projected to JSON and XML like any
+           other. Share copies a link that reopens exactly the
+           text in the editors — an unedited example by its
+           fixture id. No server, no signup."""]]
 
     [child id=pg-visualize n='8.11.2' title='Visualize'
       [body
-        """The Source pane carries a Diagram toggle in its
-           header; the Output pane carries a Tree | Graph view
-           toggle adjacent to the CX | JSON | XML projection
-           tabs. Tree is the default for every
-           fresh source — Graph is opt-in."""]
+        """The View pane, on the right, draws the Source (the
+           document or program you wrote), the Output, or both,
+           as a Tree or a Graph; Tree is the default."""]
       [body
-        """The Source-pane diagram renders the program as a
-           Mermaid graph in a sibling pane. The renderer runs
+        """The Graph renders the chosen subject as a
+           Mermaid diagram. The renderer runs
            entirely in the browser via the libcx wasm build — Mermaid text
            emitted by `cx_code_diagram`, then rendered to inline
            SVG by Mermaid.js. Zoom, fit-to-pane, and pan controls
            layer on top."""]
       [body
-        """The Output-pane Tree view renders the parsed value as
+        """The Tree view renders the parsed text as
            an interactive containment-only tree — folder icons
            for elements with body, file-text icons for prose
            leaves, tag and at-sign rows for elements and
@@ -1306,7 +1314,7 @@
            Search, count badges, and standard tree keyboard
            navigation come along for free."""]
       [body
-        """The Output-pane Graph view auto-detects mode: sources whose top-level program contains at
+        """The Graph view auto-detects mode: sources whose top-level program contains at
            least one `[?directive]` render as a Control-Flow
            Graph (basic blocks; diamonds for `[?if]`; dispatcher
            round-rects with per-arm edges for `[?match]`;
@@ -1332,8 +1340,8 @@
            repo, render the guide with `make guide`, and serve
            `docs/guide/` from any HTTP server (or open via
            `file://`) — the playground works without an internet
-           connection. The example corpus, the TypeScript
-           bundle, and the CSS all live under
+           connection. The examples (projected from the
+           primer's fixtures), the script and the CSS all live under
            `scripts/gen_guide/playground/`."""]
       [body
         """That covers the diagrams too. Both halves of the page

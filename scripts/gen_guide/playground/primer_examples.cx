@@ -1,0 +1,216 @@
+# scripts/gen_guide/playground/primer_examples.cx — the playground's picker,
+# projected from the primer's own fixtures (PLAY-1).
+#
+# The online playground's picker lists THE PRIMER'S EXAMPLES: every fixture
+# `docs-src/llm/primer.md.tmpl` cites, in the order the primer cites it, filed
+# under the primer heading it sits beneath. Nothing here is hand-written — each
+# entry is a `[case]` of a suite `docs-src/llm/manifest.cxd` declares, read by
+# the same fixture plumbing the primer generator uses
+# (scripts/gen_docs/primer_build.cx, imported below), so the playground and the
+# primer cannot show two different programs under one id. The primer's
+# freshness contract (`make docs-check`: every cited case replayed against the
+# shipped binary, its output equal to the fixture's) is what keeps these
+# answers true natively; `make test-playground-primer` holds the wasm engine
+# the page loads to the same recorded answers.
+#
+# Each entry carries its READING — how the fixture is run, which is the shape
+# of the fixture itself (primer_build.cx's `argv-tokens` names the same three):
+#
+#   document   a document alone (`[in-cx]`, no program): `cx --from=cx --to=cx`
+#   query      a program over a document (`[in-cx]` + `[in-code]`):
+#              `cx --data=input.cx prog.cx` — the document is bound as $doc
+#   program    a program alone (`[in-code]`): `cx prog.cx`
+#
+# An entry the browser cannot run as the fixture runs it — its invocation
+# carries program arguments (`[cli-argv]`) or an XML input — says so
+# (`runnable: false`, with the command line) rather than presenting a
+# different answer as the fixture's.
+#
+# Output: scripts/gen_guide/playground/playground.primer.js, one script
+# assigning `window.cxPlaygroundPrimer` (a script, not a fetched JSON file, so
+# the page also works opened from disk).
+#
+#   cx --allow-read --allow-write scripts/gen_guide/playground/primer_examples.cx          write
+#   cx --allow-read --allow-write scripts/gen_guide/playground/primer_examples.cx --check  drift
+#   (or: make docs / make docs-check, which run it beside the primer)
+#
+# Exit: 0 green; 1 an unknown fixture id, a template with no example, or drift.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/json'    as=json]
+
+[?lib './scripts/gen_docs/primer_build.cx' as=pb]
+
+[?const TEMPLATE "docs-src/llm/primer.md.tmpl"]
+[?const MANIFEST "docs-src/llm/manifest.cxd"]
+[?const OUT "scripts/gen_guide/playground/playground.primer.js"]
+[; what the wasm engine cannot reproduce, and why — graded by the gate ]
+[?const DIFFERS "scripts/gen_guide/playground/primer_wasm.cxd"]
+
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def die scope=public impure ($s)
+  [?let [= $_e [$cry [$concat "primer_examples: " $s]]] [$env:exit 1]]]
+
+[?def member scope=public ($seq $x)
+  [> [$count [?for [in $s $seq] [where [= $s $x]] [yield $s]]] 0]]
+
+# plain: a Markdown heading as picker text — no code spans, no emphasis.
+[?def plain scope=public ($s)
+  [$strings:trim [$strings:replace [$strings:replace $s "`" ""] "*" ""]]]
+
+# chapter-of: the `N` of a `## N. Title` heading, or "".
+[?def chapter-of scope=public ($h2)
+  [?let [= $i [$strings:find $h2 ". "]]
+    [?if [not [$present $i]] [then ""] [else [$strings:slice $h2 1 [- $i 1]]]]]]
+
+# heading-of: a template line as [h level=2|3 text=…], or [h level=0] when
+# the line is not a heading.
+[?def heading-of scope=public ($line)
+  [?if [$strings:starts-with $line "### "]
+    [then [h level=3 text=[$plain [$strings:slice $line 5 [$strings:length $line]]]]]
+    [else [?if [$strings:starts-with $line "## "]
+      [then [h level=2 text=[$plain [$strings:slice $line 4 [$strings:length $line]]]]]
+      [else [h level=0 text=""]]]]]]
+
+# refs-on-line: every fixture a line cites, each as [ref id=… role=…] —
+# role `wrong`/`right` for the two halves of a PAIR, `` for an EXAMPLE.
+[?def refs-on-line scope=public ($line)
+  [?let [= $chunks [$strings:split $line "{{"]]
+        [= $n [$count $chunks]]
+    [?for [in $i [$range 2 $n]]
+      [= $ch [$nth $chunks $i]]
+      [= $j [$strings:find $ch "}}"]]
+      [where [$present $j]]
+      [= $parts [$strings:split-whitespace [$strings:slice $ch 1 [- $j 1]]]]
+      [where [not [$empty $parts]]]
+      [= $kind [$first $parts]]
+      [in $r [?if [$strings:starts-with $kind "EXAMPLE:"]
+               [then ([ref id=[$strings:slice $kind 9 [$strings:length $kind]] role=""],)]
+               [else [?if [and [$strings:starts-with $kind "PAIR:"] [>= [$count $parts] 2]]
+                 [then ([ref id=[$strings:slice $kind 6 [$strings:length $kind]] role=wrong],
+                        [ref id=[$nth $parts 2] role=right])]
+                 [else ()]]]]]
+      [yield $r]]]]
+
+# cited: the template's references in order, each with the primer section it
+# sits in (`§5 Iterate with [?for]`, or the chapter itself before its first
+# sub-heading); a fixture cited twice is listed once, where it is first cited.
+[?def cited scope=public ($tmpl)
+  [?let [= $walk [$fp:fold [$strings:split-lines $tmpl] {h2: "" cur: "" refs: ()}
+            [?fn ($acc $line)
+              [?let [= $h [$heading-of $line]]
+                    [= $lv $h@level]
+                    [= $h2 [?if [= $lv 2] [then [$string $h@text]] [else [$map:get $acc "h2"]]]]
+                    [= $cur [?match $lv
+                              [case 2 [$strings:replace-first [$concat "§" [$string $h@text]] ". " " "]]
+                              [case 3 [$concat "§" [$chapter-of $h2] " " [$string $h@text]]]
+                              [else [$map:get $acc "cur"]]]]
+                    [= $new [?for [in $r [$refs-on-line $line]]
+                              [yield [ref id=[$string $r@id] role=[$string $r@role] heading=$cur]]]]
+                {h2: $h2 cur: $cur refs: [$fp:flat-map ([$map:get $acc "refs"], $new) [?fn ($x) $x]]}]]]]
+        [= $all [$map:get $walk "refs"]]
+    [$fp:fold $all ()
+      [?fn ($acc $r)
+        [?if [$member [?for [in $a $acc] [yield [$string $a@id]]] [$string $r@id]]
+          [then $acc]
+          [else [$fp:flat-map ($acc, ($r,)) [?fn ($x) $x]]]]]]]]
+
+# suite-label: a suite path as a reader names it — the repository and the file.
+[?def suite-label scope=public ($p)
+  [?let [= $q [$strings:replace [$strings:replace $p "conformance/../deps/" "deps/"] "deps/" ""]]
+    $q]]
+
+# reading-of: the fixture's shape decides how it is run (see the header).
+[?def reading-of scope=public ($sec)
+  [?let [= $code [?else [$map:get $sec "in-code"] ""]]
+        [= $data [?else [$map:get $sec "in-cx"] "[empty]"]]
+        [= $xml  [?else [$map:get $sec "in-xml"] ""]]
+    [?if [= $code ""]
+      [then 'document']
+      [else [?if [and [= $xml ""] [not [= $data "[empty]"]]] [then 'query'] [else 'program']]]]]]
+
+# entry: one picker row, as a JSON-ready map.
+[?def entry scope=public impure ($n $r $index $differs)
+  [?let [= $id [$string $r@id]]
+        [= $sec [$pb:lookup $index $id TEMPLATE]]
+        [= $code [?else [$map:get $sec "in-code"] ""]]
+        [= $data0 [?else [$map:get $sec "in-cx"] "[empty]"]]
+        [= $data [?if [= $data0 "[empty]"] [then ""] [else $data0]]]
+        [= $xml [?else [$map:get $sec "in-xml"] ""]]
+        [= $argv [?else [$map:get $sec "cli-argv"] ""]]
+        [= $toks [$pb:argv-tokens $sec]]
+        [= $cmd [$concat "cx " [$strings:join [?for [in $t $toks]
+                  [yield [$pb:resolve-token $t "show" "" "" "" $code]]] " "]]]
+        [= $e [$pb:expected-of $sec]]
+        [= $why [?if [not [= $argv ""]]
+                  [then "its invocation passes program arguments, which the browser cannot"]
+                  [else [?if [not [= $xml ""]]
+                    [then "its input is an XML document, which the browser engine does not read"]
+                    [else ""]]]]]
+    {n: $n
+     id: $id
+     suite: [$suite-label [$string [$map:get $sec "suite"]]]
+     heading: [$string $r@heading]
+     role: [$string $r@role]
+     title: [$string [?else [$map:get $sec "title"] ""]]
+     reading: [$reading-of $sec]
+     doc: [?if [= $xml ""] [then $data] [else $xml]]
+     src: $code
+     cmd: $cmd
+     expected: [$string $e@text]
+     match: [$string $e@mode]
+     exit: [$string [?else [$map:get $sec "exit-code"] ""]]
+     runnable: [= $why ""]
+     why: $why
+     wasmUnsupported: [$string [?else [$map:get $differs $id] ""]]}]]
+
+[?def render scope=public ($entries)
+  [$concat
+    "// GENERATED by scripts/gen_guide/playground/primer_examples.cx from\n"
+    "// docs-src/llm/primer.md.tmpl and the conformance fixtures it cites.\n"
+    "// Do not edit: change the template or the fixture, then run `make docs`.\n"
+    "window.cxPlaygroundPrimer = " [$json:emit-pretty {examples: $entries}] ";\n"]]
+
+[?let
+  [= $check [$member [$env:argv] "--check"]]
+  [= $manifest [$cx:parse [$io:read-file MANIFEST]]]
+  [= $suites [$fp:flat-map [?for [in $k $manifest/*]
+      [where [= [?else [$name $k] ""] "suites"]]
+      [yield [?for [in $l [$strings:split-lines [$pb:normalize [$pb:raw-of $k]]]]
+               [where [not [= [$strings:trim $l] ""]]]
+               [yield [$strings:trim $l]]]]] [?fn ($x) $x]]]
+  [= $index [$pb:load-index $suites]]
+  [= $refs [$cited [$io:read-file TEMPLATE]]]
+  [= $cited-ids [?for [in $r $refs] [yield [$string $r@id]]]]
+  [= $differs [$fp:fold [?for [in $d [$cx:parse [$io:read-file DIFFERS]]/*]
+                           [where [= [?else [$name $d] ""] "differs"]] [yield $d]] {}
+                [?fn ($acc $d)
+                  [?if [$member $cited-ids [$string $d@id]]
+                    [then [$map:put $acc [$string $d@id] [$string $d@why]]]
+                    [else [$die [$concat DIFFERS " names " [$string $d@id]
+                                         ", which the primer does not cite"]]]]]]]
+  [= $_z [?if [$empty $refs] [then [$die [$concat TEMPLATE " cites no fixture"]]] [else 0]]]
+  [= $entries [?for [in $i [$range 1 [$count $refs]]]
+                [yield [$entry $i [$nth $refs $i] $index $differs]]]]
+  [= $body [$render $entries]]
+  [= $readings [?for [in $w ('document', 'query', 'program')]
+                 [yield [$concat $w " " [$string [$count [?for [in $x $entries]
+                          [where [= [$map:get $x "reading"] $w]] [yield 1]]]]]]]]
+  [= $line [$concat "primer_examples: " [$string [$count $entries]] " fixture(s) from "
+                    TEMPLATE " (" [$strings:join $readings ", "] ")"]]
+  [?if $check
+    [then [?let [= $old [?if [$io:is-file OUT] [then [$io:read-file OUT]] [else "absent"]]]
+      [?if [= $old $body]
+        [then [?let [= $_s [$say [$concat $line " — no drift"]]] [$env:exit 0]]]
+        [else [$die [$concat "DRIFT: " OUT [?if [= $old "absent"] [then " (not committed)"] [else ""]]
+                             " differs from a fresh projection — run `make docs` and commit it"]]]]]]
+    [else [?let [= $_w [$io:write-file OUT $body]]
+                [= $_s [$say [$concat $line " → " OUT]]]
+            [$env:exit 0]]]]]

@@ -65,6 +65,10 @@ endif
 ## otherwise — docs-check proves the FILE is fresh, never the EMBED.
 docs: $(DOCS_CX_DEP) site-index
 	@CX_BIN="$(DOCS_CX_BIN)" $(DOCS_CX_BIN) $(DOCS_CAPS) $(DOCS_GEN)/primer_build.cx
+	@# PLAY-1: the playground picker is the primer's own fixtures, projected
+	@# from the same template and corpus (scripts/gen_guide/playground/
+	@# primer_examples.cx) — regenerated here so a fixture change moves both.
+	@$(DOCS_CX_BIN) --allow-read --allow-write scripts/gen_guide/playground/primer_examples.cx
 	# #954: refresh the README's self-reported CX-share badge alongside the
 	# docs layer (Linguist can't count CX until cx-tooling's tooling/linguist/ upstreams).
 	@$(DOCS_CX_BIN) --allow-read --allow-write --allow-subprocess scripts/lang_stats.cx
@@ -80,9 +84,13 @@ docs: $(DOCS_CX_DEP) site-index
 ##                                   same change. (c): delete the file, or declare it.
 ##                                   The landing page docs/index.html is held the
 ##                                   same way (site-index-check: its fixtures
-##                                   replayed, its links declared, no drift).
+##                                   replayed, its links declared, no drift),
+##                                   and so is the playground's picker,
+##                                   scripts/gen_guide/playground/playground.primer.js
+##                                   (PLAY-1: the primer's fixtures, projected).
 docs-check: $(DOCS_CX_DEP) site-index-check
 	@CX_BIN="$(DOCS_CX_BIN)" $(DOCS_CX_BIN) $(DOCS_CAPS) $(DOCS_GEN)/primer_build.cx --check
+	@$(DOCS_CX_BIN) --allow-read --allow-write scripts/gen_guide/playground/primer_examples.cx --check
 
 ## docs-diff    Preview what `make docs` would change under docs/llm/.
 docs-diff: $(DOCS_CX_DEP)

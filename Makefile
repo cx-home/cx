@@ -641,6 +641,7 @@ build-playground:
 	@cp scripts/gen_guide/playground/playground.js dist/playground-preview/playground/
 	@cp scripts/gen_guide/playground/playground.css dist/playground-preview/playground/
 	@cp scripts/gen_guide/playground/playground.examples.js dist/playground-preview/playground/
+	@cp scripts/gen_guide/playground/playground.primer.js dist/playground-preview/playground/
 	@cp scripts/gen_guide/playground/jspi_probe.html dist/playground-preview/playground/
 	@# highlight/ + assets/ make the preview docroot FAITHFUL to the shipped
 	@# page (#1007's offline run surfaced two ERR_FILE_NOT_FOUND here that
@@ -931,6 +932,12 @@ guide-check: build-vcx
 ##
 ## Cost, measured at the #989 row: 27.3-27.8 s wall / 26.5 CPU-s, single
 ## process — absorbed under -j against a ~3 h gate.
+##
+## PLAY-1: the render copies dist/wasm/ into docs/guide/wasm/, and site-check
+## (which renders through this step) now REQUIRES those five files, so the
+## bundle is built or proved fresh first — `wasm-bundle-fresh`, the same one
+## prerequisite test-playground-mermaid and -wasm-traps share (a stale bundle
+## costs one ~5 min build per run, under devbox's emcc).
 .PHONY: guide-render-gate
 ## #1663: "written by THIS run" was an mtime test against a stamp touched just
 ## before the render, and macOS sh compares mtimes at one-second resolution, so
@@ -938,7 +945,7 @@ guide-check: build-vcx
 ## stamp and index.html both 15:10:45, a false red). The proof is now that the
 ## page did not exist before the render: both are removed first, and both must
 ## exist after it. No mtime comparison is left.
-guide-render-gate: build-vcx
+guide-render-gate: build-vcx wasm-bundle-fresh
 	@rm -f docs/guide/index.html docs/guide/codec-xml.html
 	@$(MAKE) --no-print-directory guide GUIDE_SKIP_CX_BUILD=1
 	@for p in docs/guide/index.html docs/guide/codec-xml.html; do \
@@ -1150,6 +1157,27 @@ test-playground-wasm-eval:
 .PHONY: test-playground-tree
 test-playground-tree:
 	@node scripts/test_playground_tree.mjs
+
+# ── playground PRIMER gate (PLAY-1) ───────────────────────────────────────────
+# The page as a reader gets it, in headless Chrome: the engine loads (the
+# JSPI bundle, asserted), the page prints an answer on load, the picker is
+# the primer's fixtures (playground.primer.js, byte for byte what the docroot
+# serves), every primer example opened through the page's own controls
+# answers what its fixture records — or is listed in primer_wasm.cxd with the
+# reason, a listing the gate also grades — the three readings show their
+# editors, an error prints as an [err …] value, and share-by-URL round-trips.
+#
+# PLAYGROUND_ROOT is the docroot it serves: docs/guide (rendered here first,
+# the default) or `site` — the assembled cxhome.org the Site workflow
+# uploads, which is where the workflow runs it. Like the other browser gates
+# it is not in TEST_TARGETS (a Chromium-family browser is its precondition,
+# exit 2 when absent — never a skip). Every wait is bounded
+# (PRIMER_GATE_DEADLINE, default 600 s).
+PLAYGROUND_ROOT ?= docs/guide
+.PHONY: test-playground-primer
+test-playground-primer: build-vcx wasm-bundle-fresh
+	@if [ "$(PLAYGROUND_ROOT)" = docs/guide ]; then $(MAKE) --no-print-directory guide GUIDE_SKIP_CX_BUILD=1; fi
+	@CX_PLAYGROUND_ROOT="$(PLAYGROUND_ROOT)" node scripts/test_playground_primer.mjs
 
 # stdlib catalog drift gate — verifies the single invariant
 #   SPEC_SET == (BUNDLE_SET union DISPATCH_SET)

@@ -44,16 +44,23 @@ function setupFail(msg, hint) {
 // ── the corpus ───────────────────────────────────────────────────────────
 // playground.examples.js is a self-contained IIFE assigning
 // `window.cxPlaygroundExamples = { program }`; `program` maps key → entry.
-const examplesSrc = readFileSync(resolve(PLAYGROUND, 'playground.examples.js'), 'utf8');
+// Since PLAY-1 the page's picker is the primer's fixtures
+// (playground.primer.js, `window.cxPlaygroundPrimer.examples`), each run in
+// its own reading; the corpus above stays reachable by its #ex=<key> link.
+// Both are swept.
 const fakeWindow = {};
-try {
-  new Function('window', 'globalThis', examplesSrc)(fakeWindow, fakeWindow);
-} catch (e) {
-  setupFail(`could not evaluate playground.examples.js: ${e.message}`);
+for (const f of ['playground.primer.js', 'playground.examples.js']) {
+  try {
+    new Function('window', 'globalThis', readFileSync(resolve(PLAYGROUND, f), 'utf8'))(fakeWindow, fakeWindow);
+  } catch (e) {
+    setupFail(`could not evaluate ${f}: ${e.message}`);
+  }
 }
 const program = (fakeWindow.cxPlaygroundExamples || {}).program || {};
+const primer = (fakeWindow.cxPlaygroundPrimer || {}).examples || [];
 const keys = Object.keys(program);
 if (keys.length === 0) setupFail('playground.examples.js yielded no examples.');
+if (primer.length === 0) setupFail('playground.primer.js yielded no examples.', 'make docs');
 
 // ── the engine ───────────────────────────────────────────────────────────
 // The JSPI bundles abort under node (see test_playground_mermaid.mjs); the
@@ -109,17 +116,24 @@ const PROBES = {
 };
 const cases = keys.map(key => {
   const entry = program[key];
-  return [key, entry.input ?? entry.source ?? entry.src ?? ''];
+  return [key, entry.input ?? entry.source ?? entry.src ?? '', ''];
 }).filter(([, source]) => source);
-for (const [key, source] of Object.entries(PROBES)) cases.push([key, source]);
+// A primer example runs the way the page runs it: a document through the
+// data reading, a query over its document bound as $doc.
+for (const p of primer) {
+  cases.push([`primer:${p.id}`, p.reading === 'document' ? p.doc : p.src,
+              p.reading === 'query' ? p.doc : '', p.reading]);
+}
+for (const [key, source] of Object.entries(PROBES)) cases.push([key, source, '']);
 
 const counts = { ok: 0, refused: 0, abort: 0, trap: 0 };
 const traps = [];
 const aborts = [];
-for (const [key, source] of cases) {
+for (const [key, source, input, reading] of cases) {
   let verdict = 'OK', detail = '';
   try {
-    cxlib.evalCode(source, 'cx', '');
+    if (reading === 'document') cxlib.toCx(source);
+    else cxlib.evalCode(source, 'cx', input || '');
   } catch (e) {
     [verdict, detail] = classify(e);
   }

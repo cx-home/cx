@@ -1254,6 +1254,9 @@
     [$copy-if [$cat ($src, '/../assets/cx-logo.png')]  [$cat ($out, '/assets/cx-logo.png')]],
     [$copy-if [$cat ($gen, '/playground/playground.js')]          [$cat ($out, '/playground/playground.js')]],
     [$copy-if [$cat ($gen, '/playground/playground.examples.js')] [$cat ($out, '/playground/playground.examples.js')]],
+    [; PLAY-1 — the picker: the primer's own fixtures, projected by
+       playground/primer_examples.cx (`make docs`). ]
+    [$copy-if [$cat ($gen, '/playground/playground.primer.js')]   [$cat ($out, '/playground/playground.primer.js')]],
     [$copy-if [$cat ($gen, '/playground/playground.css')]         [$cat ($out, '/playground/playground.css')]],
     [$copy-if [$cat ($gen, '/playground/jspi_probe.html')]        [$cat ($out, '/playground/jspi_probe.html')]],
     [; #1007 — the diagram renderer is a VENDORED asset, not a CDN <script>, so
@@ -1275,6 +1278,7 @@
     [$copy-stamped-if [$cat ($gen, '/playground/playground.html')]
                       [$cat ($out, '/playground.html')] $ver
                       ('playground/playground.css', 'playground/playground.js',
+                       'playground/playground.primer.js',
                        'playground/playground.examples.js', 'highlight/highlight.js',
                        'playground/vendor/mermaid.min.js',
                        'wasm/cxlib.js')],

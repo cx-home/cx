@@ -11,22 +11,30 @@
 <link rel="stylesheet" href="playground/playground.css">
 </head>
 <body class="cxp-body">
+<!-- PLAY-1: one page. The toolbar carries the three READINGS of the one
+     bracketed syntax (a document, a query over a document, a program) and
+     the primer's examples for the chosen reading — every one a conformance
+     fixture, projected by primer_examples.cx, its id shown beside it. -->
 <header class="cxp-toolbar">
   <a class="cxp-brand" href="index.html" title="CX Guide">
     <svg viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
     <span>Playground</span>
   </a>
-  <input id="cxp-search" class="cxp-search" type="search"
-         placeholder="Filter examples (label, tag, code)…"
-         autocorrect="off" autocapitalize="off" spellcheck="false">
-  <select id="cxp-pick" aria-label="Choose an example (grouped by section)"
-          title="Examples grouped by section — CX data, then CX code, each by domain. ← → previous/next example · ↑ ↓ previous/next section"></select>
+  <span class="cxp-tabs cxp-readings" role="tablist" aria-label="Reading">
+    <button class="cxp-reading-tab" data-reading="document" type="button" role="tab"
+            title="A document: the text IS the value — shown as CX, JSON and XML">Document</button>
+    <button class="cxp-reading-tab" data-reading="query" type="button" role="tab"
+            title="A query: a program over a document, which is bound as $doc">Query</button>
+    <button class="cxp-reading-tab is-active" data-reading="program" type="button" role="tab"
+            title="A program: evaluated, its value shown — an error is a value too">Program</button>
+  </span>
+  <select id="cxp-pick" aria-label="The primer's examples for this reading, by primer section"
+          title="The primer's examples — each a conformance fixture. ← → previous/next example · ↑ ↓ previous/next section"></select>
   <button id="cxp-prev" class="cxp-btn cxp-btn-icon" type="button" title="Previous example">◀</button>
   <button id="cxp-next" class="cxp-btn cxp-btn-icon" type="button" title="Next example">▶</button>
-  <button id="cxp-run"   class="cxp-btn cxp-btn-primary" type="button" disabled>Run</button>
-  <button id="cxp-reset" class="cxp-btn" type="button">Reset</button>
-  <button id="cxp-load"  class="cxp-btn" type="button" title="Load a local .cx file">Load…</button>
-  <input id="cxp-load-file" type="file" accept=".cx,text/plain" hidden>
+  <button id="cxp-run"   class="cxp-btn cxp-btn-primary" type="button" disabled title="Run (Ctrl/⌘ + Enter)">Run</button>
+  <button id="cxp-reset" class="cxp-btn" type="button" title="Restore the example's own text">Reset</button>
+  <button id="cxp-share" class="cxp-btn" type="button" title="Copy a link that reopens exactly this text">Share</button>
   <span class="cxp-spacer"></span>
   <span id="cxp-crumb" class="cxp-crumb" aria-live="polite"></span>
 </header>
@@ -34,13 +42,29 @@
   <div id="cxp-divider-col" class="cxp-divider cxp-divider-col" aria-hidden="true"></div>
   <div id="cxp-divider-row" class="cxp-divider cxp-divider-row" aria-hidden="true"></div>
   <section class="cxp-pane cxp-source-pane">
-    <div class="cxp-pane-head">SOURCE</div>
-    <div class="cxp-editor-wrap">
-      <div id="cxp-input-gutter" class="cxp-gutter" aria-hidden="true"></div>
-      <pre class="cxp-editor-render" aria-hidden="true"><code id="cxp-input-render" class="language-cx"></code></pre>
-      <textarea id="cxp-input" class="cxp-source" spellcheck="false"
-                autocorrect="off" autocapitalize="off" wrap="soft"
-                placeholder="// Loading…"></textarea>
+    <div class="cxp-pane-head">
+      <span>SOURCE</span>
+      <code id="cxp-cmd" class="cxp-cmd" title="The command line the fixture runs — the same answer, natively"></code>
+    </div>
+    <div id="cxp-fixture" class="cxp-fixture" aria-live="polite"></div>
+    <div id="cxp-doc-block" class="cxp-edit-block cxp-doc-block">
+      <div class="cxp-edit-label" id="cxp-doc-label">input.cx — the document</div>
+      <div class="cxp-editor-wrap">
+        <div id="cxp-doc-gutter" class="cxp-gutter" aria-hidden="true"></div>
+        <pre class="cxp-editor-render" aria-hidden="true"><code id="cxp-doc-render" class="language-cx"></code></pre>
+        <textarea id="cxp-doc" class="cxp-source" spellcheck="false" aria-labelledby="cxp-doc-label"
+                  autocorrect="off" autocapitalize="off" wrap="soft"></textarea>
+      </div>
+    </div>
+    <div id="cxp-prog-block" class="cxp-edit-block cxp-prog-block">
+      <div class="cxp-edit-label" id="cxp-prog-label">prog.cx — the program</div>
+      <div class="cxp-editor-wrap">
+        <div id="cxp-input-gutter" class="cxp-gutter" aria-hidden="true"></div>
+        <pre class="cxp-editor-render" aria-hidden="true"><code id="cxp-input-render" class="language-cx"></code></pre>
+        <textarea id="cxp-input" class="cxp-source" spellcheck="false" aria-labelledby="cxp-prog-label"
+                  autocorrect="off" autocapitalize="off" wrap="soft"
+                  placeholder="// Loading…"></textarea>
+      </div>
     </div>
   </section>
   <section class="cxp-pane cxp-output-pane">
@@ -65,39 +89,24 @@
       <div class="cxp-gutter" aria-hidden="true"></div>
       <pre><code class="language-xml"></code></pre>
     </div>
+    <!-- The fixture's own recorded answer, beside the live one: the primer
+         and this page show the same program, and the verdict says whether
+         the engine in this tab reproduced the fixture. -->
+    <div id="cxp-expect" class="cxp-expect" hidden>
+      <div class="cxp-expect-head"><span>FIXTURE EXPECTS</span><span id="cxp-verdict" class="cxp-verdict"></span></div>
+      <pre><code id="cxp-expect-text" class="language-cx"></code></pre>
+    </div>
   </section>
   <section class="cxp-pane cxp-viz-pane">
-    <!-- One control model (#992): the pane header carries only the axes
-         that apply to EVERYTHING it can draw — which subject, which
-         representation, and (since #1001) how much detail. Everything
-         that configures ONE representation lives inside that
-         representation's own panel, so a control is on screen exactly
-         when it does something.
-
-         Detail moved back up here at #1001. #992 had put it in the
-         graph bar because Detail was graph-only IN FACT: the Tree's
-         detail-aware branch read fields the tree contract does not
-         carry and never fired. Now that the Tree honours the rung, the
-         control governs both representations and belongs on the axis
-         header by this pane's own rule. -->
     <div class="cxp-pane-head">
       <span>VIEW</span>
       <span class="cxp-tabs cxp-subject-group" role="tablist"
-            title="Choose the subject: the program you wrote, the value it produced, or both">
+            title="Choose the subject: the text you wrote, the value it produced, or both">
         <button class="cxp-subject-tab is-active" data-subject="source" type="button">Source</button>
         <button class="cxp-subject-tab"           data-subject="output" type="button">Output</button>
         <button class="cxp-subject-tab"           data-subject="all"    type="button">Both</button>
       </span>
       <span class="cxp-spacer"></span>
-      <!-- The option text is the bare rung, not "Detail: <rung>", and
-           that is MEASURED rather than a preference: at the View pane's
-           natural width (467px at a 1400px window) the header holds one
-           row only while this control is ≤85px, and "DETAIL: COMPACT"
-           is 129px. The long spelling re-stacked the header into two
-           ragged rows, which is the exact surface complaint PQ-5 bought
-           out. The rungs are the same vocabulary the CLI spells
-           `--detail`, the two groups beside this one are bare value
-           sets too, and the control names itself on hover. -->
       <select id="cxp-detail-select" class="cxp-detail-select"
               aria-label="Detail level"
               title="Detail — how much each Tree row and Graph box shows: attributes, scalar bodies, values">
@@ -114,8 +123,6 @@
       <p class="cxp-viz-placeholder">Run a program to see its structural tree.</p>
     </div>
     <div id="cxp-viz-graph" class="cxp-viz-content">
-      <!-- The graph's own controls. This strip is inside the graph
-           panel, so it is on screen only while a graph is. -->
       <div class="cxp-graph-bar">
         <span class="cxp-tabs" role="tablist"
               title="Graph subject — Auto: the INFERRED SHAPE (one box per element NAME for data, control flow for code). Instance: one box per element OCCURRENCE, a table of its own attribute values.">
@@ -142,18 +149,18 @@
   Loading <code>libcx.wasm</code>…
 </footer>
 <script src="wasm/cxlib.js" defer></script>
+<script src="playground/playground.primer.js" defer></script>
+<!-- The playground's own audited corpus (examples.cxd): not in the picker,
+     which lists the primer's fixtures, but still reachable by its stable
+     link (#ex=<key>) and still the corpus the diagram and engine sweeps
+     grade (RULED: 1170-d's page-sourced pins read it). -->
 <script src="playground/playground.examples.js" defer></script>
 <script src="highlight/highlight.js" defer></script>
-<!-- Mermaid, VENDORED (#1007). This was a jsDelivr <script> against the
-     floating range `mermaid@10`, which meant two things: the Graph pane
-     needed the network — so §8.11.3's "works without an internet
-     connection" held for evaluation but not for diagrams — and the bytes
-     that drew a reader's diagram could change under an already-cut
-     release tag. The renderer now ships in the repo at a pinned version;
-     scripts/gen_guide/playground/vendor/README.md is the pin of record.
-     Same bundle the validity gate parses against, so gate and page
-     cannot drift apart. Ordered before playground.js and both `defer`,
-     so window.mermaid is present by the time the page initialises. -->
+<!-- Mermaid, VENDORED (#1007): the Graph view's renderer at a pinned
+     version (scripts/gen_guide/playground/vendor/README.md is the pin of
+     record), the same bytes the diagram validity gate parses against.
+     Ordered before playground.js and both `defer`, so window.mermaid is
+     present by the time the page initialises. -->
 <script src="playground/vendor/mermaid.min.js" defer></script>
 <script src="playground/playground.js" defer></script>
 </body>
