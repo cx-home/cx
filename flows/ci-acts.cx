@@ -1,36 +1,32 @@
-# flows/ci-acts.cx — the ONE acts module of the CI/CD flow documents under
-# flows/ (RULED: RFLOW-1 L97, CICD-1, CXF-1).
+# flows/ci-acts.cx — the ONE module of the CI/CD flows' shared idioms (RULED:
+# RFLOW-1 L97, PRIVMK-1, CICD-1, CXF-1).
 #
-# ORDINARY command defs: a flow document names them by qualified name, and
-# this module is reached through flows/ci.env.cx's [?lib … :as ci], which is
-# what makes them `ci/<def>` in the resolver (flow.md §4.1; `cx flow --env`).
-# One module, not one per document, so an idiom lives in one place and a
-# grant changes in one place (L97): make-one, tail-of, git, log-line and the
-# gap wait are shared by every document; the acts below them are grouped by
-# the document that names them.
+# L97 puts the flows' idioms in ONE place: make-one, tail-of, git, log-line,
+# the gap wait, and the runner paths. Each idiom lives here and nowhere else,
+# so a grant changes in one place and no copy can drift. Every flow's acts
+# reach them through a [?lib] of this file:
+#   - flows/private-acts.cx, the acts of the integrator protocol's documents
+#     (merge, premerge, postmerge, refresh). Those stay private (L96).
+#   - the release document's acts, below. They are public, like the document.
+#   - docs-src/flow/docs-acts.cx, the documentation flow's acts (L97's tail).
 #
-# EVERY ACT IS A TOOL UNDERNEATH, never a second copy of a recipe: git, make
-# targets, and the two shell programs L102 keeps unchanged —
-# scripts/build-slot.sh (the runner lock live agents share) and
-# scripts/test_changed.sh (the selection). What the flow adds is one order,
-# one run record, one place to read a failure, and the compensation make and
-# shell never had.
+# THIS FILE IS PUBLIC. The path allocation (registry/repos.cxd) gives it to the
+# front door with the release document. That is why the documents that stay
+# private keep their acts in their own module rather than here. A compensator
+# must live in the module of the act it undoes, because `[compensates …]`
+# names a def of the same module. So each acts module carries its own
+# `nothing-to-undo`.
+#
+# EVERY IDIOM IS A TOOL UNDERNEATH, never a second copy of a recipe: git, make
+# targets through scripts/build-slot.sh (the runner lock live agents share,
+# L102), and the process module's bounded subprocess. The helpers are
+# scope=public with no [effects] clause. That makes them callable from an
+# importing module, but they are not commands, so no flow can name one as an
+# act (flow.md §4.1: an act is an [effects]-bearing def).
 #
 # FIELDS ARE NEVER EMPTY. An empty field is the one a performer supplies
-# (flow.md §4.6, RULED: #1260 CA-2) and the runner refuses to invoke it, so
-# every value an act needs is either a non-empty argument or derived here.
-#
-# A READ BEFORE THE PIVOT OWES A COMPENSATOR. §4.7 lets an act whose resolver
-# row carries `effect=observe` stand before the pivot unpaired, but only a
-# FEATURE verb's row carries it — a def written by hand, like every def here,
-# carries none (RULED: PIVOT-2) — so each read act that precedes a pivot is
-# paired with `nothing-to-undo`, the reversal of a read: it changes nothing
-# because the read changed nothing.
-#
-# What stays shell, and why, is named where it is called: the runner lock and
-# its stale-holder break (#1706 — cx cannot probe a pid it did not spawn), the
-# selection's 1100 lines (L102: ported on their own issue so live agents keep
-# one selection).
+# (flow.md §4.6, RULED: #1260 CA-2), and the runner refuses to invoke it. So
+# every value an act needs is either a non-empty argument or derived.
 [?lib 'cx-stdlib/process' :as process]
 [?lib 'cx-stdlib/io'      :as io]
 [?lib 'cx-stdlib/strings' :as strings]
@@ -44,38 +40,40 @@
 
 # ══ shared ═══════════════════════════════════════════════════════════════════
 
+
 # the wall-clock budgets a subprocess gets: a local git read, a network git
 # call (fetch / ls-remote / push), and one make target (the longest selected
-# step is the fixtures grader, well inside four hours).
-[?const GIT-MS 120000]
-[?const NET-MS 600000]
-[?const MAKE-MS 14400000]
+# step is the fixtures grader, well inside four hours). Defs, not consts: a
+# [?const] is not importable, and the importing modules need the same three.
+[?def git-ms  scope=public pure [returns int] () 120000]
+[?def net-ms  scope=public pure [returns int] () 600000]
+[?def make-ms scope=public pure [returns int] () 14400000]
 
 # log-line: one progress line to stderr, so a run that takes minutes is not
 # silent until its record prints. It writes through io, which the `write`
 # grant covers, and the runner narrows each act to the [effects] its def
 # declares — so an act that logs declares [write] (an undeclared one answers
 # the denial as a value mid-act, not a line).
-[?def log-line scope=private impure ($s) [$io:write-line [$env:stderr] [$concat 'ci flow: ' $s]]]
+[?def log-line scope=public impure ($s) [$io:write-line [$env:stderr] [$concat 'ci flow: ' $s]]]
 
-[?def fail scope=private pure [returns element] ($msg)
+[?def fail scope=public pure [returns element] ($msg)
   [err code='cx-err:CXER0100' message=$msg]]
 
-[?def seq-of scope=private pure [returns any] ($xs)
+[?def seq-of scope=public pure [returns any] ($xs)
   [?to-sequence [?for [in $x $xs] [yield $x]]]]
 
-[?def cat2 scope=private pure [returns any] ($a $b) [?to-sequence [?concat $a $b]]]
+[?def cat2 scope=public pure [returns any] ($a $b) [?to-sequence [?concat $a $b]]]
 
-[?def nonblank-lines scope=private pure [returns any] ($text)
+[?def nonblank-lines scope=public pure [returns any] ($text)
   [?to-sequence [?for [in $l [$strings:split [$string $text] "\n"]]
     [where [not [= [$str-trim $l] '']]] [yield [$str-trim $l]]]]]
 
-[?def member scope=private pure [returns bool] ($x $xs)
+[?def member scope=public pure [returns bool] ($x $xs)
   [> [$count [?to-sequence [?for [in $y $xs] [where [= [$string $y] [$string $x]]] [yield $y]]]] 0]]
 
 # tail-of: the last $k non-blank lines of a text, joined — what a red step's
 # record carries, so the failure is read in the record, not in a log.
-[?def tail-of scope=private pure [returns string] ($text $k)
+[?def tail-of scope=public pure [returns string] ($text $k)
   [?let [= $ls [?to-sequence [?for [in $l [$strings:split [$string $text] "\n"]]
                  [where [not [= [$str-trim $l] '']]] [yield $l]]]]
         [= $n [$count $ls]]
@@ -84,35 +82,28 @@
 
 # found: does $rx match ANYWHERE in $s. [$re:matches] is a FULL match
 # (re.md), which is what is-sha and evidence-ok want and nothing else here does.
-[?def found scope=private pure [returns bool] ($rx $s) [> [$count [$re:find-all $rx [$string $s]]] 0]]
+[?def found scope=public pure [returns bool] ($rx $s) [> [$count [$re:find-all $rx [$string $s]]] 0]]
 
-[?def ok scope=private pure [returns bool] ($r) [= [$string $r@exit-code] '0']]
-[?def out scope=private pure [returns string] ($r) [$str-trim [$string $r@stdout]]]
-[?def why scope=private pure [returns string] ($r)
+[?def ok scope=public pure [returns bool] ($r) [= [$string $r@exit-code] '0']]
+[?def out scope=public pure [returns string] ($r) [$str-trim [$string $r@stdout]]]
+[?def why scope=public pure [returns string] ($r)
   [$concat 'exit ' [$string $r@exit-code]
            [?if [= [$string $r@timed-out] 'true'] [then ' (timed out)'] [else '']] ': '
            [$tail-of [$concat [$string $r@stderr] "\n" [$string $r@stdout]] 6]]]
 
 # git: `git -C DIR ARGS…`, bounded — no git call can hang a run.
-[?def git scope=private impure [returns element] ($dir $args $ms)
+[?def git scope=public impure [returns element] ($dir $args $ms)
   [$process:run [$cat2 ('git', '-C', [$string $dir]) $args] timeout-ms=$ms]]
 
 # git-out: the trimmed stdout of a git call that must succeed, or the err.
-[?def git-out scope=private impure [returns any] ($dir $args $ms $what)
+[?def git-out scope=public impure [returns any] ($dir $args $ms $what)
   [?let [= $r [$git $dir $args $ms]]
     [?if [$ok $r] [then [$out $r]]
       [else [$fail [$concat $what ': git ' [$strings:join $args ' '] ' in ' [$string $dir]
                             ' — ' [$why $r]]]]]]]
 
-[?def git-ok scope=private impure [returns bool] ($dir $args $ms) [$ok [$git $dir $args $ms]]]
+[?def git-ok scope=public impure [returns bool] ($dir $args $ms) [$ok [$git $dir $args $ms]]]
 
-# ── nothing-to-undo — the reversal of a read (see the header) ────────────────
-# It is called with the forward act's own fields (§4.8: a compensator is
-# filled from the same [do …]), so it takes the union of the read acts' field
-# names and reads none of them.
-[?def nothing-to-undo scope=public impure [effects [read]] [returns element]
-  ($specs='' $timeout='' $shape='' $evidence='')
-  [nothing-undone why='the act read and changed nothing']]
 
 # ── the gap: the post-merge loop's last RUN line ─────────────────────────────
 # The loop grades the MAIN checkout's tree and appends `<utc> <sha>
@@ -120,7 +111,7 @@
 # after it to vcx/target/gate-loop.log; only those two kinds are verdict
 # lines. A merge lands, and a load-sensitive step runs, only in a GAP — the
 # last RUN line a RUN-EXIT (AGENTS-1, rule 5 of 2026-09-24).
-[?def last-run-line scope=private impure [returns string] ($log)
+[?def last-run-line scope=public impure [returns string] ($log)
   [?if [not [$io:is-file $log]] [then '']
     [else [?let [= $ls [?to-sequence [?for [in $l [$strings:split [$io:read-file $log] "\n"]]
                          [where [or [$strings:contains $l ' RUN-START'] [$strings:contains $l ' RUN-EXIT=']]]
@@ -128,7 +119,7 @@
       [?if [= [$count $ls] 0] [then ''] [else [$strings:join [?to-sequence [?drop [- [$count $ls] 1] $ls]] '']]]]]]]
 
 # seconds in a duration literal: `90s`, `45m`, `4h`.
-[?def seconds-of scope=private pure [returns int] ($d)
+[?def seconds-of scope=public pure [returns int] ($d)
   [?let [= $t [$str-trim [$string $d]]]
         [= $len [$strings:length $t]]
         [= $n [$strings:slice $t 1 [- $len 1]]]
@@ -140,7 +131,7 @@
 # gap-wait: block until the last RUN line is a RUN-EXIT, polling every 30 s,
 # at most $secs seconds. A RUN-EXIT that is not =0 answers now: a merge on a
 # red head waits for its fix unless the caller allows it ($red-ok).
-[?def gap-wait scope=private impure [returns element] ($log $secs $red-ok)
+[?def gap-wait scope=public impure [returns element] ($log $secs $red-ok)
   [?let [= $max [?if [< $secs 30] [then 1] [else [/ $secs 30]]]]
     [?loop [= $i 0]
       [?let [= $line [$last-run-line $log]]
@@ -159,632 +150,34 @@
                           [= $_z [?sleep 30s]]
                       [continue [+ $i 1]]]]]]]]]]]]]
 
-# ══ merge.flow.cx — the integrator's merge protocol ══════════════════════════
+# ── the runner paths and the one make idiom ─────────────────────────────────
 #
-# The SPECS document is the run's one input (`--specs=<path>`, the only arg):
-#
-#   [merge checkout='/Users/dev2/git-repos/cx/cx-private'
-#          remote-base='git@github.com:cx-home/' clones='/Users/dev2/git-repos/cx'
-#          allow-red=false
-#     [branch name='impl/<x>' dir='pipeline_<x>' graded='<40-hex>' msg='<message file>']…]
-#
-# `checkout` is the main checkout the loop grades (the integration branch is
-# the branch it has checked out), `remote-base` + <repo> + `.git` is each
-# component's remote, `clones` the directory whose clones hold the pinned
-# commits, `trial=` (optional) the temp detached worktree's path, default
-# `<clones>/union-tmp`, and `gap-log=` (optional) the loop's log, default
-# `<checkout>/vcx/target/gate-loop.log`. Every act re-reads the specs: the
-# record carries only what an act derived, never a copy of its input.
+# The integration branch derives from VERSION (release/<major>.<minor>), never a
+# literal. The own runner is $HOME/git-repos/cx/.build-slot-<worktree dir> and the
+# shared one .build-slot-impl (D17a). The loop's log is the MAIN checkout's, the
+# first row of `git worktree list`.
 
-[?def spec-attr scope=private pure [returns string] ($m $k $default)
-  [?let [= $v [$str-trim [?else [$string [$attr $m $k]] '']]]
-    [?if [= $v ''] [then $default] [else $v]]]]
-
-[?def specs-branches scope=private pure [returns any] ($m)
-  [?to-sequence [?for [in $b $m/*] [where [= [$name $b] 'branch']] [yield $b]]]]
-
-[?def is-sha scope=private pure [returns bool] ($s)
-  [$re:matches [$re:compile '^[0-9a-f]{40}$'] [$string $s]]]
-
-# read-specs: the [merge …] element, or an err naming every defect in it.
-[?def read-specs scope=private impure [returns element] ($path)
-  [?let [= $p [$str-trim [$string $path]]]
-    [?if [not [$io:is-file $p]]
-      [then [$fail [$concat 'merge specs: no file at `' $p '` — --specs names the [merge …] document'
-                            ' (flows/merge.flow.cx header)']]]
-      [else [?let [= $doc [$cx-parse [$io:read-file $p]]]
-                  [= $ms [?to-sequence [?for [in $x $doc] [where [= [$name $x] 'merge']] [yield $x]]]]
-        [?if [not [= [$count $ms] 1]]
-          [then [$fail [$concat 'merge specs `' $p '`: holds ' [$string [$count $ms]]
-                                ' [merge …] elements, the document is exactly one']]]
-          [else [?let [= $m [$first $ms]]
-                      [= $bs [$specs-branches $m]]
-                      [= $bad [$cat2
-                        [?to-sequence [?for [in $k ('checkout', 'remote-base', 'clones')]
-                          [where [= [$spec-attr $m $k ''] '']]
-                          [yield [$concat 'the [merge] element has no ' $k '=']]]]
-                        [$cat2
-                          [?if [= [$count $bs] 0] [then ('no [branch …] row — nothing to merge')] [else ()]]
-                          [?to-sequence [?for [in $b $bs] [in $k ('name', 'dir', 'graded', 'msg')]
-                            [where [= [$spec-attr $b $k ''] '']]
-                            [yield [$concat 'a [branch] row has no ' $k '=']]]]]]]
-                  [= $bad2 [$cat2 $bad
-                    [?to-sequence [?for [in $b $bs]
-                      [where [and [not [= [$spec-attr $b 'graded' ''] '']] [not [$is-sha [$spec-attr $b 'graded' '']]]]]
-                      [yield [$concat [$spec-attr $b 'name' '?'] ': graded= must be the FULL 40-hex sha (got '
-                                      [$spec-attr $b 'graded' ''] ')']]]]]]
-            [?if [> [$count $bad2] 0]
-              [then [$fail [$concat 'merge specs `' $p '`: ' [$strings:join $bad2 '; ']]]]
-              [else $m]]]]]]]]]]
-
-[?def checkout-of scope=private pure [returns string] ($m) [$spec-attr $m 'checkout' '']]
-[?def trial-of scope=private pure [returns string] ($m)
-  [$spec-attr $m 'trial' [$concat [$spec-attr $m 'clones' ''] '/union-tmp']]]
-[?def gap-log-of scope=private pure [returns string] ($m)
-  [$spec-attr $m 'gap-log' [$concat [$checkout-of $m] '/vcx/target/gate-loop.log']]]
-[?def red-ok scope=private pure [returns bool] ($m) [= [$spec-attr $m 'allow-red' 'false'] 'true']]
-
-# the integration branch IS the branch the main checkout has checked out.
-[?def integration-branch scope=private impure [returns any] ($c)
-  [$git-out $c ('rev-parse', '--abbrev-ref', 'HEAD') $GIT-MS 'the integration branch']]
-
-# ── ci/await-gap — chain step 1's gap (L99) ──────────────────────────────────
-[?def await-gap scope=public impure [effects [read] [write] [subprocess]] [compensates nothing-to-undo]
-  [returns element] ($specs='' $timeout='')
-  [?let [= $m [$read-specs $specs]]
-        [= $secs [$seconds-of $timeout]]
-    [?if [< $secs 0]
-      [then [$fail [$concat 'ci/await-gap: timeout `' [$string $timeout] '` is not a duration (90s, 45m, 4h)']]]
-      [else [$gap-wait [$gap-log-of $m] $secs [$red-ok $m]]]]]]
-
-# ── ci/merge-shape — chain steps 1 and 2 ─────────────────────────────────────
-# The checkout's tracked tree is clean and its HEAD equals the integration
-# branch on origin; per branch: the graded sha is FULL, the tip differs from
-# it only under _gate_evidence/, the RESULTS.md's last line is `MERGE-READY
-# <graded>`, and the graded commit contains HEAD — or, behind it, the head
-# moved only evidence, pins, ledger, the README or docs/llm/ since their
-# merge-base (INT-9). Every defect of every branch is named at once.
-[?const INT9-PATHS '^(_gate_evidence/|deps\.cxd$|registry/repos\.cxd$|registry/modules\.cxd$|ledger/|README\.md$|docs/llm/)']
-
-[?def branch-problems scope=private impure [returns any] ($c $b)
-  [?let [= $name [$spec-attr $b 'name' '']]
-        [= $graded [$spec-attr $b 'graded' '']]
-        [= $dir [$spec-attr $b 'dir' '']]
-        [= $f [$git $c ('fetch', '-q', 'origin', $name) $NET-MS]]
-    [?if [not [$ok $f]] [then ([$concat $name ': fetch failed — ' [$why $f]])]
-      [else [?let [= $tip [$out [$git $c ('rev-parse', [$concat 'origin/' $name]) $GIT-MS]]]
-                  [= $moved [$nonblank-lines [$out [$git $c ('diff', '--name-only', $graded, $tip) $GIT-MS]]]]
-                  [= $beyond [?to-sequence [?for [in $x $moved] [where [not [$strings:starts-with $x '_gate_evidence/']]] [yield $x]]]]
-                  [= $res [$git $c ('show', [$concat $tip ':_gate_evidence/' $dir '/RESULTS.md']) $GIT-MS]]
-                  [= $last [?if [$ok $res] [then [$tail-of [$string $res@stdout] 1]] [else '']]]
-                  [= $want [$concat 'MERGE-READY ' $graded]]
-                  [= $on-head [$git-ok $c ('merge-base', '--is-ancestor', 'HEAD', $graded) $GIT-MS]]
-                  [= $mb [?if $on-head [then ''] [else [$out [$git $c ('merge-base', 'HEAD', $graded) $GIT-MS]]]]]
-                  [= $head-moved [?if $on-head [then ()]
-                    [else [?to-sequence [?for [in $x [$nonblank-lines [$out [$git $c ('diff', '--name-only', $mb, 'HEAD') $GIT-MS]]]]
-                      [where [not [$found [$re:compile $INT9-PATHS] $x]]] [yield $x]]]]]]
-        [$cat2
-          [$cat2
-            [?if [> [$count $beyond] 0]
-              [then ([$concat $name ': the tip moves more than _gate_evidence/ past the graded sha: '
-                              [$strings:join $beyond ' ']])] [else ()]]
-            [?if [not [= $last $want]]
-              [then ([$concat $name ': _gate_evidence/' $dir '/RESULTS.md ends `' $last '`, not `' $want '`'])]
-              [else ()]]]
-          [?if [> [$count $head-moved] 0]
-            [then ([$concat $name ': behind HEAD and the head moved its inputs: ' [$strings:join $head-moved ' ']])]
-            [else ()]]]]]]]]
-
-[?def merge-shape scope=public impure [effects [read] [subprocess]] [compensates nothing-to-undo]
-  [returns element] ($specs='')
-  [?let [= $m [$read-specs $specs]]
-        [= $c [$checkout-of $m]]
-        [= $ib [$integration-branch $c]]
-        [= $dirty [$out [$git $c ('status', '--porcelain', '--untracked-files=no') $GIT-MS]]]
-        [= $fetched [$git $c ('fetch', '-q', 'origin') $NET-MS]]
-        [= $head [$out [$git $c ('rev-parse', 'HEAD') $GIT-MS]]]
-        [= $origin [$out [$git $c ('rev-parse', [$concat 'origin/' $ib]) $GIT-MS]]]
-        [= $top [$cat2
-          [?if [not [= $dirty '']] [then ([$concat 'the checkout ' $c ' has tracked changes: ' $dirty])] [else ()]]
-          [$cat2
-            [?if [not [$ok $fetched]] [then ([$concat 'fetch origin failed — ' [$why $fetched]])] [else ()]]
-            [?if [not [= $head $origin]]
-              [then ([$concat 'HEAD ' $head ' is not origin/' $ib ' ' $origin ' — another session moved the head'])]
-              [else ()]]]]]
-        [= $per [?if [> [$count $top] 0] [then ()]
-                  [else [?to-sequence [?for [in $b [$specs-branches $m]] [in $p [$branch-problems $c $b]] [yield $p]]]]]]
-        [= $all [$cat2 $top $per]]
-    [?if [> [$count $all] 0]
-      [then [$fail [$concat 'merge shape: ' [$string [$count $all]] " defect(s):\n  " [$strings:join $all "\n  "]]]]
-      [else [shape branch=$ib head=$head
-              [?splice [?to-sequence [?for [in $b [$specs-branches $m]]
-                [yield [ready name=[$spec-attr $b 'name' ''] dir=[$spec-attr $b 'dir' '']
-                              graded=[$spec-attr $b 'graded' '']
-                              tip=[$out [$git $c ('rev-parse', [$concat 'origin/' [$spec-attr $b 'name' '']]) $GIT-MS]]
-                              msg=[$spec-attr $b 'msg' '']
-                              on-head=[$string [$git-ok $c ('merge-base', '--is-ancestor', 'HEAD', [$spec-attr $b 'graded' '']) $GIT-MS]]]]]]]]]]]]
-
-# ── ci/merge-pins — chain step 3: the component pushes the merge owes ────────
-# A pin a branch moved (deps.cxd `repo= sha=`, against its merge-base with
-# HEAD) is either ALREADY main's (an [on-main] row) or a PUSH: main's sha now
-# (ls-remote), a clone under `clones` that holds the new commit, and the new
-# commit descending from main. Two branches moving one repository collapse to
-# the tip that contains the other; neither containing the other refuses.
-[?def pin-rows scope=private pure [returns any] ($text)
-  [?to-sequence [?for [in $mm [$re:find-all [$re:compile 'repo=([a-z-]+) sha=([0-9a-f]{40})'] [$string $text]]]
-    [yield [pin repo=[$re:group $mm 1] sha=[$re:group $mm 2]]]]]]
-
-[?def pin-of scope=private pure [returns string] ($rows $repo)
-  [?let [= $hit [?to-sequence [?for [in $r $rows] [where [= [$string $r@repo] $repo]] [yield [$string $r@sha]]]]]
-    [?if [= [$count $hit] 0] [then ''] [else [$first $hit]]]]]
-
-[?def remote-repo scope=private pure [returns string] ($url)
-  [?let [= $u [$str-trim [$string $url]]]
-        [= $u2 [?if [$strings:ends-with $u '.git'] [then [$strings:slice $u 0 [- [$strings:length $u] 4]]] [else $u]]]
-        [= $parts [$re:split [$re:compile '[/:]'] $u2]]
-    [$strings:join [?to-sequence [?drop [- [$count $parts] 1] $parts]] '']]]
-
-# the clone under $clones whose origin is $repo and which holds $sha.
-[?def clone-for scope=private impure [returns string] ($clones $repo $sha)
-  [?let [= $hits [?to-sequence [?for [in $d [$io:list-dir $clones]]
-                   [= $p [$concat $clones '/' [$string $d]]]
-                   [where [and [$io:exists [$concat $p '/.git']]
-                               [= [$remote-repo [$out [$git $p ('remote', 'get-url', 'origin') $GIT-MS]]] $repo]
-                               [$git-ok $p ('cat-file', '-e', $sha) $GIT-MS]]]
-                   [yield $p]]]]
-    [?if [= [$count $hits] 0] [then ''] [else [$first $hits]]]]]
-
-[?def moved-pins scope=private impure [returns any] ($c $name)
-  [?let [= $tip [$concat 'origin/' $name]]
-        [= $mb [$out [$git $c ('merge-base', 'HEAD', $tip) $GIT-MS]]]
-        [= $new [$pin-rows [$out [$git $c ('show', [$concat $tip ':deps.cxd']) $GIT-MS]]]]
-        [= $old [$pin-rows [$out [$git $c ('show', [$concat $mb ':deps.cxd']) $GIT-MS]]]]
-    [?to-sequence [?for [in $r $new] [where [not [= [$string $r@sha] [$pin-of $old [$string $r@repo]]]]]
-      [yield [moved repo=[$string $r@repo] new=[$string $r@sha] branch=$name]]]]]]
-
-[?def plan-row scope=private impure [returns element] ($m $mv)
-  [?let [= $repo [$string $mv@repo]] [= $new [$string $mv@new]]
-        [= $ls [$git '.' ('ls-remote', [$concat [$spec-attr $m 'remote-base' ''] $repo '.git'], 'refs/heads/main') $NET-MS]]
-        [= $b [$first [$strings:split [$out $ls] "\t"]]]
-    [?if [not [$ok $ls]] [then [problem text=[$concat $repo ': ls-remote failed — ' [$why $ls]]]]
-      [else [?if [= $new $b] [then [on-main repo=$repo sha=$new branch=[$string $mv@branch]]]
-        [else [?let [= $cl [$clone-for [$spec-attr $m 'clones' ''] $repo $new]]
-          [?if [= $cl ''] [then [problem text=[$concat 'NO CLONE under ' [$spec-attr $m 'clones' ''] ' holds ' $repo ' ' $new]]]
-            [else [?let [= $f [$git $cl ('fetch', '-q', 'origin', 'main') $NET-MS]]
-              [?if [not [$git-ok $cl ('merge-base', '--is-ancestor', $b, $new) $GIT-MS]]
-                [then [problem text=[$concat $repo ': ' $new ' does not descend from main ' $b ' ('
-                                             [$string $mv@branch] ')']]]
-                [else [push repo=$repo new=$new before=$b clone=$cl branch=[$string $mv@branch]]]]]]]]]]]]]]
-
-# two pushes of one repository keep the one that contains every other.
-[?def collapse scope=private impure [returns any] ($rows)
-  [?let [= $repos [$distinct [?to-sequence [?for [in $r $rows] [where [= [$name $r] 'push']] [yield [$string $r@repo]]]]]]
-    [?to-sequence [?for [in $repo $repos]
-      [= $mine [?to-sequence [?for [in $r $rows] [where [and [= [$name $r] 'push'] [= [$string $r@repo] $repo]]] [yield $r]]]]
-      [= $keep [?to-sequence [?for [in $k $mine]
-                 [where [= [$count [?to-sequence [?for [in $o $mine]
-                   [where [not [$git-ok [$string $k@clone] ('merge-base', '--is-ancestor', [$string $o@new], [$string $k@new]) $GIT-MS]]]
-                   [yield $o]]]] 0]]
-                 [yield $k]]]]
-      [yield [?if [= [$count $keep] 0]
-               [then [problem text=[$concat $repo ': two branches move it and neither tip contains the other — rebase one first']]]
-               [else [$first $keep]]]]]]]]
-
-[?def merge-pins scope=public impure [effects [read] [subprocess]] [compensates nothing-to-undo]
-  [returns element] ($specs='' $shape='')
-  [?let [= $m [$read-specs $specs]]
-        [= $c [$checkout-of $m]]
-        [= $moved [?to-sequence [?for [in $r $shape/ready] [in $mv [$moved-pins $c [$string $r@name]]] [yield $mv]]]]
-        [= $rows [?to-sequence [?for [in $mv $moved] [yield [$plan-row $m $mv]]]]]
-        [= $pushes [$collapse $rows]]
-        [= $all [$cat2 $rows $pushes]]
-        [= $probs [?to-sequence [?for [in $r $all] [where [= [$name $r] 'problem']] [yield [$string $r@text]]]]]
-    [?if [> [$count $probs] 0]
-      [then [$fail [$concat 'merge pins: ' [$strings:join [$distinct $probs] '; ']]]]
-      [else [pins count=[$string [$count $pushes]]
-              [?splice $pushes]
-              [?splice [?to-sequence [?for [in $r $rows] [where [= [$name $r] 'on-main']] [yield $r]]]]]]]]]
-
-# ── ci/merge-trial — chain steps 4 and 6, in a temp detached worktree ────────
-# BEFORE any component push (L103): every branch is merge-tree'd against the
-# head (a conflict beyond the two pin files refuses), then merged in turn; a
-# conflict confined to the pin rows — deps.cxd `sha=`, registry/repos.cxd
-# `at=` — resolves to the incoming branch's row for a repository IT moved
-# (a push or an [on-main] row of merge-pins), ours elsewhere. A failure
-# removes the worktree before answering, so a red trial leaves nothing; a
-# later refusal removes it through the compensator.
-[?const PIN-FILES ('deps.cxd', 'registry/repos.cxd')]
-
-[?def remove-trial scope=private impure [returns element] ($c $t)
-  [?let [= $_a [?if [$io:exists $t] [then [$git $c ('worktree', 'remove', '--force', $t) $GIT-MS]] [else null]]]
-        [= $_b [$git $c ('worktree', 'prune') $GIT-MS]]
-    [?if [$io:exists $t] [then [$fail [$concat 'the trial worktree ' $t ' is still there after `git worktree remove`']]]
-      [else [removed dir=$t]]]]]
-
-[?def conflicted scope=private impure [returns any] ($t)
-  [$nonblank-lines [$out [$git $t ('diff', '--name-only', '--diff-filter=U') $GIT-MS]]]]
-
-[?def row-re scope=private pure [returns element] ($repo)
-  [$re:compile [$concat '(repo|name)=' [$re:escape $repo] '( |\])']]]
-
-[?def first-line-matching scope=private pure [returns string] ($text $rx)
-  [?let [= $hit [?to-sequence [?for [in $l [$strings:split [$string $text] "\n"]] [where [$found $rx $l]] [yield $l]]]]
-    [?if [= [$count $hit] 0] [then ''] [else [$first $hit]]]]]
-
-[?def moved-to scope=private pure [returns bool] ($pins $repo $sha)
-  [> [$count [?to-sequence [?for [in $r $pins/*]
-       [where [and [= [$string $r@repo] $repo]
-                   [or [= [$string $r@new] $sha] [= [$string $r@sha] $sha]]]]
-       [yield $r]]]] 0]]
-
-# resolve one conflicted pin file in $t for the merge of $tip.
-[?def resolve-pin-file scope=private impure [returns any] ($t $base0 $tip $f $pins)
-  [?let [= $_o [$git $t ('checkout', '--ours', '--', $f) $GIT-MS]]
-        [= $mb0 [$out [$git $t ('merge-base', $base0, $tip) $GIT-MS]]]
-        [= $bt [$out [$git $t ('show', [$concat $mb0 ':' $f]) $GIT-MS]]]
-        [= $tt [$out [$git $t ('show', [$concat $tip ':' $f]) $GIT-MS]]]
-        [= $names [$distinct [?to-sequence [?for [in $mm [$re:find-all [$re:compile '(repo|name)=([a-z-]+)'] $tt]]
-                    [yield [$re:group $mm 2]]]]]]
-        [= $edits [?to-sequence [?for [in $repo $names]
-                    [= $lb [$first-line-matching $bt [$row-re $repo]]]
-                    [= $lt [$first-line-matching $tt [$row-re $repo]]]
-                    [where [not [= $lb $lt]]]
-                    [= $ts [$first [$re:find-all [$re:compile '(sha|at)=([0-9a-f]{40})'] $lt]]]
-                    [where [$present $ts]]
-                    [where [$moved-to $pins $repo [$re:group $ts 2]]]
-                    [yield [edit repo=$repo key=[$re:group $ts 1] sha=[$re:group $ts 2]]]]]]
-        [= $p [$concat $t '/' $f]]
-        [= $text0 [$io:read-file $p]]
-        [= $text [?reduce $edits [using [?fn ($acc $e)
-                   [$strings:join [?to-sequence [?for [in $l [$strings:split $acc "\n"]]
-                     [yield [?if [$found [$row-re [$string $e@repo]] $l]
-                              [then [$re:replace [$re:compile [$concat [$string $e@key] '=[0-9a-f]{40}']] $l
-                                                 [$concat [$string $e@key] '=' [$string $e@sha]]]]
-                              [else $l]]]]] "\n"]]]
-                 [init $text0]]]
-        [= $_w [$io:write-file $p $text]]
-    [?if [$found [$re:compile '(?m)^(<<<<<<<|>>>>>>>)'] $text]
-      [then [problem text=[$concat 'conflict markers left in ' $f ' merging ' $tip]]]
-      [else [?let [= $_a [$git $t ('add', $f) $GIT-MS]]
-        [resolved file=$f repos=[$strings:join [?to-sequence [?for [in $e $edits] [yield [$string $e@repo]]]] ' ']]]]]]]
-
-[?def merge-one scope=private impure [returns element] ($t $base0 $r $pins)
-  [?let [= $name [$string $r@name]] [= $tip [$concat 'origin/' $name]] [= $msg [$string $r@msg]]
-        [= $mr [$git $t ('merge', '--no-ff', '--no-edit', '-F', $msg, $tip) $GIT-MS]]
-    [?if [$ok $mr] [then [merged name=$name sha=[$out [$git $t ('rev-parse', 'HEAD') $GIT-MS]]]]
-      [else [?let [= $u [$conflicted $t]]
-                  [= $beyond [?to-sequence [?for [in $f $u] [where [not [$member $f $PIN-FILES]]] [yield $f]]]]
-        [?if [or [= [$count $u] 0] [> [$count $beyond] 0]]
-          [then [problem text=[$concat 'merging ' $name ': ' [?if [= [$count $u] 0] [then [$why $mr]]
-                                         [else [$concat 'CONFLICT beyond the pin rows: ' [$strings:join $beyond ' ']]]]]]]
-          [else [?let [= $rs [?to-sequence [?for [in $f $u] [yield [$resolve-pin-file $t $base0 $tip $f $pins]]]]]
-                      [= $bad [?to-sequence [?for [in $x $rs] [where [= [$name $x] 'problem']] [yield [$string $x@text]]]]]
-            [?if [> [$count $bad] 0] [then [problem text=[$strings:join $bad '; ']]]
-              [else [?let [= $cm [$git $t ('-c', 'core.editor=true', 'commit', '-q', '-F', $msg) $GIT-MS]]
-                [?if [not [$ok $cm]] [then [problem text=[$concat 'committing the merge of ' $name ': ' [$why $cm]]]]
-                  [else [merged name=$name sha=[$out [$git $t ('rev-parse', 'HEAD') $GIT-MS]]
-                                resolved=[$strings:join [?to-sequence [?for [in $x $rs] [yield [$string $x@repos]]]] ' ']]]]]]]]]]]]]]]
-
-# a merge-tree of every branch against the base, before the first merge.
-[?def tree-problems scope=private impure [returns any] ($t $shape)
-  [?to-sequence [?for [in $r $shape/ready]
-    [= $tip [$concat 'origin/' [$string $r@name]]]
-    [where [not [$git-ok $t ('merge-tree', '--write-tree', 'HEAD', $tip) $GIT-MS]]]
-    [= $names [?to-sequence [?drop 1 [$nonblank-lines [$out [$git $t ('merge-tree', '--write-tree', '--name-only', 'HEAD', $tip) $GIT-MS]]]]]]
-    [= $files [?to-sequence [?for [in $l $names] [where [not [$strings:contains $l ' ']]] [yield $l]]]]
-    [= $beyond [?to-sequence [?for [in $f $files] [where [not [$member $f $PIN-FILES]]] [yield $f]]]]
-    [where [> [$count $beyond] 0]]
-    [yield [$concat [$string $r@name] ': CONFLICT beyond the pin rows vs HEAD: ' [$strings:join $beyond ' ']]]]]]
-
-# merge-all: each READY branch merged in turn, stopping at the first refusal
-# (a [problem] row ends the list). A loop, not a fold: its body runs git, and
-# a [?fn] body is a pure context — an impure call inside one answers
-# CXER0233 as a value instead of running.
-[?def merge-all scope=private impure [returns any] ($t $base0 $rows $pins)
-  [?loop [= $i 1] [= $acc ()]
-    [?if [> $i [$count $rows]] [then [break $acc]]
-      [else [?let [= $m [$merge-one $t $base0 [$nth $rows $i] $pins]]
-        [?if [= [$name $m] 'problem'] [then [break [$cat2 $acc ($m)]]]
-          [else [continue [+ $i 1] [$cat2 $acc ($m)]]]]]]]]]
-
-[?def merge-trial scope=public impure [effects [read] [write] [subprocess]] [compensates merge-untrial]
-  [returns element] ($specs='' $shape='' $pins='')
-  [?let [= $m [$read-specs $specs]]
-        [= $c [$checkout-of $m]] [= $t [$trial-of $m]]
-        [= $ib [$string $shape@branch]]
-        [= $_r [$remove-trial $c $t]]
-        [= $add [$git $c ('worktree', 'add', '-q', '--detach', $t, [$concat 'origin/' $ib]) $GIT-MS]]
-    [?if [not [$ok $add]] [then [$fail [$concat 'merge trial: worktree add ' $t ' — ' [$why $add]]]]
-      [else [?let [= $base0 [$out [$git $t ('rev-parse', 'HEAD') $GIT-MS]]]
-                  [= $tp [$tree-problems $t $shape]]
-        [?if [> [$count $tp] 0]
-          [then [?let [= $_x [$remove-trial $c $t]] [$fail [$concat 'merge trial: ' [$strings:join $tp '; ']]]]]
-          [else [?let
-            [= $rs [$merge-all $t $base0 [$seq-of $shape/ready] $pins]]
-            [= $bad [?to-sequence [?for [in $x $rs] [where [= [$name $x] 'problem']] [yield [$string $x@text]]]]]
-            [?if [> [$count $bad] 0]
-              [then [?let [= $_x [$remove-trial $c $t]] [$fail [$concat 'merge trial: ' [$strings:join $bad '; ']]]]]
-              [else [trial dir=$t base=$base0 head=[$out [$git $t ('rev-parse', 'HEAD') $GIT-MS]]
-                      [?splice $rs]]]]]]]]]]]]
-
-# merge-untrial — the trial's compensator: the worktree goes, nothing else
-# was written (the trial's merges live only in it).
-[?def merge-untrial scope=public impure [effects [read] [write] [subprocess]] [returns element]
-  ($specs='' $shape='' $pins='')
-  [?let [= $m [$read-specs $specs]]
-    [$remove-trial [$checkout-of $m] [$trial-of $m]]]]
-
-# ── ci/push-components — chain step 5, leased ───────────────────────────────
-# Each push moves a component's main from the sha merge-pins measured to the
-# pinned one, leased on the measured sha, so a main that moved since is
-# refused rather than overwritten. A refusal part-way undoes the pushes
-# already made before answering (a failed step is not compensated, §4.8), so
-# the step is all or nothing; once it is :done its compensator,
-# unpush-components, is what a refused land undoes it with.
-[?def push-one scope=private impure [returns element] ($p $from $to)
-  [$git [$string $p@clone] ('push', 'origin', [$concat $to ':refs/heads/main'],
-                           [$concat '--force-with-lease=refs/heads/main:' $from]) $NET-MS]]
-
-[?def unpush-all scope=private impure [returns any] ($ps)
-  [?to-sequence [?for [in $p [$sort-reverse $ps]]
-    [= $r [$push-one $p [$string $p@new] [$string $p@before]]]
-    [yield [?if [$ok $r] [then [unpushed repo=[$string $p@repo] main=[$string $p@before]]]
-             [else [problem text=[$concat [$string $p@repo] ': unpush to ' [$string $p@before] ' refused — ' [$why $r]]]]]]]]]
-
-[?def sort-reverse scope=private pure [returns any] ($xs)
-  [?reduce $xs [using [?fn ($acc $x) [$cat2 ($x) $acc]]] [init ()]]]
-
-# push-all: each planned push in turn, stopping at the first refusal (a
-# [problem] row ends the list) — a loop for merge-all's reason.
-[?def push-all scope=private impure [returns any] ($ps)
-  [?loop [= $i 1] [= $acc ()]
-    [?if [> $i [$count $ps]] [then [break $acc]]
-      [else [?let [= $p [$nth $ps $i]]
-                  [= $_l [$log-line [$concat 'push ' [$string $p@repo] ' main ' [$string $p@before] ' -> ' [$string $p@new]]]]
-                  [= $r [$push-one $p [$string $p@before] [$string $p@new]]]
-        [?if [$ok $r] [then [continue [+ $i 1] [$cat2 $acc ($p)]]]
-          [else [break [$cat2 $acc ([problem text=[$concat [$string $p@repo] ': push refused — ' [$why $r]]])]]]]]]]]]
-
-[?def push-components scope=public impure [effects [read] [write] [subprocess]] [compensates unpush-components]
-  [returns element] ($specs='' $pins='')
-  [?let [= $ps [$seq-of $pins/push]]
-        [= $done [$push-all $ps]]
-        [= $bad [?to-sequence [?for [in $x $done] [where [= [$name $x] 'problem']] [yield [$string $x@text]]]]]
-        [= $made [?to-sequence [?for [in $x $done] [where [= [$name $x] 'push']] [yield $x]]]]
-    [?if [> [$count $bad] 0]
-      [then [?let [= $undo [$unpush-all $made]]
-                  [= $still [?to-sequence [?for [in $x $undo] [where [= [$name $x] 'problem']] [yield [$string $x@text]]]]]
-        [$fail [$concat 'component push: ' [$strings:join $bad '; ']
-                        [?if [= [$count $made] 0] [then ' — nothing had been pushed']
-                          [else [?if [= [$count $still] 0] [then [$concat ' — the ' [$string [$count $made]] ' made were undone']]
-                            [else [$concat ' — AND the undo failed: ' [$strings:join $still '; ']]]]]]]]]]
-      [else [pushed count=[$string [$count $made]] [?splice $made]]]]]]
-
-# unpush-components — each pushed main back to the sha it had, leased on the
-# pushed sha. Every repository is tried; any refusal is this compensator's
-# err, which the runner records :uncompensatable with the run in :conflict
-# and the one [conflict] value naming what the world now holds (§4.8).
-[?def unpush-components scope=public impure [effects [read] [subprocess]] [returns element]
-  ($specs='' $pins='')
-  [?let [= $undo [$unpush-all [$seq-of $pins/push]]]
-        [= $still [?to-sequence [?for [in $x $undo] [where [= [$name $x] 'problem']] [yield [$string $x@text]]]]]
-    [?if [> [$count $still] 0] [then [$fail [$concat 'unpush: ' [$strings:join $still '; ']]]]
-      [else [unpushed count=[$string [$count $undo]] [?splice $undo]]]]]]
-
-# ── ci/land — chain step 7's push: THE PIVOT ─────────────────────────────────
-# The integration branch on origin moves to the trial's head: a plain push,
-# so only a fast-forward is admitted. It is the one irreversible act — once
-# the loop sees the new tip it grades it — and it runs only after every
-# component push, so its refusal is the one failure compensation covers.
-# The checkout itself moves in the next step, so a refused push leaves it
-# untouched.
-[?def land scope=public impure [effects [read] [write] [subprocess]] [returns element]
-  ($specs='' $shape='' $trial='')
-  [?let [= $m [$read-specs $specs]]
-        [= $c [$checkout-of $m]] [= $ib [$string $shape@branch]]
-        [= $head [$out [$git $c ('rev-parse', 'HEAD') $GIT-MS]]]
-        [= $origin [$out [$git $c ('rev-parse', [$concat 'origin/' $ib]) $GIT-MS]]]
-        [= $to [$string $trial@head]]
-    [?if [not [= $head $origin]]
-      [then [$fail [$concat 'land: HEAD ' $head ' is not origin/' $ib ' ' $origin ' — the head moved during the merge']]]
-      [else [?let [= $_l [$log-line [$concat 'land ' $ib ' ' $origin ' -> ' $to]]]
-                  [= $r [$git $c ('push', 'origin', [$concat $to ':refs/heads/' $ib]) $NET-MS]]
-        [?if [$ok $r] [then [landed branch=$ib from=$origin to=$to]]
-          [else [$fail [$concat 'land: push of ' $to ' to ' $ib ' refused — ' [$why $r]]]]]]]]]]
-
-# ── ci/merge-sync — chain step 7's fast-forward and step 8 ───────────────────
-# Forward-only, after the pivot: the checkout fast-forwards to what landed,
-# the trial worktree goes, and `make deps-sync` reconciles deps/ to the new
-# pins. A red here lands the run :incomplete with the step named — the merge
-# itself is already on origin.
-[?def merge-sync scope=public impure [effects [read] [write] [subprocess]] [returns element]
-  ($specs='' $trial='')
-  [?let [= $m [$read-specs $specs]]
-        [= $c [$checkout-of $m]]
-        [= $to [$string $trial@head]]
-        [= $ff [$git $c ('merge', '--ff-only', '-q', $to) $GIT-MS]]
-        [= $rm [$remove-trial $c [$trial-of $m]]]
-    [?if [not [$ok $ff]] [then [$fail [$concat 'sync: the checkout did not fast-forward to ' $to ' — ' [$why $ff]]]]
-      [else [?let [= $ds [$process:run ('make', '--no-print-directory', 'deps-sync') cwd=$c timeout-ms=$NET-MS]]
-                  [= $dirty [$out [$git $c ('status', '--porcelain', '--untracked-files=no') $GIT-MS]]]
-        [?if [not [$ok $ds]] [then [$fail [$concat 'sync: make deps-sync — ' [$why $ds]]]]
-          [else [?if [not [= $dirty '']] [then [$fail [$concat 'sync: the checkout has tracked changes after deps-sync: ' $dirty]]]
-            [else [synced head=$to deps-sync=[$tail-of [$string $ds@stdout] 1]]]]]]]]]]]
-
-# ══ premerge.flow.cx — a branch's pre-merge pipeline ═════════════════════════
-#
-# Run from the branch's worktree root. The integration branch derives from
-# VERSION (release/<major>.<minor>), never a literal; the own runner is
-# $HOME/git-repos/cx/.build-slot-<worktree dir> and the shared one
-# .build-slot-impl (D17a); the loop's log is the MAIN checkout's — the first
-# row of `git worktree list`.
-
-[?def base-ref scope=private impure [returns string] ()
+[?def base-ref scope=public impure [returns string] ()
   [?let [= $v [$str-trim [$io:read-file 'VERSION']]]
         [= $xy [$strings:join [?to-sequence [?take 2 [$strings:split $v '.']]] '.']]
     [$concat 'origin/release/' $xy]]]
 
-[?def home scope=private impure [returns string] () [$env:var-or-default 'HOME' '']]
-[?def own-slot scope=private impure [returns string] ()
+[?def home scope=public impure [returns string] () [$env:var-or-default 'HOME' '']]
+[?def own-slot scope=public impure [returns string] ()
   [$concat [$home] '/git-repos/cx/.build-slot-' [$path:basename [$env:cwd]]]]
-[?def shared-slot scope=private impure [returns string] () [$concat [$home] '/git-repos/cx/.build-slot-impl']]
+[?def shared-slot scope=public impure [returns string] () [$concat [$home] '/git-repos/cx/.build-slot-impl']]
 
-[?def main-checkout scope=private impure [returns string] ()
-  [?let [= $l [$first [$nonblank-lines [$out [$git '.' ('worktree', 'list', '--porcelain') $GIT-MS]]]]]
+[?def main-checkout scope=public impure [returns string] ()
+  [?let [= $l [$first [$nonblank-lines [$out [$git '.' ('worktree', 'list', '--porcelain') [$git-ms]]]]]]
     [$str-trim [$strings:replace-first [$string $l] 'worktree ' '']]]]
-
-# run-dir: where one run writes — <evidence>/premerge/, which .gitignore keeps
-# out of the tree (the step logs, the selection, the step table as data and as
-# markdown); RESULTS.md, the one file an agent commits, carries the table.
-[?def run-dir scope=private pure [returns string] ($e) [$concat [$str-trim [$string $e]] '/premerge']]
-
-[?def evidence-ok scope=private pure [returns bool] ($e)
-  [$re:matches [$re:compile '^_gate_evidence/pipeline_[A-Za-z0-9_.-]+$'] [$str-trim [$string $e]]]]
-
-# the L98 data: flows/load.cxd's load-sensitive steps.
-[?def sensitive scope=private impure [returns any] ()
-  [?let [= $doc [$cx-parse [$io:read-file 'flows/load.cxd']]]
-    [?to-sequence [?for [in $top $doc] [in $s $top//step] [where [= [$string $s@load] 'sensitive']] [yield [$string $s@name]]]]]]
-
-[?def slot-for scope=private pure [returns string] ($target $sens)
-  [?if [$member [$first [$str-split-whitespace $target]] $sens] [then 'shared'] [else 'own']]]
 
 # run make under a runner: the lock stays scripts/build-slot.sh's (L102;
 # its stale-holder break needs #1706), the toolchain devbox's, the output a
 # log file per step so no capture is held in memory.
-[?def slot-make scope=private impure [returns element] ($runner $words $log)
+[?def slot-make scope=public impure [returns element] ($runner $words $log)
   [$process:run [$cat2 ('sh', 'scripts/build-slot.sh', 'devbox', 'run', '--', 'make', '--no-print-directory') $words]
-                env={CX_BUILD_SLOT: $runner} timeout-ms=$MAKE-MS
+                env={CX_BUILD_SLOT: $runner} timeout-ms=[$make-ms]
                 capture={stdout: $log, stderr: [$concat $log '.err']}]]
 
-[?def log-tail scope=private impure [returns string] ($log $k)
+[?def log-tail scope=public impure [returns string] ($log $k)
   [$tail-of [$concat [?else [$io:read-file $log] ''] "\n" [?else [$io:read-file [$concat $log '.err']] '']] $k]]
-
-# ── ci/lint — `cx lint` of every .cx / .cxd the branch touched ──────────────
-# Free and before any build (the standing rules' order). Its binary is the
-# one running this flow, which `make premerge-flow` made a COPY of the tree's
-# build, so the build step after it cannot relink a binary in use.
-[?def lint scope=public impure [effects [read] [write] [subprocess] [env]] [compensates nothing-to-undo]
-  [returns element] ($evidence='')
-  [?if [not [$evidence-ok $evidence]]
-    [then [$fail [$concat 'ci/lint: --evidence=`' [$string $evidence]
-                          '` is not _gate_evidence/pipeline_<x> — the evidence directory of this branch']]]
-    [else [?let [= $base [$base-ref]]
-                [= $_f [$git '.' ('fetch', '-q', 'origin', [$strings:replace-first $base 'origin/' '']) $NET-MS]]
-                [= $_d [$io:make-dirs [$concat [$run-dir $evidence] '/steps']]]
-                [= $files [?to-sequence [?for [in $f [$nonblank-lines [$out [$git '.' ('diff', '--name-only', [$concat $base '...HEAD']) $GIT-MS]]]]
-                            [where [and [or [$strings:ends-with $f '.cx'] [$strings:ends-with $f '.cxd']] [$io:is-file $f]]]
-                            [yield $f]]]]
-                [= $cx [$env:executable-path]]
-                [= $reds [?to-sequence [?for [in $f $files]
-                           [= $r [$process:run ($cx, 'lint', $f) timeout-ms=$GIT-MS]]
-                           [where [not [$ok $r]]]
-                           [yield [$concat $f ' — ' [$why $r]]]]]]
-      [?if [> [$count $reds] 0]
-        [then [$fail [$concat [$string [$count $reds]] ' of ' [$string [$count $files]] " lint RED:\n  " [$strings:join $reds "\n  "]]]]
-        [else [linted base=$base count=[$string [$count $files]]]]]]]]]
-
-# ── ci/build — THE PIVOT: both binaries, on the own runner ───────────────────
-# As repo-gate's toolchain step: a build cannot be un-built to its prior
-# bytes, so everything after it is forward-only and a red step lands the run
-# :incomplete with the count visible.
-[?def build scope=public impure [effects [read] [write] [subprocess] [env]] [returns element]
-  ($evidence='')
-  [?let [= $slot [$own-slot]]
-        [= $rows [?to-sequence [?for [in $t ('build-vcx', 'build-vcx-dev')]
-                   [= $log [$concat [$run-dir $evidence] '/steps/' $t '.log']]
-                   [= $_l [$log-line [$concat 'make ' $t ' (own runner)']]]
-                   [= $r [$slot-make $slot ($t) $log]]
-                   [yield [made target=$t ok=[$string [$ok $r]] exit=[$string $r@exit-code] tail=[$log-tail $log 12]]]]]]
-        [= $reds [?to-sequence [?for [in $w $rows] [where [not [= [$string $w@ok] 'true']]] [yield $w]]]]
-    [?if [= [$count $reds] 0] [then [built slot=$slot [?splice $rows]]]
-      [else [$fail [$strings:join [?to-sequence [?for [in $w $reds]
-               [yield [$concat 'make ' [$string $w@target] ' is RED (exit ' [$string $w@exit] "):\n" [$string $w@tail]]]]] "\n\n"]]]]]]
-
-# ── ci/select — the RUN-4 computed selection, as data ────────────────────────
-# RUN-4's block, unchanged in meaning: the branch's changes minus the
-# build-infra paths go to scripts/test_changed.sh --dry-run --changed-files
-# (L102: the selection stays the script live agents share), its RUN: steps
-# are the selection, test-vcx-suite fans out to the files it names, and the
-# branch's own steps (--own=, `none` for none) join them. Each item carries
-# its runner from flows/load.cxd (L98). The step table of this run starts
-# empty here.
-[?const INFRA '^(Makefile|vcx/Makefile|scripts/|VERSION|devbox)']
-
-[?def line-after scope=private pure [returns string] ($text $marker)
-  [?let [= $hit [?to-sequence [?for [in $l [$strings:split [$string $text] "\n"]] [where [$strings:contains $l $marker]]
-                  [yield [$str-trim [$strings:slice $l [+ [$strings:find $l $marker] [$strings:length $marker]] [$strings:length $l]]]]]]]
-    [?if [= [$count $hit] 0] [then ''] [else [$first $hit]]]]]
-
-[?def select scope=public impure [effects [read] [write] [subprocess] [env]] [returns element]
-  ($evidence='' $own='')
-  [?let [= $base [$base-ref]]
-        [= $e [$run-dir $evidence]]
-        [= $_d [$io:make-dirs $e]]
-        [= $changed [?to-sequence [?for [in $f [$nonblank-lines [$out [$git '.' ('diff', '--name-only', [$concat $base '...HEAD']) $GIT-MS]]]]
-                      [where [not [$found [$re:compile $INFRA] $f]]] [yield $f]]]]
-        [= $cf [$concat $e '/changed_minus_infra.txt']]
-        [= $_w [$io:write-file $cf [$concat [$strings:join $changed "\n"] "\n"]]]
-        [= $r [$process:run ('sh', 'scripts/test_changed.sh', $base, '--dry-run', '--changed-files', $cf) timeout-ms=$NET-MS]]
-        [= $_s [$io:write-file [$concat $e '/selection.log'] [$concat [$string $r@stdout] [$string $r@stderr]]]]
-    [?if [not [$ok $r]] [then [$fail [$concat 'ci/select: test_changed.sh --dry-run — ' [$why $r]]]]
-      [else [?let
-        [= $run [$line-after [$string $r@stdout] 'test-changed: RUN: ']]
-        [= $steps [?if [or [= $run ''] [= $run 'none']] [then ()] [else [$str-split-whitespace $run]]]]
-        [= $suite [$line-after [$string $r@stdout] ' test files: ']]
-        [= $sel [?to-sequence [?for [in $s $steps] [in $w
-                  [?if [and [= $s 'test-vcx-suite'] [not [= $suite '']]]
-                    [then [?to-sequence [?for [in $f [$str-split-whitespace $suite]] [yield [$concat 'test-vcx-suite SUITE_FILES=' $f]]]]]
-                    [else ($s)]]] [yield $w]]]]
-        [= $mine [?if [= [$str-trim [$string $own]] 'none'] [then ()] [else [$str-split-whitespace [$string $own]]]]]
-        [= $all [$cat2 $sel [?to-sequence [?for [in $o $mine] [where [not [$member $o $sel]]] [yield $o]]]]]
-        [= $sens [$sensitive]]
-        [= $_t [$io:write-file [$concat $e '/premerge-steps.cxd']
-                 [$concat '# the step rows of one premerge.flow.cx run (RULED: RFLOW-1), base ' $base "\n"]]]
-        [selection base=$base count=[$string [$count $all]] changed=[$string [$count $changed]]
-          [?splice [?to-sequence [?for [in $t $all] [yield [item [target $t] [slot [$slot-for $t $sens]]]]]]]]]]]]]
-
-# BUILT: the make flags every selected step runs with. The build step — the
-# pivot — made both binaries; a step that re-made build-vcx would relink the
-# tree's cx for minutes each time (#1697), so each is run `-o` of both, and
-# of the docs targets' own cx builds, as docs-acts.cx runs its targets.
-[?const BUILT ('-o', 'build-vcx', '-o', 'build-vcx-dev',
-               'DOCS_SKIP_CX_BUILD=1', 'GUIDE_SKIP_CX_BUILD=1', 'SITE_SKIP_CX_BUILD=1')]
-
-# ── ci/make — one selected step, on the runner its item names ────────────────
-# A shared step re-reads the main checkout's last RUN line before it runs
-# (L98; rule 5 of 2026-09-24) and waits for the gap, then takes
-# .build-slot-impl; an own step takes this worktree's runner. Its row goes to
-# the run's step table either way, and a red one answers the err the map
-# counts, so every red is named (RUN-2) and none stops the rest.
-[?def make scope=public impure [effects [read] [write] [subprocess] [env]] [returns element]
-  ($target='' $slot='' $evidence='')
-  [?let [= $t [$str-trim [$string $target]]] [= $s [$str-trim [$string $slot]]] [= $e [$run-dir $evidence]]
-        [= $gap [?if [= $s 'shared'] [then [$gap-wait [$concat [$main-checkout] '/vcx/target/gate-loop.log'] 14400 true]]
-                  [else [gap line='own runner']]]]
-    [?if [not [= [$name $gap] 'gap']] [then $gap]
-      [else [?let [= $runner [?if [= $s 'shared'] [then [$shared-slot]] [else [$own-slot]]]]
-                  [= $log [$concat $e '/steps/' [$re:replace [$re:compile '[^A-Za-z0-9_.-]+'] $t '_'] '.log']]
-                  [= $_l [$log-line [$concat 'make ' $t ' (' $s ' runner)']]]
-                  [= $r [$slot-make $runner [$cat2 $BUILT [$str-split-whitespace $t]] $log]]
-                  [= $row [row target=$t slot=$s exit=[$string $r@exit-code] log=$log]]
-                  [= $_a [$io:append-file [$concat $e '/premerge-steps.cxd'] [$cx-serialize $row]]]
-        [?if [$ok $r] [then [made target=$t slot=$s tail=[$log-tail $log 1]]]
-          [else [$fail [$concat 'make ' $t ' is RED (exit ' [$string $r@exit-code] ', ' $s " runner):\n" [$log-tail $log 20]]]]]]]]]]
-
-# ── ci/verdict — the step table (never MERGE-READY: the agent commits that) ──
-[?def verdict scope=public impure [effects [read] [write]] [returns element] ($evidence='')
-  [?let [= $e [$run-dir $evidence]]
-        [= $doc [$cx-parse [$io:read-file [$concat $e '/premerge-steps.cxd']]]]
-        [= $rows [?to-sequence [?for [in $r $doc] [where [= [$name $r] 'row']] [yield $r]]]]
-        [= $reds [?to-sequence [?for [in $r $rows] [where [not [= [$string $r@exit] '0']]] [yield $r]]]]
-        [= $md [$concat "| step | exit | runner | log |\n|---|---|---|---|\n"
-                 [$strings:join [?to-sequence [?for [in $r $rows]
-                   [yield [$concat '| `' [$string $r@target] '` | ' [$string $r@exit] ' | ' [$string $r@slot] ' | '
-                                   [$string $r@log] ' |']]]] "\n"] "\n"]]
-        [= $_w [$io:write-file [$concat $e '/premerge-steps.md'] $md]]
-    [?if [= [$count $reds] 0]
-      [then [verdict steps=[$string [$count $rows]] red='0' table=[$concat $e '/premerge-steps.md']]]
-      [else [$fail [$concat [$string [$count $reds]] ' of ' [$string [$count $rows]] ' steps RED: '
-                            [$strings:join [?to-sequence [?for [in $r $reds] [yield [$concat [$string $r@target] ' (exit ' [$string $r@exit] ')']]]] ', ']
-                            ' — the table is ' $e '/premerge-steps.md']]]]]]

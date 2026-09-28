@@ -1,51 +1,66 @@
-# scripts/ci_flow_gate.cx <doc> — the ONE gate of the CI/CD flow documents
-# under flows/ (RULED: RFLOW-1 L104, CICD-1, CXF-1).
+# scripts/ci_flow_gate.cx <doc> — the ONE gate of the repository's flow
+# documents (RULED: RFLOW-1 L104, PRIVMK-1, CICD-1, CXF-1).
 #
-#   cx --allow-read --allow-write --allow-env --allow-subprocess scripts/ci_flow_gate.cx merge
-#   make merge-flow-gate        make premerge-flow-gate
+#   cx --allow-read --allow-write --allow-env --allow-subprocess --allow-clock \
+#     scripts/ci_flow_gate.cx <doc>
+#   make release-flow-gate    make docs-flow-gate           (public)
+#   make merge-flow-gate      make premerge-flow-gate  …    (flows/private.mk)
 #
-# One engine over a case table per document, flows/sim/<doc>/cases.cxd, so a
-# red names its document (one target each) and no second copy of the engine
-# can drift. It reads the REAL document through THIS TREE's binary — `cx flow
-# validate`, `simulate` and `run`, the shipped surface, as subprocesses — and
-# holds, per document:
+# One engine over a case table per document, so a red names its document (one
+# target each) and no second copy of the engine can drift. A document lives in
+# one of the HOMES below, as <home>/<doc>.flow.cx, and its table is
+# <home>/sim/<doc>/cases.cxd. The table's `env=` names the env its acts
+# resolve through. The engine reads the REAL document through THIS TREE's
+# binary: `cx flow validate`, `simulate` and `run`, the shipped surface, run
+# as subprocesses. For each document it holds:
 #
-#   A. IT VALIDATES against flows/ci.env.cx, every act resolving.
+#   A. IT VALIDATES against its env, every act resolving.
 #   B. EVERY TERMINAL STATUS SIMULATES as the table names it: `:done`, each
-#      pre-pivot refusal `:compensated` with the steps before it wound back
-#      in reverse, each post-pivot one `:incomplete` with its count.
-#   C. AN ACT'S OWN REFUSAL RUNS: one real `cx flow run` that the first act
+#      pre-pivot refusal `:compensated` with the steps before it wound back in
+#      reverse, and each post-pivot one `:incomplete` with its count.
+#   C. AN ACT'S OWN REFUSAL RUNS: one real `cx flow run`, which the first act
 #      refuses before anything moves, under the grants its Makefile caller
-#      passes, exiting 1 with the refusal in the record.
-#   D. IT CANNOT GO GREEN OVER NOTHING: the table is non-empty, its
-#      expectation count is pinned in the table, every flows/*.flow.cx has a
-#      table, and every results file under flows/sim/<doc>/ is named by a case.
-#   E. (merge) A REAL RUN against throwaway local bare repositories, one world
-#      per case under a temp root that is removed before the gate answers
-#      (#1511): two branches, two components, a pin-row conflict resolved; the
-#      landing push refused so the component pushes are UNDONE (main restored
-#      — the unpush); and the unpush itself refused, which is `:conflict`.
+#      passes. It exits 1 with the refusal in the record.
+#   D. IT CANNOT GO GREEN OVER NOTHING:
+#      - the table is non-empty;
+#      - its expectation count is pinned in the table;
+#      - every <home>/*.flow.cx has a table;
+#      - every program under the table's directory is named by a case.
+#   E. (verb `real`) A REAL RUN against a throwaway world. The document's own
+#      world program, `program=`, builds the world under a temp root. That
+#      root is removed before the gate answers (#1511). The world program
+#      prints the arguments the run takes, and after the run it reports what
+#      the world holds. Each [world …] attribute of the case must equal it.
 #      The world is checked, not only the record.
-#   F. (premerge) THE L98 DATA: every flows/load.cxd row names a Makefile
-#      target, and ci/select routes a load-sensitive step to the shared
-#      runner and any other to the own one.
+#   F. (verb `probe`) A document-specific check that is not a run: a program
+#      under the table's directory, whose answer carries the [s] facts (for
+#      example premerge's load rows, and its runner routing).
+#
+# The engine names no document's acts and imports none. The worlds and probes
+# are programs beside their tables. That is what lets this one file be public
+# (the release document and the documentation flow are public, L96) while the
+# integrator protocol's documents and their worlds stay private (PRIVMK-1).
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
 [?lib 'cx-stdlib/process' as=process]
 [?lib 'cx-stdlib/strings' as=strings]
 [?lib 'cx-stdlib/fp'      as=fp]
 [?lib 'cx-stdlib/cx'      as=cx]
-[?lib 'cx-stdlib/path'    as=path]
-[?lib './flows/ci-acts.cx' as=ci]
 
 [?def cat scope=public ($parts) [$strings:join $parts '']]
 [?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
 [?def cat-seqs scope=public ($ss) [$fp:flat-map $ss [?fn ($x) $x]]]
-[?def seq-of scope=public ($xs) [?to-sequence [?for [in $x $xs] [yield $x]]]]
 [?def member scope=public pure [returns bool] ($x $xs)
   [> [$count [?to-sequence [?for [in $y $xs] [where [= [$string $y] [$string $x]]] [yield $y]]]] 0]]
 
-[?const ENV 'flows/ci.env.cx']
+# where a flow document lives: the CI/CD documents under flows/, the
+# documentation flow under docs-src/flow/ (CICD-1).
+[?const HOMES ('flows', 'docs-src/flow')]
+
+# the grants every run, probe and world program gets: those the documents'
+# Makefile callers pass. --allow-clock is included because the post-merge
+# verdict stamps its lines, as `date -u` did.
+[?const GRANTS ('--allow-read', '--allow-write', '--allow-subprocess', '--allow-env', '--allow-clock')]
 
 # ── the binary: CX_BIN (the Makefile passes this tree's build), else the
 # tree's own build. PATH is not this tree, so it is not searched (#929). ─────
@@ -58,19 +73,19 @@
               [?let [= $_x [$env:exit 2]] ""]]]]]]
 
 [?def argv-words scope=public pure ($s)
-  [?if [= [$strings:trim [$string $s]] ''] [then ()] [else [$strings:split [$strings:trim [$string $s]] " "]]]]
+  [?if [= [$strings:trim [$string $s]] ''] [then ()]
+    [else [?to-sequence [?for [in $w [$strings:split [$strings:trim [$string $s]] " "]] [where [not [= $w '']]] [yield $w]]]]]]
 
 # The grants ride AFTER the subcommand word: flags bind before a FILE and
 # `flow` is not one. validate/simulate read only; a run carries the grants
 # the document's Makefile caller passes.
-[?def argv-of scope=public pure [returns any] ($bin $flow $c $extra)
+[?def argv-of scope=public pure [returns any] ($bin $flow $env $c $extra)
   [?let [= $verb [$string $c@verb]]
         [= $head [?if [= $verb 'validate']
-           [then ($bin, 'flow', 'validate', $flow, '--env', $ENV, '--allow-read=.')]
+           [then ($bin, 'flow', 'validate', $flow, '--env', $env, '--allow-read=.')]
            [else [?if [= $verb 'simulate']
-             [then ($bin, 'flow', 'simulate', $flow, [$string $c@results], '--env', $ENV, '--allow-read=.')]
-             [else ($bin, 'flow', 'run', $flow, '--env', $ENV, '--ephemeral',
-                    '--allow-read', '--allow-write', '--allow-subprocess', '--allow-env')]]]]]
+             [then ($bin, 'flow', 'simulate', $flow, [$string $c@results], '--env', $env, '--allow-read=.')]
+             [else [$cat-seqs (($bin, 'flow', 'run', $flow, '--env', $env, '--ephemeral'), $GRANTS)]]]]]]
     [$cat-seqs ($head, [$argv-words $c@args], $extra)]]]
 
 [?def label-of scope=public pure ($c) [$cat ('case ', [$string $c@id], ' (', [$string $c@verb], ')')]]
@@ -79,220 +94,104 @@
   [?to-sequence [?for [in $e $c/expect/s]
     [where [not [$strings:contains $out [$string $e]]]]
     [yield [$cat ([$label-of $c], ': the answer does not carry `', [$string $e], '` — got: ',
-                  [$strings:slice $out 0 400])]]]]]
+                  [$strings:slice $out 0 600])]]]]]
 
-[?def run-flow scope=public impure ($bin $flow $c $extra)
-  [?let [= $r [$process:run [$argv-of $bin $flow $c $extra] timeout-ms=600000]]
+[?def exit-miss scope=public pure ($c $r $out)
+  [?if [= [$string $r@exit-code] [$string $c@exit]] [then ()]
+    [else ([$cat ([$label-of $c], ': exited ', [$string $r@exit-code], ', the table names ',
+                  [$string $c@exit], ' — ', [$strings:slice $out 0 600], ' ',
+                  [$strings:slice [$strings:trim [$string $r@stderr]] 0 600])])]]]
+
+[?def run-flow scope=public impure ($bin $flow $env $c $extra)
+  [?let [= $r [$process:run [$argv-of $bin $flow $env $c $extra] timeout-ms=900000]]
         [= $out [$string $r@stdout]]
-    [?if [not [= [$string $r@exit-code] [$string $c@exit]]]
-      [then ([$cat ([$label-of $c], ': exited ', [$string $r@exit-code], ', the table names ',
-                    [$string $c@exit], ' — ', [$strings:slice $out 0 400], ' ',
-                    [$strings:trim [$string $r@stderr]])])]
-      [else [$expect-misses $c $out]]]]]
+        [= $em [$exit-miss $c $r $out]]
+    [?if [> [$count $em] 0] [then $em] [else [$expect-misses $c $out]]]]]
 
-# ══ E — a real merge against throwaway bare repositories ════════════════════
-[?def g scope=public impure ($dir $args)
-  [$process:run [$cat-seqs (('git', '-C', $dir, '-c', 'user.name=ci-flow-gate',
-                             '-c', 'user.email=ci-flow-gate@invalid', '-c', 'init.defaultBranch=main', '-c', 'commit.gpgsign=false'), $args)]
-                timeout-ms=60000]]
-[?def g-out scope=public impure ($dir $args) [$strings:trim [$string [$g $dir $args]@stdout]]]
-[?def g-ok scope=public impure ($dir $args) [= [$string [$g $dir $args]@exit-code] '0']]
+# ── F — a probe: a program beside the table, its answer read for the [s] ────
+[?def run-program scope=public impure ($bin $program $args)
+  [$process:run [$cat-seqs (($bin), $GRANTS, ($program), $args)] timeout-ms=900000]]
 
-# a step of the world's construction: '' when it held, else what failed.
-[?def need scope=public impure ($dir $args)
-  [?let [= $r [$g $dir $args]]
-    [?if [= [$string $r@exit-code] '0'] [then '']
-      [else [$cat ('git ', [$strings:join $args ' '], ' in ', $dir, ': ', [$strings:trim [$string $r@stderr]])]]]]]
+[?def probe-case scope=public impure ($bin $c)
+  [?let [= $r [$run-program $bin [$string $c@program] [$argv-words $c@args]]]
+        [= $out [$cat ([$string $r@stdout], ' ', [$string $r@stderr])]]
+        [= $em [$exit-miss $c $r $out]]
+    [?if [> [$count $em] 0] [then $em] [else [$expect-misses $c $out]]]]]
 
-[?def commit-file scope=public impure ($repo $file $text $msg)
-  [?let [= $p [$cat ($repo, '/', $file)]]
-        [= $_d [$io:make-dirs [$path:dirname $p]]]
-        [= $_w [$io:write-file $p $text]]
-        [= $a [$need $repo ('add', '--', $file)]]
-        [= $c [$need $repo ('commit', '-q', '-m', $msg)]]
-    [$strings:join [?to-sequence [?for [in $x ($a, $c)] [where [not [= $x '']]] [yield $x]]] '; ']]]
-
-[?def pins-text scope=public pure ($a $b)
-  [$cat ("[deps\n  [dep repo=comp-a sha=", $a, "]\n  [dep repo=comp-b sha=", $b, "]]\n")]]
-[?def repos-text scope=public pure ($a $b)
-  [$cat ("[repos\n  [repo name=comp-a at=", $a, "]\n  [repo name=comp-b at=", $b, "]]\n")]]
-
-# one component: a bare remote whose main is its first commit, and a clone
-# holding a second commit main does not have yet — the pin a branch moves to.
-[?def component scope=public impure ($root $name)
-  [?let [= $bare [$cat ($root, '/remotes/', $name, '.git')]]
-        [= $cl [$cat ($root, '/clones/', $name)]]
-        [= $e1 [$need $root ('init', '-q', '--bare', '-b', 'main', $bare)]]
-        [= $e2 [$need $root ('clone', '-q', $bare, $cl)]]
-        [= $e3 [$commit-file $cl 'README' [$cat ($name, " 0\n")] [$cat ($name, ': first')]]]
-        [= $e4 [$need $cl ('push', '-q', 'origin', 'HEAD:refs/heads/main')]]
-        [= $c0 [$g-out $cl ('rev-parse', 'HEAD')]]
-        [= $e5 [$commit-file $cl 'README' [$cat ($name, " 1\n")] [$cat ($name, ': the pinned change')]]]
-        [= $c1 [$g-out $cl ('rev-parse', 'HEAD')]]
-        [= $errs [$strings:join [?to-sequence [?for [in $x ($e1, $e2, $e3, $e4, $e5)] [where [not [= $x '']]] [yield $x]]] '; ']]
-    [comp name=$name c0=$c0 c1=$c1 errs=$errs]]]
-
-# one READY branch: the pin bump (the graded commit) and its evidence on top.
-[?def ready-branch scope=public impure ($main $name $dir $pins $repos $file)
-  [?let [= $e1 [$need $main ('checkout', '-q', '-b', $name, 'release/gate')]]
-        [= $_1 [$io:write-file [$cat ($main, '/deps.cxd')] $pins]]
-        [= $_2 [$io:write-file [$cat ($main, '/registry/repos.cxd')] $repos]]
-        [= $e0 [$need $main ('add', 'deps.cxd', 'registry/repos.cxd')]]
-        [= $e2 [$commit-file $main $file [$cat ($name, "\n")] [$cat ($name, ': the change')]]]
-        [= $graded [$g-out $main ('rev-parse', 'HEAD')]]
-        [= $e3 [$commit-file $main [$cat ('_gate_evidence/', $dir, '/RESULTS.md')]
-                 [$cat ("# evidence\n\nMERGE-READY ", $graded, "\n")] [$cat ($name, ': evidence')]]]
-        [= $e4 [$need $main ('push', '-q', 'origin', $name)]]
-        [= $e5 [$need $main ('checkout', '-q', 'release/gate')]]
-        [= $errs [$strings:join [?to-sequence [?for [in $x ($e1, $e0, $e2, $e3, $e4, $e5)] [where [not [= $x '']]] [yield $x]]] '; ']]
-    [ready name=$name dir=$dir graded=$graded errs=$errs]]]
-
-# the world of one case: two components, a front door on release/gate at F0
-# pinning both at their first commit, branch b1 moving comp-a and branch b2
-# moving comp-b — adjacent pin rows, so the second merge conflicts on them and
-# the pin-row resolution is exercised — a gap in the loop's log, the specs.
-[?def world scope=public impure ($root $scenario)
-  [?let [= $a [$component $root 'comp-a']]
-        [= $b [$component $root 'comp-b']]
-        [= $main [$cat ($root, '/main')]]
-        [= $front [$cat ($root, '/remotes/front.git')]]
-        [= $e1 [$need $root ('init', '-q', '--bare', '-b', 'release/gate', $front)]]
-        [= $e2 [$need $root ('init', '-q', '-b', 'release/gate', $main)]]
-        [= $_m [$io:write-file [$cat ($main, '/Makefile')]
-                 "deps-sync:\n\t@echo deps-sync: the fixture checkout of the gate has nothing to reconcile\n"]]
-        [= $_i [$io:write-file [$cat ($main, '/.gitignore')] "vcx/target/\n"]]
-        [= $_p [$io:write-file [$cat ($main, '/deps.cxd')] [$pins-text [$string $a@c0] [$string $b@c0]]]]
-        [= $e3 [$commit-file $main 'registry/repos.cxd' [$repos-text [$string $a@c0] [$string $b@c0]] 'F0: the base']]
-        [= $e4 [$need $main ('add', 'Makefile', '.gitignore', 'deps.cxd')]]
-        [= $e5 [$need $main ('commit', '-q', '--amend', '--no-edit')]]
-        [= $e6 [$need $main ('remote', 'add', 'origin', $front)]]
-        [= $e7 [$need $main ('push', '-q', '-u', 'origin', 'release/gate')]]
-        [= $f0 [$g-out $main ('rev-parse', 'HEAD')]]
-        [= $b1 [$ready-branch $main 'impl/b1' 'pipeline_b1'
-                 [$pins-text [$string $a@c1] [$string $b@c0]] [$repos-text [$string $a@c1] [$string $b@c0]] 'b1.txt']]
-        [= $b2 [$ready-branch $main 'impl/b2' 'pipeline_b2'
-                 [$pins-text [$string $a@c0] [$string $b@c1]] [$repos-text [$string $a@c0] [$string $b@c1]] 'b2.txt']]
-        [= $_c [$need $main ('config', 'user.name', 'ci-flow-gate')]]
-        [= $_e [$need $main ('config', 'user.email', 'ci-flow-gate@invalid')]]
-        [= $_n [$need $main ('config', 'commit.gpgsign', 'false')]]
-        [= $_l [$io:make-dirs [$cat ($main, '/vcx/target')]]]
-        [= $_g [$io:write-file [$cat ($main, '/vcx/target/gate-loop.log')]
-                 [$cat ('2026-01-01T00:00:00Z ', [$strings:slice $f0 0 9], " RUN-START\n2026-01-01T00:10:00Z ",
-                        [$strings:slice $f0 0 9], " RUN-EXIT=0 passed\n")]]]
-        [= $_1 [$io:write-file [$cat ($root, '/msg-b1.txt')] "merge(b1): the gate's first branch\n"]]
-        [= $_2 [$io:write-file [$cat ($root, '/msg-b2.txt')] "merge(b2): the gate's second branch\n"]]
-        [= $_s [$io:write-file [$cat ($root, '/specs.cxd')]
-                 [$cat ("[merge checkout='", $main, "' remote-base='", $root, "/remotes/' clones='", $root,
-                        "/clones' allow-red=false\n  [branch name='impl/b1' dir='pipeline_b1' graded='", [$string $b1@graded],
-                        "' msg='", $root, "/msg-b1.txt']\n  [branch name='impl/b2' dir='pipeline_b2' graded='",
-                        [$string $b2@graded], "' msg='", $root, "/msg-b2.txt']]\n")]]]
-        # the scenario's refusals: a landing push the front door refuses (a pack
-        # larger than it admits), and on top of it an unpush comp-a refuses (a
-        # rewind of main is a non-fast-forward).
-        [= $e8 [?if [$member $scenario ('land-refused', 'unpush-refused')]
-                 [then [$need $front ('config', 'receive.maxInputSize', '1')]] [else '']]]
-        [= $e9 [?if [= $scenario 'unpush-refused']
-                 [then [$need [$cat ($root, '/remotes/comp-a.git')] ('config', 'receive.denyNonFastForwards', 'true')]] [else '']]]
-        [= $errs [?to-sequence [?for [in $x ([$string $a@errs], [$string $b@errs], $e1, $e2, $e3, $e4, $e5, $e6, $e7,
-                                              [$string $b1@errs], [$string $b2@errs], $e8, $e9)]
-                   [where [not [= $x '']]] [yield $x]]]]
-        [= $a0 [$string $a@c0]] [= $a1 [$string $a@c1]] [= $b0 [$string $b@c0]] [= $b1 [$string $b@c1]]
-        [= $t1 [$g-out $main ('rev-parse', 'origin/impl/b1')]] [= $t2 [$g-out $main ('rev-parse', 'origin/impl/b2')]]
-        [= $all [$strings:join $errs '; ']]
-    [world root=$root f0=$f0 a0=$a0 a1=$a1 b0=$b0 b1=$b1 t1=$t1 t2=$t2 errs=$all]]]
-
-# what the world holds after the run, in the table's words.
-[?def observe scope=public impure ($w)
-  [?let [= $root [$string $w@root]]
-        [= $am [$g-out [$cat ($root, '/remotes/comp-a.git')] ('rev-parse', 'main')]]
-        [= $bm [$g-out [$cat ($root, '/remotes/comp-b.git')] ('rev-parse', 'main')]]
-        [= $front [$cat ($root, '/remotes/front.git')]]
-        [= $rel [$g-out $front ('rev-parse', 'release/gate')]]
-        [= $merged [and [$g-ok $front ('merge-base', '--is-ancestor', [$string $w@t1], $rel)]
-                        [$g-ok $front ('merge-base', '--is-ancestor', [$string $w@t2], $rel)]]]
-        [= $deps [$g-out $front ('show', [$cat ($rel, ':deps.cxd')])]]
-        [= $head [$g-out [$cat ($root, '/main')] ('rev-parse', 'HEAD')]]
-        [= $ca [?if [= $am [$string $w@a1]] [then 'new'] [else [?if [= $am [$string $w@a0]] [then 'before'] [else $am]]]]]
-        [= $cb [?if [= $bm [$string $w@b1]] [then 'new'] [else [?if [= $bm [$string $w@b0]] [then 'before'] [else $bm]]]]]
-        [= $re [?if [= $rel [$string $w@f0]] [then 'unmoved'] [else [?if $merged [then 'merged'] [else 'moved']]]]]
-        [= $pn [?if [and [$strings:contains $deps [$string $w@a1]] [$strings:contains $deps [$string $w@b1]]] [then 'both'] [else 'not-both']]]
-        [= $co [?if [= $head $rel] [then 'synced'] [else 'behind']]]
-        [= $tr [?if [$io:exists [$cat ($root, '/clones/union-tmp')]] [then 'present'] [else 'absent']]]
-    [seen comp-a=$ca comp-b=$cb release=$re pins=$pn checkout=$co trial=$tr]]]
+# ══ E — a real run in a throwaway world ══════════════════════════════════════
+# The world program answers `build <root> <scenario>` with one [world …]
+# element: `args=` (the flow arguments this world's run takes) and `errs=`
+# ('' when the world stands). After the run it answers `observe <root>` with
+# one [seen …] element, whose attributes are the world's facts in the table's
+# words.
+[?def answer-of scope=public pure ($out $head)
+  [?let [= $doc [?else [$cx:parse [$string $out]] ()]]
+        [= $hits [?to-sequence [?for [in $x $doc] [where [= [$name $x] $head]] [yield $x]]]]
+    [?if [= [$count $hits] 0] [then [none]] [else [$first $hits]]]]]
 
 [?def world-misses scope=public pure ($c $seen)
-  [?to-sequence [?for [in $want $c/world] [in $k ('comp-a', 'comp-b', 'release', 'pins', 'checkout', 'trial')]
-    [where [not [= [$string [$attr $want $k]] '']]]
-    [where [not [= [$string [$attr $want $k]] [$string [$attr $seen $k]]]]]
-    [yield [$cat ([$label-of $c], ': the world after the run has ', $k, '=', [$string [$attr $seen $k]],
-                  ', the table names ', [$string [$attr $want $k]])]]]]]
+  [?to-sequence [?for [in $want $c/world] [in $a [$attrs $want]] [= $k [$string $a@name]]
+    [where [not [= [$string [$attr $want $k]] [$string [?else [$attr $seen $k] '']]]]]
+    [yield [$cat ([$label-of $c], ': the world after the run has ', [$string $k], '=',
+                  [$string [?else [$attr $seen $k] '(nothing)']], ', the table names ', [$string [$attr $want $k]])]]]]]
 
-[?def real-case scope=public impure ($bin $flow $c)
+[?def real-case scope=public impure ($bin $flow $env $c)
   [?let [= $root [$io:temp-dir 'ci-flow-gate']]
-        [= $w [$world $root [$string $c@scenario]]]
-        [= $misses [?if [not [= [$string $w@errs] '']]
-                     [then ([$cat ([$label-of $c], ': the world could not be built — ', [$string $w@errs])])]
-                     [else [?let [= $rm [$run-flow $bin $flow $c ([$cat ('--specs=', $root, '/specs.cxd')])]]
-                                 [= $seen [$observe $w]]
+        [= $program [$string $c@program]]
+        [= $b [$run-program $bin $program ('build', $root, [$string $c@scenario])]]
+        [= $w [$answer-of $b@stdout 'world']]
+        [= $misses [?if [or [not [= [$name $w] 'world']] [not [= [$string $w@errs] '']]]
+                     [then ([$cat ([$label-of $c], ': the world could not be built — ',
+                                   [$string [?else $w@errs '']], ' ', [$strings:slice [$string $b@stdout] 0 400], ' ',
+                                   [$strings:slice [$strings:trim [$string $b@stderr]] 0 400])])]
+                     [else [?let [= $rm [$run-flow $bin $flow $env $c [$argv-words $w@args]]]
+                                 [= $o [$run-program $bin $program ('observe', $root)]]
+                                 [= $seen [$answer-of $o@stdout 'seen']]
                        [$cat-seqs ($rm, [$world-misses $c $seen])]]]]]
         [= $_rm [$io:remove-tree $root]]
     $misses]]
 
-# ══ F — the L98 data ═════════════════════════════════════════════════════════
-[?def load-case scope=public impure ($c)
-  [?let [= $mk [$io:read-file 'Makefile']]
-        [= $ld [$cx:parse [$io:read-file 'flows/load.cxd']]]
-        [= $rows [?to-sequence [?for [in $top $ld] [in $s $top//step] [yield $s]]]]
-        [= $names [?to-sequence [?for [in $s $rows] [yield [$string $s@name]]]]]
-        [= $stale [?to-sequence [?for [in $n $names]
-                    [where [not [or [$strings:starts-with $mk [$cat ($n, ':')]] [$strings:contains $mk [$cat ("\n", $n, ':')]]]]]
-                    [yield [$cat ([$label-of $c], ': flows/load.cxd names `', $n, '`, which is no Makefile target')]]]]]
-    [$cat-seqs ($stale, [$expect-misses $c [$strings:join $names ' ']],
-                [?if [= [$count $rows] 0] [then ([$cat ([$label-of $c], ': flows/load.cxd has no row')])] [else ()]])]]]
-
-[?def select-case scope=public impure ($c)
-  [?let [= $dir [$io:temp-dir 'ci-flow-gate-select']]
-        [= $own [$string $c@own]]
-        [= $r [$ci:select evidence=$dir own=$own]]
-        [= $out [$cat ('base=', [$string $r@base], ' count=', [$string $r@count], ' ',
-                       [$strings:join [?to-sequence [?for [in $i $r/item]
-                         [yield [$cat ([$string $i/target], '@', [$string $i/slot])]]]] ' '])]]
-        [= $_rm [$io:remove-tree $dir]]
-    [$expect-misses $c $out]]]
-
 # ── the run ─────────────────────────────────────────────────────────────────
-[?def run-case scope=public impure ($bin $flow $c)
+[?def run-case scope=public impure ($bin $flow $env $c)
   [?let [= $verb [$string $c@verb]]
-    [?if [= $verb 'real'] [then [$real-case $bin $flow $c]]
-      [else [?if [= $verb 'load'] [then [$load-case $c]]
-        [else [?if [= $verb 'select'] [then [$select-case $c]]
-          [else [$run-flow $bin $flow $c ()]]]]]]]]]
+    [?if [= $verb 'real'] [then [$real-case $bin $flow $env $c]]
+      [else [?if [= $verb 'probe'] [then [$probe-case $bin $c]]
+        [else [$run-flow $bin $flow $env $c ()]]]]]]]
 
 [?def expectation-count scope=public pure [returns int] ($cs)
   [$count [$cat-seqs [?to-sequence [?for [in $c $cs]
     [yield [$cat-seqs ([?to-sequence [?for [in $e $c/expect/s] [yield $e]]],
-                       [?to-sequence [?for [in $wv $c/world] [in $k ('comp-a', 'comp-b', 'release', 'pins', 'checkout', 'trial')]
-                         [where [not [= [$string [$attr $wv $k]] '']]] [yield $k]]])]]]]]]]
+                       [?to-sequence [?for [in $wv $c/world] [in $a [$attrs $wv]] [yield $a]]])]]]]]]]
+
+[?def home-of scope=public impure [returns string] ($doc)
+  [?let [= $hits [?to-sequence [?for [in $h $HOMES] [where [$io:is-file [$cat ($h, '/', $doc, '.flow.cx')]]] [yield $h]]]]
+    [?if [= [$count $hits] 0] [then ''] [else [$first $hits]]]]]
+
+[?def flow-docs scope=public impure ($home)
+  [?if [not [$io:is-directory $home]] [then ()]
+    [else [?to-sequence [?for [in $f [$io:list-dir $home]] [where [$strings:ends-with [$string $f] '.flow.cx']]
+            [yield [$strings:replace [$string $f] '.flow.cx' '']]]]]]]
 
 [?let
   [= $doc [$strings:trim [?else [$nth [$env:argv] 2] '']]]
   [= $bin [$locate-cx]]
-  [= $flow [$cat ('flows/', $doc, '.flow.cx')]]
-  [= $simdir [$cat ('flows/sim/', $doc)]]
+  [= $home [$home-of $doc]]
+  [= $flow [$cat ($home, '/', $doc, '.flow.cx')]]
+  [= $simdir [$cat ($home, '/sim/', $doc)]]
   [= $table-path [$cat ($simdir, '/cases.cxd')]]
   [= $tdoc [?if [$io:is-file $table-path] [then [$cx:parse [$io:read-file $table-path]]] [else [none]]]]
   [= $table [$first [?to-sequence [?for [in $x $tdoc] [where [= [$name $x] 'cases']] [yield $x]]]]]
+  [= $env [?else [$string $table@env] 'flows/ci.env.cx']]
   [= $cs [?to-sequence [?for [in $c $table/case] [yield $c]]]]
-  [= $docs [?to-sequence [?for [in $f [$io:list-dir 'flows']] [where [$strings:ends-with [$string $f] '.flow.cx']]
-             [yield [$strings:replace [$string $f] '.flow.cx' '']]]]]
-  [= $named [?to-sequence [?for [in $c $cs] [where [not [= [$string $c@results] '']]] [yield [$string $c@results]]]]]
+  [= $named [?to-sequence [?for [in $c $cs] [in $k ('results', 'program')]
+              [where [not [= [$string [?else [$attr $c $k] '']] '']]] [yield [$string [$attr $c $k]]]]]]
   [= $sims [?if [$io:is-directory $simdir]
              [then [?to-sequence [?for [in $f [$io:list-dir $simdir]] [where [$strings:ends-with [$string $f] '.cx']]
                      [yield [$cat ($simdir, '/', [$string $f])]]]]]
              [else ()]]]
   [= $misses [$cat-seqs
-    ([?if [= $doc ''] [then ('ci-flow-gate: name the document — merge or premerge (usage in the header)')] [else ()]],
-     [?if [not [$io:is-file $flow]] [then ([$cat ('ci-flow-gate: no ', $flow)])] [else ()]],
+    ([?if [= $doc ''] [then ('ci-flow-gate: name the document — e.g. release, docs, merge (usage in the header)')] [else ()]],
+     [?if [= $home ''] [then ([$cat ('ci-flow-gate: no ', $doc, '.flow.cx in any of ', [$strings:join $HOMES ', '])])] [else ()]],
      [?if [= [$count $cs] 0]
        [then ([$cat ('ci-flow-gate: ', $table-path, ' holds no case — this gate cannot pass over nothing')])] [else ()]],
      [?if [not [= [$string [$expectation-count $cs]] [$string $table@expectations]]]
@@ -300,11 +199,12 @@
                      ' expectations but pins expectations=', [$string $table@expectations],
                      ' — an expectation that is not addressable is not checked')])]
        [else ()]],
-     [?to-sequence [?for [in $d $docs] [where [not [$io:is-file [$cat ('flows/sim/', $d, '/cases.cxd')]]]]
-       [yield [$cat ('flows/', $d, '.flow.cx: a flow document with no flows/sim/', $d, '/cases.cxd')]]]],
+     [?to-sequence [?for [in $d [$flow-docs $home]] [where [not [$io:is-file [$cat ($home, '/sim/', $d, '/cases.cxd')]]]]
+       [yield [$cat ($home, '/', $d, '.flow.cx: a flow document with no ', $home, '/sim/', $d, '/cases.cxd')]]]],
      [?to-sequence [?for [in $s $sims] [where [not [$member $s $named]]]
-       [yield [$cat ($s, ': a results table no case names')]]]],
-     [$cat-seqs [?to-sequence [?for [in $c $cs] [yield [$run-case $bin $flow $c]]]]])]]
+       [yield [$cat ($s, ': a program under the table that no case names')]]]],
+     [?if [= $home ''] [then ()]
+       [else [$cat-seqs [?to-sequence [?for [in $c $cs] [yield [$run-case $bin $flow $env $c]]]]]]])]]
   [?if [> [$count $misses] 0]
     [then [?let [= $_ [?for [in $m $misses] [yield [$cry [$string $m]]]]]
             [?let [= $_x [$env:exit 2]] '']]]
