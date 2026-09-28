@@ -203,6 +203,13 @@ struct FlowCliAct {
 	// projected def property, and it is there for the same reason the first
 	// two are: a STATIC check needs to see it.
 	requires string
+	// effect — the verb's `effect=` (observe | act | arrange), copied from the
+	// FEATURE a `pkg:` import projected the def from (RULED: PIVOT-2), and ''
+	// for every other def: no def clause carries it (Letter 57 (a) was
+	// rejected), so a hand-written def has no feature behind it and its row
+	// carries none — an act, which §4.7 makes owe a compensator before the
+	// pivot. The row's fourth projected property, for §4.7's pre-pivot read.
+	effect   string
 	callable string
 }
 
@@ -241,6 +248,7 @@ fn flow_cli_module_acts(span string, mut table code.ModuleTable) []FlowCliAct {
 	m := code.resolve_lib(ln, mut table) or { return [] }
 	prefix := code.module_call_prefix(ln)
 	only := ln.only_imports
+	effects := flow_cli_pkg_effects(ln, m)
 	mut out := []FlowCliAct{}
 	for name in m.public_def_names() {
 		if o := only {
@@ -264,7 +272,41 @@ fn flow_cli_module_acts(span string, mut table code.ModuleTable) []FlowCliAct {
 			compensates: comp
 			idempotent:  d.is_idempotent
 			requires:    d.requires.join(' ')
+			effect:      effects[name] or { '' }
 			callable:    '\$${prefix}:${name}'
+		}
+	}
+	return out
+}
+
+// flow_cli_pkg_effects answers, for a `pkg:` import whose module the CK-3
+// projection generated, each projected verb's `effect=` as the FEATURE declares
+// it (RULED: PIVOT-2, Letter 57 = (b)): the projection records them in the
+// module's private `cx--effects` constant beside its `cx--projected` marker
+// (xap_ck3_projection.v), and this is the `pkg:` import copying them onto the
+// resolver rows — the same values the deployment host copies onto its rows, so
+// the two faces answer §4.7's pre-pivot read the same. Any other import answers
+// nothing: a path or registered module is hand-written, has no feature behind
+// it, and its defs' rows carry no `effect=` (an act — the safe default).
+fn flow_cli_pkg_effects(ln cx.LibNode, m &code.Module) map[string]string {
+	mut out := map[string]string{}
+	if !ln.resolver_source.starts_with('pkg:') || 'cx--projected' !in m.consts {
+		return out
+	}
+	c := m.consts['cx--effects'] or { return out }
+	doc := cx.parse(c.value_source) or { return out }
+	for n in doc.elements {
+		if !n.is_element() {
+			continue
+		}
+		for it in n.element().items {
+			if !it.is_element() {
+				continue
+			}
+			row := *it.element()
+			if row.name == 'verb' && row.attr('name') != '' && row.attr('effect') != '' {
+				out[row.attr('name')] = row.attr('effect')
+			}
 		}
 	}
 	return out
@@ -340,7 +382,9 @@ fn flow_cli_env_feature_pkgs(path string) []string {
 // resolver row that carries no `idempotent=` is NOT idempotent (RULED:
 // 789-WF-38a) and one that carries no `requires=` declares no authority
 // requirement (RULED: 1265-WF-40b) — which is
-// `commands_effects.md`'s deny-by-default posture. All three sit ahead of the
+// `commands_effects.md`'s deny-by-default posture. `effect=` is emitted only for
+// a def a `pkg:` import projected from a feature, copied from the verb (RULED:
+// PIVOT-2): a row with none is an act. All four sit ahead of the
 // `[fn …]` child on purpose — `cx` ends an element's attribute list at the
 // first content token, so an attribute written after the child would be
 // invisible to every read.
@@ -357,6 +401,9 @@ fn flow_cli_resolver(acts []FlowCliAct) string {
 		}
 		if a.requires != '' {
 			row += " requires='${a.requires}'"
+		}
+		if a.effect != '' {
+			row += " effect='${a.effect}'"
 		}
 		row += ' [fn ${a.callable}]]'
 		b << row
