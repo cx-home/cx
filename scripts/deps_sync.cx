@@ -44,9 +44,14 @@
 #   2  deps.cxd cannot be read, or the consumer's origin cannot be determined
 #
 # Run from the checkout root:
+#   cx deps sync [--check] [--verbose] [--vpath] [--deps FILE] [--dir DIR]
+# the verb of the binary, which carries this file and scripts/deps_pins.cx
+# embedded and runs them with its own evaluator (RULED: DEPSV-1), or the file
+# itself, with the same flags:
 #   cx --allow-all scripts/deps_sync.cx [--check] [--verbose]
 #                                       [--deps FILE] [--dir DIR]
-# (or: make deps-sync / make deps-check; `make union` runs it before the suite)
+# (or: make deps-sync / make deps-check, which call the verb; `make union`
+# runs it before the suite)
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
@@ -54,7 +59,9 @@
 [?lib 'cx-stdlib/process' as=process]
 [; From the CHECKOUT ROOT — see #1604: code.md §12.1 says a `./`-form [?lib]
    resolves against the importing module's directory, the resolver resolves it
-   against the process working directory. ]
+   against the process working directory. `cx deps sync` (vcx/cmd/deps.v)
+   registers its embedded copy of the module under this literal resolver
+   string, so the verb reads this spelling too (RULED: DEPSV-1). ]
 [?lib './scripts/deps_pins.cx' as=pins]
 
 [?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
