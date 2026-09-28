@@ -218,8 +218,15 @@
             [td [?if [= $at ""]
                   [then "not pinned — it pins the others (deps.cxd)"]
                   [else [a href=[$concat GITHUB $name "/commit/" $at] [code [$short-sha $at]]]]]]]
+        [; a row with no pins= column (the three packages of wave 3: secrets,
+           sso, ux) is not the root of anything — the registry has not recorded
+           what it builds on, and the page says exactly that rather than the
+           front door's line, which is deps.cxd's and true only of the self row ]
         [tr [td "builds on"]
-            [td [?if [$empty $pins] [then "nothing of CX — the root of the graph"]
+            [td [?if [$empty $pins]
+                  [then [?if [$is-self $name]
+                    [then "nothing of CX — the root of the graph"]
+                    [else "none recorded — the registry row carries no pins= column yet"]]]
                   [else [$strings:join $pins ", "]]]]]
         [tr [td "built on by"]
             [td [?if [$empty $by] [then "nothing pins it yet"]

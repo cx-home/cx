@@ -1,0 +1,45 @@
+[# docs-src/repos/cx-platform-net.cxd — the wire's page,
+   repo-cx-platform-net.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 3).
+   Facts from the registries; the one example from its own corpus (the net
+   suite). #]
+
+[repo name=cx-platform-net
+  [intro
+    """**TL;DR — every socket in CX is opened here, and none opens without
+       your say-so.** `cx-platform-net` is the wire: stream and datagram
+       transports, TLS on either side, name resolution, and the HTTP/1.1
+       server that everything served on this site listens with. Every verb
+       that touches the network is behind the `net` grant, and a denial is a
+       value naming the flag that would allow it."""]
+  [body
+    """An address is a value before it is a socket. `parse-addr` reads a
+       restricted transport URL or a bare `host:port` into an `[addr]`
+       element — host, port, family, scheme — and refuses what a URL parser
+       would happily carry into a dial: user information, a query, a path on
+       a stream scheme, an unbracketed IPv6 literal. The corpus grades each
+       refusal by name beside the round trips, so an address that reaches
+       `dial` or `listen` is one the program could have inspected first."""]
+  [body
+    """The `net` grant gates the effects, not the arithmetic: resolve, dial,
+       listen, accept, every read and write, and the datagram pair are each
+       refused without it — one case per verb — and `http` adds no
+       capability of its own. The server is an accept loop over a handler
+       that maps a request to a response, with Server-Sent Events for
+       held-open push and the WebSocket handshake graded frame by frame;
+       what it serves and how a deployment runs it is the [[operations]]
+       page. The `ftp` and `sftp` rows the registry carries are planned, and
+       the table below shows only what ships today."""]
+  [gives
+    """Two modules of the platform group: the transport layer and the HTTP
+       server built over it. Each links to the reference page the guide
+       projects from the module's own documentation; the transports the
+       store, the fabric and the application host speak over are these."""]
+  [try
+    """A transport URL parsed into an address value — the host, the port and
+       the family, as an element a program can pattern-match before anything
+       is dialed. Nothing here needs a grant."""]
+  [fixture id=net-001-parse-addr-tcp]
+  [status
+    """The wire builds on the language and is built on by mail, identity,
+       the store, the fabric and the application host; the front door
+       compiles its V module from the pin."""]]

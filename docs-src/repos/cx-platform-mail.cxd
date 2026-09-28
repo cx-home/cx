@@ -1,0 +1,47 @@
+[# docs-src/repos/cx-platform-mail.cxd — the mail repository's page,
+   repo-cx-platform-mail.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 3).
+   Facts from the registries; the one example from its own corpus (the sasl
+   suite). #]
+
+[repo name=cx-platform-mail
+  [intro
+    """**TL;DR — both halves of mail, each in one call.** `cx-platform-mail`
+       is SMTP and IMAP as a CX program meets them: a submission client that
+       dials, greets, upgrades, authenticates, sends and quits in one verb, a
+       mailbox client that connects and reads by UID in one verb, the two
+       server cores a CX process serves either protocol from, and the SASL
+       registry they share — byte-pinned to the RFC vectors."""]
+  [body
+    """The common way a mail client is broken is a step its author forgot, so
+       `submit` and `connect` have no steps to forget: there is no separate
+       STARTTLS verb, no login verb, no ENABLE verb. Partial acceptance is a
+       value — `submit` answers a row per recipient — and the IMAP surface
+       is UID-only, because a sequence number renumbers on every EXPUNGE and
+       a client that computed one is a client about to act on the wrong
+       message."""]
+  [body
+    """The server cores decide meaning and open nothing, which is what lets
+       the corpus grade them without a socket: the message terminator and
+       its near-misses, dot-stuffing and its inverse, the RFC 5321 minimums
+       for line, path and recipient counts, size claims that overflow, AUTH
+       refused on a cleartext connection under a TLS policy. `sasl` carries
+       the mechanism registry for both: PLAIN, OAUTHBEARER and XOAUTH2
+       emission pinned to the published vectors, the GS2 refusals, and a
+       downgrade — a token offered to a password-only server, or the reverse
+       — refused before a credential is sent."""]
+  [gives
+    """Three modules: the two protocols, in the platform group, and `sasl`, a
+       Ring 1 module that keeps its `cx-stdlib` namespace because a program
+       imports it the same way whichever repository carries it. Each links to
+       the reference page projected from the module's own documentation."""]
+  [try
+    """The first exchange of RFC 4616 §4, derived by hand in the case and
+       graded byte for byte: the PLAIN initial response for `tim`, as the
+       wire carries it and as the decoded octets, the two NULs where the
+       standard puts them."""]
+  [fixture id=sasl-001-plain-rfc4616-tim-vector]
+  [status
+    """The mail repository builds on the wire and is built on by the
+       application host; the front door compiles its V module from the pin,
+       and the module's own initialisation registers the two pure server
+       cores with the language, so the core names no product."""]]

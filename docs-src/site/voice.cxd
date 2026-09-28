@@ -55,5 +55,5 @@ Two ratchets, each read by a step:
     [page path='docs/dev/v0130-capabilities.md' allow=1 wave=7 why='docs/dev folds into the guide (DOCS-46)']]
 
   [; ── the fixture-citation floor over docs-src/canonical/sections/*.cxd and docs-src/repos/*.cxd ── ]
-  [fixtures floor=37]
+  [fixtures floor=45]
 ]

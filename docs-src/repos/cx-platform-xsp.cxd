@@ -1,0 +1,48 @@
+[# docs-src/repos/cx-platform-xsp.cxd — the stream protocol's page,
+   repo-cx-platform-xsp.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 3).
+   Facts from the registries; the one example from its own corpus (the xsp
+   suite). #]
+
+[repo name=cx-platform-xsp
+  [intro
+    """**TL;DR — one frame, any transport, and a handshake whose every verb is
+       pure.** `cx-platform-xsp` is the XAP Stream Protocol: a
+       self-describing, self-delimiting frame — version, type, stream,
+       principal, flags, length, payload — that carries the platform's
+       traffic over whatever socket is underneath, and XSP-AUTH, the mutual
+       proof-of-control handshake the store, identity and the fabric open
+       their connections with."""]
+  [body
+    """The codec is two pure verbs. `encode` turns a `[frame]` element into
+       bytes and `decode` reads one back, reporting how many bytes it
+       consumed so a reader can step to the next frame; `decode-all` walks a
+       buffer and hands back the trailing partial frame as a value rather
+       than losing it. A binary payload carries a CX element losslessly —
+       attributes, children, text, an empty element — because a transport
+       whose users have to know which values survive the trip is not a
+       transport. Every way a frame can be wrong has its lane: a reserved
+       flag, a foreign version, a truncated header, a length past the
+       declared ceiling."""]
+  [body
+    """XSP-AUTH is four messages on stream 0, signed ephemeral X25519 in the
+       SIGMA shape, with a per-request possession proof and a rotation
+       continuity proof beside it. Its verbs take their randomness as an
+       argument and answer values, so the whole handshake is graded in the
+       corpus without a socket, and credit frames carry the flow control a
+       stream negotiates. The protocol pages themselves live in this
+       repository's spec directory below."""]
+  [gives
+    """Two modules: the frame codec, a Ring 1 module under the `cx-stdlib`
+       namespace because it is pure and reaches nothing, and the handshake
+       calculus in the platform group. Each links to the reference page
+       projected from its own documentation."""]
+  [try
+    """Every frame type the protocol defines, encoded and decoded in turn, the
+       type read back from the frame — eight round trips, no grant, no
+       socket."""]
+  [fixture id=xsp-002-roundtrip-all-eight-types]
+  [status
+    """The stream protocol builds on the language alone and is built on by
+       the store, identity, the fabric and the application host, which reach
+       the handshake calculus through the pin; the front door compiles its V
+       module from the same pin."""]]
