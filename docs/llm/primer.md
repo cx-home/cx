@@ -1929,6 +1929,7 @@ visible in the import line.
 | `smtp` | Both halves of ESMTP on one wire grammar: the submission client a CX program sends mail with (RFC 6409) and the receive server core it accepts mail with (RFC 5321 §4). |
 | `sso` | The enterprise-SSO deployment surface: the half of enterprise single sign-on that RECEIVES a request. |
 | `store` | A content-addressed object store with URL-dispatched backends. |
+| `sync` | Incremental sync: the cursor/watermark contract that makes a source updated in place instead of polled whole, and the three ways a source is captured — polling-diff (the portable baseline every connector gets), provider-delta (a vendor token carried, compared and resumed, never interpreted) and log (a backend change-log position). |
 | `vc-revocation` | The durable half of credential lifecycle: recording that a verifiable credential is revoked, and reading back the set of revoked ids. |
 | `xap` | The XAP orchestrator — the experience layer at the top of the CX web stack. |
 | `xsp-auth` | The XSP-AUTH mutual proof-of-control handshake calculus — SIGMA-style signed ephemeral X25519 over four messages riding ordinary XSP v1 frames on stream 0, with the per-request possession proof and the rotation-continuity proof beside it. |
