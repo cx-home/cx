@@ -1,4 +1,5 @@
-/* CX Playground — full-viewport dark theme, 3-region layout.
+/* CX Playground — full-viewport dark theme, 3-region layout (PLAY-1: the
+   source region holds the document and/or program editor the reading needs).
    Source top-left, Output bottom-left, View (Tree/Graph) right column. */
 
 :root {
@@ -724,3 +725,114 @@ body.cxp-resizing.is-row { cursor: row-resize; }
 .cxp-crumb:empty { display: none; }
 .cxp-gkind { font-size: 12px; color: var(--text-dim); padding-left: 8px; white-space: nowrap; }
 #cxp-pick optgroup { font-style: normal; font-weight: 600; color: var(--text-dim); }
+
+/* ── PLAY-1: readings, the fixture strip, two editors, the recorded answer ──
+   Same palette as everything above — no colour is added here, only
+   placement. */
+[hidden] { display: none !important; }
+.cxp-readings { margin-right: 4px; }
+.cxp-reading-tab {
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-pane);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: inherit;
+}
+.cxp-reading-tab + .cxp-reading-tab { border-left: none; }
+.cxp-reading-tab:first-child { border-radius: 4px 0 0 4px; }
+.cxp-reading-tab:last-child  { border-radius: 0 4px 4px 0; }
+.cxp-reading-tab:hover { color: var(--text); background: var(--bg-hover); }
+.cxp-reading-tab.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #17150d;
+}
+.cxp-cmd {
+  font-family: var(--code-font);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cxp-fixture {
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cxp-fixture:empty { display: none; }
+.cxp-fixture-id { color: var(--syn-name); font-family: var(--code-font); font-weight: 600; }
+.cxp-fixture-role { color: var(--pending); font-weight: 600; }
+.cxp-fixture-role.is-right { color: var(--ok); }
+.cxp-fixture-why { color: var(--pending); }
+.cxp-fixture-own { font-style: italic; }
+.cxp-source-pane { display: flex; flex-direction: column; }
+.cxp-edit-block {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.cxp-edit-block + .cxp-edit-block { border-top: 1px solid var(--border-soft); }
+.cxp-edit-label {
+  flex: 0 0 auto;
+  padding: 3px 12px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  background: var(--bg-head);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+body[data-reading="query"] .cxp-doc-block { flex-grow: 0.8; }
+.cxp-output-pane { display: flex; flex-direction: column; }
+.cxp-expect {
+  flex: 0 0 auto;
+  max-height: 38%;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border-soft);
+  background: var(--bg-toolbar);
+}
+.cxp-expect-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 12px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+.cxp-expect pre {
+  margin: 0;
+  padding: 4px 14px 8px;
+  font-family: var(--code-font);
+  font-size: 12.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow: auto;
+  color: var(--text);
+}
+.cxp-verdict { font-weight: 600; letter-spacing: 0; }
+.cxp-verdict.is-ok { color: var(--ok); }
+.cxp-verdict.is-diff { color: var(--err); }
+.cxp-verdict.is-edited { color: var(--text-dim); font-style: italic; }
+@media (max-width: 900px) {
+  .cxp-readings { order: 1; }
+  .cxp-cmd { display: none; }
+}

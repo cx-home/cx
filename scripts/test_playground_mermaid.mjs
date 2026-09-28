@@ -6,6 +6,11 @@
 //
 //     example × {auto, instance} × {source, output} × {min, compact, full}
 //
+// where `example` is every example the page can open: the primer's
+// fixtures (playground.primer.js — the picker since PLAY-1), each drawn in
+// its own reading, and the playground corpus (playground.examples.js,
+// reachable by its #ex=<key> link).
+//
 // against THE VERY BUNDLE the page loads. A diagram that does not parse
 // is a pane the reader cannot use — which is how `string @size "'large'"`
 // sat in front of visitors for five releases (#992): every piece of the
@@ -113,18 +118,36 @@ function setupFail(msg, hint) {
 // size under which a red here can only mean a bad diagram.
 const SHARD_SIZE = 1;
 
-function countExamples() {
-  // Cheap: the examples file is a self-contained IIFE that assigns to
-  // window. No jsdom, no wasm — the dispatcher must not pay for either.
-  const src = readFileSync(resolve(PLAYGROUND, 'playground.examples.js'), 'utf8');
-  const fakeWindow = {};
-  try {
-    new Function('window', 'globalThis', src)(fakeWindow, fakeWindow);
-  } catch (e) {
-    setupFail(`could not evaluate playground.examples.js: ${e.message}`);
+// pageExamples — every example the page can put on screen, in one list:
+// the primer's fixtures (playground.primer.js, the picker since PLAY-1)
+// first, then the playground corpus (playground.examples.js, reachable by
+// its #ex=<key> link). Each row carries what the View pane draws as Source
+// (`input`) and how its Output is produced (`reading`, `doc`).
+function pageExamples(win) {
+  const rows = [];
+  for (const p of ((win.cxPlaygroundPrimer || {}).examples || [])) {
+    rows.push([`primer:${p.id}`, {
+      input: p.reading === 'document' ? p.doc : p.src,
+      reading: p.reading, doc: p.doc, runnable: p.runnable,
+    }]);
   }
-  const program = (fakeWindow.cxPlaygroundExamples || {}).program || {};
-  return Object.keys(program).length;
+  for (const [key, ex] of Object.entries((win.cxPlaygroundExamples || {}).program || {})) {
+    rows.push([key, { ...ex, reading: 'program', doc: '' }]);
+  }
+  return rows;
+}
+function countExamples() {
+  // Cheap: the examples files are self-contained scripts that assign to
+  // window. No jsdom, no wasm — the dispatcher must not pay for either.
+  const fakeWindow = {};
+  for (const f of ['playground.primer.js', 'playground.examples.js']) {
+    try {
+      new Function('window', 'globalThis', readFileSync(resolve(PLAYGROUND, f), 'utf8'))(fakeWindow, fakeWindow);
+    } catch (e) {
+      setupFail(`could not evaluate ${f}: ${e.message}`);
+    }
+  }
+  return pageExamples(fakeWindow).length;
 }
 
 if (!SLICE) {
@@ -268,6 +291,7 @@ mermaid.initialize({
 // rendering. Without it the page takes its "renderer still loading"
 // branch and stays quiet while this file drives mermaid.parse directly.
 win.cxlib = cxlib;
+win.eval(readFileSync(resolve(PLAYGROUND, 'playground.primer.js'), 'utf8'));
 win.eval(readFileSync(resolve(PLAYGROUND, 'playground.examples.js'), 'utf8'));
 win.eval(readFileSync(resolve(PLAYGROUND, 'playground.js'), 'utf8'));
 
@@ -277,8 +301,9 @@ if (!internals || typeof internals.buildInstanceGraph !== 'function') {
             'the verification seam at the end of playground.js was removed or renamed');
 }
 
-const examples = (win.cxPlaygroundExamples || {}).program || {};
-const ALL_KEYS = Object.keys(examples);
+const ALL_ROWS = pageExamples(win);
+const examples = Object.fromEntries(ALL_ROWS);
+const ALL_KEYS = ALL_ROWS.map(([k]) => k);
 let keys;
 if (SLICE) {
   const [a, b] = SLICE.split(':').map(n => parseInt(n, 10));
@@ -286,7 +311,7 @@ if (SLICE) {
 } else {
   keys = ALL_KEYS.slice(0, LIMIT);
 }
-if (keys.length === 0) setupFail('playground.examples.js yielded no examples.');
+if (keys.length === 0) setupFail('the page yielded no examples.');
 
 // ── the walk ───────────────────────────────────────────────────
 const LEVELS   = ['min', 'compact', 'full'];
@@ -378,7 +403,13 @@ for (const key of keys) {
   // diagram to check. That is a SKIP, and it is counted and named.
   let output = '';
   if (ex.runnable !== false) {
-    try { output = String(cxlib.evalCode(source, 'cx') || ''); }
+    // The page's own reading (PLAY-1): a document is its own value, a query
+    // runs over its document bound as $doc, a program over nothing.
+    try {
+      output = String((ex.reading === 'document'
+        ? cxlib.toCx(ex.doc || source)
+        : cxlib.evalCode(source, 'cx', ex.reading === 'query' ? (ex.doc || '') : '')) || '');
+    }
     catch (_) { output = ''; }
   }
 

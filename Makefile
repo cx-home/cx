@@ -641,6 +641,7 @@ build-playground:
 	@cp scripts/gen_guide/playground/playground.js dist/playground-preview/playground/
 	@cp scripts/gen_guide/playground/playground.css dist/playground-preview/playground/
 	@cp scripts/gen_guide/playground/playground.examples.js dist/playground-preview/playground/
+	@cp scripts/gen_guide/playground/playground.primer.js dist/playground-preview/playground/
 	@cp scripts/gen_guide/playground/jspi_probe.html dist/playground-preview/playground/
 	@# highlight/ + assets/ make the preview docroot FAITHFUL to the shipped
 	@# page (#1007's offline run surfaced two ERR_FILE_NOT_FOUND here that
@@ -1150,6 +1151,27 @@ test-playground-wasm-eval:
 .PHONY: test-playground-tree
 test-playground-tree:
 	@node scripts/test_playground_tree.mjs
+
+# ── playground PRIMER gate (PLAY-1) ───────────────────────────────────────────
+# The page as a reader gets it, in headless Chrome: the engine loads (the
+# JSPI bundle, asserted), the page prints an answer on load, the picker is
+# the primer's fixtures (playground.primer.js, byte for byte what the docroot
+# serves), every primer example opened through the page's own controls
+# answers what its fixture records — or is listed in primer_wasm.cxd with the
+# reason, a listing the gate also grades — the three readings show their
+# editors, an error prints as an [err …] value, and share-by-URL round-trips.
+#
+# PLAYGROUND_ROOT is the docroot it serves: docs/guide (rendered here first,
+# the default) or `site` — the assembled cxhome.org the Site workflow
+# uploads, which is where the workflow runs it. Like the other browser gates
+# it is not in TEST_TARGETS (a Chromium-family browser is its precondition,
+# exit 2 when absent — never a skip). Every wait is bounded
+# (PRIMER_GATE_DEADLINE, default 600 s).
+PLAYGROUND_ROOT ?= docs/guide
+.PHONY: test-playground-primer
+test-playground-primer: build-vcx wasm-bundle-fresh
+	@if [ "$(PLAYGROUND_ROOT)" = docs/guide ]; then $(MAKE) --no-print-directory guide GUIDE_SKIP_CX_BUILD=1; fi
+	@CX_PLAYGROUND_ROOT="$(PLAYGROUND_ROOT)" node scripts/test_playground_primer.mjs
 
 # stdlib catalog drift gate — verifies the single invariant
 #   SPEC_SET == (BUNDLE_SET union DISPATCH_SET)

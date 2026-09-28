@@ -23,9 +23,11 @@
 #                     declares, and the committed page byte-identical to a fresh
 #                     generation. `make docs-check` runs it.
 #
-# The playground's wasm engine is not built here: `make guide` reuses dist/wasm/
-# when it exists and says so when it does not (emcc builds it: `make guide-wasm`),
-# and site_assemble.cx reports a site assembled without it.
+# The playground's wasm engine is not built here: `make guide` copies dist/wasm/
+# when it exists and says so when it does not (emcc builds it: `make guide-wasm`).
+# site-check lists its five files as declared-but-optional, and as REQUIRED
+# under CX_SITE_REQUIRE_WASM=1, which the Site workflow sets once its pinned
+# emsdk has built them (PLAY-1; docs-src/site/manifest.cxd's required-when=).
 
 SITE_GEN    := scripts/gen_site
 SITE_CX_BIN := $(CURDIR)/deps/cx-core-code/vcx/target/cx

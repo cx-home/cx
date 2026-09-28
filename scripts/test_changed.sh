@@ -293,7 +293,7 @@ step_globs() {
     # And the contributor front door's facts (RULED: K11a): the two registries,
     # the Makefile's step roster (and the files it includes) and the ledger's
     # RS-n statements are projected into docs/llm/contributor-*.md.
-    docs-check)                    echo 'docs-src/* docs/llm/* docs/index.html scripts/gen_site/* scripts/gen_docs/* scripts/docs_fragment.cx scripts/deps_pins.cx deps.cxd registry/* Makefile scripts/gen_guide/guide.mk ledger/* conformance/* spec/* stdlib/* vcx/* VERSION' ;;
+    docs-check)                    echo 'docs-src/* docs/llm/* docs/index.html scripts/gen_site/* scripts/gen_docs/* scripts/gen_guide/playground/* scripts/docs_fragment.cx scripts/deps_pins.cx deps.cxd registry/* Makefile scripts/gen_guide/guide.mk ledger/* conformance/* spec/* stdlib/* vcx/* VERSION' ;;
     ring-import-gate)              echo 'vcx/* scripts/ring_import_gate* registry/repos.cxd' ;;
     gates-manifest-gate)           echo 'conformance/* packages/* scripts/gates_manifest_gate* scripts/gates_register*' ;;
     ring-tag-gate)                 echo 'conformance/* scripts/*' ;;

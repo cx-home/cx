@@ -3678,6 +3678,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [note [#
 **Introduces:** `cx-stdlib/re` (re.md §2) — the RE2 syntax, which is linear-time and therefore has no backreferences and no lookaround: a pattern that asks for one is refused at compile time with `cx-err:CXER3200` rather than accepted and then catastrophically slow. `[$re:compile]` answers a compiled pattern VALUE (§3), so hoist it out of the loop and pass it in, the way this example binds `$rx` once for three subjects. `'CX-1234'` is false on purpose — `{3}` means three letters, and `CX` is two.
 #]]
+  [wasm-unsupported [#The playground's wasm build links a stub for the RE2 shim (deps/cx-core-code/scripts/wasm/stubs/re2_shim.c): every pattern fails to compile, so `[$re:compile]` refuses with `CXER3201` here (#1701).#]]
   [expect [# [check id=ABC-1234 ok=true] #]]
  ]
 
@@ -3696,6 +3697,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [note [#
 **Introduces:** `[$re:find PATTERN SUBJECT]` and the two group readers (re.md §4). `[$re:group M 0]` is the whole match and `1`, `2`, … are the numbered captures; `[$re:group-named M NAME]` reads a `(?P<name>…)` capture, which is what to write when the pattern is long enough that counting parentheses is a bug waiting to happen. A group that does not exist is a refusal — `cx-err:CXER3202` — not an empty string, so a renamed capture fails where you wrote it. A pattern that does not match at all answers `[no-match]`, which `[?match]` or `[?else]` can branch on.
 #]]
+  [wasm-unsupported [#The playground's wasm build links a stub for the RE2 shim (deps/cx-core-code/scripts/wasm/stubs/re2_shim.c): every pattern fails to compile, so `[$re:compile]` refuses with `CXER3201` here (#1701).#]]
   [expect [# level=WARN code='429' msg='rate limited' #]]
  ]
 
@@ -3712,6 +3714,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [note [#
 **Introduces:** `[$re:replace PATTERN SUBJECT TEMPLATE]` (re.md §4). The template reads captures back as `$0` (the whole match), `$1`, `$2`, … and `${name}` for a named one; a literal dollar is `$$`. `replace` rewrites every match and `[$re:replace-first]` rewrites one — two verbs instead of a count argument, so the common case has no argument to get wrong. When the replacement has to COMPUTE something rather than rearrange it, `[$re:replace-fn]` takes a `[?fn ($m) …]` and hands it each match.
 #]]
+  [wasm-unsupported [#The playground's wasm build links a stub for the RE2 shim (deps/cx-core-code/scripts/wasm/stubs/re2_shim.c): every pattern fails to compile, so `[$re:compile]` refuses with `CXER3201` here (#1701).#]]
   [expect [# us='09/17/2026' #]]
  ]
 
@@ -4122,6 +4125,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [note [#
 **Introduces:** `[$env:exit CODE]` and `[$env:write-line TEXT]` (env.md §3.4, §3.5), and the ordering rule between them that surprises everyone once. A program's top-level results are rendered when the program ENDS, so `[$env:exit]` — which ends it immediately — discards every one of them: `[summary rows=3]` is computed here and never printed. `write-line` writes to fd 1 and FLUSHES as it happens, which is why it survives the exit, and it needs no capability at all (RULED: 1316-c2 — stdout is the invocation's answer channel, not the filesystem). So: compute with results, but say anything that must outlive an early exit with `write-line`.
 #]]
+  [wasm-unsupported [#`[$env:exit]` ends the wasm runtime itself here (`Program terminated with exit(N)`), and a page has no process exit status to show; what a terminal prints is the `write-line` output above the exit.#]]
   [expect [# summarized 3 rows #]]
  ]
 
@@ -4222,6 +4226,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [note [#
 **Introduces:** the CLI refusal — a human-readable message on stdout and a non-zero exit status, which is what a caller's `&&` and a pipeline's failure test actually read. `[$env:write-line]` is the message channel because it flushes immediately and so survives `[$env:exit]` (a top-level result would not — example 278). The convention worth keeping: the line the program prints is itself an `[err …]` element in CX text, so a caller can parse the refusal with `[$cx:parse]` instead of matching on prose, and a `hint=` attribute says what to DO. Status 2 is the usage-error convention the `cx` binary itself follows; reserve 1 for "ran, and the answer is no".
 #]]
+  [wasm-unsupported [#`[$env:exit]` ends the wasm runtime itself here (`Program terminated with exit(N)`), and a page has no process exit status to show; what a terminal prints is the `write-line` output above the exit.#]]
   [expect [# code='empty-input' #]]
  ]
 

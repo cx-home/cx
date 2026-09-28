@@ -31,9 +31,13 @@ import { tmpdir } from 'node:os';
 
 export const ROOT = resolve(import.meta.dirname, '../..');
 export const PLAYGROUND = resolve(ROOT, 'scripts/gen_guide/playground');
-export const PREVIEW = resolve(ROOT, 'dist/playground-preview');
+// The docroot the browser gates serve: the staged preview by default, or any
+// other tree that holds the page — CX_PLAYGROUND_ROOT=docs/guide (make guide)
+// or =site (make site, what cxhome.org serves; PLAY-1).
+export const PREVIEW = process.env.CX_PLAYGROUND_ROOT
+  ? resolve(ROOT, process.env.CX_PLAYGROUND_ROOT) : resolve(ROOT, 'dist/playground-preview');
 export const NATIVE = process.env.CX_BIN
-  ? resolve(process.env.CX_BIN) : resolve(ROOT, 'vcx/target/cx');
+  ? resolve(process.env.CX_BIN) : resolve(ROOT, 'deps/cx-core-code/vcx/target/cx');
 
 // Chromium-family candidates. CX_CHROME wins; otherwise the usual install
 // locations. A missing browser is a LOUD setup failure — these gates have
@@ -96,12 +100,12 @@ export function createHarness({ label, deadlineMs }) {
   }
 
   // ── preconditions (all loud) ─────────────────────────────────
-  function requirePreconditions({ needNative = true } = {}) {
-    if (!existsSync(join(PREVIEW, 'playground.html'))) {
-      setupFail('dist/playground-preview/ is not staged.', 'make build-playground');
+  function requirePreconditions({ needNative = true, root = PREVIEW } = {}) {
+    if (!existsSync(join(root, 'playground.html'))) {
+      setupFail(`${root}/playground.html is not staged.`, 'make build-playground (or make site for site/)');
     }
-    if (!existsSync(join(PREVIEW, 'wasm/libcx-async.js'))) {
-      setupFail('the JSPI bundle dist/playground-preview/wasm/libcx-async.js is missing.',
+    if (!existsSync(join(root, 'wasm/libcx-async.js'))) {
+      setupFail(`the JSPI bundle ${root}/wasm/libcx-async.js is missing.`,
                 'make build-playground');
     }
     if (needNative && !existsSync(NATIVE)) {
@@ -124,7 +128,7 @@ export function createHarness({ label, deadlineMs }) {
   // JSPI bundle loaded, so this choice cannot silently change the engine.
   //
   // `portBase` is per-gate so two of these can run side by side.
-  async function bootServer({ portBase, verbose = false }) {
+  async function bootServer({ portBase, verbose = false, root = PREVIEW }) {
     const candidates = [];
     const base = portBase + (process.pid % 200);
     for (let i = 0; i < 5; i++) candidates.push(base + i);
@@ -133,7 +137,7 @@ export function createHarness({ label, deadlineMs }) {
       const p = spawn(NATIVE, [
         '--allow-read', '--allow-net', '--allow-clock',
         resolve(ROOT, 'scripts/serve_static.cx'),
-        '--port', String(port), '--root', PREVIEW,
+        '--port', String(port), '--root', root,
       ], { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
       let stderr = '';
       p.stderr.on('data', d => { stderr += String(d); });
@@ -236,9 +240,9 @@ export function createHarness({ label, deadlineMs }) {
   // headless Chrome, a tab on playground.html, cxlib ready, and the ENGINE
   // ASSERTED. A non-JSPI bundle is a setup failure, never a quiet downgrade
   // to the weaker engine whose verdicts are known to be wrong.
-  async function bootPage({ portBase, cdpBase, needNative = true, verbose = false }) {
-    const chrome = requirePreconditions({ needNative });
-    const port = await bootServer({ portBase, verbose });
+  async function bootPage({ portBase, cdpBase, needNative = true, verbose = false, root = PREVIEW }) {
+    const chrome = requirePreconditions({ needNative, root });
+    const port = await bootServer({ portBase, verbose, root });
     const pageUrl = `http://127.0.0.1:${port}/playground.html`;
     const { evalJs, version, close } = await bootBrowser(pageUrl, { chrome, cdpBase });
     console.log(`[${label}] browser: ${version['Browser']}`);

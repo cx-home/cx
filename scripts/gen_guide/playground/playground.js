@@ -3,14 +3,25 @@
 (function () {
   'use strict';
 
+  // ── Examples (PLAY-1) ─────────────────────────────────────
+  // THE PICKER is the primer's own examples: every conformance fixture
+  // docs-src/llm/primer.md.tmpl cites, in the primer's order, filed under
+  // the primer section it sits in, each carrying its READING — document,
+  // query (a program over a document, bound as $doc) or program — and the
+  // answer the fixture records. playground.primer.js is projected from the
+  // corpus by primer_examples.cx (`make docs`), so the page and the primer
+  // cannot show two programs under one id.
+  //
+  // The playground's older audited corpus (examples.cxd →
+  // playground.examples.js) is not in the picker. It stays reachable by its
+  // stable link, #ex=<key>, and stays the corpus the diagram and engine
+  // sweeps grade; an example opened that way says what it is.
+  const primer = ((window.cxPlaygroundPrimer || {}).examples) || [];
   const examples = (window.cxPlaygroundExamples || { program: {} });
   const programEntries = examples.program || {};
-  // ── Sections (#1375) — two top-level groups, domain subcategories ─────
-  // The picker groups by `ex.section` (authored in examples.cxd, one of the
-  // closed list gen_examples.cx enforces), never by when a feature was
-  // introduced. The ORDER here is the reading order; within a subcategory
-  // the corpus order (simple → complex) stands. Left/right walk this order,
-  // up/down jump to the neighbouring subcategory.
+  const READINGS = ['document', 'query', 'program'];
+  const READING_NAMES = { document: 'Document', query: 'Query', program: 'Program' };
+  // ── Legacy corpus sections (#1375) — kept for the #ex=<key> crumb ─────
   const SECTION_ORDER = [
     'data/elements', 'data/collections', 'data/numbers', 'data/text', 'data/formats', 'data/schema',
     'code/bindings', 'code/control-flow', 'code/patterns', 'code/functions', 'code/comprehensions',
@@ -52,31 +63,60 @@
     'everyday/testing': ['Everyday scripts', 'Testing your own script'],
     'everyday/world': ['Everyday scripts', 'The world: HTTP, a database, mail'],
   };
-  const sectionRank = (sec) => { const i = SECTION_ORDER.indexOf(sec); return i < 0 ? SECTION_ORDER.length : i; };
-  const keyNumber = (key) => parseInt(String(key).split('-')[0], 10) || 0;
-  const ALL_ENTRIES = [];
-  for (const [key, ex] of Object.entries(programEntries)) ALL_ENTRIES.push({ key, kind: 'program', ex });
-  ALL_ENTRIES.sort((a, b) => (sectionRank(a.ex.section) - sectionRank(b.ex.section)) || (keyNumber(a.key) - keyNumber(b.key)));
-  // The picker shows the label WITHOUT the `[204]` corpus number: the number
-  // is the stable id (URL hash, pins), not something a reader navigates by.
-  // The authored label keeps its `[NNN]` number: it is how the owner, the
-  // issues and the notes name an example (#1380 — stripping it made the
-  // picker hard to reference).
+  // ALL_ENTRIES — the picker's rows, in the primer's order. `ex` keeps the
+  // field names the rest of this file (and the sweeps) read: `input` is the
+  // text the View pane draws as Source — the document for the document
+  // reading, the program otherwise.
+  const ALL_ENTRIES = primer.map((p) => ({
+    key: p.id, kind: 'primer', reading: p.reading,
+    ex: {
+      ...p,
+      label: `[${p.n}] ${p.id}${p.role === 'wrong' ? ' — do not write this' : (p.role === 'right' ? ' — write this' : '')}`,
+      section: p.heading,
+      input: p.reading === 'document' ? p.doc : p.src,
+    },
+  }));
+  // A legacy corpus entry, opened by #ex=<key>: always the program reading.
+  function legacyEntry(key) {
+    const ex = programEntries[key];
+    if (!ex) return null;
+    const names = SECTION_NAMES[ex.section] || ['', ex.section || ''];
+    return {
+      key, kind: 'legacy', reading: 'program',
+      ex: { ...ex, id: key, doc: '', src: ex.input, heading: `${names[0]} › ${names[1]}`,
+            suite: 'scripts/gen_guide/playground/examples.cxd', expected: '', cmd: 'cx program.cx' },
+    };
+  }
   const displayLabel = (e) => (e.ex.label || e.key);
-  const exampleNumber = (e) => { const m = /^\[(\d+)\]/.exec(e.ex.label || ''); return m ? m[1] : ''; };
+  const exampleNumber = (e) => (e.ex.n ? String(e.ex.n) : '');
+  const entriesOf = (reading) => ALL_ENTRIES.filter(e => e.reading === reading);
 
   const pick     = document.getElementById('cxp-pick');
-  const searchEl = document.getElementById('cxp-search');
   const prevBtn  = document.getElementById('cxp-prev');
   const nextBtn  = document.getElementById('cxp-next');
   const runBtn   = document.getElementById('cxp-run');
   const resetBtn = document.getElementById('cxp-reset');
-  const loadBtn  = document.getElementById('cxp-load');
-  const loadFile = document.getElementById('cxp-load-file');
+  const shareBtn = document.getElementById('cxp-share');
   const fmtBtn   = document.getElementById('cxp-format');
   const status   = document.getElementById('cxp-status');
   const input    = document.getElementById('cxp-input');
   const renderEl = document.getElementById('cxp-input-render');
+  const docInput = document.getElementById('cxp-doc');
+  const docRender = document.getElementById('cxp-doc-render');
+  const docGutter = document.getElementById('cxp-doc-gutter');
+  const docBlock  = document.getElementById('cxp-doc-block');
+  const progBlock = document.getElementById('cxp-prog-block');
+  const docLabel  = document.getElementById('cxp-doc-label');
+  const fixtureEl = document.getElementById('cxp-fixture');
+  const cmdEl     = document.getElementById('cxp-cmd');
+  const expectEl  = document.getElementById('cxp-expect');
+  const expectText = document.getElementById('cxp-expect-text');
+  const verdictEl = document.getElementById('cxp-verdict');
+  const readingTabs = [...document.querySelectorAll('.cxp-reading-tab')];
+  // The reading the page is in, and the entry the editors were loaded from
+  // (null once the reader has typed their own text in, or opened a link).
+  let reading = 'program';
+  let current = null;
   const outTabs  = [...document.querySelectorAll('.cxp-tab')];
   const vizTabs  = [...document.querySelectorAll('.cxp-viz-tab')];
   const subjectTabs = [...document.querySelectorAll('.cxp-subject-tab')];
@@ -265,13 +305,12 @@
       }
       return out.replace(/^\n/, '');
     }
-    // CX — route through cxlib.toCx if available; falls back to a
-    // local bracket-depth-aware indenter when wasm isn't ready.
-    const cxlib = globalThis.cxlib;
-    if (cxlib && typeof cxlib.toCx === 'function') {
-      try { return cxlib.toCx(text); } catch (_) {}
-    }
-    return cxPrettyFallback(text);
+    // CX — the engine's own answer, byte for byte (PLAY-1). It is what
+    // `cx` prints and what the fixture records; re-emitting it through
+    // cxlib.toCx re-reads the text as a DOCUMENT, which respells values
+    // (`email='a@x.com'` came back `email=a@x.com`) beside a fixture that
+    // records the first spelling.
+    return text;
   }
   function minimised(lang, text) {
     if (!text) return '';
@@ -285,37 +324,6 @@
       try { return cxlib.toCxCompact(text); } catch (_) {}
     }
     return text.replace(/\s+/g, ' ').trim();
-  }
-
-  // Bracket-aware CX indenter used as fallback when cxlib.toCx isn't
-  // available. Wraps a child element / sequence onto its own line when
-  // depth changes, indents two spaces per nest level.
-  function cxPrettyFallback(text) {
-    let depth = 0, out = '', i = 0, inString = false, sq = false;
-    while (i < text.length) {
-      const c = text[i];
-      if (inString) {
-        out += c;
-        if (c === '\\' && i + 1 < text.length) { out += text[i+1]; i += 2; continue; }
-        if ((!sq && c === '"') || (sq && c === '\'')) inString = false;
-        i++; continue;
-      }
-      if (c === '"' || c === '\'') { inString = true; sq = (c === '\''); out += c; i++; continue; }
-      if (c === '[') {
-        if (out && !out.endsWith('\n') && !out.endsWith(' ')) out += '\n' + '  '.repeat(depth);
-        out += '[';
-        depth++;
-        i++; continue;
-      }
-      if (c === ']') {
-        depth = Math.max(0, depth - 1);
-        out += ']';
-        i++; continue;
-      }
-      out += c;
-      i++;
-    }
-    return out.replace(/\n{2,}/g, '\n').trim();
   }
 
   function applyOutputProjection() {
@@ -334,22 +342,19 @@
     wireGutterScroll(outGutters[k], pre);
   }
 
-  // ── Example dropdown ─────────────────────────────────────
-  function populatePicker(filter) {
+  // ── The picker: the primer's examples for the current reading ──────
+  // One <optgroup> per primer section, in the primer's order; each option
+  // is `[n] <fixture id>` — n is the example's place in the primer, the id
+  // is the case the corpus grades.
+  function populatePicker() {
     pick.innerHTML = '';
-    const q = (filter || '').trim().toLowerCase();
-    let shown = 0;
     let group = null;
     let groupSec = null;
-    for (const e of ALL_ENTRIES) {
-      if (q && !exampleMatches(e, q)) continue;
+    for (const e of entriesOf(reading)) {
       const sec = e.ex.section || '';
       if (sec !== groupSec) {
-        // one <optgroup> per subcategory, labelled "CX code › Paths (cxpath)";
-        // a group with no match under the filter is simply never created.
-        const names = SECTION_NAMES[sec] || ['Other', sec || '(unsectioned)'];
         group = document.createElement('optgroup');
-        group.label = `${names[0]} › ${names[1]}`;
+        group.label = sec;
         pick.appendChild(group);
         groupSec = sec;
       }
@@ -357,60 +362,32 @@
       o.value = `${e.kind}:${e.key}`;
       o.textContent = displayLabel(e);
       group.appendChild(o);
-      shown++;
     }
-    if (shown === 0) {
+    // A legacy example (opened by link) is shown as the one extra option, so
+    // the picker never claims a primer example the editors do not hold.
+    if (current && current.kind === 'legacy') {
+      const g = document.createElement('optgroup');
+      g.label = 'Opened by link — the playground corpus (examples.cxd)';
       const o = document.createElement('option');
-      o.disabled = true;
-      o.textContent = `(no matches for "${q}")`;
-      pick.appendChild(o);
+      o.value = `legacy:${current.key}`;
+      o.textContent = current.ex.label || current.key;
+      g.appendChild(o);
+      pick.appendChild(g);
     }
   }
-  // Match an example against a lowercased query: label, tags array,
-  // and source text all participate. Multi-word queries AND-match
-  // (every word must appear somewhere).
-  function exampleMatches(e, q) {
-    const haystack = [
-      (e.ex.label || '').toLowerCase(),
-      (e.ex.tags || []).join(' ').toLowerCase(),
-      (e.ex.input || '').toLowerCase(),
-    ].join(' ');
-    const words = q.split(/\s+/).filter(Boolean);
-    return words.every(w => haystack.includes(w));
-  }
-  populatePicker();
-  // #ex=KEY reopens an example by its stable key (set on every load).
-  (function openFromHash() {
-    const m = /^#ex=([^&]+)/.exec(location.hash || '');
-    if (!m) return;
-    const key = decodeURIComponent(m[1]);
-    const hit = ALL_ENTRIES.find(e => e.key === key);
-    if (hit) pick.value = `${hit.kind}:${hit.key}`;
-  })();
 
-  if (searchEl) {
-    searchEl.addEventListener('input', () => {
-      populatePicker(searchEl.value);
-      // After re-populating, auto-select the first visible option so
-      // Run / Reset / prev / next operate on something sensible.
-      if (pick.options.length > 0 && !pick.options[0].disabled) {
-        pick.selectedIndex = 0;
-        loadExample(pick.value);
-      }
-    });
+  function lookup(value) {
+    if (!value) return null;
+    const i = value.indexOf(':');
+    const kind = value.slice(0, i), key = value.slice(i + 1);
+    if (kind === 'legacy') return legacyEntry(key);
+    const list = ALL_ENTRIES;
+    const idx = list.findIndex(e => e.key === key);
+    return idx >= 0 ? { idx, ...list[idx] } : null;
   }
 
-  function lookup(key) {
-    if (!key) return null;
-    const idx = ALL_ENTRIES.findIndex(e => `${e.kind}:${e.key}` === key);
-    return idx >= 0 ? { idx, ...ALL_ENTRIES[idx] } : null;
-  }
-
-  // ANNOTATION_RE matches the trailing `[; ─── … ─── ]` block we append to
-  // each example's source. We strip it before feeding source to
-  // cxlib.tree() / cxlib.diagram() (wasm tree builder bug with block
-  // comments) and we use its position to figure out where the program
-  // ends in the editor (for the cursor-to-tree bridge).
+  // ANNOTATION_RE matches the trailing `[; ─── … ─── ]` note block a LEGACY
+  // example's source carries; it is stripped before evaluating or drawing.
   const ANNOTATION_RE = /\n*\[;\s*─+[\s\S]*?─+\s*\]\s*$/;
   function annotationStart(src) {
     const m = src.match(ANNOTATION_RE);
@@ -419,98 +396,257 @@
   function stripAnnotation(src) {
     return src.replace(ANNOTATION_RE, '').replace(/\s+$/, '');
   }
-
   function composeSource(ex) {
     if (!ex) return '';
     if (ex.note) {
-      return `${ex.input}\n\n[; \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n${ex.note}\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 ]\n`;
+      return `${ex.input}\n\n[; ────────────────────\n${ex.note}\n──────────────────── ]\n`;
     }
     return ex.input;
   }
 
   function syncRender() {
-    if (!renderEl) return;
-    renderEl.innerHTML = highlight('cx', input.value);
-    updateGutter(inputGutter, input.value);
+    if (renderEl) {
+      renderEl.innerHTML = highlight('cx', input.value);
+      updateGutter(inputGutter, input.value);
+    }
+    if (docRender) {
+      docRender.innerHTML = highlight('cx', docInput.value);
+      updateGutter(docGutter, docInput.value);
+    }
   }
   function syncScroll() {
-    if (!renderEl) return;
-    renderEl.parentElement.scrollTop  = input.scrollTop;
-    renderEl.parentElement.scrollLeft = input.scrollLeft;
-    if (inputGutter) inputGutter.scrollTop = input.scrollTop;
+    if (renderEl) {
+      renderEl.parentElement.scrollTop  = input.scrollTop;
+      renderEl.parentElement.scrollLeft = input.scrollLeft;
+      if (inputGutter) inputGutter.scrollTop = input.scrollTop;
+    }
+  }
+  function syncDocScroll() {
+    if (docRender) {
+      docRender.parentElement.scrollTop  = docInput.scrollTop;
+      docRender.parentElement.scrollLeft = docInput.scrollLeft;
+      if (docGutter) docGutter.scrollTop = docInput.scrollTop;
+    }
   }
 
-  // Picking an example RUNS it. A reader clicking through the list sees
-  // each one working — output pane and View pane both populated — with
-  // no run control to hunt for. runProgram() serialises and tokenises,
-  // so a fast switch never paints the previous example's result.
+  // ── The reading: which editors show, what Run does ──────────────────
+  //   document  the document editor alone; Run shows the document itself
+  //             (`cx --from=cx --to=cx input.cx`) as CX, JSON and XML
+  //   query     the document editor, bound as $doc, and the program over it
+  //             (`cx --data=input.cx prog.cx`)
+  //   program   the program editor alone (`cx prog.cx`)
+  function applyReading(r) {
+    reading = READINGS.includes(r) ? r : 'program';
+    readingTabs.forEach(t => {
+      const on = t.dataset.reading === reading;
+      t.classList.toggle('is-active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    if (docBlock)  docBlock.hidden  = (reading === 'program');
+    if (progBlock) progBlock.hidden = (reading === 'document');
+    if (docLabel) {
+      docLabel.textContent = reading === 'query'
+        ? 'input.cx — the document, bound as $doc'
+        : 'input.cx — the document';
+    }
+    document.body.dataset.reading = reading;
+  }
+  // The text the reading reads, as the command line would see it.
+  function sourceText() {
+    return reading === 'document' ? docInput.value : stripAnnotation(input.value);
+  }
+  // The editor whose text the View pane draws as Source (the tree bridge
+  // selects in it).
+  function activeEditor() { return reading === 'document' ? docInput : input; }
+
+  // The fixture strip: which case this is, where the corpus keeps it, and
+  // where the primer shows it; plus the command line that gives the same
+  // answer natively. An entry the browser cannot run as the fixture does
+  // says why, rather than presenting a different answer as the fixture's.
+  function showFixture(found) {
+    if (!fixtureEl) return;
+    fixtureEl.innerHTML = '';
+    if (!found) {
+      fixtureEl.innerHTML = '<span class="cxp-fixture-own">your own text — no fixture</span>';
+      if (cmdEl) cmdEl.textContent = reading === 'document' ? '$ cx --from=cx --to=cx input.cx'
+        : (reading === 'query' ? '$ cx --data=input.cx prog.cx' : '$ cx prog.cx');
+      return;
+    }
+    const ex = found.ex;
+    const id = document.createElement('code');
+    id.className = 'cxp-fixture-id';
+    id.textContent = found.key;
+    id.title = found.kind === 'legacy' ? 'playground corpus key' : 'conformance fixture id';
+    const where = document.createElement('span');
+    where.className = 'cxp-fixture-where';
+    where.textContent = found.kind === 'legacy'
+      ? ' · the playground corpus (examples.cxd) — not a primer fixture'
+      : ` · ${ex.suite} · primer ${ex.section}`;
+    fixtureEl.append(found.kind === 'legacy' ? 'example ' : 'fixture ', id, where);
+    if (ex.role) {
+      const b = document.createElement('span');
+      b.className = `cxp-fixture-role is-${ex.role}`;
+      b.textContent = ex.role === 'wrong' ? 'anti-pattern — do not write this' : 'the fix — write this';
+      fixtureEl.append(' ', b);
+    }
+    if (ex.runnable === false && ex.why) {
+      const w = document.createElement('span');
+      w.className = 'cxp-fixture-why';
+      w.textContent = ` · run it in a terminal: ${ex.why}`;
+      fixtureEl.append(w);
+    }
+    if (cmdEl) cmdEl.textContent = `$ ${ex.cmd || 'cx prog.cx'}`;
+  }
+
+  // The fixture's recorded answer, shown beside the live one. `match` is
+  // the fixture's own rule: exact bytes, or — for a recorded refusal, which
+  // the corpus pins by its CXER code rather than its wording — containment.
+  function showExpected(found) {
+    if (!expectEl) return;
+    const exp = found && found.kind === 'primer' ? found.ex.expected : '';
+    expectEl.hidden = !exp;
+    if (expectText) expectText.innerHTML = exp ? highlight('cx', exp) : '';
+    if (verdictEl) { verdictEl.textContent = ''; verdictEl.className = 'cxp-verdict'; delete verdictEl.dataset.match; }
+  }
+  function edited() {
+    if (!current || current.kind !== 'primer') return true;
+    const ex = current.ex;
+    if (reading === 'document') return docInput.value !== ex.doc;
+    if (reading === 'query') return docInput.value !== ex.doc || input.value !== ex.src;
+    return input.value !== ex.src;
+  }
+  // A recorded refusal (`match: contains`) is pinned by its code, which the
+  // native CLI prints as `cx-err:CXERnnnn: …` and the wasm engine throws as
+  // `CXERnnnn: …` — the same code either way, so the prefix is not compared.
+  function sameAnswer(got, ex) {
+    const g = String(got || '').replace(/\s+$/, '');
+    const e = String(ex.expected || '').replace(/\s+$/, '');
+    if (ex.match !== 'contains') return g === e;
+    const bare = (s) => s.replace(/cx-err:/g, '');
+    return bare(g).includes(bare(e));
+  }
+  function showVerdict(raw) {
+    if (!verdictEl || !current || current.kind !== 'primer') return;
+    if (edited()) {
+      verdictEl.textContent = 'edited — the fixture answers its own text';
+      verdictEl.className = 'cxp-verdict is-edited';
+      return;
+    }
+    const ok = sameAnswer(raw, current.ex);
+    verdictEl.textContent = ok ? '✓ this engine reproduces it' : '≠ this engine answers differently';
+    verdictEl.className = `cxp-verdict ${ok ? 'is-ok' : 'is-diff'}`;
+    verdictEl.dataset.match = ok ? 'yes' : 'no';
+  }
+
+  // ── Share-by-URL ──────────────────────────────────────────────────
+  // An unedited example is shared by its id (#ex=<fixture id>); anything
+  // else by its text: #r=<reading>&d=<document>&p=<program>, each text
+  // UTF-8 then base64url, so any program survives the round trip.
+  function b64uEncode(s) {
+    const bytes = new TextEncoder().encode(s);
+    let bin = '';
+    for (const b of bytes) bin += String.fromCharCode(b);
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function b64uDecode(s) {
+    const t = s.replace(/-/g, '+').replace(/_/g, '/');
+    const bin = atob(t + '==='.slice((t.length + 3) % 4));
+    return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
+  }
+  function shareHash() {
+    if (current && !edited()) return `#ex=${encodeURIComponent(current.key)}`;
+    const parts = [`r=${reading}`];
+    if (reading !== 'program') parts.push(`d=${b64uEncode(docInput.value)}`);
+    if (reading !== 'document') parts.push(`p=${b64uEncode(input.value)}`);
+    return '#' + parts.join('&');
+  }
+  function parseHash(h) {
+    const m = /^#ex=([^&]+)/.exec(h || '');
+    if (m) return { ex: decodeURIComponent(m[1]) };
+    const q = {};
+    for (const kv of String(h || '').replace(/^#/, '').split('&')) {
+      const i = kv.indexOf('=');
+      if (i > 0) q[kv.slice(0, i)] = kv.slice(i + 1);
+    }
+    if (!q.r) return null;
+    try {
+      return { r: q.r, d: q.d ? b64uDecode(q.d) : '', p: q.p ? b64uDecode(q.p) : '' };
+    } catch (_) { return null; }
+  }
+  if (shareBtn) shareBtn.addEventListener('click', async () => {
+    const h = shareHash();
+    try { history.replaceState(null, '', h); } catch (_) {}
+    const url = location.href;
+    let copied = false;
+    try { if (navigator.clipboard) { await navigator.clipboard.writeText(url); copied = true; } } catch (_) {}
+    setStatus(copied ? 'Link copied — it reopens exactly this text.'
+                     : `Link: <code>${escapeHtml(url)}</code>`, 'ok');
+  });
+
+  // Picking an example RUNS it: a reader clicking through the list sees
+  // each one answer, with no run control to hunt for.
   const crumbEl = document.getElementById('cxp-crumb');
   function showCrumb(found) {
     if (!crumbEl) return;
-    const names = SECTION_NAMES[found.ex.section] || ['', found.ex.section || ''];
-    const sec = ALL_ENTRIES.filter(e => e.ex.section === found.ex.section);
-    const pos = sec.findIndex(e => e.key === found.key) + 1;
-    const num = exampleNumber(found);
-    crumbEl.textContent = `${num ? '[' + num + '] · ' : ''}${names[0]} › ${names[1]} · ${pos} of ${sec.length}`;
-    crumbEl.title = 'Left/right: previous/next example · Up/down: previous/next subcategory (also from the picker)';
+    if (!found) { crumbEl.textContent = READING_NAMES[reading]; return; }
+    if (found.kind === 'legacy') { crumbEl.textContent = `${found.ex.label || found.key} · by link`; return; }
+    const list = entriesOf(found.reading);
+    const pos = list.findIndex(e => e.key === found.key) + 1;
+    crumbEl.textContent = `[${exampleNumber(found)}] · ${READING_NAMES[found.reading]} · ${pos} of ${list.length}`;
+    crumbEl.title = 'Left/right: previous/next example · Up/down: previous/next section (also from the picker)';
   }
-  function loadExample(key) {
-    const found = lookup(key);
+  function loadExample(value) {
+    const found = lookup(value);
     if (!found) return;
+    current = found;
+    applyReading(found.reading);
+    populatePicker();
+    pick.value = `${found.kind}:${found.key}`;
     showCrumb(found);
-    // the key is the stable address: #ex=<key> reopens this example
+    showFixture(found);
+    showExpected(found);
     try { history.replaceState(null, '', `#ex=${encodeURIComponent(found.key)}`); } catch (_) {}
-    input.value = composeSource(found.ex);
+    docInput.value = found.ex.doc || '';
+    input.value = found.kind === 'legacy' ? composeSource(found.ex) : (found.ex.src || '');
     syncRender();
     clearResults();
     refreshView();
-    // Two different "this won't do what you expect here" markers, and they
-    // are NOT the same thing:
-    //
-    //   runnable:false     — needs a capability the sandbox can't grant
-    //                        (net / subprocess / fs). It still RUNS; it just
-    //                        returns a capability-denied `[err …]` value.
-    //   wasmUnsupported    — the engine cannot reproduce this faithfully
-    //                        (#1033). Either it REFUSES the program outright
-    //                        (the [?worker]/[?async] class: nothing comes back
-    //                        but a V panic, so without a banner the reader gets
-    //                        a raw engine error for something the corpus
-    //                        already knew about), or it EVALUATES IT TO A
-    //                        DIFFERENT VALUE than native cx (example 57: a
-    //                        [?bulkhead] never saturates when [par] is
-    //                        sequential) — a quietly wrong answer, which needs
-    //                        the note even though nothing threw.
-    //
-    // Surface either up front so a result isn't mistaken for a bug.
     wasmUnsupportedNote = (typeof found.ex.wasmUnsupported === 'string'
                            && found.ex.wasmUnsupported.trim())
       ? found.ex.wasmUnsupported.trim() : '';
-    // noStableValue is a third, weaker marker: the program RUNS, but its
-    // native value is a race, so what the reader sees here is not "the"
-    // answer. Saying so beats letting them memorise one run's output.
     const unstableNote = (typeof found.ex.noStableValue === 'string'
                           && found.ex.noStableValue.trim())
       ? found.ex.noStableValue.trim() : '';
-    // grants (RULED: CXF-2) is the SHARPEST of the three: the corpus states
-    // the exact command line, so the reader gets that rather than a generic
-    // "needs a capability" sentence. It is read before the generic
-    // runnable:false branch for exactly that reason.
     grantsNote = (typeof found.ex.grants === 'string' && found.ex.grants.trim())
       ? found.ex.grants.trim() : '';
     const capNote = wasmUnsupportedNote
-      ? `${wasmUnsupportedNote} ${WASM_UNSUPPORTED_REMEDY}`
+      ? (found.kind === 'primer'
+        ? `${escapeHtml(wasmUnsupportedNote)} Run it in your terminal: <code>${escapeHtml(found.ex.cmd)}</code> — the answer under the output is the fixture's.`
+        : `${wasmUnsupportedNote} ${WASM_UNSUPPORTED_REMEDY}`)
       : (unstableNote
         ? `This program has no single answer. ${unstableNote}`
         : (grantsNote
           ? grantsLine(grantsNote)
-          : ((found.ex.runnable === false)
-          ? 'This example needs a capability unavailable in the wasm playground '
-            + '(network / subprocess / filesystem). Run it under `make guide-http` or '
-            + '`cx --allow-net` in your terminal; here it returns a capability-denied result.'
-          : '')));
+          : ((found.ex.runnable === false && found.kind === 'primer')
+            ? `This fixture runs as <code>${escapeHtml(found.ex.cmd)}</code> — ${escapeHtml(found.ex.why)}; `
+              + 'its recorded answer is shown under the output.'
+            : ((found.ex.runnable === false)
+              ? 'This example needs a capability unavailable in the wasm playground '
+                + '(network / subprocess / filesystem). Run it with <code>cx</code> in your terminal; '
+                + 'here it returns a capability-denied result.'
+              : ''))));
     if (capNote) setStatus(capNote, 'pending');
     runProgram({ auto: true, capNote });
   }
+  // A reading tab opens that reading's first example, unless the example
+  // on screen is already one of its own.
+  readingTabs.forEach(t => t.addEventListener('click', () => {
+    const r = t.dataset.reading;
+    if (current && current.reading === r && current.kind === 'primer') return;
+    const first = entriesOf(r)[0];
+    if (first) loadExample(`${first.kind}:${first.key}`);
+    else { applyReading(r); populatePicker(); }
+  }));
 
   // Drops any result carried over from the previous program. Called
   // before every load and at the head of every run, so a pane is never
@@ -518,48 +654,47 @@
   function clearResults() {
     for (const k of Object.keys(outs)) { outs[k].dataset.raw = ''; outs[k].textContent = ''; }
     lastEvalRawCx = '';
+    if (verdictEl) { verdictEl.textContent = ''; verdictEl.className = 'cxp-verdict'; delete verdictEl.dataset.match; }
     resetVizPanes();
   }
 
   pick.addEventListener('change', () => loadExample(pick.value));
-  resetBtn.addEventListener('click', () => loadExample(pick.value));
+  resetBtn.addEventListener('click', () => {
+    if (current) loadExample(`${current.kind}:${current.key}`);
+    else if (pick.value) loadExample(pick.value);
+  });
   prevBtn.addEventListener('click', () => stepExample(-1));
   nextBtn.addEventListener('click', () => stepExample(+1));
+  // ←/→ walk the current reading's examples (wrapping); ↑/↓ jump to the
+  // first example of the previous/next primer section in it.
   function stepExample(delta) {
-    const cur = lookup(pick.value);
-    if (!cur) return;
-    let next = (cur.idx + delta + ALL_ENTRIES.length) % ALL_ENTRIES.length;
-    const target = ALL_ENTRIES[next];
-    selectAndLoad(target);
+    const list = entriesOf(reading);
+    if (!list.length) return;
+    const i = current ? list.findIndex(e => e.key === current.key) : -1;
+    const next = list[(Math.max(i, 0) + (i < 0 ? 0 : delta) + list.length) % list.length];
+    loadExample(`${next.kind}:${next.key}`);
   }
-  // A target hidden by the filter is reached by clearing the filter first.
-  function selectAndLoad(target) {
-    const v = `${target.kind}:${target.key}`;
-    pick.value = v;
-    if (pick.value !== v) {
-      if (searchEl) searchEl.value = '';
-      populatePicker();
-      pick.value = v;
-    }
-    loadExample(v);
-  }
-  // Up/down: the FIRST example of the previous/next subcategory (wrapping).
   function stepSection(delta) {
-    const cur = lookup(pick.value);
-    if (!cur) return;
+    const list = entriesOf(reading);
+    if (!list.length) return;
     const secs = [];
-    for (const e of ALL_ENTRIES) if (secs[secs.length - 1] !== e.ex.section) secs.push(e.ex.section);
-    const i = secs.indexOf(cur.ex.section);
+    for (const e of list) if (secs[secs.length - 1] !== e.ex.section) secs.push(e.ex.section);
+    const cur = current ? current.ex.section : secs[0];
+    const i = Math.max(0, secs.indexOf(cur));
     const target = secs[(i + delta + secs.length) % secs.length];
-    const first = ALL_ENTRIES.find(e => e.ex.section === target);
-    if (first) selectAndLoad(first);
+    const first = list.find(e => e.ex.section === target);
+    if (first) loadExample(`${first.kind}:${first.key}`);
   }
-  // Arrow keys navigate unless focus is in a TEXT field — typing in the
-  // editor or the filter is never hijacked. The picker is not a text field:
-  // after choosing an example it holds focus, and the keys must keep working
-  // from there (#1380 — before this the handler returned for every <select>,
-  // so ←/→ did nothing and ↑/↓ fell through to the native option stepping).
+  // Arrow keys navigate unless focus is in a TEXT field — typing in an
+  // editor is never hijacked. The picker is not a text field: after a
+  // choice it holds focus, and the keys keep working from there (#1380).
+  // Ctrl/⌘+Enter runs from anywhere, the editors included.
   document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) {
+      ev.preventDefault();
+      if (!runBtn.disabled) runProgram({ auto: false });
+      return;
+    }
     const t = ev.target;
     const tag = t && t.tagName ? t.tagName.toLowerCase() : '';
     if (tag === 'textarea' || tag === 'input' || (t && t.isContentEditable)) return;
@@ -569,38 +704,27 @@
     else if (ev.key === 'ArrowDown') { ev.preventDefault(); stepSection(+1); }
     else if (ev.key === 'ArrowUp') { ev.preventDefault(); stepSection(-1); }
   });
-  // Editing the source retires the loaded example's wasm-unsupported marker
-  // (#1033). The marker is a claim about THAT program; once the reader has
-  // changed the text, a refusal may be entirely their own, and labelling it
-  // "not supported in this build" would be the same dishonesty in reverse.
-  // The grants line is retired for the same reason: it names the flags THAT
-  // program declared, and an edited program may need different ones.
-  input.addEventListener('input', () => {
+  // Editing retires the loaded example's markers (#1033, CXF-2): they are
+  // claims about THAT text, and an edited text may behave differently.
+  function onEdit() {
     wasmUnsupportedNote = '';
     grantsNote = '';
     syncRender();
     refreshView();
-  });
+    if (verdictEl && current && current.kind === 'primer' && edited()) {
+      verdictEl.textContent = 'edited — the fixture answers its own text';
+      verdictEl.className = 'cxp-verdict is-edited';
+    }
+  }
+  input.addEventListener('input', onEdit);
   input.addEventListener('scroll', syncScroll);
-  ['keyup','mouseup','click','select'].forEach(ev =>
-    input.addEventListener(ev, () => highlightTreeAtSourceCursor()));
-
-  // ── Load local file ─────────────────────────────────────
-  loadBtn.addEventListener('click', () => loadFile.click());
-  loadFile.addEventListener('change', () => {
-    const f = loadFile.files && loadFile.files[0];
-    if (!f) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      input.value = String(reader.result || '');
-      syncRender();
-      clearResults();
-      refreshView();
-      setStatus(`Loaded ${escapeHtml(f.name)} (${f.size} bytes) — evaluating…`, 'pending');
-      runProgram({ auto: true });
-    };
-    reader.readAsText(f);
-    loadFile.value = '';
+  if (docInput) {
+    docInput.addEventListener('input', onEdit);
+    docInput.addEventListener('scroll', syncDocScroll);
+  }
+  ['keyup','mouseup','click','select'].forEach(ev => {
+    input.addEventListener(ev, () => highlightTreeAtSourceCursor());
+    if (docInput) docInput.addEventListener(ev, () => highlightTreeAtSourceCursor());
   });
 
   // ── Output tab + projection toggle ────────────────────────
@@ -808,11 +932,11 @@
         // the user has deleted content above the click target, the loc
         // may now point past the end. Clamp.
         if (register) {
-          const cap = annotationStart(input.value);
+          const cap = annotationStart(activeEditor().value);
           if (end > cap) end = cap;
           if (start > cap) start = cap;
-          input.focus();
-          input.setSelectionRange(start, end);
+          activeEditor().focus();
+          activeEditor().setSelectionRange(start, end);
         }
         markSelected(target);
       });
@@ -1154,7 +1278,7 @@
   function highlightTreeAtSourceCursor() {
     if (vizSubject === 'output') return;   // no source tree on screen
     if (!nodeRegistry.length) return;
-    const pos = input.selectionStart;
+    const pos = activeEditor().selectionStart;
     // Tightest node covering pos.
     let best = null, bestSpan = Infinity;
     for (const n of nodeRegistry) {
@@ -1664,11 +1788,11 @@
   // the CX the renderers consume; `register` marks the one tree whose
   // node locs index the editor (the source).
   function vizParts() {
-    const srcText = stripAnnotation(input.value);
+    const srcText = sourceText();
     const source = {
       id: 'source',
       title: 'Source',
-      note: 'the program you wrote',
+      note: reading === 'document' ? 'the document you wrote' : 'the program you wrote',
       text: srcText,
       register: true,
       empty: 'Source is empty.',
@@ -1766,6 +1890,63 @@
     }
   }
 
+  // ── What the page opens on ──────────────────────────────
+  // A link wins (#1375): #ex=<fixture id> opens that primer example,
+  // #ex=<corpus key> a legacy one, #r=…&d=…&p=… the shared text. Otherwise
+  // the first Program example a reader should write and the engine runs —
+  // the page prints an ANSWER on load, not the wrong half of an anti-pattern
+  // pair, a terminal-only or wasm-unsupported fixture, or one whose recorded
+  // answer is itself an [err …] (test-playground-primer holds the same rule).
+  function openingEntry() {
+    const list = entriesOf('program');
+    const ok = (e) => {
+      const ex = e.ex || {};
+      return ex.role !== 'wrong' && ex.runnable !== false
+        && !(typeof ex.wasmUnsupported === 'string' && ex.wasmUnsupported.trim())
+        && !/^\s*\[err\b/.test(ex.expected || '');
+    };
+    return list.find(ok) || list[0];
+  }
+  function openInitial() {
+    const h = parseHash(location.hash);
+    if (h && h.ex) {
+      const hit = ALL_ENTRIES.find(e => e.key === h.ex);
+      if (hit) { loadExample(`primer:${hit.key}`); return; }
+      if (programEntries[h.ex]) { loadExample(`legacy:${h.ex}`); return; }
+    }
+    if (h && h.r) {
+      current = null;
+      applyReading(h.r);
+      populatePicker();
+      pick.selectedIndex = -1;
+      docInput.value = h.d || '';
+      input.value = h.p || '';
+      syncRender();
+      showCrumb(null);
+      showFixture(null);
+      showExpected(null);
+      clearResults();
+      refreshView();
+      runProgram({ auto: true });
+      return;
+    }
+    const first = openingEntry() || ALL_ENTRIES[0];
+    if (first) loadExample(`${first.kind}:${first.key}`);
+  }
+  // Before the engine is ready the page still shows what it will run.
+  (function preload() {
+    const h = parseHash(location.hash);
+    if (h && (h.r || h.ex)) { applyReading(h.r || 'program'); populatePicker(); return; }
+    const first = openingEntry();
+    applyReading('program');
+    populatePicker();
+    if (first) {
+      pick.value = `${first.kind}:${first.key}`;
+      input.value = first.ex.src || '';
+      syncRender();
+    }
+  })();
+
   // ── Activate when wasm is ready ─────────────────────────
   const ready = (globalThis.cxlib && globalThis.cxlib.ready)
     ? globalThis.cxlib.ready
@@ -1788,13 +1969,10 @@
         });
       } catch (_) {}
     }
-    if (pick.options.length > 0) {
-      // #ex=KEY in the URL wins over "the first example" (#1375): a link to an
-      // example must open that example. openFromHash() already selected it.
-      const fromHash = /^#ex=/.test(location.hash || '') && lookup(pick.value);
-      if (!fromHash) pick.selectedIndex = 0;
-      loadExample(pick.value);
-    }
+    openInitial();
+    // A link pasted into this same tab changes only the hash; the page's own
+    // hash updates go through replaceState, which fires no hashchange.
+    window.addEventListener('hashchange', openInitial);
   }, (err) => {
     setStatus(`Failed to load wasm runtime: ${escapeHtml(err.message)}`, 'error');
   });
@@ -1827,47 +2005,128 @@
     return runChain;
   }
 
+  // errValue — a refusal the engine THREW (a parse error, a top-level
+  // CXER), shown as the value the language would have made of it: an
+  // [err code=… message=…] element. Errors are values in CX, so the output
+  // pane shows one as a value — projected to JSON and XML like any other —
+  // rather than as a crash banner. The raw message is kept for the
+  // fixture verdict, which the corpus pins by its CXER code.
+  function cxString(s) {
+    return '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n') + '"';
+  }
+  function errValue(msg) {
+    const m = /(?:cx-err:)?(CXER\d+):?\s*([\s\S]*)$/.exec(String(msg));
+    const code = m ? m[1] : 'CXER0000';
+    const text = (m ? m[2] : String(msg)).replace(/^cx-err:CXER\d+:?\s*/, '').trim();
+    return `[err code=${code} message=${cxString(text || String(msg))}]`;
+  }
+
+  // ── A stopped engine is restarted, not shown as the answer ─────────
+  // The wasm engine is one module instance built `-gc none`: its arena is
+  // never reclaimed, so after enough runs in one page (measured: ~90 primer
+  // examples with the Tree view drawing each) an eval dies inside the engine
+  // — `memory access out of bounds`, `Program terminated`, an abort — and
+  // every later call dies the same way. That is not the program's answer.
+  // The page reloads itself on the text in the editors (its share link),
+  // which gives a fresh engine, and runs it again there. If a FRESH engine
+  // stops on that same text, that IS the answer and it is shown as a value.
+  const ENGINE_STOPPED_RE = /memory access out of bounds|table index is out of bounds|\bunreachable\b|null function|indirect call|Aborted\(|Program terminated|program has already aborted|must be non-NULL and non-empty/i;
+  function engineStopped(err, msg) {
+    return (typeof WebAssembly !== 'undefined' && err instanceof WebAssembly.RuntimeError)
+      || ENGINE_STOPPED_RE.test(msg);
+  }
+  function restartEngine() {
+    const target = shareHash();
+    let tried = '';
+    try { tried = sessionStorage.getItem('cxp.restartedFor') || ''; } catch (_) { return false; }
+    if (tried === target) {
+      try { sessionStorage.removeItem('cxp.restartedFor'); } catch (_) {}
+      return false;
+    }
+    try {
+      sessionStorage.setItem('cxp.restartedFor', target);
+      sessionStorage.setItem('cxp.restarts', String(1 + Number(sessionStorage.getItem('cxp.restarts') || 0)));
+    } catch (_) { return false; }
+    setStatus('The engine stopped after many runs in this page — restarting it on this text…', 'pending');
+    try { history.replaceState(null, '', target); } catch (_) {}
+    location.reload();
+    return true;
+  }
+  function engineHealthy() {
+    try { sessionStorage.removeItem('cxp.restartedFor'); } catch (_) {}
+  }
+
   async function runOnce(token, o) {
     if (token !== runToken) return;          // superseded before we started
     const cxlib = globalThis.cxlib;
     if (!cxlib || !cxlib.ready) return;
-    const src = input.value;
+    const rd = reading;
+    const doc = docInput ? docInput.value : '';
+    const prog = stripAnnotation(input.value);
+    const src = rd === 'document' ? doc : prog;
     if (!src.trim()) {
-      if (!o.auto) setStatus('Source is empty. Pick an example or type something to evaluate.', 'error');
+      if (!o.auto) setStatus(rd === 'document'
+        ? 'The document is empty. Pick an example or type a document.'
+        : 'The program is empty. Pick an example or type something to evaluate.', 'error');
       return;
     }
-    // Strip the trailing `[; ─── note ─── ]` annotation before evaluating,
-    // exactly as the tree/diagram path does. The note is documentation, not
-    // program input; passing it through is harmless when its brackets balance
-    // but turns the block comment unterminated (→ CXER0100) when the prose
-    // contains an unbalanced bracket. Stripping makes a Run immune to note
-    // content; results are identical for well-formed notes.
-    const evalSrc = stripAnnotation(src);
     for (const k of Object.keys(outs)) { outs[k].dataset.raw = ''; outs[k].textContent = ''; }
     runsInFlight++;
     runBtn.classList.add('is-running');
     runBtn.disabled = true;
     setStatus('Evaluating…', 'pending');
     // An explicit Run holds the "Evaluating…" state briefly so the click
-    // reads as an action; an automatic run only yields a frame, because
-    // clicking through the example list must not feel padded.
-    await new Promise(r => setTimeout(r, o.auto ? 0 : 500));
+    // reads as an action; an automatic run only yields a frame.
+    await new Promise(r => setTimeout(r, o.auto ? 0 : 300));
 
     let accumulated = '';
+    let raw = '';                            // what the fixture verdict reads
     try {
-      if (token !== runToken) return;
-      if (typeof cxlib.evalCodeStreamingAsync === 'function') {
-        await cxlib.evalCodeStreamingAsync(evalSrc, 'cx', (chunk) => {
-          accumulated += chunk;
-          if (token === runToken) outs.cx.textContent = accumulated;
-        }, '');
-      } else if (typeof cxlib.evalCodeAsync === 'function') {
-        accumulated = await cxlib.evalCodeAsync(evalSrc, 'cx', '');
-        if (token === runToken) outs.cx.textContent = accumulated;
+      if (token !== runToken) { finishRun(); return; }
+      if (rd === 'document') {
+        // The document reading: the text IS the value (`--from=cx --to=cx`).
+        accumulated = cxlib.toCx(doc);
       } else {
-        accumulated = cxlib.evalCode(evalSrc, 'cx', '');
-        if (token === runToken) outs.cx.textContent = accumulated;
+        const bound = rd === 'query' ? doc : '';
+        if (typeof cxlib.evalCodeStreamingAsync === 'function') {
+          await cxlib.evalCodeStreamingAsync(prog, 'cx', (chunk) => {
+            accumulated += chunk;
+            if (token === runToken) outs.cx.textContent = accumulated;
+          }, bound);
+        } else if (typeof cxlib.evalCodeAsync === 'function') {
+          accumulated = await cxlib.evalCodeAsync(prog, 'cx', bound);
+        } else {
+          accumulated = cxlib.evalCode(prog, 'cx', bound);
+        }
       }
+      raw = accumulated;
+      engineHealthy();
+    } catch (err) {
+      if (token !== runToken) { finishRun(); return; }
+      const msg = (err && err.message) ? err.message : String(err);
+      raw = msg;
+      // eslint-disable-next-line no-console
+      console.error('[cx-playground] refused:', err);
+      if (wasmUnsupportedNote) {
+        // The corpus already knew this engine refuses this program (#1033).
+        accumulated = '';
+        showRefusal(
+          `// not supported in this playground build\n`
+          + `// ${wasmUnsupportedNote}\n`
+          + `// ${WASM_UNSUPPORTED_REMEDY}\n`
+          + `//\n`
+          + `// engine detail: ${msg}`);
+        lastEvalRawCx = '';
+        refreshView();
+        showVerdict(raw);
+        setStatus(`${wasmUnsupportedNote} ${WASM_UNSUPPORTED_REMEDY}`, 'pending');
+        finishRun();
+        return;
+      }
+      if (engineStopped(err, msg) && restartEngine()) { finishRun(); return; }
+      accumulated = errValue(msg);
+    }
+    try {
       if (token !== runToken) return;        // a newer request owns the panes
       outs.cx.dataset.raw = accumulated;
       if (accumulated) {
@@ -1879,14 +2138,12 @@
       applyOutputProjection();
       lastEvalRawCx = accumulated;
       refreshView();
-      // A grants example (RULED: CXF-2) never gets an "Evaluated — N bytes"
-      // line, whatever started the run: this engine cannot hold the
-      // capabilities the corpus named, so what came back is a
-      // capability-denied value, not the answer. The command line stands in
-      // for it — including on a manual Run click, which carries no capNote.
+      showVerdict(raw);
+      const isErr = /^\s*\[err\b/.test(accumulated);
       const note = o.capNote || (grantsNote ? grantsLine(grantsNote) : '');
       if (accumulated) {
-        setStatus(note || `Evaluated — ${accumulated.length} bytes.`,
+        setStatus(note || (isErr ? `Evaluated to an error value — ${accumulated.length} bytes.`
+                                 : `Evaluated — ${accumulated.length} bytes.`),
                   note ? 'pending' : 'ok');
       } else {
         // An empty result is a real answer (e.g. an empty comprehension),
@@ -1894,46 +2151,23 @@
         showRefusal('// evaluated to nothing — this program produced no output');
         setStatus(note || 'Evaluated — empty result.', note ? 'pending' : 'ok');
       }
-    } catch (err) {
-      if (token !== runToken) return;
-      const msg = (err && err.message) ? err.message : String(err);
-      lastEvalRawCx = '';
-      if (wasmUnsupportedNote) {
-        // The corpus already knew this engine refuses this program (#1033).
-        // Showing the reader a raw V panic for a KNOWN limitation reads as
-        // "the playground is broken" when the truth is "this build has no
-        // threads" — so the marker's own words lead, the remedy follows,
-        // and the engine's message rides along as detail instead of as the
-        // headline. This is not a failed run; it is an unsupported one.
-        showRefusal(
-          `// not supported in this playground build\n`
-          + `// ${wasmUnsupportedNote}\n`
-          + `// ${WASM_UNSUPPORTED_REMEDY}\n`
-          + `//\n`
-          + `// engine detail: ${msg}`);
-        refreshView();
-        setStatus(`${wasmUnsupportedNote} ${WASM_UNSUPPORTED_REMEDY}`, 'pending');
-      } else {
-        // Honest failure: the refusal goes in the OUTPUT PANE, not only in
-        // the status bar. A reader clicking through examples must never be
-        // left staring at an empty pane wondering whether it ran.
-        showRefusal(`// this program refused to run\n${msg}`);
-        refreshView();
-        setStatus(`Run failed: ${escapeHtml(msg)}`, 'error');
-      }
-      // eslint-disable-next-line no-console
-      console.error('[cx-playground] Run failed:', err);
     } finally {
-      runsInFlight--;
-      if (runsInFlight <= 0) {
-        runsInFlight = 0;
-        runBtn.classList.remove('is-running');
-        runBtn.disabled = false;
-      }
+      finishRun();
+    }
+  }
+  // body[data-ran] counts settled runs: what a reader sees as "the answer
+  // arrived", and what test-playground-primer waits on instead of a sleep.
+  let settledRuns = 0;
+  function finishRun() {
+    runsInFlight--;
+    if (runsInFlight <= 0) {
+      runsInFlight = 0;
+      runBtn.classList.remove('is-running');
+      runBtn.disabled = false;
+      document.body.dataset.ran = String(++settledRuns);
     }
   }
 
-  // Writes a diagnostic into all three output tabs so whichever one the
   // reader is looking at carries the explanation.
   function showRefusal(text) {
     for (const k of Object.keys(outs)) {
