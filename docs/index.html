@@ -638,23 +638,23 @@ true</code></pre>
 <li><a href="downloads.html">Downloads</a> — the four builds of one binary: <code>data</code>, <code>embed</code>, <code>cli</code> and <code>platform</code>. Take the smallest one that answers your question.</li>
 </ul>
 <h2>The repositories</h2>
-<p>Each repository is thin — what it is, how to install it, what it pins — and this site, served from <code>cx</code>, carries the narrative for all of them. A row links to that repository's page of this site where one exists, and to the repository on GitHub otherwise; the pages arrive in the next waves of this documentation, eight at a time, and a row switches over the day its page is served.</p>
+<p>Each repository is thin — what it is, how to install it, what it pins — and this site, served from <code>cx</code>, carries the narrative for all of them. A row links to that repository's page of this site where one exists — the front door, the two cores and five of the platform repositories have theirs — and to the repository on GitHub otherwise; the rest arrive eight at a time, and a row switches over the day its page is served.</p>
 <table>
 <thead><tr><th>group</th><th>repository</th><th>what it is</th><th>ships</th></tr></thead>
 <tbody>
-<tr><td>the front door</td><td><a href="https://github.com/cx-home/cx">cx</a></td><td>the front door: pins every repo, builds the four cx builds and libcx-core/libcx, holds the site, the release, the installer</td><td>binary</td></tr>
-<tr><td>the two cores</td><td><a href="https://github.com/cx-home/cx-core-data">cx-core-data</a></td><td>the data format: reader, writer, canonical form, schema, codecs, libcx-core, the data-only cx</td><td>binary</td></tr>
-<tr><td></td><td><a href="https://github.com/cx-home/cx-core-code">cx-core-code</a></td><td>the language: evaluator, stdlib, LSP, libcx, the cli and embed builds</td><td>binary</td></tr>
+<tr><td>the front door</td><td><a href="repo-cx.html">cx</a></td><td>the front door: pins every repo, builds the four cx builds and libcx-core/libcx, holds the site, the release, the installer</td><td>binary</td></tr>
+<tr><td>the two cores</td><td><a href="repo-cx-core-data.html">cx-core-data</a></td><td>the data format: reader, writer, canonical form, schema, codecs, libcx-core, the data-only cx</td><td>binary</td></tr>
+<tr><td></td><td><a href="repo-cx-core-code.html">cx-core-code</a></td><td>the language: evaluator, stdlib, LSP, libcx, the cli and embed builds</td><td>binary</td></tr>
 <tr><td>the platform group</td><td><a href="https://github.com/cx-home/cx-platform-net">cx-platform-net</a></td><td>sockets, TLS, the HTTP server, the XSP transport bindings, ftp, sftp, file_surface</td><td>binary</td></tr>
 <tr><td></td><td><a href="https://github.com/cx-home/cx-platform-mail">cx-platform-mail</a></td><td>SMTP and IMAP, server and client cores, sasl</td><td>binary</td></tr>
-<tr><td></td><td><a href="https://github.com/cx-home/cx-platform-identity">cx-platform-identity</a></td><td>sessions, did:web, authz-store, vc-revocation</td><td>binary</td></tr>
-<tr><td></td><td><a href="https://github.com/cx-home/cx-platform-store">cx-platform-store</a></td><td>the storage engine, its substrates, journal/live/audit, ft, and the store server</td><td>binary</td></tr>
+<tr><td></td><td><a href="repo-cx-platform-identity.html">cx-platform-identity</a></td><td>sessions, did:web, authz-store, vc-revocation</td><td>binary</td></tr>
+<tr><td></td><td><a href="repo-cx-platform-store.html">cx-platform-store</a></td><td>the storage engine, its substrates, journal/live/audit, ft, and the store server</td><td>binary</td></tr>
 <tr><td></td><td><a href="https://github.com/cx-home/cx-platform-db">cx-platform-db</a></td><td>external database access: $sql-*, $redis-*, the drivers</td><td>binary</td></tr>
 <tr><td></td><td><a href="https://github.com/cx-home/cx-platform-fabric">cx-platform-fabric</a></td><td>messaging and fabric-serve</td><td>binary</td></tr>
 <tr><td></td><td><a href="https://github.com/cx-home/cx-platform-xsp">cx-platform-xsp</a></td><td>the XAP Stream Protocol: the frame codec, the XSP-AUTH handshake, the protocol pages</td><td>binary</td></tr>
-<tr><td></td><td><a href="https://github.com/cx-home/cx-platform-xap">cx-platform-xap</a></td><td>the application host, compose, dist, schema, market, the reference deployments</td><td>binary</td></tr>
-<tr><td></td><td><a href="https://github.com/cx-home/cx-platform-flow">cx-platform-flow</a></td><td>workflow; its CLI verbs stay in the binary</td><td>package</td></tr>
-<tr><td></td><td><a href="https://github.com/cx-home/cx-platform-connector">cx-platform-connector</a></td><td>the connector kit and sync</td><td>package</td></tr>
+<tr><td></td><td><a href="repo-cx-platform-xap.html">cx-platform-xap</a></td><td>the application host, compose, dist, schema, market, the reference deployments</td><td>binary</td></tr>
+<tr><td></td><td><a href="repo-cx-platform-flow.html">cx-platform-flow</a></td><td>workflow; its CLI verbs stay in the binary</td><td>package</td></tr>
+<tr><td></td><td><a href="repo-cx-platform-connector.html">cx-platform-connector</a></td><td>the connector kit and sync</td><td>package</td></tr>
 <tr><td></td><td><a href="https://github.com/cx-home/cx-platform-secrets">cx-platform-secrets</a></td><td>the minimal keystore: one handle grammar, one internal resolve seam, the PEP and the audit record, custody that rises by a provider row</td><td>package</td></tr>
 <tr><td></td><td><a href="https://github.com/cx-home/cx-platform-sso">cx-platform-sso</a></td><td>enterprise sign-on, the interop lane</td><td>package</td></tr>
 <tr><td></td><td><a href="https://github.com/cx-home/cx-platform-ux">cx-platform-ux</a></td><td>the web and terminal surfaces</td><td>package</td></tr>

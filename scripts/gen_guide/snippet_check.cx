@@ -118,7 +118,11 @@
   [= $tmpdir [$cat ([$env:var-or-default 'TMPDIR' '/tmp'], '/cx-snippet-check')]]
   [= $tmp [$cat ($tmpdir, '/snippet.cx')]]
   [= $mk [$io:make-dirs $tmpdir]]
-  [= $files [$io:glob 'docs-src/canonical/sections/*.cxd']]
+  [; DOCS-41: the repository pages' sources carry the same block vocabulary
+     and the same rule — their one example each is a [fixture] citation the
+     floor below counts, and an [example lang=cx] there runs like any other. ]
+  [= $files [$fp:flat-map ('docs-src/canonical/sections/*.cxd', 'docs-src/repos/*.cxd')
+                [?fn ($g) [$io:glob $g]]]]
   [= $fails [$fp:flat-map $files [?fn ($f) [$file-fails $cxbin $tmp $f]]]]
   [= $per [?for [in $f $files] [yield [$counts $f]]]]
   [= $total [$fp:fold $per 0 [?fn ($a $c) [+ $a $c@total]]]]

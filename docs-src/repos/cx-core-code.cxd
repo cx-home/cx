@@ -1,0 +1,42 @@
+[# docs-src/repos/cx-core-code.cxd — the language's page, repo-cx-core-code.html
+   (RULED: DOCS-41, DOCS-47, DOCS-49 wave 2). Facts from the registries;
+   the one example from the repository's own corpus (its code suite). #]
+
+[repo name=cx-core-code
+  [intro
+    """**TL;DR — Ring 1 adds execution and nothing else.** `cx-core-code` is
+       the evaluator, CXPath, the directive set, the bundled standard library
+       below, the formatter, the linter and the language server. It adds no
+       servers, no protocol stacks and no databases: a Ring-1 program still
+       cannot open a socket, and it reads nothing until you grant it
+       ([[capabilities]])."""]
+  [body
+    """The language is the data format with directives: a program is a
+       document whose `[?…]` elements the evaluator runs, a query is a
+       pattern over the document you already have ([[code]]), and every
+       error is a value you match on rather than an exception you catch.
+       Effects are deny-by-default; a refusal names the flag that would allow
+       the effect and is an ordinary value like any other."""]
+  [body
+    """It ships `libcx`, the embeddable evaluator the bindings load, and the
+       `cli` and `embed` builds of `cx`: the same binary as the platform
+       build with the servers left out, so a script or an embedded evaluator
+       carries only the two rings. The specification behind every directive
+       is projected into one table on the [directive reference](directives.html);
+       if a directive is not in that table, it does not exist."""]
+  [gives
+    """Every Ring 1 module a program can import without leaving the two rings.
+       Each row below is a `registry/modules.cxd` row read when this page was
+       built, and each links to the reference page the guide projects from
+       that module's own documentation — the same source the conformance
+       corpus grades."""]
+  [try
+    """A query grouped by an attribute: every `user` by department, counted.
+       There is no object model to build first and no parser to call — the
+       program reads the data in the form you wrote it."""]
+  [fixture id=program-for-004-group-count]
+  [status
+    """The language repository builds on the data core alone and is built on
+       by the platform's storage engine; the front door compiles its
+       evaluator and its bundled modules from the pin, and the `cx` this
+       site's examples were replayed against is that build."""]]

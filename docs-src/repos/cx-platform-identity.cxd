@@ -1,0 +1,42 @@
+[# docs-src/repos/cx-platform-identity.cxd — the identity repository's page,
+   repo-cx-platform-identity.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 2).
+   Facts from the registries; the one example from its own corpus (the
+   session suite). #]
+
+[repo name=cx-platform-identity
+  [intro
+    """**TL;DR — who is asking, as a value.** `cx-platform-identity` turns a
+       verified token into a session bound to a principal and a tenant,
+       maps claims to that principal deterministically, resolves `did:web`
+       identifiers, keeps authorization rows in the store and answers
+       whether a credential has been revoked."""]
+  [body
+    """A session is attached from a token checked against the issuer's keys,
+       and every question about it is answered as a value: an unattached
+       request, an unknown session id, an unknown client are all absence you
+       can ask about with `[?else]`, never an exception. The claim mapping is
+       pure — the same claims map to the same principal every time — so a
+       policy written against a principal can be tested without a token in
+       hand."""]
+  [body
+    """The rest of the repository is the identity fabric around the session:
+       `did:web` resolution refuses to reach the network until it is granted
+       and refuses a self-describing document; the authorization store keeps
+       grants as rows the engine can query and replay; credential revocation
+       is an append to a journal and a fold over one — a fact that outlives
+       the process and is visible to a second party. The single sign-on
+       protocols themselves live one repository over, in the sso module."""]
+  [gives
+    """Four modules of the platform group: the session layer, the
+       authorization store, `did:web` resolution and credential revocation.
+       Each links to its reference page, projected from the module's own
+       documentation."""]
+  [try
+    """A claims document mapped to a principal with no session in hand — the
+       tenant from `tid`, the identity from `sub`, and the same answer every
+       time it is asked."""]
+  [fixture id=session-005-map-claims-pure]
+  [status
+    """The identity repository builds on the store, the wire and the session
+       layer, and the application host builds on it; the front door compiles
+       its V module from the pin."""]]
