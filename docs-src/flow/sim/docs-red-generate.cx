@@ -1,0 +1,10 @@
+# A RED GENERATE. generate is the pivot and nothing precedes it, so there is
+# nothing to compensate: the run winds back over an empty prefix and lands
+# `:compensated`, the checks never start (flow.md §4.7, §4.8; RULED: CICD-1).
+#
+#   cx flow simulate docs-src/flow/docs.flow.cx docs-src/flow/sim/docs-red-generate.cx \
+#     --env docs-src/flow/docs.env.cx --allow-read=. --mode=write
+[results
+  [step name="generate" status=:failed
+        [result [err code='cx-err:CXER0100'
+                     message='make docs-generate is RED (exit 2): a cited fixture no longer reproduces']]]]

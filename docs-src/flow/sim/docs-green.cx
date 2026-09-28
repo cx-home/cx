@@ -1,0 +1,15 @@
+# The green path of docs-src/flow/docs.flow.cx under --mode=write, as a
+# `simulate` result table (flow.md §3, §4.14): the runner law over SUPPLIED
+# results — a dry run that needs no journal and runs no make (RULED: CICD-1).
+#
+#   cx flow simulate docs-src/flow/docs.flow.cx docs-src/flow/sim/docs-green.cx \
+#     --env docs-src/flow/docs.env.cx --allow-read=. --mode=write
+[results
+  [step name="generate" status=:done
+        [result [generated ran=true tail='primer_build: 15 document(s) written']]]
+  [step name="check" status=:done
+        [result [checked count='2'
+                  [made target='docs-check' ok=true tail='no drift']
+                  [made target='verify-doc-links' ok=true tail='0 failed']]]]
+  [step name="assemble" status=:done
+        [result [assembled dir='site' tail='site-check: site/ holds exactly the required files']]]]
