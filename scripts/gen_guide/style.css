@@ -640,3 +640,42 @@ p.fn-sig code { font-size: 0.82em; color: var(--ink); background: rgba(26,24,18,
   footer.title-block { grid-column: 1; grid-row: 4; flex-wrap: wrap; }
   .hero h1 { font-size: 2.4rem; }
 }
+
+/* ── DOCS-4: the generated figures and the before/after panels ──────────
+   No colour is introduced here: every value is a token above. */
+figure.ring-figure { margin: 1rem 0 1.4rem; }
+figure.ring-figure svg { width: 100%; max-width: 640px; height: auto; display: block; margin: 0 auto; }
+figure.ring-figure a { display: block; }
+.hero-fig svg { max-width: 100%; }
+ul.tldr { margin: 0.4rem 0 1rem; }
+ul.tldr li { margin: 0.25rem 0; }
+
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1.2rem;
+  margin: 0.8rem 0 1.6rem;
+  border-top: 1.5px solid var(--ink);
+}
+.pair-half { min-width: 0; padding-top: 0.5rem; }
+.pair-half .fixture { margin-top: 0.2rem; }
+.pair-half pre { font-size: 11.5px; }
+p.pair-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin: 0.4rem 0 0;
+}
+.pair-before p.pair-label { color: var(--accent); }
+p.pair-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.98rem;
+  color: var(--ink);
+  margin: 0.15rem 0 0.2rem;
+}
+@media (max-width: 900px) {
+  .pair { grid-template-columns: 1fr; }
+}

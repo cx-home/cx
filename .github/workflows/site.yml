@@ -77,6 +77,13 @@ jobs:
       - name: List the site against its manifest
         run: make site-check
 
+      # DOCS-45: every external link of the assembled site, fetched once
+      # (scripts/gen_site/check_external_links.cx; docs-src/site/links.cxd is
+      # the allowlist). Not a pre-merge step — it needs the network — so it
+      # lives here, after the internal-link walk site-check does.
+      - name: Fetch every external link
+        run: make site-links-external
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

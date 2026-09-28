@@ -1,0 +1,55 @@
+[tldr
+  [doc [#
+docs-src/site/tldr.cxd — the one TL;DR of why to reach for CX (RULED: DOCS-49,
+RS-30; the design's voice rule 2).
+
+One sentence lives in one place. scripts/gen_docs/primer_build.cx projects this
+file into the three pages that open with it — the landing page
+(docs-src/site/index.md, `{{TLDR}}`), the guide home
+(scripts/gen_guide/guide_build.cx, tldr-html) and the primer's §0
+(docs-src/llm/primer.md.tmpl, `{{TLDR}}`) — so the three cannot drift apart
+the way the three hand copies they replace had.
+
+  [lead]      the opening paragraph: why to reach for CX, in our voice
+  [standard]  the standard we hold ourselves to, stated as ours — each clause
+              below is one of its terms with the fixture that proves it
+  [clause]    one claim, and the conformance case (`fixture=`) the page
+              replays for it when it is built; the case must come from a
+              suite both docs-src/site/manifest.cxd's and
+              docs-src/llm/manifest.cxd's [suites] declare, because both
+              projections replay it (a moved output stops either build)
+
+The prose carries the site's inline Markdown (**bold**, `code`); the HTML
+projection renders exactly those two forms.
+#]]
+
+  [lead [#
+**TL;DR — reach for CX whenever the data is the point.** One bracketed syntax is the document, the query, the program and the compiler's own tree, so the file you read is the file you transform, validate, hash, store and serve — with no second language in between.
+#]]
+
+  [standard [#
+We hold ourselves to a standard we can state in one line — **readable on day one, batteries included, exact by default, and effects you grant rather than inherit** — and we prove each term of it with a conformance case this page replayed when it was built:
+#]]
+
+  [clause fixture=program-for-003-name-email-pair [#
+a query is a pattern over the document, not code over an object model
+#]]
+  [clause fixture=ap-decimal-float-mix-right [#
+a fraction literal is an exact decimal, and mixing one with a binary float is refused out loud rather than rounded in silence
+#]]
+  [clause fixture=program-construction-err-004-captured-err-propagates [#
+an error is a value that propagates out of whatever is built from it — no exception unwinds past you
+#]]
+  [clause fixture=io-001-read-file-cap-denied [#
+a program reads nothing it was not granted, and the denial is a value naming the flag that would allow it
+#]]
+  [clause fixture=re-003-compile-backreference-unsupported [#
+a regular expression cannot backtrack, so no input can make it run for as long as it likes
+#]]
+  [clause fixture=store-rt-001-round-trip-get [#
+state that outlives the program is two calls to a content-addressed store
+#]]
+  [clause fixture=mcp-001-call-tool-request-shape [#
+an agent-protocol message is an ordinary value projected to its wire form
+#]]
+]

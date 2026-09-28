@@ -1,0 +1,100 @@
+# scripts/gen_site/docs_voice_check.cx — the docs-voice step (RULED: DOCS-43,
+# RS-30, CXF-1).
+#
+# The docs speak for CX on its own identity. Python is named only where a
+# reader arriving from it needs the bridge — the migration page, the
+# comparison's one section, the quickstart's host-language step — and this
+# step is what holds that: it counts the word (any case, whole word) in every
+# served SOURCE and refuses the run when a file reads more than
+# docs-src/site/voice.cxd allows it. A file with no row must read zero.
+#
+# It is a RATCHET, not a ceiling: a file that reads LESS than its row allows
+# fails too, naming the new count, so the allowance is always the measured
+# number and only ever moves down — a wave that removes a mention lowers the
+# row in the same change, and the rows carrying a `wave=` are the floors
+# DOCS-49's later waves take to zero.
+#
+# What is scanned (the sources every served page is rendered from; a
+# generated page is held through its source, never twice):
+#   docs-src/site/*.md, docs-src/site/tldr.cxd        the landing page
+#   docs-src/canonical/sections/*.cxd, about.html      the guide
+#   docs-src/canonical/reference/*.cx                  the reference pages
+#   docs-src/llm/*.tmpl, primer-platform.chapter.md    the LLM layer
+#   docs/dev/*.md                                      the dev pages (served raw)
+#
+# Run (from the repository root):
+#   cx --allow-read scripts/gen_site/docs_voice_check.cx
+#   (or: make docs-voice-check)
+# Exit: 0 green (the per-file table on stdout); 1 any file over or under its
+# allowance, or a row whose file is not there.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?const VOICE "docs-src/site/voice.cxd"]
+[?const GLOBS ("docs-src/site/*.md", "docs-src/site/tldr.cxd",
+               "docs-src/canonical/sections/*.cxd", "docs-src/canonical/about.html",
+               "docs-src/canonical/reference/*.cx",
+               "docs-src/llm/*.tmpl", "docs-src/llm/primer-platform.chapter.md",
+               "docs/dev/*.md")]
+
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def attr scope=public ($e $k $d)
+  [?let [= $hits [?for [in $a [$attrs $e]] [where [= [$string $a@name] $k]] [yield [$string $a]]]]
+    [?if [$empty $hits] [then $d] [else [$first $hits]]]]]
+
+# rows: the [python] block's [page] rows, as {path, allow, wave, why}.
+[?def rows scope=public impure ()
+  [?for [in $p [$cx:parse [$io:read-file VOICE]]//python/page]
+    [yield [row path=[$attr $p "path" ""] allow=[$strings:to-number [$attr $p "allow" "0"]]
+                wave=[$attr $p "wave" ""] why=[$attr $p "why" ""]]]]]
+
+[?def word-rx scope=public impure () [$re:compile "(?i)\\bpython\\b"]]
+
+[?def count-in scope=public impure ($path)
+  [$count [$re:find-all [$word-rx] [$io:read-file $path]]]]
+
+[?def sources scope=public impure ()
+  [$fp:flat-map GLOBS [?fn ($g) [$io:glob $g]]]]
+
+[?def allow-for scope=public ($rows $path)
+  [?let [= $hits [?for [in $r $rows] [where [= [$string $r@path] $path]] [yield $r]]]
+    [?if [$empty $hits] [then [row path=$path allow=0 wave="" why=""]] [else [$first $hits]]]]]
+
+[?let
+  [= $rows [$rows]]
+  [= $files [$sources]]
+  [= $missing [?for [in $r $rows] [where [not [$io:is-file [$string $r@path]]]] [yield [$string $r@path]]]]
+  [= $graded [?for [in $f $files]
+               [= $n [$count-in $f]]
+               [= $r [$allow-for $rows $f]]
+               [yield [g path=$f n=$n allow=$r@allow wave=[$string $r@wave]]]]]
+  [= $over [?for [in $g $graded] [where [> $g@n $g@allow]] [yield $g]]]
+  [= $under [?for [in $g $graded] [where [< $g@n $g@allow]] [yield $g]]]
+  [= $total [$fp:fold $graded 0 [?fn ($a $g) [+ $a $g@n]]]]
+  [= $_table [?for [in $g $graded] [where [> $g@n 0]]
+               [yield [$say [$concat "  " [$string $g@n] "\t" [$string $g@path]
+                                     [?if [= [$string $g@wave] ""] [then ""]
+                                       [else [$concat "\t(floor for wave " [$string $g@wave] ")"]]]]]]]]
+  [= $_m [?for [in $p $missing] [yield [$cry [$concat "docs-voice-check: " VOICE " names " $p " and it is not there — remove the row"]]]]]
+  [= $_o [?for [in $g $over] [yield [$cry [$concat "docs-voice-check: " [$string $g@path] " names Python "
+                                                    [$string $g@n] " time(s); " VOICE " allows "
+                                                    [$string $g@allow] " — the docs speak for CX on its own identity (DOCS-43): "
+                                                    "rewrite the sentence, or, for a bridge page, raise the row with its reason"]]]]]
+  [= $_u [?for [in $g $under] [yield [$cry [$concat "docs-voice-check: " [$string $g@path] " names Python "
+                                                     [$string $g@n] " time(s) and " VOICE " still allows "
+                                                     [$string $g@allow] " — ratchet: lower allow= to "
+                                                     [$string $g@n] " in the same change"]]]]]
+  [?if [and [$empty $missing] [and [$empty $over] [$empty $under]]]
+    [then [?let [= $_s [$say [$concat "docs-voice-check: " [$string [$count $files]] " served sources, "
+                                      [$string $total] " Python mention(s), every one within " VOICE
+                                      "'s allowance; " [$string [$count [?for [in $g $graded] [where [= $g@n 0]] [yield 1]]]]
+                                      " files read zero"]]]
+            [$env:exit 0]]]
+    [else [$env:exit 1]]]]
