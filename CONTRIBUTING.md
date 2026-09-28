@@ -170,7 +170,7 @@ make build-vcx        build the toolchain (the `cx` binary lands in vcx/target/)
 make test             the whole post-merge pipeline — run this once, at the end
 make test-changed     only the steps whose inputs your change touched
 make test-changed-dry the same selection, printed and not run
-make docs             regenerate the LLM layer after changing a cited fixture
+make docs             regenerate the LLM layer, then run every doc check and assemble the site (the docs flow)
 make docs-check       the drift gate; fails if the layer is stale
 make guide            the human-facing documentation site
 scripts/gate.sh       run a pipeline and ALWAYS write a verdict marker
