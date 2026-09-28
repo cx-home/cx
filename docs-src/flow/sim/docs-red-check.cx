@@ -1,0 +1,13 @@
+# A RED CHECK. Every step after the pivot is forward-only, so a red check
+# lands the run `:incomplete` with the count visible (§4.8) — the check and
+# the assembly it holds back — and never un-generates: the regenerated files
+# are what the developer reads to fix it. The err names every red target
+# (docs/check runs all of them, RULED: CICD-1, RUN-2).
+#
+#   cx flow simulate docs-src/flow/docs.flow.cx docs-src/flow/sim/docs-red-check.cx \
+#     --env docs-src/flow/docs.env.cx --allow-read=. --mode=check
+[results
+  [step name="generate" status=:done [result [generated ran=false reason='--mode=check']]]
+  [step name="check" status=:failed
+        [result [err code='cx-err:CXER0100'
+                     message='1 of 6 checks RED: docs-check (exit 2)']]]]

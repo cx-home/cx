@@ -39,8 +39,9 @@ name: Site
 # wasm/cxlib.js: a page with no engine. The job now installs the Emscripten
 # SDK at the version devbox.json pins (the one pin; the emsdk checkout is the
 # tag of that same version, cached per version), builds the engine with
-# `make guide-wasm` before `make site`, lists the site with the five wasm
-# files required (docs-src/site/manifest.cxd), and before uploading anything
+# `make guide-wasm` before the docs flow, lists the site with the five wasm
+# files required (CX_SITE_REQUIRE_WASM=1 → docs-src/site/manifest.cxd's
+# required-when=), and before uploading anything
 # loads the ASSEMBLED site in headless Chrome and runs every primer example
 # in the page (`make test-playground-primer PLAYGROUND_ROOT=site`).
 #
@@ -121,11 +122,16 @@ jobs:
       - name: Build the playground's wasm engine and render the guide with it
         run: make guide-wasm
 
-      - name: Assemble the site
-        run: make site
-
-      - name: List the site against its manifest (the five wasm files required)
-        run: make site-check
+      # The documentation flow, docs-src/flow/docs.flow.cx, in --mode=check —
+      # the same document `make docs` and the post-merge doc pipeline run
+      # (RULED CICD-1); its assemble step runs site-check. The engine was
+      # built above, so here the manifest's wasm block is REQUIRED
+      # (required-when=CX_SITE_REQUIRE_WASM, PLAY-1): a site missing any of
+      # its five files is red before anything uploads.
+      - name: The docs flow — check every generated document, assemble and list site/ with the five wasm files required
+        env:
+          CX_SITE_REQUIRE_WASM: '1'
+        run: make docs-flow
 
       - uses: actions/setup-node@v4
         with:
