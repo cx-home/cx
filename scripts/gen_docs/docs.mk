@@ -63,7 +63,25 @@ endif
 ## embedded the older text. `touch docs/llm/primer.md` then rebuild. Only
 ## tools/release-verify.sh's `cx primer == docs/llm/primer.md` row catches this
 ## otherwise — docs-check proves the FILE is fresh, never the EMBED.
-docs: $(DOCS_CX_DEP) site-index
+##
+## `make docs` is the documentation FLOW in --mode=write (RULED: CICD-1): the
+## Makefile's `docs-flow` runs docs-src/flow/docs.flow.cx — generate (the
+## recipe below), then every doc check, then the site assembled and listed —
+## and prints the run's record. It is the same document the post-merge doc
+## pipeline (`make test-docs`) and the Site workflow run in --mode=check. A red
+## check fails `make docs` AFTER regenerating: the files stay, and the record
+## names the target with its output tail.
+docs:
+	@$(MAKE) --no-print-directory docs-flow DOCS_FLOW_MODE=write
+
+## docs-generate  The flow's `generate` step (docs/generate --mode=write): the
+##                                   platform chapter (primer-platform), the
+##                                   landing page (site-index), docs/llm/
+##                                   (primer_build.cx) and the README badge.
+##                                   Run it alone only to regenerate without the
+##                                   checks; `make docs` is the process.
+.PHONY: docs-generate
+docs-generate: $(DOCS_CX_DEP) primer-platform site-index
 	@CX_BIN="$(DOCS_CX_BIN)" $(DOCS_CX_BIN) $(DOCS_CAPS) $(DOCS_GEN)/primer_build.cx
 	# #954: refresh the README's self-reported CX-share badge alongside the
 	# docs layer (Linguist can't count CX until cx-tooling's tooling/linguist/ upstreams).
