@@ -135,7 +135,7 @@
          to features: every feature must apply uniformly across its natural
          domain or carry a written, justified exception — enforced by the
          UNIFORM review gate in
-         [`spec/03-approved/process/spec-authoring-guide.md`](../../spec/03-approved/process/spec-authoring-guide.md)
+         [`spec/03-approved/process/spec-authoring-guide.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/process/spec-authoring-guide.md)
          §3, not merely aspired to."""]
 
     [body

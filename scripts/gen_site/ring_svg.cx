@@ -1,0 +1,341 @@
+# scripts/gen_site/ring_svg.cx — the ring figure, rendered from the registries
+# (RULED: DOCS-42, RS-1, RS-30, CXF-1).
+#
+# The two rings and the groups above them, drawn from the rows that DECLARE
+# them: Ring 0 at the centre (the data format — registry/modules.cxd's
+# ring=0 rows), Ring 1's modules as named ticks on the ring (the ring=1 rows
+# with no group), the platform group clustered by repository (the
+# group=platform rows, one sector per registry/repos.cxd row, in the
+# registry's order), and the bindings and ecosystem groups at the edge (the
+# repos.cxd rows of those groups that ship). The figure carries the same
+# counts the landing page prints — modules and repositories — read through
+# site_counts.cx's count-of and shown-repos, so the picture and the
+# numbers beside it cannot disagree. Nothing here is hand geometry: a module
+# that moves ring or repository moves in the picture on the next build.
+#
+# Colours are READ from scripts/gen_guide/style.css's :root tokens (--ink,
+# --accent, --paper-panel, …), never spelled here (the owner's rule: no
+# colour-scheme change; the design's rule: no hard-coded colour again). The
+# figure is emitted through [$xml:emit], the way the guide emits its pages.
+#
+# Consumers: guide_build.cx inlines the figure into the guide home and into
+# rings.html (a [figure name=rings] block) and writes it, untracked, as
+# docs/guide/assets/rings.svg; site_build.cx inlines it into the landing page.
+#
+# Run (from the repository root):
+#   cx --allow-read scripts/gen_site/ring_svg.cx            the SVG on stdout
+#   cx --allow-read scripts/gen_site/ring_svg.cx --check    the self-test:
+#        the module ticks the figure draws equal registry/modules.cxd's
+#        shipped-module count (the landing's {{COUNT:modules}}), and every
+#        platform row names a repository row
+#   (or: make ring-svg-check)
+#
+# Exit: 0 green; 1 a token missing from style.css, a platform row whose
+# repository has no repos.cxd row, or a self-test miss.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/xml'     as=xml]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/math'    as=math]
+[?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/strings' as=strings]
+
+# The rows the site counts (site_counts.cx): shown-repos and count-of are the
+# rows the landing counts, read here so the figure cannot count differently.
+[?lib './scripts/gen_site/site_counts.cx' as=sc]
+
+[?const STYLE "scripts/gen_guide/style.css"]
+[?const MODULES "registry/modules.cxd"]
+[?const REPOS "registry/repos.cxd"]
+[?const MANIFEST "docs-src/site/manifest.cxd"]
+[?const MONO "IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace"]
+
+# The geometry, in one 720×720 viewBox: the centre, the rings' radii.
+[?const C 360]
+[?const R0 64]
+[?const R1-IN 84]
+[?const R1-OUT 168]
+[?const RP-IN 198]
+[?const RP-OUT 290]
+[?const R-EDGE 318]
+
+[?def member scope=public ($seq $x)
+  [> [$count [?for [in $y $seq] [where [= $y $x]] [yield 1]]] 0]]
+
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def die scope=public impure ($s)
+  [?let [= $_ [$cry [$concat "ring_svg: " $s]]] [$env:exit 1]]]
+
+# ── numbers ─────────────────────────────────────────────────────────────
+
+# fx: a float as an SVG number with one decimal ("123.4"), never the
+# exponent spelling [$string] gives a float.
+[?def font scope=public () MONO]
+
+[?def fx scope=public ($v)
+  [?let [= $t [$math:round [* $v 10.0e0]]]
+        [= $a [?if [< $t 0] [then [- 0 $t]] [else $t]]]
+        [= $w [$math:floor [/ $a 10]]]
+        [= $f [% $a 10]]
+    [$concat [?if [< $t 0] [then "-"] [else ""]] [$string $w] "." [$string $f]]]]
+
+[?def deg-to-rad scope=public ($deg) [* [$math:pi] [/ $deg 180]]]
+
+# px / py: the point at radius $r and angle $deg (0° = east, -90° = north).
+[?def px scope=public ($r $deg) [+ C [* $r [$math:cos [$deg-to-rad $deg]]]]]
+[?def py scope=public ($r $deg) [+ C [* $r [$math:sin [$deg-to-rad $deg]]]]]
+
+# ── the colour tokens ───────────────────────────────────────────────────
+
+[?def tokens scope=public impure ()
+  [$fp:fold [$re:find-all [$re:compile "--([a-z-]+):\\s*(#[0-9a-fA-F]{3,6})"] [$io:read-file STYLE]] {}
+    [?fn ($acc $m) [$map:put $acc [$re:group $m 1] [$re:group $m 2]]]]]
+
+[?def tok scope=public impure ($toks $name)
+  [?if [$map:contains $toks $name] [then [$map:get $toks $name]]
+    [else [$die [$concat "no --" $name " token in " STYLE " — the figure reads its colours from there"]]]]]
+
+# ── the rows ────────────────────────────────────────────────────────────
+
+[?def module-rows scope=public impure ()
+  [?for [in $m [$cx:parse [$io:read-file MODULES]]//module] [yield $m]]]
+
+[?def attr scope=public ($e $k $d)
+  [?let [= $hits [?for [in $a [$attrs $e]] [where [= [$string $a@name] $k]] [yield [$string $a]]]]
+    [?if [$empty $hits] [then $d] [else [$first $hits]]]]]
+
+[?def is-module scope=public ($m) [= [$attr $m "kind" "module"] "module"]]
+[?def is-planned scope=public ($m) [= [$attr $m "status" ""] "planned"]]
+
+# ring0-rows: the data format's rows. ring1-rows: Ring 1's modules with no
+# group, in name order — the ticks on the ring. platform-rows: every
+# group=platform row (any kind; a planned row is drawn faint and says so).
+[?def ring0-rows scope=public impure ()
+  [?for [in $m [$module-rows]] [where [= [$attr $m "ring" ""] "0"]] [order-by $m/@name] [yield $m]]]
+[?def ring1-rows scope=public impure ()
+  [?for [in $m [$module-rows]]
+    [where [and [= [$attr $m "ring" ""] "1"] [= [$attr $m "group" ""] ""]]]
+    [where [$is-module $m]]
+    [where [not [$is-planned $m]]]
+    [order-by $m/@name] [yield $m]]]
+[?def platform-rows scope=public impure ()
+  [?for [in $m [$module-rows]] [where [= [$attr $m "group" ""] "platform"]] [yield $m]]]
+
+[?def repo-rows scope=public impure ()
+  [?for [in $r [$cx:parse [$io:read-file REPOS]]//repo] [yield $r]]]
+
+# platform-repos: the platform repositories in registry order, each with its
+# rows; a row naming a repository the registry does not carry is refused.
+[?def platform-repos scope=public impure ()
+  [?let [= $rows [$platform-rows]]
+        [= $repos [?for [in $r [$repo-rows]] [where [= [$attr $r "group" ""] "platform"]] [yield [$string $r@name]]]]
+        [= $stray [?for [in $m $rows] [where [not [$member $repos [$attr $m "repo" ""]]]]
+                    [yield [$concat [$string $m@name] " (repo=" [$attr $m "repo" "none"] ")"]]]]
+        [= $_s [?if [$empty $stray] [then 0]
+                 [else [$die [$concat "platform row(s) naming no platform repository row: "
+                                      [$strings:join $stray ", "]]]]]]
+    [?for [in $rp $repos]
+      [= $mine [?for [in $m $rows] [where [= [$attr $m "repo" ""] $rp]] [order-by $m/@name] [yield $m]]]
+      [where [not [$empty $mine]]]
+      [yield [cluster repo=$rp [?splice $mine]]]]]]
+
+# edge-repos: the bindings and ecosystem repositories that ship.
+[?def edge-repos scope=public impure ($group)
+  [?for [in $r [$repo-rows]]
+    [where [= [$attr $r "group" ""] $group]]
+    [where [not [= [$attr $r "ships" ""] "archived"]]]
+    [yield [$string $r@name]]]]
+
+[?def site-self scope=public impure ()
+  [$string [$first [?for [in $k [$cx:parse [$io:read-file MANIFEST]]/*] [where [= [?else [$name $k] ""] "site"]] [yield $k]]]@repo]]
+
+# ── the drawing ─────────────────────────────────────────────────────────
+
+# radial-label: a name written along the radius at angle $deg, ending at
+# radius $r and running inward, upright on both halves of the dial.
+[?def radial-label scope=public ($r $deg $name $size $fill $dash)
+  [?let [= $left [< [$math:cos [$deg-to-rad $deg]] 0.0e0]]
+        [= $x [$px $r $deg]]
+        [= $y [$py $r $deg]]
+        [= $rot [?if $left [then [+ $deg 180]] [else $deg]]]
+    [text x=[$fx $x] y=[$fx [+ $y 2.6e0]]
+          transform=[$concat "rotate(" [$string [$math:round $rot]] " " [$fx $x] " " [$fx $y] ")"]
+          text-anchor=[?if $left [then "start"] [else "end"]]
+          font-family=[$font] font-size=$size fill=$fill
+          font-style=[?if $dash [then "italic"] [else "normal"]]
+          $name]]]
+
+# tangent-label: a name written along the circle at radius $r, angle $deg.
+[?def tangent-label scope=public ($r $deg $name $size $fill $weight)
+  [?let [= $bottom [> [$math:sin [$deg-to-rad $deg]] 0.0e0]]
+        [= $x [$px $r $deg]]
+        [= $y [$py $r $deg]]
+        [= $rot [?if $bottom [then [- $deg 90]] [else [+ $deg 90]]]]
+    [text x=[$fx $x] y=[$fx [+ $y 3.0e0]]
+          transform=[$concat "rotate(" [$string [$math:round $rot]] " " [$fx $x] " " [$fx $y] ")"]
+          text-anchor="middle" font-family=[$font] font-size=$size font-weight=$weight
+          letter-spacing="1.2" fill=$fill $name]]]
+
+[?def tick scope=public ($r-in $r-out $deg $stroke $width)
+  [line x1=[$fx [$px $r-in $deg]] y1=[$fx [$py $r-in $deg]]
+        x2=[$fx [$px $r-out $deg]] y2=[$fx [$py $r-out $deg]]
+        stroke=$stroke stroke-width=$width]]
+
+# ring1-marks: one tick and one radial label per Ring 1 module, evenly around
+# the ring, starting at the top.
+[?def ring1-marks scope=public ($rows $ink $muted)
+  [?let [= $n [$count $rows]]
+    [?for [in $i [$range 1 $n]]
+      [= $deg [+ -90.0e0 [* [- $i 1] [/ 360.0e0 $n]]]]
+      [= $m [$nth $rows $i]]
+      [yield [g class="rf-r1"
+        [$tick [- R1-OUT 5] R1-OUT $deg $ink "0.9"]
+        [$radial-label [- R1-OUT 9] $deg [$string $m@name] "7.4" $ink false]]]]]]
+
+# platform-marks: the clusters as sectors — a hairline between clusters, a
+# tick and a radial label per row, the repository's name on the outer arc.
+[?def platform-marks scope=public ($clusters $ink $accent $muted $faint)
+  [?let [= $nrows [$fp:fold $clusters 0 [?fn ($a $c) [+ $a [$count $c/*]]]]]
+        [= $slots [+ $nrows [$count $clusters]]]
+        [= $step [/ 360.0e0 $slots]]
+    [?for [in $ci [$range 1 [$count $clusters]]]
+      [= $c [$nth $clusters $ci]]
+      [= $before [$fp:fold [?for [in $j [$range 1 [- $ci 1]]] [yield [$nth $clusters $j]]] 0
+                   [?fn ($a $k) [+ $a [+ 1 [$count $k/*]]]]]]
+      [= $rows [?for [in $m $c/*] [yield $m]]]
+      [= $first-deg [+ -90.0e0 [* $before $step]]]
+      [= $mid-deg [+ $first-deg [* [/ [- [$count $rows] 1] 2] $step]]]
+      [= $edge-deg [- $first-deg [/ $step 2]]]
+      [yield [g class="rf-platform" data-repo=[$string $c@repo]
+        [$tick RP-IN RP-OUT $edge-deg $ink "0.5"]
+        [$tangent-label [+ RP-OUT 11] $mid-deg [$string $c@repo] "7.2" $accent "600"]
+        [?for [in $ri [$range 1 [$count $rows]]]
+          [= $m [$nth $rows $ri]]
+          [= $deg [+ $first-deg [* [- $ri 1] $step]]]
+          [= $mod [$is-module $m]]
+          [= $planned [$is-planned $m]]
+          [yield [g class=[?if [and $mod [not $planned]] [then "rf-module"] [else [?if $planned [then "rf-planned"] [else "rf-row"]]]]
+            [$tick [- RP-OUT 5] RP-OUT $deg [?if $mod [then $ink] [else $faint]] [?if $mod [then "0.9"] [else "0.6"]]]
+            [$radial-label [- RP-OUT 9] $deg
+              [?if $planned [then [$concat [$string $m@name] " (planned)"]] [else [$string $m@name]]]
+              "7.2" [?if [and $mod [not $planned]] [then $ink] [else $faint]] $planned]]]]]]]]]
+
+# edge-marks: the two edge groups as short arcs of names at the rim — the
+# bindings on the lower-left, the ecosystem on the lower-right.
+[?def edge-marks scope=public ($names $from-deg $to-deg $title $ink $faint)
+  [?let [= $n [$count $names]]
+        [= $step [?if [<= $n 1] [then 0.0e0] [else [/ [- $to-deg $from-deg] [- $n 1]]]]]
+        [= $mid [/ [+ $from-deg $to-deg] 2]]
+    [g class="rf-edge"
+      [$tangent-label [+ R-EDGE 31] $mid $title "8.5" $ink "600"]
+      [?for [in $i [$range 1 $n]]
+        [= $deg [+ $from-deg [* [- $i 1] $step]]]
+        [yield [g
+          [circle cx=[$fx [$px R-EDGE $deg]] cy=[$fx [$py R-EDGE $deg]] r="2" fill=$ink]
+          [$tangent-label [+ R-EDGE 17] $deg [$nth $names $i] "7.2" $faint "500"]]]]]]]
+
+# ring-figure: the whole SVG as an element tree.
+[?def ring-figure scope=public impure ()
+  [?let [= $t [$tokens]]
+        [= $ink [$tok $t "ink"]]
+        [= $accent [$tok $t "accent"]]
+        [= $panel [$tok $t "paper-panel"]]
+        [= $paper [$tok $t "paper"]]
+        [= $muted [$tok $t "muted"]]
+        [= $faint [$tok $t "faint"]]
+        [= $rule [$tok $t "rule"]]
+        [= $r0 [$ring0-rows]]
+        [= $r1 [$ring1-rows]]
+        [= $clusters [$platform-repos]]
+        [= $self [$site-self]]
+        [= $nmods [$sc:count-of "modules" $self 0]]
+        [= $nrepos [$string [$count [$sc:shown-repos $self]]]]
+        [= $ndirs [$sc:count-of "directives" $self 0]]
+    [svg viewBox="0 0 720 720" xmlns="http://www.w3.org/2000/svg" role="img"
+         aria-label=[$concat "The two rings of CX and the groups above them, drawn from the registry: "
+                             $nmods " modules in " $nrepos " repositories, imports pointing inward"]
+      [defs
+        [marker id="rf-arr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"
+          [path d="M0,0 L7,3 L0,6 z" fill=$accent]]]
+      [; the drafting sheet: centre lines, the outer construction circle ]
+      [line x1="360" y1="14" x2="360" y2="706" stroke=$ink stroke-width="0.5" stroke-dasharray="14 4 2 4" opacity="0.35"]
+      [line x1="14" y1="360" x2="706" y2="360" stroke=$ink stroke-width="0.5" stroke-dasharray="14 4 2 4" opacity="0.35"]
+      [circle cx="360" cy="360" r=[$string R-EDGE] fill="none" stroke=$ink stroke-width="0.8" stroke-dasharray="4 5" opacity="0.7"]
+      [; the platform annulus ]
+      [circle cx="360" cy="360" r=[$string RP-OUT] fill="none" stroke=$ink stroke-width="1.4"]
+      [circle cx="360" cy="360" r=[$string RP-IN] fill="none" stroke=$ink stroke-width="1.1"]
+      [; Ring 1 ]
+      [circle cx="360" cy="360" r=[$string R1-OUT] fill=$paper stroke=$ink stroke-width="1.4"]
+      [circle cx="360" cy="360" r=[$string R1-IN] fill="none" stroke=$ink stroke-width="1.1"]
+      [; Ring 0 ]
+      [circle cx="360" cy="360" r=[$string R0] fill=$panel stroke=$ink stroke-width="1.6"]
+      [text x="360" y="352" text-anchor="middle" font-family=[$font] font-size="12" font-weight="600" letter-spacing="3" fill=$ink "DATA"]
+      [text x="360" y="366" text-anchor="middle" font-family=[$font] font-size="7.2" letter-spacing="1.4" fill=$muted "RING 0 · CANNOT EXECUTE"]
+      [text x="360" y="380" text-anchor="middle" font-family=[$font] font-size="6.8" letter-spacing="1" fill=$faint
+        [$concat "codec: " [$strings:join [?for [in $m $r0] [yield [$string $m@name]]] " · "]]]
+      [; the ring names, on the vertical centre line ]
+      [text x="360" y=[$string [- C [+ R1-IN 4]]] text-anchor="middle" font-family=[$font] font-size="8.5" font-weight="600" letter-spacing="1.6" fill=$ink "RING 1 · CODE"]
+      [text x="360" y=[$string [- C [+ RP-IN 4]]] text-anchor="middle" font-family=[$font] font-size="8.5" font-weight="600" letter-spacing="1.6" fill=$ink "THE PLATFORM GROUP"]
+      [g class="rf-ring1" [?splice [$ring1-marks $r1 $ink $muted]]]
+      [g class="rf-platform-group" [?splice [$platform-marks $clusters $ink $accent $muted $faint]]]
+      [$edge-marks [$edge-repos "binding"] -172.0e0 -112.0e0 "BINDINGS" $ink $faint]
+      [$edge-marks [$edge-repos "ecosystem"] -68.0e0 -8.0e0 "ECOSYSTEM" $ink $faint]
+      [; the import contract: inward, never outward ]
+      [line x1=[$fx [$px 340.0e0 38.0e0]] y1=[$fx [$py 340.0e0 38.0e0]]
+            x2=[$fx [$px 92.0e0 38.0e0]] y2=[$fx [$py 92.0e0 38.0e0]]
+            stroke=$paper stroke-width="7" opacity="0.85"]
+      [line x1=[$fx [$px 340.0e0 38.0e0]] y1=[$fx [$py 340.0e0 38.0e0]]
+            x2=[$fx [$px 92.0e0 38.0e0]] y2=[$fx [$py 92.0e0 38.0e0]]
+            stroke=$accent stroke-width="1.5" marker-end="url(#rf-arr)"]
+      [text x=[$fx [$px 352.0e0 34.0e0]] y=[$fx [$py 352.0e0 34.0e0]]
+            transform=[$concat "rotate(-56 " [$fx [$px 352.0e0 34.0e0]] " " [$fx [$py 352.0e0 34.0e0]] ")"]
+            text-anchor="middle" font-family=[$font] font-size="8.5" letter-spacing="1.3" fill=$accent "IMPORTS POINT INWARD"]
+      [g stroke=$accent stroke-width="1.5"
+        [line x1=[$fx [$px 240.0e0 50.0e0]] y1=[$fx [$py 240.0e0 50.0e0]] x2=[$fx [$px 256.0e0 46.0e0]] y2=[$fx [$py 256.0e0 46.0e0]]]
+        [line x1=[$fx [$px 256.0e0 50.0e0]] y1=[$fx [$py 256.0e0 50.0e0]] x2=[$fx [$px 240.0e0 46.0e0]] y2=[$fx [$py 240.0e0 46.0e0]]]]
+      [text x=[$fx [$px 270.0e0 52.0e0]] y=[$fx [$py 270.0e0 52.0e0]]
+            transform=[$concat "rotate(-52 " [$fx [$px 270.0e0 52.0e0]] " " [$fx [$py 270.0e0 52.0e0]] ")"]
+            text-anchor="middle" font-family=[$font] font-size="7.5" letter-spacing="1.2" fill=$accent "NEVER OUTWARD"]
+      [; the inspection stamp, with the counts the landing prints ]
+      [g transform="rotate(-6 604 668)"
+        [rect x="514" y="646" width="180" height="44" fill=$paper stroke=$accent stroke-width="1.7"]
+        [text x="604" y="664" text-anchor="middle" font-family=[$font] font-size="9.5" font-weight="600" letter-spacing="2" fill=$accent
+          [$concat $nmods " MODULES · " $nrepos " REPOSITORIES"]]
+        [text x="604" y="680" text-anchor="middle" font-family=[$font] font-size="7" letter-spacing="1.2" fill=$accent
+          [$concat $ndirs " DIRECTIVES · MACHINE-CHECKED IMPORTS"]]]
+      [text x="24" y="700" font-family=[$font] font-size="7" letter-spacing="1" fill=$faint
+        "DRAWN FROM registry/modules.cxd AND registry/repos.cxd WHEN THIS PAGE WAS BUILT"]]]]
+
+# ring-svg: the figure as an SVG string ([$xml:emit] wraps a [?for]'s yield
+# in empty-name <>/</> tags in content position; they are stripped, as the
+# guide's post-body strips them).
+[?def ring-svg scope=public impure ()
+  [$re:replace [$re:compile " cx:attr-types=\"[^\"]*\""]
+    [$strings:replace [$strings:replace [$xml:emit [$ring-figure]] "<>" ""] "</>" ""] ""]]
+
+# figure-module-count: the kind=module ticks the figure draws.
+[?def figure-module-count scope=public impure ()
+  [+ [$count [$ring1-rows]]
+     [$count [?for [in $c [$platform-repos]] [in $m $c/*]
+               [where [$is-module $m]] [where [not [$is-planned $m]]] [yield 1]]]]]
+
+[?let [= $argv [$env:argv]]
+  [?if [$member $argv "--check"]
+    [then [?let [= $drawn [$figure-module-count]]
+                [= $declared [$strings:to-number [$sc:count-of "modules" [$site-self] 0]]]
+                [= $svg [$ring-svg]]
+                [= $ticks [$count [$re:find-all [$re:compile "class=\"rf-module\"|class=\"rf-r1\""] $svg]]]
+            [?if [and [= $drawn $declared] [= $ticks $declared]]
+              [then [?let [= $_s [$say [$concat "ring-svg-check: the figure draws " [$string $drawn]
+                                               " module ticks (" [$string $ticks] " in the emitted SVG) — equal to "
+                                               MODULES "'s shipped-module count, the landing's {{COUNT:modules}}; "
+                                               [$string [$strings:length $svg]] " bytes"]]]
+                      [$env:exit 0]]]
+              [else [$die [$concat "the figure draws " [$string $drawn] " module rows (" [$string $ticks]
+                                   " ticks emitted) but " MODULES " declares " [$string $declared]
+                                   " shipped modules — a row is missing from the figure"]]]]]]
+    [else [?let [= $_p [$say [$ring-svg]]] [$env:exit 0]]]]]

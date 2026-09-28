@@ -1,0 +1,160 @@
+# scripts/gen_site/check_external_links.cx — every external link of cxhome.org,
+# fetched once (RULED: DOCS-45, CXF-1).
+#
+# `make site-check` (site_assemble.cx --check) resolves every INTERNAL link
+# against the assembled tree; this step is the other half of "make sure all
+# the links work": it walks the assembled site, collects every http(s) URL an
+# `href`, `src` or Markdown link names, fetches each URL once over
+# cx-stdlib/http-client, and refuses the run on any that does not answer. A
+# response is an answer when its status is below 400 (a redirect is followed
+# by the client); a 403 or 405 to a HEAD is retried as a GET, since some hosts
+# refuse HEAD on principle.
+#
+# docs-src/site/links.cxd is the allowlist: `[skip host=]` rows are hosts the
+# step does not fetch, `[expect url= status=]` rows are URLs whose answer is
+# known and accepted as it is — each with the reason on the row.
+#
+# NOT in TEST_TARGETS (the network): it runs in .github/workflows/site.yml
+# after site-check, and in the CICD-1 flow's check step.
+#
+# Run (from the repository root, after `make site`):
+#   cx --allow-read --allow-net --allow-env scripts/gen_site/check_external_links.cx
+#   (or: make site-links-external)
+# Exit: 0 every URL answered (the table on stdout); 1 any URL that did not,
+# each named with the pages that cite it; 2 no site/ to walk.
+
+[?lib 'cx-stdlib/io'          as=io]
+[?lib 'cx-stdlib/env'         as=env]
+[?lib 'cx-stdlib/cx'          as=cx]
+[?lib 'cx-stdlib/re'          as=re]
+[?lib 'cx-stdlib/fp'          as=fp]
+[?lib 'cx-stdlib/map'         as=map]
+[?lib 'cx-stdlib/strings'     as=strings]
+[?lib 'cx-stdlib/http-client' as=http]
+
+[?const MANIFEST "docs-src/site/manifest.cxd"]
+[?const LINKS "docs-src/site/links.cxd"]
+[?const TIMEOUT "20s"]
+
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def attr scope=public ($e $k $d)
+  [?let [= $hits [?for [in $a [$attrs $e]] [where [= [$string $a@name] $k]] [yield [$string $a]]]]
+    [?if [$empty $hits] [then $d] [else [$first $hits]]]]]
+
+[?def site-out scope=public impure ()
+  [$string [$first [?for [in $k [$cx:parse [$io:read-file MANIFEST]]/*]
+                     [where [= [?else [$name $k] ""] "site"]] [yield $k@out]]]]]
+
+# files-under: every regular file below $dir, relative to it.
+[?def files-under scope=public impure ($dir)
+  [?for [in $e [$io:walk $dir]]
+    [where [= [$string $e@is-file] "true"]]
+    [yield [$strings:slice [$string $e@path] [+ [$strings:length $dir] 2] [$strings:length [$string $e@path]]]]]]
+
+# urls-in: every http(s) URL a page names in an href/src attribute or a
+# Markdown link, trimmed of a trailing fragment and of the punctuation a
+# sentence leaves on it.
+[; two patterns rather than one alternation: [$re:group] refuses a group the
+   other branch left unmatched (CXER3202). ]
+[?def attr-url-rx scope=public impure () [$re:compile "(?:href|src)=\"(https?://[^\"]+)\""]]
+[?def md-url-rx scope=public impure () [$re:compile "\\]\\((https?://[^) ]+)\\)"]]
+
+[?def urls-in scope=public impure ($text)
+  [$distinct [?for [in $m [$fp:flat-map ([$re:find-all [$attr-url-rx] $text], [$re:find-all [$md-url-rx] $text]) [?fn ($x) $x]]]
+    [= $raw [$re:group $m 1]]
+    [= $u [$strings:trim-end-chars [$first [$strings:split $raw "#"]] ".,;:"]]
+    [where [not [= $u ""]]]
+    [yield $u]]]]
+
+[?def host-of scope=public ($u)
+  [$first [$strings:split [$strings:slice $u [+ [$strings:find $u "://"] 3] [$strings:length $u]] "/"]]]
+
+# ── the allowlist ────────────────────────────────────────────────────────
+
+[?def allow scope=public impure ()
+  [?let [= $doc [$cx:parse [$io:read-file LINKS]]]
+        [= $noreason [?for [in $r $doc/*]
+                       [where [or [= [?else [$name $r] ""] "skip"] [= [?else [$name $r] ""] "expect"]]]
+                       [where [= [$attr $r "why" ""] ""]]
+                       [yield [$attr $r [?if [= [?else [$name $r] ""] "skip"] [then "host"] [else "url"]] "?"]]]]
+    [?if [not [$empty $noreason]]
+      [then [?let [= $_c [$cry [$concat "check_external_links: " LINKS " row(s) without a why=: "
+                                        [$strings:join $noreason " "]]]] [$env:exit 1]]]
+      [else {skip: [?for [in $r $doc//skip] [yield [$attr $r "host" ""]]],
+             expect: [$fp:fold [?for [in $r $doc//expect] [where [not [= [$attr $r "url" ""] ""]]] [yield $r]] {}
+                       [?fn ($acc $r) [$map:put $acc [$attr $r "url" ""] [$attr $r "status" ""]]]],
+             prefixes: [?for [in $r $doc//expect] [where [not [= [$attr $r "prefix" ""] ""]]]
+                         [yield [pre prefix=[$attr $r "prefix" ""] status=[$attr $r "status" ""]]]]}]]]]
+
+# prefix-status: the status a prefix row accepts for $u, or "" when no row
+# covers it.
+[?def prefix-status scope=public ($prefixes $u)
+  [?let [= $hits [?for [in $p $prefixes] [where [$strings:starts-with $u [$string $p@prefix]]] [yield [$string $p@status]]]]
+    [?if [$empty $hits] [then ""] [else [$first $hits]]]]]
+
+[?def member scope=public ($seq $x)
+  [> [$count [?for [in $y $seq] [where [= $y $x]] [yield 1]]] 0]]
+
+# ── the fetch ────────────────────────────────────────────────────────────
+
+# status-of: the answer for one URL — its status, or the error's code when the
+# request itself failed (no route, no name, a refused connection).
+[?def status-of scope=public impure ($u)
+  [?let [= $h [$http:head $u {timeout: TIMEOUT}]]
+    [?match $h
+      [case [err $e] [$concat "error " [$string $e@code]]]
+      [else [?let [= $s [$http:status $h]]
+              [?if [or [= $s 403] [= $s 405]]
+                [then [?match [$http:get $u {timeout: TIMEOUT}]
+                        [case [err $e] [$concat "error " [$string $e@code]]]
+                        [else [$string [$http:status [$http:get $u {timeout: TIMEOUT}]]]]]]
+                [else [$string $s]]]]]]]]
+
+[?def answered scope=public ($status)
+  [?let [= $n [$strings:to-number $status]]
+    [?match $n [case [err] false] [else [< $n 400]]]]]
+
+[?let
+  [= $out [$site-out]]
+  [= $_o [?if [$io:is-directory $out] [then 0]
+           [else [?let [= $_c [$cry [$concat "check_external_links: " $out "/ is not there — run `make site` first"]]]
+                   [$env:exit 2]]]]]
+  [= $pages [?for [in $f [$files-under $out]]
+              [where [or [$strings:ends-with $f ".html"] [or [$strings:ends-with $f ".md"] [$strings:ends-with $f ".txt"]]]]
+              [yield $f]]]
+  [= $cites [$fp:fold $pages {} [?fn ($acc $p)
+              [$fp:fold [$urls-in [$io:read-file [$concat $out "/" $p]]] $acc
+                [?fn ($m $u) [$map:put $m $u [?if [$map:contains $m $u]
+                                               [then [$concat [$map:get $m $u] " " $p]]
+                                               [else $p]]]]]]]]
+  [= $al [$allow]]
+  [= $urls [?for [in $u [$map:keys $cites]] [order-by $u] [yield $u]]]
+  [= $skipped [?for [in $u $urls] [where [$member [$map:get $al "skip"] [$host-of $u]]] [yield $u]]]
+  [= $graded [?for [in $u $urls]
+               [where [not [$member [$map:get $al "skip"] [$host-of $u]]]]
+               [= $status [$status-of $u]]
+               [= $expected [?if [$map:contains [$map:get $al "expect"] $u]
+                              [then [$map:get [$map:get $al "expect"] $u]]
+                              [else [$prefix-status [$map:get $al "prefixes"] $u]]]]
+               [= $ok [?if [= $expected ""] [then [$answered $status]]
+                        [else [or [= $expected $status] [$answered $status]]]]]
+               [yield [r url=$u status=$status ok=$ok expected=[?if [= $expected $status] [then $expected] [else ""]]]]]]
+  [= $_t [?for [in $r $graded]
+           [yield [$say [$concat "  " [?if $r@ok [then "ok  "] [else "DEAD"]] " " [$string $r@status]
+                                 [?if [= [$string $r@expected] ""] [then ""] [else " (expected, allowlisted)"]]
+                                 "\t" [$string $r@url]]]]]]
+  [= $_s [?for [in $u $skipped] [yield [$say [$concat "  skip     \t" $u " (host allowlisted)"]]]]]
+  [= $dead [?for [in $r $graded] [where [not $r@ok]] [yield $r]]]
+  [= $_d [?for [in $r $dead]
+           [yield [$cry [$concat "check_external_links: DEAD " [$string $r@url] " answered " [$string $r@status]
+                                 " — cited by " [$map:get $cites [$string $r@url]]]]]]]
+  [?if [$empty $dead]
+    [then [?let [= $_k [$say [$concat "site-links-external: " [$string [$count $graded]] " external URL(s) fetched from "
+                                      [$string [$count $pages]] " served pages, every one answered ("
+                                      [$string [$count $skipped]] " skipped by host, "
+                                      [$string [$count [?for [in $r $graded] [where [not [= [$string $r@expected] ""]]] [yield 1]]]]
+                                      " accepted as allowlisted)"]]]
+            [$env:exit 0]]]
+    [else [$env:exit 1]]]]

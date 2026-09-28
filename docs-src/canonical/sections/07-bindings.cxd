@@ -16,9 +16,9 @@
        other bindings (TypeScript, Java, C#, Ruby, Kotlin, Swift) are
        archived under `lang/_archived/` pending restoration — see
        [[migration]]. Normative spec:
-       [`spec/03-approved/misc/bindings.md`](../../spec/03-approved/misc/bindings.md). C ABI surface:
+       [`spec/03-approved/misc/bindings.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/bindings.md). C ABI surface:
        [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md). Per-binding gate status:
-       [`spec/03-approved/misc/parity-matrix.md`](../../spec/03-approved/misc/parity-matrix.md)."""]
+       [`spec/03-approved/misc/parity-matrix.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/parity-matrix.md)."""]
 
   [child id=c-abi n=7.1 title='The C ABI surface'
     [intro
@@ -193,7 +193,7 @@
            per-family exception hierarchy, and lint findings are not
            errors at all (they are structured diagnostics from
            `cx_lint`). The namespace registry in
-           [`spec/03-approved/process/governance.md`](../../spec/03-approved/process/governance.md)
+           [`spec/03-approved/process/governance.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/process/governance.md)
            §9.6 is the single source of truth; codes are stable and
            additions get fresh numbers."""]]]
 
@@ -204,7 +204,7 @@
          conventions) with identical semantics. Drift between
          bindings on any Layer-1 method is a release-blocker (gate
          28.6, Layer-1 parity). Normative spec:
-         [`spec/03-approved/misc/bindings.md`](../../spec/03-approved/misc/bindings.md) §2."""]
+         [`spec/03-approved/misc/bindings.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/bindings.md) §2."""]
 
     [body
       """**16 canonical methods.** No more, no less, at this layer.
@@ -326,7 +326,7 @@
          `V.Doc.parse(B).eval(C).bytes() == Python.… == Go.… == Rust.…`.
          A binding that drifts on a single byte of output blocks the
          release. The matrix lives in
-         [`spec/03-approved/misc/parity-matrix.md`](../../spec/03-approved/misc/parity-matrix.md)."""]]
+         [`spec/03-approved/misc/parity-matrix.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/parity-matrix.md)."""]]
 
   [child id=layer-2 n=7.3 title='Layer 2 — host idiom packs'
     [intro
@@ -334,7 +334,7 @@
          host-idiomatic wrappers that compile to Layer-1 calls at the
          boundary. The compilation is deterministic — every Layer-2
          expression has a single, documented Layer-1 desugaring. Spec:
-         [`spec/03-approved/misc/bindings.md`](../../spec/03-approved/misc/bindings.md) §3."""]
+         [`spec/03-approved/misc/bindings.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/bindings.md) §3."""]
 
     [body
       """**Why two layers? Two audiences.** **CX-native developers**
@@ -476,7 +476,7 @@
       """Every CX scalar kind maps to a specific host type in each
          binding. The mapping is mandatory at Layer 1 (gate 28.4,
          type-mapping conformance); a binding that deviates blocks
-         release. Per [`spec/03-approved/misc/bindings.md`](../../spec/03-approved/misc/bindings.md) §4."""]
+         release. Per [`spec/03-approved/misc/bindings.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/bindings.md) §4."""]
 
     [body
       """**Scalar kinds.** The eleven CX atomic kinds (per
@@ -845,7 +845,7 @@
       """When a CX schema (`.cxs`, see [[schema]]) is available,
          every binding could generate typed Layer-2 projections from
          it. This is **planned follow-up work**; the spec slot
-         is reserved in [`spec/03-approved/misc/bindings.md`](../../spec/03-approved/misc/bindings.md)
+         is reserved in [`spec/03-approved/misc/bindings.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/bindings.md)
          §7, and no CLI surface for it exists yet — not even a
          stub."""]
 
@@ -979,7 +979,7 @@
       [body
         """If any binding produces a different hash, that binding
            has drifted from the canonical-bytes contract — file
-           against [`spec/03-approved/misc/parity-matrix.md`](../../spec/03-approved/misc/parity-matrix.md)
+           against [`spec/03-approved/misc/parity-matrix.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/parity-matrix.md)
            and the conformance harness will catch it on next
            CI run."""]]]
 
@@ -1114,7 +1114,7 @@
          the 16-method Layer-1 surface in idiomatic form, the atom
          scalar kind, schema validation, and the
          type-mapping table. The full normative contract is
-         [`spec/03-approved/misc/bindings.md §2.1`](../../spec/03-approved/misc/bindings.md); the C ABI
+         [`spec/03-approved/misc/bindings.md §2.1`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/bindings.md); the C ABI
          is [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)."""]
 
     [child id=c-abi-detail n=7.11.1 title='C ABI — symbol catalog'
@@ -1431,7 +1431,7 @@
       """The C ABI is the contract that lets every binding call into
          libcx without recompilation, so its evolution rules are worth
          stating plainly. The normative policy lives in
-         [`spec/03-approved/process/governance.md`](../../spec/03-approved/process/governance.md); this is the
+         [`spec/03-approved/process/governance.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/process/governance.md); this is the
          practicing summary."""]
 
     [list

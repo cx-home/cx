@@ -1,0 +1,59 @@
+[docs-voice
+  [doc [#
+docs-src/site/voice.cxd — the docs-voice rules as data (RULED: DOCS-43,
+DOCS-47, RS-30).
+
+Two ratchets, each read by a step:
+
+  [python]    scripts/gen_site/docs_voice_check.cx (`make docs-voice-check`,
+              TEST_TARGETS). The docs speak for CX on its own identity, and
+              name Python only where a reader arriving from it needs the
+              bridge (the design's voice rule 4). The step counts the word
+              (any case, whole word) in every served SOURCE — the landing
+              page, the guide sections and the about page, the reference
+              sources, the LLM templates, the dev pages — and holds each
+              file to its row here: a file with no row must read ZERO; a file
+              with a row may read at most its `allow=`, and when it reads
+              LESS the step refuses too, naming the new count, so the number
+              here is always the measured one and only ever moves down (a
+              ratchet). The three bridge pages keep their rows for good; the
+              rows carrying a wave number are the floors DOCS-49's later
+              waves lower to zero, one page at a time.
+
+  [fixtures]  scripts/gen_guide/snippet_check.cx (`make guide-snippets-check`).
+              Every example on a new or re-voiced page is a [fixture id=]
+              citation replayed byte-exact (DOCS-47); `floor=` is the number
+              of citations the guide's sections carry — a [fixture] counts
+              one, a [pair] counts two — and a wave that lowers it is refused.
+              A wave that raises it raises the floor in the same change.
+#]]
+
+  [; ── the Python allowances, measured 2026-09-28 on the DOCS-4 wave-1 tree ── ]
+  [python
+    [; the bridge pages — kept for good (DOCS-43): the migration page, the
+       comparison's one section, the quickstart's host-language step ]
+    [page path='docs-src/canonical/sections/10-migration.cxd' allow=5 why='the migration page is the bridge for a reader arriving from Python']
+    [page path='docs-src/canonical/sections/13-comparison.cxd' allow=13 why='the comparison states the case beside Python in one section (cx-vs-python) and three tooling rows; wave 5 narrows it to the one section']
+    [page path='docs-src/canonical/sections/00-quickstart.cxd' allow=8 why='the host-language step (first-binding) shows the four bindings; wave 5 narrows the rest to that step']
+    [; the hand-authored about page: the owner writes it, nobody regenerates it ]
+    [page path='docs-src/canonical/about.html' allow=3 why='hand-authored by the owner; the page names what CX was measured against']
+    [; floors for waves 5–7 (the voice pass), the count measured now ]
+    [page path='docs-src/canonical/sections/01-intro.cxd' allow=7 wave=5 why='the standard-to-meet sentence and the bindings list']
+    [page path='docs-src/canonical/sections/01b-choosing.cxd' allow=1 wave=5 why='the bindings row']
+    [page path='docs-src/canonical/sections/02-data-language.cxd' allow=2 wave=5 why='two aside comparisons']
+    [page path='docs-src/canonical/sections/03-surfaces.cxd' allow=1 wave=5 why='one aside comparison']
+    [page path='docs-src/canonical/sections/04-identity.cxd' allow=5 wave=5 why='the binding examples']
+    [page path='docs-src/canonical/sections/05-analytics.cxd' allow=23 wave=6 why='the columnar tour is written against the pandas/Arrow reader']
+    [page path='docs-src/canonical/sections/06-code.cxd' allow=4 wave=5 why='aside comparisons']
+    [page path='docs-src/canonical/sections/07-bindings.cxd' allow=62 wave=6 why='the bindings page documents cxlib for Python beside Go, Rust and V; letter for waves 5–7 whether a binding page may name its host language']
+    [page path='docs-src/canonical/sections/08-tooling.cxd' allow=7 wave=6 why='the editor and packaging rows']
+    [page path='docs-src/canonical/sections/11-glossary.cxd' allow=1 wave=7 why='one glossary entry']
+    [page path='docs-src/canonical/sections/12-faq.cxd' allow=12 wave=7 why='the FAQ answers questions asked from Python']
+    [page path='docs-src/canonical/sections/16a-code-tooling.cxd' allow=4 wave=6 why='the tooling comparison rows']
+    [page path='docs-src/llm/reference-platform.md.tmpl' allow=2 wave=7 why='the bindings paragraph of the platform reference']
+    [page path='docs/dev/store-service.md' allow=1 wave=7 why='docs/dev folds into the guide (DOCS-46)']
+    [page path='docs/dev/v0130-capabilities.md' allow=1 wave=7 why='docs/dev folds into the guide (DOCS-46)']]
+
+  [; ── the fixture-citation floor over docs-src/canonical/sections/*.cxd ── ]
+  [fixtures floor=29]
+]
