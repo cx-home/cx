@@ -71,7 +71,10 @@ jobs:
       - name: Sync + verify the pinned repositories with the cx just built
         run: make deps-sync CX_BIN=deps/cx-core-code/vcx/target/cx
 
-      - name: The docs flow — check every generated document, assemble and list site/ (RULED: CICD-1)
+      # The documentation flow, docs-src/flow/docs.flow.cx, in --mode=check —
+      # the same document `make docs` and the post-merge doc pipeline run
+      # (RULED CICD-1).
+      - name: The docs flow — check every generated document, assemble and list site/
         run: make docs-flow
 
       - uses: actions/upload-pages-artifact@v3
