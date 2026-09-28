@@ -42,7 +42,7 @@ import { resolve, join } from 'node:path';
 import { createHarness, PREVIEW, PLAYGROUND, ROOT } from './playground-gate/browser_harness.mjs';
 
 const VERBOSE = process.argv.includes('--verbose');
-const DOCROOT = process.env.CX_PLAYGROUND_ROOT ? resolve(ROOT, process.env.CX_PLAYGROUND_ROOT) : PREVIEW;
+const DOCROOT = PREVIEW;   // CX_PLAYGROUND_ROOT, read by the harness
 const DEADLINE = 1000 * Number(process.env.PRIMER_GATE_DEADLINE || 600);
 const H = createHarness({ label: 'playground-primer', deadlineMs: DEADLINE });
 

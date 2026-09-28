@@ -115,7 +115,7 @@ const BRIDGE = fixture.bridge || {};
 // reaches into playground.js's closure, so the gate cannot pass by calling
 // a function the page never calls.
 function probeCase(example, rung) {
-  return `(() => {
+  return `(async () => {
     const out = { errors: [] };
     const pick   = document.getElementById('cxp-pick');
     const detail = document.getElementById('cxp-detail-select');
@@ -133,17 +133,30 @@ function probeCase(example, rung) {
     // fixture pins the corpus key. Try the qualified form the page builds,
     // then the bare key, and say which forms were tried if neither takes —
     // a renamed corpus must fail LOUDLY here, not render the wrong example.
+    //
+    // PLAY-1: the picker lists the primer's fixtures; these pinned examples
+    // are the playground corpus, which a reader reaches by its link
+    // (#ex=<key>) — so that is the control used when the picker has no
+    // such option, and the page then carries it as the picker's one
+    // 'legacy:<key>' option.
     const want = ${JSON.stringify(example)};
     let picked = '';
-    for (const v of ['program:' + want, want]) {
+    for (const v of ['legacy:' + want, 'program:' + want, want]) {
       pick.value = v;
       if (pick.value === v) { picked = v; break; }
     }
-    if (!picked) {
-      out.errors.push('the picker has no such example — tried "program:' + want + '" and "' + want + '"');
-      return JSON.stringify(out);
+    if (picked) {
+      pick.dispatchEvent(new Event('change', { bubbles: true }));
+    } else {
+      location.hash = '#ex=' + encodeURIComponent(want);
+      for (let i = 0; i < 100 && pick.value !== 'legacy:' + want; i++) {
+        await new Promise(r => setTimeout(r, 20));
+      }
+      if (pick.value !== 'legacy:' + want) {
+        out.errors.push('the page has no such example — tried the picker ("legacy:' + want + '", "program:' + want + '", "' + want + '") and the link #ex=' + want);
+        return JSON.stringify(out);
+      }
     }
-    pick.dispatchEvent(new Event('change', { bubbles: true }));
     detail.value = ${JSON.stringify(rung)};
     if (detail.value !== ${JSON.stringify(rung)}) {
       out.errors.push('the Detail control has no such rung: ' + ${JSON.stringify(rung)});

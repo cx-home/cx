@@ -31,7 +31,11 @@ import { tmpdir } from 'node:os';
 
 export const ROOT = resolve(import.meta.dirname, '../..');
 export const PLAYGROUND = resolve(ROOT, 'scripts/gen_guide/playground');
-export const PREVIEW = resolve(ROOT, 'dist/playground-preview');
+// The docroot the browser gates serve: the staged preview by default, or any
+// other tree that holds the page — CX_PLAYGROUND_ROOT=docs/guide (make guide)
+// or =site (make site, what cxhome.org serves; PLAY-1).
+export const PREVIEW = process.env.CX_PLAYGROUND_ROOT
+  ? resolve(ROOT, process.env.CX_PLAYGROUND_ROOT) : resolve(ROOT, 'dist/playground-preview');
 export const NATIVE = process.env.CX_BIN
   ? resolve(process.env.CX_BIN) : resolve(ROOT, 'deps/cx-core-code/vcx/target/cx');
 
