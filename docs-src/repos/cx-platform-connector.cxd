@@ -1,0 +1,41 @@
+[# docs-src/repos/cx-platform-connector.cxd — the connector kit's page,
+   repo-cx-platform-connector.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 2).
+   Facts from the registries; the one example from its own corpus. #]
+
+[repo name=cx-platform-connector
+  [intro
+    """**TL;DR — a connector is a declaration, and the plan it makes is
+       pure.** `cx-platform-connector` describes an external system as data —
+       a gateway, its verbs, a binding — and plans every request without
+       resolving anything, so a credential cannot reach a URL, a header, a
+       log line or an audit record even in principle. `sync` carries the
+       watermarks and cursors that make a repeated walk exact."""]
+  [body
+    """The corpus grades the attack classes by name: a control character in a
+       cursor is refused before it can reach a header; a secret written into
+       a gateway row or a feature document is refused at validation with its
+       code; the plan carries a handle marker, never a value; a cursor that
+       repeats is a cycle, not a loop. The positive twins are there too — a
+       clean cursor rides as a query parameter, and only there."""]
+  [body
+    """`sync` is the other half: a watermark per source and tenant, a capture
+       mode (polling diff or provider delta), an overlap window, and the one
+       legal non-advance — an empty run that moves the sequence number and the
+       stall counter and never the cursor — so \"nothing is changing\" and
+       \"the cursor is stuck\" are readable apart without reading the store
+       twice. The reference connectors and their design document ship in
+       this repository's `reference/` directory."""]
+  [gives
+    """Two modules: the connector kit and sync. Both are pure over their
+       declarations — the effect happens in the runtime that executes a
+       plan, never in the plan — so the case below, like the attack cases
+       beside it, runs with no grant at all."""]
+  [try
+    """A request planned from a gateway, a verb and a binding whose credential
+       is a handle: the plan names the scheme and the handle and puts nothing
+       in the headers. The secret was never in reach."""]
+  [fixture id=connector-009-the-plan-carries-a-handle-marker-never-a-value]
+  [status
+    """The connector kit ships as a package: its two modules are bundled into
+       the platform build from the pin, and the front door's link step reads
+       the reference connectors' documents from the same checkout."""]]
