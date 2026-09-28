@@ -1,4 +1,4 @@
-# Owner decisions 2026-09-27 (evening) — Letter 58: a feature's gate is the feature's (GATE-1), the boot report names each seeded basis (CAPADDR-1)
+# Owner decisions 2026-09-27 (evening) — Letter 58: a feature's gate is the feature's (GATE-1), the boot report names each seeded basis (CAPADR-1)
 
 **Status: RULED (owner, 2026-09-27 ~21:0xZ, in session, on the letter posted on
 [#1591](https://github.com/cx-home/cx-private/issues/1591) at 19:0xZ with SEED-1's merge; 58.1 and
@@ -16,7 +16,7 @@ features, the unit KIT-1 already deploys and grants. Nothing to build. Rejected:
 `requires=` on `[verb]` — a new schema word and a second place the PEP reads a basis from; (c) both
 with precedence.
 
-## CAPADDR-1 — the boot report prints each seeded basis (L58.3 = (a))
+## CAPADR-1 — the boot report prints each seeded basis (L58.3 = (a))
 
 The `cap:` address an author writes in a binding row is the hash of the runner's seeded value
 (`runner-caps`); the host's boot report prints each seeded basis, one line
