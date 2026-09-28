@@ -1,0 +1,41 @@
+[# docs-src/repos/cx-platform-store.cxd — the storage engine's page,
+   repo-cx-platform-store.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 2).
+   Facts from the registries; the one example from its own corpus (the
+   journal suite). #]
+
+[repo name=cx-platform-store
+  [intro
+    """**TL;DR — state that outlives the program, addressed by content.**
+       `cx-platform-store` is the storage engine: a document's handle is
+       derived from its canonical bytes, the journal is a hash chain, the
+       live and audit streams read from the same log, full-text search sits
+       beside it, and the served store answers the same two calls as an
+       in-memory one."""]
+  [body
+    """Content addressing is the model ([[store]]): `put-doc` answers a
+       handle computed from the canonical form, so the same document put
+       twice is one document, and a handle is a fact about bytes rather than
+       a row number. The journal appends entries whose `prev-hash` names the
+       entry before, so a chain that verifies is a history nobody edited
+       ([[event-evolution]], [[consistency]])."""]
+  [body
+    """`mem://` needs no grant and is the store every example on this site
+       runs against; a real URL talks to `cx store-serve`, the daemon
+       described on the [[operations]] page, with the same calls. The
+       substrates, the transports, encryption at rest and the management
+       console are the [[store]] page's chapters; the three streams —
+       journal, live, audit — are the modules below."""]
+  [gives
+    """Five modules: the engine, its journal, its live and audit streams, and
+       full-text search — `ft` is a Ring 1 module of this repository, the
+       rest are the platform group's. Each links to the reference page the
+       guide projects from the module's own documentation."""]
+  [try
+    """Two appends to an in-memory journal, then the second entry read back:
+       its `prev-hash` is the first entry's hash, its own hash covers the
+       payload, and the event rides inside it unchanged."""]
+  [fixture id=journal-002-chain-link]
+  [status
+    """The storage engine builds on the language, the wire and the session
+       layer, and is built on by the identity repository and the application
+       host; the front door compiles its V module from the pin."""]]

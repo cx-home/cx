@@ -18,6 +18,7 @@
 # generated page is held through its source, never twice):
 #   docs-src/site/*.md, docs-src/site/tldr.cxd        the landing page
 #   docs-src/canonical/sections/*.cxd, about.html      the guide
+#   docs-src/repos/*.cxd                               the repository pages
 #   docs-src/canonical/reference/*.cx                  the reference pages
 #   docs-src/llm/*.tmpl, primer-platform.chapter.md    the LLM layer
 #   docs/dev/*.md                                      the dev pages (served raw)
@@ -38,6 +39,7 @@
 [?const VOICE "docs-src/site/voice.cxd"]
 [?const GLOBS ("docs-src/site/*.md", "docs-src/site/tldr.cxd",
                "docs-src/canonical/sections/*.cxd", "docs-src/canonical/about.html",
+               "docs-src/repos/*.cxd",
                "docs-src/canonical/reference/*.cx",
                "docs-src/llm/*.tmpl", "docs-src/llm/primer-platform.chapter.md",
                "docs/dev/*.md")]

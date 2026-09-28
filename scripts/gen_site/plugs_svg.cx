@@ -92,7 +92,7 @@
   [?for [in $i [$range 1 [$count $names]]]
     [= $y [+ $y0 [* [- $i 1] ROW-H]]]
     [yield [g class="pl-node"
-      [rect x=$x y=$y width=BOX-W height=[- ROW-H 4] fill=$fill stroke=$ink stroke-width="0.8"]
+      [rect x=$x y=$y width=[$string BOX-W] height=[- ROW-H 4] fill=$fill stroke=$ink stroke-width="0.8"]
       [text x=[+ $x 8] y=[+ $y 13] font-family=[$rs:font] font-size="9" fill=$ink [$nth $names $i]]]]]]
 
 [?def leader scope=public ($x1 $y1 $x2 $y2 $stroke)
@@ -132,7 +132,7 @@
         [else [g [?splice [$column $pins $lx $y0 $ink $paper $faint]]]]]
       [; the repository itself, with its face below it ]
       [g class="pl-self"
-        [rect x=$cx y=$y0 width=BOX-W height=[- ROW-H 4] fill=$panel stroke=$accent stroke-width="1.6"]
+        [rect x=$cx y=$y0 width=[$string BOX-W] height=[- ROW-H 4] fill=$panel stroke=$accent stroke-width="1.6"]
         [text x=[+ $cx 8] y=[+ $y0 13] font-family=[$rs:font] font-size="9.5" font-weight="600" fill=$ink $name]
         [?if [$empty $face]
           [then [text x=[+ $cx 8] y=[+ $y0 [+ ROW-H 13]] font-family=[$rs:font] font-size="8.5" font-style="italic" fill=$faint "no bundled module — see its row"]]
@@ -172,6 +172,16 @@
                     [= $got [$node-count $n]]
                     [yield [fig repo=$n want=$want got=$got]]]]
         [= $miss [?for [in $f $drawn] [where [not [= $f@want $f@got]]] [yield [$string $f@repo]]]]
+        [; a constant written bare in attribute position (`width=BOX-W`) is emitted
+           as its NAME, not its value — an SVG whose boxes have no width; every
+           attribute value that reads as a bare constant name is refused ]
+        [= $bare [?for [in $n $names]
+                   [where [or [= $n [$rs:site-self]] [= [$rs:attr [$repo-row $n] "status" ""] "extracted"]]]
+                   [where [not [$empty [$re:find-all [$re:compile "=\"[A-Z][A-Z0-9-]*\""] [$plugs-svg $n]]]]]
+                   [yield $n]]]
+        [= $_bare [?if [$empty $bare] [then 0]
+                    [else [$die [$concat "a bare constant name in attribute position of the figure for: "
+                                         [$strings:join $bare " "]]]]]]
     [?if [$empty $miss]
       [then [$say [$concat "plugs-svg-check: " [$string [$count $drawn]] " repository figures, each drawing exactly "
                            "1 + pins + pinned-by + modules nodes ("

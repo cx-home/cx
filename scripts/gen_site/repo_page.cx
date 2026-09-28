@@ -1,0 +1,294 @@
+# scripts/gen_site/repo_page.cx — the FACTS of a repository page, projected
+# from the registries (RULED: DOCS-41, DOCS-42, DOCS-47, DOCS-49, RS-30, CXF-1).
+#
+# One served page per repository, repo-<name>.html (DOCS-49's waves 2–4, eight
+# pages a wave). The page's PROSE is one hand file, docs-src/repos/<name>.cxd
+# (the advocate voice: what it is for, in our own words); everything on the
+# page that is a FACT — what the repository ships, its status, the sha `cx`
+# pins it at, what it builds on and what builds on it, where its spec and its
+# corpus live — is read here from registry/repos.cxd, registry/modules.cxd
+# and deps.cxd when the guide is built, so a stale fact is impossible and a
+# stale sentence is a diff (the design's letter A, the owner's (a)). The
+# page's one runnable example is a [fixture id=] citation replayed byte-exact
+# by the guide build (DOCS-47), from the repository's own corpus.
+#
+# The prose file's vocabulary (a data-only document, one [repo name=] root):
+#
+#   [intro """…"""], [body """…"""], [note """…"""], [list [item …]…],
+#   [table …]                        the case for the repository — rendered by
+#                                    the guide's own block renderer, in order
+#   [gives """…"""]                  the paragraph above the module table
+#   [try """…"""]                    the paragraph above the example
+#   [fixture id=<case>]              THE example: exactly one, from a suite of
+#                                    the repository's own corpus, declared in
+#                                    docs-src/site/manifest.cxd's [suites]
+#   [status """…"""]                 the paragraph above the status table
+#
+# Consumers: scripts/gen_guide/guide_build.cx renders every source under
+# docs-src/repos/ into docs/guide/repo-<name>.html (the site root) with the
+# guide's chrome, the fixture replayed, the plug-in figure (plugs_svg.cx)
+# inlined; docs-src/site/manifest.cxd declares each page, so `site-check`
+# names a page with no source (MISSING) and a source with no page (EXTRA).
+#
+# Run (from the repository root):
+#   cx --allow-read --allow-write scripts/gen_site/repo_page.cx --check
+#        every source names a repository the site shows (the front door or a
+#        status=extracted row), carries exactly one [fixture], and every
+#        repo-<name>.html the manifest declares has its source and vice versa;
+#        every module the page links has its lib- page in the manifest
+#   cx --allow-read --allow-write scripts/gen_site/repo_page.cx <name>
+#        the status table and the links of one page, as CX (the write grant
+#        is stdout's, as for every generator here)
+#
+# Exit: 0 green; 1 a source naming no shown row, a missing or doubled
+# fixture, a manifest/source mismatch, a module with no reference page, a
+# spec or corpus directory the (pinned) tree does not hold.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/strings' as=strings]
+
+# The registries' row helpers (ring_svg.cx) and the plug-in figure's pins
+# (plugs_svg.cx) — read once there, reused here.
+[?lib './scripts/gen_site/ring_svg.cx'  as=rs]
+[?lib './scripts/gen_site/plugs_svg.cx' as=plugs]
+[?lib './scripts/gen_site/site_build.cx' as=sb]
+
+[?const SOURCES "docs-src/repos"]
+[?const MANIFEST "docs-src/site/manifest.cxd"]
+[?const GITHUB "https://github.com/cx-home/"]
+
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def die scope=public impure ($s)
+  [?let [= $_ [$cry [$concat "repo_page: " $s]]] [$env:exit 1]]]
+
+[?def member scope=public ($seq $x)
+  [> [$count [?for [in $y $seq] [where [= $y $x]] [yield 1]]] 0]]
+
+# ── the sources ─────────────────────────────────────────────────────────
+
+# name-of: 'docs-src/repos/cx-platform-store.cxd' → 'cx-platform-store'.
+[?def name-of scope=public ($f)
+  [$strings:replace [$strings:slice $f [+ [$strings:rfind $f "/"] 1] [$strings:length $f]] ".cxd" ""]]
+
+# repo-sources: every prose file — [src name= path= slug=] — in the
+# REGISTRY's order (the front door first, then registry/repos.cxd's rows as
+# the landing's repository map lists them), so the sidebar and the map agree;
+# a source naming no shown row follows, for `check` to refuse by name.
+[?def repo-sources scope=public impure ()
+  [?let [= $files [$io:glob [$concat SOURCES "/*.cxd"]]]
+        [= $names [?for [in $f $files] [yield [$name-of $f]]]]
+        [= $shown [?for [in $r [$sb:shown-repos [$rs:site-self]]] [yield [$string $r@name]]]]
+        [= $ordered [?for [in $n $shown] [where [$member $names $n]] [yield $n]]]
+        [= $stray [?for [in $n $names] [where [not [$member $shown $n]]] [order-by $n] [yield $n]]]
+    [?for [in $n [$fp:flat-map ($ordered, $stray) [?fn ($g) $g]]]
+      [yield [src name=$n path=[$concat SOURCES "/" $n ".cxd"] slug=[$concat "repo-" $n]]]]]]
+
+# ── the rows ────────────────────────────────────────────────────────────
+
+# shown: is $name a repository the site shows — the front door, or a
+# status=extracted row (the landing's repository map, site_counts.cx).
+[?def shown scope=public impure ($name)
+  [$member [?for [in $r [$sb:shown-repos [$rs:site-self]]] [yield [$string $r@name]]] $name]]
+
+[?def row scope=public impure ($name)
+  [?if [not [$shown $name]]
+    [then [$die [$concat "'" $name "' is not a repository this site shows — the front door or a "
+                         "registry/repos.cxd row with status=extracted (a page arrives with its extraction)"]]]
+    [else [$plugs:repo-row $name]]]]
+
+# is-self: the front door — the row the site manifest names as its own.
+[?def is-self scope=public impure ($name) [= $name [$rs:site-self]]]
+
+# face: the modules the repository ships — kind=module rows, not planned, in
+# name order (the same rows the plug-in figure draws as its face).
+[?def face scope=public impure ($name)
+  [?for [in $m [$rs:module-rows]]
+    [where [= [$rs:attr $m "repo" ""] $name]]
+    [where [$rs:is-module $m]]
+    [where [not [$rs:is-planned $m]]]
+    [order-by $m/@name]
+    [yield $m]]]
+
+# tree-root: where the repository's own files are read from — this tree for
+# the front door, the pinned checkout for every other row (RS-7, RS-12).
+[?def tree-root scope=public impure ($name)
+  [?if [$is-self $name] [then ""] [else [$concat "deps/" $name "/"]]]]
+
+# own-path: a registry path (deps/<name>/spec/…, or spec/… for the front
+# door's own rows) as the repository sees it — its own root, the pin prefix
+# stripped.
+[?def own-path scope=public impure ($name $p)
+  [?let [= $pre [$tree-root $name]]
+    [?if [and [not [= $pre ""]] [$strings:starts-with $p $pre]]
+      [then [$strings:slice $p [+ [$strings:length $pre] 1] [$strings:length $p]]]
+      [else $p]]]]
+
+[?def dirname scope=public ($p)
+  [?let [= $i [$strings:rfind $p "/"]]
+    [?if [not [$present $i]] [then ""] [else [$strings:slice $p 1 [- $i 1]]]]]]
+
+# dirs-of: the distinct directories the face's $attr (spec= or corpus=)
+# columns name, as the repository's own paths, in first-seen order, after
+# the one directory $default names — the repository's whole spec or corpus
+# root, which a repository with no bundled module (the front door, the data
+# core) has and nothing else; the corpus a page cites may sit there too
+# (cx-core-code's code.cxd is conformance/, its modules' are conformance/stdlib/).
+[?def dirs-of scope=public impure ($name $attr $default)
+  [?let [= $f [$face $name]]
+        [= $dirs [$distinct [?for [in $m $f]
+                              [= $p [$rs:attr $m $attr ""]]
+                              [where [not [= $p ""]]]
+                              [where [not [= $p "none"]]]
+                              [yield [$dirname [$own-path $name $p]]]]]]
+    [$distinct [$fp:flat-map (($default,), $dirs) [?fn ($g) $g]]]]]
+
+# verified-dir: a directory the (pinned) tree must hold, or the build stops
+# naming it — a link on a served page points at what the pin holds.
+[?def verified-dir scope=public impure ($name $d)
+  [?if [$io:is-directory [$concat [$tree-root $name] $d]] [then $d]
+    [else [$die [$concat "'" $name "' has no directory " $d " under " [$tree-root $name]
+                         " — the registry names it and the pinned tree does not hold it"]]]]]
+
+[?def spec-dirs scope=public impure ($name)
+  [?for [in $d [$dirs-of $name "spec" "spec/03-approved"]] [yield [$verified-dir $name $d]]]]
+[?def corpus-dirs scope=public impure ($name)
+  [?for [in $d [$dirs-of $name "corpus" "conformance"]] [yield [$verified-dir $name $d]]]]
+
+# readme: the pinned README, verified present.
+[?def readme scope=public impure ($name)
+  [?if [$io:is-file [$concat [$tree-root $name] "README.md"]] [then "README.md"]
+    [else [$die [$concat "'" $name "' has no README.md under " [$tree-root $name]]]]]]
+
+# ── the facts, as HTML-shaped CX (emitted by the guide build) ────────────
+
+# ref-page: the reference page a module renders to — lib-<name>.html for a
+# bundled module, codec-<name>.html for a synthesized codec surface — as the
+# manifest's [files] declare it; a module with neither stops the build.
+[?def ref-page scope=public impure ($files $m)
+  [?let [= $lib [$concat "lib-" [$string $m@name] ".html"]]
+        [= $codec [$concat "codec-" [$string $m@name] ".html"]]
+    [?if [$member $files $lib] [then $lib]
+      [else [?if [$member $files $codec] [then $codec]
+        [else [$die [$concat "module '" [$string $m@name] "' has no reference page in " MANIFEST
+                             " — neither " $lib " nor " $codec " is declared"]]]]]]]]
+
+[?def ring-label scope=public ($m)
+  [?let [= $g [$rs:attr $m "group" ""]]
+    [?if [= $g ""] [then [$concat "Ring " [$rs:attr $m "ring" "?"]]]
+      [else [$concat "Ring " [$rs:attr $m "ring" "?"] " · the " $g " group"]]]]]
+
+# face-table: what the repository gives you — one row per module it ships:
+# the module, the namespace a program imports it by, its ring and group, its
+# reference page.
+[?def face-table scope=public impure ($name $files)
+  [?let [= $f [$face $name]]
+    [?if [$empty $f]
+      [then [p class="note" "This repository ships no bundled module of its own; what it gives you is above, and its links are below."]]
+      [else [table
+        [thead [tr [th "module"] [th "import it as"] [th "where it lives"] [th "reference"]]]
+        [tbody [?for [in $m $f] [yield
+          [tr [td [code [$string $m@name]]]
+              [td [code [$concat "[?lib '" [$rs:attr $m "ns" "cx-stdlib"] "/" [$string $m@name] "']"]]]
+              [td [$ring-label $m]]
+              [td [a href=[$ref-page $files $m] [$concat [$string $m@name] " reference"]]]]]]]]]]]]
+
+[?def short-sha scope=public ($sha) [$strings:slice $sha 1 9]]
+
+# status-table: ships=, status=, the pinned sha (linked to the commit), what
+# it builds on, what builds on it, the modules it ships — every cell a
+# registry column.
+[?def status-table scope=public impure ($name)
+  [?let [= $r [$row $name]]
+        [= $at [$rs:attr $r "at" ""]]
+        [= $pins [$plugs:pins-of $name]]
+        [= $by [$plugs:pinned-by $name]]
+    [table
+      [thead [tr [th "fact"] [th "as the registry records it"]]]
+      [tbody
+        [tr [td "ships as"] [td [code [$rs:attr $r "ships" "none"]]]]
+        [tr [td "status"]
+            [td [?if [$is-self $name]
+                  [then "the front door — the tree this site was built from"]
+                  [else [$rs:attr $r "status" "in this tree"]]]]]
+        [tr [td "pinned at"]
+            [td [?if [= $at ""]
+                  [then "not pinned — it pins the others (deps.cxd)"]
+                  [else [a href=[$concat GITHUB $name "/commit/" $at] [code [$short-sha $at]]]]]]]
+        [tr [td "builds on"]
+            [td [?if [$empty $pins] [then "nothing of CX — the root of the graph"]
+                  [else [$strings:join $pins ", "]]]]]
+        [tr [td "built on by"]
+            [td [?if [$empty $by] [then "nothing pins it yet"]
+                  [else [$strings:join $by ", "]]]]]
+        [tr [td "bundled modules"] [td [$string [$count [$face $name]]]]]]]]]
+
+# links: GitHub, the README, the spec directory, the corpus — each a path the
+# (pinned) tree holds, on the repository's own GitHub tree.
+[?def links scope=public impure ($name)
+  [?let [= $tree [$concat GITHUB $name "/tree/main/"]]
+        [= $blob [$concat GITHUB $name "/blob/main/"]]
+    [ul
+      [li [a href=[$concat GITHUB $name] [$concat "github.com/cx-home/" $name]] " — the repository"]
+      [li [a href=[$concat $blob [$readme $name]] "README"] " — what it is, how to install it, what it pins"]
+      [?for [in $d [$spec-dirs $name]] [yield
+        [li [a href=[$concat $tree $d] [code $d]] " — the specification, the only truth"]]]
+      [?for [in $d [$corpus-dirs $name]] [yield
+        [li [a href=[$concat $tree $d] [code $d]] " — the conformance corpus, the executable truth"]]]]]]
+
+# ── the self-test ───────────────────────────────────────────────────────
+
+[?def fixtures-in scope=public impure ($path)
+  [?match [$cx:parse [$io:read-file $path]]
+    [case [err $e] [$die [$concat $path " does not parse — " [$string $e@message]]]]
+    [else [?for [in $f [$cx:parse [$io:read-file $path]]//fixture] [yield [$string $f@id]]]]]]
+
+[?def root-name scope=public impure ($path)
+  [?let [= $roots [?for [in $r [$cx:parse [$io:read-file $path]]//repo] [yield [$string $r@name]]]]
+    [?if [= [$count $roots] 1] [then [$first $roots]]
+      [else [$die [$concat $path " must carry exactly one [repo name=] root; it carries "
+                           [$string [$count $roots]]]]]]]]
+
+[?def check scope=public impure ()
+  [?let [= $srcs [$repo-sources]]
+        [= $files [$sb:site-files [$cx:parse [$io:read-file MANIFEST]]]]
+        [= $declared [?for [in $f $files] [where [$strings:starts-with $f "repo-"]] [yield $f]]]
+        [= $_n [?for [in $s $srcs]
+                 [= $root [$root-name [$string $s@path]]]
+                 [where [not [= $root [$string $s@name]]]]
+                 [yield [$die [$concat [$string $s@path] " names [repo name=" $root "]; the file is "
+                                       [$string $s@name] ".cxd — one name, spelled once"]]]]]
+        [= $_r [?for [in $s $srcs] [yield [$row [$string $s@name]]]]]
+        [= $_f [?for [in $s $srcs]
+                 [= $n [$count [$fixtures-in [$string $s@path]]]]
+                 [where [not [= $n 1]]]
+                 [yield [$die [$concat [$string $s@path] " cites " [$string $n]
+                                       " fixture(s); a repository page carries exactly ONE runnable "
+                                       "example from its own corpus (DOCS-47)"]]]]]
+        [= $_d [?for [in $s $srcs]
+                 [= $page [$concat [$string $s@slug] ".html"]]
+                 [where [not [$member $declared $page]]]
+                 [yield [$die [$concat $page " is rendered from " [$string $s@path] " and " MANIFEST
+                                       " does not declare it — add its line to the [files from=repos] block"]]]]]
+        [= $_s [?for [in $p $declared]
+                 [= $n [$strings:replace [$strings:slice $p 6 [$strings:length $p]] ".html" ""]]
+                 [where [not [$member [?for [in $s $srcs] [yield [$string $s@name]]] $n]]]
+                 [yield [$die [$concat MANIFEST " declares " $p " and " SOURCES "/" $n
+                                       ".cxd is not there — the page has no prose"]]]]]
+        [= $_m [?for [in $s $srcs] [in $m [$face [$string $s@name]]] [yield [$ref-page $files $m]]]]
+        [= $_l [?for [in $s $srcs] [yield [$links [$string $s@name]]]]]
+    [$say [$concat "repo-page-check: " [$string [$count $srcs]] " repository page(s), each naming a shown "
+                   "repository, citing one fixture, declared in " MANIFEST ", every module linked to its "
+                   "reference page, every spec and corpus directory present in the (pinned) tree"]]]]
+
+[?let [= $argv [$env:argv]]
+  [?if [$member $argv "--check"]
+    [then [?let [= $_c [$check]] [$env:exit 0]]]
+    [else [?if [< [$count $argv] 2]
+      [then [$die "name a repository (a docs-src/repos/<name>.cxd source), or --check"]]
+      [else [?let [= $n [$nth $argv 2]]
+                  [= $_p [$say [$cx:emit [facts repo=$n [$status-table $n] [$links $n]]]]]
+              [$env:exit 0]]]]]]]

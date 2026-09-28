@@ -605,6 +605,12 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/gen_site/llm_index.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/gen_site/check_external_links.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/gen_site/site_assemble.cx', .program, reason_1536},
+	// DOCS-4 wave 2 (RULED: DOCS-41, DOCS-49): the repository pages' facts
+	// generator, scripts/gen_site/repo_page.cx -- the class's own shape once
+	// more, `[$fp:flat-map ($ordered, $stray) [?fn ($g) $g]]` (its
+	// repo-sources, the registry's order over the prose files) and
+	// `[$fp:flat-map (($default,), $dirs) [?fn ($g) $g]]` (dirs-of).
+	AcceptedByOne{'scripts/gen_site/repo_page.cx', .program, reason_1536},
 	// 79 -> 80: #1669's scripts/public_history_replace.cx, the replace-text
 	// sibling pass -- the class's own shape (its `ensure-mirror`/`rewrite-one`
 	// duplicate strip_attribution.cx's `clone-mirror`/`run-git` helpers by the
