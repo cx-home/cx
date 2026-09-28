@@ -3,44 +3,41 @@
 # CX replacement for `python3 -m http.server` in the test harnesses
 # (RULED: PYE-5, ledger/rulings_2026_08_22_python_eradication.md; #922 —
 # discovered instance: scripts/test_playground_smoke.sh). Serves the files
-# under --root on 127.0.0.1:--port, byte-faithfully (probed live: a 4 KB
-# /dev/urandom blob round-trips `cmp`-identical through the bytes-bodied
-# [response]).
+# under --root on 127.0.0.1:--port through `[$serve-file]` (http.md
+# §"Static files"): raw octets, Content-Type by extension.
 #
-#   vcx/target/cx --allow-read --allow-net --allow-clock \
+#   deps/cx-core-code/vcx/target/cx --allow-read --allow-net --allow-clock \
 #     scripts/serve_static.cx --port 8080 --root dist/playground-preview
 #
 # Behavior:
-#   GET /<path>  → 200 with the file bytes; 404 when absent;
-#                  403 when the path contains a '..' segment.
+#   GET /<path>  → 200 with the file bytes and its extension's Content-Type
+#                  (text/html, application/javascript, text/css,
+#                  application/wasm, image/svg+xml, …); 404 when absent; a
+#                  '..' path segment is refused.
 #   GET /        → serves <root>/index.html (404 when absent).
 #   A busy port fails fast: rc 1 with the bind error on stderr (the
 #   caller retries another port).
+#
+# #1696 (FIX-1, PLAY-1): this used to build its own `[response body=
+# [$io:read-file-bytes …]]`, which carries no Content-Type — every file,
+# playground.html included, went out as text/plain, so Chrome showed the
+# page's source and no script ran: every browser-driven playground gate
+# (browser_harness.mjs boots this server) failed at setup with `no-cxlib`.
 #
 # [block true] parks the evaluator in the service loop — without it the
 # program prints the service handle and EXITS (measured; the same trap
 # examples/htmx/serve.cx avoids the same way).
 
-[?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
-[?lib 'cx-stdlib/strings' as=strings]
-
-[?def file-response impure ($root $rel)
-  [?let [= $path [$concat $root '/' [?if [= $rel ''] [then 'index.html'] [else $rel]]]]
-    [?if [$strings:contains $rel '..']
-      [then [response status=403 body='forbidden']]
-      [else [?fallback
-              [response status=200 body=[$io:read-file-bytes $path]]
-              [recover-with [response status=404 body='not found']]]]]]]
 
 [?let
   [= $args [$env:parse-args [argspec [flag name=port type=int default=8080]
                                      [flag name=root type=string default='.']]]]
-  [= $root [$env:flag $args 'root']]
   [= $svc
     [?http-service on=http port=[$env:flag $args 'port'] name=serve-static
+      root=[$env:flag $args 'root']
       [bind-host '127.0.0.1']
       [block true]
-      [resource [get '/*'] produces='application/octet-stream'
-        [file-response $root [$string $request/path-params/_]]]]]
+      [resource [get '/'] [$serve-file 'index.html']]
+      [resource [get '/*'] [$serve-file]]]]
   $svc]
