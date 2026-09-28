@@ -932,12 +932,6 @@ guide-check: build-vcx
 ##
 ## Cost, measured at the #989 row: 27.3-27.8 s wall / 26.5 CPU-s, single
 ## process — absorbed under -j against a ~3 h gate.
-##
-## PLAY-1: the render copies dist/wasm/ into docs/guide/wasm/, and site-check
-## (which renders through this step) now REQUIRES those five files, so the
-## bundle is built or proved fresh first — `wasm-bundle-fresh`, the same one
-## prerequisite test-playground-mermaid and -wasm-traps share (a stale bundle
-## costs one ~5 min build per run, under devbox's emcc).
 .PHONY: guide-render-gate
 ## #1663: "written by THIS run" was an mtime test against a stamp touched just
 ## before the render, and macOS sh compares mtimes at one-second resolution, so
@@ -945,7 +939,7 @@ guide-check: build-vcx
 ## stamp and index.html both 15:10:45, a false red). The proof is now that the
 ## page did not exist before the render: both are removed first, and both must
 ## exist after it. No mtime comparison is left.
-guide-render-gate: build-vcx wasm-bundle-fresh
+guide-render-gate: build-vcx
 	@rm -f docs/guide/index.html docs/guide/codec-xml.html
 	@$(MAKE) --no-print-directory guide GUIDE_SKIP_CX_BUILD=1
 	@for p in docs/guide/index.html docs/guide/codec-xml.html; do \

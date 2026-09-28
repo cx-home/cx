@@ -23,8 +23,9 @@ also by scripts/gen_guide/guide_build.cx (`make guide`). Declares:
             claimed by no line, fails the step by name. A block may carry
             `optional=true`: its lines may be absent from the tree without
             failing MISSING, but a file present that no line — required or
-            optional — declares still fails EXTRA. No block carries it today
-            (the wasm bundle was the one until PLAY-1 made it required).
+            optional — declares still fails EXTRA. `required-when=VAR` makes
+            an optional block REQUIRED whenever the environment variable VAR
+            is "1" (the wasm bundle below, PLAY-1).
 
 Where each group comes from is the map scripts/publish.sh applied before it
 retired with the allowlist mirror (RULED: RS-11), now `make site`'s:
@@ -47,14 +48,15 @@ leaves its old page for `site-check` to have to either reject or be told to
 bless. #1672 is what this file's own history got wrong before this line was
 written — see the `[files from=guide]` block's own note below.
 
-The playground's wasm/ bundle is REQUIRED (PLAY-1): a site without it is a
-playground page whose engine answers 404, which is what cxhome.org served
-while this block was `optional=true` (the Site run 36375144472 shipped 0 of
-the 5 files, because emcc was not on the runner). `make site` and
-`make site-check` now build or prove fresh the bundle first
-(`wasm-bundle-fresh`, emcc from devbox here and from a pinned, cached emsdk
-on the Site workflow's runner), so every one of the five files below must be
-in the assembled tree.
+The playground's wasm/ bundle is REQUIRED WHERE IT IS BUILT (PLAY-1):
+`optional=true required-when=CX_SITE_REQUIRE_WASM`. The Site workflow builds
+the engine with a pinned, cached emsdk (`make guide-wasm`) and sets
+CX_SITE_REQUIRE_WASM=1, so the site cxhome.org serves fails `site-check`
+MISSING without any one of the five files — the Site run 36375144472 shipped
+0 of them while this block was plainly optional, and the page answered 404
+for its engine. Everywhere else (the post-merge doc pipeline on a box with no
+emcc, `make docs`) the same five lines are declared and optional: absent is
+fine, and a wasm file no line declares still fails EXTRA.
 #]]
 
   [site repo=cx base='https://cxhome.org/' out=site]
@@ -249,10 +251,9 @@ xap.html
 #]]
 
   [; the playground's wasm engine, staged by `make guide` under docs/guide/wasm/
-     from dist/wasm/ (built by `wasm-bundle-fresh`, which `make site` and
-     `make site-check` run first; `make guide-wasm` builds it too). REQUIRED
-     since PLAY-1: a site missing any of these five fails `site-check`. ]
-  [files from=guide-wasm [#
+     when dist/wasm/ holds it (`make guide-wasm`, emcc). Optional, and REQUIRED
+     when CX_SITE_REQUIRE_WASM=1 — which the Site workflow sets (PLAY-1). ]
+  [files from=guide-wasm optional=true required-when=CX_SITE_REQUIRE_WASM [#
 wasm/cxlib.js
 wasm/libcx-async.js
 wasm/libcx-pthreads.js

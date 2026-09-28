@@ -259,9 +259,7 @@ step_globs() {
     # #1412 — the RENDERER, not the doc graders. Its inputs are the generator
     # itself, the canonical sources it reads, and the two module tiers whose
     # pages it projects (x/ included: an x/ module gets its own page).
-    # PLAY-1: the render now builds or proves fresh the playground's wasm
-    # engine first (wasm-bundle-fresh), which is built from the pinned sources.
-    guide-render-gate)             echo 'scripts/gen_guide/* docs-src/* stdlib/* deps.cxd' ;;
+    guide-render-gate)             echo 'scripts/gen_guide/* docs-src/* stdlib/*' ;;
     # cxhome.org (RULED: RS-28, D57a): the assembled site, listed against
     # docs-src/site/manifest.cxd. It renders the guide (its prerequisite is
     # guide-render-gate) and copies the landing page, docs/llm/ and docs/dev/, and

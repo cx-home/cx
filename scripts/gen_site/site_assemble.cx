@@ -22,11 +22,11 @@
 #   (empty)                 → .nojekyll       (Pages serves the tree as is)
 #
 # The playground's engine (docs/guide/wasm/, which `make guide` copies from
-# dist/wasm/) is REQUIRED since PLAY-1: `make site` and `make site-check` build
-# it or prove it fresh first, and the manifest names its five files in a
-# required block, so `--check` fails a site without them MISSING. This program
-# also says so when it assembles without them — a site whose playground page
-# cannot run is never shipped silently.
+# dist/wasm/ when it exists; emcc builds it: `make guide-wasm`) is declared in a
+# block that is REQUIRED where the engine is built — the Site workflow sets
+# CX_SITE_REQUIRE_WASM=1 after its pinned-emsdk build (PLAY-1), so a site
+# without it fails `--check` MISSING — and optional on a box with no emcc.
+# This program also says so whenever it assembles without it.
 #
 #   cx --allow-read --allow-write scripts/gen_site/site_assemble.cx          assemble
 #   cx --allow-read --allow-write scripts/gen_site/site_assemble.cx --check  list it
@@ -67,7 +67,20 @@
 # optional-of: a [files] block's own optional=true|false, AS A STRING (kept
 # comparable to a string $want-optional below, the way this file already
 # compares $e@is-file's bool to "true" rather than to a bare bool).
-[?def optional-of scope=public ($k) [$attr-or $k "optional" "false"]]
+#
+# required-when=VAR (PLAY-1): a block that is optional=true unless the
+# environment variable VAR is "1" — then it is required like any other. The
+# Site workflow sets CX_SITE_REQUIRE_WASM=1 after it has built the wasm engine
+# with the pinned emsdk, so cxhome.org can never ship the playground without
+# it; a box with no emcc (the post-merge doc pipeline) lists the same five
+# files as declared-but-optional. Read only under `--check`, which is granted
+# --allow-env.
+[?def optional-of scope=public impure ($k)
+  [?let [= $var [$attr-or $k "required-when" ""]]
+        [= $opt [$attr-or $k "optional" "false"]]
+    [?if [and [not [= $var ""]] [= [$env:var-or-default $var ""] "1"]]
+      [then "false"]
+      [else $opt]]]]
 
 # declared-lines: every path named by a manifest [files] block for which
 # $want-optional ("true" or "false") matches the block's own optional=
@@ -123,7 +136,7 @@
     [= $_w [?if [$empty $wasm]
              [then [$cry [$concat "site_assemble: NOTE — no playground engine: docs/guide/wasm/ is absent "
                                   "(it needs dist/wasm/, built by `make guide-wasm` with emcc), so "
-                                  "playground.html would ship without the engine it loads — site-check fails it MISSING"]]]
+                                  "playground.html would ship without the engine it loads (site-check fails it MISSING under CX_SITE_REQUIRE_WASM=1)"]]]
              [else 0]]]
     [$say [$concat "site_assemble: " $out "/ — " [$string [$count $guide]] " guide files (index.html as guide.html), "
                    "the landing page, " [$string [$count $llm]] " llm/ files and the llms.txt pair at the root, "

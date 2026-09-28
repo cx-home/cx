@@ -23,14 +23,11 @@
 #                     declares, and the committed page byte-identical to a fresh
 #                     generation. `make docs-check` runs it.
 #
-# The playground's wasm engine is REQUIRED (PLAY-1): cxhome.org served the page
-# with its engine answering 404 while the manifest called it optional. Both
-# targets build it first or prove it fresh — `site` through `wasm-bundle-fresh`
-# before its guide render, `site-check` through `guide-render-gate`, which
-# depends on it — so the guide render copies a current dist/wasm/ into
-# docs/guide/wasm/ and the manifest's five wasm lines are graded like any other.
-# emcc comes from devbox here and from a pinned, cached emsdk on the Site
-# workflow's runner (.github/workflows/site.yml).
+# The playground's wasm engine is not built here: `make guide` copies dist/wasm/
+# when it exists and says so when it does not (emcc builds it: `make guide-wasm`).
+# site-check lists its five files as declared-but-optional, and as REQUIRED
+# under CX_SITE_REQUIRE_WASM=1, which the Site workflow sets once its pinned
+# emsdk has built them (PLAY-1; docs-src/site/manifest.cxd's required-when=).
 
 SITE_GEN    := scripts/gen_site
 SITE_CX_BIN := $(CURDIR)/deps/cx-core-code/vcx/target/cx
@@ -44,8 +41,7 @@ endif
 
 .PHONY: site site-check site-index site-index-check
 
-site: wasm-bundle-fresh
-	@$(MAKE) --no-print-directory guide
+site: guide
 	@$(SITE_CX_BIN) --allow-read --allow-write $(SITE_GEN)/site_assemble.cx
 
 site-check: guide-render-gate
