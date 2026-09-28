@@ -33,13 +33,13 @@ A row without a `why=` is refused: the allowlist is evidence, not an excuse.
   [expect url='https://github.com/cx-home/cx-platform-xsp' status=404
           why='the repository is created by the integrator at the push (RS-8); its registry row is already status=extracted']
 
-  [; every other component repository exists and is PRIVATE until the v0.18.0
+  [; every other component repository exists and is PRIVATE until the release
      cut flips it public (K13: secrets-scan and check-no-consumer-terms are
      the flip's preconditions) — GitHub answers 404 to a client that is not
      signed in. Measured 2026-09-28: 54 URLs under this prefix, every one
      404; the front door itself (cx-home/cx) answers 200. ]
   [expect prefix='https://github.com/cx-home/cx-' status=404
-          why='the component repositories are private until the v0.18.0 cut flips them public (K13); GitHub answers 404 to an unauthenticated client']
+          why='the component repositories are private until the release cut flips them public (K13); GitHub answers 404 to an unauthenticated client']
 
   [; the two font origins are <link rel=preconnect> targets — an origin to
      open a connection to, not a document; both answer 404 at the root while
