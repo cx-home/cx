@@ -51,8 +51,11 @@ the product compiles from (RULED: RS-24).
 - `deps.cxd` is the ONE place a pin lives: one `[dep]` row per repository,
   its sha, the modules it provides, and the V-fork sha for a V repository
   (RULED: RS-7; the format is `spec/03-approved/process/repository-dependency-pins.md`).
-- `make deps-sync` fetches each pin shallowly into the ignored `deps/<repo>/`
-  and **fails** on a stale pin or a drifted checkout — it never warns.
+- `cx deps sync` — the binary's verb, which `make deps-sync` calls — fetches each
+  pin shallowly into the ignored `deps/<repo>/` and **fails** on a stale pin or
+  a drifted checkout — it never warns; `cx deps sync --check` fetches nothing and
+  refuses a checkout that is not at its pin. The program is
+  `scripts/deps_sync.cx`, embedded in the binary (RULED: DEPSV-1).
 - The build compiles every V module from its pinned checkout through `-path`:
   `make build-vcx` runs the Ring-1 repository's own `vcx/` build
   (`deps/cx-core-code/vcx`) with the front door's `deps.cxd` and `deps/` root,

@@ -200,6 +200,7 @@ Subcommands (`cx <subcommand> --help` for details):
   xap                  XAP project tooling — scaffold a project (`init`), a composition pattern (`scaffold`), and check (`check-surface`).
   flow                 cx-platform/flow: the local profile (run / validate / simulate / status / diagram) and the standalone runner (serve).
   secrets              cx-platform/secrets: the keystore client verbs (put / rotate / list) — a value is never printed, never read from argv.
+  deps                 The repository dependency pins: sync deps/<repo>/ to each deps.cxd sha, or --check it — a stale pin or a drifted checkout is refused, never warned.
   demo                 Self-contained showcase (no file I/O, no network, < 1s).
   lock                 Generate / verify cx.lock from [?lib] directives.
   lsp                  Language server (LSP) on stdio.

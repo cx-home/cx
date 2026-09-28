@@ -68,7 +68,13 @@ $ make -C third_party/v                          # the fork builds itself
 $ make deps-sync CX_BIN=<any cx>                 # every deps.cxd pin into deps/<repo>/, refusing a stale or drifted one
 $ make build-vcx                                 # deps/cx-core-code/vcx's build over the front door's deps.cxd and deps/
 $ deps/cx-core-code/vcx/target/cx --version      # names the commit and the V fork it was built from
+$ deps/cx-core-code/vcx/target/cx deps sync --check   # every checkout at its pin, nothing fetched
 ```
+
+- `make deps-sync` is a thin caller of the binary's verb `cx deps sync [--check]
+  [--verbose]`, which runs `scripts/deps_sync.cx` embedded in it; a `cx` older
+  than the verb runs the checkout's file instead and says so, and a box with no
+  `cx` at all seeds `deps/` with `scripts/deps_bootstrap.sh` first (RULED: DEPSV-1).
 
 - The build passes the pinned checkouts to V through `-path`; a direct
   `v test` of anything importing `cx` needs the same flags, printed by
