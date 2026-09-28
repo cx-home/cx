@@ -504,6 +504,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `dblane-1` | [rulings_2026_09_28_owner_decisions_l89_l90.md](rulings_2026_09_28_owner_decisions_l89_l90.md) | DBLANE-1 — DBNUL-1 merges on sqlite's proof; a real-server lane grades every db case on postgres and mysql (L89 = (a)) |
 | `dbnul-1` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | DBNUL-1 — a kind=db parameter may be absent, and the kit binds NULL for a cursor on page one (L64 = (a)) |
 | `dbnul-1` | [rulings_2026_09_28_owner_decisions_l89_l90.md](rulings_2026_09_28_owner_decisions_l89_l90.md) | DBLANE-1 — DBNUL-1 merges on sqlite's proof; a real-server lane grades every db case on postgres and mysql (L89 = (a)) |
+| `depsv-1` | [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) | DEPSV-1 — `cx deps sync` becomes a verb of the binary (L95 = (a)) |
 | `df-1` | [rulings_2026_09_05_computed_fields.md](rulings_2026_09_05_computed_fields.md) | Rulings 2026-09-05 — computed field values, and how a slug is declared (DF-1, DF-2) |
 | `df-1` | [rulings_2026_09_05_computed_fields.md](rulings_2026_09_05_computed_fields.md) | DF-1 — may the grammar compute a field's value? — RULED (c): NO |
 | `df-2` | [rulings_2026_09_05_computed_fields.md](rulings_2026_09_05_computed_fields.md) | Rulings 2026-09-05 — computed field values, and how a slug is declared (DF-1, DF-2) |
@@ -693,6 +694,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pace-2` | [rulings_2026_09_27_owner_decisions_l41_l44.md](rulings_2026_09_27_owner_decisions_l41_l44.md) | Owner decisions 2026-09-27 — Letters 41–45: the call spread (SPREAD-1), the orders-db partial (ODB-1), R-1492 as graded (BEX-1), the bus audit subject (BUS-1), no new agents (PACE-2) |
 | `pace-2` | [rulings_2026_09_27_owner_decisions_l41_l44.md](rulings_2026_09_27_owner_decisions_l41_l44.md) | PACE-2 — no new agent from this session; the switch to the other account when reasonable (owner, 01:1xZ, on Letter 45) |
 | `pace-3` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | PACE-3 — this session runs the kit overnight (owner, 2026-09-27 ~04:2xZ: "a") |
+| `part-1` | [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) | PART-1 — the six unmade sentence moves of the repo-split edit map land now, and item 5 ticks on the page that names them (L94 = (a)) |
 | `pb-1` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-1 — how the runner performs a step's act — RULED (a) |
 | `pb-2` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-2 — the run id preimage — RULED (a) |
 | `pb-3` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-3 — the home stream default — RULED (a) |
@@ -742,6 +744,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pye-4` | [rulings_2026_08_22_python_eradication.md](rulings_2026_08_22_python_eradication.md) | PYE-4 (item 4c) — the regex class rewrite becomes correct, not narrowed |
 | `pye-5` | [rulings_2026_08_22_python_eradication.md](rulings_2026_08_22_python_eradication.md) | PYE-5 (item 5a) — the exemption is all of `lang/python/**` |
 | `pye-6` | [rulings_2026_08_22_python_eradication.md](rulings_2026_08_22_python_eradication.md) | PYE-6 (item 6a) — an all-SKIP gate run is a failure |
+| `rflow-1` | [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) | RFLOW-1 — the whole CI/CD as five cx flow documents, the design's nine choices (L96…L104 = (a)) |
 | `rp-0` | [rulings_2026_09_02_cxdm_representation_1119.md](rulings_2026_09_02_cxdm_representation_1119.md) | RP-0 — the streaming direction is ALREADY RULED; it stands (TF-5 = a) |
 | `rp-1` | [rulings_2026_08_28_rowset_perf_1080_1083.md](rulings_2026_08_28_rowset_perf_1080_1083.md) | RP-1 — re compile reuse (#1080) (RULED: RP-1 = a) |
 | `rp-1` | [rulings_2026_08_28_rowset_perf_1080_1083.md](rulings_2026_08_28_rowset_perf_1080_1083.md) | RP-1 — re compile reuse (#1080) (RULED: RP-1 = a) |
@@ -1354,7 +1357,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `imap-3` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `imap-4` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `imap-5` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
-| `int-10` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_16_run_selection_run1.md](rulings_2026_09_16_run_selection_run1.md), [rulings_2026_09_28_owner_direction_cicd1.md](rulings_2026_09_28_owner_direction_cicd1.md) |
+| `int-10` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_16_run_selection_run1.md](rulings_2026_09_16_run_selection_run1.md), [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md), [rulings_2026_09_28_owner_direction_cicd1.md](rulings_2026_09_28_owner_direction_cicd1.md) |
 | `int-11` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-12` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-2` | [rulings_2026_09_12_audit_sink_1422.md](rulings_2026_09_12_audit_sink_1422.md), [rulings_2026_09_12_fmt_1384_1391.md](rulings_2026_09_12_fmt_1384_1391.md), [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md), [rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md](rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md), [rulings_2026_09_15_default_in_campaign_int17.md](rulings_2026_09_15_default_in_campaign_int17.md), [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md), [rulings_2026_09_15_owner_decisions_1145z.md](rulings_2026_09_15_owner_decisions_1145z.md) |
@@ -1364,7 +1367,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `int-5` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_13_claude_context_audit.md](rulings_2026_09_13_claude_context_audit.md), [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md) |
 | `int-6` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
 | `int-7` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
-| `int-8` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
+| `int-8` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md), [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) |
 | `int-9` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_15_integrator_decisions_int15.md](rulings_2026_09_15_integrator_decisions_int15.md), [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md), [rulings_2026_09_19_owner_decisions_0505z.md](rulings_2026_09_19_owner_decisions_0505z.md) |
 | `ir-1` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) |
 | `ir-2` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) |
@@ -1410,13 +1413,13 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ring-1` | [batch_796_post_gate_defects.md](batch_796_post_gate_defects.md), [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
 | `ring-2` | [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
 | `rs-10` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) |
-| `rs-11` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
+| `rs-11` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md), [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) |
 | `rs-2` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
-| `rs-3` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
+| `rs-3` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md), [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) |
 | `rs-4` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_23_x_graduation_d45a.md](rulings_2026_09_23_x_graduation_d45a.md) |
 | `rs-5` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
 | `rs-6` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
-| `rs-7` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
+| `rs-7` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md), [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) |
 | `rs-8` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) |
 | `rs-9` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
 | `rsa-2048` | [rulings_2026_09_05_certificate_key_1287.md](rulings_2026_09_05_certificate_key_1287.md) |
@@ -1488,4 +1491,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*348 ledger pages; 773 ids declared, 390 cited only.*
+*349 ledger pages; 776 ids declared, 390 cited only.*
