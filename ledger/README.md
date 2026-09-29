@@ -503,8 +503,10 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `cxf-8` | [rulings_2026_09_27_integrator_decisions_l60.md](rulings_2026_09_27_integrator_decisions_l60.md) | 1690's agent; reversible by the owner's word. 1509-a, CXF-8, FIX-1, #1690.** |
 | `cxp-1` | [rulings_2026_08_20_cx_pragma_registry.md](rulings_2026_08_20_cx_pragma_registry.md) | Ruling CXP-1 (2026-08-20) — the [?cx] pragma key set closes (#879, owner "4a") |
 | `dblane-1` | [rulings_2026_09_28_owner_decisions_l89_l90.md](rulings_2026_09_28_owner_decisions_l89_l90.md) | DBLANE-1 — DBNUL-1 merges on sqlite's proof; a real-server lane grades every db case on postgres and mysql (L89 = (a)) |
+| `dblane-1` | [rulings_2026_09_29_integrator_decisions_l110.md](rulings_2026_09_29_integrator_decisions_l110.md) | Owner decision 2026-09-29 — Letter 110: DBLANE-1's servers run in containers from a runtime devbox ships |
 | `dbnul-1` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | DBNUL-1 — a kind=db parameter may be absent, and the kit binds NULL for a cursor on page one (L64 = (a)) |
 | `dbnul-1` | [rulings_2026_09_28_owner_decisions_l89_l90.md](rulings_2026_09_28_owner_decisions_l89_l90.md) | DBLANE-1 — DBNUL-1 merges on sqlite's proof; a real-server lane grades every db case on postgres and mysql (L89 = (a)) |
+| `dbsrv-1` | [rulings_2026_09_29_integrator_decisions_l110.md](rulings_2026_09_29_integrator_decisions_l110.md) | DBSRV-1 — the container runtime comes from devbox; the lane runs the vendors' images (L110 = (b′)) |
 | `depsv-1` | [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) | DEPSV-1 — `cx deps sync` becomes a verb of the binary (L95 = (a)) |
 | `df-1` | [rulings_2026_09_05_computed_fields.md](rulings_2026_09_05_computed_fields.md) | Rulings 2026-09-05 — computed field values, and how a slug is declared (DF-1, DF-2) |
 | `df-1` | [rulings_2026_09_05_computed_fields.md](rulings_2026_09_05_computed_fields.md) | DF-1 — may the grammar compute a field's value? — RULED (c): NO |
@@ -1499,4 +1501,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*354 ledger pages; 784 ids declared, 390 cited only.*
+*355 ledger pages; 785 ids declared, 390 cited only.*
