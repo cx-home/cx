@@ -518,11 +518,20 @@
     [else 1]]]
 
 # makefile-includes: the files the Makefile splices in (`-include <path>`),
-# whose rules are as much a step's recipe as its own.
+# whose rules are as much a step's recipe as its own — EXCEPT flows/private.mk
+# (RULED: PRIVMK-1). That include is the private orchestration's: the public
+# tree has no such file, and the docs/llm/ layer is committed in both trees, so
+# a roster read through it would project rows the public tree regenerates
+# differently (cx main cb0b22a78's Site run: docs-check DRIFT). The roster is
+# the public tree's, read with the include disabled, and the private steps
+# never sit on the public `TEST_TARGETS :=` line (check-selection-manifest).
+[?const PRIVATE-INCLUDE "flows/private.mk"]
+
 [?def makefile-includes scope=public impure ($mk)
   [?for [in $l [$strings:split-lines $mk]]
     [where [or [$strings:starts-with $l "-include "] [$strings:starts-with $l "include "]]]
     [= $p [$strings:trim [$strings:slice $l [+ [$strings:find $l " "] 1] [$strings:length $l]]]]
+    [where [not [= $p $PRIVATE-INCLUDE]]]
     [where [$io:is-file $p]]
     [yield [$io:read-file $p]]]]
 
