@@ -220,7 +220,7 @@
            under a `::bytes` ascription. The canonical form emits the hex
            string with the `0x` prefix; the data-bin wire format uses raw
            length-prefixed bytes (no encoding overhead). The conversion
-           contract maps bytes to base64 / tagged forms per lane — see
+           contract maps bytes to base64 / tagged forms per format — see
            [[bytes-wire]] in [[surfaces]] for the per-surface table."""]]
 
     [child id=sized-types n=2.3.7 title='Sized type tags'
@@ -323,7 +323,7 @@
            patterns test (`int`, `string`, `element`, `array`, `path`, …,
            plus `[]` for array kinds). Reading a declared entry's value
            refuses — absence is not null — and only the `cx` and
-           round-trip-XML lanes can carry a declaration; every lossy
+           round-trip-XML projections can carry a declaration; every lossy
            target (JSON, YAML, CSV, …) refuses the document loudly."""]]
 
     [child id=seq-flat n=2.4.4 title='The sequence-flat principle'
@@ -433,7 +433,7 @@
            remains a pointer. In body position the reference form is
            `[ref @ada]`. Cross-format identity: only CX and XML carry
            the ID/IDREF mechanism losslessly; the JSON/YAML/TOML/MD
-           lanes flatten it to an ordinary `id` field plus a `$ref`
+           projections flatten it to an ordinary `id` field plus a `$ref`
            envelope, one-way. See [[identity]]."""]]
 
     [child id=type n=2.5.4 title='The : type sigil'

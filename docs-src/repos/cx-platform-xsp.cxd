@@ -20,7 +20,7 @@
        than losing it. A binary payload carries a CX element losslessly —
        attributes, children, text, an empty element — because a transport
        whose users have to know which values survive the trip is not a
-       transport. Every way a frame can be wrong has its lane: a reserved
+       transport. Every way a frame can be wrong has its own refusal: a reserved
        flag, a foreign version, a truncated header, a length past the
        declared ceiling."""]
   [body

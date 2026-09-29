@@ -1,7 +1,7 @@
 [# docs-src/repos/cx-binding-go.cxd — the Go binding's page,
    repo-cx-binding-go.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 4).
    Facts from the registries; the one example from the front door's ABI
-   vectors, the corpus the binding's own lane grades itself against. #]
+   vectors, the corpus the binding grades itself against. #]
 
 [repo name=cx-binding-go
   [intro
@@ -24,7 +24,7 @@
     """We grade the binding against the front door's published ABI vectors —
        one case per entry point a wrapper covers, an input document and the
        canonical output, hash or refusal it must answer — through the
-       binding's own lane, written in Go, which loads the file from its pin
+       binding's own test, written in Go, which loads the file from its pin
        and asserts every vector through its own wrapper. The same file is
        checked against `libcx` directly by the front door's C test, so the
        wrapper and the engine are held to one witness."""]
@@ -36,7 +36,7 @@
   [try
     """One ABI vector, replayed by this site's `cx`: an XML document imported
        to CX through the entry point the wrapper's `XmlToCx` calls, and the
-       canonical text it must answer. The binding's lane asserts the same
+       canonical text it must answer. The binding's own test asserts the same
        vector through the wrapper; this page shows the engine's own answer."""]
   [fixture id=abi-010-xml-to-cx]
   [status
@@ -45,4 +45,4 @@
        `libcx` from, which is why the registry row carries no `at=` and the
        figure draws no column on either side. It ships from its own
        repository at its own cadence, and a pin moves there only when the
-       newer front door is green with it."""]]
+       newer front door passes with it."""]]

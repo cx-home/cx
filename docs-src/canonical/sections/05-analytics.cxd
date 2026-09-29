@@ -14,14 +14,14 @@
 
 [section id=analytics group='Ring 0 — Data' n=5 title='Analytics, columnar formats, and bridges'
 
-  [child id=overview n=5.1 title='The analytics lane'
+  [child id=overview n=5.1 title='The columnar path'
     [intro
       """**TL;DR — a table is a CX element, so everything we promise for a
          document holds for a billion rows.** The same brackets that carry a
          configuration file carry a typed columnar table; the same canonical
          bytes and address that anchor one document anchor a dataset; the
          same evaluator that renders a report streams over a file larger
-         than memory. The analytics lane has three load-bearing pieces —
+         than memory. Our columnar path has three load-bearing pieces —
          a logical shape, a physical wire form, and bridges to the
          columnar ecosystem — and this section is how they compose. Every
          example on it is a case of the data ring's table suite, replayed
@@ -630,7 +630,7 @@
 
   [child id=performance n=5.8 title='Performance characteristics'
     [intro
-      """The analytics lane's budgets and where each is measured. The spec
+      """The columnar path's budgets and where each is measured. The spec
          fixes the gates; the bench targets re-measure them; the numbers
          live where they are re-run, not in prose that goes stale."""]
 
@@ -669,7 +669,7 @@
 
   [child id=cxcol-vs-others n=5.9 title='When to use CXCol vs Parquet vs Arrow vs JSON'
     [intro
-      """Pick by use case. The four formats overlap in the analytics lane
+      """Pick by use case. The four formats overlap on the columnar path,
          and each has a niche the others fill badly."""]
 
     [list

@@ -99,19 +99,19 @@
            round-trip projections**."""]
       [fixture id=cx-078-hash-stable-through-xml-round-trip]
       [body
-        """The property holds for the **lossless lanes**: XML, and the
+        """The property holds for the **lossless projections**: XML, and the
            `--lossless` JSON / YAML envelope encoding (see
-           [[roundtrip]]). The **default** (idiomatic) JSON / YAML lanes
-           and the TOML lane are typed-lossy — the re-imported document
+           [[roundtrip]]). The **default** (idiomatic) JSON / YAML projections
+           and the TOML projection are typed-lossy — the re-imported document
            is a different document with a different hash. Lossy
            projections (Markdown, CSV/TSV) drop information outright.
            CX makes the lossy-ness explicit; see [[roundtrip]] for the
            full matrix."""]
       [body
         """Practical use: in a content-addressable store, you can
-           accept incoming data in a lossless-lane format, convert to
+           accept incoming data in a lossless format, convert to
            CX, hash, dedupe — knowing that two clients sending the
-           same data through lossless lanes will produce the same key."""]]]
+           same data through lossless projections will produce the same key."""]]]
 
   [child id=hash n=4.2 title='SHA-256 content hash'
     [intro
@@ -455,7 +455,7 @@
       [body
         """The ID/IDREF model is XML-compatible: round-trip through
            XML preserves the references (`xml:id` + IDREF-typed
-           attributes). The semantic JSON / YAML / TOML lanes emit an
+           attributes). The semantic JSON / YAML / TOML projections emit an
            ordinary `id` field and a `{"$ref": "…"}` envelope — a
            one-way, human-readable projection per
            [`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md)
@@ -464,7 +464,7 @@
     [child id=id-cross-format n=4.5.3 title='Identity preservation across projections'
       [body
         """Only CX and XML carry the ID/IDREF mechanism losslessly;
-           the other lanes flatten it into plain fields
+           the other projections flatten it into plain fields
            ([`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §1.1):"""]
       [table
         [tr [th 'format'] [th 'ID encoding'] [th 'IDREF encoding'] [th 'round-trip']]

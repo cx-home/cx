@@ -125,7 +125,7 @@
        contract, the session/authz rulings, and the accessibility
        clauses, each fixture-mapped. The semantic core lives in the
        `cx-x/ux` module with the web and terminal faces beside it, and
-       the conformance lane exercises projection, addressing, the
+       the conformance corpus exercises projection, addressing, the
        refusal gate, and redaction against goldens. The pack is
        x-tier: bundled and gated in-tree, with its stability promise
        deliberately unfrozen until its go/kill review passes."""]]]

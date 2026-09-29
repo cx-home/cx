@@ -13,7 +13,7 @@
 [section id=comparison group='Reference' n=13 title='Comparison to alternatives'
 
   [intro
-    """**TL;DR — reach for CX for nearly every data-format job and for
+    """**TL;DR — reach for CX for nearly every data-format need and for
        most general-purpose programs.** One syntax carries the document,
        the query, the transform and the program, so the layers other
        stacks glue together are one surface here. This section states
@@ -145,7 +145,7 @@
       [tr [td 'Bytes'] [td 'Base64 in a string'] [td 'First-class :bytes scalar (see [[bytes]])']]
       [tr [td 'Tooling ecosystem'] [td 'Vast — every language, every editor, every CDN'] [td 'Tier-1 bindings V/Python/Go/Rust; LSP + tree-sitter + VS Code; growing']]
       [tr [td 'Wire size'] [td 'Baseline'] [td 'Comparable text form; data-bin / CXCol smaller']]
-      [tr [td 'Parse speed'] [td 'Highly optimized parsers everywhere'] [td 'Fast reference parser; the release gate holds streaming to a >=200 MB/s floor (not yet green)']]
+      [tr [td 'Parse speed'] [td 'Highly optimized parsers everywhere'] [td 'Fast reference parser; the release gate holds streaming to a >=200 MB/s floor (not yet passing)']]
       [tr [td 'Learning curve'] [td 'Trivial'] [td 'Bracket-and-sigil form; ~one hour for the data subset']]]
 
     [body
@@ -405,7 +405,7 @@
     [body
       """**When to pick CXCol.** Your data is tabular but the
          producers and consumers are CX-native (pipelines, in-
-         memory analytical jobs, services that ship columnar
+         memory analytical workloads, services that ship columnar
          payloads). When you need to interchange with the
          broader ecosystem, export to Parquet."""]]
 
@@ -569,7 +569,7 @@
            multi-gigabyte input streams at full speed in constant
            residency. `[?map]` measures **129 MB/s** against the same
            200 MB/s floor the gate holds every shape to. Streaming is
-           the high-throughput lane for text-form bulk data."""]]
+           the high-throughput path for text-form bulk data."""]]
 
     [child id=perf-xsp n='13.14a.3b' title='XSP — the binary wire, small-and-frequent to bulk'
       [body
@@ -603,8 +603,8 @@
            one parse replaces the parse-then-validate-then-decode
            tower other stacks bolt together. Parse cost is **linear in
            input bytes and gated to stay that way** (the amplification
-           gate runs on every full test), so throughput is a constant,
-           not a cliff. For raw bulk, the binary lanes below and the
+           step runs in every post-merge pipeline), so throughput is a constant,
+           not a cliff. For raw bulk, the binary formats below and the
            streaming path above are the fast path by design."""]]
 
     [child id=perf-bindings n='13.14a.5' title='One engine, thin bindings'

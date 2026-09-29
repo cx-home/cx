@@ -11,7 +11,7 @@
        repository of CX at a sha, builds the four builds of one binary from
        those pins, and serves this site. You install from it, you read from
        it, and every change to CX arrives through it: a pin moves only when
-       the newer set is green together."""]
+       the newer set passes together."""]
   [body
     """A pin is a sha, never a branch, and `deps.cxd` is the one place a pin
        is written: `make deps-sync` fetches each pinned repository into

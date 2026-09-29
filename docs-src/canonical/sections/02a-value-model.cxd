@@ -130,15 +130,15 @@
          Ring 1) — but they are additional, never substitutes. Trust
          decisions bind to the content address of the exact text."""]]
 
-  [child id=vm-lanes n=2a.4 title='What rides with a value — the three lanes'
+  [child id=vm-attach n=2a.4 title='What rides with a value — three ways, and no fourth'
     [intro
       """Not everything about a value belongs *in* the value. CX admits
          exactly three ways to attach information to one, and the list
-         is closed — no fourth lane, no intrinsic envelope under any
+         is closed — no fourth way, no intrinsic envelope under any
          name."""]
 
     [table
-      [tr [th 'Lane'] [th 'Mechanism'] [th 'Identity?'] [th 'Use for']]
+      [tr [th 'Way'] [th 'Mechanism'] [th 'Identity?'] [th 'Use for']]
       [tr [td '1 — inert side-band'] [td '`[?meta]` — rides with the value']
           [td '**excluded** — annotating never moves the address'] [td 'display hints, tooling notes, PII flags']]
       [tr [td '2 — detached claims'] [td 'hash-keyed values ABOUT an address']
@@ -147,7 +147,7 @@
           [td 'envelope hashed with its payload'] [td 'attribution: who did what, when, in which stream']]]
 
     [body
-      """The lane discipline is what keeps identity honest. Two records
+      """Holding to these three is what keeps identity honest. Two records
          that differ only in a `[?meta]` annotation are the **same
          value** — same address, same cache hits, same approvals. Two
          records that differ in an effective date are **different
@@ -205,7 +205,7 @@
          comes from the value, the hash from the schema in force, so
          there are no extra bytes to desync. When a type identity must
          be *asserted* (at a trust boundary), it travels as a detached
-         Lane-2 `[type-binding]` claim, and asserting it obliges
+         `[type-binding]` claim, and asserting it obliges
          fail-closed validation. A schema document that anchors a type
          identity declares exactly one type, so editing one type can
          never silently move another's identity. Schema *revisions* are

@@ -1,11 +1,11 @@
 [# Section 1b — choosing a ring: the audience router. The four reader
-   paths ruled in the #826 proposal §4, plus the task router (moved here
+   paths ruled in the #826 proposal §4, plus the goal router (moved here
    from the rings section, which now hands off). Each path terminates in
    something the reader can DO. Authored 2026-08-19 for #826. #]
 
 [section id=choosing group='Start here' n='1b' title='Choosing a ring'
 
-  [child id=choose-task n=1b.1 title='Start from what you want to do'
+  [child id=choose-goal n=1b.1 title='Start from what you want to do'
     [intro
       """Take the smallest ring that answers your question — you can
          always move outward later, and nothing you wrote against a
@@ -63,7 +63,7 @@
       [item """[[data]] — the data language end to end: elements,
               scalars, collections, anchors."""]
       [item """[[value-model]] — one value, one address: what identity
-              buys you and what rides in the three lanes."""]
+              buys you and the three ways information rides with it."""]
       [item """[[surfaces]] — projections to and from JSON, XML, YAML,
               TOML, Markdown, and the binary forms."""]
       [item """[[identity]] — canonical form and hashing, the mechanics

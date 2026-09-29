@@ -81,7 +81,7 @@
          `prefix-consistent` and `read-your-writes` are incomparable —
          neither implies the other — and a declaration is a set, not a
          level. A refusal names the failing token and the failing
-         stage, so widening a declaration tells you exactly what you
+         check, so widening a declaration tells you exactly what you
          just asked for that the surface cannot give."""]
 
     [body

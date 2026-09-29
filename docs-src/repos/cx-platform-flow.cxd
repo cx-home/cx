@@ -26,7 +26,7 @@
        transitions. The documentation flow that generates, checks and
        assembles this site is one such document, `docs-src/flow/docs.flow.cx`,
        run by `make docs` — a generate pivot, then every check, then the
-       assembled site, each red target named in the record."""]
+       assembled site, each failed target named in the record."""]
   [gives
     """One module, `cx-platform/flow`: validate, simulate, run and the record
        readers. Its CLI verbs stay in the binary — `cx flow validate`,

@@ -48,4 +48,4 @@
     """The agent surface ships as a package: its eight modules are bundled
        into the build from the pin, its specification and corpus travel with
        it, and its own repository grades the pins, the lint, the corpus and
-       the lanes before the front door moves the pin."""]]
+       the real-socket tests before the front door moves the pin."""]]

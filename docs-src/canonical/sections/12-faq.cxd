@@ -160,17 +160,15 @@
 
     [child id=faq-double-anchor title='Can I have two `&anchor` declarations with the same name?'
       [body
-        """No. Anchor names are document-unique; declaring `&foo`
-           twice raises `CXER0101` at parse time. If you want to
-           reuse an anchor's content in two places, declare it
-           once and merge it twice with `*foo`:"""]
+        """You can, and it is not an error: when a name is declared twice
+           the first definition in document order wins, deterministically
+           ([`spec/03-approved/core/canonical.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md)
+           §2.8, rule 6). We measured it: `cx` reads
+           `[doc [a &x value=1] [b &x value=2]]` with exit 0. So keep a
+           name to one declaration, and to reuse its content in two
+           places, declare it once and merge it twice with `*foo`:"""]
       [example lang=cx
-        """[# Wrong: duplicate anchor                                  #]
-           [a &x value=1]
-           [b &x value=2]   [# → CXER0101                              #]
-
-           [# Right: one anchor, two merges                            #]
-           [defaults &x timeout=30 retries=3]
+        """[defaults &x timeout=30 retries=3]
            [service-a *x]
            [service-b *x]"""]]]
 
@@ -182,46 +180,32 @@
            pattern-driven `[?for]` with one less keyword. Anything
            you wrote in `[?find]` form can be expressed as `[?for]`
            over a pattern, or — more directly — as a CXPath
-           expression. See [[from-v07x]] for the migration table."""]
-      [; check=none — migration panel: the first form deliberately shows
-         the RETIRED [?find] spelling, which the current parser rejects. ]
-      [example lang=cx check=none
-        """[# v0.7.x — old form (retired)                              #] # version-literal-ok
-           [?find [user @active=true $u] :yield $u]
-
-           [# v0.8.0 — CXPath form (preferred)                         #] # version-literal-ok
-           //user[= $_@active true]
-
-           [# v0.8.0 — equivalent pattern form                         #] # version-literal-ok
-           [?for [user @active=true $u] [yield $u]]"""]]
+           expression. See [[from-v07x]] for the migration table. The
+           pattern form, as it reads today:"""]
+      [fixture id=program-for-006-conditional-emit]]
 
     [child id=faq-dispatch-on-type title='How do I dispatch on element type?'
       [body
         """Use multi-arm `[?match]` with `[case …]` clause-children
            that name the element type. Each `[case …]` is a pattern +
            result, the first one that matches wins, and `[else …]` is
-           the catch-all."""]
-      [example lang=cx
-        """[doc [prose 'text'] [code 'x = 1'] [img src='logo.svg']]
-           [?for [in $n //doc/*] [yield
-             [?match $n
-               [case [prose $p]   [p $p]]
-               [case [code $c]    [pre $c]]
-               [case [img src=$s] [figure src=$s]]
-               [else              ()]]]]"""]]
+           the catch-all. Here a `[prose]` node takes the first arm:"""]
+      [fixture id=program-match-multi-001-element-dispatch]
+      [body
+        """Put the dispatch inside a `[?for]` over `//doc/*` and every
+           child takes the arm its element name picks."""]]
 
     [child id=faq-update-value title='How do I update a value?'
       [body
         """Use `[?modify]`. It takes a document, a CXPath
            focus, and an action; it returns a new document. There is
            no in-place mutation in CX — see the next question."""]
-      [example lang=cx
-        """[users [user id=1 email='ada@example.com']]
-           [?modify $doc //user[= $_@id 1]/@email [set 'ada@cx.dev']]
-
-           [# Eleven actions: [set …] / [delete] / [using …] / [rename …] #]
-           [# [set-attr …] / [delete-attr …] / [append …] / [prepend …]   #]
-           [# [insert-before …] / [insert-after …] / [replace …]          #]"""]]
+      [fixture id=program-modify-001-set-attribute]
+      [body
+        """Eleven actions, one per clause: `[set …]`, `[delete]`,
+           `[using …]`, `[rename …]`, `[set-attr …]`, `[delete-attr …]`,
+           `[append …]`, `[prepend …]`, `[insert-before …]`,
+           `[insert-after …]` and `[replace …]`."""]]
 
     [child id=faq-pure-functional title='Why does `[?modify]` return a new Doc instead of mutating?'
       [body
@@ -239,12 +223,10 @@
         """`_` is the partial-application hole: a `[?pipe]` stage
            that carries a single `_` receives the threaded value at
            that position. A stage with no hole receives the value
-           appended as its final positional argument, so these are
-           equivalent:"""]
-      [example lang=cx
-        """[users [user active=true] [user active=false]]
-           ([?pipe //user[= $_@active true] [$count]],
-            [?pipe //user[= $_@active true] [$count _]])"""]]]
+           appended as its final positional argument — a bare name like
+           `add1` is called with it. The hole form first, then the bare name:"""]
+      [fixture id=program-ophole-007-pipe-stage-one-hole]
+      [fixture id=program-sap-pipe-01-bare-stages]]]
 
   [child id=faq-bindings n=12.4 title='Bindings'
 
@@ -390,7 +372,7 @@
            `cx_events_next`) and streamed `[?for]` comprehension
            output — which bound resident memory to a chunk. See
            [[streaming-data]]. The release gate holds streaming
-           throughput to a ≥200 MB/s floor; that gate is not green
+           throughput to a ≥200 MB/s floor; that gate does not pass
            yet (`[?for]` measures around the line, `[?map]` below
            it), so treat the floor as the target, not a promise."""]
       [example lang=shell

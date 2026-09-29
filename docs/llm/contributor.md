@@ -19,11 +19,11 @@
   the behaviour and nothing above it moves.
 - Every rule below cites the decision (`RULED: <id>`) that made it; the
   ledger (`ledger/README.md` indexes every id) is where to read the reason.
-- Load ONE area file for the task. The table in §1 is the whole routing.
+- Load ONE area file for the work at hand. The table in §1 is the whole routing.
 
-## 1. The reading order — load the least that answers the task
+## 1. The reading order — load the least that answers the question
 
-| Task | Load, in order | Never load |
+| The work | Load, in order | Never load |
 |---|---|---|
 | Write or fix a CX program | `cx primer` → the one `reference-*.md` the primer's §11 names | the spec whole; `llms-full.txt` |
 | Add or move a module / surface | this file → `contributor-design.md` → the module's row in `registry/modules.cxd` → its spec's named section | `registry/repos.cxd`'s `why=` prose; other modules' specs |
@@ -93,7 +93,7 @@ breaks it. Where the ledger has the rule's own words, §4 prints them.
 | 6 | **A module lives in the ring of its highest verb**; a pure half a Ring-1 consumer needs becomes its own Ring-1 module. | RULED: OL-14 | `placement-gate` |
 | 7 | **Placement before code.** A new surface states its ring, group and directories in its decision, then its `registry/modules.cxd` row, then spec, corpus, code. | RULED: OL-15, 1427-f | `placement-gate`, `stdlib-catalog-gate` |
 | 8 | **One repository per product**, split where a person could own, release and explain it in one line. | RULED: RS-2, RS-3 | `repos-allocation-gate` |
-| 9 | **Consumers pull, producers never push.** Every repository pins what it builds on by sha in `deps.cxd`; `cx` is a migration lane, never a gate. | RULED: RS-7 | `test-deps-pins`, `make deps-sync` |
+| 9 | **Consumers pull, producers never push.** Every repository pins what it builds on by sha in `deps.cxd`; `cx` is a migration path, never a gate. | RULED: RS-7 | `test-deps-pins`, `make deps-sync` |
 | 10 | **The mover fixes what it breaks.** A lower repository keeps its specified surface compatible; an intentional break is a decision naming its consumers. | RULED: RS-8 | the consumer's own gate on the bump |
 | 11 | **A V product imports the rings and its pins, nothing else**; one V module per product, explicit `import`s, a `pub` surface per caller. | RULED: RS-24 | `product-import-gate` |
 | 12 | **Products register themselves.** A product adds its builtins and its CLI verbs from its own `init()`; the core knows no product by name. | RULED: D71a, D73a | the build of a profile without the product |

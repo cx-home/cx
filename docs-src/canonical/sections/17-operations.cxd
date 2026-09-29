@@ -450,7 +450,7 @@ $ make check   # the drift gate — specs against the implementation, fails on d
       [tr [th 'variable'] [th 'default'] [th 'meaning']]
       [tr [td 'CX_HTTP_N'] [td 'min(4, cores)'] [td 'HTTP reactor (socket-owner) count. An integer is honored as-is; `max` means one per core. Fan-out past 4 rarely helps — the default scales from laptop to server.']]
       [tr [td 'CX_HTTP_EXEC'] [td '16'] [td 'HTTP executor threads running handlers — deliberately above the reactor count so a handler parked on an upstream call never freezes the serve plane.']]
-      [tr [td 'CX_HTTP_QUEUE'] [td '1024'] [td 'Pending-job queue depth; overflow answers 503.']]
+      [tr [td 'CX_HTTP_QUEUE'] [td '1024'] [td 'Pending-request queue depth; overflow answers 503.']]
       [tr [td 'CX_WORKER_THREADS'] [td '(unset)'] [td 'Sizes the worker thread pool — sizing only, never a semantics dial. [?worker] and [?async] bodies always spawn concurrently; the old =0 synchronous-fallback semantics are retired and non-conforming.']]
       [tr [td 'CX_REGISTRY'] [td '(unset)'] [td 'Store URL binding the feature registry for `pkg:` module references; unset, a `pkg:` resolution fails closed (CXER4889).']]
       [tr [td 'CX_STORE_KEK_<id>'] [td '(unset)'] [td 'Key-encryption-key material for encrypted stores, injected by id — key material never lives in config files.']]
@@ -568,14 +568,14 @@ cx vX.Y.Z-dev+3ed9ade5
          CX will just work against the identity provider that
          organization already runs, and the only honest answer is a
          table saying what was run, against what, and when. This is
-         that table. It is kept honest by two lanes, and
+         that table. It is kept honest by two steps, and
          the split between them is the reason the table can be trusted:
          `make test-sso-interop-lane` runs on every commit against an
          identity provider that ships with the sso module itself. Since
          the module was extracted into its own repository that provider
          reaches a `cx` build as the pinned checkout `deps.cxd` names
          (`deps/cx-platform-sso/scripts/sso_interop/idp.cx`, after `make
-         deps-sync`), and the lane still runs against the binary this
+         deps-sync`), and the step still runs against the binary this
          tree built. `tools/sso_interop_real.sh PROVIDER`, in the same
          repository, runs against a real tenant at release time. A cell
          that names neither is an unverified cell, and it says so. A
@@ -584,7 +584,7 @@ cx vX.Y.Z-dev+3ed9ade5
          alone — so a partial run can never be read as more than what
          it drove."""]
     [body
-      """What the per-commit lane grades: discovery and its issuer
+      """What the per-commit step grades: discovery and its issuer
          mix-up refusal, the authorization request as the library forms
          it, all four client-authentication methods at the token
          endpoint, PKCE verification failure, ID-token signature
@@ -592,8 +592,8 @@ cx vX.Y.Z-dev+3ed9ade5
          rotation, the machine grant, and the token endpoint's own
          OAuth error body surfacing to the caller. What it CANNOT
          grade: the interactive authorize leg. A real login puts a
-         human at a sign-in page, so no unattended lane can perform one
-         — the lane reads the `Location` the identity provider answers
+         human at a sign-in page, so no unattended step can perform one
+         — the step reads the `Location` the identity provider answers
          with and redeems the code from it, which is exactly what a
          callback handler does, but the consent screen in between is
          not exercised by anything here."""]
@@ -604,7 +604,7 @@ cx vX.Y.Z-dev+3ed9ade5
       [tr [td 'PingFederate / PingOne'] [td '--'] [td '--'] [td '--'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/sso_interop_real.sh ping -- pending a tenant'] [td '--']]
       [tr [td 'ADFS'] [td '--'] [td '--'] [td '--'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/sso_interop_real.sh adfs -- pending a tenant'] [td '--']]
       [tr [td 'Keycloak'] [td '--'] [td '--'] [td '--'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/sso_interop_real.sh keycloak -- pending a tenant'] [td '--']]
-      [tr [td 'cx reference IdP (deps/cx-platform-sso/scripts/sso_interop/idp.cx)'] [td 'yes -- code, state, nonce, S256 challenge, and the RFC 9207 iss parameter on the authorization response'] [td 'all four'] [td 'assertion-signed: fetched over http and attached, in plaintext and as an EncryptedAssertion (AES-256-CBC under RSA-OAEP-MGF1P) the relying party decrypts with its own private half; response-signed and the ACS POST binding are NOT graded'] [td 'not exercised -- this lane is the login half'] [td 'verified per commit -- test-sso-interop-lane'] [td 'rows: discover, mixup, login-none, login-secret-basic, login-secret-post, login-private-key-jwt, wrong-secret, pkce-mismatch, rotation, refresh, client-credentials, saml-over-wire, saml-encrypted-over-wire'] [td 'every commit']]]
+      [tr [td 'cx reference IdP (deps/cx-platform-sso/scripts/sso_interop/idp.cx)'] [td 'yes -- code, state, nonce, S256 challenge, and the RFC 9207 iss parameter on the authorization response'] [td 'all four'] [td 'assertion-signed: fetched over http and attached, in plaintext and as an EncryptedAssertion (AES-256-CBC under RSA-OAEP-MGF1P) the relying party decrypts with its own private half; response-signed and the ACS POST binding are NOT graded'] [td 'not exercised -- this step is the login half'] [td 'verified per commit -- `make test-sso-interop-lane`'] [td 'rows: discover, mixup, login-none, login-secret-basic, login-secret-post, login-private-key-jwt, wrong-secret, pkce-mismatch, rotation, refresh, client-credentials, saml-over-wire, saml-encrypted-over-wire'] [td 'every commit']]]
     [note
       """Entra groups OVERAGE, recorded rather than left silent (RULED:
          1406-b). Above its threshold Entra stops emitting the `groups`

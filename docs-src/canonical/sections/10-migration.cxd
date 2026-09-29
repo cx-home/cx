@@ -224,8 +224,8 @@
                 conformance; `make test-binding-api-parity` for Layer-1
                 cross-binding)."""]
         [item """If the runner errors on your fixture, the implementation
-                doesn't handle it — that's the bug; file it. If runner
-                green, your fixture is now a regression gate."""]]]
+                doesn't handle it — that's the bug; file it. If the run
+                passes, your fixture is now a regression gate."""]]]
 
     [child id=propose-change n=10.5.3 title='Proposing a design change'
       [body

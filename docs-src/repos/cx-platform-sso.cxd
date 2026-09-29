@@ -30,7 +30,7 @@
        the right one alike, and no configured token is not an open door;
        create, read, patch and delete round-trip through the store. The
        token endpoint serves client credentials and no other grant. The
-       repository's `examples/` directory carries the interop lane a
+       repository's `examples/` directory carries the interop tests a
        deployment is graded against."""]
   [gives
     """One module of the platform group, a pure-CX package over the codecs
@@ -47,4 +47,4 @@
   [status
     """Sign-on ships as a package: its module is bundled into the build from
        the pin, the first repository to leave the front door, and the
-       interop lane runs from its own tree."""]]
+       interop tests run from its own tree."""]]

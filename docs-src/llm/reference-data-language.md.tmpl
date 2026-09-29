@@ -108,11 +108,11 @@ Two guard rails matter, because both used to be soundness holes rather than
 formatting warts:
 
 * **Out-of-set glyphs are not heads.** `**` and `==` are absent from the ruled
-  set, so `[== 5 3]` stays in the array lane and canonicalizes as the string
+  set, so `[== 5 3]` stays an array and canonicalizes as the string
   `'== 5 3'` — deliberately, and pinned.
 * **Glued continuations are not heads.** `[-1, 2]` is an array with a negative
   number, `[*n]` is an alias reference, `[<=x]` is an array item. Only the
-  delimited glyph dispatches to the element lane.
+  delimited glyph makes the bracket an element.
 
 Getting this wrong is not cosmetic: before the alphabet was closed, `[<= 5 3]`
 canonicalized into the very bytes of `['<= 5 3']` and shared its content
@@ -147,7 +147,7 @@ cx --from=cx --to=json --lossless doc.cx    # re-imports byte-identically
 cx --xml doc.cx                             # projection shorthand
 ```
 
-The XML lane is the one to check your mental model against, because the two
+The XML projection is the one to check your mental model against, because the two
 models are close but not identical:
 
 {{EXAMPLE:003-element-attrs block}}

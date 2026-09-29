@@ -632,7 +632,7 @@
            thread's stack-bottom with libcx's GC."""]
       [body
         """**What each binding actually does differs — know your
-           lane.** Rust: every FFI chokepoint calls `ensure_thread()`
+           binding.** Rust: every FFI chokepoint calls `ensure_thread()`
            before the C call, and thread exit unregisters — fully
            automatic. Go: each cgo call runs on a locked OS thread
            (`LockOSThread`) and the internal `cxThread()` guard
@@ -1049,8 +1049,8 @@
         """Go uses cgo to call the C ABI. The module is
            `github.com/cx-home/cx/lang/go`; Layer 1 and the Layer-2
            builders share the one `cxlib` package. Requires Go
-           1.22+. The cgo bridge finds libcx through the repo's
-           Makefile lanes; `LIBCX_PATH` / `LIBCX_LIB_DIR` point it
+           1.22+. The cgo bridge finds libcx through the repository's
+           Makefile targets; `LIBCX_PATH` / `LIBCX_LIB_DIR` point it
            at a specific build when needed. Docs are safe to share
            across goroutines — each cgo call runs on a locked,
            registered OS thread."""]

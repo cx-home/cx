@@ -3,7 +3,7 @@
    entitlements, and the honest marketplace status. Spec home: the
    feature distribution & market spec
    (spec/03-approved/xap/xap_feature_distribution_market.md). The
-   task-oriented developer set that used to sit under docs/dev/
+   how-to developer set that used to sit under docs/dev/
    (features-*, registry-*, marketplace, client-and-views, the ORIEL and
    studio guides) folded into this section under DOCS-46, re-voiced, each
    claim beside a corpus case this guide's cx replays ([fixture id=]) or
@@ -41,7 +41,7 @@
          it; behavior ships **inside the package**, never in the
          serving process. Not everything is a feature, though — the
          sealing and signing machinery is content-agnostic, and the
-         package `kind` decides only which gate runs at install:"""]
+         package `kind` decides only which check runs at install:"""]
     [table
       [tr [th 'kind'] [th 'unit'] [th 'install gate']]
       [tr [td 'feature'] [td 'the XAP composition unit: grammar + impl + fixtures'] [td 'verify + compose-gate + needs consent']]
@@ -270,7 +270,7 @@
               raises `CXER4887`; re-publishing the identical hash is
               idempotent."""]
       [item """**pkg-verify** re-runs the full fail-closed chain
-              (re-hash, signature, required credentials); nothing stages
+              (re-hash, signature, required credentials); nothing is staged
               on failure."""]]
     [body
       """Sign from day one, even internally — it costs nothing, and it
@@ -326,7 +326,7 @@
   [child id=dist-consuming n=19.4 title='Consuming — verify, install, pin'
     [body
       """The consumer pipeline is `discover → acquire → verify →
-         gate → consent → enable`, fail-closed at every stage, and
+         gate → consent → enable`, fail-closed at every step, and
          every check is offline-verifiable — a vendored mirror is as
          good as the origin. Discovery and verification against a
          registry store — this exact program, pointed at the
@@ -373,7 +373,7 @@
          registry (run from the repository root):"""]
     [; check=none — needs a bound CX_REGISTRY plus read/env grants;
        under the grant-free docs-example gate the load fails CXER4889
-       by design (the fail-closed lane pinned in the table below).
+       by design (the fail-closed path pinned in the table below).
        Verified live 2026-08-20 against registry/store: true. ]
     [example lang=cx check=none
       """[?lib 'pkg:gtin@0.1.0' :as gtin]
@@ -383,10 +383,10 @@
 true"""]
     [body
       """A `pkg:NAME@VERSION#MANIFEST-HASH` reference pins past the
-         alias table entirely. The failure lanes are values, each
+         alias table entirely. Each failure is a value
          naming its cause:"""]
     [table
-      [tr [th 'lane'] [th 'error']]
+      [tr [th 'failure'] [th 'error']]
       [tr [td 'no registry bound (CX_REGISTRY unset)'] [td 'CXER4889 — fails closed, never a guess']]
       [tr [td 'name or version absent'] [td 'CXER4886']]
       [tr [td '#hash pin does not match the resolved manifest'] [td 'CXER4888']]

@@ -90,8 +90,8 @@
          intrinsic could without perturbing identity."""]
 
     [body
-      """The link is an explicit, detached **lineage claim**: a Lane-2
-         value naming the `from` schema address, the `to` schema
+      """The link is an explicit, detached **lineage claim**: a value of its
+         own, naming the `from` schema address, the `to` schema
          address, the relation (`:additive`, `:narrowing`, `:split`,
          `:merge`), and — when one exists — the upcaster that carries
          old data forward. For the derivable classes, `cx schema

@@ -266,13 +266,13 @@
            'Jean-Luc' 4 null]"""]]
 
   [child id=td-47 n=14.47 title='47. Anchor and alias'
-    [body """`&classic` **names** this element; `[*classic]` is an alias node referencing it. Which reading you get depends on the lane. The **lossless lanes** carry the reference as written: canonical CX emit prints `[*classic]` back out, and `--xml` marks it with a `cx:` attribute, so the document round-trips byte-faithfully. The **semantic lanes resolve it**: under `--json`/`--yaml`/`--csv` (any lossy projection) and inside a program's `$doc`, each alias expands to a deep copy of its anchor — the JSON of the example below carries two full Margheritas inside `menu`. `cx lint` (CX-L004) errors on a reference whose anchor does not exist, and a lossy projection of a dangling alias refuses outright."""]
+    [body """`&classic` **names** this element; `[*classic]` is an alias node referencing it. Which reading you get depends on the projection. The **lossless projections** carry the reference as written: canonical CX emit prints `[*classic]` back out, and `--xml` marks it with a `cx:` attribute, so the document round-trips byte-faithfully. The **semantic projections resolve it**: under `--json`/`--yaml`/`--csv` (any lossy projection) and inside a program's `$doc`, each alias expands to a deep copy of its anchor — the JSON of the example below carries two full Margheritas inside `menu`. `cx lint` (CX-L004) errors on a reference whose anchor does not exist, and a lossy projection of a dangling alias refuses outright."""]
     [example lang=cx
       """[pizza &classic name=Margherita price=12 [base tomato]]
          [menu [*classic] [*classic]]"""]]
 
   [child id=td-48 n=14.48 title='48. Merge declaration'
-    [body """`*classic` **declares** a merge from the anchor, with the element's own attrs as overrides. The same lane split as the alias: the lossless lanes keep the declaration as written — canonical emit prints `[pizza *classic …]`, `--xml` emits a `cx:merge="classic"` attribute — while the semantic lanes **apply** it: under a lossy projection or `$doc`, the second pizza inherits `name=Margherita price=12 [base tomato]` and its own attrs win on collision, so it comes out `name=ClassicXL size=large price=16` with the tomato base. CX-L004 checks the target anchor exists."""]
+    [body """`*classic` **declares** a merge from the anchor, with the element's own attrs as overrides. The same split as the alias: the lossless projections keep the declaration as written — canonical emit prints `[pizza *classic …]`, `--xml` emits a `cx:merge="classic"` attribute — while the semantic projections **apply** it: under a lossy projection or `$doc`, the second pizza inherits `name=Margherita price=12 [base tomato]` and its own attrs win on collision, so it comes out `name=ClassicXL size=large price=16` with the tomato base. CX-L004 checks the target anchor exists."""]
     [example lang=cx
       """[pizza &classic name=Margherita price=12 [base tomato]]
          [pizza *classic name=ClassicXL size=large price=16]"""]]
@@ -298,7 +298,7 @@
            ''']]"""]]
 
   [child id=td-50 n=14.50 title='50. The whole shop'
-    [body """XML decl, anchor, block comments, typed table, a merge declaration (carried on the lossless lanes, applied on the semantic ones — see 48), map and sequence children, triple-quoted text. One syntax, everywhere."""]
+    [body """XML decl, anchor, block comments, typed table, a merge declaration (carried on the lossless projections, applied on the semantic ones — see 48), map and sequence children, triple-quoted text. One syntax, everywhere."""]
     [example lang=cx
       """[?xml version=1.0 encoding=UTF-8]
          [shop &flagship name='New Haven' port=8080 open=true
@@ -311,7 +311,7 @@
              Diavola    medium 13.00 false]
            [staff [cook &lead name=Pepe shift=morning founder=true]
                   [cook *lead name=Maria shift=closing founder=false]]
-           [contact address='123 Forno Lane'
+           [contact address='123 Via Forno'
              [coords {lat: 40.8518, lon: 14.2681}]
              [phones ('+39 555 0101', '+39 555 0102')]]
            [tagline '''
