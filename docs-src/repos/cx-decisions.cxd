@@ -1,0 +1,52 @@
+[# docs-src/repos/cx-decisions.cxd — the record's page,
+   repo-cx-decisions.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 4). Facts
+   from the registries; the repository has no corpus of its own, so the one
+   example is a case of the language corpus whose own notes name the ledger
+   page that ruled it — the substitution RESULTS.md names. #]
+
+[repo name=cx-decisions
+  [intro
+    """**TL;DR — a decision is written down once, and a commit that cites it
+       has to find it.** `cx-decisions` is the record: the ledger of every
+       ruling under its id, the process specs that give the work its
+       vocabulary — release, epic, issue, decision; branch, merge; owner,
+       integrator, agent; step, pipeline, run — the standing rules every
+       agent reads before its brief, and the design texts a ruling was
+       argued from."""]
+  [body
+    """A `RULED: <id>` in a commit subject is not decoration: the freeze gate
+       resolves every id against the ledger and refuses a commit that names
+       a decision the ledger does not carry, and the ledger's index maps
+       every id to the file and heading that carries it — so a rule is
+       either recorded or it is not a rule. The ledger records decisions; it
+       does not make them. The spec is the only truth, and a decision that
+       changes it is an edit to the spec inside the decision, never a
+       document beside it."""]
+  [body
+    """What is here is what every other repository reads and none of them
+       owns: the delivery grammar, governance, the readiness rubric and the
+       release process; the pin-document format every `deps.cxd` follows;
+       the standing rules; the working specs and the archived ones; the
+       design texts and the release campaign's own record. The tree this
+       site was built from keeps the tracked copies its gates read, and this
+       repository is the record published for the rest."""]
+  [gives
+    """No module and no code: the repository is text — the ledger, the
+       process specs, the rules and the designs — so the table below is the
+       generator's note. What it gives you is the reason behind every
+       `RULED:` on this site."""]
+  [try
+    """A decision and its executable end, side by side. This case's own
+       notes name the ledger page that ruled it: a monitor's batch receive
+       answers the channel family's terminal when there will never be
+       anything more — a drained monitor, a closed one — instead of an empty
+       answer that could also mean not yet, and the corpus pins exactly that.
+       The case is the language corpus's; the ruling it cites is a page of
+       this repository's ledger."""]
+  [fixture id=program-conc-028b-monitor-batch-terminal-answers]
+  [status
+    """The front door pins nothing of the record — its gates read their own
+       tracked copies of the ledger and the process specs — so the registry
+       row carries an `at=` and `deps.cxd` carries no row, and the figure
+       draws the repository alone. Nothing builds on it in the build's
+       sense; everything is ruled by it."""]]

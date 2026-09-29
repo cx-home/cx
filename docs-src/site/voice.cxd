@@ -37,6 +37,11 @@ Two ratchets, each read by a step:
     [page path='docs-src/canonical/sections/00-quickstart.cxd' allow=8 why='the host-language step (first-binding) shows the four bindings; wave 5 narrows the rest to that step']
     [; the hand-authored about page: the owner writes it, nobody regenerates it ]
     [page path='docs-src/canonical/about.html' allow=3 why='hand-authored by the owner; the page names what CX was measured against']
+    [; the PyPI binding's repository page (DOCS-49 wave 4): the word is the
+       repository's own NAME — the [repo name=] root the generator requires and
+       the file comment that names the page — and the prose names no host
+       language; whether a binding page may is the bindings row's open letter ]
+    [page path='docs-src/repos/cx-binding-python.cxd' allow=2 why='the repository is named cx-binding-python: its root element and the comment naming the file; the prose names no host language']
     [; floors for waves 5–7 (the voice pass), the count measured now ]
     [page path='docs-src/canonical/sections/01-intro.cxd' allow=7 wave=5 why='the standard-to-meet sentence and the bindings list']
     [page path='docs-src/canonical/sections/01b-choosing.cxd' allow=1 wave=5 why='the bindings row']
@@ -55,5 +60,5 @@ Two ratchets, each read by a step:
     [page path='docs/dev/v0130-capabilities.md' allow=1 wave=7 why='docs/dev folds into the guide (DOCS-46)']]
 
   [; ── the fixture-citation floor over docs-src/canonical/sections/*.cxd and docs-src/repos/*.cxd ── ]
-  [fixtures floor=45]
+  [fixtures floor=53]
 ]

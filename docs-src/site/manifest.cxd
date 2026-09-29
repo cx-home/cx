@@ -87,6 +87,10 @@ deps/cx-platform-xsp/conformance/stdlib/xsp
 deps/cx-platform-secrets/conformance/platform/secrets
 deps/cx-platform-sso/conformance/platform/sso
 deps/cx-platform-ux/conformance/xap/ux
+deps/cx-platform-agent/conformance/x/tools
+abi
+deps/cx-platform-xap/conformance/xap/xap-dist
+deps/cx-tooling/conformance/stdlib/diagram
 #]]
 
   [files from=landing [#
@@ -105,7 +109,14 @@ guide.html
      landing page's repository map links a row's page the day its line is
      here. Wave 2: the front door, the two cores, five platform repositories;
      wave 3: the platform remainder — the wire, mail, the database drivers,
-     the fabric, the stream protocol, the keystore, sign-on, the surfaces. ]
+     the fabric, the stream protocol, the keystore, sign-on, the surfaces;
+     wave 4, the last eight: the agent surface, the four shipping bindings,
+     the package index, the decisions record, the editor and diagram
+     surface — every row of the map has its page. A binding and the two
+     ecosystem rows nothing is compiled from have no checkout in this tree
+     (no deps.cxd row); their pages cite the front door's ABI vectors, the
+     application host's store case and a language-corpus case whose notes
+     name the ledger page that ruled it, and say so. ]
   [files from=repos [#
 repo-cx.html
 repo-cx-core-code.html
@@ -123,6 +134,14 @@ repo-cx-platform-xsp.html
 repo-cx-platform-secrets.html
 repo-cx-platform-sso.html
 repo-cx-platform-ux.html
+repo-cx-platform-agent.html
+repo-cx-binding-python.html
+repo-cx-binding-go.html
+repo-cx-binding-rust.html
+repo-cx-binding-v.html
+repo-cx-registry.html
+repo-cx-decisions.html
+repo-cx-tooling.html
 #]]
 
   [; the rendered guide (make guide, docs/guide/), at the root; the lib- pages
