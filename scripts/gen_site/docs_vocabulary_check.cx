@@ -46,7 +46,6 @@
                "docs-src/repos/*.cxd",
                "docs-src/canonical/reference/*.cx",
                "docs-src/llm/*.tmpl", "docs-src/llm/primer-platform.chapter.md",
-               "docs/dev/*.md",
                "scripts/gen_guide/playground/playground.js",
                "scripts/gen_guide/playground/playground.html",
                "scripts/gen_guide/guide_build.cx")]

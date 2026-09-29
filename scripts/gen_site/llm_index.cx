@@ -120,3 +120,72 @@
       "</body>",
       "</html>",
       "") "\n"]]]
+
+# dev-index-html: the developer door, dev/index.html (RULED: DOCS-46). The
+# fifteen docs/dev/*.md pages that predated RS-1 — still saying "Ring 2/3" —
+# folded into the guide; the old dev/ URL now answers with where each page
+# went, so a bookmark or an external link lands on the page that carries the
+# content today instead of a 404. Every target below is an assembled guide
+# page, and site-check's link walk resolves each one.
+[?def dev-row scope=public ($href $was $now)
+  [$strings:join ("<li><a href=\"", $href, "\"><b>", [$esc $now], "</b></a> — was <code>dev/", [$esc $was], "</code></li>\n") ""]]
+
+[?def dev-index-html scope=public impure ($ver)
+  [$strings:join (
+    "<!DOCTYPE html>",
+    "<html lang=\"en\">",
+    "<head>",
+    "<meta charset=\"utf-8\">",
+    "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
+    "<title>Developer notes — where they went — CX</title>",
+    "<meta name=\"description\" content=\"The developer notes folded into the CX guide: the store, operations and distribution sections.\">",
+    "<link rel=\"icon\" type=\"image/svg+xml\" href=\"../assets/cx-logo.svg\">",
+    [$strings:join ("<link rel=\"stylesheet\" href=\"../style.css?v=", $ver, "\">") ""],
+    "<style>",
+    "body.site-home { grid-template-columns: 1fr; }",
+    "body.site-home header.sheet-bar, body.site-home main, body.site-home footer.title-block { grid-column: 1; }",
+    "body.site-home main { max-width: 920px; margin: 0 auto; }",
+    "ul.llm-index { list-style: none; padding-left: 0; }",
+    "ul.llm-index li { margin: 0.55rem 0; padding-left: 0.9rem; border-left: 2px solid var(--rule); }",
+    "</style>",
+    "</head>",
+    "<body class=\"site-home\">",
+    "<header class=\"sheet-bar\">",
+    "  <div class=\"sb-left\"><span class=\"sb-brand\">CX · cxhome.org</span><span class=\"sb-title\">Developer notes</span></div>",
+    [$strings:join ("  <div class=\"sb-right\"><a href=\"../index.html\">Home</a><a href=\"../guide.html\">Guide</a>",
+                    "<a href=\"https://github.com/cx-home/cx\">GitHub</a>",
+                    "<span class=\"sb-rev\">v", $ver, "</span></div>") ""],
+    "</header>",
+    "<main>",
+    "<h1>The developer notes moved into the guide</h1>",
+    "<p class=\"lede\">The task-oriented developer set that used to live here was written before the platform became two rings and the groups above them, and it still said so. Its content now lives in the guide, re-voiced, every example a conformance fixture the guide replays when it is built. This page is the forwarding address.</p>",
+    "<h2>Where each page went</h2>",
+    "<ul class=\"llm-index\">",
+    [$dev-row "../store.html" "store-embedded.md" "The store platform — the embedded workflow"],
+    [$dev-row "../store.html#store-porcelain" "store-management.md" "The store platform — porcelain, replication, the admin plane"],
+    [$dev-row "../store.html#store-security" "store-security.md" "The store platform — security and encryption at rest"],
+    [$dev-row "../operations.html#ops-store-daemon" "store-service.md" "Operations — the store service daemon, its bootstrap, authority and observability"],
+    [$dev-row "../operations.html#ops-xap-host" "xap-quickstart.md" "Operations — the XAP host"],
+    [$dev-row "../xap-distribution.html#dist-authoring" "features-authoring.md" "XAP feature distribution — authoring"],
+    [$dev-row "../xap-distribution.html#dist-consuming" "features-consuming.md" "XAP feature distribution — consuming"],
+    [$dev-row "../xap-distribution.html#dist-registry" "registry-setup.md" "XAP feature distribution — publishing, a git repo is a registry"],
+    [$dev-row "../xap-distribution.html#dist-consuming" "registry-consuming.md" "XAP feature distribution — verify, install, pin"],
+    [$dev-row "../xap-distribution.html#dist-market" "marketplace.md" "XAP feature distribution — the marketplace, today versus specified"],
+    [$dev-row "../xap-distribution.html#dist-clients" "client-and-views.md" "XAP feature distribution — clients and surfaces"],
+    [$dev-row "../xap-distribution.html#dist-reference-surfaces" "oriel-guide.md" "XAP feature distribution — the reference surfaces (ORIEL)"],
+    [$dev-row "../xap-distribution.html#dist-reference-surfaces" "studio-guide.md" "XAP feature distribution — the reference surfaces (the studio)"],
+    [$dev-row "../operations.html" "README.md" "Operations — the operator's reading order"],
+    [$dev-row "../enterprise.html" "v0130-capabilities.md" "Assessing CX — every capability beside its fixture"],
+    "</ul>",
+    "<p class=\"note\">Rendered by <code>scripts/gen_site/llm_index.cx</code> at assembly and declared in <code>docs-src/site/manifest.cxd</code>; the guide pages it points at are the sections under <code>docs-src/canonical/sections/</code>.</p>",
+    "</main>",
+    "<footer class=\"title-block\">",
+    "  <div class=\"tb-cell tb-project\"><span>Project</span><b>CX — one language, data format to platform</b></div>",
+    "  <div class=\"tb-cell\"><span>Drawing</span><b>Developer door</b></div>",
+    [$strings:join ("  <div class=\"tb-cell\"><span>Rev</span><b>", $ver, "</b></div>") ""],
+    "  <div class=\"tb-cell\"><span>Checked by</span><b class=\"tb-accent\">The compiler</b></div>",
+    "  <div class=\"tb-cell\"><span>Issued</span><b>cxhome.org</b></div>",
+    "</footer>",
+    "</body>",
+    "</html>",
+    "") "\n"]]

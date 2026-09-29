@@ -1,9 +1,13 @@
 [# Section 17 — operations: running CX in production. Process model,
    the store service daemon, deployment artifacts, environment knobs,
-   GC posture, logging. Sources: docs/dev/*.md (runtime-verified),
-   tooling/cxstore/, vcx/cmd dispatch, and the live binary — every
-   command and output on this page was run before it landed here
-   (issue #425 coverage gap). #]
+   GC posture, logging — and, folded in here under DOCS-46 from the
+   developer set that used to sit under docs/dev/, the daemon's
+   clean-state bootstrap, its one authority table, observability and
+   backpressure, and the XAP host. Sources: tooling/cxstore/, vcx/cmd
+   dispatch, the store and XAP corpora ([fixture id=] citations replayed
+   when the page is built) and the live binary — every command and
+   output on this page was run before it landed here (issue #425
+   coverage gap). #]
 
 [section id=operations group='The platform group' n=17 title='Operations'
 
@@ -12,11 +16,13 @@
        foreground process, explicit capability grants (see
        [[capabilities]]), the host OS as the supervisor, and a small
        set of environment knobs. This section covers the process
-       model, the store service daemon and its deployment artifacts,
-       the environment variables that matter, the collector at a
-       glance, and logging — with pointers into the deeper
-       runtime-verified operator docs under `docs/dev/` in the
-       repository."""]
+       model, the store service daemon — its listeners, its clean-state
+       bootstrap, its one authority table, its observability and
+       backpressure — the XAP host, the deployment artifacts, the
+       environment variables that matter, the collector at a glance,
+       and logging. Every claim here stands beside the corpus case this
+       guide's `cx` replayed when the page was built, or names the spec
+       page that holds it."""]
 
   [child id=ops-process n=17.1 title='Process model'
     [body
@@ -45,10 +51,9 @@
               accept plane. Pool sizes are deploy-time environment
               config (subsection on environment variables below)."""]]
     [body
-      """The deployment process model is described operator-first in
-         `docs/dev/xap-quickstart.md` (the XAP host) and
-         `docs/dev/store-service.md` (the store daemon); both are
-         runtime-verified documents in the repository."""]]
+      """The two long-running processes the platform ships are the
+         store daemon ([[ops-store-daemon]]) and the XAP host
+         ([[ops-xap-host]]); both follow every rule above."""]]
 
   [child id=ops-store-daemon n=17.2 title='The store service daemon'
     [body
@@ -99,17 +104,314 @@ ready"""]
       [tr [td 'SIGTERM / SIGINT'] [td 'stop accepting, drain in-flight requests, checkpoint every mounted store, exit 0']]
       [tr [td 'SIGHUP'] [td 'reload the hot config sections — tls, timeouts, limits, observability — without dropping connections, validate-then-swap; bind/stores/workers changes refuse the reload as restart-required. This is the signal an ExecReload= directive should send (the shipped unit does not carry one yet)']]]
     [body
-      """One operator verb rounds out the surface: `cx store-rotate-kek`
+      """**Two listeners.** `[bind addr=…]` is required and is a
+         bootstrap-only HTTP surface: `health`, `ready` and
+         `capabilities` under `/cx-store/v1/`, plus a daemon-level
+         `/metrics`. It carries no store operation — any other path
+         answers 404 `CXER1709` naming the profile as the wire. The
+         data wire is the XSP store profile on its own listener
+         (`[xsp enabled=true addr=…]`), with the optional gRPC edge
+         (`[grpc enabled=true addr=…]`) beside it; the three addresses
+         must differ, and `[xsp enabled=true]` requires an
+         `[identity did= seed-env=]` — attach is XSP-AUTH and there is
+         no anonymous responder. `capabilities` is the discovery advert:
+         `wire-version`, `server-impl`, `config-generation`, the
+         encodings, the `admin-ops` this daemon routes, the request and
+         response size caps, the rate limit and — when the profile
+         listener is up — `[xsp [addr …] [did …]]`, so a management
+         client learns the store wire's address and responder DID from
+         the bootstrap port instead of being configured with them
+         twice."""]
+    [body
+      """Two operator verbs round out the surface. `cx store-rotate-kek`
          re-wraps an encrypted store under a new key-encryption key,
-         resumable and fail-closed. There is no token-minting verb,
-         because authority is not a bearer secret: clients hold DIDs,
-         and the daemon's `[xsp [grants …]]` table decides every
-         operation. TLS, observability (metrics, tracing, JSON logs),
-         DoS fairness, and the gRPC listener are covered end-to-end in
-         `docs/dev/store-service.md`, `docs/dev/store-management.md`,
-         and `docs/dev/store-security.md`."""]]
+         resumable and fail-closed ([[store-security]]). `cx
+         store-mint-principal` mints an XSP-AUTH principal offline —
+         the next subsection walks a deployment from a clean state with
+         it. There is no token-minting verb, because authority is not a
+         bearer secret: clients hold DIDs, and the daemon's
+         `[xsp [grants …]]` table decides every operation
+         ([[ops-authority]]). Metrics, tracing, logs and backpressure
+         are [[ops-observability]]; the gRPC edge is
+         [[store-transports]]."""]]
 
-  [child id=ops-artifacts n=17.3 title='Deployment artifacts'
+  [child id=ops-bootstrap n=17.3 title='Clean-state bootstrap — mint, grant, serve, present'
+    [body
+      """Store credentials are **XSP-AUTH principals**: an Ed25519
+         `did:key` whose seed the holder proves possession of per
+         attach. `[xsp [grants …]]` is the only grant table, and a
+         non-empty table means deny-by-default — the daemon admits
+         exactly the DIDs written into its config and refuses every
+         other principal. That leaves one question a fresh deployment
+         has to answer: where does the *first* principal come from?
+         `cx store-mint-principal` answers it offline — it generates
+         the seed and derives the DID locally, touching no network and
+         no store. Minting grants nothing; the config is still the sole
+         authority."""]
+    [body
+      """**1 — Mint the principal.** The seed lands in a `0600` file and
+         is never printed. `--caps` is required — the authority a grant
+         carries is stated at mint time, never inherited from a
+         default:"""]
+    [example lang=sh
+      """$ cx store-mint-principal --id ops --seed-file ./ops.seed --caps "read write admin\""""]
+    [body
+      """stdout is one canonical CX element — machine-readable and
+         copy-paste-able — carrying the DID, the config stanza to
+         splice into the daemon's `[xsp …]` section, and the open-opts
+         a client presents:"""]
+    [output
+      """[xsp-principal id=ops for=grant did=did:key:z6Mk… seed-file='./ops.seed' seed-env=CX_XSP_SEED_OPS
+  [config-stanza [xsp [grants [grant did=did:key:z6Mk… caps='read write admin']]]]
+  [client-opts [map xsp-did=did:key:z6Mk… xsp-seed-env=CX_XSP_SEED_OPS]]]"""]
+    [body
+      """Operator guidance goes to stderr. Back the seed file up — it is
+         the only proof of that DID, and a lost seed means re-minting
+         and re-granting. Re-running the verb against an existing
+         `--seed-file` is refused; `--force` replaces it and
+         invalidates the old DID. `--id` must be the canonical spelling
+         of the environment variable it derives — lowercase, `-` for
+         word breaks: `CX_XSP_SEED_<NAME>` upper-cases and folds `-` to
+         `_`, so `fleet_ops` and `Fleet-Ops` would derive the same
+         variable as `fleet-ops`, and two principals minted under two
+         spellings would silently share one seed. The verb refuses the
+         non-canonical spellings, naming the id to use and the variable
+         they would have shared."""]
+    [body
+      """**2 — Mint the daemon's own identity.** Attach is XSP-AUTH in
+         both directions, so the daemon needs a responder identity of
+         its own. Same verb, `--for identity`, and no `--caps`: the
+         daemon's identity is the root of its authority, not a
+         grantee."""]
+    [example lang=sh
+      """$ cx store-mint-principal --id host --seed-file ./host.seed --for identity"""]
+    [body
+      """**3 — Assemble the config.** Both `[config-stanza]` bodies
+         splice into the same `[xsp …]` section verbatim — the identity
+         row from step 2, the grant row from step 1 (the fabric daemon
+         takes the same `[identity did= seed-env=]` row at its own top
+         level):"""]
+    [example lang=cx
+      """[cxstore-service
+  [bind addr="127.0.0.1:18761"]
+  [stores [store name="main" url="file:///var/lib/cxstore/main"]]
+  [xsp enabled=true addr="127.0.0.1:18762"
+    [identity did="did:key:z6MkHost…" seed-env="CX_XSP_SEED_HOST"]
+    [grants [grant did="did:key:z6Mk…" caps="read write admin"]]]]"""]
+    [body
+      """**4 — Serve.** The daemon resolves `seed-env` while parsing the
+         config, so the host seed is exported *before* it starts. With
+         grants present the daemon is deny-by-default from the first
+         attach; no separate switch turns enforcement on:"""]
+    [example lang=sh
+      """$ export CX_XSP_SEED_HOST="$(cat ./host.seed)"
+$ cx store-serve --config cxstore.service.cx \\
+    --allow-read --allow-write --allow-env \\
+    --allow-net=127.0.0.1:18761 --allow-net=127.0.0.1:18762"""]
+    [body
+      """The startup line says which posture it came up in — `auth
+         ENFORCED (XSP-AUTH, N grant(s))` with a grant table, `auth OPEN
+         — no [xsp [grants …]] configured, anonymous full access`
+         without one. Read it on every deploy; it is the daemon's own
+         answer, not an inference from the config file you think you
+         shipped."""]
+    [body
+      """**5 — Present the identity.** The client loads the seed from
+         the environment — never from the URL, never from an opts
+         literal — and passes the `[client-opts]` map verbatim:"""]
+    [example lang=sh
+      """$ export CX_XSP_SEED_OPS="$(cat ./ops.seed)\""""]
+    [; check=none — a live daemon on the loopback port is the program's
+       input; no corpus case owns the presented-identity open. ]
+    [example lang=cx check=none
+      """[?lib 'cx-platform/store' :as store]
+[?let [= $c [$store:open-opts 'cx-store+xsp://127.0.0.1:18762/main/'
+              [map xsp-did='did:key:z6Mk…' xsp-seed-env='CX_XSP_SEED_OPS']]]
+  [$store:put-doc $c [note [body 'first write']]]]"""]
+    [body
+      """A principal that was never granted is an equally well-formed
+         identity and is still refused: the daemon rejects the op and
+         the client raises `CXER1131` (`E_STORE_AUTH_FAILED`) naming the
+         rejected wire op. Deny-by-default is a property of the config,
+         not of the credential's cryptographic quality."""]]
+
+  [child id=ops-authority n=17.4 title='Authority — one grant table'
+    [body
+      """There is exactly one authority model, shared by the profile
+         listener and the gRPC edge with no second implementation.
+         `[xsp [grants …]]` is the only grant table; the retired
+         store-HTTP-era `[auth …]` section — static tokens, JWT, OIDC,
+         role bundles, the Bearer base — is a hard config error that
+         names the replacement, never a silently ignored stanza. Each
+         `[grant did="…" caps="…" over=?]` row compiles to an ordinary
+         delegation in the session's authority basis at attach, so one
+         decision function governs every verb — attenuation, revocation
+         and explain come for free rather than as a parallel role
+         engine:"""]
+    [fixture id=store-grants-001-row-compiles-to-one-root-delegation]
+    [list
+      [item """**The capability grammar** is `read`, `write`, `delete`,
+              `admin`, `peer`. An unrecognised class is a startup error
+              listing the accepted set. `over="/path"` slices a grant to
+              a subtree; `[grant floor=true caps="read"]` is the
+              anonymous floor, paired with
+              `[xsp [policy mode=floor floor=NAME]]`. `admin` carries
+              `status`, `gc`, `mounts` and `config-reload`; `peer` is
+              deliberately narrower than `read` — a peer daemon receives
+              revocations without holding read on any data plane."""]
+      [item """**Posture follows the table's presence.** Grants
+              configured means deny-by-default, every verb checked at
+              the policy enforcement point and the PEP's `[deny …]`
+              value crossing the wire verbatim. No grants means the open
+              dev posture: data verbs open, the daemon-level admin verbs
+              still requiring a DID-proven principal. Absent is open,
+              present is enforced; there is no third switch."""]
+      [item """**Delegation and presentation.** A client may attenuate
+              its authority further by presenting a credential chain
+              (`[vp …]` on attach, or a later `phase=present`) whose
+              terminal subject is the session principal byte for byte.
+              Escalation on any axis refuses; a root issuer this
+              deployment does not recognise compiles to nothing rather
+              than conjuring authority; a credential from a revoked
+              chain stops verifying at its next use."""]
+      [item """**Revoking a principal** is a `[xsp [grants …]]` edit
+              plus `SIGHUP`, and it is live: the reload re-folds the
+              grant table into every session already attached, so the
+              revoked principal is refused at its very next call, not at
+              the next restart. Revocation reaches delegated authority
+              too — a credential that principal presented only ever
+              conveyed authority through the config grant it was rooted
+              in. The gRPC edge compiles its basis per call and picks the
+              change up the same way. A live session's authority only
+              ever narrows on reload: remove every grant and the attached
+              sessions keep enforcing until they re-attach."""]
+      [item """**Client identity never rides the wire URL or a
+              literal.** `xsp-did` names the DID, `xsp-seed-env` names
+              the environment variable holding the seed."""]]
+    [body
+      """The grammar and the refusal codes are the XSP store profile's
+         listener-model section (`spec/03-approved/xap/xsp_store_profile.md`)
+         and the gRPC edge's `spec/03-approved/misc/cxstore-grpc.md` §4,
+         which share the one calculus; the gRPC edge authenticates per
+         call — the `authorization` metadata carries a `CxCall`
+         credential signed by the presenting DID over the exact method
+         path, the exact request bytes, a timestamp inside a freshness
+         window and a single-use nonce — against the same table and the
+         same PEP."""]]
+
+  [child id=ops-observability n=17.5 title='Observability and backpressure'
+    [list
+      [item """**`GET /metrics`** — Prometheus exposition on the
+              bootstrap port, an unauthenticated operator plane: the
+              bind address is the operator's control, and a standard
+              scraper cannot sign a request. It is not exempt from
+              admission control — the global pre-auth bucket covers it,
+              so a scrape flood cannot force unbounded work. Cardinality
+              is bounded by construction (labels: endpoint, status,
+              store — never per hash): request counters, histograms and
+              bytes, an in-flight gauge, per-store document, object and
+              dedup gauges. No fabricated zeros — a store-internal series
+              attaches only when the backend instruments it."""]
+      [item """**OpenTelemetry tracing** — off by default; W3C
+              trace-context is propagated either way so logs correlate;
+              OTLP/HTTP export when enabled."""]
+      [item """**Structured logs** — one record per bootstrap-surface
+              request (endpoint, store, status, latency, bytes in and
+              out, trace id), CX or JSON, with the health and ready
+              probes suppressed as noise. The record carries no
+              credential material, and the startup banner redacts the
+              userinfo of any mount URL that has one (an
+              `ftp://user:pass@…` substrate) rather than printing
+              it."""]
+      [item """**Backpressure, on by default.** The bootstrap surface
+              and the gRPC edge run a token-bucket rate limit plus a
+              concurrency cap keyed on the resolved store name —
+              tenant-level backpressure — behind a global pre-auth bucket
+              covering unauthenticated traffic. Every admission rejection
+              is `429 CXER1706` with `Retry-After`; draining or not ready
+              is `503 CXER1708`. The profile listener carries its own
+              flow control — `[xsp [limits pending-window= liveness-ms=
+              handshake-ms= max-frame-bytes=]]` — and
+              `[xsp [limits [pushdown steps= memory-mb=]]]` budgets
+              daemon-side evaluation for the compute-class verbs: an
+              exhausted budget is a loud typed refusal, never a daemon
+              takedown."""]
+      [item """**Reload, hot and restart-required.** `SIGHUP` (or the
+              admin-gated `config-reload` op) is validate-then-swap,
+              all-or-nothing, fail-closed. Hot: `[tls]` (the cert and key
+              *contents*, so rotation needs no restart), `[timeouts]`,
+              `[limits]`, `[observability]` and `[xsp [grants …]]`.
+              Restart-required: `[bind]`, `[grpc]`, `[stores]`,
+              `[workers]` and every part of `[xsp]` other than `[grants]`
+              — a change there refuses the whole reload with `CXER1712`
+              naming the offenders. Env-injected secrets are
+              rotation-blind; use file-based sources to rotate."""]]
+    [body
+      """The service-tier contract is
+         `spec/03-approved/misc/cxstore_service_tier_phase2.md`
+         (config appendix, tenancy, observability); the tenant boundary
+         it fixes — store-per-tenant, one dedup pool per mount — is
+         taught in [[store-security]]. Intra-store tenancy, quotas and
+         multi-node are the demand-gated next phase and are not
+         implemented."""]]
+
+  [child id=ops-xap-host n=17.6 title='The XAP host'
+    [body
+      """A XAP is authored as three data documents — a feature per
+         grammar, the deployment document, a surface per medium
+         ([[dist-authoring]]) — and served by one call:
+         `[$xap:host XAP-DOC OPTS]` boots a complete XAP from its
+         deployment document. It acquires the pinned packages, verifies
+         them, composes the grammar (the compose gate at load),
+         translates governance into runtime dials, loads each feature's
+         contract module, and serves the standard surface —
+         `GET /grammar`, `/features`, `/surface/<f>`, `POST /intent`,
+         `GET /stream`. A XAP with no custom transport is zero server
+         code; deployment-specific pieces (extra routes, ingest
+         workers, a simulation cadence) register as adapters through
+         OPTS and never fork the host. The reference deployment and
+         its client are the XAP repository's `reference/shop` and
+         `reference/shop-web-client` (their page: [[dist-reference-surfaces]]);
+         a project built on them runs with three make targets:"""]
+    [example lang=sh
+      """$ make run     # the XAP on :9001, foreground (its ingest adapter by default)
+$ make dev     # the XAP, the web client and a browser; Ctrl-C stops both
+$ make check   # the drift gate — specs against the implementation, fails on drift"""]
+    [body
+      """The host obeys the process model above to the letter. The
+         deployment entry uses `[$xap:host …]!` — the postfix that turns
+         an error value into a fatal exit — so a XAP that cannot serve
+         never half-runs its ingest workers; and the serve verb refuses
+         a URL with no port, and refuses to serve an errored runtime
+         at all, propagating the error rather than relabelling it:"""]
+    [fixture id=xap-serve-004-portless-url-refused]
+    [fixture id=xap-serve-009-an-err-runtime-does-not-serve]
+    [body
+      """Two layers of authority, both deny-by-default, and never
+         blurred: **host capabilities** — `cx` grants `read`, `write`,
+         `net`, `env` per invocation, and an ungranted effect raises
+         `CXER0271` naming the flag ([[capabilities]]) — and **XAP
+         authority** (the trust-model part of the XAP spec): authority
+         originates only from principals, every intent passes the one
+         policy enforcement point, grants are per verb, scoped and
+         conditioned, and the dial moves *who drives*, never *what is
+         permitted*. Identity is DID-first — `did:key`, offline, right
+         for a disconnected deployment — and a delegation is a
+         verifiable credential."""]
+    [body
+      """A session is a `(principal, tenant)` **attachment**: the server
+         owns session state, clients attach, detach and mirror-attach,
+         and the session survives the death of a client. Authoritative
+         state is the journal fold, never the session. What runs today
+         is the single in-process runtime a long-lived deployment uses;
+         the multi-tenant gateway and worker topology is design-frozen
+         and implemented incrementally (the session module spec and the
+         XAP architecture notes). The attachment, replayed:"""]
+    [fixture id=session-001-attach-binds-principal-tenant]
+    [fixture id=session-011-mirror-attach-adds-client]
+    [fixture id=session-014-detach-client-survives-zero]]
+
+  [child id=ops-artifacts n=17.7 title='Deployment artifacts'
     [body
       """Reference deployment artifacts live in `tooling/cxstore/` in
          the repository — use them as the template rather than
@@ -139,7 +441,7 @@ ready"""]
          date, the compiled collector, the V-fork pin, the compiled
          storage engines, and the feature set."""]]
 
-  [child id=ops-env n=17.4 title='Environment variables'
+  [child id=ops-env n=17.8 title='Environment variables'
     [body
       """The honest current set of deploy-relevant knobs, from the
          engine source. All are optional; the defaults are the
@@ -164,7 +466,7 @@ ready"""]
 [gc 1] marked=62MB goal=125MB headroom=32768KB pause=25188us arenas=2 spans=5509 pool=4680KB trimmed=0KB threads=1
 [gc 2] marked=123MB goal=246MB headroom=65536KB pause=64069us arenas=3 spans=13070 pool=0KB trimmed=0KB threads=1"""]]
 
-  [child id=ops-gc n=17.5 title='Garbage collection at a glance'
+  [child id=ops-gc n=17.9 title='Garbage collection at a glance'
     [body
       """The collector is a build-time property of the binary, and the
          binary tells you which one it carries:"""]
@@ -215,7 +517,7 @@ cx vX.Y.Z-dev+3ed9ade5
          wall), and `VGC_GCTRACE` (observability) — see the table
          above. There is nothing to tune on day one."""]]
 
-  [child id=ops-logging n=17.6 title='Logging and journaling'
+  [child id=ops-logging n=17.10 title='Logging and journaling'
     [body
       """Structured logging is a bundled module, not an external
          dependency. Leveled emits write to the active sink (stderr
@@ -248,17 +550,19 @@ cx vX.Y.Z-dev+3ed9ade5
          `journal` module page in the Standard library section. The
          store daemon additionally exposes service-side observability
          (request metrics, optional OTel tracing, JSON access logs) —
-         configured in the service config, documented in
-         `docs/dev/store-service.md`."""]
+         configured in the service config ([[ops-observability]])."""]
     [note
-      """Going deeper: `docs/dev/README.md` is the operator reading
-         order for the whole platform — store embedded tier
-         through service tier, registries, and the XAP host. Where a
-         capability is designed but not yet shipped, those pages say
-         so explicitly; this guide section only teaches what the
-         shipped binary was observed to do."""]]
+      """The operator's reading order for the whole platform runs
+         through this guide: the store's embedded tier and porcelain
+         ([[store]]), this page for the daemon and the host, the
+         registries and the distribution machinery
+         ([[xap-distribution]]), and the three contracts you operate
+         under ([[bitemporal]], [[consistency]], [[event-evolution]]).
+         Where a capability is designed but not yet shipped, the page
+         says so by name; this section only teaches what the shipped
+         binary was observed to do."""]]
 
-  [child id=ops-sso-compat n=17.7 title='Identity-provider compatibility'
+  [child id=ops-sso-compat n=17.11 title='Identity-provider compatibility'
     [body
       """The question an enterprise evaluation actually asks is whether
          CX will just work against the identity provider that

@@ -12,7 +12,7 @@
 
    Authority: spec/03-approved/core/cx_partition.md §2 (the rings) and §3 (the
    import contracts). The business-facing account stays in
-   docs-src/positioning/ring_value_map.md and links here.
+   the value map that became [[enterprise]] (09-enterprise.cxd) and links here.
 
    Cross-links use [[anchor]] form. #]
 

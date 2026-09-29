@@ -8,7 +8,7 @@
 #                     site/ (gitignored) with publish.sh's old map — the guide at
 #                     the root (its home page as guide.html), the landing page
 #                     as index.html, docs/llm/ under llm/ with llms.txt and
-#                     llms-full.txt at the root too, docs/dev/, install, CNAME
+#                     llms-full.txt at the root too, the dev/ door, install, CNAME
 #                     and .nojekyll. The Pages workflow
 #                     (.github/workflows/site.yml) uploads exactly this directory.
 #   site-check        Render the guide through guide-render-gate (so it can run

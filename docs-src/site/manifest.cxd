@@ -32,7 +32,7 @@ retired with the allowlist mirror (RULED: RS-11), now `make site`'s:
 docs/guide/'s contents at the root, except the guide's own index.html, which
 becomes guide.html (the root's index.html is the landing page); docs/llm/ under
 llm/, with llms.txt and llms-full.txt copied to the root as well (D51d: the
-assembly step copies them, untracked); docs/dev/ under dev/; docs/install and
+assembly step copies them, untracked); the dev/ door (dev/index.html); docs/install and
 docs/CNAME at the root; an empty .nojekyll.
 
 Adding a guide section, a stdlib module (its reference page is lib-<name>.html)
@@ -89,9 +89,11 @@ deps/cx-platform-xsp/conformance/stdlib/xsp
 deps/cx-platform-secrets/conformance/platform/secrets
 deps/cx-platform-sso/conformance/platform/sso
 deps/cx-platform-ux/conformance/xap/ux
+deps/cx-platform-ux/conformance/xap/ux-web
+deps/cx-platform-xap/conformance/xap/xap-dist
+deps/cx-platform-xap/conformance/xap/xap-serve
 deps/cx-platform-agent/conformance/x/tools
 abi
-deps/cx-platform-xap/conformance/xap/xap-dist
 deps/cx-tooling/conformance/stdlib/diagram
 deps/cx-platform-store/conformance/platform/live
 deps/cx-core-code/conformance/stdlib/bus
@@ -366,23 +368,13 @@ llms-full.txt
 llms.txt
 #]]
 
-  [; docs/dev/, under dev/ ]
+  [; dev/index.html is the developer door (RULED: DOCS-46): the fifteen
+     docs/dev/*.md pages that predated RS-1 folded into the guide — the store
+     section, the operations section and the distribution section — and the
+     door, rendered by scripts/gen_site/llm_index.cx at assembly like the LLM
+     door, is what the old dev/ URL answers with: where each page went. ]
   [files from=dev [#
-dev/README.md
-dev/client-and-views.md
-dev/features-authoring.md
-dev/features-consuming.md
-dev/marketplace.md
-dev/oriel-guide.md
-dev/registry-consuming.md
-dev/registry-setup.md
-dev/store-embedded.md
-dev/store-management.md
-dev/store-security.md
-dev/store-service.md
-dev/studio-guide.md
-dev/v0130-capabilities.md
-dev/xap-quickstart.md
+dev/index.html
 #]]
 
   [; the installer the README's one-liner fetches, the custom-domain binding,

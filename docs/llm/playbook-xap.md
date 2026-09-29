@@ -1338,7 +1338,7 @@ publish, add a pinned row, re-pin, restart.
 > every occurrence is specification or schema. The nearest working programs
 > use the direct `compose` + `run` lane and say so:
 > `reference/shop-web-client/serve.cx:36`, with `[$xap:compose]` at `:131` and
-> `[$xap:run]` at `:136`. `docs/dev/xap-quickstart.md:73-97` is the six-step
+> `[$xap:run]` at `:136`. The guide's Operations section, *The XAP host*, is the six-step
 > summary and carries the `[$xap:host …]!` postfix rule.
 
 ### The surface document
