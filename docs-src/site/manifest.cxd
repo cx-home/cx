@@ -10,7 +10,10 @@ also by scripts/gen_guide/guide_build.cx (`make guide`). Declares:
   [site]    the site's own repository (the front door, `repo=`), the published
             base URL, and the output directory `make site` assembles
   [page]    the landing page: its Markdown source and the tracked, generated
-            HTML it renders to
+            HTML it renders to — the brand, the message and the start of the
+            journey (HOME-1): one hero with the running example, three doors,
+            three beats each beside its fixture, the plain ring figure, the
+            journey strip, in the guide's chrome
   [suites]  the conformance suites the landing page may cite with
             {{EXAMPLE:<id> …}} and a guide page with [fixture id=<id>] (the
             guide build replays each, RULED: RS-30), spelled as

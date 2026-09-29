@@ -1186,6 +1186,23 @@ test-playground-primer: build-vcx wasm-bundle-fresh
 	@if [ "$(PLAYGROUND_ROOT)" = docs/guide ]; then $(MAKE) --no-print-directory guide GUIDE_SKIP_CX_BUILD=1; fi
 	@CX_PLAYGROUND_ROOT="$(PLAYGROUND_ROOT)" node scripts/test_playground_primer.mjs
 
+# ── landing RUN gate (HOME-1, RULED: DOCS-51 §4, PLAY-1's on-load rule) ────────
+# The landing page as a reader gets it, in headless Chrome against the
+# ASSEMBLED site (index.html lives at the site root, not under docs/guide):
+# the engine loads (the JSPI bundle, asserted), the running example prints
+# its answer on load without a click and the answer is the fixture's, the
+# page's own bytes carry the recorded answer and the fixture line before any
+# script runs (a browser without the engine is never blank), the sidebar is
+# the guide's five groups with Home active, and the three doors and the four
+# journey cards each name a file the site serves. Opt-in like the other
+# browser gates (a Chromium-family browser is its precondition, exit 2 when
+# absent — never a skip); not in TEST_TARGETS. Every wait is bounded
+# (LANDING_GATE_DEADLINE, default 600 s).
+.PHONY: test-landing-run
+test-landing-run: build-vcx wasm-bundle-fresh
+	@$(MAKE) --no-print-directory site GUIDE_SKIP_CX_BUILD=1
+	@node scripts/test_landing_run.mjs
+
 # stdlib catalog drift gate — verifies the single invariant
 #   SPEC_SET == (BUNDLE_SET union DISPATCH_SET)
 # i.e. every status=current [module-meta] in the spec pages

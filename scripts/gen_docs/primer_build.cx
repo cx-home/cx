@@ -92,6 +92,7 @@
 [?lib 'cx-stdlib/process' as=process]
 [?lib 'cx-stdlib/math'    as=math]
 [?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/re'      as=re]
 [; The per-repository documentation fragments (RULED: RS-9) and the pin
    document that says which repositories to look in (RULED: RS-7). Both are
    spelled from the CHECKOUT ROOT — see #1604. ]

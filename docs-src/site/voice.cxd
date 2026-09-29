@@ -23,9 +23,12 @@ Two ratchets, each read by a step:
   [fixtures]  scripts/gen_guide/snippet_check.cx (`make guide-snippets-check`).
               Every example on a new or re-voiced page is a [fixture id=]
               citation replayed byte-exact (DOCS-47); `floor=` is the number
-              of citations the guide's sections carry — a [fixture] counts
-              one, a [pair] counts two — and a wave that lowers it is refused.
-              A wave that raises it raises the floor in the same change.
+              of citations the guide's sections, the repository pages and the
+              landing page carry — a [fixture] counts one, a [pair] counts
+              two, and each {{FIXTURE:}}, {{HERO:}} or {{EXAMPLE:}} of
+              docs-src/site/index.md one (HOME-1) — and a wave that lowers it
+              is refused. A wave that raises it raises the floor in the same
+              change.
 #]]
 
   [; ── the Python allowances, measured 2026-09-28 on the DOCS-4 wave-1 tree ── ]
@@ -49,5 +52,5 @@ Two ratchets, each read by a step:
     [page path='docs-src/canonical/sections/07-bindings.cxd' allow=62 why='FIXED (RULED: HOSTL-1, L109 = (a)): the subject of the page is the bindings, and a page whose subject is a binding names its host language beside its fixtures; the count is the measured one and never rises']]
 
   [; ── the fixture-citation floor over docs-src/canonical/sections/*.cxd and docs-src/repos/*.cxd ── ]
-  [fixtures floor=258]
+  [fixtures floor=262]
 ]

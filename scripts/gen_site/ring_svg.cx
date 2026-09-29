@@ -185,20 +185,27 @@
         x2=[$fx [$px $r-out $deg]] y2=[$fx [$py $r-out $deg]]
         stroke=$stroke stroke-width=$width]]
 
+# The names are a parameter, not a copy (HOME-1): the full figure draws every
+# module's and repository's name; the landing's plain figure ($names false)
+# draws the same ticks and sectors, the ring and group titles and the
+# import contract, and no name — the two rings and the groups above them,
+# the full figure a link away on rings.html.
+[?def maybe scope=public ($on $el) [?if $on [then ($el,)] [else ()]]]
+
 # ring1-marks: one tick and one radial label per Ring 1 module, evenly around
 # the ring, starting at the top.
-[?def ring1-marks scope=public ($rows $ink $muted)
+[?def ring1-marks scope=public ($rows $ink $muted $names)
   [?let [= $n [$count $rows]]
     [?for [in $i [$range 1 $n]]
       [= $deg [+ -90.0e0 [* [- $i 1] [/ 360.0e0 $n]]]]
       [= $m [$nth $rows $i]]
       [yield [g class="rf-r1"
         [$tick [- R1-OUT 5] R1-OUT $deg $ink "0.9"]
-        [$radial-label [- R1-OUT 9] $deg [$string $m@name] "7.4" $ink false]]]]]]
+        [?splice [$maybe $names [$radial-label [- R1-OUT 9] $deg [$string $m@name] "7.4" $ink false]]]]]]]]
 
 # platform-marks: the clusters as sectors — a hairline between clusters, a
 # tick and a radial label per row, the repository's name on the outer arc.
-[?def platform-marks scope=public ($clusters $ink $accent $muted $faint)
+[?def platform-marks scope=public ($clusters $ink $accent $muted $faint $names)
   [?let [= $nrows [$fp:fold $clusters 0 [?fn ($a $c) [+ $a [$count $c/*]]]]]
         [= $slots [+ $nrows [$count $clusters]]]
         [= $step [/ 360.0e0 $slots]]
@@ -212,7 +219,7 @@
       [= $edge-deg [- $first-deg [/ $step 2]]]
       [yield [g class="rf-platform" data-repo=[$string $c@repo]
         [$tick RP-IN RP-OUT $edge-deg $ink "0.5"]
-        [$tangent-label [+ RP-OUT 11] $mid-deg [$string $c@repo] "7.2" $accent "600"]
+        [?splice [$maybe $names [$tangent-label [+ RP-OUT 11] $mid-deg [$string $c@repo] "7.2" $accent "600"]]]
         [?for [in $ri [$range 1 [$count $rows]]]
           [= $m [$nth $rows $ri]]
           [= $deg [+ $first-deg [* [- $ri 1] $step]]]
@@ -220,14 +227,14 @@
           [= $planned [$is-planned $m]]
           [yield [g class=[?if [and $mod [not $planned]] [then "rf-module"] [else [?if $planned [then "rf-planned"] [else "rf-row"]]]]
             [$tick [- RP-OUT 5] RP-OUT $deg [?if $mod [then $ink] [else $faint]] [?if $mod [then "0.9"] [else "0.6"]]]
-            [$radial-label [- RP-OUT 9] $deg
+            [?splice [$maybe $names [$radial-label [- RP-OUT 9] $deg
               [?if $planned [then [$concat [$string $m@name] " (planned)"]] [else [$string $m@name]]]
-              "7.2" [?if [and $mod [not $planned]] [then $ink] [else $faint]] $planned]]]]]]]]]
+              "7.2" [?if [and $mod [not $planned]] [then $ink] [else $faint]] $planned]]]]]]]]]]]
 
 # edge-marks: the two edge groups as short arcs of names at the rim — the
 # bindings on the lower-left, the ecosystem on the lower-right.
-[?def edge-marks scope=public ($names $from-deg $to-deg $title $ink $faint)
-  [?let [= $n [$count $names]]
+[?def edge-marks scope=public ($repos $from-deg $to-deg $title $ink $faint $names)
+  [?let [= $n [$count $repos]]
         [= $step [?if [<= $n 1] [then 0.0e0] [else [/ [- $to-deg $from-deg] [- $n 1]]]]]
         [= $mid [/ [+ $from-deg $to-deg] 2]]
     [g class="rf-edge"
@@ -236,10 +243,11 @@
         [= $deg [+ $from-deg [* [- $i 1] $step]]]
         [yield [g
           [circle cx=[$fx [$px R-EDGE $deg]] cy=[$fx [$py R-EDGE $deg]] r="2" fill=$ink]
-          [$tangent-label [+ R-EDGE 17] $deg [$nth $names $i] "7.2" $faint "500"]]]]]]]
+          [?splice [$maybe $names [$tangent-label [+ R-EDGE 17] $deg [$nth $repos $i] "7.2" $faint "500"]]]]]]]]]
 
-# ring-figure: the whole SVG as an element tree.
-[?def ring-figure scope=public impure ()
+# ring-figure: the whole SVG as an element tree; $names true draws every
+# module's and repository's name, false none (the landing's plain figure).
+[?def ring-figure scope=public impure ($names)
   [?let [= $t [$tokens]]
         [= $ink [$tok $t "ink"]]
         [= $accent [$tok $t "accent"]]
@@ -280,10 +288,10 @@
       [; the ring names, on the vertical centre line ]
       [text x="360" y=[$string [- C [+ R1-IN 4]]] text-anchor="middle" font-family=[$font] font-size="8.5" font-weight="600" letter-spacing="1.6" fill=$ink "RING 1 · CODE"]
       [text x="360" y=[$string [- C [+ RP-IN 4]]] text-anchor="middle" font-family=[$font] font-size="8.5" font-weight="600" letter-spacing="1.6" fill=$ink "THE PLATFORM GROUP"]
-      [g class="rf-ring1" [?splice [$ring1-marks $r1 $ink $muted]]]
-      [g class="rf-platform-group" [?splice [$platform-marks $clusters $ink $accent $muted $faint]]]
-      [$edge-marks [$edge-repos "binding"] -172.0e0 -112.0e0 "BINDINGS" $ink $faint]
-      [$edge-marks [$edge-repos "ecosystem"] -68.0e0 -8.0e0 "ECOSYSTEM" $ink $faint]
+      [g class="rf-ring1" [?splice [$ring1-marks $r1 $ink $muted $names]]]
+      [g class="rf-platform-group" [?splice [$platform-marks $clusters $ink $accent $muted $faint $names]]]
+      [$edge-marks [$edge-repos "binding"] -172.0e0 -112.0e0 "BINDINGS" $ink $faint $names]
+      [$edge-marks [$edge-repos "ecosystem"] -68.0e0 -8.0e0 "ECOSYSTEM" $ink $faint $names]
       [; the import contract: inward, never outward ]
       [line x1=[$fx [$px 340.0e0 38.0e0]] y1=[$fx [$py 340.0e0 38.0e0]]
             x2=[$fx [$px 92.0e0 38.0e0]] y2=[$fx [$py 92.0e0 38.0e0]]
@@ -313,9 +321,13 @@
 # ring-svg: the figure as an SVG string ([$xml:emit] wraps a [?for]'s yield
 # in empty-name <>/</> tags in content position; they are stripped, as the
 # guide's post-body strips them).
-[?def ring-svg scope=public impure ()
+[?def emit-figure scope=public impure ($names)
   [$re:replace [$re:compile " cx:attr-types=\"[^\"]*\""]
-    [$strings:replace [$strings:replace [$xml:emit [$ring-figure]] "<>" ""] "</>" ""] ""]]
+    [$strings:replace [$strings:replace [$xml:emit [$ring-figure $names]] "<>" ""] "</>" ""] ""]]
+[?def ring-svg scope=public impure () [$emit-figure true]]
+# ring-svg-plain: the landing's figure (HOME-1) — the same rings, ticks,
+# sectors, titles, arrow and stamp, with no module or repository name.
+[?def ring-svg-plain scope=public impure () [$emit-figure false]]
 
 # figure-module-count: the kind=module ticks the figure draws.
 [?def figure-module-count scope=public impure ()
