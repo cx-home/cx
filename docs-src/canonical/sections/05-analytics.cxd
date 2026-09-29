@@ -99,8 +99,10 @@
          loudly rather than coerced — the encode-refusal rule of
          [`spec/core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md)
          §3.10.3, never wrap, never widen, never approximate — and so is a
-         column whose declared type and cell annotation disagree:"""]
-    [fixture id=tab-026-type-annotation-conflict]
+         column whose declared type and cell annotation disagree (the table
+         suite's `tab-026` pins that refusal; its recorded diagnostic is a
+         message rather than a code, which is why this page names it
+         instead of replaying it)."""]
 
     [body
       """Supported column types match the scalar type system:
