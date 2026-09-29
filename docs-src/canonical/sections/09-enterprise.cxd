@@ -1,0 +1,362 @@
+[# Section 9 — assessing CX: the value map, served (RULED: DOCS-48, DOCS-47,
+   DOCS-43, DOCS-49 wave 6, RS-30). docs-src/positioning/ring_value_map.md was
+   an unserved positioning document in a business voice, each item carrying a
+   `Backing:` pointer at a spec page — three of them archived. This page is
+   that map in our own voice: the same items, one per claim, and beside each
+   claim the conformance case this guide's `cx` replayed when the page was
+   built ([fixture id=]) or the `make` step of the front door that holds it by
+   name. A status tag is not typed anywhere: a claim with a replayed case is
+   shipped by construction, and a claim held by a step is as true as that
+   step's last run. Two items of the map are not on this page because
+   neither a case nor a step backs them today — RESULTS.md names them.
+
+   The nav puts this page at the head of the Repositories group: the
+   assessment journey (DOCS4-DESIGN.md §1) lands here and leaves convinced
+   from the front door's page and the contributor's front door. Cross-links
+   use [[anchor]] form; a repository page is linked by its path. File
+   extension .cxd — data-only source. #]
+
+[section id=enterprise group='Repositories' n=9 title='Assessing CX'
+
+  [intro
+    """**TL;DR — we make structural claims, and we let you check each one.**
+       CX is two rings and the groups above them: the data ring parses and
+       addresses data and can execute nothing; the code ring adds programs,
+       queries and authority; the platform group is the operating platform —
+       storage, history, wire, live data — reached over the network and never
+       embedded, which is what keeps the rings below it small enough to audit.
+       Every claim on this page stands beside the conformance case this
+       guide's `cx` replayed when the page was built, or names the step of
+       the front door's build that holds it. If a claim ever stops holding,
+       this page stops building."""]
+
+  [body
+    """The numbers on this page are counted, not typed: {{COUNT:modules}}
+       shipped modules across {{COUNT:repositories}} repositories, each
+       declared once in a registry the build holds the tree to, and
+       {{COUNT:directives}} directives in the language. [[rings]] draws the
+       picture from the same rows."""]
+
+  [child id=enterprise-data n=9.1 title='The data ring — what a document is worth'
+
+    [child id=ent-address n=9.1.1 title='One address per value'
+      [body
+        """Every value has one cryptographic address, computed from its
+           canonical bytes, and the address of a value equals the address of
+           the text that spells it — so reconciliation between two systems is
+           the comparison of two hashes, not a project. Fewer integration
+           engineers per partner, fewer disputes, faster onboarding."""]
+      [fixture id=cx-025-hash-value-and-source-agree]]
+
+    [child id=ent-same-meaning n=9.1.2 title='The same value everywhere'
+      [body
+        """A value is the same value whether it sits in a file, in a
+           program, in a store or on the wire: what we write is what we
+           read back, byte for byte, without a convention holding the two
+           apart. The "it worked in system A and not in system B" incident
+           class has no seam to live in."""]
+      [fixture id=store-rt-001-round-trip-get]]
+
+    [child id=ent-types n=9.1.3 title='Types without a registry'
+      [body
+        """Two parties agree on a data shape by exchanging one hash: a type
+           binding names the value's address and its schema's address, and
+           anyone can recompute and compare. A tampered value fails the
+           check as a value, not as a policy. No shared server, nothing to
+           host, nothing to trust."""]
+      [fixture id=cx-113-type-binding-claim-shape]
+      [fixture id=cx-115-type-binding-verify-tamper]]
+
+    [child id=ent-exact n=9.1.4 title='Exact money math'
+      [body
+        """A fraction literal is an exact decimal, arithmetic keeps it one,
+           and a decimal's scale and sign are part of its identity — `1.10`
+           is not `1.1`, and neither is ever `1.0999…`. Mixing a decimal with
+           a binary float is refused out loud, naming the one bridge between
+           them. The scalar kinds are
+           [`spec/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md);
+           the sign rule is decision 1353-b."""]
+      [pair wrong=ap-decimal-float-mix-wrong right=ap-decimal-float-mix-right]]
+
+    [child id=ent-no-execute n=9.1.5 title='A parser that cannot execute'
+      [body
+        """The data build of `cx` contains no evaluator: it parses, converts,
+           canonicalizes, hashes, diffs and validates, and it can run
+           nothing. That is verified at build time, byte for byte, by two
+           standing steps of the front door — `make test-extraction-gate`,
+           which builds the data-only artifact and probes it for every
+           execution symbol, and `make test-profile-gate`, which grades each
+           of the four builds against the corpus its surface promises.
+           "Processing untrusted input cannot run code" is structural, not
+           policy; [[rings]] says which build carries what."""]]
+
+    [child id=ent-formats n=9.1.6 title='Every format, one model'
+      [body
+        """JSON, XML, YAML, TOML, CSV and the columnar binary form read and
+           write through one value model, so one team keeps one pipeline
+           instead of one per format. An XML document arrives as the same
+           tree a CX document would; a JSON array is a sequence like any
+           other."""]
+      [fixture id=abi-010-xml-to-cx]
+      [fixture id=json-006-parse-array]]
+
+    [child id=ent-diff n=9.1.7 title='Semantic diff and patch'
+      [body
+        """A difference is computed on meaning, not on text lines: the diff
+           of two documents is a record of what changed, and a patch applies
+           it. Review over data — prices, configuration, contracts — becomes
+           precise, and a change that changes nothing is empty."""]
+      [fixture id=cx-041-diff-attr-record-shape]
+      [fixture id=cx-042-patch-attr-and-add]]
+
+    [child id=ent-schema n=9.1.8 title='Schemas that fail closed'
+      [body
+        """A schema states what a document must carry and refuses what it
+           does not know: a missing required attribute is a violation with a
+           code, a path and a message, and an unknown enumeration type or an
+           unregistered name is refused rather than waved through. Bad data
+           stops at the door, not at quarter close. The schema language is
+           [`spec/core/schema.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/schema.md)."""]
+      [fixture id=cx-136-validate-violation-item]
+      [fixture id=validate-054-enum-values-unknown-type-fail-closed]]
+
+    [child id=ent-longevity n=9.1.9 title='A fifty-year format'
+      [body
+        """The specification and its conformance corpus are the contract:
+           every release ships the full corpus as its conformance bundle
+           beside the binaries (the release flow's `package` step, and
+           `make test-bundle-sources` holds the bundle's source list to the
+           tree), so anyone can rebuild a conforming reader and grade it
+           against the same cases we grade ours. The governance page's
+           clean-room clause is the rule that keeps the spec implementable
+           from its text and corpus alone
+           ([`spec/process/governance.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/process/governance.md)
+           §10.1a). No lock-in — including on our own implementation."""]]
+
+    [child id=ent-columnar n=9.1.10 title='Fast bulk without a second system'
+      [body
+        """A typed columnar table is a CX element like any other — the same
+           brackets, the same canonical bytes, the same address — and its
+           binary wire form carries the same identities as the text. The
+           corpus grades the table shape below and the chunked, compressed,
+           schema-driven and Arrow forms of its wire (the `data_bin_*`
+           suites of the data ring); [[analytics]] is the tour."""]
+      [fixture id=tab-001-typed-columns]]]
+
+  [child id=enterprise-code n=9.2 title='The code ring — what a computation is worth'
+
+    [child id=ent-programs-data n=9.2.1 title='Programs are data with addresses'
+      [body
+        """Code, queries and configuration share the value model, so a
+           program has an address like any document — the address of its
+           quoted form is the address of the data document that spells it.
+           You cannot approve, audit or price "exactly this computation"
+           unless computations are addressable; here they are."""]
+      [fixture id=cx-094-quote-hash-is-tier1]]
+
+    [child id=ent-reproducible n=9.2.2 title='Reproducible computation, by construction'
+      [body
+        """A pure computation is deterministic — a property of the model,
+           not a team discipline — and each carries an identity over its
+           function, its inputs and its environment: two different
+           computations never share one. "Show exactly what produced this
+           number" is a lookup, not a forensic project."""]
+      [fixture id=cx-108-computation-id-injectivity]]
+
+    [child id=ent-effects n=9.2.3 title='Side effects are declared and enforced'
+      [body
+        """A command states what it touches, and the runtime holds it to the
+           statement: a declared effect runs under its grant, an undeclared
+           one is refused before anything happens. The blast radius is known
+           before the program runs — incident prevention rather than
+           response. The vocabulary is
+           [`spec/core/commands_effects.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/commands_effects.md)."""]
+      [fixture id=cmd-001-command-effects-declared-cap-allowed]
+      [fixture id=cmd-002-command-effects-undeclared-cap-denied]]
+
+    [child id=ent-delegation n=9.2.4 title='Authority is delegated explicitly and only narrows'
+      [body
+        """Authority is granted in writing and passed on only through a
+           presented delegation; a grant row compiles to exactly one root
+           delegation, and what a holder may do is what the chain permits
+           and nothing wider. You can state, in writing, the most an
+           automated caller can do."""]
+      [fixture id=authz-091-basis-permits-through-the-presented-delegation]
+      [fixture id=store-grants-001-row-compiles-to-one-root-delegation]]
+
+    [child id=ent-propose n=9.2.5 title='Approve exactly the code that runs'
+      [body
+        """Propose mode binds a human approval to the address of the precise
+           program text; a proposal is a value you can read, and a
+           precondition that no longer holds refuses at commit. "Who
+           approved this action, and what exactly did they approve?" has one
+           answer."""]
+      [fixture id=cmd-019-propose-value-shape]
+      [fixture id=cmd-020-propose-precondition-false-refuses]]
+
+    [child id=ent-idempotent n=9.2.6 title='Double-execution protection built in'
+      [body
+        """An idempotent command executes once inside its window however
+           many times it is called — the key derived from the request
+           itself when none is supplied — and a command that is not declared
+           idempotent is never silently deduplicated. The double-refund and
+           double-shipment defect class is removed at the platform, not
+           per team."""]
+      [fixture id=cmd-013-idempotent-direct-call-dedups]
+      [fixture id=cmd-018-non-idempotent-never-dedups]]
+
+    [child id=ent-plans n=9.2.7 title='One query tier that optimizes itself'
+      [body
+        """A query has a canonical plan with its own address, and two
+           spellings of the same plan share one address — so they share one
+           cache, and repeated analytical work is paid for once,
+           organization-wide, with no coordination asked of anyone."""]
+      [fixture id=cx-100-plan-address-byte-pin]
+      [fixture id=cx-101-plan-pair-alpha-respelling]]
+
+    [child id=ent-tools n=9.2.8 title='Agent tools derived, not maintained'
+      [body
+        """A command definition projects to an agent tool descriptor by
+           itself — a definition with an effects clause is a command, and a
+           command is a tool — and an agent-protocol request is an ordinary
+           value projected to its wire form. New capabilities are
+           agent-ready the day they ship, and there is no wrapper to drift.
+           The projection is
+           [`spec/x/agent_tool_projection.md`](https://github.com/cx-home/cx-platform-agent/blob/main/spec/03-approved/x/agent_tool_projection.md)."""]
+      [fixture id=tools-004-zero-item-effects-is-a-command]
+      [fixture id=mcp-001-call-tool-request-shape]]
+
+    [child id=ent-sandbox n=9.2.9 title='Run third-party logic safely'
+      [body
+        """Untrusted code evaluates in a sandbox that can only narrow the
+           caller's library set — never widen it — under a recursion ceiling
+           the runtime enforces. A partner or extension surface opens
+           without opening a hole."""]
+      [fixture id=cx-125-eval-lib-narrowing-allowed]
+      [fixture id=cx-126-eval-lib-widen-refused]
+      [fixture id=cx-127-eval-depth-exceeded]]]
+
+  [child id=enterprise-platform n=9.3 title='The platform group — what the system of record is worth'
+
+    [child id=ent-store n=9.3.1 title='A store that works like git for data'
+      [body
+        """Documents are content-addressed; named branches move with a
+           visible log, a forced move is recorded as one, and a compare-
+           and-set against a stale head refuses. "Who changed what, when,
+           and to what" is intrinsic to the store, so the audit-trail line
+           item leaves every application built on it. The store is
+           [`spec/platform/store.md`](https://github.com/cx-home/cx-platform-store/blob/main/spec/03-approved/platform/store.md)."""]
+      [fixture id=store-log-003-branch-advances-appear]
+      [fixture id=store-branch-002-force-moves]
+      [fixture id=store-branch-003-cas-conflict]]
+
+    [child id=ent-journal n=9.3.2 title='A tamper-evident system of record'
+      [body
+        """Journal entries are hash-chained, state is rebuilt by
+           deterministic folds, and verification is a verb: an intact chain
+           verifies to a value, and a tampered one answers a finding that
+           names the break — also a value, never a crash. Prove the ledger
+           to a regulator or a counterparty on demand."""]
+      [fixture id=journal-019-verify-valid]
+      [fixture id=journal-022-tamper-finding-is-value]]
+
+    [child id=ent-time n=9.3.3 title='Time travel on business data'
+      [body
+        """Valid time and record time are separate, first-class axes: an
+           entry's validity may be open-ended, and a correction is a new
+           entry chained to the one it corrects, so "what was true on the
+           third" and "what did we believe on the third" are both ordinary
+           reads. Back-dated corrections and restatements become queries.
+           The semantics are
+           [`spec/core/bitemporal.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/bitemporal.md)."""]
+      [fixture id=journal-111-open-ended-validity]
+      [fixture id=journal-146-m5-correction-chain-depth-two]]
+
+    [child id=ent-erasure n=9.3.4 title='Right-to-be-forgotten in an append-only world'
+      [body
+        """Erasure is a first-class entry: applying it purges the payload
+           and the deduplicated records that carried it while every chain
+           still verifies, because what the chain covers is the address, not
+           the bytes we no longer hold. Compliance without giving up
+           tamper-evident history — the combination regulated industries
+           cannot otherwise buy. The design is
+           [`spec/platform/store/erasure_compliance.md`](https://github.com/cx-home/cx-platform-store/blob/main/spec/03-approved/platform/store/erasure_compliance.md)."""]
+      [fixture id=journal-137-apply-erasures]
+      [fixture id=journal-131-erase-purges-dedup-records]]
+
+    [child id=ent-wire n=9.3.5 title='One security model on one wire'
+      [body
+        """Identity and permission are one system across queries, events
+           and storage, and the connection's own negotiation rides inside
+           the signed transcript: a replayed handshake message fails its
+           signature, and a version the peer did not offer is refused
+           rather than downgraded to. One security review instead of
+           three."""]
+      [fixture id=xsp-auth-004-replay-m2-fails-sig]
+      [fixture id=xsp-auth-008-version-not-offered]]
+
+    [child id=ent-live n=9.3.6 title='Live and batch are the same question'
+      [body
+        """A query runs once, stays maintained, or answers changes-since a
+           cursor — the same text, and the answers are equal by contract,
+           which the corpus grades leg by leg. Real-time dashboards and
+           pipelines without a second streaming stack."""]
+      [fixture id=live-002-quartet-leg1-for-equivalence]
+      [fixture id=live-004-inserts-since-cursor]]
+
+    [child id=ent-replicas n=9.3.7 title='Offline and multi-site by design'
+      [body
+        """A replica is seeded and ingests locally with no central sequencer,
+           and a merge is itself an entry with recorded lineage — the one
+           conflict value is how disagreement is spelled, and a resolution
+           is an entry anyone can read later. Field, branch and edge
+           scenarios work disconnected and reconcile honestly. The design is
+           [`spec/platform/store/distributed_store.md`](https://github.com/cx-home/cx-platform-store/blob/main/spec/03-approved/platform/store/distributed_store.md)."""]
+      [fixture id=journal-117-offline-replica-seed]
+      [fixture id=store-reconcile-003-resolution-merge-entry]]
+
+    [child id=ent-flows n=9.3.8 title='Cross-system workflows that fail safely'
+      [body
+        """A workflow is a document; before its pivot a failed step is
+           compensated in reverse order, after it the run retries forward,
+           and the record says which. The half-committed transaction —
+           the worst outage class in distributed systems — is designed
+           out; what remains is visible and recoverable. The runner law is
+           [`spec/platform/flow.md`](https://github.com/cx-home/cx-platform-flow/blob/main/spec/03-approved/platform/flow.md)."""]
+      [fixture id=flow-032-compensation-triple]
+      [fixture id=flow-012-simulate-compensation-and-incomplete]]
+
+    [child id=ent-evolution n=9.3.9 title='Data that survives schema change'
+      [body
+        """Old entries upgrade through declared upcasters at one seam, and
+           an upcaster that cannot cover its input refuses instead of
+           guessing, so history stays replayable across every format the
+           schema has had. The recurring migration project becomes a
+           declaration."""]
+      [fixture id=journal-118-upcaster-seam]
+      [fixture id=journal-120-upcast-refusals]]
+
+    [child id=ent-messaging n=9.3.10 title='Messaging without a broker'
+      [body
+        """Fan-out channels with glob subscriptions, a delivery count you
+           can read, and a dead-letter path for a record that breaks its
+           bound — on the same store and the same security model as
+           everything else. One vendor, one cluster and one pager rotation
+           fewer, with a stronger audit story than the broker they replace.
+           The unified model is
+           [`spec/core/delivery.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/delivery.md)."""]
+      [fixture id=fabric-004-subscribe-glob-receive]
+      [fixture id=bus-005-delivered-count]
+      [fixture id=sync-011-a-record-over-the-byte-bound-is-dead-lettered]]]
+
+  [child id=enterprise-next n=9.4 title='Where to go next'
+    [body
+      """The front door's page, [cx](repo-cx.html), is where the claims above
+         are assembled: the pins, the four builds of one binary, the release
+         and the installer, each held by a step. The contributor's front door,
+         [`llm/contributor.md`](https://cxhome.org/llm/contributor.md), lists
+         every step of the build with the decision it holds. [[rings]] is the
+         map of what you take on; [[quickstart]] runs a first file in five
+         minutes; every repository in the group below has a page in the same
+         shape — what it is, what it gives you, one replayed example, its
+         status and its links."""]]]

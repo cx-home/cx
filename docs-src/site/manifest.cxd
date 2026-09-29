@@ -91,6 +91,12 @@ deps/cx-platform-agent/conformance/x/tools
 abi
 deps/cx-platform-xap/conformance/xap/xap-dist
 deps/cx-tooling/conformance/stdlib/diagram
+deps/cx-platform-store/conformance/platform/live
+deps/cx-core-code/conformance/stdlib/bus
+deps/cx-platform-connector/conformance/platform/sync
+deps/cx-platform-xsp/conformance/xap/xsp-auth
+deps/cx-core-code/conformance/stdlib/authz
+deps/cx-core-code/conformance/stdlib/validate
 #]]
 
   [files from=landing [#
@@ -187,6 +193,7 @@ data-language.html
 data-tooling.html
 directives.html
 downloads.html
+enterprise.html
 event-evolution.html
 faq.html
 glossary.html
