@@ -7,12 +7,13 @@
 [section id=bindings group='The bindings and ecosystem groups' n=7 title='Bindings'
 
   [intro
-    """libcx is a V library. Every other supported language is a
-       binding that wraps the compiled C ABI. There are two layers
+    """We ship libcx as a V library; every other host language reaches
+       it through a binding that wraps the compiled C ABI. There are two layers
        per binding: **Layer 1** (the conformance contract — 16
        canonical methods, byte-identical semantics across hosts) and
        **Layer 2** (opt-in host-idiomatic sugar that desugars to
-       Layer 1). CX ships V, Python, Go, and Rust at Tier 1; six
+       Layer 1). We ship four bindings at Tier 1 — `cx-binding-v`,
+       `cx-binding-python`, `cx-binding-go` and `cx-binding-rust`; six
        other bindings (TypeScript, Java, C#, Ruby, Kotlin, Swift) are
        archived under `lang/_archived/` pending restoration — see
        [[migration]]. Normative spec:
@@ -849,13 +850,12 @@
          §7, and no CLI surface for it exists yet — not even a
          stub."""]
 
-    [example lang=cx
-      """[# users.cxs — the schema source #]
-         [schema
-           [element name=user
-             [attribute name=id    type=int    required=true]
-             [attribute name=email type=string required=true]
-             [attribute name=active type=bool  default=true]]]"""]
+    [body
+      """What a schema states today is what the validator grades — a
+         missing required attribute is a violation with a code, a path and
+         a message, replayed here from the corpus — and a generated
+         projection would be a projection of the same schema:"""]
+    [fixture id=cx-136-validate-violation-item]
 
     [body
       """**Planned per-target output (future revision):**"""]
@@ -879,7 +879,7 @@
          `cx schema infer` (synthesize a `.cxs` from a corpus) and
          `cx schema export --to=json-schema` (project a schema to
          JSON Schema 2020-12). Typed projections from a schema are
-         design work that has not landed in any binding."""]]
+         design work no binding has merged."""]]
 
   [child id=install-hello n=7.9 title='Install + hello world per binding'
     [intro
@@ -976,6 +976,11 @@
            $ python hello.py        # -> 8f3d2a1b...
            $ go run hello.go        # -> 8f3d2a1b...
            $ cargo run --bin hello  # -> 8f3d2a1b..."""]
+      [body
+        """The ABI vectors of the front door's corpus are the contract each
+           binding grades itself against; the one below is replayed by this
+           guide's `cx` when the page is built:"""]
+      [fixture id=abi-001-fmt-lossless-retains-comment]
       [body
         """If any binding produces a different hash, that binding
            has drifted from the canonical-bytes contract — file

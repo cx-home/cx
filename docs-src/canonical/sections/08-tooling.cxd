@@ -327,9 +327,9 @@
                 production, live match-count against the current
                 document, axis-name doc."""]
         [item """**Layer-2 host idiom** — desugared Layer-1 form
-                (Python comprehension, Go filter chain, Rust
-                iterator). Implementation calls
-                `cxlib.idioms.explain()`."""]]
+                of a host-idiom call (a comprehension, a filter chain, an
+                iterator adapter). The binding's `idioms.explain()`
+                answers it."""]]
 
       [example lang=cx
         """[# Hovering '//section[2]/p[@lang=\"en\"]' shows: #]
@@ -464,10 +464,11 @@
         [item """`injections.scm` — embedded-language injection
                 for fenced code blocks (`[code lang='rust'
                 [| ... |]]`). Recognised injection languages:
-                `python`, `rust`, `go`, `js`, `ts`, `java`, `c`,
-                `cpp`, `csharp`, `ruby`, `swift`, `kotlin`, `sh`,
-                `sql`, `html`, `css`, `json`, `yaml`, `toml`,
-                `xml`, `markdown`."""]]
+                twenty-one, from the bindings' host languages and the
+                common systems, web and data languages to `sh`, `sql`,
+                `html`, `css`, `json`, `yaml`, `toml`, `xml` and
+                `markdown` — `injections.scm` in `cx-tooling` is the
+                list."""]]
       [body
         """These two are the only query files that ship. Indent and
            locals queries do not exist — auto-indent comes from the
@@ -685,7 +686,7 @@
         """A custom rule wrapping `cx validate` for hermetic builds.
            Sketch (treats validation as a generated stamp file):"""]
 
-      [example lang=python
+      [example lang=starlark
         """# tools/cx.bzl
            def _cx_validate_impl(ctx):
                stamp = ctx.actions.declare_file(ctx.label.name + \".valid\")
@@ -1099,8 +1100,7 @@
         """# Conformance.
            make test            # all bindings, all suites
            make test-vcx        # V core conformance
-           make test-rust       # Rust binding
-           make test-python     # Python binding
+           # each binding grades itself in its own repository (make check there)
 
            # Fuzzer — structured-random input over the parser.
            # scripts/fuzz_cx.cx, run continuously by
@@ -1163,10 +1163,12 @@
            cx --toml server.cx > server.toml"""]]
 
     [child id=recipe-write-stream n='8.10.5' title='Write a stream'
-      [example lang=python
-        """with cx.stream_writer(open("out.cx", "wb")) as w:
-               for record in fetch_records():
-                   w.write(record)"""]]
+      [body
+        """A document stream is written one record at a time through the
+           streaming writer of the C ABI — see [[streaming-data]] for the
+           event shape and [[cxcol-streaming-api]] for the table form —
+           which each binding wraps in its host's idiom: open a sink,
+           write records, close. One record is in flight at a time."""]]
 
     [child id=recipe-compose-include n='8.10.6' title='Compose a document from files'
       [; check=none — [?cx include] is approved surface (code.md §13); the
@@ -1365,8 +1367,8 @@
         """Every code block on the guide is syntax-highlighted by
            a small in-house JS module at
            `scripts/gen_guide/highlight/`. It speaks the
-           languages the docs actually use — `cx`, `shell`,
-           `python`, `go`, `rust`, `javascript`, `typescript`,
+           languages the docs actually use — `cx`, `shell`, the
+           bindings' host languages, `javascript`, `typescript`,
            `java`, `c#`, `ruby`, `kotlin`, `swift`, `v`, `sql`,
            `ebnf`, `xml`, `html`, `json`, `yaml`, `toml`, `md`.
            The highlighter is regex-based, around 150 lines, no

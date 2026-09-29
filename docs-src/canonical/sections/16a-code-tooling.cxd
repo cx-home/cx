@@ -1,7 +1,7 @@
 [# Section 16a — code tooling: the CLI verbs that serve Ring 1 — running
    programs under capability grants, lint, diagnostics, visualization,
    profiling. Split out of the monolithic Tooling section per the #826
-   ruling (CLI verbs go to the ring each serves). Content carried
+   decision (CLI verbs go to the ring each serves). Content carried
    verbatim from the verified 08-tooling children; only numbering and
    the frame are new. #]
 
@@ -383,17 +383,16 @@
 
       [example lang=sh
         """$ cx --allow-read --allow-write --allow-subprocess \
-                --allow-clock --allow-env bench_report.cx python go rust
-           benchmarking python       ... parse=…ms  stream=…ms
+                --allow-clock --allow-env bench_report.cx go rust
            benchmarking go           ... parse=…ms  stream=…ms
            benchmarking rust         ... parse=…ms  stream=…ms"""]
 
       [note
         """The Go shim's former crash on 1 MB+ inputs is fixed — the
            FFI call path now locks its goroutine to an OS thread and
-           registers it with the CX runtime. Python's decoder ceiling
-           is architectural (a pure-Python floor); a C extension is a
-           planned future candidate."""]]
+           registers it with the CX runtime. The PyPI binding's decoder ceiling
+           is architectural (a pure-interpreter floor); a C extension is a
+           planned candidate."""]]
 
     [child id=profile-targets n='16a.6.4' title='Regression tracking'
       [body
