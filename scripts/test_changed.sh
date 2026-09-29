@@ -752,6 +752,19 @@ tests_by_module() {
     NF > 0 { for (i = 2; i <= NF; i++) if ($i == want) { print $1; break } }'
 }
 
+# pinned_test <file> — a suite file named by a row, where it is: this tree's
+# $SUITE_DIR when it holds the file, else the front door's pinned language
+# core (deps/cx-core-code/vcx/tests, where the CLI readers went with RS-12).
+# A file in neither is named under $SUITE_DIR unchanged, so the deleted-input
+# case (selftest F) keeps selecting the step rather than skipping it.
+PINNED_SUITE_DIR='deps/cx-core-code/vcx/tests'
+pinned_test() {
+  if [ -f "$SUITE_DIR/$1" ]; then printf '%s/%s' "$SUITE_DIR" "$1"
+  elif [ -f "$PINNED_SUITE_DIR/$1" ]; then printf '%s/%s' "$PINNED_SUITE_DIR" "$1"
+  else printf '%s/%s' "$SUITE_DIR" "$1"
+  fi
+}
+
 # tests_importing <path-relative-to-vcx> — the module rule for a changed vcx/ file.
 tests_importing() {
   local d=${1%%/*}
@@ -886,8 +899,12 @@ suite_files() {
         # conformance/ is read through the `fixtures` corpus loader.
         sel="$sel $(tests_by_module fixtures | tr '\n' ' ')" ;;
       docs/llm/*|VERSION)
-        # embedded in the binary, read only by its own doc/help surface.
-        sel="$sel $SUITE_DIR/cli_umbrella_test.v $SUITE_DIR/cli_default_eval_test.v" ;;
+        # embedded in the binary, read only by its own doc/help surface. The
+        # two readers left with cx-core-code's extraction (RULED: RS-12, RS-8):
+        # they are named where they are, so `v test` is pointed at a file that
+        # exists (PLAY-2 found the row naming vcx/tests/, a path this tree no
+        # longer holds — `v test` refused it, exit 2, selftest case Q).
+        sel="$sel $(pinned_test cli_umbrella_test.v) $(pinned_test cli_default_eval_test.v)" ;;
       # RULED: RFLOW-1 — the CI/CD flow documents, their acts and tables: CX
       # programs `cx flow` runs and scripts/ci_flow_gate.cx grades (its own
       # row), compiled into no test file of this step.
