@@ -5,7 +5,7 @@
 
 [repo name=cx-binding-rust
   [intro
-    """**TL;DR — the same C ABI, in the host's own idiom.** `cx-binding-rust`
+    """The same C ABI, in the host's own idiom. `cx-binding-rust`
        is the `cxlib` crate: a thin wrapper over `libcx`'s string-in,
        string-out C ABI, so a Rust program parses, canonicalises, hashes,
        converts and evaluates CX with the very engine the `cx` binary runs —

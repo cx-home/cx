@@ -2,7 +2,7 @@
    after §12 FAQ. Authored 2026-05-22.
 
    RS-30 (owner, 2026-09-23): this section states CX's case — it does not
-   referee. It leads with a TL;DR of why to reach for CX, names Python as
+   referee. It leads with a lead of why to reach for CX, names Python as
    the standard CX is built to equal and exceed (never a target to
    replace), and every claim it adds stands beside a [fixture] the guide
    build replays against the running cx, so the case is checkable. The
@@ -13,8 +13,8 @@
 [section id=comparison group='Reference' n=13 title='Comparison to alternatives'
 
   [intro
-    """**TL;DR — reach for CX for nearly every data-format need and for
-       most general-purpose programs.** One syntax carries the document,
+    """Reach for CX for nearly every data-format need and for
+       most general-purpose programs. One syntax carries the document,
        the query, the transform and the program, so the layers other
        stacks glue together are one surface here. This section states
        CX's case: first beside Python — the standard CX is built to meet

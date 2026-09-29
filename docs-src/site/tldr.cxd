@@ -1,6 +1,6 @@
 [tldr
   [doc [#
-docs-src/site/tldr.cxd — the one TL;DR of why to reach for CX (RULED: DOCS-49,
+docs-src/site/tldr.cxd — the one lead of why to reach for CX (RULED: DOCS-49,
 RS-30; the design's voice rule 2).
 
 One sentence lives in one place. scripts/gen_docs/primer_build.cx projects this
@@ -10,6 +10,10 @@ since HOME-1; the clauses' cases are the guide home's and the primer's), the
 guide home (scripts/gen_guide/guide_build.cx, tldr-html) and the primer's §0
 (docs-src/llm/primer.md.tmpl, `{{TLDR}}`) — so the three cannot drift apart
 the way the three hand copies they replace had.
+
+The lead carries no label: each page opens on its sentence as plain prose,
+and docs-src/site/vocabulary.cxd refuses the label's return (RULED: DOCS-51
+§1 and §7, DOCS-43).
 
   [lead]      the opening paragraph: why to reach for CX, in our voice
   [standard]  the standard we hold ourselves to, stated as ours — each clause
@@ -25,7 +29,7 @@ projection renders exactly those two forms.
 #]]
 
   [lead [#
-**TL;DR — reach for CX whenever the data is the point.** One bracketed syntax is the document, the query, the program and the compiler's own tree, so the file you read is the file you transform, validate, hash, store and serve — with no second language in between.
+Reach for CX whenever the data is the point. One bracketed syntax is the document, the query, the program and the compiler's own tree, so the file you read is the file you transform, validate, hash, store and serve — with no second language in between.
 #]]
 
   [standard [#

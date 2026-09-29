@@ -6,8 +6,8 @@
 
 [repo name=cx-registry
   [intro
-    """**TL;DR — a git repository is a package registry, and the review is
-       the publish gate.** `cx-registry` is the package index: a `file://` CX
+    """A git repository is a package registry, and the review is
+       the publish gate. `cx-registry` is the package index: a `file://` CX
        store laid out in a repository — content trees, sealed manifests and
        `name@version` aliases — the publisher identity that signs them, and
        the publish program that seals, signs, publishes and re-verifies in

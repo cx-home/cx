@@ -16,8 +16,8 @@
 
   [child id=overview n=5.1 title='The columnar path'
     [intro
-      """**TL;DR — a table is a CX element, so everything we promise for a
-         document holds for a billion rows.** The same brackets that carry a
+      """A table is a CX element, so everything we promise for a
+         document holds for a billion rows. The same brackets that carry a
          configuration file carry a typed columnar table; the same canonical
          bytes and address that anchor one document anchor a dataset; the
          same evaluator that renders a report streams over a file larger

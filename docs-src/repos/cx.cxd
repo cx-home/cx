@@ -7,7 +7,7 @@
 
 [repo name=cx
   [intro
-    """**TL;DR — we keep one front door.** `cx` is the tree that pins every
+    """We keep one front door. `cx` is the tree that pins every
        repository of CX at a sha, builds the four builds of one binary from
        those pins, and serves this site. You install from it, you read from
        it, and every change to CX arrives through it: a pin moves only when

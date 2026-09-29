@@ -13,7 +13,7 @@
 [section id=why group='Start here' n='0a' title='Why CX'
 
   [intro
-    """**TL;DR — we built CX so that the data is the program's own shape.**
+    """We built CX so that the data is the program's own shape.
        One bracketed syntax is the document, the query, the program and the
        compiler's own tree, and everything we promise below follows from
        holding that line: numbers that stay exact, effects you grant rather

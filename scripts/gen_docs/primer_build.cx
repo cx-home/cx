@@ -29,7 +29,7 @@
 #                               the case is replayed and verified like any other
 #   {{PAIR:<wrong-id> <right-id>}}   one anti-pattern entry: heading, the
 #                               `[why]` prose, then both halves as blocks
-#   {{TLDR}}                    the one TL;DR of why to reach for CX, from
+#   {{TLDR}}                    the one lead of why to reach for CX, from
 #                               docs-src/site/tldr.cxd: its lead, its standard,
 #                               one bullet per clause citing the case the page
 #                               replays for it (RULED: DOCS-49)
@@ -583,15 +583,15 @@
                                               [where [$strings:contains $l "MISSING-FROM-LEDGER"]]
                                               [yield [$concat "  " $l]]] "\n"]]]]
         [else $t]]]]]]
-# ── the one TL;DR (RULED: DOCS-49; the design's voice rule 2) ───────────
+# ── the one lead (RULED: DOCS-49; the design's voice rule 2) ───────────
 #
-# docs-src/site/tldr.cxd is the one place the TL;DR of why to reach for CX is
+# docs-src/site/tldr.cxd is the one place the lead of why to reach for CX is
 # written: a [lead] paragraph, the [standard] we hold ourselves to, and one
 # [clause fixture=<id>] per term of it. It is projected here into Markdown
 # (`{{TLDR}}` in the primer's §0 and in the landing page's source) and into
 # HTML (the guide home, through tldr-html), and every clause's fixture is
 # replayed by the page that shows it — refs-of-directive below counts them
-# as citations — so the three pages that open with the TL;DR carry one text
+# as citations — so the three pages that open with the lead carry one text
 # and one set of verified cases.
 [?const TLDR-PATH "docs-src/site/tldr.cxd"]
 

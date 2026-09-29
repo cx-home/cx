@@ -1,6 +1,6 @@
 [# Section 1 — Hello CX, design philosophy, how to read this guide.
    Authored 2026-05-22. RS-30 (owner, 2026-09-23): the section opens with
-   the TL;DR of why to reach for CX, and every claim the voice pass added
+   the lead of why to reach for CX, and every claim the voice pass added
    stands beside a [fixture] the guide build replays against the running
    cx.
    Cross-links use [[anchor]] form; the template renderer (Phase 6.12)
@@ -9,7 +9,7 @@
 [section id=intro group='Start here' n=1 title='Introduction'
 
   [child id=hello n=1.1 title='Hello, CX'
-    [; the one TL;DR (docs-src/site/tldr.cxd), projected here as on the
+    [; the one lead (docs-src/site/tldr.cxd), projected here as on the
        guide home and the primer's §0: the lead, the standard we hold
        ourselves to, and each of its clauses beside the case that proves it
        (RULED: DOCS-49, DOCS-47). ]

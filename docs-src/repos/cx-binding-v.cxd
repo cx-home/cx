@@ -5,8 +5,8 @@
 
 [repo name=cx-binding-v
   [intro
-    """**TL;DR — the native reference binding: the engine's own language,
-       with no ABI in between.** `cx-binding-v` is the V binding of CX, and
+    """The native reference binding: the engine's own language,
+       with no ABI in between. `cx-binding-v` is the V binding of CX, and
        it is two things at once: the native path imports the reader and the
        evaluator's V modules directly from its pin of the front door, and the
        archived C-FFI path shows the same surface reached the way every

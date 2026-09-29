@@ -5,8 +5,8 @@
 
 [repo name=cx-platform-sso
   [intro
-    """**TL;DR — the receiving half of enterprise sign-on, as request in and
-       response out.** `cx-platform-sso` is a deployment's OpenID Connect
+    """The receiving half of enterprise sign-on, as request in and
+       response out. `cx-platform-sso` is a deployment's OpenID Connect
        relying party, its SAML service provider, its SCIM provisioning
        routes, its logout channels and its token endpoint — each a verb from
        a `[request]` value to a `[response]` value, with the session it

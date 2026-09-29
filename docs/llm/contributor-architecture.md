@@ -6,8 +6,6 @@
 > prose is the rules, each citing its decision. Edit the template or the
 > registry, never this file.
 
-## TL;DR
-
 - Two rings, frozen: **Ring 0** the data format (`cx-core-data`), **Ring 1**
   the language and its standard library (`cx-core-code`). Everything else is a
   **group** — platform, binding, ecosystem, dist — importing the rings plus

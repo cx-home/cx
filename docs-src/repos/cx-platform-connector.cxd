@@ -4,8 +4,8 @@
 
 [repo name=cx-platform-connector
   [intro
-    """**TL;DR — a connector is a declaration, and the plan it makes is
-       pure.** `cx-platform-connector` describes an external system as data —
+    """A connector is a declaration, and the plan it makes is
+       pure. `cx-platform-connector` describes an external system as data —
        a gateway, its verbs, a binding — and plans every request without
        resolving anything, so a credential cannot reach a URL, a header, a
        log line or an audit record even in principle. `sync` carries the

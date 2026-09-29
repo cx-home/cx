@@ -7,7 +7,7 @@
 
 [repo name=cx-binding-python
   [intro
-    """**TL;DR — the same C ABI, in the host's own idiom.** This binding is
+    """The same C ABI, in the host's own idiom. This binding is
        `cxlib` on PyPI: a thin wrapper over `libcx`'s string-in, string-out
        C ABI, so a program in the host language parses, canonicalises,
        hashes, converts and evaluates CX with the very engine the `cx`

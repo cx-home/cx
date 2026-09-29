@@ -4,7 +4,7 @@
 
 [repo name=cx-core-data
   [intro
-    """**TL;DR — Ring 0 is the data format on its own.** `cx-core-data` reads,
+    """Ring 0 is the data format on its own. `cx-core-data` reads,
        writes, canonicalises, hashes, validates and converts CX documents,
        and it cannot execute anything: there is no evaluator in the artifact
        to switch off. It is the smallest piece of CX you can take on, and the

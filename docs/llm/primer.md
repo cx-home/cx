@@ -10,7 +10,7 @@
 
 ## 0. Twelve facts that carry most of the distance
 
-**TL;DR — reach for CX whenever the data is the point.** One bracketed syntax is the document, the query, the program and the compiler's own tree, so the file you read is the file you transform, validate, hash, store and serve — with no second language in between.
+Reach for CX whenever the data is the point. One bracketed syntax is the document, the query, the program and the compiler's own tree, so the file you read is the file you transform, validate, hash, store and serve — with no second language in between.
 
 We hold ourselves to a standard we can state in one line — **readable on day one, batteries included, exact by default, and effects you grant rather than inherit** — and we prove each term of it with a conformance case this page replayed when it was built:
 

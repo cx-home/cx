@@ -5,8 +5,8 @@
 
 [repo name=cx-platform-net
   [intro
-    """**TL;DR — every socket in CX is opened here, and none opens without
-       your say-so.** `cx-platform-net` is the wire: stream and datagram
+    """Every socket in CX is opened here, and none opens without
+       your say-so. `cx-platform-net` is the wire: stream and datagram
        transports, TLS on either side, name resolution, and the HTTP/1.1
        server that everything served on this site listens with. Every verb
        that touches the network is behind the `net` grant, and a denial is a

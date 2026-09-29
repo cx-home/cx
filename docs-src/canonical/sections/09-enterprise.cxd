@@ -19,7 +19,7 @@
 [section id=enterprise group='Repositories' n=9 title='Assessing CX'
 
   [intro
-    """**TL;DR — we make structural claims, and we let you check each one.**
+    """We make structural claims, and we let you check each one.
        CX is two rings and the groups above them: the data ring parses and
        addresses data and can execute nothing; the code ring adds programs,
        queries and authority; the platform group is the operating platform —

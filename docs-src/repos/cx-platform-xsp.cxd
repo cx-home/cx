@@ -5,8 +5,8 @@
 
 [repo name=cx-platform-xsp
   [intro
-    """**TL;DR — one frame, any transport, and a handshake whose every verb is
-       pure.** `cx-platform-xsp` is the XAP Stream Protocol: a
+    """One frame, any transport, and a handshake whose every verb is
+       pure. `cx-platform-xsp` is the XAP Stream Protocol: a
        self-describing, self-delimiting frame — version, type, stream,
        principal, flags, length, payload — that carries the platform's
        traffic over whatever socket is underneath, and XSP-AUTH, the mutual
