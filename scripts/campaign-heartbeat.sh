@@ -41,7 +41,7 @@ longest_proc() {
     for sh in $(ps -eo pid,ppid | awk -v p="$cl" '$2==p {print $1}'); do
       ps -eo pid,ppid,etime,command | awk -v s="$sh" '$2==s' | while read -r pid ppid et cmd; do
         case "$cmd" in /bin/zsh*|/bin/sh*|/bin/bash*|*"-c "*) continue;; esac
-        case "$cmd" in *devbox*|*make*|*third_party/v/v*|*vcx/target/cx*|*gate.sh*|*"gh "*|*"git "*) ;; *) continue;; esac
+        case "$cmd" in *devbox*|*make*|*third_party/v/v*|*vcx/target/cx*|*postmerge.flow.cx*|*"gh "*|*"git "*) ;; *) continue;; esac
         cwd=$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -1)
         case "$cwd" in "$HOME"/git-repos/cx/*) ;; *) continue;; esac
         mins=$(echo "$et" | sed 's/-.*//' | awk -F: '{ if (NF==3) print $1*60+$2; else if (NF==2) print $1; else print 0 }')
@@ -49,7 +49,7 @@ longest_proc() {
         echo "$mins|$short|${cwd#$HOME/git-repos/cx/}"
       done
     done
-  done | sort -t'|' -k1,1nr | head -1 | awk -F'|' 'NF==3 { flag=""; if ($1>=25 && $2 !~ /gate.sh|make test$/) flag=" HUNG?"; printf "%s %dm @%s%s", $2, $1, $3, flag }'
+  done | sort -t'|' -k1,1nr | head -1 | awk -F'|' 'NF==3 { flag=""; if ($1>=25 && $2 !~ /postmerge.flow.cx|make test$/) flag=" HUNG?"; printf "%s %dm @%s%s", $2, $1, $3, flag }'
 }
 echo $$ > vcx/target/campaign-heartbeat.pid
 while true; do

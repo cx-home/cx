@@ -1,0 +1,9 @@
+# PUSHED, AND THE GITHUB RELEASE WAS RED: past the pivot, forward-only; the
+# tag is public and three phases are left, :incomplete with the count.
+[results
+  [step name="preflight" status=:done [result [preflight tag=vX.Y.Z version=X.Y.Z branch=line head=h notes=RELEASE_NOTES_vX.Y.Z.md from-bump=none mode=real]]]
+  [step name="tag" status=:done [result [tagged tag=vX.Y.Z sha=t before=h bumped=true]]]
+  [step name="package" status=:done [result [packaged tag=vX.Y.Z target=macos-arm64 public=darwin-arm64 linux=true assets=5]]]
+  [step name="merge-main" status=:done [result [merged-main status=merged from=line main-before=m0 main=m1]]]
+  [step name="push" status=:done [result [pushed to=origin refs="main line vX.Y.Z"]]]
+  [step name="gh-release" status=:failed [result [err code="cx-err:CXER0100" message="ci/release-gh: exit 1: HTTP 502"]]]]

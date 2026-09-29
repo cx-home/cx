@@ -35,8 +35,8 @@
 name: release
 
 # Manual-only: org GitHub Actions runners are unavailable (jobs fail at startup;
-# org billing/runner allocation). Releases are cut LOCALLY via `make cut-release`
-# / scripts/release.sh. The build logic below is correct + ready; re-add the
+# org billing/runner allocation). Releases are cut LOCALLY via `make release-flow`
+# (flows/release.flow.cx). The build logic below is correct + ready; re-add the
 # `push: tags: ['v*.*.*']` trigger once runners are restored (e.g. a self-hosted
 # runner) to make tag-push auto-publish. Test first: `gh workflow run release.yml
 # -f tag=vX.Y.Z`.

@@ -1,0 +1,8 @@
+# THE PUSH REFUSED (the pivot): main reset, dist/ removed, the tag deleted
+# and the bump reset, in reverse — nothing reached origin; :compensated.
+[results
+  [step name="preflight" status=:done [result [preflight tag=vX.Y.Z version=X.Y.Z branch=line head=h notes=RELEASE_NOTES_vX.Y.Z.md from-bump=none mode=real]]]
+  [step name="tag" status=:done [result [tagged tag=vX.Y.Z sha=t before=h bumped=true]]]
+  [step name="package" status=:done [result [packaged tag=vX.Y.Z target=macos-arm64 public=darwin-arm64 linux=true assets=5]]]
+  [step name="merge-main" status=:done [result [merged-main status=merged from=line main-before=m0 main=m1]]]
+  [step name="push" status=:failed [result [err code="cx-err:CXER0100" message="ci/release-push: exit 1: rejected"]]]]

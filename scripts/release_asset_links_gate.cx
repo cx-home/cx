@@ -38,7 +38,7 @@
    since v0.17.0's linux asset was measured clean; #1670 asks this gate to
    MEASURE that claim on every cut rather than assume it forever).
 
-   Wired into scripts/release.sh's R2.2 stage (scripts/lib/r22_profile_gate.sh)
+   Wired into the release flow's package act, the R2.2 stage (scripts/lib/r22_profile_gate.sh)
    immediately after staging and before the per-profile install verification:
    the cut does not proceed on a refusal. Also `make check-release-asset-links`
    (TEST_TARGETS), which runs it against whatever is currently staged, and the
@@ -122,7 +122,7 @@
 # construction (dpkg-provided libsqlite3.so.0 et al.) -- the risk is a
 # RUNPATH/RPATH baking in a build-machine path. `readelf -d` is preferred;
 # where it is absent (this gate itself may run on a darwin box measuring a
-# linux asset -- release.sh cuts darwin-side) the fallback is the same
+# linux asset -- the release flow cuts darwin-side) the fallback is the same
 # `/nix/store` string scan the redteam measurement used: a NEEDED soname
 # never spells a directory, so any `/nix/store` byte string anywhere in the
 # artifact IS a load path (RUNPATH/RPATH) or an interpreter/comment leak,
@@ -167,7 +167,7 @@
 
 # -- one staged tarball: extract to a scratch dir, run the matching check,
 # clean up. `plat` decides darwin vs linux by the substring in its own name
-# (release.sh/release_linux.sh both spell platforms this way already:
+# (the release flow and release_linux.sh both spell platforms this way already:
 # darwin-arm64, linux-arm64, linux-x86_64). ]
 [?def check-one-tarball scope=private impure [returns string] ($tarball::string)
   [?let [= $base [$last [$strings:split $tarball "/"]]]

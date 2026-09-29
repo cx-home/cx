@@ -88,7 +88,7 @@ CX_VFORK="$(git -C third_party/v rev-parse --short HEAD 2>/dev/null || echo unkn
 # tag. The value is READ FROM the Makefile rather than re-derived here — one
 # implementation of the rule (`make -C vcx print-CX_RELEASE`), evaluated on the
 # host, where the tag and the working tree actually are. This script is invoked
-# by release.sh BEFORE its merge-to-main step, so the host HEAD is the tagged
+# by the release flow BEFORE its merge-to-main step, so the host HEAD is the tagged
 # commit at this point.
 # --no-print-directory: `make -C` otherwise brackets the value with
 # Entering/Leaving lines. Only the two known states are accepted — a probe that
@@ -140,7 +140,7 @@ build_one() {
       cp third_party/re2/LICENSE "/tmp/$T/LICENSE-re2.txt"
       ( cd /tmp && tar czf "/out/cx-'"$TAG"'-$T.tar.gz" "$T/" )
       ( cd "/tmp/$T" && tar czf "/out/public/cx-$T.tar.gz" cx cx.h libcx.so LICENSE-re2.txt )
-      # I4 (#651/#516): the §4 profile tarballs (see release.sh phase 2 for
+      # I4 (#651/#516): the §4 profile tarballs (see the package act of the release flow for
       # the composition rationale) — cx-<profile>-linux-<arch>.tar.gz.
       make -C vcx '"$PROFILES_TARGET"' CX_COMMIT='"$CX_COMMIT"' CX_VFORK='"$CX_VFORK"' CX_RELEASE='"$CX_RELEASE"'
       for prof in data embed cli; do
@@ -156,10 +156,10 @@ build_one() {
       echo "-- engines probe:"; "/tmp/$T/cx" -v || true
       # R2.2 (#651/#516 remediation register, ruled (a) 2026-08-09): BLOCKING
       # per-profile install verification, linux lane — the same contract as
-      # release.sh phase 2: every staged tarball must extract the way the
+      # the package act of the release flow: every staged tarball must extract the way the
       # installer extracts it and its binary must report the expected profile
-      # line, or the cut dies here (this script failing fails release.sh).
-      # RULED: PGL-1 (#741) — ONE implementation, shared with release.sh and
+      # line, or the cut dies here (this script failing fails the release flow).
+      # RULED: PGL-1 (#741) — ONE implementation, shared with the release flow and
       # with the standalone pre-cut lane. The lean container copy above
       # includes scripts/, so the file is here at /build; cwd is /build.
       . scripts/lib/r22_profile_gate.sh
@@ -177,4 +177,4 @@ fi
 
 echo
 echo "Done. Upload with the release: gh release upload $TAG dist/public/cx-*linux*.tar.gz --clobber"
-echo "(and refresh dist/SHA256SUMS.txt — scripts/release.sh write_sums — to include the linux tarballs before uploading it)"
+echo "(and refresh dist/SHA256SUMS.txt — the release flow's package act does — to include the linux tarballs before uploading it)"
