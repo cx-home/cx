@@ -6,8 +6,8 @@
   // ── Examples (PLAY-1) ─────────────────────────────────────
   // THE PICKER is the primer's own examples: every conformance fixture
   // docs-src/llm/primer.md.tmpl cites, in the primer's order, filed under
-  // the primer section it sits in, each carrying its READING — document,
-  // query (a program over a document, bound as $doc) or program — and the
+  // the primer section it sits in, each carrying its READING — data,
+  // query (a program over a document, bound as $doc) or code (RULED: PLAY-2) — and the
   // answer the fixture records. playground.primer.js is projected from the
   // corpus by primer_examples.cx (`make docs`), so the page and the primer
   // cannot show two programs under one id.
@@ -19,8 +19,8 @@
   const primer = ((window.cxPlaygroundPrimer || {}).examples) || [];
   const examples = (window.cxPlaygroundExamples || { program: {} });
   const programEntries = examples.program || {};
-  const READINGS = ['document', 'query', 'program'];
-  const READING_NAMES = { document: 'Document', query: 'Query', program: 'Program' };
+  const READINGS = ['data', 'query', 'code'];
+  const READING_NAMES = { data: 'Data', query: 'Query', code: 'Code' };
   // ── Legacy corpus sections (#1375) — kept for the #ex=<key> crumb ─────
   const SECTION_ORDER = [
     'data/elements', 'data/collections', 'data/numbers', 'data/text', 'data/formats', 'data/schema',
@@ -32,27 +32,27 @@
     'everyday/testing', 'everyday/world',
   ];
   const SECTION_NAMES = {
-    'data/elements': ['CX data', 'Elements and attributes'],
-    'data/collections': ['CX data', 'Collections: sequences, arrays, maps'],
-    'data/numbers': ['CX data', 'Numbers and durations'],
-    'data/text': ['CX data', 'Text'],
-    'data/formats': ['CX data', 'Formats: JSON, XML, YAML, TOML, CSV'],
-    'data/schema': ['CX data', 'Schema and closed types'],
-    'code/bindings': ['CX code', 'Bindings, constants, modules'],
-    'code/control-flow': ['CX code', 'Control flow and match'],
-    'code/patterns': ['CX code', 'Patterns and destructuring'],
-    'code/functions': ['CX code', 'Functions and callables'],
-    'code/comprehensions': ['CX code', 'Comprehensions, map, reduce, slices'],
-    'code/paths': ['CX code', 'Paths (cxpath)'],
-    'code/transforms': ['CX code', 'Transforms: modify and pipe'],
-    'code/queries': ['CX code', 'Queries over graphs and sets'],
-    'code/errors': ['CX code', 'Errors and refusals'],
-    'code/effects': ['CX code', 'Effects, purity, capabilities'],
-    'code/builtins': ['CX code', 'Builtins and randomness'],
-    'code/concurrency': ['CX code', 'Concurrency'],
-    'code/resilience': ['CX code', 'Resilience'],
-    'code/metaprogramming': ['CX code', 'Quoting and splicing'],
-    'code/diagrams': ['CX code', 'Diagrams'],
+    'data/elements': ['Data', 'Elements and attributes'],
+    'data/collections': ['Data', 'Collections: sequences, arrays, maps'],
+    'data/numbers': ['Data', 'Numbers and durations'],
+    'data/text': ['Data', 'Text'],
+    'data/formats': ['Data', 'Formats: JSON, XML, YAML, TOML, CSV'],
+    'data/schema': ['Data', 'Schema and closed types'],
+    'code/bindings': ['Code', 'Bindings, constants, modules'],
+    'code/control-flow': ['Code', 'Control flow and match'],
+    'code/patterns': ['Code', 'Patterns and destructuring'],
+    'code/functions': ['Code', 'Functions and callables'],
+    'code/comprehensions': ['Code', 'Comprehensions, map, reduce, slices'],
+    'code/paths': ['Code', 'Paths (cxpath)'],
+    'code/transforms': ['Code', 'Transforms: modify and pipe'],
+    'code/queries': ['Code', 'Queries over graphs and sets'],
+    'code/errors': ['Code', 'Errors and refusals'],
+    'code/effects': ['Code', 'Effects, purity, capabilities'],
+    'code/builtins': ['Code', 'Builtins and randomness'],
+    'code/concurrency': ['Code', 'Concurrency'],
+    'code/resilience': ['Code', 'Resilience'],
+    'code/metaprogramming': ['Code', 'Quoting and splicing'],
+    'code/diagrams': ['Code', 'Diagrams'],
     'everyday/files': ['Everyday scripts', 'Files and directories'],
     'everyday/text': ['Everyday scripts', 'Text and regex'],
     'everyday/collections': ['Everyday scripts', 'Collections, as scripts use them'],
@@ -73,16 +73,16 @@
       ...p,
       label: `[${p.n}] ${p.id}${p.role === 'wrong' ? ' — do not write this' : (p.role === 'right' ? ' — write this' : '')}`,
       section: p.heading,
-      input: p.reading === 'document' ? p.doc : p.src,
+      input: p.reading === 'data' ? p.doc : p.src,
     },
   }));
-  // A legacy corpus entry, opened by #ex=<key>: always the program reading.
+  // A legacy corpus entry, opened by #ex=<key>: always the code reading.
   function legacyEntry(key) {
     const ex = programEntries[key];
     if (!ex) return null;
     const names = SECTION_NAMES[ex.section] || ['', ex.section || ''];
     return {
-      key, kind: 'legacy', reading: 'program',
+      key, kind: 'legacy', reading: 'code',
       ex: { ...ex, id: key, doc: '', src: ex.input, heading: `${names[0]} › ${names[1]}`,
             suite: 'scripts/gen_guide/playground/examples.cxd', expected: '', cmd: 'cx program.cx' },
     };
@@ -115,7 +115,7 @@
   const readingTabs = [...document.querySelectorAll('.cxp-reading-tab')];
   // The reading the page is in, and the entry the editors were loaded from
   // (null once the reader has typed their own text in, or opened a link).
-  let reading = 'program';
+  let reading = 'code';
   let current = null;
   const outTabs  = [...document.querySelectorAll('.cxp-tab')];
   const vizTabs  = [...document.querySelectorAll('.cxp-viz-tab')];
@@ -436,14 +436,14 @@
   //             (`cx --data=input.cx prog.cx`)
   //   program   the program editor alone (`cx prog.cx`)
   function applyReading(r) {
-    reading = READINGS.includes(r) ? r : 'program';
+    reading = READINGS.includes(r) ? r : 'code';
     readingTabs.forEach(t => {
       const on = t.dataset.reading === reading;
       t.classList.toggle('is-active', on);
       t.setAttribute('aria-selected', on ? 'true' : 'false');
     });
-    if (docBlock)  docBlock.hidden  = (reading === 'program');
-    if (progBlock) progBlock.hidden = (reading === 'document');
+    if (docBlock)  docBlock.hidden  = (reading === 'code');
+    if (progBlock) progBlock.hidden = (reading === 'data');
     if (docLabel) {
       docLabel.textContent = reading === 'query'
         ? 'input.cx — the document, bound as $doc'
@@ -453,11 +453,11 @@
   }
   // The text the reading reads, as the command line would see it.
   function sourceText() {
-    return reading === 'document' ? docInput.value : stripAnnotation(input.value);
+    return reading === 'data' ? docInput.value : stripAnnotation(input.value);
   }
   // The editor whose text the View pane draws as Source (the tree bridge
   // selects in it).
-  function activeEditor() { return reading === 'document' ? docInput : input; }
+  function activeEditor() { return reading === 'data' ? docInput : input; }
 
   // The fixture strip: which case this is, where the corpus keeps it, and
   // where the primer shows it; plus the command line that gives the same
@@ -468,7 +468,7 @@
     fixtureEl.innerHTML = '';
     if (!found) {
       fixtureEl.innerHTML = '<span class="cxp-fixture-own">your own text — no fixture</span>';
-      if (cmdEl) cmdEl.textContent = reading === 'document' ? '$ cx --from=cx --to=cx input.cx'
+      if (cmdEl) cmdEl.textContent = reading === 'data' ? '$ cx --from=cx --to=cx input.cx'
         : (reading === 'query' ? '$ cx --data=input.cx prog.cx' : '$ cx prog.cx');
       return;
     }
@@ -511,7 +511,7 @@
   function edited() {
     if (!current || current.kind !== 'primer') return true;
     const ex = current.ex;
-    if (reading === 'document') return docInput.value !== ex.doc;
+    if (reading === 'data') return docInput.value !== ex.doc;
     if (reading === 'query') return docInput.value !== ex.doc || input.value !== ex.src;
     return input.value !== ex.src;
   }
@@ -556,8 +556,8 @@
   function shareHash() {
     if (current && !edited()) return `#ex=${encodeURIComponent(current.key)}`;
     const parts = [`r=${reading}`];
-    if (reading !== 'program') parts.push(`d=${b64uEncode(docInput.value)}`);
-    if (reading !== 'document') parts.push(`p=${b64uEncode(input.value)}`);
+    if (reading !== 'code') parts.push(`d=${b64uEncode(docInput.value)}`);
+    if (reading !== 'data') parts.push(`p=${b64uEncode(input.value)}`);
     return '#' + parts.join('&');
   }
   function parseHash(h) {
@@ -569,6 +569,8 @@
       if (i > 0) q[kv.slice(0, i)] = kv.slice(i + 1);
     }
     if (!q.r) return null;
+    // A link minted before PLAY-2 names a reading by its old key.
+    q.r = ({ document: 'data', program: 'code' })[q.r] || q.r;
     try {
       return { r: q.r, d: q.d ? b64uDecode(q.d) : '', p: q.p ? b64uDecode(q.p) : '' };
     } catch (_) { return null; }
@@ -1792,7 +1794,7 @@
     const source = {
       id: 'source',
       title: 'Source',
-      note: reading === 'document' ? 'the document you wrote' : 'the program you wrote',
+      note: reading === 'data' ? 'the document you wrote' : 'the program you wrote',
       text: srcText,
       register: true,
       empty: 'Source is empty.',
@@ -1893,12 +1895,12 @@
   // ── What the page opens on ──────────────────────────────
   // A link wins (#1375): #ex=<fixture id> opens that primer example,
   // #ex=<corpus key> a legacy one, #r=…&d=…&p=… the shared text. Otherwise
-  // the first Program example a reader should write and the engine runs —
+  // the first code example a reader should write and the engine runs —
   // the page prints an ANSWER on load, not the wrong half of an anti-pattern
   // pair, a terminal-only or wasm-unsupported fixture, or one whose recorded
   // answer is itself an [err …] (test-playground-primer holds the same rule).
   function openingEntry() {
-    const list = entriesOf('program');
+    const list = entriesOf('code');
     const ok = (e) => {
       const ex = e.ex || {};
       return ex.role !== 'wrong' && ex.runnable !== false
@@ -1936,9 +1938,9 @@
   // Before the engine is ready the page still shows what it will run.
   (function preload() {
     const h = parseHash(location.hash);
-    if (h && (h.r || h.ex)) { applyReading(h.r || 'program'); populatePicker(); return; }
+    if (h && (h.r || h.ex)) { applyReading(h.r || 'code'); populatePicker(); return; }
     const first = openingEntry();
-    applyReading('program');
+    applyReading('code');
     populatePicker();
     if (first) {
       pick.value = `${first.kind}:${first.key}`;
@@ -2063,9 +2065,9 @@
     const rd = reading;
     const doc = docInput ? docInput.value : '';
     const prog = stripAnnotation(input.value);
-    const src = rd === 'document' ? doc : prog;
+    const src = rd === 'data' ? doc : prog;
     if (!src.trim()) {
-      if (!o.auto) setStatus(rd === 'document'
+      if (!o.auto) setStatus(rd === 'data'
         ? 'The document is empty. Pick an example or type a document.'
         : 'The program is empty. Pick an example or type something to evaluate.', 'error');
       return;
@@ -2083,8 +2085,8 @@
     let raw = '';                            // what the fixture verdict reads
     try {
       if (token !== runToken) { finishRun(); return; }
-      if (rd === 'document') {
-        // The document reading: the text IS the value (`--from=cx --to=cx`).
+      if (rd === 'data') {
+        // The data reading: the text IS the value (`--from=cx --to=cx`).
         accumulated = cxlib.toCx(doc);
       } else {
         const bound = rd === 'query' ? doc : '';

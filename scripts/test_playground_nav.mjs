@@ -13,7 +13,7 @@
 //   (d) the breadcrumb names the example's number;
 //   (e) the three READING tabs (PLAY-1): each lists exactly that reading's
 //       primer examples, and shows the editors that reading needs —
-//       Document the document alone, Query both, Program the program alone.
+//       Data the document alone, Query both, Code the program alone.
 // RED-PROOF: at 1fe8528a3 (a) and (b) both fail — the label strip and the
 // handler's early return for every <select>.
 //
@@ -72,7 +72,7 @@ function key(target, k) {
 const tab = (r) => win.document.querySelector(`.cxp-reading-tab[data-reading="${r}"]`);
 
 // (e) the readings
-for (const r of ['document', 'query', 'program']) {
+for (const r of ['data', 'query', 'code']) {
   if (!tab(r)) setupFail(`no reading tab for ${r}`);
   tab(r).click();
   const values = [...pick.querySelectorAll('option')].map(o => o.value);
@@ -82,7 +82,7 @@ for (const r of ['document', 'query', 'program']) {
   }
   const docShown = !win.document.getElementById('cxp-doc-block').hidden;
   const progShown = !win.document.getElementById('cxp-prog-block').hidden;
-  const expect = { document: [true, false], query: [true, true], program: [false, true] }[r];
+  const expect = { data: [true, false], query: [true, true], code: [false, true] }[r];
   if (docShown !== expect[0] || progShown !== expect[1]) {
     fail(`the ${r} reading shows document=${docShown} program=${progShown}, expected document=${expect[0]} program=${expect[1]}`);
   }

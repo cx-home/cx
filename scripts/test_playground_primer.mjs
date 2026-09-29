@@ -8,7 +8,7 @@
 //   (1) the ENGINE LOADS: the page's cxlib becomes ready on the JSPI bundle
 //       (browser_harness.mjs asserts which bundle) — cxhome.org answered 404
 //       for wasm/cxlib.js before PLAY-1, and the page loaded with no engine;
-//   (2) the page PRINTS ON LOAD: with no link, the first Program example is
+//   (2) the page PRINTS ON LOAD: with no link, the first code example is
 //       loaded and run, and its answer is the fixture's recorded answer;
 //   (3) the picker is the PRIMER: the page's examples are the file the tree
 //       generates (scripts/gen_guide/playground/playground.primer.js, byte
@@ -20,12 +20,12 @@
 //       refusal — unless the fixture itself says the browser cannot run it
 //       (`runnable: false`: program arguments, an XML input), which is
 //       counted and named, never graded as a pass;
-//   (5) the three READINGS: Document shows the document editor alone,
-//       Query both, Program the program editor alone;
+//   (5) the three READINGS: Data shows the document editor alone,
+//       Query both, Code the program editor alone;
 //   (6) an ERROR IS A VALUE: a program the engine refuses prints an
 //       `[err …]` value in the CX pane, projected to JSON too — never an
 //       empty pane or a crash banner alone;
-//   (7) SHARE-BY-URL round-trips: edited text shared from the Program and
+//   (7) SHARE-BY-URL round-trips: edited text shared from the Code and
 //       Query readings reopens, from the link alone, as the same reading
 //       and the same text.
 //
@@ -115,18 +115,18 @@ async function open(e) {
 }
 
 // (2) prints on load — an ANSWER, not a refusal: the page opens on the first
-// Program example a reader should write and the engine runs (not the wrong
+// code example a reader should write and the engine runs (not the wrong
 // half of an anti-pattern pair, not terminal-only, not marked wasm-unsupported,
 // and not a fixture whose recorded answer is itself an [err …] value).
 {
-  const opening = (e) => e.reading === 'program' && e.role !== 'wrong' && e.runnable !== false
+  const opening = (e) => e.reading === 'code' && e.role !== 'wrong' && e.runnable !== false
     && !(typeof e.wasmUnsupported === 'string' && e.wasmUnsupported.trim())
     && !/^\s*\[err\b/.test(e.expected || '');
   const first = EXAMPLES.find(opening) || { id: '(none)', n: 0, expected: '' };
-  if (first.id === '(none)') fail('no primer Program example qualifies to open the page (every one is a wrong half, terminal-only, unsupported or an [err] answer)');
+  if (first.id === '(none)') fail('no primer code example qualifies to open the page (every one is a wrong half, terminal-only, unsupported or an [err] answer)');
   const s = await waitFor(s => s.match !== '', 'the first run');
   const before = failures.length;
-  if (s.pick !== `primer:${first.id}`) fail(`on load the picker holds ${s.pick}, expected the first Program example a reader should write, primer:${first.id}`);
+  if (s.pick !== `primer:${first.id}`) fail(`on load the picker holds ${s.pick}, expected the first code example a reader should write, primer:${first.id}`);
   if (!s.cx.trim()) fail('on load the CX pane is empty — the page did not print an answer');
   if (/^\s*\[err\b/.test(s.cx)) fail(`on load the page printed a refusal, not an answer: ${s.cx.split('\n')[0]}`);
   if (s.match !== 'yes') fail(`on load ${first.id} answered ${JSON.stringify(s.cx)}; the fixture records ${JSON.stringify(first.expected)}`);
@@ -137,7 +137,7 @@ async function open(e) {
 {
   const opts = JSON.parse(await evalJs(`(() => {
     const out = {};
-    for (const r of ['document', 'query', 'program']) {
+    for (const r of ['data', 'query', 'code']) {
       document.querySelector('.cxp-reading-tab[data-reading="' + r + '"]').click();
       out[r] = [...document.getElementById('cxp-pick').options].map(o => [o.value, o.textContent]);
     }
@@ -158,7 +158,7 @@ const counts = { match: 0, terminal: 0, marked: 0 };
 const terminalOnly = [], marked = [];
 for (const e of EXAMPLES) {
   const s = await open(e);
-  const want = { document: [false, true], query: [false, false], program: [true, false] }[e.reading];
+  const want = { data: [false, true], query: [false, false], code: [true, false] }[e.reading];
   if (s.reading !== e.reading) fail(`${e.id}: the page is in the ${s.reading} reading, the fixture's is ${e.reading}`);
   if (s.docHidden !== want[0] || s.progHidden !== want[1]) {
     fail(`${e.id}: the ${e.reading} reading shows document=${!s.docHidden} program=${!s.progHidden}`);
@@ -189,7 +189,7 @@ console.log(`  ok   readings: every example opened in its own reading with the e
 
 // (6) an error is a value
 {
-  const refusal = EXAMPLES.find(e => e.runnable !== false && !e.wasmUnsupported && e.match === 'contains' && e.reading === 'program');
+  const refusal = EXAMPLES.find(e => e.runnable !== false && !e.wasmUnsupported && e.match === 'contains' && e.reading === 'code');
   if (!refusal) fail('no primer example records a refusal — (6) has nothing to grade');
   else {
     const s = await open(refusal);
@@ -220,11 +220,11 @@ async function shareRoundTrip(r, edit) {
   })()`, 20000);
   const s = await waitFor(s => s.hash === link && s.cx !== '', `the reopened link (${r})`);
   if (s.reading !== r) fail(`share (${r}): the link reopened the ${s.reading} reading`);
-  if (r !== 'document' && s.prog !== edited.prog) fail(`share (${r}): the program came back ${JSON.stringify(s.prog.slice(0, 80))}`);
-  if (r !== 'program' && s.doc !== edited.doc) fail(`share (${r}): the document came back ${JSON.stringify(s.doc.slice(0, 80))}`);
+  if (r !== 'data' && s.prog !== edited.prog) fail(`share (${r}): the program came back ${JSON.stringify(s.prog.slice(0, 80))}`);
+  if (r !== 'code' && s.doc !== edited.doc) fail(`share (${r}): the document came back ${JSON.stringify(s.doc.slice(0, 80))}`);
   else console.log(`  ok   share (${r}): a ${link.length}-char link reopens the same reading and text → ${s.cx.split('\n')[0].slice(0, 60)}`);
 }
-await shareRoundTrip('program', `p.value = '[?let [= $x "é — ünïcode"] [shared text=$x n=[+ 40 2]]]';`);
+await shareRoundTrip('code', `p.value = '[?let [= $x "é — ünïcode"] [shared text=$x n=[+ 40 2]]]';`);
 await shareRoundTrip('query', `d.value = '[users [user [name Ada] [email ada@x.org]]]';`);
 
 const restarts = (await state()).restarts;

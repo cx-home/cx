@@ -1,0 +1,108 @@
+# scripts/gen_guide/playground/readings_check.cx — the playground READINGS
+# step, `make test-playground-readings` (RULED: PLAY-2, DOCS-51 §4, CXF-1).
+#
+# The picker the page serves (scripts/gen_guide/playground/playground.primer.js,
+# projected by primer_examples.cx) files every example under one of three
+# readings — data, query, code — and this step holds each entry to WHAT IT
+# IS, by reading.cx's rule over the entry's own document and program:
+#
+#   - an entry whose reading is not one of the three words is refused;
+#   - a `data` entry carries no program; a `query` entry reads a REAL document
+#     (`$doc`/`$input`, a bare CXPath, an element-pattern `[?for]`) — never a
+#     stub such as `[doc]`; a `code` entry either has no document or reads
+#     none — an entry filed against the rule is refused BY NAME with the
+#     reading the rule gives and why;
+#   - the three counts are printed, and every example the page cannot run is
+#     listed by name with its reason (`runnable: false`, the fixture's own
+#     invocation) or the engine difference primer_wasm.cxd declares.
+#
+# It reads the PROJECTED file, not the corpus: what a reader is served is
+# what is graded. The rule is reading.cx's, shared with the generator, so a
+# tree where the two disagree is a tree whose projection is stale (docs-check
+# names that) or whose file was edited by hand.
+#
+# Red-proof: the file PLAY-1 shipped filed `program-match-multi-005-when-arm-
+# predicate` — a `[?match]` over a literal, graded beside a `[doc]` stub —
+# under Query; this step refuses that file naming it.
+#
+# Run (from the repository root):
+#   cx --allow-read scripts/gen_guide/playground/readings_check.cx [<file>]
+#   (or: make test-playground-readings)
+# Exit: 0 every entry filed as it is; 1 otherwise.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/json'    as=json]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?lib './scripts/gen_guide/playground/reading.cx' as=rd]
+
+[?const DEFAULT "scripts/gen_guide/playground/playground.primer.js"]
+[?const MARK "window.cxPlaygroundPrimer = "]
+[?const READINGS ("data", "query", "code")]
+
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def member scope=public ($seq $x)
+  [> [$count [?for [in $s $seq] [where [= $s $x]] [yield $s]]] 0]]
+
+# entries: the `examples` list of the projected script, as maps.
+[?def entries scope=public impure ($path)
+  [?let [= $text [$io:read-file $path]]
+        [= $i [$strings:find $text MARK]]
+    [?if [not [$present $i]]
+      [then [?let [= $_e [$cry [$concat "test-playground-readings: " $path " does not assign " MARK "— not the projected picker"]]]
+              [$env:exit 1]]]
+      [else [?let [= $from [+ $i [$strings:length MARK]]]
+                  [= $body [$strings:trim [$strings:slice $text $from [$strings:length $text]]]]
+                  [= $j [$strings:length $body]]
+                  [= $jsonish [?if [$strings:ends-with $body ";"] [then [$strings:slice $body 1 [- $j 1]]] [else $body]]]
+              [$map:get [$json:parse $jsonish] "examples"]]]]]]
+
+[?def field scope=public ($e $k) [$string [?else [$map:get $e $k] ""]]]
+
+[?let
+  [; the argv carries the program itself first; the projected file is the .js argument ]
+  [= $args [?for [in $a [$env:argv]] [where [$strings:ends-with $a ".js"]] [yield $a]]]
+  [= $path [?if [$empty $args] [then DEFAULT] [else [$first $args]]]]
+  [= $es [$entries $path]]
+  [= $graded [?for [in $e $es]
+               [= $id [$field $e "id"]]
+               [= $filed [$field $e "reading"]]
+               [= $code [$field $e "src"]]
+               [= $doc [$field $e "doc"]]
+               [= $rule [$rd:reading-of $code $doc]]
+               [yield [g id=$id filed=$filed rule=$rule why=[$rd:why-of $code $doc]
+                         runnable=[= [$field $e "runnable"] "true"] reason=[$field $e "why"]
+                         marked=[$field $e "wasmUnsupported"]]]]]
+  [= $unknown [?for [in $g $graded] [where [not [$member READINGS [$string $g@filed]]]] [yield $g]]]
+  [= $wrong [?for [in $g $graded]
+              [where [$member READINGS [$string $g@filed]]]
+              [where [not [= [$string $g@filed] [$string $g@rule]]]]
+              [yield $g]]]
+  [= $counts [?for [in $w READINGS]
+               [yield [$concat $w " " [$string [$count [?for [in $g $graded] [where [= [$string $g@filed] $w]] [yield 1]]]]]]]]
+  [= $not-run [?for [in $g $graded] [where [not $g@runnable]] [yield $g]]]
+  [= $marked [?for [in $g $graded] [where [not [= [$string $g@marked] ""]]] [yield $g]]]
+  [= $_c [$say [$concat "test-playground-readings: " [$string [$count $graded]] " example(s) in " $path
+                        " — " [$strings:join $counts ", "]]]]
+  [= $_n [?for [in $g $not-run]
+           [yield [$say [$concat "  not offered to run: " [$string $g@id] " — " [$string $g@reason]]]]]]
+  [= $_m [?for [in $g $marked]
+           [yield [$say [$concat "  marked (the engine differs): " [$string $g@id] " — " [$string $g@marked]]]]]]
+  [= $_u [?if [$empty $unknown] [then ()]
+           [else [$cry [$concat "test-playground-readings: " [$string [$count $unknown]]
+                                " entr(ies) carry a reading that is not data/query/code (the first: "
+                                [$string [$first $unknown]@id] " filed as '" [$string [$first $unknown]@filed]
+                                "') — the three words are the site's (PLAY-2)"]]]]]
+  [= $_w [?for [in $g $wrong]
+           [yield [$cry [$concat "test-playground-readings: " [$string $g@id] " is filed as " [$string $g@filed]
+                                 "; by what it is it is " [$string $g@rule] " — " [$string $g@why]]]]]]
+  [?if [and [$empty $unknown] [$empty $wrong]]
+    [then [?let [= $_s [$say [$concat "test-playground-readings: OK — every example filed by what it is; "
+                                      [$string [$count $not-run]] " not offered to run (named above), "
+                                      [$string [$count $marked]] " marked"]]]
+            [$env:exit 0]]]
+    [else [$env:exit 1]]]]

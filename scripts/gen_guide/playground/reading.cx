@@ -1,0 +1,91 @@
+# scripts/gen_guide/playground/reading.cx — WHAT an example IS (RULED: PLAY-2,
+# DOCS-51 §4).
+#
+# The playground files every example under one of three readings, and the
+# reading is decided by a rule over the example's OWN text — never by the
+# primer chapter it sits in, the flags its fixture runs with, or the presence
+# of an `[in-cx]` block beside an `[in-code]` block (PLAY-1's rule, which put
+# a `[?match]` over a literal, graded with a `[doc]` stub, under Query). The
+# three words are the site's words — data, code, and a query is a program
+# over data — and they are the same words on the tabs, the crumb, the picker,
+# the fixture line and the primer's first fact.
+#
+#   data    a document alone: no program. Shown and projected
+#           (`cx --from=cx --to=cx input.cx`).
+#   query   a program that READS a bound document — `$doc` or `$input`
+#           named, a bare CXPath (`//user`, `[?if //flag …]`), or a `[?for]`
+#           whose first clause is an element pattern over the document
+#           (`[?for [user [name $n]] …]`) — and the document it reads is
+#           REAL: never a stub such as `[doc]` or `[ignored]`, one empty
+#           element written to satisfy a grader (`cx --data=input.cx prog.cx`).
+#   code    every other program (`cx prog.cx`); its data pane is hidden.
+#
+# A program that reads the document by this rule and is graded against a
+# STUB is a corpus defect (the query would run over nothing); `reading-of`
+# says so through `stub-read`, and the generator refuses the tree by name.
+#
+# This file is a library: primer_examples.cx applies the rule when it
+# projects the picker, and readings_check.cx (`make test-playground-readings`)
+# applies the same rule to the projected file and refuses an example filed
+# against its shape — one rule, two readers, so the picker and the step
+# cannot disagree about what an example is.
+
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+# The corpus's "no document" marker (primer_build.cx's render-block).
+[?const NO-DOC "[empty]"]
+
+# is-stub-doc: one empty element and nothing else — `[doc]`, `[ignored]`, `[x]`.
+[?def is-stub-doc scope=public [returns bool] ($text)
+  [?let [= $t [$strings:trim $text]]
+    [$re:matches [$re:compile "^\\[[A-Za-z_][A-Za-z0-9_-]*\\]$"] $t]]]
+
+# has-doc: the fixture binds a document at all (a stub counts as bound; it
+# is `is-stub-doc` that says whether it is real).
+[?def has-doc scope=public [returns bool] ($doc)
+  [and [not [= [$strings:trim $doc] ""]] [not [= [$strings:trim $doc] NO-DOC]]]]
+
+# The clause heads a `[?for]` may open with that are NOT an element pattern.
+[?const FOR-CLAUSES ("in", "where", "yield", "group-by", "order-by", "limit", "offset", "distinct")]
+
+[?def member scope=public ($seq $x)
+  [> [$count [?for [in $s $seq] [where [= $s $x]] [yield $s]]] 0]]
+
+# reads-doc-why: "" when the program reads no bound document, else the
+# clause of the rule it reads it by (the words the check prints).
+[?def reads-doc-why scope=public [returns string] ($code)
+  [?let [= $named [> [$count [$re:find-all [$re:compile "\\$(doc|input)\\b"] $code]] 0]]
+        [= $path [> [$count [$re:find-all [$re:compile "(^|[\\s\\[(,])//"] $code]] 0]]
+        [= $heads [?for [in $m [$re:find-all [$re:compile "\\[\\?for\\s+\\[([A-Za-z_][A-Za-z0-9_-]*)"] $code]]
+                    [yield [$nth [$re:groups-all $m] 2]]]]
+        [= $pattern [> [$count [?for [in $h $heads] [where [not [$member FOR-CLAUSES $h]]] [yield $h]]] 0]]
+    [?if $named [then "it names $doc or $input"]
+      [else [?if $path [then "it selects with a bare CXPath (//)"]
+        [else [?if $pattern [then "its [?for] opens with an element pattern over the document"]
+          [else ""]]]]]]]]
+
+# reading-of: 'data' | 'query' | 'code' | 'stub-read' (the defect above).
+#   $code  the program text, "" for none
+#   $doc   the input document text — `[in-cx]` or `[in-xml]` — "" or the
+#          corpus's `[empty]` marker for none
+[?def reading-of scope=public [returns string] ($code $doc)
+  [?if [= [$strings:trim $code] ""]
+    [then 'data']
+    [else [?let [= $why [$reads-doc-why $code]]
+      [?if [= $why ""]
+        [then 'code']
+        [else [?if [not [$has-doc $doc]]
+          [then 'code']
+          [else [?if [$is-stub-doc $doc] [then 'stub-read'] [else 'query']]]]]]]]]]
+
+# why-of: one sentence a reader can check, for the reading the rule gives.
+[?def why-of scope=public [returns string] ($code $doc)
+  [?let [= $r [$reading-of $code $doc]]
+    [?if [= $r 'data'] [then "a document alone, no program"]
+      [else [?if [= $r 'query'] [then [$concat "a program over the document: " [$reads-doc-why $code]]]
+        [else [?if [= $r 'stub-read']
+          [then [$concat "the program reads the document (" [$reads-doc-why $code] ") but the fixture binds a stub, " [$strings:trim $doc]]]
+          [else [?if [$has-doc $doc]
+            [then [$concat "a program that reads no document; the fixture's " [?if [$is-stub-doc $doc] [then "stub "] [else ""]] "input is not shown"]]
+            [else "a program alone"]]]]]]]]]]

@@ -121,7 +121,7 @@ const cases = keys.map(key => {
 // A primer example runs the way the page runs it: a document through the
 // data reading, a query over its document bound as $doc.
 for (const p of primer) {
-  cases.push([`primer:${p.id}`, p.reading === 'document' ? p.doc : p.src,
+  cases.push([`primer:${p.id}`, p.reading === 'data' ? p.doc : p.src,
               p.reading === 'query' ? p.doc : '', p.reading]);
 }
 for (const [key, source] of Object.entries(PROBES)) cases.push([key, source, '']);
@@ -132,7 +132,7 @@ const aborts = [];
 for (const [key, source, input, reading] of cases) {
   let verdict = 'OK', detail = '';
   try {
-    if (reading === 'document') cxlib.toCx(source);
+    if (reading === 'data') cxlib.toCx(source);
     else cxlib.evalCode(source, 'cx', input || '');
   } catch (e) {
     [verdict, detail] = classify(e);

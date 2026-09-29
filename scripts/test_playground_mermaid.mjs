@@ -127,12 +127,12 @@ function pageExamples(win) {
   const rows = [];
   for (const p of ((win.cxPlaygroundPrimer || {}).examples || [])) {
     rows.push([`primer:${p.id}`, {
-      input: p.reading === 'document' ? p.doc : p.src,
+      input: p.reading === 'data' ? p.doc : p.src,
       reading: p.reading, doc: p.doc, runnable: p.runnable,
     }]);
   }
   for (const [key, ex] of Object.entries((win.cxPlaygroundExamples || {}).program || {})) {
-    rows.push([key, { ...ex, reading: 'program', doc: '' }]);
+    rows.push([key, { ...ex, reading: 'code', doc: '' }]);
   }
   return rows;
 }
@@ -406,7 +406,7 @@ for (const key of keys) {
     // The page's own reading (PLAY-1): a document is its own value, a query
     // runs over its document bound as $doc, a program over nothing.
     try {
-      output = String((ex.reading === 'document'
+      output = String((ex.reading === 'data'
         ? cxlib.toCx(ex.doc || source)
         : cxlib.evalCode(source, 'cx', ex.reading === 'query' ? (ex.doc || '') : '')) || '');
     }

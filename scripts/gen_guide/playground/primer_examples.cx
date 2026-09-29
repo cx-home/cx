@@ -13,13 +13,21 @@
 # answers true natively; `make test-playground-primer` holds the wasm engine
 # the page loads to the same recorded answers.
 #
-# Each entry carries its READING — how the fixture is run, which is the shape
-# of the fixture itself (primer_build.cx's `argv-tokens` names the same three):
+# Each entry carries its READING — WHAT the example is, decided by
+# reading.cx's rule over the example's own text (RULED: PLAY-2, DOCS-51 §4),
+# in the site's three words:
 #
-#   document   a document alone (`[in-cx]`, no program): `cx --from=cx --to=cx`
-#   query      a program over a document (`[in-cx]` + `[in-code]`):
-#              `cx --data=input.cx prog.cx` — the document is bound as $doc
-#   program    a program alone (`[in-code]`): `cx prog.cx`
+#   data    a document alone (no program): `cx --from=cx --to=cx input.cx`
+#   query   a program that reads a bound, REAL document — `$doc`/`$input`
+#           named, a bare CXPath, or a `[?for]` opening with an element
+#           pattern: `cx --data=input.cx prog.cx`
+#   code    every other program: `cx prog.cx`; a stub document the fixture
+#           carries for its grader (`[doc]`, `[ignored]`) is never shown
+#
+# A program that reads the document by the rule while its fixture binds a
+# stub is a corpus defect: this generator refuses the tree by name.
+# `make test-playground-readings` (readings_check.cx) applies the same rule
+# to the projected file and prints the three counts.
 #
 # An entry the browser cannot run as the fixture runs it — its invocation
 # carries program arguments (`[cli-argv]`) or an XML input — says so
@@ -46,6 +54,7 @@
 [?lib 'cx-stdlib/json'    as=json]
 
 [?lib './scripts/gen_docs/primer_build.cx' as=pb]
+[?lib './scripts/gen_guide/playground/reading.cx' as=rd]
 
 [?const TEMPLATE "docs-src/llm/primer.md.tmpl"]
 [?const MANIFEST "docs-src/llm/manifest.cxd"]
@@ -133,14 +142,19 @@
   [?let [= $q [$strings:replace [$strings:replace $p "conformance/../deps/" "deps/"] "deps/" ""]]
     $q]]
 
-# reading-of: the fixture's shape decides how it is run (see the header).
-[?def reading-of scope=public ($sec)
+# reading-of: what the example IS — reading.cx's rule over the fixture's own
+# program and document (see the header). A `stub-read` verdict is a corpus
+# defect and stops the projection by name.
+[?def reading-of scope=public impure ($id $sec)
   [?let [= $code [?else [$map:get $sec "in-code"] ""]]
         [= $data [?else [$map:get $sec "in-cx"] "[empty]"]]
         [= $xml  [?else [$map:get $sec "in-xml"] ""]]
-    [?if [= $code ""]
-      [then 'document']
-      [else [?if [and [= $xml ""] [not [= $data "[empty]"]]] [then 'query'] [else 'program']]]]]]
+        [= $doc  [?if [= $xml ""] [then $data] [else $xml]]]
+        [= $r [$rd:reading-of $code $doc]]
+    [?if [= $r 'stub-read']
+      [then [$die [$concat $id ": " [$rd:why-of $code $doc]
+                           " — a query over a stub is a corpus defect; fix the fixture's input or the program (CXF-8)"]]]
+      [else $r]]]]
 
 # entry: one picker row, as a JSON-ready map.
 [?def entry scope=public impure ($n $r $index $differs)
@@ -151,9 +165,15 @@
         [= $data [?if [= $data0 "[empty]"] [then ""] [else $data0]]]
         [= $xml [?else [$map:get $sec "in-xml"] ""]]
         [= $argv [?else [$map:get $sec "cli-argv"] ""]]
+        [= $reading [$reading-of $id $sec]]
         [= $toks [$pb:argv-tokens $sec]]
-        [= $cmd [$concat "cx " [$strings:join [?for [in $t $toks]
-                  [yield [$pb:resolve-token $t "show" "" "" "" $code]]] " "]]]
+        [; the command line that gives the same answer natively: the fixture's
+           own argv when it has one, else the reading's shape — a code example
+           graded beside a stub document answers the same with no --data ]
+        [= $cmd [?if [and [= $argv ""] [and [= $reading 'code'] [not [= $data ""]]]]
+                  [then "cx prog.cx"]
+                  [else [$concat "cx " [$strings:join [?for [in $t $toks]
+                    [yield [$pb:resolve-token $t "show" "" "" "" $code]]] " "]]]]]
         [= $e [$pb:expected-of $sec]]
         [= $why [?if [not [= $argv ""]]
                   [then "its invocation passes program arguments, which the browser cannot"]
@@ -166,8 +186,8 @@
      heading: [$string [$map:get $r "heading"]],
      role: [$string [$map:get $r "role"]],
      title: [$string [?else [$map:get $sec "title"] ""]],
-     reading: [$reading-of $sec],
-     doc: [?if [= $xml ""] [then $data] [else $xml]],
+     reading: $reading,
+     doc: [?if [= $reading 'code'] [then ""] [else [?if [= $xml ""] [then $data] [else $xml]]]],
      src: $code,
      cmd: $cmd,
      expected: [$string $e@text],
@@ -209,7 +229,7 @@
   [= $entries [?for [in $i [$range 1 [$count $refs]]]
                 [yield [$entry $i [$nth $refs $i] $index $differs]]]]
   [= $body [$render $entries]]
-  [= $readings [?for [in $w ('document', 'query', 'program')]
+  [= $readings [?for [in $w ('data', 'query', 'code')]
                  [yield [$concat $w " " [$string [$count [?for [in $x $entries]
                           [where [= [$map:get $x "reading"] $w]] [yield 1]]]]]]]]
   [= $line [$concat "primer_examples: " [$string [$count $entries]] " fixture(s) from "
