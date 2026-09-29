@@ -1,4 +1,4 @@
-# Reference: the platform and ecosystem rings — v0.18.0-pre.1
+# Reference: the platform, bindings and ecosystem groups — v0.18.0-pre.1
 
 > **GENERATED.** Source: `docs-src/llm/reference-platform.md.tmpl` + the
 > conformance corpus. Every output was re-recorded from the `cx` v0.18.0-pre.1

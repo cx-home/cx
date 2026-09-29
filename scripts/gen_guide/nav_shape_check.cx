@@ -1,0 +1,259 @@
+# scripts/gen_guide/nav_shape_check.cx — the navigation SHAPE step,
+# `make nav-shape-check` (RULED: DOCS-51 §3, PLAY-2, DOCS-44, CXF-1).
+#
+# The navigation is the reader journeys: five groups — Start here, Guide,
+# Reference, Repositories, LLM — a group of at most about seven visible
+# entries, the module reference pages under Reference only, every served
+# page within three links of the landing. guide_build.cx's `nav-groups`
+# renders it; this step reads what was RENDERED, in the assembled site, and
+# refuses:
+#
+#   (1) a sidebar whose groups are not exactly the five, in that order;
+#   (2) a group over its visible-entry limit — a visible entry is a link or
+#       a sub-heading's summary (a <details class="nav-sub">); a sub-heading
+#       of Guide over seven items; Reference's Modules sub-list over seven
+#       sub-lists (its module lists, one per ring and tier, are as long as
+#       the registry); the Repositories sub-list not holding exactly the
+#       served repo-<name>.html pages;
+#   (3) a module page (lib-<m>.html, codec-<m>.html, x-<m>.html) linked from
+#       any group but Reference, or a served module page Reference does not
+#       link;
+#   (4) a served page (every required .html and .md the site manifest
+#       declares) the walk from index.html does not reach within three
+#       links — the landing's own links, then the sidebar and the pages'
+#       links, breadth first (the assembler's link rules: markup only, no
+#       external targets, relative paths resolved).
+#
+# Red-proof: the sidebar PLAY-2 replaced (six ring-shaped groups, each
+# appending every module page — 134 links on every page) fails (1), (2)
+# and (3) by name.
+#
+# Run (from the repository root, after `make site`):
+#   cx --allow-read --allow-write scripts/gen_guide/nav_shape_check.cx [--site=<dir>]
+#   (or: make nav-shape-check)
+# Exit: 0 the shape holds (the counts on stdout); 1 otherwise.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?lib './scripts/gen_docs/primer_build.cx' as=pb]
+
+[?const MANIFEST "docs-src/site/manifest.cxd"]
+[?const GROUPS ("Start here", "Guide", "Reference", "Repositories", "LLM")]
+[?const VISIBLE-LIMIT 7]
+[?const DEPTH 3]
+
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def member scope=public ($seq $x)
+  [> [$count [?for [in $s $seq] [where [= $s $x]] [yield $s]]] 0]]
+
+[?def attr-or scope=public ($e $k $d)
+  [?let [= $hits [?for [in $a [$attrs $e]] [where [= [$string $a@name] $k]] [yield [$string $a]]]]
+    [?if [$empty $hits] [then $d] [else [$first $hits]]]]]
+
+# ── the manifest: the served pages ────────────────────────────────────────
+[?def required-lines scope=public impure ()
+  [?for [in $k [$cx:parse [$io:read-file MANIFEST]]/*]
+    [where [= [?else [$name $k] ""] "files"]]
+    [where [= [$attr-or $k "optional" "false"] "false"]]
+    [in $l [$strings:split-lines [$pb:normalize [$pb:raw-of $k]]]]
+    [where [not [= [$strings:trim $l] ""]]]
+    [yield [$strings:trim $l]]]]
+
+[; a served PAGE is an .html or .md the manifest requires — less the
+   playground page's own files under playground/ (its script, style, the
+   engine probe it loads), which are assets of playground.html ]
+[?def is-page scope=public ($p)
+  [and [or [$strings:ends-with $p ".html"] [$strings:ends-with $p ".md"]]
+       [not [$strings:starts-with $p "playground/"]]]]
+
+[; a file the walk READS for links: the pages, and the llms.txt pair, whose
+   Markdown links are how the LLM layer's references are reached ]
+[?def carries-links scope=public ($p)
+  [or [$is-page $p] [$strings:ends-with $p ".txt"]]]
+
+[?def is-module-page scope=public impure ($p)
+  [$re:matches [$re:compile "^(lib|codec|x)-[^/]*\\.html$"] $p]]
+
+# ── links, as the assembler reads them (site_assemble.cx, DOCS-44) ────────
+[?def attr-rx scope=public impure () [$re:compile "(?:href|src)=\"([^\"]*)\""]]
+[?def attr-rx-sq scope=public impure () [$re:compile "(?:href|src)='([^']*)'"]]
+[?def md-rx scope=public impure () [$re:compile "\\]\\(([^) ]+)\\)"]]
+
+[?def external scope=public ($t)
+  [or [$strings:starts-with $t "http://"] [or [$strings:starts-with $t "https://"]
+      [or [$strings:starts-with $t "mailto:"] [or [$strings:starts-with $t "data:"]
+          [or [$strings:starts-with $t "javascript:"] [$strings:starts-with $t "//"]]]]]]]
+
+[?def markup-only scope=public impure ($text)
+  [$re:replace [$re:compile "(?s)<script[^>]*>.*?</script>"]
+    [$re:replace [$re:compile "(?s)<code[^>]*>.*?</code>"]
+      [$re:replace [$re:compile "(?s)<pre[^>]*>.*?</pre>"] $text " "] " "] " "]]
+
+[; the site's own published base (the manifest's [site base=]): a link to
+   https://cxhome.org/<path> — llms.txt names its files that way — is the
+   site's own page, read as <path> ]
+[?def site-base scope=public impure ()
+  [?let [= $rows [?for [in $k [$cx:parse [$io:read-file MANIFEST]]/*]
+                   [where [= [?else [$name $k] ""] "site"]] [yield [$attr-or $k "base" ""]]]]
+    [?if [$empty $rows] [then ""] [else [$first $rows]]]]]
+
+[?def own-or-external scope=public ($base $t)
+  [?if [and [not [= $base ""]] [$strings:starts-with $t $base]]
+    [then [$concat "/" [$strings:slice $t [+ [$strings:length $base] 1] [$strings:length $t]]]]
+    [else $t]]]
+
+[?def links-of scope=public impure ($rel $text)
+  [?let [= $html [?if [$strings:ends-with $rel ".html"] [then [$markup-only $text]] [else ""]]]
+        [= $raw [?if [$strings:ends-with $rel ".html"]
+                  [then [$pb:cat-seqs ([?for [in $m [$re:find-all [$attr-rx] $html]] [yield [$re:group $m 1]]],
+                                       [?for [in $m [$re:find-all [$attr-rx-sq] $html]] [yield [$re:group $m 1]]])]]
+                  [else [?for [in $m [$re:find-all [$md-rx] $text]] [yield [$re:group $m 1]]]]]]
+    [$distinct [?for [in $t0 $raw]
+                 [= $t [$own-or-external [$site-base] $t0]]
+                 [= $t2 [$first [$strings:split [$first [$strings:split $t "?"]] "#"]]]
+                 [where [not [= $t2 ""]]]
+                 [where [not [$external $t2]]]
+                 [yield $t2]]]]]
+
+[?def resolve scope=public ($rel $target)
+  [?let [= $dir [?if [$present [$strings:find $rel "/"]]
+                  [then [$strings:slice $rel 1 [- [$strings:rfind $rel "/"] 1]]] [else ""]]]
+        [= $joined [?if [$strings:starts-with $target "/"] [then [$strings:slice $target 2 [$strings:length $target]]]
+                     [else [?if [= $dir ""] [then $target] [else [$concat $dir "/" $target]]]]]]
+        [= $parts [$fp:fold [$strings:split $joined "/"] ()
+                    [?fn ($acc $p)
+                      [?if [or [= $p "."] [= $p ""]] [then $acc]
+                        [else [?if [= $p ".."]
+                          [then [?for [in $i [$range 1 [- [$count $acc] 1]]] [yield [$nth $acc $i]]]]
+                          [else [$pb:cat-seqs ($acc, ($p,))]]]]]]]]
+    [$strings:join $parts "/"]]]
+
+# page-links: the served pages one page links, resolved.
+[?def page-links scope=public impure ($site $rel $pages)
+  [?let [= $p [$concat $site "/" $rel]]
+    [?if [not [$io:is-file $p]] [then ()]
+      [else [$distinct [?for [in $t [$links-of $rel [$io:read-file $p]]]
+                         [= $r [$resolve $rel $t]]
+                         [where [$member $pages $r]]
+                         [yield $r]]]]]]]
+
+[; the walk's node set: every served page plus the link-bearing text files ]
+
+# reached: the pages within DEPTH links of index.html — breadth first, one
+# level per fold, the visited set carried as a map.
+[?def reached scope=public impure ($site $pages)
+  [$fp:fold [$range 1 DEPTH] {seen: {"index.html": 0}, frontier: ("index.html",)}
+    [?fn ($st $d)
+      [?let [= $seen0 [$map:get $st "seen"]]
+            [= $next [$distinct [$fp:flat-map [$map:get $st "frontier"]
+                                  [?fn ($f) [$page-links $site $f $pages]]]]]
+            [= $new [?for [in $n $next] [where [not [$present [$map:get $seen0 $n]]]] [yield $n]]]
+        {seen: [$fp:fold $new $seen0 [?fn ($m $n) [$map:put $m $n $d]]],
+         frontier: $new}]]]]
+
+# ── the sidebar's shape ───────────────────────────────────────────────────
+[?def sidebar-of scope=public impure ($html)
+  [?let [= $i [$strings:find $html "<aside class=\"sidebar\">"]]
+        [= $j [$strings:find $html "</aside>"]]
+    [?if [or [not [$present $i]] [not [$present $j]]] [then ""]
+      [else [$strings:slice $html $i [- $j 1]]]]]]
+
+[?def count-items scope=public impure ($s)
+  [$count [$re:find-all [$re:compile "<li><a "] $s]]]
+
+# fold-subs: every <details class=$level> block becomes ONE item token
+# carrying its title and its own item count, so the enclosing list counts
+# it as one visible entry and the token still says how long it is.
+[?def fold-subs scope=public impure ($level $html)
+  [$re:replace-fn
+    [$re:compile [$concat "(?s)<details class=\"" $level "\"[^>]*><summary>([^<]*)</summary>.*?</details>"]]
+    $html
+    [?fn ($m) [$concat "<li><a class=\"folded\" data-level=\"" $level "\" data-title=\"" [$re:group $m 1]
+                       "\" data-items=\"" [$string [$count-items [$re:group $m 0]]] "\"></a></li>"]]]]
+
+# sections: the groups as [group title= visible= html= folded=…], in order.
+[?def sections scope=public impure ($sidebar)
+  [?let [= $folded [$fold-subs "nav-sub" [$fold-subs "nav-subsub" $sidebar]]]
+        [= $rx [$re:compile "(?s)<section><h4>([^<]*)</h4>(.*?)</section>"]]
+        [= $raw-secs [$re:find-all $rx $sidebar]]
+        [= $folded-secs [$re:find-all $rx $folded]]
+    [?for [in $i [$range 1 [$count $raw-secs]]]
+      [= $r [$nth $raw-secs $i]]
+      [= $f [$nth $folded-secs $i]]
+      [yield [group title=[$re:group $r 1] visible=[$count-items [$re:group $f 2]]
+                [raw [$re:group $r 2]]
+                [?for [in $t [$re:find-all [$re:compile "data-level=\"([^\"]*)\" data-title=\"([^\"]*)\" data-items=\"([0-9]+)\""] [$re:group $f 2]]]
+                  [yield [sub level=[$re:group $t 1] title=[$re:group $t 2] items=[$strings:to-number [$re:group $t 3]]]]]]]]]]
+
+[?def hrefs-in scope=public impure ($html)
+  [$distinct [?for [in $m [$re:find-all [$attr-rx] $html]] [yield [$re:group $m 1]]]]]
+
+[?let
+  [= $args [?for [in $a [$env:argv]] [where [$strings:starts-with $a "--site="]] [yield [$strings:slice $a 8 [$strings:length $a]]]]]
+  [= $site [?if [$empty $args] [then "site"] [else [$first $args]]]]
+  [= $_d [?if [$io:is-file [$concat $site "/guide.html"]] [then 0]
+           [else [?let [= $_e [$cry [$concat "nav-shape-check: " $site "/guide.html is not there — run `make site` first"]]] [$env:exit 1]]]]]
+  [= $lines [$required-lines]]
+  [= $pages [?for [in $l $lines] [where [$is-page $l]] [yield $l]]]
+  [= $nodes [?for [in $l $lines] [where [$carries-links $l]] [yield $l]]]
+  [= $module-pages [?for [in $p $pages] [where [$is-module-page $p]] [yield $p]]]
+  [= $repo-pages [?for [in $p $pages] [where [$re:matches [$re:compile "^repo-[^/]*\\.html$"] $p]] [yield $p]]]
+  [= $sidebar [$sidebar-of [$io:read-file [$concat $site "/guide.html"]]]]
+  [= $groups [$sections $sidebar]]
+  [= $titles [?for [in $g $groups] [yield [$string $g@title]]]]
+  [= $problems [$pb:cat-seqs (
+    [; (1) the five groups, in order ]
+    [?if [= [$strings:join $titles " | "] [$strings:join GROUPS " | "]] [then ()]
+      [else ([$concat "the groups are [" [$strings:join $titles " | "] "], not [" [$strings:join GROUPS " | "] "]"],)]],
+    [; (2) the limits ]
+    [?for [in $g $groups]
+      [where [not [= [$string $g@title] "Repositories"]]]
+      [where [> $g@visible VISIBLE-LIMIT]]
+      [yield [$concat [$string $g@title] " shows " [$string $g@visible] " visible entries; at most " [$string VISIBLE-LIMIT]]]],
+    [?for [in $g $groups]
+      [where [$member ("Guide", "Reference") [$string $g@title]]]
+      [in $s $g//sub]
+      [where [= [$string $s@level] "nav-sub"]]
+      [where [> $s@items VISIBLE-LIMIT]]
+      [yield [$concat [$string $g@title] " › " [$string $s@title] " holds " [$string $s@items] " items; at most " [$string VISIBLE-LIMIT]]]],
+    [?for [in $g $groups]
+      [where [= [$string $g@title] "Repositories"]]
+      [in $s $g//sub]
+      [where [not [= $s@items [$count $repo-pages]]]]
+      [yield [$concat "Repositories › " [$string $s@title] " holds " [$string $s@items] " items; the site serves " [$string [$count $repo-pages]] " repository pages"]]],
+    [; (3) module pages under Reference only ]
+    [?for [in $g $groups]
+      [where [not [= [$string $g@title] "Reference"]]]
+      [= $mods [?for [in $h [$hrefs-in [$string [$first $g/raw]]]] [where [$is-module-page $h]] [yield $h]]]
+      [where [not [$empty $mods]]]
+      [yield [$concat [$string $g@title] " links " [$string [$count $mods]] " module page(s) (" [$first $mods] ", …); a module page is listed under Reference only"]]],
+    [?let [= $ref [?for [in $g $groups] [where [= [$string $g@title] "Reference"]] [yield $g]]]
+          [= $linked [?if [$empty $ref] [then ()] [else [$hrefs-in [$string [$first [$first $ref]/raw]]]]]]
+      [?for [in $m $module-pages] [where [not [$member $linked $m]]]
+        [yield [$concat "Reference does not link the served module page " $m]]]])]]
+  [; (4) the walk ]
+  [= $walk [$reached $site $nodes]]
+  [= $seen [$map:get $walk "seen"]]
+  [= $unreached [?for [in $p $pages] [where [not [$present [$map:get $seen $p]]]] [yield $p]]]
+  [= $_t [?for [in $g $groups]
+           [yield [$say [$concat "  " [$string $g@title] ": " [$string $g@visible] " visible"
+                                 [?if [$empty $g//sub] [then ""]
+                                   [else [$concat " — " [$strings:join [?for [in $s $g//sub]
+                                     [yield [$concat [$string $s@title] " (" [$string $s@items] ")"]]] ", "]]]]]]]]]
+  [= $_p [?for [in $p $problems] [yield [$cry [$concat "nav-shape-check: " $p]]]]]
+  [= $_u [?for [in $p $unreached] [yield [$cry [$concat "nav-shape-check: " $p " is served and not within " [$string DEPTH] " links of index.html"]]]]]
+  [?if [and [$empty $problems] [$empty $unreached]]
+    [then [?let [= $_s [$say [$concat "nav-shape-check: OK — five groups, " [$string [$count $module-pages]]
+                                      " module pages under Reference only, " [$string [$count $repo-pages]]
+                                      " repository pages, every one of " [$string [$count $pages]]
+                                      " served pages within " [$string DEPTH] " links of index.html"]]]
+            [$env:exit 0]]]
+    [else [$env:exit 1]]]]

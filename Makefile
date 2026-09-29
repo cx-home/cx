@@ -1072,6 +1072,18 @@ test-playground-mermaid: wasm-bundle-fresh
 test-playground-nav:
 	@node scripts/test_playground_nav.mjs
 
+# ── playground READINGS step (RULED: PLAY-2, DOCS-51 §4) ─────────────────────
+# The picker the page serves files every example by WHAT IT IS — data, query,
+# code — under reading.cx's rule over the example's own text; this step holds
+# the projected file to that rule, refuses an example filed against its shape
+# by name, prints the three counts and names every example the page cannot
+# run with its reason. Red-proofed on PLAY-1's file (a [?match] over a literal
+# beside a [doc] stub, filed under Query).
+.PHONY: test-playground-readings
+test-playground-readings: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+test-playground-readings: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/gen_guide/playground/readings_check.cx
+
 # ── playground WASM TRAP sweep (#1374) ───────────────────────────────────────
 # Every example evaluated in the shipped engine under node; a wasm TRAP
 # (`table index is out of bounds` — what a V closure does when wasm32 calls
@@ -1761,7 +1773,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := docs-voice-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate merge-flow-gate premerge-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate merge-flow-gate premerge-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-readings test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -3861,6 +3873,29 @@ check-selection-manifest:
 docs-voice-check: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 docs-voice-check: build-vcx
 	@"$(CX_BIN)" --allow-read --allow-write scripts/gen_site/docs_voice_check.cx
+
+# ── docs-vocabulary-check (RULED: DOCS-51 §1, PLAY-2) — one vocabulary ──────
+# Counts the words the site does not use — "Ring 2"/"Ring 3", an "ecosystem
+# ring", the "monorepo", lane, campaign, gate run, steward, ruling, landed,
+# and Document/Program as a playground tab or crumb label — in every served
+# source, the playground's page and script and the guide generator, and holds
+# each file to docs-src/site/vocabulary.cxd in the voice ratchet's shape: a
+# file with no row reads zero, a row's count only ever moves down.
+.PHONY: docs-vocabulary-check
+docs-vocabulary-check: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+docs-vocabulary-check: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/gen_site/docs_vocabulary_check.cx
+
+# ── nav-shape-check (RULED: DOCS-51 §3, PLAY-2) — the navigation is the reader
+# journeys. Assembles the site (`make site`), then reads the sidebar it
+# rendered and walks the tree: five groups in order, at most seven visible
+# entries in a group and seven items in a Guide sub-heading, the module pages
+# under Reference only, the repositories sub-list equal to the served
+# repository pages, every served page within three links of index.html.
+.PHONY: nav-shape-check
+nav-shape-check: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+nav-shape-check: site
+	@"$(CX_BIN)" --allow-read --allow-write scripts/gen_guide/nav_shape_check.cx
 
 # ── ring-svg (RULED: DOCS-42, CICD-1) — the ring figure as a served file ─────
 # The docs flow's generate step (docs-src/flow/docs.flow.cx → docs-generate)

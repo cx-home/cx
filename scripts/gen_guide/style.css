@@ -221,6 +221,28 @@ aside.sidebar a.active {
 }
 aside.sidebar .sec-n { color: var(--accent); font-weight: 500; }
 
+/* ── the navigation's sub-headings (RULED: DOCS-51 §3) — a <details> per
+   ring, group, tour set and module list, open only on its own pages; the
+   guide home's table of contents renders the same five groups ─────────── */
+aside.sidebar details.nav-sub, .toc-groups details.nav-sub { margin: 0.1rem 0 0.25rem; }
+aside.sidebar details.nav-subsub, .toc-groups details.nav-subsub { margin: 0.05rem 0 0.15rem 0.6rem; }
+aside.sidebar summary, .toc-groups summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0.14rem 0.4rem 0.14rem 0.55rem;
+  margin-left: -0.55rem;
+  border-left: 2px solid transparent;
+}
+aside.sidebar summary::-webkit-details-marker, .toc-groups summary::-webkit-details-marker { display: none; }
+aside.sidebar summary::before, .toc-groups summary::before { content: '\25B8\00a0'; color: var(--muted); }
+aside.sidebar details[open] > summary::before, .toc-groups details[open] > summary::before { content: '\25BE\00a0'; }
+aside.sidebar details[open] > summary, .toc-groups details[open] > summary { border-left-color: var(--rule); }
+aside.sidebar details.nav-subsub > summary, .toc-groups details.nav-subsub > summary { font-weight: 500; color: var(--muted); }
+aside.sidebar details.nav-sub > ul, .toc-groups details.nav-sub > ul { margin-left: 0.6rem; }
+
 /* ── main column ────────────────────────────────────────────────────── */
 main {
   grid-column: 2;

@@ -259,6 +259,13 @@ step_globs() {
     # docs-voice-check (RULED: DOCS-43): the served sources it counts, and its
     # allowlist docs-src/site/voice.cxd (under docs-src/*).
     docs-voice-check)              echo 'docs-src/* docs/dev/* scripts/gen_site/docs_voice_check.cx' ;;
+    # docs-vocabulary-check (RULED: DOCS-51 §1): the same served sources, the
+    # playground's page and script, the guide generator (the navigation's
+    # labels), and its word list docs-src/site/vocabulary.cxd (under docs-src/*).
+    docs-vocabulary-check)         echo 'docs-src/* docs/dev/* scripts/gen_site/docs_vocabulary_check.cx scripts/gen_guide/playground/* scripts/gen_guide/guide_build.cx' ;;
+    # nav-shape-check (RULED: DOCS-51 §3): the sidebar guide_build.cx renders and
+    # the assembled tree it walks — site-check's inputs and the check itself.
+    nav-shape-check)               echo 'docs-src/* docs/* scripts/gen_site/* scripts/gen_guide/* scripts/gen_docs/* deps.cxd registry/* VERSION' ;;
     # ring-svg-check (RULED: DOCS-42): the two figure generators, the registries
     # they draw from, the stylesheet whose tokens they read, the site manifest
     # (the front door's name) and the primer generator's directive projection.
@@ -542,6 +549,9 @@ step_globs() {
     # #1380: a jsdom gate over the SHIPPED playground page and script — no wasm,
     # no binary. Its inputs are that directory, the gate and its node modules.
     test-playground-nav)           echo 'scripts/gen_guide/playground/* scripts/test_playground_nav.mjs scripts/playground-gate/*' ;;
+    # PLAY-2: the readings step reads the projected picker and the rule it is
+    # filed by (both under the playground directory) — no wasm, no browser.
+    test-playground-readings)      echo 'scripts/gen_guide/playground/*' ;;
     # #1374: the same playground corpus evaluated in the WASM bundle, and the
     # bundle is built from the ring closure (scripts/wasm/ + build-playground).
     test-playground-wasm-traps)    echo "scripts/gen_guide/playground/* scripts/test_playground_wasm_traps.mjs scripts/wasm/* $RING_LIB $RING_SUP $RING_EMBED" ;;

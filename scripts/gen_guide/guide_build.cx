@@ -399,6 +399,10 @@
                         '</span> ')]]],
          $title, '</a></li>\n')]]
 [?def nav-item scope=public ($m $active) [$nav-link $m@slug $m@title $m@n $active]]
+[# nav-raw-link: one <li> whose href is taken as written (a path outside the
+   guide directory: the LLM layer, the developer notes, the llms.txt pair). #]
+[?def nav-raw-link scope=public ($href $title)
+  [$cat ('    <li><a href="', $href, '">', $title, '</a></li>\n')]]
 
 [# nav-section: wrap a group's <li> html in a titled <section>, or '' if empty. #]
 [?def nav-section scope=public ($title $items)
@@ -454,7 +458,7 @@
         [where [= [$string [?else $m@group '']] 'platform']]
         [yield [$string $m@name]]] ' '],
       ' ')]]]
-[# pack-ring answers a QUESTION ABOUT DATA, so it takes the data: the ring-2
+[# pack-ring answers a QUESTION ABOUT DATA, so it takes the data: the platform-group
    name set its caller read once. That is not a style choice here. #1427-f
    turned `ring2-packs` from a hand-kept string into a registry READ, which
    made it impure and made this def impure with it — and this def is called
@@ -503,14 +507,66 @@
   [$cat ([$nav-link 'directives' 'Directives' '' $active],
          [$nav-link 'syntax' 'Core syntax' '' $active])]]
 
-[# nav-html: the sidebar <aside> — one group per top-level area.
+[# nav-sub: one sub-heading of a group as a <details>, open only when it
+   holds the active page (its items then carry class="active"), so a reader
+   sees the sections of the ring they are in and one line for each other.
+   Empty items render nothing. $level is 'nav-sub' or, for a sub-list inside
+   a sub-list (Reference's module lists), 'nav-subsub' — nav_shape_check.cx
+   parses the two by class. #]
+[?def nav-sub scope=public ($level $title $items)
+  [?if [= $items ''] [then '']
+    [else [$cat ('  <details class="', $level, '"',
+                 [?if [$present [$strings:find $items 'class="active"']] [then ' open'] [else '']],
+                 '><summary>', $title, '</summary><ul>\n', $items, '  </ul></details>\n')]]]]
 
-   #826 §3 — SIX groups: the four rings, plus the two things that are not
-   ring-shaped and should stop pretending to be. `Standard library` is no
-   longer top-level; each ring indexes the packs it owns, so a reader on the
-   Ring 0 page sees what Ring 0 gives them and, in the same breath, that
-   `http` is not among them. Ring order is inward-out, which is also the
-   dependency order the import contract allows. #]
+[# nav-groups: the FIVE groups of the navigation — the reader journeys
+   (RULED: DOCS-51 §3, PLAY-2): Start here, Guide, Reference, Repositories,
+   LLM. The sidebar and the guide home's table of contents render the same
+   five, so a reader meets one shape. Inside Guide the two rings, the platform
+   group, the groups above them, the application host and the tours are
+   sub-headings (nav-sub), each open only on its own pages; inside Reference
+   the module pages sit under one Modules sub-list, by ring, beside the
+   codecs and the x/ tier — a module page is listed nowhere else; the
+   repositories are one sub-list of every served page; LLM is the door, the
+   primer, llms.txt and the developer notes. `make nav-shape-check` holds
+   the shape: five groups, at most seven visible items in a group and in a
+   sub-heading, the module pages under Reference only, every served page
+   within three links of the landing. #]
+[?def nav-groups scope=public impure ($metas $libfiles $active)
+  [$cat (
+    [$nav-section 'Start here'
+      [$cat ([$nav-link 'index' 'Home' '' $active],
+             [$group-nav-items $metas 'Start here' $active])]],
+    [$nav-section 'Guide'
+      [$cat ([$nav-sub 'nav-sub' 'Ring 0 — Data' [$group-nav-items $metas 'Ring 0 — Data' $active]],
+             [$nav-sub 'nav-sub' 'Ring 1 — Code' [$group-nav-items $metas 'Ring 1 — Code' $active]],
+             [$nav-sub 'nav-sub' 'The platform group' [$group-nav-items $metas 'The platform group' $active]],
+             [$nav-sub 'nav-sub' 'The bindings and ecosystem groups' [$group-nav-items $metas 'The bindings and ecosystem groups' $active]],
+             [$nav-sub 'nav-sub' 'XAP — the application host' [$xap-nav-items $active]],
+             [$nav-sub 'nav-sub' 'Tours — 50 ways' [$group-nav-items $metas 'Tours' $active]])]],
+    [$nav-section 'Reference'
+      [$cat ([$ref-nav-items $active],
+             [$group-nav-items $metas 'Reference' $active],
+             [$nav-sub 'nav-sub' 'Modules'
+               [$cat ([$nav-sub 'nav-subsub' 'Ring 1 — Code' [$lib-ring-items $libfiles 1 $active]],
+                      [$nav-sub 'nav-subsub' 'The platform group' [$lib-ring-items $libfiles 2 $active]],
+                      [$nav-sub 'nav-subsub' 'Codecs — core, synthesized' [$codec-tier-items $libfiles $active]],
+                      [$nav-sub 'nav-subsub' 'x/ tier — experimental' [$x-tier-items $libfiles $active]])]])]],
+    [$nav-section 'Repositories'
+      [$nav-sub 'nav-sub' [$cat ('All ', [$string [$count [$rp:repo-sources]]], ' repositories')] [$repo-nav-items $active]]],
+    [$nav-section 'LLM'
+      [; these resolve on the assembled site (docs/llm/ under llm/, docs/dev/
+         under dev/, the llms.txt pair at the root — the manifest's map); the
+         guide directory alone does not serve them ]
+      [$cat ([$nav-raw-link 'llm/index.html' 'For LLMs — the door'],
+             [$nav-raw-link 'llm/primer.md' 'The primer'],
+             [$nav-raw-link 'llms.txt' 'llms.txt'],
+             [$nav-raw-link 'dev/README.md' 'Developer notes'])]])]]
+
+[# nav-html: the sidebar <aside> — the five groups of nav-groups under the
+   brand and the search box. #826's six ring-shaped groups, each appending
+   every module page, retired here (RULED: DOCS-51 §3): the navigation is the
+   reader journeys, and a module page is found under Reference. #]
 [?def nav-html scope=public impure ($metas $libfiles $active)
   [$cat (
     '<aside class="sidebar">\n',
@@ -527,28 +583,7 @@
     '           autocomplete="off" spellcheck="false" data-prefix="" />\n',
     '    <ul id="side-search-results" class="side-search-results" hidden></ul>\n',
     '  </div>\n',
-    [$nav-section 'Start here' [$group-nav-items $metas 'Start here' $active]],
-    [$nav-section 'Repositories' [$repo-nav-items $active]],
-    [$nav-section 'Ring 0 — Data'
-      [$cat ([$group-nav-items $metas 'Ring 0 — Data' $active],
-             [$lib-ring-items $libfiles 0 $active])]],
-    [$nav-section 'Ring 1 — Code'
-      [$cat ([$group-nav-items $metas 'Ring 1 — Code' $active],
-             [$lib-ring-items $libfiles 1 $active])]],
-    [$nav-section 'The platform group'
-      [$cat ([$group-nav-items $metas 'The platform group' $active],
-             [$lib-ring-items $libfiles 2 $active],
-             [$xap-nav-items $active])]],
-    [$nav-section 'The bindings and ecosystem groups'
-      [$cat ([$group-nav-items $metas 'The bindings and ecosystem groups' $active],
-             [$lib-ring-items $libfiles 3 $active])]],
-    [$nav-section 'Codecs — core, synthesized'
-      [$codec-tier-items $libfiles $active]],
-    [$nav-section 'x/ tier — experimental'
-      [$x-tier-items $libfiles $active]],
-    [$nav-section 'Reference'
-      [$cat ([$group-nav-items $metas 'Reference' $active],
-             [$ref-nav-items $active])]],
+    [$nav-groups $metas $libfiles $active],
     '</aside>\n')]]
 
 [# ── the repository pages (RULED: DOCS-41, DOCS-49 waves 2–4) ─────────────
@@ -771,28 +806,8 @@
     "specification's directive registry and <code>registry/repos.cxd</code> when this page was built.</p>\n",
     '</section>\n',
     '<section class="toc-groups"><h2>Table of contents</h2>\n',
-    [$nav-section 'Start here' [$group-nav-items $metas 'Start here' '']],
-    [$nav-section 'Repositories' [$repo-nav-items '']],
-    [$nav-section 'Ring 0 — Data'
-      [$cat ([$group-nav-items $metas 'Ring 0 — Data' ''],
-             [$lib-ring-items $libfiles 0 ''])]],
-    [$nav-section 'Ring 1 — Code'
-      [$cat ([$group-nav-items $metas 'Ring 1 — Code' ''],
-             [$lib-ring-items $libfiles 1 ''])]],
-    [$nav-section 'The platform group'
-      [$cat ([$group-nav-items $metas 'The platform group' ''],
-             [$lib-ring-items $libfiles 2 ''],
-             [$xap-nav-items ''])]],
-    [$nav-section 'The bindings and ecosystem groups'
-      [$cat ([$group-nav-items $metas 'The bindings and ecosystem groups' ''],
-             [$lib-ring-items $libfiles 3 ''])]],
-    [$nav-section 'Codecs — core, synthesized'
-      [$codec-tier-items $libfiles '']],
-    [$nav-section 'x/ tier — experimental'
-      [$x-tier-items $libfiles '']],
-    [$nav-section 'Reference'
-      [$cat ([$group-nav-items $metas 'Reference' ''],
-             [$ref-nav-items ''])]],
+    [; the same five groups as the sidebar (nav-groups), every sub-heading closed here too: one shape, one vocabulary ]
+    [$nav-groups $metas $libfiles ''],
     '</section>\n',
     '<p class="note">\n',
     '  Source: <code>docs-src/canonical/sections/*.cxd</code> +\n',

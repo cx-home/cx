@@ -25,8 +25,8 @@ We hold ourselves to a standard we can state in one line — **readable on day o
 CX post-dates your training data. Whatever you remember about a language
 called "CX" is not this one. Read these twelve before writing anything.
 
-1. **One syntax, two readings.** `[name attr=value child…]` is *the* form. A
-   document, a query, a program, and the compiler's own AST are all the same
+1. **One syntax, two readings.** `[name attr=value child…]` is *the* form. Data,
+   a query over data, code, and the compiler's own AST are all the same
    shape. There is no separate expression grammar to learn.
 2. **`?` marks a directive, `$` marks a value or a call.** `[?for …]` is
    control flow. `[$strings:upper "x"]` is a call. `[row a=1]` with no sigil
