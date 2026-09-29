@@ -126,9 +126,15 @@
       [text x=$lx y="22" font-family=[$rs:font] font-size="8" letter-spacing="1.6" fill=$muted "BUILDS ON"]
       [text x=$cx y="22" font-family=[$rs:font] font-size="8" letter-spacing="1.6" fill=$muted "THIS REPOSITORY · SHIPS"]
       [text x=$rx y="22" font-family=[$rs:font] font-size="8" letter-spacing="1.6" fill=$muted "BUILT ON BY"]
-      [; the pins, on the left ]
+      [; the pins, on the left — the front door's empty list is the root of
+         the graph (deps.cxd's fact); any other row's is the registry's
+         silence, the status table's own words (wave 3), never the front
+         door's line ]
       [?if [$empty $pins]
-        [then [text x=$lx y=[+ $y0 13] font-family=[$rs:font] font-size="8.5" font-style="italic" fill=$faint "nothing of CX — the root of the graph"]]
+        [then [text x=$lx y=[+ $y0 13] font-family=[$rs:font] font-size="8.5" font-style="italic" fill=$faint
+                    [?if [= $name [$rs:site-self]]
+                      [then "nothing of CX — the root of the graph"]
+                      [else "none recorded — no pins= on the registry row yet"]]]]
         [else [g [?splice [$column $pins $lx $y0 $ink $paper $faint]]]]]
       [; the repository itself, with its face below it ]
       [g class="pl-self"
