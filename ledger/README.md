@@ -359,6 +359,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ack-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | ACK-1 — `by=` on the `:peer` step's ack is a space-separated list of DIDs (L52.1 = (a)) |
 | `ackr-1` | [rulings_2026_09_27_owner_decisions_l59.md](rulings_2026_09_27_owner_decisions_l59.md) | Owner decision 2026-09-27 (evening) — Letter 59: the host's ack stays a receipt (ACKR-1) |
 | `ackr-1` | [rulings_2026_09_27_owner_decisions_l59.md](rulings_2026_09_27_owner_decisions_l59.md) | ACKR-1 — an act's answer is read from the record, not carried by the ack (L59 = (a)) |
+| `actsm-1` | [rulings_2026_09_29_integrator_decisions_l106_l108.md](rulings_2026_09_29_integrator_decisions_l106_l108.md) | ACTSM-1 — one public idioms module, one private acts module, the gate engine public (L108 = (a), delegated) |
 | `ad-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-1 — `[selection …]` binds every consumption point, through the one PEP (#1181) |
 | `ad-10` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-10 — instantiation is CONTRACT-LEVEL by design, and an unservable `[add]` refuses (#1162) |
 | `ad-2` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-2 — contract evolution gets the SEA-1 treatment (#1182) |
@@ -651,6 +652,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `lim-2` | [rulings_2026_08_20_limits_second_half.md](rulings_2026_08_20_limits_second_half.md) | Ruling LIM-2 (2026-08-20) — no blanket caps; amplification is a gated property (#876 second half, owner "2a") |
 | `lim-2` | [rulings_2026_08_20_limits_second_half.md](rulings_2026_08_20_limits_second_half.md) | 876 closes: LIM-1 (spec home) + LIM-2 (this ruling) cover both halves. |
 | `liter-1` | [rulings_2026_09_28_owner_decisions_l80_l84.md](rulings_2026_09_28_owner_decisions_l80_l84.md) | LITER-1 — a `[?for]` contributes one item per `[yield]` in a `(…)` or array literal, as 1509-a says (L83 = (b)) |
+| `lswap-1` | [rulings_2026_09_29_integrator_decisions_l106_l108.md](rulings_2026_09_29_integrator_decisions_l106_l108.md) | LSWAP-1 — the loop swap happens in one gap, the old loop unloaded first (L106 = (a), delegated) |
 | `lt-1` | [rulings_2026_08_26_diagram_let_node_ids_1036.md](rulings_2026_08_26_diagram_let_node_ids_1036.md) | LT-1 — the defect |
 | `lt-2` | [rulings_2026_08_26_diagram_let_node_ids_1036.md](rulings_2026_08_26_diagram_let_node_ids_1036.md) | LT-2 — the fix is a threaded counter, because the alternatives do not cover siblings |
 | `lt-3` | [rulings_2026_08_26_diagram_let_node_ids_1036.md](rulings_2026_08_26_diagram_let_node_ids_1036.md) | LT-3 — the spelling is `lt1`, not a bare `lt` for the first |
@@ -749,6 +751,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pye-5` | [rulings_2026_08_22_python_eradication.md](rulings_2026_08_22_python_eradication.md) | PYE-5 (item 5a) — the exemption is all of `lang/python/**` |
 | `pye-6` | [rulings_2026_08_22_python_eradication.md](rulings_2026_08_22_python_eradication.md) | PYE-6 (item 6a) — an all-SKIP gate run is a failure |
 | `rflow-1` | [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) | RFLOW-1 — the whole CI/CD as five cx flow documents, the design's nine choices (L96…L104 = (a)) |
+| `rlock-1` | [rulings_2026_09_29_integrator_decisions_l106_l108.md](rulings_2026_09_29_integrator_decisions_l106_l108.md) | RLOCK-1 — the killed-run verdict rests on the runner lock until `io:lock` is real (L107 = (a), delegated) |
 | `rp-0` | [rulings_2026_09_02_cxdm_representation_1119.md](rulings_2026_09_02_cxdm_representation_1119.md) | RP-0 — the streaming direction is ALREADY RULED; it stands (TF-5 = a) |
 | `rp-1` | [rulings_2026_08_28_rowset_perf_1080_1083.md](rulings_2026_08_28_rowset_perf_1080_1083.md) | RP-1 — re compile reuse (#1080) (RULED: RP-1 = a) |
 | `rp-1` | [rulings_2026_08_28_rowset_perf_1080_1083.md](rulings_2026_08_28_rowset_perf_1080_1083.md) | RP-1 — re compile reuse (#1080) (RULED: RP-1 = a) |
@@ -1361,7 +1364,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `imap-3` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `imap-4` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `imap-5` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
-| `int-10` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_16_run_selection_run1.md](rulings_2026_09_16_run_selection_run1.md), [rulings_2026_09_28_owner_decisions_l105.md](rulings_2026_09_28_owner_decisions_l105.md), [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md), [rulings_2026_09_28_owner_direction_cicd1.md](rulings_2026_09_28_owner_direction_cicd1.md) |
+| `int-10` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_16_run_selection_run1.md](rulings_2026_09_16_run_selection_run1.md), [rulings_2026_09_28_owner_decisions_l105.md](rulings_2026_09_28_owner_decisions_l105.md), [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md), [rulings_2026_09_28_owner_direction_cicd1.md](rulings_2026_09_28_owner_direction_cicd1.md), [rulings_2026_09_29_integrator_decisions_l106_l108.md](rulings_2026_09_29_integrator_decisions_l106_l108.md) |
 | `int-11` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-12` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-2` | [rulings_2026_09_12_audit_sink_1422.md](rulings_2026_09_12_audit_sink_1422.md), [rulings_2026_09_12_fmt_1384_1391.md](rulings_2026_09_12_fmt_1384_1391.md), [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md), [rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md](rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md), [rulings_2026_09_15_default_in_campaign_int17.md](rulings_2026_09_15_default_in_campaign_int17.md), [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md), [rulings_2026_09_15_owner_decisions_1145z.md](rulings_2026_09_15_owner_decisions_1145z.md) |
@@ -1495,4 +1498,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*352 ledger pages; 780 ids declared, 390 cited only.*
+*353 ledger pages; 783 ids declared, 390 cited only.*
