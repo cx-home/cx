@@ -2,9 +2,12 @@
    feature is, authoring, publishing to a registry, consuming by pin,
    entitlements, and the honest marketplace status. Spec home: the
    feature distribution & market spec
-   (spec/03-approved/xap/xap_feature_distribution_market.md); developer
-   docs: docs/dev/{features-*,registry-*,marketplace}.md
-   (runtime-verified). Every command and output on this page was run
+   (spec/03-approved/xap/xap_feature_distribution_market.md). The
+   task-oriented developer set that used to sit under docs/dev/
+   (features-*, registry-*, marketplace, client-and-views, the ORIEL and
+   studio guides) folded into this section under DOCS-46, re-voiced, each
+   claim beside a corpus case this guide's cx replays ([fixture id=]) or
+   the spec page that holds it. Every command and output on this page was run
    against the branch-head binary — including the pkg pipeline against
    the live external reference registry (issue #425 coverage gap: XAP feature
    distribution). #]
@@ -21,13 +24,13 @@
        registry is a store, a version is an alias, and trust is the
        Tier-1 content hash plus a publisher-DID signature. The
        normative model is the feature distribution & market spec
-       (`spec/03-approved/xap/xap_feature_distribution_market.md`); the
-       task-oriented developer set is `docs/dev/` (`features-authoring`,
-       `features-consuming`, `registry-setup`, `registry-consuming`,
-       `marketplace`, `client-and-views` — and `oriel-guide`, the
-       worked end-to-end reference surface built the declarative way).
-       This section walks the staircase and is explicit about which
-       steps are shipped and which are specified-but-not-yet-built."""]
+       (`spec/03-approved/xap/xap_feature_distribution_market.md`).
+       This section walks the staircase — the unit, authoring,
+       publishing, consuming, entitlements, the market — then the
+       clients that materialize a surface and the reference surfaces
+       built the declarative way, and it is explicit about which steps
+       are shipped and which are specified-but-not-yet-built. Running a
+       XAP is [[ops-xap-host]]."""]
 
   [child id=dist-what n=19.1 title='The unit — what a feature is'
     [body
@@ -159,9 +162,59 @@
          `scope=public` is what a module exports, and the package
          manifest's `exports` block must list exactly that contract
          surface — projected from the code at publish and re-verified
-         at install, both ways. Authoring depth (frames and keys for
-         cross-feature joins, the swappable source-gateway stack,
-         composite features) is `docs/dev/features-authoring.md`."""]]
+         at install, both ways."""]
+    [body
+      """**The filename is part of the contract, not tidiness.** The
+         module MUST be at `<feature-name>.cx` — the name the
+         `[feature name=…]` carries, exactly. Three readers resolve the
+         entry point by that path and nothing else: `pkg:` module
+         references, the install gate, and the host's own acquisition;
+         a package may carry other `.cx` entries (a vendored helper), so
+         "whichever `.cx` is in the tree" is not a rule anything could
+         apply. `pkg-seal`, `pkg-install` and host boot each refuse a
+         mismatch with `CXER4884` naming the missing entry (#1195) —
+         before that enforcement a mismatched package sealed, published,
+         verified, composed and booted, and then served an empty
+         readout for the life of the deployment. The exported surface
+         is checked both ways: code with no `exports` block is refused,
+         and a declared export the code does not define is refused
+         (the distribution spec's feature runtime contract section)."""]
+    [table
+      [tr [th 'export'] [th 'required'] [th 'called']]
+      [tr [td 'readout ($host $t)'] [td 'always'] [td 'serves GET /surface/<feature>; feeds the push channel']]
+      [tr [td 'apply ($verb $intent $host)'] [td 'iff the grammar has a non-observe verb'] [td 'after the policy check admits the emit; $verb arrives qualified; $intent is the committed act itself']]
+      [tr [td 'simulate ($host $t $params)'] [td 'optional'] [td 'the host\'s simulation tick']]]
+    [body
+      """Three authoring rules that hold a feature set together.
+         **Requirement and verb trace each other** — every verb traces
+         to a requirement and every requirement to a verb, enforced as
+         a validation concern, and a requirement's acceptance criteria
+         are its conformance fixtures. **Frames and keys** relate nouns
+         *across* features: a frame is a shared continuous coordinate
+         (compare by nearness — geo, time, value), a key a shared
+         identifier (join by sameness); register onto them, never
+         invent private ones for a shared concept. **The source stack
+         is a seam**: gateways (`kind` deliberately not enumerated) plus
+         prioritised sensors with failover feed the nouns, and the noun
+         shapes are the stable contract — nothing above the stack
+         changes when a vendor does. Your verbs already project a form:
+         `[$ux:form $feature 'register' {}]` derives it from the verb's
+         declared parameters, falling back to the fields of the noun it
+         writes, and the same entry takes a composed grammar
+         ([[ux-capability]]):"""]
+    [fixture id=ux-080-feature-form-projects-the-xap-grammar]
+    [body
+      """A **composite feature** is just a feature that `uses` others
+         and declares derived nouns (a `[from …]` join over shared
+         frames and keys). Composition is closed under feature: the
+         composite packages, publishes and installs like a base
+         feature, with its `uses` set as grammar-plane dependencies,
+         and its cross-feature reads are exactly what the `needs`
+         block's `reads` consent is for ([[dist-entitlements]]). The
+         full-size reference is the XAP repository's `reference/shop`:
+         its base features, and its composite delayed-shipment feature
+         joining two of them over geo and time into derived alert
+         nouns ([[dist-reference-surfaces]])."""]]
 
   [child id=dist-registry n=19.3 title='Publishing — a git repo is a registry'
     [body
@@ -229,8 +282,46 @@
          last subsection wraps stage 2. Hashes and signatures never
          change across stages, and a re-hosted package keeps its
          original publisher's signature — trust is per-package, never
-         per-registry. Manifest projection, key management, and the
-         make-target workflow are `docs/dev/registry-setup.md`."""]]
+         per-registry. The sealed tree is canonical — entries sorted by
+         path, byte-stable — which is what makes its hash the package's
+         identity:"""]
+    [fixture id=xap-dist-001-tree-canonical-order]
+    [body
+      """A stage-1 registry is a directory in a git repository:
+         `registry/keys/<publisher>.cxd` (the publisher identity — a
+         `did:key` plus its signing seed, committed by design at stage
+         1, because repository permission IS publish permission),
+         `registry/store/` (the `file://` CX store holding the sealed
+         packages, the manifests and the alias index), and the three
+         programs that drive it — `publish.cx`, `pin.cx`, `rehost.cx`.
+         Consumers reach it as `file://` (a clone or a vendored copy)
+         or `https://` (raw); git adds exactly what an internal registry
+         wants — publish by pull request (moving an alias is a reviewed
+         commit), history as audit, repository permissions as publish
+         permissions."""]
+    [body
+      """**Manifests: hand-written versus projected.** The draft
+         `package.cxd` carries only what cannot be derived — `kind`,
+         `publisher`, `requires` (the code plane), `compatibility`,
+         `license-terms`, and the `exports` contract surface. The
+         grammar summary, the `needs` consent set and the `uses`
+         dependencies are projected from the feature spec at publish
+         and re-verified at install, never restated by hand; the
+         consuming project's `registry/publish.cx` is that projection,
+         driven by its make targets (`registry-publish`,
+         `registry-publish-all`, `registry-publish-lib`,
+         `registry-rehost-<name>`). **Keys**: a stage-1 key is an
+         ed25519 seed, the DID a `did:key` — offline-verifiable, no
+         resolver infrastructure; rotation and compromise recovery are
+         DID-document rotation per the did module spec, with
+         attestations re-anchoring trust for pre-rotation artifacts.
+         The growth path, each stage a re-host of the same bytes:"""]
+    [table
+      [tr [th 'stage'] [th 'what'] [th 'status']]
+      [tr [td '0 — in-repo'] [td 'directories and path references'] [td 'the floor']]
+      [tr [td '1 — an internal git registry'] [td 'sealed, signed packages, publish by pull request'] [td 'implemented and live (the original external reference instance; the in-family successor is the XAP repository\'s reference/shop)']]
+      [tr [td '2 — a served registry'] [td 'the same store served over the store wire by cx store-serve; consumers switch the URL scheme'] [td 'implemented (the wire re-host is engine-tested; pkg-catalog works locally and served)']]
+      [tr [td '3 — a market'] [td 'the market XAP wraps the registry'] [td 'the model specified, the entitlement machinery shipped — [[dist-market]]']]]]
 
   [child id=dist-consuming n=19.4 title='Consuming — verify, install, pin'
     [body
@@ -315,7 +406,31 @@ true"""]
          expected vs actual; SRI integrity for `https://` entries is
          recorded resolved-only today (the binary says so in a
          warning), so treat `pkg:` + the pinned deployment doc as the
-         XAP-era system and `cx.lock` as the module-fetch pin."""]]
+         XAP-era system and `cx.lock` as the module-fetch pin."""]
+    [body
+      """Three consequences we hold ourselves to. **Consent is grants**:
+         with a runtime and a grantee named in the install options,
+         install issues exactly the manifest's `needs` set as
+         delegations — enabling IS granting, there is no
+         installed-but-ungoverned state, a runtime request beyond
+         `needs` is denied at the policy enforcement point, and a
+         library, which has no `needs`, receives no grants. **An update
+         is a new hash and an explicit re-pin**; one that would rebind
+         existing utterances surfaces as an ambiguity, never a silent
+         change, and the composer can diff two grammars — they are data
+         — before you move; **a rollback is re-pinning the previous
+         hash**, and the composed-grammar hash returns to its previous
+         value (a downgraded feature must tolerate event kinds a newer
+         version introduced — the open schema mode is the floor).
+         **Yank and revocation are attestations published at the
+         market**, never remote reach-in (invariant N-DIST-1): a running
+         XAP is untouched and its composer surfaces the warning. The
+         consuming project's `registry/pin.cx` installs every feature
+         its deployment document names and writes the fully pinned
+         document back (`make registry-pin` — fails loud, writes
+         nothing on error), and a `tools/vendor.cx` materializes the
+         required library packages from the registry, verified, for an
+         offline field deployment."""]]
 
   [child id=dist-entitlements n=19.5 title='Entitlements and identity'
     [body
@@ -409,6 +524,116 @@ true"""]
          and commerce phases. Revocation, when it lands, is
          **attestations published at the market, never remote
          reach-in**: a running XAP is untouched; its composer surfaces
-         the warning. The full today-versus-specified detail is
-         `docs/dev/marketplace.md`."""]]
+         the warning. A catalog listing IS the feature's grammar plus
+         its requirements, so discovery is a structured query, not a
+         text search — design the listing as you design the
+         feature."""]]
+
+  [child id=dist-clients n=19.7 title='Clients and surfaces — the fourth project'
+    [body
+      """A XAP **never embeds its renderer** (invariant N-CLIENT-2, the
+         clients section of the XAP spec). It exposes its surface as
+         data, and every client is a separate application with its own
+         spec that attaches over the wire and materializes that data
+         into one medium — so the same surface drives a command line, a
+         terminal, an agent and a web client with no change to the
+         XAP. The **surface document** (`surfaces/<s>.surface.cxd`)
+         binds already-declared feature verbs and views to media and
+         layout, and never restates an intent: a panel names its
+         feature, its region, and how it materializes on each medium
+         present (`screen`, `audio`, `haptic` — the same intent, a
+         different trigger per medium); a surface *distributes*, it
+         does not render. The **client document** (`client.cxd`,
+         validated by `client.cxs`) is the fourth document kind: which
+         XAP it attaches to, what it consumes, how it projects, its
+         windows, widgets and session model — the XAP repository's
+         `reference/shop-web-client/client.cxd` is the template."""]
+    [body
+      """What a client consumes is the XAP's data endpoints: observe
+         verbs serve as `GET /surface/<feature>` returning readouts;
+         act and arrange verbs arrive as `POST /intent` — an XSP request
+         frame wrapping the act, `[do 'feature/verb' [field value]…]`,
+         bare or inside `[event actor= focus= …]` when the client claims
+         an actor or narrows the resolution (#1260); `GET /grammar`
+         serves the composed control grammar — the client's single
+         control vocabulary, never a hard-coded verb list; `GET /stream`
+         is the push channel, named per-feature events carrying full
+         readout snapshots, so a reconnect simply re-converges. The
+         routes and their fragment endpoints, replayed:"""]
+    [fixture id=ux-100-surface-routes-and-fragment-endpoints]
+    [body
+      """**The web client is a hypermedia client.** The default
+         architecture is server-rendered HTML from surface data, the
+         browser a generic hypermedia client on a pinned subset of
+         HTMX, JavaScript only by explicit, named exception; the client
+         app — not the browser — speaks CX and XSP upstream. Run the
+         pair with `make dev` (the XAP on one port, the client on the
+         next, a browser), or the client alone against a running XAP
+         with `cx --allow-net=127.0.0.1 --allow-read --allow-env
+         serve.cx` — and `--allow-net=127.0.0.1` matters: a bare
+         `--allow-net` binds, but the SSRF deny-set in the http module
+         spec blocks the loopback dial to the XAP. The pinned subset:"""]
+    [fixture id=web-003-the-pinned-htmx-subset]
+    [body
+      """**Intents ride XSP upstream.** The XAP-to-client link carries
+         XSP frames (`spec/03-approved/xap/xsp.md`): a self-delimiting
+         binary frame naming the principal DID, with a text or a binary
+         payload; the v1 web binding is push down, `POST` up. An act
+         rides as the frame's **text** payload — the CX source the host
+         parses, byte for byte what it journals; a binary payload is
+         object-shaped and cannot keep a child field apart from an
+         attribute, so it is not the carrier for an act (#1269 tracks
+         the binary carrier). The text round trip, replayed:"""]
+    [fixture id=xsp-003-roundtrip-text-payload]
+    [body
+      """Three rules of the road. Derive the verb surface from
+         `GET /grammar` and refuse unknown verbs client-side before they
+         leave the browser. The client **mirrors** authority, never
+         owns it — a dial toggle posts the intent and re-syncs from the
+         XAP's truth, and a non-privileged attempt reverts. Agent parity
+         is structural: an agent reads the identical surface data the
+         human's client materializes. WebSocket and WebTransport
+         bindings, multiplexing beyond the stream id, credit
+         backpressure and reconnect-resume are scoped in the XSP spec
+         and not yet implemented."""]]
+
+  [child id=dist-reference-surfaces n=19.8 title='The reference surfaces — ORIEL and the studio'
+    [body
+      """Two worked surfaces show the declarative way end to end, and
+         both live with the repositories that own them rather than on
+         this page. **ORIEL** is the reference storefront — built on three shipped
+         modules, `ux`, `ux-web` and `ux-tui` — a catalogue of products with
+         departments and facets, a session-scoped basket, a four-step
+         checkout, subscriptions, returns and reviews, in a browser, in
+         a terminal and in a serial voice-style renderer, from
+         declarations, with zero view code. Its four documents are the
+         domain (a feature document), the composition (a surface
+         document), the theme (every appearance decision, and the only
+         place one may live) and the service (folds, the command layer,
+         page composition — no view code); what polices the arrangement
+         is not discipline but six instruments that walk the running
+         store and refuse loudly when a declaration and a rendering
+         disagree. **The studio** is the design tool for a live XAP: a
+         designer opens a page of a running app, selects a block, drags
+         it, resizes it, rewrites its words, restyles the brand — and
+         every act is a journaled command against a base document, so
+         shipping an improvement to every deployment that customized
+         the app is a replay, not a merge. The studio edits
+         arrangements, and an arrangement is projected by a face; the
+         same document renders on all three faces, which is why a
+         studio edit cannot mean "add some CSS" — a value the terminal
+         cannot honour is not admissible."""]
+    [body
+      """Both are the ux repository's — its own step runs ORIEL's
+         drive, keys, voice, nokernel and diff instruments on every
+         commit — and the studio's clauses are the ux capability spec's
+         (`spec/03-approved/xap/ux.md` §18–§19); the in-family reference
+         deployment beside them is the XAP repository's
+         `reference/shop` with `reference/shop-web-client`. The pages
+         that own them on this site: the ux repository's page
+         (`repo-cx-platform-ux.html`), the XAP repository's page
+         (`repo-cx-platform-xap.html`), and the ux capability's own
+         section, [[ux-capability]]. The content normal form every
+         face consumes, replayed:"""]
+    [fixture id=ux-030-content-normal-form]]
 ]

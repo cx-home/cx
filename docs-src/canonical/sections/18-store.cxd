@@ -2,10 +2,14 @@
    workflow, git-porcelain and replication, the service tier, the XSP
    store profile + gRPC-edge transports, security/encryption, the
    management console. Spec home:
-   the store spec (spec/03-approved/platform/store.md); operator docs:
-   docs/dev/store-*.md (runtime-verified). Every command and output on
-   this page was run against the branch-head binary before it landed
-   here (issue #425 coverage gap: store platform user guide). #]
+   the store spec (spec/03-approved/platform/store.md). The operator
+   depth that used to sit in a separate developer set (docs/dev/store-*.md,
+   folded here under DOCS-46) is on this page and in [[operations]]: every
+   claim stands beside the store corpus case this guide's cx replayed when
+   the page was built ([fixture id=]) or names the spec page that holds it,
+   and every command and output was run against the branch-head binary
+   before it landed here (issue #425 coverage gap: store platform user
+   guide). #]
 
 [section id=store group='The platform group' n=18 title='The store platform'
 
@@ -17,11 +21,12 @@
        substrate with a URL at open time and nothing else changes. It
        is specified in the store spec
        (`spec/03-approved/platform/store.md`); this section teaches the
-       workflow. The per-function API reference is the `store` module
-       page in the Standard library section of this guide, and the
-       operator-depth documents live under `docs/dev/` in the
-       repository (`store-embedded.md`, `store-service.md`,
-       `store-management.md`, `store-security.md`)."""]
+       workflow: the embedded tier, the porcelain and replication, the
+       service tier and its wire, security, and the console. The
+       per-function API reference is the `store` module page in the
+       Standard library section of this guide; running the daemon —
+       bootstrap, authority, observability, lifecycle — is
+       [[operations]]."""]
 
   [child id=store-model n=18.1 title='Content addressing and identity'
     [body
@@ -81,9 +86,17 @@
          graph of shared subtree objects — identical subtrees across
          documents store once, a one-field edit re-stores only the path
          to the root, and `diff` skips identical subtrees in O(1). The
-         alternative `document+` model (one object per doc, required
-         for the columnar encodings) and the full URI axes are in the
-         store spec and `docs/dev/store-embedded.md`."""]]
+         alternative `document+` model (one object per doc, the
+         required prefix for the columnar encodings) is the other
+         axis of the same URL —
+         `[document+]<substrate>://<location>[?encoding=…&read-only=…&schema=…]`
+         — and we ask you to state only what departs from a default,
+         only at create: a `file://` store is self-describing on
+         reopen. An axis we have specified but not applied (a
+         non-`none` `?compression=`, the `?cache=` layer) is refused
+         fail-closed, never accepted and ignored, and a scheme we do
+         not build dispatches to a refusal that names it:"""]
+    [fixture id=store-025b-open-unknown-scheme-dispatch]]
 
   [child id=store-embedded n=18.2 title='The embedded workflow'
     [body
@@ -139,7 +152,35 @@
          flag, so a program can degrade gracefully (see
          [[caps-errors]]). Streaming variants (`put-doc-stream`,
          `iter-docs`) keep memory bounded over any corpus size; the
-         full surface is on the `store` module page."""]]
+         full surface is on the `store` module page. The read-only
+         refusal and the ungranted open, replayed:"""]
+    [fixture id=store-ro-001-readonly-put]
+    [fixture id=store-001-open-cap-denied]
+    [body
+      """**One writer per local root.** A `file://`, `sqlite://` or
+         local columnar root admits ONE writable handle plus any number
+         of read-only ones — across processes as much as within one. A
+         second writable open in the same process returns a handle over
+         the same live store; a second writable open from another
+         process is refused `CXER1143`, naming the holding pid. Two
+         writers on one root corrupt it, and the damage only shows at a
+         later open — so when you need many writers, run the service
+         tier (one writer, N clients) or open read-only. A crashed
+         writer releases the root at once: the lock dies with the
+         process, and nothing is cleaned up by hand (the store spec's
+         locking section). Streaming and direct storage agree byte for
+         byte, and an opaque blob comes back exactly as it went in:"""]
+    [fixture id=store-017-put-doc-stream-equals-put-doc]
+    [fixture id=store-blob-001-byte-exact-round-trip]
+    [body """The errors you meet first, each a value naming its cause
+            (the store spec's error-codes section carries the table):"""]
+    [table
+      [tr [th 'code'] [th 'meaning']]
+      [tr [td 'CXER1100 / CXER1101'] [td 'unknown or unbuilt backend / unreachable substrate']]
+      [tr [td 'CXER1110'] [td 'a write on a read-only handle']]
+      [tr [td 'CXER1116'] [td 'a substrate persist failed — never a phantom success; the next successful persist self-heals']]
+      [tr [td 'CXER1120 / CXER1121'] [td 'integrity mismatch on read (never a silent wrong document) / not found']]
+      [tr [td 'CXER1130 / CXER1140 / CXER1143'] [td 'closed handle / a handle shared across workers / a second writable open of one root from another process']]]]
 
   [child id=store-porcelain n=18.3 title='Porcelain — introspect, branch, replicate'
     [body
@@ -163,6 +204,14 @@
       [tr [td 'prune / gc'] [td 'reclaim objects no live ref reaches; gc adds durable compaction. A shared subtree survives the deletion of another doc — an object stays live while ANY ref reaches it']]
       [tr [td 'branch / branch-force'] [td 'point a mutable named ref at a doc; a non-fast-forward move is refused (CXER1114, CAS-safe) unless forced']]
       [tr [td 'diff'] [td 'structural diff by hash — identical subtrees are skipped, so cost is O(changed), not O(size)']]]
+    [body """Each verb, replayed: a delete is an epoch in the log, a
+            branch advance appears in it, `gc` reclaims only what no
+            ref reaches, a non-fast-forward branch move is refused, and
+            a one-leaf change diffs to one path:"""]
+    [fixture id=store-log-003-branch-advances-appear]
+    [fixture id=store-gc-001-reclaims-unreachable]
+    [fixture id=store-branch-003-cas-conflict]
+    [fixture id=store-diff-001-modified-leaf]
     [body
       """Replication is the same idea pointed at two stores. Because
          identity is content, transfer is incremental (only missing
@@ -185,10 +234,45 @@
          content-hash ID preserved. Backup is a `clone` to a second
          substrate; restore is a `clone` back, with every hash
          re-verifying on read; a substrate move (dev `mem://` to prod
-         `s3://`, embedded to daemon) is a `migrate` — the recovery
-         playbook is in `docs/dev/store-management.md`. `merge` and
+         `s3://`, embedded to daemon) is a `migrate`. `merge` and
          `rebase` deliberately do not exist: the model keeps roots plus
-         epoch-ordered refs, not a parent-linked commit graph."""]]
+         epoch-ordered refs, not a parent-linked commit graph. The
+         three verbs, replayed — a clone into an empty destination, a
+         push that carries only what the other side lacks, and a
+         migration's report:"""]
+    [fixture id=store-clone-001-into-empty]
+    [fixture id=store-push-001-local-to-remote]
+    [fixture id=store-mig-001-report]
+    [body """The recovery playbook we run ourselves, in four lines:"""]
+    [list
+      [item """**Backup** is a `clone` (or a `push`) to a second
+              substrate — nightly `file://` to `s3://` — incremental and
+              verifiable by construction, because identity is
+              content."""]
+      [item """**Restore** is a `clone` back into a fresh store; every
+              hash re-verifies on read."""]
+      [item """**A substrate move** (file to sqlite, dev `mem://` to prod
+              `s3://`, embedded to daemon) is a `migrate`; document
+              identity is universal, so nothing that references a hash
+              changes."""]
+      [item """**Crash safety inside one store** is the engine's
+              append-only ref-log recovery plus a per-op atomic-rename
+              flush; a failed persist raises `CXER1116` rather than
+              acknowledging a phantom write, and the next successful
+              persist self-heals."""]]
+    [body
+      """Object-identity transfer is `subtree` to `subtree` only; across
+         the model boundary the verbs degrade to the doc-level
+         `migrate`. On a service handle (`cx-store://`, next subsection)
+         `status` and `gc` are the daemon's admin-plane ops under the
+         same names, scoped to the mount the session attached to;
+         `mounts` enumerates the daemon's stores and `config-reload`
+         triggers the validate-then-swap reload. All four sit in the
+         `admin` class of the one grant table, and all four are
+         daemon-level — a local handle IS its only store, so there they
+         refuse with `CXER1709`:"""]
+    [fixture id=store-mounts-001-local-handle-refuses]
+    [fixture id=store-config-reload-001-local-handle-refuses]]
 
   [child id=store-service n=18.4 title='The service tier — cx store-serve'
     [body
@@ -251,11 +335,24 @@ ready"""]
          sections (tls, timeouts, limits, observability) with
          validate-then-swap, all-or-nothing (`CXER1712` names any
          restart-required offender and refuses the whole reload).
-         Prometheus metrics, optional OpenTelemetry tracing, structured
-         request logs, per-principal rate/concurrency fairness, and the
-         systemd/Docker deployment artifacts under `tooling/cxstore/`
-         are covered in `docs/dev/store-service.md` and
-         [[operations]]."""]]
+         Two rules the URL enforces rather than documents: the port is
+         required on `cx-store(+xsp)://` — the profile listener has no
+         registered default, so a portless URL refuses at open rather
+         than dialing something arbitrary — and the URL carries no
+         userinfo (a `user@host` authority refuses with `CXER1100`;
+         identity rides the open-opts, the seed always from the
+         environment). The retired `cx-store+http(s)://` schemes refuse
+         with `CXER1100` naming the replacements — a cutover, no
+         dual-accept window. And like every remote substrate, a
+         service open is capability-gated:"""]
+    [fixture id=store-022-open-service-cap-denied]
+    [body
+      """Bootstrapping a deployment from a clean state (mint, grant,
+         serve, present), the one authority calculus, metrics and
+         tracing, DoS fairness, the reload's hot and restart-required
+         sections, and the systemd/Docker artifacts under
+         `tooling/cxstore/` are the operator's page: [[ops-bootstrap]],
+         [[ops-authority]], [[ops-observability]], [[ops-artifacts]]."""]]
 
   [child id=store-transports n=18.5 title='Transports — the store wire and the edge'
     [body
@@ -333,7 +430,11 @@ ready"""]
          re-wraps every envelope's data key under a new tenant KEK —
          payloads and content addresses untouched, atomic per object,
          resumable, fail-closed (the same operation is callable
-         in-process as `[$store:rotate-kek]`):"""]
+         in-process as `[$store:rotate-kek]`) — and on a store that was
+         never sealed there is nothing to re-wrap, so the verb refuses
+         rather than pretending:"""]
+    [fixture id=store-rotate-kek-001-plaintext-unsupported]
+    [body """The shipped rotation, end to end:"""]
     [output
       """$ CX_STORE_KEK_tenant-a=… CX_STORE_KEK_tenant-b=… cx store-rotate-kek \
     --url file:///tmp/sealed-store --encrypt-key-id tenant-a --new-key-id tenant-b
@@ -344,10 +445,42 @@ cx store-rotate-kek: 5 object(s) now under `tenant-b` (5 re-wrapped) — verify 
          boundary is **store-per-tenant**, so each tenant owns a
          separate dedup pool — a shared pool would let one tenant probe
          another's content by hash, and the design rejects that
-         existence oracle by construction. The whole layer cake, the
-         KMS seam, and the fail-closed inventory are in
-         `docs/dev/store-security.md` and the security sections of the
-         store and service-tier specs."""]]
+         existence oracle by construction. Scoping rides the authority
+         basis rather than a principal-to-store-name list: a grant, and
+         any delegation attenuated from it, is bound to its mount, and a
+         cross-tenant delegation is a fault, never something that
+         quietly compiles to nothing. A class the row does not hold is
+         denied as a value — `[deny …]` carrying its code as data, which
+         is what lets the daemon send the same value across the wire
+         verbatim:"""]
+    [fixture id=store-grants-003-ungranted-class-denies-as-a-value]
+    [body
+      """Three least-privilege habits: open registries and read paths
+         with `[map read-only='true']` so `write` is never requested;
+         scope net grants to the daemon (`--allow-net=127.0.0.1:18762`),
+         never bare `--allow-net`; and keep `--allow-all` for trusted
+         local runs. A principal's seed lives in a `0600` file and
+         reaches the process through `xsp-seed-env` — never a URL, an
+         opts literal or the config text; `${env:VAR}` injection keeps
+         TLS key material out of the config file; the request log
+         carries no credential material. When a store backs a XAP, a
+         fourth layer sits above these: grants attach to features and
+         principals at the policy enforcement point, never to library
+         code, install-time consent is exactly the manifest's `needs`
+         set, and an entitlement check is a policy check
+         ([[dist-entitlements]]). What refuses rather than degrades,
+         in one table:"""]
+    [table
+      [tr [th 'surface'] [th 'behaviour']]
+      [tr [td 'a missing capability'] [td 'CXER0271, naming the grant']]
+      [tr [td 'a write on a read-only store'] [td 'CXER1110']]
+      [tr [td 'an integrity mismatch on read'] [td 'CXER1120 — never a silent wrong document']]
+      [tr [td 'a substrate persist failure'] [td 'CXER1116 — never a phantom success']]
+      [tr [td 'an encrypted store with the wrong or absent key'] [td 'a hard error, in both mode directions']]
+      [tr [td 'an unsupported compression request'] [td 'rejected, never accepted and ignored']]
+      [tr [td 'an unknown daemon config attribute'] [td 'startup failure CXER1711; a reload refused whole, CXER1712']]
+      [tr [td 'an anonymous or under-privileged wire op'] [td 'CXER1702 (401) / CXER1703 (403); over the store wire the PEP\'s [deny …] value verbatim']]
+      [tr [td 'a package that fails verification at any stage'] [td 'nothing staged; the stage\'s own error value']]]]
 
   [child id=store-console n=18.7 title='The management console'
     [body
@@ -362,8 +495,16 @@ cx store-rotate-kek: 5 object(s) now under `tenant-b` (5 re-wrapped) — verify 
          management API is complete. The free tier covers connect, health, metrics,
          status, browse, config reload, and maintenance (gc). Contract:
          the store management console spec
-         (`spec/03-approved/misc/store_management_console.md`);
-         operator walkthrough: `docs/dev/store-management.md`.
-         Client identity is a DID presented over the wire (open-opts
-         xsp-did/xsp-seed-env); operator authority rides [xsp [grants …]]."""]]
+         (`spec/03-approved/misc/store_management_console.md`), read
+         through the wire-transition note at its head, which maps every
+         store HTTP op verb-for-verb onto the profile. Client identity
+         is a DID presented over the wire (open-opts
+         xsp-did/xsp-seed-env); operator authority rides
+         `[xsp [grants …]]`. The console's own principal is minted the
+         way every principal is — `cx store-mint-principal`, offline,
+         granting nothing until an operator installs the stanza
+         ([[ops-bootstrap]]) — and gets the narrowest classes its tier
+         needs: `read` covers browsing (get, list, iter, query); the
+         whole admin plane — `status`, `gc`, `mounts`, `config-reload`
+         — sits in `admin`."""]]
 ]

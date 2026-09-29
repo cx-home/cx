@@ -613,10 +613,10 @@ ux-web surface — is `playbook-xap.md`.** Read it before you write one.
 
 ### Language bindings
 
-CX is reachable from Go, Python, Rust, and V through the C ABI
-(`include/cx.h`). The binding surfaces are parity-tested against a shared
-conformance family (`conformance/binding_api.cxd`), so "it works in Python"
-and "it works in Go" mean the same bytes came back.
+CX is reachable from four host languages through the C ABI
+(`include/cx.h`), each binding a repository of its own — `cx-binding-python`, `cx-binding-go`, `cx-binding-rust`, `cx-binding-v` —
+parity-tested against one shared conformance family (`conformance/binding_api.cxd`),
+so "it works" in one binding and "it works" in another mean the same bytes came back.
 
 ## Choosing a ring, in one line each
 

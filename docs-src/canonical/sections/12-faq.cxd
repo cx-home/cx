@@ -250,17 +250,17 @@
 
     [child id=faq-which-binding title='Which binding should I use?'
       [body
-        """Pick by deployment shape:
-           **V** for embedded / native — the reference implementation,
-           no FFI overhead, smallest binary footprint.
-           **Python** for scripting, data-engineering pipelines, and
-           any analytical workflow already on pandas / polars.
-           **Go** for services — high-throughput servers, especially
-           when CX is the wire format.
-           **Rust** for systems integration — FFI into Rust crates,
-           or for the lowest-overhead pure-Rust deployments.
-           Layer 1 (the 16 canonical methods) is identical across all
-           four, so you can change your mind later."""]]
+        """Pick by deployment shape. The **native reference binding**
+           for embedded work — no FFI overhead, the smallest binary
+           footprint. The **scripting binding** for data-engineering
+           pipelines and analytical work already living in a dataframe
+           library. The **services binding** for high-throughput
+           servers, especially when CX is the wire format. The
+           **systems binding** for the lowest-overhead FFI into a
+           systems language's crates. Layer 1 (the 16 canonical
+           methods) is identical across all four — [[bindings]] names
+           each one beside its repository and its ABI vector — so you
+           can change your mind later."""]]
 
     [child id=faq-thread-safe title='Are CX values thread-safe?'
       [body
@@ -272,14 +272,15 @@
 
     [child id=faq-cx-thread-register title='When do I call `cx_thread_register()`?'
       [body
-        """It depends on the binding. **Rust**: never — every FFI
-           chokepoint calls `ensure_thread` before the C call and
-           unregisters at thread exit. **Go**: never — each cgo call
-           runs on a locked OS thread that the internal guard
-           registers. **Python**: the binding does NOT register
-           threads at all; it assumes the GIL plus a single calling
-           thread, so a `threading.Thread` that calls into libcx is
-           unprotected — keep libcx calls on one thread, or call
+        """It depends on the binding. **The systems binding**: never
+           — every FFI chokepoint calls `ensure_thread` before the C
+           call and unregisters at thread exit. **The services
+           binding**: never — each foreign call runs on a locked OS
+           thread that the internal guard registers. **The scripting
+           binding**: it does NOT register threads at all; it assumes
+           the interpreter's global lock plus a single calling thread,
+           so a host thread that calls into libcx is unprotected —
+           keep libcx calls on one thread, or call
            `cx_thread_register` yourself before the first call from
            a worker thread. **Manually always** when you call the C
            ABI directly from a host-spawned thread — that thread is
@@ -287,30 +288,26 @@
            [[ffi-thread-register]] and
            [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) §1.6."""]]
 
-    [child id=faq-python-memory title='Do I need to close a Python Doc to release memory?'
+    [child id=faq-doc-memory title='Do I need to close a Doc to release memory?'
       [body
-        """No — there is nothing to close. A Python `Doc` is an
-           ordinary refcounted object: the binding copies every
-           string libcx returns and frees the C buffer at the call
-           boundary, so no Doc holds libcx memory between calls.
-           Dropping the last reference reclaims it like any other
-           Python value. `Doc` has no `close()`, no `__del__`, and
-           no context-manager protocol."""]
+        """No — there is nothing to close. In the scripting binding a
+           `Doc` is an ordinary refcounted host object: the binding
+           copies every string libcx returns and frees the C buffer at
+           the call boundary, so no Doc holds libcx memory between
+           calls. Dropping the last reference reclaims it like any
+           other host value. `Doc` has no `close()`, no finalizer, and
+           no scoped-resource protocol."""]
       [body
         """The handle-backed classes are the ones with an explicit
            lifecycle — `Stream`, `TableReader`, `TableWriter`, and
-           `EventWriter` carry `close()` and support `with`:"""]
-      [example lang=python
-        """import cxlib
-         with cxlib.TableReader(open('huge.cxcol', 'rb').read()) as reader:
-             for row_group in reader:
-                 use(row_group)
-         [# reader.close() called automatically on exit                #]"""]
+           `EventWriter` carry `close()` and support the host's
+           scoped-resource form, so a reader opened over a columnar
+           file is closed on the way out of the block whatever the
+           block did; the shape, per binding, is on [[bindings]]."""]
       [note
         """See [[ffi-doc-lifetime]] for the full per-binding lifetime
-           contract. The TS binding had a Boehm GC interaction bug
-           on Node — see lang/_archived/typescript/README.md if you
-           need historical context."""]]]
+           contract. An archived binding's collector interaction notes
+           live in that binding's own repository, frozen with it."""]]]
 
   [child id=faq-tooling n=12.5 title='Tooling'
 
@@ -519,25 +516,25 @@
       [body
         """Those bindings were archived in v0.8.0 — they are still [; version-literal-ok ]
            available on v0.7.5 (last release before the archive) [; version-literal-ok ]
-           and live under `lang/_archived/` for reference. The
-           current binding set is V, Python, Go, Rust (Tier 1)
-           only. The path forward is to **migrate to a Tier-1
-           binding** — Layer 1 is identical across all four, so the
-           migration is mostly module-import changes plus
-           host-idiomatic adjustments at Layer 2. (There is no
-           supported pre-reshape line to stay on — no maintenance
-           releases are cut for tags before the stability boundary.)
-           See `lang/_archived/README.md` for the per-binding
-           archival notes and pointer to the last working
-           commit."""]
+           and each keeps its own repository, frozen at the ABI it
+           was archived with (the `ships=archived` rows of the
+           repository map). The current binding set is the four
+           shipped binding repositories [[bindings]] names. The path
+           forward is to **migrate to a shipped binding** — Layer 1 is
+           identical across all four, so the migration is mostly
+           module-import changes plus host-idiomatic adjustments at
+           Layer 2. (There is no supported pre-reshape line to stay on
+           — no maintenance releases are cut for tags before the
+           stability boundary.) Each archived repository's README
+           carries its archival notes and the pointer to the last
+           working commit."""]
       [note
         """The decision to archive was about resource focus, not
-           technical limitation — those bindings worked. The
-           The Tier-1 set was chosen for ecosystem reach
-           (Python for analytics, Go for services, Rust for
-           systems, V as the native reference). Community-
-           maintained revivals are welcome and the C ABI stays
-           stable for them."""]]]
+           technical limitation — those bindings worked. The shipped
+           set was chosen for ecosystem reach (a scripting binding for
+           analytics, a services binding, a systems binding, and the
+           native reference). Community-maintained revivals are
+           welcome and the C ABI stays stable for them."""]]]
 
   [# Migrated from docs-src/content/faq.cx during Phase B docs →
      guide consolidation (2026-05-24). Unique Q&A from the
@@ -566,9 +563,9 @@
            quantities, or any value where IEEE 754 binary floats
            would lose precision. `0.1 + 0.2` is
            `0.30000000000000004` in float; in `:decimal` it is
-           `0.3`. Consumer bindings map `:decimal` to their
-           language's decimal type (Python `Decimal`, Java
-           `BigDecimal`, .NET `decimal`, Ruby `BigDecimal`)."""]]
+           `0.3`. A binding maps `:decimal` to its host's
+           arbitrary-precision decimal type, never to a binary
+           float."""]]
 
     [child id=faq-brackets n=12.9.3 title='Why brackets instead of braces, indentation, or tags?'
       [body
@@ -599,11 +596,12 @@
            classes. All format converters are stateless and can
            run concurrently across threads on disjoint inputs.
            The Boehm GC underneath libcx requires
-           `cx_thread_register` on each calling thread. Rust and Go
-           handle that automatically (per-chokepoint registration;
-           locked OS threads); the Python binding does NOT — it
-           assumes the GIL and a single calling thread, so keep
-           Python libcx calls on one thread."""]]
+           `cx_thread_register` on each calling thread. The systems
+           and services bindings handle that automatically
+           (per-chokepoint registration; locked OS threads); the
+           scripting binding does NOT — it assumes the interpreter's
+           global lock and a single calling thread, so keep its libcx
+           calls on one thread."""]]
 
     [child id=faq-confusion-raw n=12.9.6 title='Why does my embedded code get garbled?'
       [body
