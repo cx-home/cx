@@ -42,6 +42,32 @@
 #   {{FIGURE:rings}}          the ring figure, rendered from the registries by
 #                             ring_svg.cx (RULED: DOCS-42), inlined in place
 #                             and linked to rings.html
+#   {{FIGURE:rings-plain}}    the same figure with the module and repository
+#                             names off (ring_svg.cx's ring-svg-plain): the
+#                             two rings and the groups above them, the full
+#                             figure a link away on rings.html (HOME-1)
+#   {{TLDR:lead}}             the TL;DR's lead paragraph alone, as the hero's
+#                             lede (the one sentence in one place, DOCS-49)
+#   {{FIXTURE:<id>}}          one replayed case in the guide's fixture shape
+#                             (its files, the invocation with the LIVE output,
+#                             where the case lives) — the block a beat's
+#                             sentence stands beside
+#   {{HERO:<id>}}             the running example (HOME-1): the case's program
+#                             and its recorded answer in the page's bytes, and
+#                             a script that runs the same program in the
+#                             reader's browser through the playground's engine
+#                             (wasm/cxlib.js) and marks the answer as run when
+#                             it equals the fixture's — a browser without the
+#                             engine keeps the recorded answer and says so; the
+#                             case must record an exact answer, never a refusal
+#
+# The page wears the guide's chrome (HOME-1, DOCS-51 §3): the sidebar is read
+# from docs/guide/index.html as `make guide` rendered it (site.mk orders the
+# render first), so the first click from the landing does not change the
+# frame; the sheet bar and the title block are the guide's shape. Every
+# href= and src= the page carries, the sidebar's included, must name a file
+# the manifest serves (a query string or fragment aside) or index.html
+# itself — the {{PAGE:}} rule, applied to the whole page.
 #
 # ── The Markdown it renders ─────────────────────────────────────────────────
 #
@@ -50,7 +76,10 @@
 # tables (header row, separator row, body), ``` fences with a language, and
 # inline `code`, **bold** and [label](url). Text is HTML-escaped before any
 # inline form is applied; a code span's content is escaped and nothing else.
-# An unclosed fence or an unpaired backtick is a hard failure, never output.
+# A ```html fence is the page's own markup — the hero, the doors, the
+# journey cards — emitted as it is; its links are held by the href rule
+# above. An unclosed fence or an unpaired backtick is a hard failure, never
+# output.
 #
 # Run (from the repository root):
 #   cx --allow-read --allow-write --allow-subprocess --allow-env \
@@ -194,9 +223,12 @@
     [?if [= $mode "code"]
       [then [?if [$strings:starts-with $t "```"]
         [then {html: [$concat [$map:get $st "html"]
-                        "<pre><code class=\"language-" [$map:get $st "lang"] "\">"
-                        [$esc [$strings:join [$map:get $st "buf"] "\n"]]
-                        "</code></pre>\n"],
+                        [?if [= [$map:get $st "lang"] "html"]
+                          [then [$concat [$strings:join [$map:get $st "buf"] "\n"] "\n"]]
+                          [else [$concat
+                            "<pre><code class=\"language-" [$map:get $st "lang"] "\">"
+                            [$esc [$strings:join [$map:get $st "buf"] "\n"]]
+                            "</code></pre>\n"]]]],
                mode: "none", lang: "", buf: ()}]
         [else [$push-line $st "code" $l]]]]
       [else [?if [$strings:starts-with $t "```"]
@@ -260,13 +292,163 @@
 [?def count-of scope=public impure ($what $self $nrefs) [$sc:count-of $what $self $nrefs]]
 
 # The ring figure rides through the Markdown pass as a bare token (raw HTML
-# would be escaped there) and is substituted into the rendered page after it.
+# would be escaped there) and is substituted into the rendered page after it;
+# so do the fixture blocks, the running example and the TL;DR's lead.
 [?const FIGURE-TOKEN "@@FIGURE:rings@@"]
+[?const FIGURE-PLAIN-TOKEN "@@FIGURE:rings-plain@@"]
+[?const TLDR-LEAD-TOKEN "@@TLDR:lead@@"]
 [?def place-figure scope=public impure ($html)
-  [$strings:replace $html [$concat "<p>" FIGURE-TOKEN "</p>\n"]
-    [$concat "<div class=\"hero-fig site-fig\"><a href=\"rings.html\" aria-label=\"The rings, page\">"
-             [$rs:ring-svg]
-             "</a><div class=\"fig-caption\">Fig. 1 — two rings, the groups above them, drawn from the registry when this page was built · <a href=\"rings.html\">the rings page</a></div></div>\n"]]]
+  [$strings:replace
+    [$strings:replace $html [$concat "<p>" FIGURE-TOKEN "</p>\n"]
+      [$concat "<div class=\"hero-fig site-fig\"><a href=\"rings.html\" aria-label=\"The rings, page\">"
+               [$rs:ring-svg]
+               "</a><div class=\"fig-caption\">Fig. 1 — two rings, the groups above them, drawn from the registry when this page was built · <a href=\"rings.html\">the rings page</a></div></div>\n"]]
+    [$concat "<p>" FIGURE-PLAIN-TOKEN "</p>\n"]
+    [$concat "<figure class=\"ring-figure home-rings\"><a href=\"rings.html\" aria-label=\"The rings, page\">"
+             [$rs:ring-svg-plain]
+             "</a><figcaption class=\"fig-caption\">Fig. 1 — two rings, the groups above them, imports pointing inward · drawn from the registry when this page was built · <a href=\"rings.html\">every module named, on the rings page</a></figcaption></figure>\n"]]]
+
+# esc-attr: text inside a double-quoted attribute.
+[?def esc-attr scope=public ($s) [$strings:replace [$esc $s] "\"" "&quot;"]]
+
+# site-refs: the case ids {{HERO:…}} and {{FIXTURE:…}} cite — replayed and
+# verified like {{EXAMPLE:…}}'s, and counted by {{COUNT:examples}}.
+[?def refs-of-kind scope=public impure ($tmpl $kind)
+  [?for [in $m [$re:find-all [$re:compile [$concat "\\{\\{" $kind ":([^} ]+)\\}\\}"]] $tmpl]]
+    [yield [$re:group $m 1]]]]
+[?def site-refs scope=public impure ($tmpl)
+  [$pb:cat-seqs ([$refs-of-kind $tmpl "HERO"], [$refs-of-kind $tmpl "FIXTURE"])]]
+
+# fixture-html: one replayed case as the guide shows one (guide_build.cx's
+# fixture-block, the same classes): its document and program when it has
+# them, the invocation with the LIVE output, and where the case lives.
+[?def fixture-html scope=public impure ($id $ctx)
+  [?let [= $sec [$pb:lookup [$map:get $ctx "index"] $id [$map:get $ctx "where"]]]
+        [= $rep [$map:get [$map:get $ctx "replays"] $id]]
+        [= $data [?else [$map:get $sec "in-cx"] "[empty]"]]
+        [= $code [?else [$map:get $sec "in-code"] ""]]
+    [$concat
+      "<div class=\"fixture\">\n"
+      [?if [= $data "[empty]"] [then ""]
+        [else [$concat "<p class=\"fixture-file\"><code>input.cx</code></p>\n<pre><code lang=\"cx\">" [$esc $data] "</code></pre>\n"]]]
+      [?if [= $code ""] [then ""]
+        [else [$concat "<p class=\"fixture-file\"><code>prog.cx</code></p>\n<pre><code lang=\"cx\">" [$esc $code] "</code></pre>\n"]]]
+      "<pre class=\"sample-output\"><code>$ " [$esc [$string $rep@cmd]] "\n" [$esc [$string $rep@out]] "</code></pre>\n"
+      "<p class=\"fixture-src\">Fixture <code>" [$esc $id] "</code> in <code>" [$esc [$string [$map:get $sec "suite"]]]
+      "</code> — replayed against this cx when the page was built.</p>\n"
+      "</div>\n"]]]
+
+# hero-html: the running example. The program and the recorded answer are in
+# the page's bytes (a browser without the engine sees them, never a blank);
+# home-script below runs the same program in the browser and marks the
+# answer as run when it equals the fixture's. A case whose recorded answer
+# is a refusal, or matched by containment, cannot be the hero.
+[?def hero-html scope=public impure ($id $ctx)
+  [?let [= $sec [$pb:lookup [$map:get $ctx "index"] $id [$map:get $ctx "where"]]]
+        [= $rep [$map:get [$map:get $ctx "replays"] $id]]
+        [= $exp [$pb:expected-of $sec]]
+        [= $code [?else [$map:get $sec "in-code"] ""]]
+        [= $data [?else [$map:get $sec "in-cx"] "[empty]"]]
+        [= $_m [?if [and [= [$string $exp@mode] "exact"] [not [$strings:starts-with [$strings:trim [$string $exp@text]] "[err"]]]
+                 [then 0]
+                 [else [$die [$concat "{{HERO:" $id "}} — the running example must record an exact answer that is not a refusal"]]]]]
+        [= $_c [?if [and [not [= $code ""]] [= $data "[empty]"]] [then 0]
+                 [else [$die [$concat "{{HERO:" $id "}} — the running example is a program with no input document"]]]]]
+    [$concat
+      "<figure class=\"home-run\" id=\"home-run\" data-id=\"" [$esc-attr $id] "\" data-expected=\"" [$esc-attr [$string $exp@text]] "\">\n"
+      "<p class=\"fixture-file\"><code>prog.cx</code></p>\n"
+      "<pre><code lang=\"cx\" id=\"home-run-src\">" [$esc $code] "</code></pre>\n"
+      "<pre class=\"sample-output\"><code id=\"home-run-out\">$ " [$esc [$string $rep@cmd]] "\n" [$esc [$string $rep@out]] "</code></pre>\n"
+      "<p class=\"home-run-verdict\" id=\"home-run-verdict\" data-state=\"recorded\">Recorded when this page was built · looking for the engine…</p>\n"
+      "<p class=\"fixture-src\">Fixture <code>" [$esc $id] "</code> in <code>" [$esc [$string [$map:get $sec "suite"]]]
+      "</code> — replayed against this cx when the page was built.</p>\n"
+      "</figure>\n"]]]
+
+# place-blocks: every token the Markdown pass carried — a fixture block, the
+# running example, the TL;DR's lead — replaced by its HTML; a token left
+# over is refused, never printed.
+[?def place-blocks scope=public impure ($html $ctx)
+  [?let [= $tmpl [$map:get $ctx "tmpl"]]
+        [= $with-fixtures [$fp:fold [$distinct [$refs-of-kind $tmpl "FIXTURE"]] $html
+          [?fn ($acc $id)
+            [$strings:replace $acc [$concat "<p>@@FIXTURE:" $id "@@</p>\n"] [$fixture-html $id $ctx]]]]]
+        [= $with-hero [$fp:fold [$distinct [$refs-of-kind $tmpl "HERO"]] $with-fixtures
+          [?fn ($acc $id)
+            [?let [= $block [$hero-html $id $ctx]]
+              [$strings:replace
+                [$strings:replace $acc [$concat "<p>@@HERO:" $id "@@</p>\n"] $block]
+                [$concat "@@HERO:" $id "@@"] $block]]]]]
+        [= $led [$strings:replace $with-hero [$concat "<p>" TLDR-LEAD-TOKEN "</p>\n"]
+                  [$concat "<p class=\"lede\">" [$inline [$pb:tldr-part "lead"] [$map:get $ctx "where"]] "</p>\n"]]]
+    [?if [$present [$strings:find $led "@@"]]
+      [then [$die "a placeholder token was left in the page — a {{FIXTURE:}}, {{HERO:}} or {{TLDR:lead}} not on a line of its own, or a {{FIGURE:}} this build does not draw"]]
+      [else $led]]]]
+
+# guide-sidebar: the sidebar `make guide` rendered into docs/guide/index.html
+# — the five groups, Home active — so the landing and the guide share one
+# frame (nav_shape_check.cx reads the same markup back from the site).
+[?def guide-sidebar scope=public impure ()
+  [?let [= $p "docs/guide/index.html"]
+        [= $h [?if [$io:is-file $p] [then [$io:read-file $p]]
+                [else [$die [$concat $p " is not there — the landing page wears the guide's sidebar; run `make guide` first (make site-index does)"]]]]]
+        [= $i [$strings:find $h "<aside class=\"sidebar\">"]]
+        [= $j [$strings:find $h "</aside>"]]
+    [?if [or [not [$present $i]] [not [$present $j]]]
+      [then [$die [$concat $p " carries no <aside class=\"sidebar\"> … </aside> — the guide's frame moved; teach guide-sidebar the new shape"]]]
+      [else [$strings:slice $h $i [+ $j 7]]]]]]
+
+# check-links: every href= and src= of the page names a served file (the
+# manifest's [files] lines, index.html itself), a query string or fragment
+# aside; external and fragment-only targets are not the site's to check.
+[?def link-target scope=public ($t)
+  [$first [$strings:split [$first [$strings:split $t "#"]] "?"]]]
+[?def check-links scope=public impure ($html $files $where)
+  [?let [= $targets [?for [in $m [$re:find-all [$re:compile "(?:href|src)=\"([^\"]*)\""] $html]]
+                      [yield [$re:group $m 1]]]]
+        [= $bad [?for [in $t [$distinct $targets]]
+                  [where [not [or [$strings:starts-with $t "http://"] [or [$strings:starts-with $t "https://"]
+                                  [or [$strings:starts-with $t "mailto:"] [or [$strings:starts-with $t "#"]
+                                      [$strings:starts-with $t "data:"]]]]]]]
+                  [= $f [$link-target $t]]
+                  [where [not [or [= $f ""] [or [= $f "index.html"] [$pb:member $files $f]]]]]
+                  [yield $t]]]
+    [?if [$empty $bad] [then [$count $targets]]
+      [else [$die [$concat "the page links a file the site does not serve — no line of " MANIFEST
+                           "'s [files] blocks is: " [$strings:join $bad " "] " (in " $where ")"]]]]]]
+
+# home-script: the running example's script — the program from the page's
+# own <code>, the engine the playground loads (wasm/cxlib.js, already on the
+# page), the answer compared with the fixture's recorded one. document.body's
+# data-home-run says what happened (pending → ran | differs | recorded), which
+# is what scripts/test_landing_run.mjs reads in headless Chrome.
+[?def home-script scope=public ()
+  [$strings:join (
+    "<script>",
+    "// Runs once the deferred scripts above (the engine loader among them) have executed.",
+    "document.addEventListener('DOMContentLoaded', function () {",
+    "  var fig = document.getElementById('home-run');",
+    "  if (!fig) return;",
+    "  var out = document.getElementById('home-run-out');",
+    "  var verdict = document.getElementById('home-run-verdict');",
+    "  var src = document.getElementById('home-run-src').textContent;",
+    "  var expected = fig.dataset.expected.replace(/\\n+$/, '');",
+    "  var cmd = out.textContent.split('\\n')[0];",
+    "  function state(s, text) { verdict.dataset.state = s; verdict.textContent = text; document.body.dataset.homeRun = s; }",
+    "  function recorded(why) { state('recorded', 'The answer above is the one recorded when this page was built \\u2014 ' + why); }",
+    "  document.body.dataset.homeRun = 'pending';",
+    "  var lib = globalThis.cxlib;",
+    "  if (!lib || !lib.ready) { recorded('this browser did not load our engine.'); return; }",
+    "  lib.ready.then(function () {",
+    "    var run = (typeof lib.evalCodeAsync === 'function') ? lib.evalCodeAsync(src, 'cx', '') : Promise.resolve(lib.evalCode(src, 'cx', ''));",
+    "    return run.then(function (got) {",
+    "      var answer = String(got).replace(/\\n+$/, '');",
+    "      out.textContent = cmd + '\\n' + answer;",
+    "      if (answer === expected) state('ran', 'Run in your browser just now by libcx.wasm \\u2014 the answer the fixture records.');",
+    "      else state('differs', 'Run in your browser just now \\u2014 and it differs from the recorded answer, which is a defect we want to hear about.');",
+    "    });",
+    "  }).catch(function (e) { recorded('the engine could not run it here (' + (e && e.message ? e.message : e) + ').'); });",
+    "});",
+    "</script>") "\n"]]
 
 [?def page-link scope=public impure ($parts $files $where)
   [?let [= $target [$strings:slice [$first $parts] 6 [$strings:length [$first $parts]]]]
@@ -287,6 +469,10 @@
       [when [$strings:starts-with $kind "PAGE:"] [$page-link $parts [$map:get $ctx "files"] $where]]
       [when [= $kind "REPO-MAP"] [$repo-map [$map:get $ctx "self"] [$map:get $ctx "files"]]]
       [when [= $kind "FIGURE:rings"] FIGURE-TOKEN]
+      [when [= $kind "FIGURE:rings-plain"] FIGURE-PLAIN-TOKEN]
+      [when [= $kind "TLDR:lead"] TLDR-LEAD-TOKEN]
+      [when [$strings:starts-with $kind "HERO:"] [$concat "@@HERO:" [$strings:slice $kind 6 [$strings:length $kind]] "@@"]]
+      [when [$strings:starts-with $kind "FIXTURE:"] [$concat "@@FIXTURE:" [$strings:slice $kind 9 [$strings:length $kind]] "@@"]]
       [when [$strings:starts-with $kind "COUNT:"]
         [$count-of [$strings:slice $kind 7 [$strings:length $kind]] [$map:get $ctx "self"] [$map:get $ctx "nrefs"]]]
       [else [$pb:expand-one $body [$map:get $ctx "index"] [$map:get $ctx "replays"]
@@ -308,10 +494,13 @@
 
 # ── the page ────────────────────────────────────────────────────────────────
 
-# The landing page wears the guide's stylesheet (style.css sits at the site
-# root beside it) with the sidebar column dropped; asset URLs carry
-# ?v=<VERSION> exactly as the guide's own pages do (#953).
-[?def wrap scope=public ($title $ver $body)
+# The landing page wears the guide's chrome (HOME-1): its stylesheet
+# (style.css sits at the site root beside it), its sidebar as `make guide`
+# rendered it, its sheet bar and its title block; the search box needs the
+# guide's index and script, and the running example needs the playground's
+# engine loader. Asset URLs carry ?v=<VERSION> exactly as the guide's own
+# pages do (#953).
+[?def wrap scope=public ($title $ver $sidebar $body)
   [$strings:join (
     "<!DOCTYPE html>",
     "<html lang=\"en\">",
@@ -325,20 +514,13 @@
     "<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>",
     "<link href=\"https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap\" rel=\"stylesheet\">",
     [$concat "<link rel=\"stylesheet\" href=\"style.css?v=" $ver "\">"],
-    "<style>",
-    "body.site-home { grid-template-columns: 1fr; }",
-    "body.site-home header.sheet-bar, body.site-home main, body.site-home footer.title-block { grid-column: 1; }",
-    "body.site-home main { max-width: 920px; margin: 0 auto; }",
-    ".site-fig { max-width: 520px; margin: 1.2rem auto; }",
-    ".site-fig svg { width: 100%; height: auto; display: block; }",
-    "ul.tldr { margin: 0.4rem 0 1rem; }",
-    "</style>",
     "</head>",
     "<body class=\"site-home\">",
+    [$strings:trim-end-chars $sidebar "\n"],
     "<header class=\"sheet-bar\">",
     "  <div class=\"sb-left\"><span class=\"sb-brand\">CX · cxhome.org</span><span class=\"sb-title\">Home</span></div>",
-    [$concat "  <div class=\"sb-right\"><a href=\"guide.html\">Guide</a><a href=\"llm/primer.md\">Primer</a>"
-             "<a href=\"downloads.html\">Downloads</a><a href=\"https://github.com/cx-home/cx\">GitHub</a>"
+    [$concat "  <div class=\"sb-right\"><a href=\"playground.html\">Playground</a>"
+             "<a href=\"downloads.html\">Downloads</a><a href=\"about.html\">About</a>"
              "<span class=\"sb-rev\">v" $ver "</span></div>"],
     "</header>",
     "<main>",
@@ -352,6 +534,10 @@
     "  <div class=\"tb-cell\"><span>Issued</span><b>cxhome.org</b></div>",
     "</footer>",
     [$concat "<script src=\"highlight/highlight.js?v=" $ver "\" defer></script>"],
+    [$concat "<script src=\"search-index.js?v=" $ver "\" defer></script>"],
+    [$concat "<script src=\"search/search.js?v=" $ver "\" defer></script>"],
+    [$concat "<script src=\"wasm/cxlib.js?v=" $ver "\" defer></script>"],
+    [$home-script],
     "</body>",
     "</html>",
     "") "\n"]]
@@ -373,21 +559,23 @@
   [= $tmpl [?if [$io:is-file $src] [then [$io:read-file $src]]
              [else [$die [$concat "the page source " $src " is not there"]]]]]
   [= $index [$pb:load-index $suites]]
-  [= $refs [$distinct [$pb:refs-in $tmpl]]]
+  [= $refs [$distinct [$pb:cat-seqs ([$pb:refs-in $tmpl], [$site-refs $tmpl])]]]
   [= $tmpdir [$path:join [$env:var-or-default "TMPDIR" "/tmp"] "cx-site-build"]]
   [= $_md [$io:make-dirs $tmpdir]]
   [= $replays [$fp:fold $refs {}
     [?fn ($acc $id) [$pb:add-replay $acc $id $index $cxbin $tmpdir]]]]
   [= $_rm [$io:remove-tree $tmpdir]]
   [= $ctx {index: $index, replays: $replays, version: $version, cxbin: $cxbin,
-           where: $src, files: $files, self: $self, nrefs: [$count $refs]}]
+           where: $src, files: $files, self: $self, nrefs: [$count $refs], tmpl: $tmpl}]
   [= $md [$expand $tmpl $ctx]]
-  [= $html [$wrap [$string $page@title] $version [$place-figure [$markdown $md $src]]]]
+  [= $html [$wrap [$string $page@title] $version [$guide-sidebar]
+             [$place-blocks [$place-figure [$markdown $md $src]] $ctx]]]
+  [= $nlinks [$check-links $html $files $src]]
   [?if $check
     [then [?let [= $old [?if [$io:is-file $out] [then [$io:read-file $out]] [else "absent"]]]
       [?if [= $old $html]
         [then [?let [= $_s [$say [$concat "site_build: " $out " — " [$string [$count $refs]]
-                                          " fixture(s) replayed green — no drift"]]]
+                                          " fixture(s) replayed and verified — no drift"]]]
                 [$env:exit 0]]]
         [else [?let [= $_c [$cry [$concat "docs-check: DRIFT: " $out
                                           [?if [= $old "absent"] [then " (not committed)"] [else ""]]
@@ -396,6 +584,6 @@
                 [$env:exit 1]]]]]]
     [else [?let [= $_w [$io:write-file $out $html]]
                 [= $_s [$say [$concat "site_build: " $src " → " $out " (" [$string [$count $refs]]
-                                      " fixture(s) replayed green, "
+                                      " fixture(s) replayed and verified, "
                                       [$string [$strings:length $html]] " bytes)"]]]
       [$env:exit 0]]]]]

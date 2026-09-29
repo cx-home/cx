@@ -672,6 +672,116 @@ figure.ring-figure a { display: block; }
 ul.tldr { margin: 0.4rem 0 1rem; }
 ul.tldr li { margin: 0.25rem 0; }
 
+/* ── HOME-1: the landing page — the hero with the running example, the
+   three doors, the three beats beside the plain ring figure, the journey
+   strip. The guide's chrome and tokens; no colour is introduced. */
+.home-hero {
+  display: flex;
+  gap: 2.2rem;
+  align-items: flex-start;
+  margin: 0.2rem 0 1.2rem;
+}
+.home-hero-text { flex: 1.05; min-width: 0; }
+.home-hero .hero-head { margin: 0 0 0.9rem; }
+.home-hero img.hero-mark { width: 96px; height: 96px; flex-shrink: 0; }
+.home-hero h1 { font-size: 2.35rem; line-height: 1.02; margin: 0; white-space: nowrap; }
+.home-hero h1 .accent { color: var(--accent); }
+.home-hero p.lede { font-size: 1.08rem; margin: 0 0 0.6rem; }
+.home-hero-note { font-size: 14px; color: var(--muted); margin: 0; }
+figure.home-run { flex: 1; min-width: 0; margin: 0.1rem 0 0; }
+figure.home-run pre { margin: 0.35rem 0; font-size: 12.5px; }
+figure.home-run pre code { white-space: pre-wrap; word-break: break-word; }
+figure.home-run p.fixture-file { margin: 0 0 0.2rem; }
+figure.home-run p.fixture-src { margin: 0.3rem 0 0; font-size: 12px; }
+.home-run-verdict {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0.45rem 0 0;
+}
+.home-run-verdict[data-state="ran"] { color: var(--accent); }
+.home-run-verdict[data-state="differs"] { color: var(--accent-dark); }
+
+.home-doors {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.2rem;
+  margin: 0.4rem 0 1.8rem;
+}
+.home-doors .door {
+  display: block;
+  border-top: 1.5px solid var(--ink);
+  padding: 0.55rem 0 0.4rem;
+  text-decoration: none;
+  color: var(--ink);
+}
+.home-doors .door:hover { color: var(--accent); text-decoration: none; }
+.home-doors .door-n {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.home-doors .door b { display: block; font-family: var(--font-display); font-size: 17px; margin: 0.15rem 0 0.2rem; }
+.home-doors .door-d { display: block; font-size: 14.5px; line-height: 1.45; color: var(--muted); }
+.home-doors .door code { display: block; font-size: 11.5px; margin-top: 0.4rem; }
+
+.home-case {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 2.2rem;
+  align-items: start;
+}
+.home-case > * { min-width: 0; }
+.home-beats h2 { margin-top: 0.8rem; }
+.home-beats .fixture { margin: 0.6rem 0 1rem; }
+.home-beats .fixture pre { font-size: 12px; }
+.home-figure { position: sticky; top: 4rem; }
+figure.home-rings { margin: 1.6rem 0 0; }
+figure.home-rings svg { max-width: 460px; }
+
+.home-journey {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.2rem;
+  margin: 0.6rem 0 1.4rem;
+}
+.home-journey .card {
+  display: block;
+  border-top: 1.5px solid var(--ink);
+  padding: 0.55rem 0 0.4rem;
+  text-decoration: none;
+  color: var(--ink);
+}
+.home-journey .card:hover { color: var(--accent); text-decoration: none; }
+.home-journey .card-n {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.home-journey .card b { display: block; font-family: var(--font-display); font-size: 16px; margin: 0.15rem 0 0.2rem; }
+.home-journey .card-d { display: block; font-size: 14px; line-height: 1.45; color: var(--muted); }
+
+@media (max-width: 1100px) {
+  .home-hero { flex-direction: column; }
+  .home-hero h1 { white-space: normal; }
+  .home-journey { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 900px) {
+  .home-case { grid-template-columns: 1fr; }
+  .home-doors { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .home-journey { grid-template-columns: 1fr; }
+}
+
 .pair {
   display: grid;
   grid-template-columns: 1fr 1fr;

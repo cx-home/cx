@@ -131,8 +131,20 @@
   [; DOCS-47: the fixture-citation ratchet. Every example on a new or
      re-voiced page is a [fixture id=] citation (one) or a [pair wrong= right=]
      panel (two, both halves replayed); docs-src/site/voice.cxd's [fixtures
-     floor=] is the count the sections carry, and a wave may not lower it. ]
-  [= $cited [$fp:fold $files 0 [?fn ($a $f)
+     floor=] is the count the sections carry, and a wave may not lower it.
+     HOME-1: the landing page's citations count too — each {{FIXTURE:<id>}},
+     {{HERO:<id>}} and {{EXAMPLE:<id> …}} of docs-src/site/index.md is one
+     case site_build.cx replays byte-exact when the page is built. ]
+  [= $landing 'docs-src/site/index.md']
+  [= $landing-cited [?if [$io:is-file $landing]
+                      [then [$count [?for [in $l [$strings:split-lines [$io:read-file $landing]]]
+                                      [in $piece [$strings:split $l '{{']]
+                                      [where [or [$strings:starts-with $piece 'FIXTURE:']
+                                                 [or [$strings:starts-with $piece 'HERO:']
+                                                     [$strings:starts-with $piece 'EXAMPLE:']]]]
+                                      [yield 1]]]]
+                      [else 0]]]
+  [= $cited [$fp:fold $files $landing-cited [?fn ($a $f)
               [?match [$cx:parse [$io:read-file $f]]
                 [case [err $e] $a]
                 [else [+ $a [+ [$count [$cx:parse [$io:read-file $f]]//fixture]
@@ -160,7 +172,8 @@
                  [$string [- [- $total $optout] $nfail]], ' pass, ',
                  [$string $optout], ' opt-out (check=none), ',
                  [$string $nfail], ' fail')]],
-    [$say [$cat ('snippet-check: ', [$string $cited], ' fixture citations in the sections ([fixture] one, [pair] two); ',
+    [$say [$cat ('snippet-check: ', [$string $cited], ' fixture citations in the sections ([fixture] one, [pair] two) and the landing page (',
+                 [$string $landing-cited], '); ',
                  'the floor in docs-src/site/voice.cxd is ', [$string $floor],
                  [?if [> $cited $floor] [then ' — above it: raise the floor in the same change (DOCS-47)'] [else '']])]],
     [?if [< $cited $floor]
