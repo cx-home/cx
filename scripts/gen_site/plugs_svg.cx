@@ -182,6 +182,18 @@
         [= $_bare [?if [$empty $bare] [then 0]
                     [else [$die [$concat "a bare constant name in attribute position of the figure for: "
                                          [$strings:join $bare " "]]]]]]
+        [; the empty left column's line — "the root of the graph" — is deps.cxd's
+           and true of the front door alone; a shown row with no pins= column (a
+           package, a binding, an ecosystem row) draws the registry's silence
+           instead, so the front door's line on any other figure is refused ]
+        [= $rooted [?for [in $n $names]
+                     [where [not [= $n [$rs:site-self]]]]
+                     [where [= [$rs:attr [$repo-row $n] "status" ""] "extracted"]]
+                     [where [$strings:contains [$plugs-svg $n] "the root of the graph"]]
+                     [yield $n]]]
+        [= $_rooted [?if [$empty $rooted] [then 0]
+                      [else [$die [$concat "the front door's 'root of the graph' line on a figure that is not the front door's: "
+                                           [$strings:join $rooted " "]]]]]]
     [?if [$empty $miss]
       [then [$say [$concat "plugs-svg-check: " [$string [$count $drawn]] " repository figures, each drawing exactly "
                            "1 + pins + pinned-by + modules nodes ("
