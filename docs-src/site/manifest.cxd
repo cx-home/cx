@@ -79,6 +79,14 @@ deps/cx-platform-xap/conformance/xap/xap-compose
 deps/cx-platform-connector/conformance/platform/connector
 deps/cx-platform-store/conformance/platform/journal
 deps/cx-platform-identity/conformance/platform/session
+deps/cx-platform-net/conformance/platform/net
+deps/cx-platform-mail/conformance/stdlib/sasl
+deps/cx-platform-db/conformance/platform/db
+deps/cx-platform-fabric/conformance/platform/fabric
+deps/cx-platform-xsp/conformance/stdlib/xsp
+deps/cx-platform-secrets/conformance/platform/secrets
+deps/cx-platform-sso/conformance/platform/sso
+deps/cx-platform-ux/conformance/xap/ux
 #]]
 
   [files from=landing [#
@@ -95,7 +103,9 @@ guide.html
      (scripts/gen_site/repo_page.cx) and the one example replayed; a line
      here with no source is MISSING, a source with no line is EXTRA, and the
      landing page's repository map links a row's page the day its line is
-     here. Wave 2: the front door, the two cores, five platform repositories. ]
+     here. Wave 2: the front door, the two cores, five platform repositories;
+     wave 3: the platform remainder — the wire, mail, the database drivers,
+     the fabric, the stream protocol, the keystore, sign-on, the surfaces. ]
   [files from=repos [#
 repo-cx.html
 repo-cx-core-code.html
@@ -105,6 +115,14 @@ repo-cx-platform-flow.html
 repo-cx-platform-identity.html
 repo-cx-platform-store.html
 repo-cx-platform-xap.html
+repo-cx-platform-net.html
+repo-cx-platform-mail.html
+repo-cx-platform-db.html
+repo-cx-platform-fabric.html
+repo-cx-platform-xsp.html
+repo-cx-platform-secrets.html
+repo-cx-platform-sso.html
+repo-cx-platform-ux.html
 #]]
 
   [; the rendered guide (make guide, docs/guide/), at the root; the lib- pages

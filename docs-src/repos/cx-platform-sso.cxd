@@ -1,0 +1,50 @@
+[# docs-src/repos/cx-platform-sso.cxd — the sign-on repository's page,
+   repo-cx-platform-sso.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 3).
+   Facts from the registries; the one example from its own corpus (the sso
+   suite). #]
+
+[repo name=cx-platform-sso
+  [intro
+    """**TL;DR — the receiving half of enterprise sign-on, as request in and
+       response out.** `cx-platform-sso` is a deployment's OpenID Connect
+       relying party, its SAML service provider, its SCIM provisioning
+       routes, its logout channels and its token endpoint — each a verb from
+       a `[request]` value to a `[response]` value, with the session it
+       establishes held by the identity repository and its state in the
+       store."""]
+  [body
+    """A login begins by checking the requested return-to against the
+       allow-list — an absolute URL, a protocol-relative one or one carrying
+       a newline is refused before anything is parked — then generates
+       state, nonce and the PKCE verifier together, parks them, and answers
+       a 302 to the provider's authorize endpoint. Nothing dials. The
+       callback treats a missing state, a state never issued, a replayed
+       state and an expired row as one refusal, deliberately, so an attacker
+       learns nothing from which one they hit."""]
+  [body
+    """The SAML assertion consumer refuses a GET, a body with no response, a
+       response that is not base64 and an oversized body before it decodes
+       anything, and a real signed assertion establishes a real session;
+       the metadata endpoint answers the service provider descriptor
+       verbatim. SCIM refuses a wrong bearer, a missing one and a prefix of
+       the right one alike, and no configured token is not an open door;
+       create, read, patch and delete round-trip through the store. The
+       token endpoint serves client credentials and no other grant. The
+       repository's `examples/` directory carries the interop lane a
+       deployment is graded against."""]
+  [gives
+    """One module of the platform group, a pure-CX package over the codecs
+       the language ships — `oidc`, `saml`, `scim`, `url`, `http-client` —
+       linking to the reference page projected from its own
+       documentation."""]
+  [try
+    """The classic sign-on defect, refused: a login link carrying an absolute
+       `return-to` would send a freshly authenticated user, cookie in hand,
+       to someone else's page. The response's body is an error value with
+       its own code, answered before anything is parked — and the program
+       reads it as a value, no grant, no socket."""]
+  [fixture id=sso-001-login-refuses-an-absolute-return-to]
+  [status
+    """Sign-on ships as a package: its module is bundled into the build from
+       the pin, the first repository to leave the front door, and the
+       interop lane runs from its own tree."""]]
