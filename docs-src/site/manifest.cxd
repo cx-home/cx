@@ -66,6 +66,8 @@ fine, and a wasm file no line declares still fails EXTRA.
 
   [suites [#
 deps/cx-core-code/conformance/code
+../deps/cx-core-data/conformance/core
+../deps/cx-core-data/conformance/identity
 llm/antipatterns
 ../deps/cx-core-data/conformance/table
 deps/cx-core-code/conformance/stdlib/json
