@@ -2,7 +2,7 @@
 # nothing to compensate: the run winds back over an empty prefix and lands
 # `:compensated`, the checks never start (flow.md §4.7, §4.8; RULED: CICD-1).
 #
-#   cx flow simulate docs-src/flow/docs.flow.cx docs-src/flow/sim/docs-red-generate.cx \
+#   cx flow simulate docs-src/flow/docs.flow.cx docs-src/flow/sim/docs/docs-red-generate.cx \
 #     --env docs-src/flow/docs.env.cx --allow-read=. --mode=write
 [results
   [step name="generate" status=:failed

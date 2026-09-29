@@ -9136,7 +9136,7 @@ reading what the step checks.
 | 74 | `store-session-dep-gate` |  | `scripts/store_session_dep_gate.cx` |
 | 75 | `flow-vocabulary-gate` |  | `deps/cx-platform-flow/scripts/flow_vocabulary_gate.cx` |
 | 76 | `flow-dogfood-gate` |  | `deps/cx-platform-flow/scripts/flow_dogfood_gate.cx` |
-| 77 | `docs-flow-gate` | yes | `scripts/docs_flow_gate.cx` |
+| 77 | `docs-flow-gate` | yes | `scripts/ci_flow_gate.cx` |
 | 78 | `release-flow-gate` |  | `scripts/ci_flow_gate.cx` |
 | 79 | `test-flow-umbrella` |  | — |
 | 80 | `address-baseline-gate` |  | `v run deps/cx-core-code/vcx/tests/runners/address_baseline/address_baseline.v` |

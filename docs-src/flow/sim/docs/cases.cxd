@@ -1,0 +1,38 @@
+# The case table of docs-src/flow/docs.flow.cx, read by scripts/ci_flow_gate.cx
+# (`make docs-flow-gate`; RULED: CICD-1, RFLOW-1 L104). The documentation
+# flow's own gate folded onto the one engine of the repository's flow
+# documents. It had been scripts/docs_flow_gate.cx, whose cases these are,
+# unchanged. The fields:
+#   - `env` names the env the acts resolve through.
+#   - `verb` is validate | simulate | run.
+#   - `exit` is the exit code the case expects.
+#   - each `[s …]` is a substring the answer must carry. It is STRUCTURAL (a
+#     status, a count, a name), never a byte golden.
+#   - the run case carries `grants=`, the three `make docs-flow` passes. So a
+#     grant the acts need and that caller does not pass fails here, not in
+#     `make docs`.
+#   - `expectations` pins their number.
+# It runs NO make target. The flow's real acts are the doc pipeline's own
+# steps, and running them here would nest the whole doc pipeline inside
+# `make test`. `make docs-flow` is where they run.
+[cases doc=docs env='docs-src/flow/docs.env.cx' expectations=26
+  [case id=A verb=validate exit=0
+    [expect [s '[valid '] [s 'steps=3'] [s "words='flow step pivot needs"]
+            [s "[act name='docs/generate'"] [s "[act name='docs/check'"]
+            [s "[act name='docs/assemble'"]]]
+  [case id=B-green verb=simulate results='docs-src/flow/sim/docs/docs-green.cx' args='--mode=write' exit=0
+    [expect [s 'status=:done'] [s 'step name=generate status=:done pivot=true']
+            [s 'step name=check status=:done'] [s 'step name=assemble status=:done']]]
+  [case id=B-check-mode verb=simulate results='docs-src/flow/sim/docs/docs-check-mode.cx' args='--mode=check' exit=0
+    [expect [s 'status=:done'] [s 'ran=false'] [s "[mode 'check']"]]]
+  [case id=B-generate verb=simulate results='docs-src/flow/sim/docs/docs-red-generate.cx' args='--mode=write' exit=0
+    [expect [s 'status=:compensated'] [s 'step name=generate status=:failed']
+            [s 'step name=check status=:waiting']]]
+  [case id=B-check verb=simulate results='docs-src/flow/sim/docs/docs-red-check.cx' args='--mode=check' exit=0
+    [expect [s 'status=:incomplete'] [s 'incomplete=2'] [s 'step name=check status=:failed']
+            [s 'step name=assemble status=:waiting']]]
+  [case id=B-assemble verb=simulate results='docs-src/flow/sim/docs/docs-red-assemble.cx' args='--mode=check' exit=0
+    [expect [s 'status=:incomplete'] [s 'incomplete=1'] [s 'step name=assemble status=:failed']]]
+  [case id=C verb=run args='--mode=bogus' grants='--allow-read --allow-write --allow-subprocess' exit=1
+    [expect [s 'status=:compensated'] [s 'is neither write nor check']
+            [s 'step name=check status=:waiting']]]]

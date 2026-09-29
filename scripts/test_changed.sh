@@ -406,7 +406,7 @@ step_globs() {
     # its env, acts and simulate tables, the gate that reads them, and what can
     # move the vocabulary or the three subcommands it drives them through (the
     # flow module is the pin's; `cx flow` is this tree's binary).
-    docs-flow-gate)                echo 'docs-src/flow/* scripts/docs_flow_gate.cx deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
+    docs-flow-gate)                echo 'docs-src/flow/* flows/ci-acts.cx scripts/ci_flow_gate.cx deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
     # RULED: RFLOW-1 L103 — the release document's fixture: the document, its env,
     # the one public acts module, its simulate tables, the one gate program, and
     # what can move the vocabulary or the subcommands it drives them through.

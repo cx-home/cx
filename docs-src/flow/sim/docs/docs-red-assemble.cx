@@ -2,7 +2,7 @@
 # so `:incomplete incomplete=1` (§4.8), and the Site workflow uploads nothing
 # because its upload step follows a failed step (RULED: CICD-1).
 #
-#   cx flow simulate docs-src/flow/docs.flow.cx docs-src/flow/sim/docs-red-assemble.cx \
+#   cx flow simulate docs-src/flow/docs.flow.cx docs-src/flow/sim/docs/docs-red-assemble.cx \
 #     --env docs-src/flow/docs.env.cx --allow-read=. --mode=check
 [results
   [step name="generate" status=:done [result [generated ran=false reason='--mode=check']]]

@@ -12,7 +12,9 @@
 # one order, one run record, one place to read a failure — and never a second
 # copy of a recipe.
 #
-# THE TOOLCHAIN IS THE CALLER'S. Every nested make runs with `-o build-vcx`
+# THE TOOLCHAIN IS THE CALLER'S. Every nested make runs through
+# flows/ci-acts.cx's make-one (the CI flows' one idioms module, RULED: RFLOW-1
+# L97, whose tail-of this module reuses too): `-o build-vcx`
 # and the three *_SKIP_CX_BUILD switches: the caller (`make docs-flow`, which
 # depends on build-vcx, or the Site workflow's build step) built the binary
 # this flow runs under, and a relink under a running flow is the
@@ -24,40 +26,11 @@
 [?lib 'cx-stdlib/io' :as io]
 [?lib 'cx-stdlib/strings' :as strings]
 [?lib 'cx-stdlib/env' :as env]
+[?lib './flows/ci-acts.cx' :as c]
 
-# say: one progress line to stderr, so a run that takes minutes is not
-# silent until its record prints.
-[?def say scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
 
-# make-argv: the one make invocation every act uses (see the header).
-[?def make-argv scope=private pure [returns any] ($target)
-  ('make', '--no-print-directory', '-o', 'build-vcx',
-   'DOCS_SKIP_CX_BUILD=1', 'GUIDE_SKIP_CX_BUILD=1', 'SITE_SKIP_CX_BUILD=1',
-   $target)]
-
-# tail-of: the last $k non-blank lines of a text, joined — what a red step's
-# record carries, so the failure is read in the record, not in a log.
-[?def tail-of scope=private pure [returns string] ($text $k)
-  [?let [= $ls [?to-sequence [?for [in $l [$strings:split [$string $text] "\n"]]
-                 [where [not [= [$str-trim $l] '']]] [yield $l]]]]
-        [= $n [$count $ls]]
-        [= $d [?if [> $n $k] [then [- $n $k]] [else 0]]]
-    [$strings:join [?to-sequence [?drop $d $ls]] "\n"]]]
-
-# make-one: one target, run once. The answer is a [made …] row either way —
-# ok=true with the last line of its stdout (its summary line), ok=false with
-# its exit code and the tail of stdout and stderr together — so a caller
-# running several can report every red one.
-[?def make-one scope=private impure [returns element] ($target)
-  [?let [= $_ [$say [$concat 'docs flow: make ' $target]]]
-        [= $r [$process:run [$make-argv $target]]]
-        [= $out [$concat [$string $r@stdout] [$string $r@stderr]]]
-    [?if [= [$string $r@exit-code] '0']
-      [then [made target=$target ok=true
-                  tail=[$tail-of [?if [= [$str-trim [$string $r@stdout]] '']
-                                   [then $out] [else $r@stdout]] 1]]]
-      [else [made target=$target ok=false exit=[$string $r@exit-code]
-                  tail=[$tail-of $out 25]]]]]]
+# make-one: flows/ci-acts.cx's, labelled for this flow.
+[?def make-one scope=private impure [returns element] ($target) [$c:make-one $target 'docs flow']]
 
 # red: the err a red row becomes when it is the step's answer.
 [?def red scope=private pure [returns element] ($row)

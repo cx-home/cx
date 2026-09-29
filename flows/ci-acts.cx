@@ -481,3 +481,29 @@
 
 [?def last-of-seq scope=private pure [returns string] ($xs)
   [?if [= [$count $xs] 0] [then ''] [else [$string [$nth $xs [$count $xs]]]]]]
+
+# ══ make-one — one make target, run once, as a row (L97) ═════════════════════
+# The one make invocation the documentation flow's acts use
+# (docs-src/flow/docs-acts.cx): `-o build-vcx` and the three *_SKIP_CX_BUILD
+# switches, because the caller built the binary the flow runs under. A relink
+# under a running flow is the 'Exec format error' class, and every
+# `build-vcx` on the head relinks (#1697). The answer is a [made …] row
+# either way. ok=true carries the last line of its stdout (its summary line).
+# ok=false carries its exit code and the tail of stdout and stderr together.
+# So a caller running several can report every red one. $label prefixes the
+# progress line ('docs flow').
+[?def make-argv scope=public pure [returns any] ($target)
+  ('make', '--no-print-directory', '-o', 'build-vcx',
+   'DOCS_SKIP_CX_BUILD=1', 'GUIDE_SKIP_CX_BUILD=1', 'SITE_SKIP_CX_BUILD=1',
+   $target)]
+
+[?def make-one scope=public impure [returns element] ($target $label)
+  [?let [= $_ [$io:write-line [$env:stderr] [$concat $label ': make ' $target]]]
+        [= $r [$process:run [$make-argv $target]]]
+        [= $out [$concat [$string $r@stdout] [$string $r@stderr]]]
+    [?if [= [$string $r@exit-code] '0']
+      [then [made target=$target ok=true
+                  tail=[$tail-of [?if [= [$str-trim [$string $r@stdout]] '']
+                                   [then $out] [else $r@stdout]] 1]]]
+      [else [made target=$target ok=false exit=[$string $r@exit-code]
+                  tail=[$tail-of $out 25]]]]]]

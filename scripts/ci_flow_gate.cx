@@ -78,14 +78,20 @@
 
 # The grants ride AFTER the subcommand word: flags bind before a FILE and
 # `flow` is not one. validate/simulate read only; a run carries the grants
-# the document's Makefile caller passes.
+# the document's Makefile caller passes — GRANTS, or the case's own
+# `grants=` where its caller passes fewer (the docs flow's `make docs-flow`
+# passes three), so a grant the acts need and the caller does not pass fails
+# here rather than in the caller.
+[?def grants-of scope=public pure [returns any] ($c)
+  [?if [= [$string [?else $c@grants '']] ''] [then $GRANTS] [else [$argv-words $c@grants]]]]
+
 [?def argv-of scope=public pure [returns any] ($bin $flow $env $c $extra)
   [?let [= $verb [$string $c@verb]]
         [= $head [?if [= $verb 'validate']
            [then ($bin, 'flow', 'validate', $flow, '--env', $env, '--allow-read=.')]
            [else [?if [= $verb 'simulate']
              [then ($bin, 'flow', 'simulate', $flow, [$string $c@results], '--env', $env, '--allow-read=.')]
-             [else [$cat-seqs (($bin, 'flow', 'run', $flow, '--env', $env, '--ephemeral'), $GRANTS)]]]]]]
+             [else [$cat-seqs (($bin, 'flow', 'run', $flow, '--env', $env, '--ephemeral'), [$grants-of $c])]]]]]]
     [$cat-seqs ($head, [$argv-words $c@args], $extra)]]]
 
 [?def label-of scope=public pure ($c) [$cat ('case ', [$string $c@id], ' (', [$string $c@verb], ')')]]

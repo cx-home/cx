@@ -2802,17 +2802,21 @@ docs-flow: build-vcx
 	@"$(CURDIR)/deps/cx-core-code/vcx/target/cx" flow run $(DOCS_FLOW) --env $(DOCS_FLOW_ENV) \
 	  --ephemeral --mode=$(DOCS_FLOW_MODE) $(DOCS_FLOW_CAPS)
 
-# ── docs-flow-gate — the documentation flow's own fixture (RULED: CICD-1) ────
-# scripts/docs_flow_gate.cx reads the REAL document through this tree's binary
-# — `cx flow validate`, `cx flow simulate` over docs-src/flow/sim/, and one
-# `cx flow run` of the generate act's own refusal — in flow-dogfood-gate's
-# shape: a corpus case embeds its document inline, so it cannot catch this
-# one rotting. It runs no make target (the flow's acts are the doc pipeline's
-# steps; running them here would nest the doc pipeline inside `make test`).
+# ── docs-flow-gate — the documentation flow's own fixture (RULED: CICD-1,
+# RFLOW-1 L104) ──────────────────────────────────────────────────────────────
+# scripts/ci_flow_gate.cx docs, the one gate of the repository's flow
+# documents (the docs flow gate folded onto it, L104). It reads the REAL
+# document through this tree's binary: `cx flow validate`, `cx flow simulate`
+# over docs-src/flow/sim/docs/, and one `cx flow run` of the generate act's
+# own refusal under the grants `make docs-flow` passes. It is shaped like
+# flow-dogfood-gate: a corpus case embeds its document inline, so it cannot
+# catch this one rotting. It runs no make target: the flow's acts are the
+# doc pipeline's steps, and running them here would nest the doc pipeline
+# inside `make test`.
 .PHONY: docs-flow-gate
 docs-flow-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 docs-flow-gate: build-vcx
-	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/docs_flow_gate.cx
+	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess --allow-clock scripts/ci_flow_gate.cx docs
 
 # ── the private CI/CD flow targets (RULED: PRIVMK-1, RFLOW-1) ─────────────────
 # merge-flow-gate, premerge-flow-gate and premerge-flow run the integrator
