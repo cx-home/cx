@@ -536,6 +536,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `docs-49` | [rulings_2026_09_28_owner_decisions_l71_l79.md](rulings_2026_09_28_owner_decisions_l71_l79.md) | DOCS-49 — the generators and the front pages first, the repository pages next, the voice pass last (L79 = (a)) |
 | `docs-50` | [rulings_2026_09_28_owner_decisions_l85.md](rulings_2026_09_28_owner_decisions_l85.md) | DOCS-50 — the bindings page is a fourth allowed page for a host language's name, as a binding's target only (L85 = (a)) |
 | `docs-51` | [rulings_2026_09_29_owner_direction_docs_5of5.md](rulings_2026_09_29_owner_direction_docs_5of5.md) | DOCS-51 — the acceptance criteria for a 5 of 5, each held by a step, none ticked on a step table alone |
+| `docsok-1` | [rulings_2026_09_29_owner_approval_docs.md](rulings_2026_09_29_owner_approval_docs.md) | DOCSOK-1 — the site as read on 2026-09-29 is the standard's baseline; every later change holds it |
 | `dr-1` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) | DR-1 … DR-11 — the design letter's eleven sub-rulings |
 | `dr-10` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) | DR-10 consult log (spec-sufficiency probe register) |
 | `dr-11` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) | DR-1 … DR-11 — the design letter's eleven sub-rulings |
@@ -1498,4 +1499,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*353 ledger pages; 783 ids declared, 390 cited only.*
+*354 ledger pages; 784 ids declared, 390 cited only.*
