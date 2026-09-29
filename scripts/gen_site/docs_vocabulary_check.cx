@@ -1,19 +1,20 @@
 # scripts/gen_site/docs_vocabulary_check.cx — the docs-vocabulary step
-# (RULED: DOCS-51 §1 and §5, PLAY-2, RS-1, CXF-1).
+# (RULED: DOCS-51 §1 and §5, DG-1, PLAY-2, RS-1, CXF-1).
 #
 # One vocabulary: the rings' and the delivery grammar's words everywhere —
 # data, code, a query is a program over data, two rings and the groups above
 # them, decision / merge / step / run. This step counts, in every served
 # SOURCE and in the playground's own page and script, the words the site
 # does not use — "Ring 2", "Ring 3", an "ecosystem ring", the "monorepo",
-# "lane", "campaign", "gate run", "steward", "ruling", "landed", and the
-# reading names Document / Program as a tab or crumb label — and holds each
+# "lane", "campaign", "gate run", "steward", "ruling", "landed", the
+# grammar's verdict and unit words "green"/"red", "job", "stage" and "task",
+# and the reading names Document / Program as a tab or crumb label — and holds each
 # file to docs-src/site/vocabulary.cxd, in the voice ratchet's shape: a file
 # with no row for a word must read ZERO of it; a file with a row may read at
 # most its `allow=`, and when it reads LESS the step refuses too, naming the
 # new count, so the number in the row is always the measured one and only
 # ever moves down. Every row carries its `why=` — the sense that is not the
-# grammar's (a codec lane, a page that records the words leaving), or the
+# grammar's (a pipe's stage, a page that records the words leaving), or the
 # floor a voice wave lowers to zero (`wave=`).
 #
 # What is scanned: the served sources docs_voice_check.cx scans (the landing,
@@ -22,15 +23,17 @@
 # playground.js and playground.html and the guide generator (the navigation's
 # labels are its strings).
 #
-# Not scanned, by name: the grammar's "green/red", "job/stage/task" and
-# "landing" — ordinary words in these pages ("landing page", a `job` element,
-# a task list) whose pipeline sense a word count cannot tell apart; a sentence
-# using one in the pipeline sense is the voice pass's to catch.
+# Code spans are not prose (the `prose` def below): a word is counted only
+# outside them, so a make target or a directory named with a word keeps its
+# spelling inside a code span and nowhere else. A mention of green/red or
+# job/stage/task in a sense that is not the pipeline's — a pipe's stage, the
+# A2A protocol's task — is a row whose why= names that sense, at its
+# measured count. Not scanned, by name: "landing" ("landing page").
 #
 # Run (from the repository root):
 #   cx --allow-read --allow-write scripts/gen_site/docs_vocabulary_check.cx
 #   (or: make docs-vocabulary-check)
-# Exit: 0 green (the per-file table on stdout); 1 any file over or under an
+# Exit: 0 pass (the per-file table on stdout); 1 any file over or under an
 # allowance, a row naming a file that is not there, or a row naming no word.
 
 [?lib 'cx-stdlib/io'      as=io]
@@ -66,7 +69,8 @@
     [= $flags [$attr $w "flags" "(?i)"]]
     [= $scope [$attr $w "scope" ""]]
     [= $say [$attr $w "say" ""]]
-    [yield [w id=$id rx=$rx flags=$flags scope=$scope say=$say]]]]
+    [= $spans [$attr $w "spans" "exempt"]]
+    [yield [w id=$id rx=$rx flags=$flags scope=$scope say=$say spans=$spans]]]]
 
 # rows: the [allow]/[page] rows — {path, word, allow, wave, why}.
 [?def rows scope=public impure ($doc)
@@ -78,8 +82,31 @@
     [= $why [$attr $p "why" ""]]
     [yield [row path=$path word=$word allow=$allow wave=$wave why=$why]]]]
 
-[?def count-in scope=public impure ($text $w)
-  [$count [$re:find-all [$re:compile [$concat [$string $w@flags] [$string $w@rx]]] $text]]]
+# prose: the text a reader reads as sentences — every code span removed
+# before a word is counted: a fenced block (```…```), a [fixture id=…]
+# citation (a case id is a name, not a sentence), an inline `…` span (it
+# may wrap one line, as the .cxd bodies do, never a paragraph), an HTML
+# <code>…</code>, and a path literal outside one (a token carrying a "/"
+# that ends in "/" or in a file extension — `lanes/`, examples/lanes/x.cx).
+# A directory, file or make-target name that carries a word keeps its
+# spelling there, and only there; "JSON/YAML" or "green/red" is not a path
+# and is still counted.
+[?const SPAN-RX "(?s)```.*?```|\\[fixture id=[^\\]]*\\]|`[^`\n]*(?:\n[^`\n]*)?`|<code>.*?</code>"]
+[?const PATH-RX "[A-Za-z0-9_.-]*[A-Za-z0-9_-]/[A-Za-z0-9_./-]*"]
+[?const PATH-EXT-RX "(?s).*(/|\\.[A-Za-z0-9]+)"]
+[?def prose scope=public ($text)
+  [?let [= $spanless [$re:replace [$re:compile SPAN-RX] $text " "]]
+        [= $ext [$re:compile PATH-EXT-RX]]
+    [$re:replace-fn [$re:compile PATH-RX] $spanless
+      [?fn ($m) [?let [= $t [$re:group $m 0]]
+                  [?if [$re:matches $ext $t] [then " "] [else $t]]]]]]]
+
+# count-in: a word's mentions in a file — over the prose, or over the whole
+# text for a word whose `spans=keep` (the reading label is a quoted string
+# in the playground's own script, so its code is the thing counted).
+[?def count-in scope=public impure ($text $plain $w)
+  [$count [$re:find-all [$re:compile [$concat [$string $w@flags] [$string $w@rx]]]
+                          [?if [= [$string $w@spans] "keep"] [then $text] [else $plain]]]]]
 
 [?def in-scope scope=public ($w $path)
   [?if [= [$string $w@scope] ""] [then true]
@@ -106,9 +133,10 @@
                 [yield [$concat [$string $r@path] " → word=" [$string $r@word]]]]]
   [= $graded [$fp:flat-map $files [?fn ($f)
                [?let [= $text [$io:read-file $f]]
+                       [= $plain [$prose $text]]
                  [?for [in $w $words]
                    [where [$in-scope $w $f]]
-                   [= $n [$count-in $text $w]]
+                   [= $n [$count-in $text $plain $w]]
                    [= $id [$string $w@id]]
                    [= $say [$string $w@say]]
                    [= $r [$allow-for $rows $f $id]]

@@ -3873,8 +3873,9 @@ docs-voice-check: build-vcx
 # ── docs-vocabulary-check (RULED: DOCS-51 §1, PLAY-2) — one vocabulary ──────
 # Counts the words the site does not use — "Ring 2"/"Ring 3", an "ecosystem
 # ring", the "monorepo", lane, campaign, gate run, steward, ruling, landed,
-# and Document/Program as a playground tab or crumb label — in every served
-# source, the playground's page and script and the guide generator, and holds
+# green/red, job, stage, task, and Document/Program as a playground tab or
+# crumb label — outside code spans, in every served source, the
+# playground's page and script and the guide generator, and holds
 # each file to docs-src/site/vocabulary.cxd in the voice ratchet's shape: a
 # file with no row reads zero, a row's count only ever moves down.
 .PHONY: docs-vocabulary-check
