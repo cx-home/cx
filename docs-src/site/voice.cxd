@@ -42,12 +42,10 @@ Two ratchets, each read by a step:
        the file comment that names the page — and the prose names no host
        language; whether a binding page may is the bindings row's open letter ]
     [page path='docs-src/repos/cx-binding-python.cxd' allow=2 why='the repository is named cx-binding-python: its root element and the comment naming the file; the prose names no host language']
-    [; floors for waves 5–7 (the voice pass), the count measured now ]
-    [page path='docs-src/canonical/sections/01-intro.cxd' allow=7 wave=5 why='the standard-to-meet sentence and the bindings list']
-    [page path='docs-src/canonical/sections/01b-choosing.cxd' allow=1 wave=5 why='the bindings row']
+    [; floors for waves 5–7 (the voice pass), the count measured now; wave 5
+     took 01-intro, 01b-choosing, 03-surfaces and 04-identity to zero (their
+     rows are gone: a file with no row reads zero) ]
     [page path='docs-src/canonical/sections/02-data-language.cxd' allow=2 wave=5 why='two aside comparisons']
-    [page path='docs-src/canonical/sections/03-surfaces.cxd' allow=1 wave=5 why='one aside comparison']
-    [page path='docs-src/canonical/sections/04-identity.cxd' allow=5 wave=5 why='the binding examples']
     [page path='docs-src/canonical/sections/05-analytics.cxd' allow=23 wave=6 why='the columnar tour is written against the pandas/Arrow reader']
     [page path='docs-src/canonical/sections/06-code.cxd' allow=4 wave=5 why='aside comparisons']
     [page path='docs-src/canonical/sections/07-bindings.cxd' allow=62 wave=6 why='the bindings page documents cxlib for Python beside Go, Rust and V; letter for waves 5–7 whether a binding page may name its host language']
@@ -60,5 +58,5 @@ Two ratchets, each read by a step:
     [page path='docs/dev/v0130-capabilities.md' allow=1 wave=7 why='docs/dev folds into the guide (DOCS-46)']]
 
   [; ── the fixture-citation floor over docs-src/canonical/sections/*.cxd and docs-src/repos/*.cxd ── ]
-  [fixtures floor=53]
+  [fixtures floor=74]
 ]
