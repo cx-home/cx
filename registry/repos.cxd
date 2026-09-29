@@ -387,6 +387,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='conformance/gates_register.cxd' repo=cx why='the drift check of the cx-wide gate register: a suite status lives on its own [test-suite] element and conformance/gates.cxd is derived from the elements -- scripts/gates_register.cx is the check and this corpus its executable half (RULED: RS-27)']
   [path exact='conformance/gates.cxd' repo=cx why='the cx-wide gate register D49a derives from every suite element; conformance/gates_register.cxd, the front door\'s, is its drift check (RULED: D68a)']
   [path exact='conformance/llm/antipatterns.cxd' repo=cx why='the primer\'s anti-pattern corpus, graded by scripts/gen_docs/primer_build.cx; the LLM docs are the front door\'s (RULED: D68a)']
+  [path exact='conformance/llm/cli.cxd' repo=cx why='the guide\'s CLI invocation cases, replayed by scripts/gen_docs/primer_build.cx when the guide is built; the site is the front door\'s (RULED: DOCSOK-1, D68a)']
   [path prefix='conformance/' repo=cx why='what remains of the root corpus after the rows above is the corpus READMEs and triage notes, which describe the corpus of every repository (RULED: D68a)']
   [; _gate_evidence/ and .claude/ RE-ALLOCATED to cx-private above (RULED: D82a, RS-32): runner
      evidence and per-tool scaffolding are the orchestration repository's, not the public front
