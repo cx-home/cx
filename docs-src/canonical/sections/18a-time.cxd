@@ -33,8 +33,8 @@
          double-count, with an open end spelled as an *absent* attribute
          — never a null. Two records differing only in effective date
          are different values with different addresses, which is exactly
-         why validity is payload and not metadata (see the lane
-         discipline in [[value-model]])."""]]
+         why validity is payload and not metadata (see the three ways
+         information rides with a value, in [[value-model]])."""]]
 
   [child id=bt-corrections n=18a.2 title='Corrections — three relations, not one'
     [intro

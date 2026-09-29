@@ -114,9 +114,9 @@ the product compiles from (RULED: RS-24).
   `make build-vcx` runs the Ring-1 repository's own `vcx/` build
   (`deps/cx-core-code/vcx`) with the front door's `deps.cxd` and `deps/` root,
   so the binary is exactly the pinned set.
-- `cx` is a migration lane, never a gate: a repository that releases is tried
-  against the newest mutually green set; green advances its pin, red leaves
-  it and lands a finding on the repository that moved (RULED: RS-7, RS-8).
+- `cx` is a migration path, never a gate: a repository that releases is tried
+  against the newest set that passes together; a pass advances its pin, a
+  fail leaves it and files a finding on the repository that moved (RULED: RS-7, RS-8).
 
 ## 4. The registration hooks — the core names no product
 
@@ -153,7 +153,7 @@ fragment (RULED: D58a).
 
 ## 7. The public front door and the private working tree
 
-The public `cx` is filtered from the private orchestration repository's green
+The public `cx` is filtered from the private orchestration repository's passing
 heads by the extraction recipe: every `repo=cx` path except the orchestration
 set (runner evidence, per-tool scaffolding, the agent entry points), with the
 ledger and the process specs public because `cx`'s own gate reads them

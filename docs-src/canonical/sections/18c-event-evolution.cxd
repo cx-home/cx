@@ -122,7 +122,7 @@
 
     [list
       [item """**Provenance is a claim.** `[migrated-from hash=…]` is a
-              detached Lane-2 value linking new to old — the same
+              detached claim linking new to old — the same
               hash-linkage discipline corrections use, never a field
               smuggled into either document."""]
       [item """**Migration is the representational relation.** It never

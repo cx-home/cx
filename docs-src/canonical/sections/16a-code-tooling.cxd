@@ -405,8 +405,8 @@
            30%, `STRICT=1` for 10%). The **V-core streaming gate**
            lives in
            `vcx/tests/runners/code_streaming_throughput_bench.v`
-           with a 200 MB/s line — honest status: the gate is not yet
-           green (`[?for]` streaming sits at the ~200 MB/s line;
+           with a 200 MB/s line — honest status: the gate does not
+           pass yet (`[?for]` streaming sits at the ~200 MB/s line;
            `[?map]` last measured 129.2 MB/s)."""]
 
       [body

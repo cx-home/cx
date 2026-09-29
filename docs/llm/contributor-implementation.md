@@ -95,7 +95,7 @@ $ deps/cx-core-code/vcx/target/cx deps sync --check   # every checkout at its pi
   needs it. Keep the logic PURE — text in, verdict out — and put the reads,
   writes and exit in the program that calls it (`scripts/deps_pins.cx` is the
   shape) (RULED: CXF-1).
-- Another language for a task needs a filed `cx-gap` issue — the task, the CX
+- Another language for any work needs a filed `cx-gap` issue — the work, the CX
   attempt, the gap by kind — BEFORE it runs, for a probe as much as for a
   checked-in tool (RULED: CXF-1).
 - A CX surprise — a silent wrong answer, a lint that passes what the run

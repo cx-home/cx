@@ -751,7 +751,7 @@ that every registration onto one name agrees in value type. Nothing checks
 that the NAME is the one the author meant."*
 
 So if one feature says `order-id` and the other says `order_id`, there is **no
-W2 conflict**. Both become solitary, composition is green, `ok=true`, and the
+W2 conflict**. Both become solitary, composition passes, `ok=true`, and the
 first evidence is an empty readout at runtime. What catches it is a **note**,
 and `ok=` is untouched:
 
@@ -811,7 +811,7 @@ things by one correctly-spelled name.
 Before you publish a feature as an archetype for others to instantiate,
 `xap_grammar_composition.md:383`:
 
-> **Graduation (R8.10).** Archetype status is EARNED: the cohesion gate green,
+> **Graduation (R8.10).** Archetype status is EARNED: the cohesion gate passing,
 > plus TWO genuinely different instantiations named and recorded as evidence —
 > different composing surface/tenant, non-overlapping `uses` neighborhoods,
 > **not two skins of one deployment**.
@@ -1031,7 +1031,7 @@ mechanism is worse than one that admits a gap:
   document are spec prose plus the ORIEL demo
   (`spec/03-approved/xap/demos/oriel/serve.cx:5165-5263`, routes at
   `surface.cx:66-67`, gate-enforced assertions at `drive.cx:1016-1025` and
-  `:1362-1381` — which is a real lane, `make test-oriel-lane`). The spec's own
+  `:1362-1381` — which is a real-socket step, `make test-oriel-lane`). The spec's own
   status ladder scopes the claim (`ux.md:2114`): built *"for a candidate bundle
   and per-tenant adoption"*, with migration commands for breaking changes
   **unbuilt**.

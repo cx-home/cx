@@ -367,8 +367,8 @@ ready"""]
          tell the transports apart above the URL. Three runnable,
          self-contained recipes live in the repository under
          `examples/cxstore/`, each with a Makefile that starts the
-         server, drives a client, and stops it (all three were run
-         green against this branch-head binary):"""]
+         server, drives a client, and stops it (all three were run,
+         and passed, against this branch-head binary):"""]
     [list
       [item """`client-server/` — a client over THE store wire: `cx
               store-serve` holds a store and serves it over the XSP
@@ -480,7 +480,7 @@ cx store-rotate-kek: 5 object(s) now under `tenant-b` (5 re-wrapped) — verify 
       [tr [td 'an unsupported compression request'] [td 'rejected, never accepted and ignored']]
       [tr [td 'an unknown daemon config attribute'] [td 'startup failure CXER1711; a reload refused whole, CXER1712']]
       [tr [td 'an anonymous or under-privileged wire op'] [td 'CXER1702 (401) / CXER1703 (403); over the store wire the PEP\'s [deny …] value verbatim']]
-      [tr [td 'a package that fails verification at any stage'] [td 'nothing staged; the stage\'s own error value']]]]
+      [tr [td 'a package that fails verification at any check'] [td 'nothing staged; the failing check\'s own error value']]]]
 
   [child id=store-console n=18.7 title='The management console'
     [body

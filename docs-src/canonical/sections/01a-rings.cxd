@@ -209,7 +209,7 @@
       """Take the smallest ring, or group, that answers your question. You
          can always move outward later — nothing you wrote against a lower
          ring has to change, because the lower ring is unchanged by the
-         higher one. [[choosing]] is the router: a task table and four
+         higher one. [[choosing]] is the router: a table of goals and four
          reader paths (evaluator, data-format adopter, application author,
          platform operator), each ending in something you can do. If you
          just want to try CX first, start at [[quickstart]] — it runs

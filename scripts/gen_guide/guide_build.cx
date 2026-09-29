@@ -482,7 +482,7 @@
    made it impure and made this def impure with it — and this def is called
    from inside a `[?for]`'s `[where]`, whose enclosing `[?def]` declares no
    purity and is therefore PURE, so the guide stopped rendering at all
-   (CXER0233 E_PURITY_VIOLATION, the post-merge red on 100989e09). Marking the
+   (CXER0233 E_PURITY_VIOLATION, the failed post-merge run on 100989e09). Marking the
    caller impure is the honest half of the answer -- `lib-ring-items` and the
    three defs above it (nav-html, wrap-page, index-body) DO transitively read a
    file, and they say so now, terminating at the top level, which was always
@@ -841,7 +841,7 @@
    tarballs land in the docs, top-nav slot between Playground and About).
    The build matrix IS the ring model as artifacts — the same cx binary name,
    a build-decided surface. What a release carries is what the release flow
-   stages: the four builds for darwin-arm64 (Phase 2) and for linux-arm64
+   publishes: the four builds for darwin-arm64 (Phase 2) and for linux-arm64
    (Phase 2b, release_linux.sh, default-on; x86_64 only with
    RELEASE_LINUX_AMD64=1), the conformance bundle, the VS Code extension
    (RULED: CO-20) and SHA256SUMS.txt — the asset list of the latest release
@@ -1216,7 +1216,7 @@
           'binding, iterators, resilience, services, concurrency, and async. '
           'Each entry is generated from the co-located reference source and, '
           'where the conformance corpus backs it, carries a runnable example '
-          'pinned verbatim to a green fixture.']
+          'pinned verbatim to a passing fixture.']
         [?for [in $dd $dds] [yield [$directive-html $dd]]]]]]]]
 
 [# render-syntax: reference/syntax.cx → the core-syntax page body. #]

@@ -25,7 +25,7 @@
        against — one case per entry point a wrapper covers, an input
        document and the canonical output, hash or refusal it must answer —
        and checks the same file against `libcx` directly in its C test. The
-       crate's own lane over those vectors is owed: its repository's check
+       crate's own test over those vectors is owed: its repository's check
        grades the pins alone today, and its own build notes say so rather
        than dressing a skip as a pass."""]
   [gives
@@ -36,7 +36,7 @@
   [try
     """One ABI vector, replayed by this site's `cx`: an XML document imported
        to CX through the entry point the wrapper's XML-to-CX call wraps, and
-       the canonical text it must answer. A binding's lane asserts the same
+       the canonical text it must answer. A binding's own test asserts the same
        vector through its wrapper; this page shows the engine's own answer."""]
   [fixture id=abi-010-xml-to-cx]
   [status
@@ -45,4 +45,4 @@
        `libcx` from, which is why the registry row carries no `at=` and the
        figure draws no column on either side. It ships from its own
        repository at its own cadence, and a pin moves there only when the
-       newer front door is green with it."""]]
+       newer front door passes with it."""]]

@@ -1,7 +1,7 @@
 [# docs-src/repos/cx-binding-v.cxd — the V binding's page,
    repo-cx-binding-v.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 4).
    Facts from the registries; the one example from the front door's ABI
-   vectors, the corpus the binding's own lane grades itself against. #]
+   vectors, the corpus the binding grades itself against. #]
 
 [repo name=cx-binding-v
   [intro
@@ -22,7 +22,7 @@
   [body
     """We grade the binding against the front door's published ABI vectors —
        one case per entry point, an input document and the canonical output,
-       hash or refusal it must answer — through the binding's own lane,
+       hash or refusal it must answer — through the binding's own test,
        written in V, which loads the file from its pin and asserts every
        vector through its own calls. The same file is checked against
        `libcx` directly by the front door's C test, so the native path, the
@@ -36,7 +36,7 @@
   [try
     """One ABI vector, replayed by this site's `cx`: a document with a
        presentation comment, kept through `cx_fmt` — the lossless canonical
-       text the binding's `fmt` answers. The binding's lane asserts the same
+       text the binding's `fmt` answers. The binding's own test asserts the same
        vector natively; this page shows the engine's own answer."""]
   [fixture id=abi-001-fmt-lossless-retains-comment]
   [status
@@ -45,4 +45,4 @@
        and the `libcx` the archived path links, which is why the registry row
        carries no `at=` and the figure draws no column on either side. It
        ships from its own repository at its own cadence, and a pin moves
-       there only when the newer front door is green with it."""]]
+       there only when the newer front door passes with it."""]]

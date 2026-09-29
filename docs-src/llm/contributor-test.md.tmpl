@@ -53,8 +53,8 @@ $ make fixtures FIXTURE_FILES="<file> …"            # just the files your bran
 | the diff touches only documentation | the doc pipeline (`make test-docs`, the steps marked below) is the post-merge run's; your own steps are unchanged | RULED: INT-10 |
 | a step fails at the same commit with no code change | a flaky test: a known one is retried once; a new one gets a flaky-test issue — never a loosened bound or a skipped case | RULED: DG-1 |
 
-A failed post-merge run names EVERY red step (`make test` runs its storm with
-`-k`), so the fix for a red head carries every class the log names
+A failed post-merge run names EVERY failed step (`make test` runs its storm with
+`-k`), so the fix for a failed head carries every class the log names
 (RULED: RUN-2).
 
 ## 3. The umbrellas — where a test function goes
@@ -90,7 +90,7 @@ lost with one that was added (RULED: RS-12).
 
 | Runner | Runs | Holds |
 |---|---|---|
-| pre-merge — the branch's own | its builds, lints, graders, umbrellas and docs checks, under its own `CX_BUILD_SLOT` through `scripts/build-slot.sh`; load-sensitive steps (memory gauges, bench, real-socket lanes) one at a time on the shared slot | the branch's own tree: every own step passed once on the final tree before merge (RULED: INT-8, OL-3) |
+| pre-merge — the branch's own | its builds, lints, graders, umbrellas and docs checks, under its own `CX_BUILD_SLOT` through `scripts/build-slot.sh`; load-sensitive steps (memory gauges, bench, real-socket tests) one at a time on the shared slot | the branch's own tree: every own step passed once on the final tree before merge (RULED: INT-8, OL-3) |
 | post-merge — the loop on each new head | `make test-changed BASE=<last passed head>`, escalating to the full union on an infra change; the full union daily on an idle runner | the integration branch: a failed run gets a fix, never a revert of the gate (RULED: RUN-1, RUN-3) |
 
 Read a status directly, never through an inner shell that `devbox run` wraps

@@ -165,7 +165,7 @@ identity:
 `cx` ships as four builds of one binary name. The build answers *how much of
 CX you have to take on*; take the smallest one that answers your question.
 
-| Your task | Build | What you get | When NOT to use it |
+| You want | Build | What you get | When NOT to use it |
 |---|---|---|---|
 | Read, write, convert, diff, hash, validate documents — including untrusted ones | **`data`** | Ring 0 only: the reading, the canonical form, fmt, lint. No evaluator is compiled in, so nothing can execute | The moment you need a value computed rather than re-projected |
 | Run CX inside a host application | **`embed`** | Rings 0–1 core: directives, CXPath, comprehensions, the pure stdlib; no local-effect packs | When the program itself must read files, the clock or the network |
@@ -867,7 +867,7 @@ than guessed at:
 
 ## 11. Where to go next
 
-Load one only when the task needs it — this primer is meant to be the whole
+Load one only when the work needs it — this primer is meant to be the whole
 context for ordinary work.
 
 | File | Load it when |

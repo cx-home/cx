@@ -21,7 +21,7 @@
        and flag catalog, the grammars and the parity register against the
        lexer and the language server, each a step of the front door that
        reads this repository from its pin. A verb added to `cx` without its
-       completion is a red step, not a stale editor. [[editors]] and [[cli]]
+       completion is a failed step, not a stale editor. [[editors]] and [[cli]]
        are the guide's pages."""]
   [body
     """The diagram renderer is a pure CX program: it renders a program's

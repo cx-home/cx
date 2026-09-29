@@ -321,7 +321,7 @@ $ cx --from=cx --to=cx input.cx
 `cx` ships as four builds of one binary name. The build answers *how much of
 CX you have to take on*; take the smallest one that answers your question.
 
-| Your task | Build | What you get | When NOT to use it |
+| You want | Build | What you get | When NOT to use it |
 |---|---|---|---|
 | Read, write, convert, diff, hash, validate documents — including untrusted ones | **`data`** | Ring 0 only: the reading, the canonical form, fmt, lint. No evaluator is compiled in, so nothing can execute | The moment you need a value computed rather than re-projected |
 | Run CX inside a host application | **`embed`** | Rings 0–1 core: directives, CXPath, comprehensions, the pure stdlib; no local-effect packs | When the program itself must read files, the clock or the network |
@@ -2473,7 +2473,7 @@ error: cx-err:CXER0001: [?if] expects [then …] / [else …] clause children af
 
 ## 11. Where to go next
 
-Load one only when the task needs it — this primer is meant to be the whole
+Load one only when the work needs it — this primer is meant to be the whole
 context for ordinary work.
 
 | File | Load it when |
@@ -3457,11 +3457,11 @@ Two guard rails matter, because both used to be soundness holes rather than
 formatting warts:
 
 * **Out-of-set glyphs are not heads.** `**` and `==` are absent from the ruled
-  set, so `[== 5 3]` stays in the array lane and canonicalizes as the string
+  set, so `[== 5 3]` stays an array and canonicalizes as the string
   `'== 5 3'` — deliberately, and pinned.
 * **Glued continuations are not heads.** `[-1, 2]` is an array with a negative
   number, `[*n]` is an alias reference, `[<=x]` is an array item. Only the
-  delimited glyph dispatches to the element lane.
+  delimited glyph makes the bracket an element.
 
 Getting this wrong is not cosmetic: before the alphabet was closed, `[<= 5 3]`
 canonicalized into the very bytes of `['<= 5 3']` and shared its content
@@ -3524,7 +3524,7 @@ cx --from=cx --to=json --lossless doc.cx    # re-imports byte-identically
 cx --xml doc.cx                             # projection shorthand
 ```
 
-The XML lane is the one to check your mental model against, because the two
+The XML projection is the one to check your mental model against, because the two
 models are close but not identical:
 
 `input.xml`
@@ -5426,7 +5426,7 @@ true
 
 This is worth its own heading because it is the failure mode that makes a gate
 worse than no gate. A gate over the empty set has verified the empty set, and
-reports green:
+reports a pass:
 
 `prog.cx`
 ```cx
@@ -5765,7 +5765,7 @@ $ cx prog.cx
 ### The deriver is a principal
 
 This is the design move that makes the rest cohere. A deriver is not a
-callback or a job; it is an **actor**, declared beside the roles and the
+callback or a background worker; it is an **actor**, declared beside the roles and the
 agents, so run assembly reads *one* block to know every actor in the system:
 
 ```cx
@@ -6251,7 +6251,7 @@ there is **one validator, never two**.
   with no row is a refusal, never a silent no-op.**
 * **`[resolver …]`** — only the kinds that *are* data: `kind=scripted` and
   `[affinity …]` rule rows. A **closure** resolver is code, not deployment
-  data, and stays on the direct `[$xap:run]` lane.
+  data, and stays on the direct `[$xap:run]` path.
 * **`[log-reduce window= fn=]`** — `fn=` names a public def of a *pinned
   feature's* contract module as `<feature>:<def>`. Because a binding may name
   a contract def, the host's load step runs **before** its attach step.
@@ -6467,7 +6467,7 @@ publish, add a pinned row, re-pin, restart.
 
 > **Honest gap.** `[$xap:host]` has no live call site in this repository —
 > every occurrence is specification or schema. The nearest working programs
-> use the direct `compose` + `run` lane and say so:
+> use the direct `compose` + `run` path and say so:
 > `reference/shop-web-client/serve.cx:36`, with `[$xap:compose]` at `:131` and
 > `[$xap:run]` at `:136`. The guide's Operations section, *The XAP host*, is the six-step
 > summary and carries the `[$xap:host …]!` postfix rule.
@@ -6853,7 +6853,7 @@ $ cx prog.cx
 `hx-on` is excluded **permanently** — it is what would force `unsafe-inline`
 into `script-src`. Enforcement is two-sided: a name gate at authorship, and a
 re-scan of the *serialized bytes* so a path that bypassed the constructor
-still goes red:
+still fails:
 
 `prog.cx`
 ```cx
@@ -7123,7 +7123,7 @@ pieces:
    (`:40-42`); `vtree` / `vctx` unpack the `[ux:view]` envelope (`:54-64`).
 2. **A driver that uses the shipped wire.** `post-raw` posts to
    `/intent/<verb>` with `follow-redirects: false` (`:70-72`), and
-   `post-headers` toggles `HX-Request: true` for the fragment lane (`:74-83`).
+   `post-headers` toggles `HX-Request: true` for the fragment responses (`:74-83`).
    Nothing supplies a scope — the server derives it from the cookie it set.
 3. **Steps are values.** `[?def check]` returns
    `[step name= ok="PASS"|"FAIL" detail=]` (`:132-133`), so the harness output
@@ -7155,10 +7155,10 @@ compatibility alias anywhere, deliberately — two spellings for one meaning is
 two things to keep true.
 
 **No silent partials.** A gate over the empty set refuses rather than
-reporting green (`xap-compose-051`). A `[sources]` block with no rows refuses
+reporting a pass (`xap-compose-051`). A `[sources]` block with no rows refuses
 rather than binding nothing. A composition reports *every* W-violation rather
 than the first (`xap-compose-014`). The pattern: a check that cannot do its
-job says so.
+work says so.
 
 **No error-as-silent-data.** An externalizing effect refuses to carry an
 `[err]` out of the program unless you wrote `errs=:permit`. This closes the
@@ -8007,7 +8007,7 @@ that every registration onto one name agrees in value type. Nothing checks
 that the NAME is the one the author meant."*
 
 So if one feature says `order-id` and the other says `order_id`, there is **no
-W2 conflict**. Both become solitary, composition is green, `ok=true`, and the
+W2 conflict**. Both become solitary, composition passes, `ok=true`, and the
 first evidence is an empty readout at runtime. What catches it is a **note**,
 and `ok=` is untouched:
 
@@ -8067,7 +8067,7 @@ things by one correctly-spelled name.
 Before you publish a feature as an archetype for others to instantiate,
 `xap_grammar_composition.md:383`:
 
-> **Graduation (R8.10).** Archetype status is EARNED: the cohesion gate green,
+> **Graduation (R8.10).** Archetype status is EARNED: the cohesion gate passing,
 > plus TWO genuinely different instantiations named and recorded as evidence —
 > different composing surface/tenant, non-overlapping `uses` neighborhoods,
 > **not two skins of one deployment**.
@@ -8287,7 +8287,7 @@ mechanism is worse than one that admits a gap:
   document are spec prose plus the ORIEL demo
   (`spec/03-approved/xap/demos/oriel/serve.cx:5165-5263`, routes at
   `surface.cx:66-67`, gate-enforced assertions at `drive.cx:1016-1025` and
-  `:1362-1381` — which is a real lane, `make test-oriel-lane`). The spec's own
+  `:1362-1381` — which is a real-socket step, `make test-oriel-lane`). The spec's own
   status ladder scopes the claim (`ux.md:2114`): built *"for a candidate bundle
   and per-tenant adoption"*, with migration commands for breaking changes
   **unbuilt**.
@@ -8340,11 +8340,11 @@ vocabulary). The rulings behind the refusals: AD-10 (#1162) and 1161-Q1a in
   the behaviour and nothing above it moves.
 - Every rule below cites the decision (`RULED: <id>`) that made it; the
   ledger (`ledger/README.md` indexes every id) is where to read the reason.
-- Load ONE area file for the task. The table in §1 is the whole routing.
+- Load ONE area file for the work at hand. The table in §1 is the whole routing.
 
-## 1. The reading order — load the least that answers the task
+## 1. The reading order — load the least that answers the question
 
-| Task | Load, in order | Never load |
+| The work | Load, in order | Never load |
 |---|---|---|
 | Write or fix a CX program | `cx primer` → the one `reference-*.md` the primer's §11 names | the spec whole; `llms-full.txt` |
 | Add or move a module / surface | this file → `contributor-design.md` → the module's row in `registry/modules.cxd` → its spec's named section | `registry/repos.cxd`'s `why=` prose; other modules' specs |
@@ -8414,7 +8414,7 @@ breaks it. Where the ledger has the rule's own words, §4 prints them.
 | 6 | **A module lives in the ring of its highest verb**; a pure half a Ring-1 consumer needs becomes its own Ring-1 module. | RULED: OL-14 | `placement-gate` |
 | 7 | **Placement before code.** A new surface states its ring, group and directories in its decision, then its `registry/modules.cxd` row, then spec, corpus, code. | RULED: OL-15, 1427-f | `placement-gate`, `stdlib-catalog-gate` |
 | 8 | **One repository per product**, split where a person could own, release and explain it in one line. | RULED: RS-2, RS-3 | `repos-allocation-gate` |
-| 9 | **Consumers pull, producers never push.** Every repository pins what it builds on by sha in `deps.cxd`; `cx` is a migration lane, never a gate. | RULED: RS-7 | `test-deps-pins`, `make deps-sync` |
+| 9 | **Consumers pull, producers never push.** Every repository pins what it builds on by sha in `deps.cxd`; `cx` is a migration path, never a gate. | RULED: RS-7 | `test-deps-pins`, `make deps-sync` |
 | 10 | **The mover fixes what it breaks.** A lower repository keeps its specified surface compatible; an intentional break is a decision naming its consumers. | RULED: RS-8 | the consumer's own gate on the bump |
 | 11 | **A V product imports the rings and its pins, nothing else**; one V module per product, explicit `import`s, a `pub` surface per caller. | RULED: RS-24 | `product-import-gate` |
 | 12 | **Products register themselves.** A product adds its builtins and its CLI verbs from its own `init()`; the core knows no product by name. | RULED: D71a, D73a | the build of a profile without the product |
@@ -8609,9 +8609,9 @@ the product compiles from (RULED: RS-24).
   `make build-vcx` runs the Ring-1 repository's own `vcx/` build
   (`deps/cx-core-code/vcx`) with the front door's `deps.cxd` and `deps/` root,
   so the binary is exactly the pinned set.
-- `cx` is a migration lane, never a gate: a repository that releases is tried
-  against the newest mutually green set; green advances its pin, red leaves
-  it and lands a finding on the repository that moved (RULED: RS-7, RS-8).
+- `cx` is a migration path, never a gate: a repository that releases is tried
+  against the newest set that passes together; a pass advances its pin, a
+  fail leaves it and files a finding on the repository that moved (RULED: RS-7, RS-8).
 
 ## 4. The registration hooks — the core names no product
 
@@ -8648,7 +8648,7 @@ fragment (RULED: D58a).
 
 ## 7. The public front door and the private working tree
 
-The public `cx` is filtered from the private orchestration repository's green
+The public `cx` is filtered from the private orchestration repository's passing
 heads by the extraction recipe: every `repo=cx` path except the orchestration
 set (runner evidence, per-tool scaffolding, the agent entry points), with the
 ledger and the process specs public because `cx`'s own gate reads them
@@ -8689,7 +8689,7 @@ tracked file no rule claims and a rule that claims nothing.
 | 1 | the DECISION: ring, group, directories, the option table | the issue, then a `ledger/` page citing `RULED: <id>` | `spec-freeze-gate` (a later spec+impl commit needs the id) |
 | 2 | the ROW | `registry/modules.cxd` — `status=planned` until every artifact exists | `placement-gate` |
 | 3 | the SPEC | `spec/03-approved/stdlib/<name>.md` / `spec/03-approved/platform/<name>.md`, in the owning repository | `spec-freeze-gate`, `check-code-spec-consistency` |
-| 4 | the CORPUS — fixtures first | `conformance/stdlib/<name>.cxd` / `conformance/platform/<name>.cxd`, its header's `ring=` the lane that grades it | the fixture graders; `check-fixture-shard-manifest` (a new file in no shard) |
+| 4 | the CORPUS — fixtures first | `conformance/stdlib/<name>.cxd` / `conformance/platform/<name>.cxd`, its header's `ring=` choosing the grader that runs it | the fixture graders; `check-fixture-shard-manifest` (a new file in no shard) |
 | 5 | the BUNDLED SOURCE with its `[module-doc]` | `stdlib/<name>.cx`, namespace `cx-stdlib/<name>` / `cx-platform/<name>` | `guide-check` (fn-doc examples match the corpus), `stdlib-catalog-gate` |
 | 6 | the V CODE, only where CX cannot express it | `vcx/code/` (the rings) / the product's `vcx/<vmodule>/` | `ring-import-gate`, `product-import-gate`, `check-no-stub-impl` |
 
@@ -8800,7 +8800,7 @@ its long-term consequence for CX. The table covers every dimension at once:
 |---|---|
 | code | which V module and directory; the imports it adds; the registration hook it uses |
 | spec | which page, which section, added or changed sentences |
-| conformance | which corpus file, which lane (`ring=`), which shard |
+| conformance | which corpus file, which grader (`ring=`), which shard |
 | gates | which step refuses the wrong tree, and whether one is added (`check-selection-manifest` then) |
 | docs | which generated document moves (`make docs` in the same commit) |
 | lockfile / pins | which `deps.cxd` row or `[module]` row changes |
@@ -8906,7 +8906,7 @@ $ deps/cx-core-code/vcx/target/cx deps sync --check   # every checkout at its pi
   needs it. Keep the logic PURE — text in, verdict out — and put the reads,
   writes and exit in the program that calls it (`scripts/deps_pins.cx` is the
   shape) (RULED: CXF-1).
-- Another language for a task needs a filed `cx-gap` issue — the task, the CX
+- Another language for any work needs a filed `cx-gap` issue — the work, the CX
   attempt, the gap by kind — BEFORE it runs, for a probe as much as for a
   checked-in tool (RULED: CXF-1).
 - A CX surprise — a silent wrong answer, a lint that passes what the run
@@ -8977,8 +8977,8 @@ $ make fixtures FIXTURE_FILES="<file> …"            # just the files your bran
 | the diff touches only documentation | the doc pipeline (`make test-docs`, the steps marked below) is the post-merge run's; your own steps are unchanged | RULED: INT-10 |
 | a step fails at the same commit with no code change | a flaky test: a known one is retried once; a new one gets a flaky-test issue — never a loosened bound or a skipped case | RULED: DG-1 |
 
-A failed post-merge run names EVERY red step (`make test` runs its storm with
-`-k`), so the fix for a red head carries every class the log names
+A failed post-merge run names EVERY failed step (`make test` runs its storm with
+`-k`), so the fix for a failed head carries every class the log names
 (RULED: RUN-2).
 
 ## 3. The umbrellas — where a test function goes
@@ -9043,7 +9043,7 @@ lost with one that was added (RULED: RS-12).
 
 | Runner | Runs | Holds |
 |---|---|---|
-| pre-merge — the branch's own | its builds, lints, graders, umbrellas and docs checks, under its own `CX_BUILD_SLOT` through `scripts/build-slot.sh`; load-sensitive steps (memory gauges, bench, real-socket lanes) one at a time on the shared slot | the branch's own tree: every own step passed once on the final tree before merge (RULED: INT-8, OL-3) |
+| pre-merge — the branch's own | its builds, lints, graders, umbrellas and docs checks, under its own `CX_BUILD_SLOT` through `scripts/build-slot.sh`; load-sensitive steps (memory gauges, bench, real-socket tests) one at a time on the shared slot | the branch's own tree: every own step passed once on the final tree before merge (RULED: INT-8, OL-3) |
 | post-merge — the loop on each new head | `make test-changed BASE=<last passed head>`, escalating to the full union on an infra change; the full union daily on an idle runner | the integration branch: a failed run gets a fix, never a revert of the gate (RULED: RUN-1, RUN-3) |
 
 Read a status directly, never through an inner shell that `devbox run` wraps

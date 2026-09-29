@@ -27,7 +27,7 @@
        owns: the delivery grammar, governance, the readiness rubric and the
        release process; the pin-document format every `deps.cxd` follows;
        the standing rules; the working specs and the archived ones; the
-       design texts and the release campaign's own record. The tree this
+       design texts and each release's own record. The tree this
        site was built from keeps the tracked copies its gates read, and this
        repository is the record published for the rest."""]
   [gives

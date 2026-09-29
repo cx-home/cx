@@ -295,7 +295,7 @@ true
 
 This is worth its own heading because it is the failure mode that makes a gate
 worse than no gate. A gate over the empty set has verified the empty set, and
-reports green:
+reports a pass:
 
 `prog.cx`
 ```cx
@@ -634,7 +634,7 @@ $ cx prog.cx
 ### The deriver is a principal
 
 This is the design move that makes the rest cohere. A deriver is not a
-callback or a job; it is an **actor**, declared beside the roles and the
+callback or a background worker; it is an **actor**, declared beside the roles and the
 agents, so run assembly reads *one* block to know every actor in the system:
 
 ```cx
@@ -1120,7 +1120,7 @@ there is **one validator, never two**.
   with no row is a refusal, never a silent no-op.**
 * **`[resolver …]`** — only the kinds that *are* data: `kind=scripted` and
   `[affinity …]` rule rows. A **closure** resolver is code, not deployment
-  data, and stays on the direct `[$xap:run]` lane.
+  data, and stays on the direct `[$xap:run]` path.
 * **`[log-reduce window= fn=]`** — `fn=` names a public def of a *pinned
   feature's* contract module as `<feature>:<def>`. Because a binding may name
   a contract def, the host's load step runs **before** its attach step.
@@ -1336,7 +1336,7 @@ publish, add a pinned row, re-pin, restart.
 
 > **Honest gap.** `[$xap:host]` has no live call site in this repository —
 > every occurrence is specification or schema. The nearest working programs
-> use the direct `compose` + `run` lane and say so:
+> use the direct `compose` + `run` path and say so:
 > `reference/shop-web-client/serve.cx:36`, with `[$xap:compose]` at `:131` and
 > `[$xap:run]` at `:136`. The guide's Operations section, *The XAP host*, is the six-step
 > summary and carries the `[$xap:host …]!` postfix rule.
@@ -1722,7 +1722,7 @@ $ cx prog.cx
 `hx-on` is excluded **permanently** — it is what would force `unsafe-inline`
 into `script-src`. Enforcement is two-sided: a name gate at authorship, and a
 re-scan of the *serialized bytes* so a path that bypassed the constructor
-still goes red:
+still fails:
 
 `prog.cx`
 ```cx
@@ -1992,7 +1992,7 @@ pieces:
    (`:40-42`); `vtree` / `vctx` unpack the `[ux:view]` envelope (`:54-64`).
 2. **A driver that uses the shipped wire.** `post-raw` posts to
    `/intent/<verb>` with `follow-redirects: false` (`:70-72`), and
-   `post-headers` toggles `HX-Request: true` for the fragment lane (`:74-83`).
+   `post-headers` toggles `HX-Request: true` for the fragment responses (`:74-83`).
    Nothing supplies a scope — the server derives it from the cookie it set.
 3. **Steps are values.** `[?def check]` returns
    `[step name= ok="PASS"|"FAIL" detail=]` (`:132-133`), so the harness output
@@ -2024,10 +2024,10 @@ compatibility alias anywhere, deliberately — two spellings for one meaning is
 two things to keep true.
 
 **No silent partials.** A gate over the empty set refuses rather than
-reporting green (`xap-compose-051`). A `[sources]` block with no rows refuses
+reporting a pass (`xap-compose-051`). A `[sources]` block with no rows refuses
 rather than binding nothing. A composition reports *every* W-violation rather
 than the first (`xap-compose-014`). The pattern: a check that cannot do its
-job says so.
+work says so.
 
 **No error-as-silent-data.** An externalizing effect refuses to carry an
 `[err]` out of the program unless you wrote `errs=:permit`. This closes the

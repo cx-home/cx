@@ -14,18 +14,25 @@ carries and why ([allow]).
   [words]   one [word] per word the site does not use: `id=` names it in a
             row, `rx=` is the pattern (RE2 syntax; `flags=` prefixes it,
             `(?i)` unless said), `scope=` limits it to the paths carrying that
-            substring, `say=` is how the step names it.
+            substring, `say=` is how the step names it, `spans=keep` counts inside
+            code spans too (a label the playground's script spells).
   [allow]   one [page] per file and word: a file with no row for a word must
             read ZERO of it; a file with a row may read at most its `allow=`,
             and when it reads LESS the step refuses too, naming the new count,
             so the number here is always the measured one and only ever moves
-            down. `why=` says which sense the mention is (a codec lane, a
+            down. `why=` says which sense the mention is (a pipe's stage, a
             page recording that a word left) or which voice wave lowers the
             row to zero (`wave=`, as voice.cxd's floors).
 
-Not scanned, by name: the grammar's "green/red", "job/stage/task" and
-"landing" — ordinary words on these pages ("landing page", a `job` element)
-whose pipeline sense a word count cannot tell apart from the everyday one.
+Code spans are not prose: the step counts a word only outside a fenced
+block, an inline `…` span, an HTML <code> span, a [fixture id=…] citation
+and a path literal (a token
+with a "/" ending in "/" or a file extension), so a directory, file or make
+target named with a word keeps its spelling there and nowhere else. The
+grammar's "green/red" and "job/stage/task" are scanned (2026-09-29): a mention
+in another sense — a pipe's stage, a `job` element in a data example — is
+an [allow] row whose why= names that sense, at its measured count, which
+never rises. Not scanned, by name: "landing" ("landing page").
 #]]
 
   [words
@@ -38,63 +45,50 @@ whose pipeline sense a word count cannot tell apart from the everyday one.
     [word id=steward rx='\bstewards?\b' say='"steward"']
     [word id=ruling rx='\brulings?\b' say='"ruling"']
     [word id=landed rx='\blanded\b' say='"landed"']
+    [; the delivery grammar's verdict and unit words (RULED: DG-1, DOCS-51 §1; the owner, 2026-09-29: "we stick with our terminology"): a run passes or
+       fails, and its units are steps in a pipeline — never green/red as a verdict, never a
+       job, stage or task. An ordinary-English or language sense (a pipe's stage, a `job`
+       element in a data example, the colour red) stays only as an [allow] row with its why= ]
+    [word id=green-red rx='\b(green|red)\b' say='"green" / "red"']
+    [word id=job rx='\bjobs?\b' say='"job"']
+    [word id=stage rx='\bstages?\b' say='"stage"']
+    [word id=task rx='\btasks?\b' say='"task"']
     [; the playground's readings are data / query / code (PLAY-2): the old
        names may not come back as a tab or crumb label — a quoted string or
        element text reading exactly Document or Program ]
-    [word id=reading-label rx="(>|['\"])(Document|Program)(<|['\"])" flags='' scope='playground' say='the reading label "Document" / "Program"']]
+    [word id=reading-label rx="(>|['\"])(Document|Program)(<|['\"])" flags='' scope='playground' spans=keep say='the reading label "Document" / "Program"']]
 
-  [; ── the allowances, measured on the PLAY-2 tree (2026-09-29); rows with wave= are floors the voice pass lowers ── ]
+  [; ── the allowances, measured on the PLAY-2 tree and re-measured 2026-09-29: no row for lane, campaign, gate run or steward but the one generated from a spec sentence; rows with wave= are floors the voice pass lowers ── ]
   [allow
-    [page path="docs-src/canonical/sections/00-quickstart.cxd" word=lane allow=1 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
     [page path="docs-src/canonical/sections/01a-rings.cxd" word=ring-2-3 allow=2 why="the page records, in its file comment and prose, that Ring 2 and Ring 3 left under RS-1 and that no such ring exists"]
-    [page path="docs-src/canonical/sections/01b-choosing.cxd" word=lane allow=1 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/canonical/sections/02-data-language.cxd" word=lane allow=3 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/canonical/sections/02a-value-model.cxd" word=lane allow=6 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/canonical/sections/03-surfaces.cxd" word=lane allow=11 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/canonical/sections/04-identity.cxd" word=lane allow=7 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/canonical/sections/04a-schema.cxd" word=lane allow=1 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/canonical/sections/05-analytics.cxd" word=lane allow=4 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
+    [page path="docs-src/canonical/sections/00-quickstart.cxd" word=stage allow=1 why="the `[?pipe]` stage — the code language's own word for one transform of a pipe (code.md §6.4, §8.9), not a pipeline unit"]
+    [page path="docs-src/canonical/sections/05-analytics.cxd" word=stage allow=3 why="a stage of a streaming pipe — the code language's word for one transform a row group flows through, not a pipeline unit"]
+    [page path="docs-src/canonical/sections/06-code.cxd" word=stage allow=15 why="the `[?pipe]` stage — the code language's own word for one transform of a pipe (code.md §6.4, §8.9), not a pipeline unit"]
+    [page path="docs-src/canonical/sections/08-tooling.cxd" word=job allow=1 why="a CI service's own `jobs:` key inside the workflow-file example"]
+    [page path="docs-src/canonical/sections/12-faq.cxd" word=stage allow=3 why="the `[?pipe]` stage — the code language's own word for one transform of a pipe (code.md §6.4, §8.9), not a pipeline unit"]
+    [page path="docs-src/canonical/sections/14-tour-data.cxd" word=green-red allow=1 why="the colour, in the tour's text-body example (\"Roses are red\")"]
+    [page path="docs-src/canonical/sections/15-tour-programs.cxd" word=stage allow=1 why="the `[?pipe]` stage — the code language's own word for one transform of a pipe (code.md §6.4, §8.9), not a pipeline unit"]
+    [page path="docs-src/canonical/sections/16a-code-tooling.cxd" word=stage allow=1 why="the `[?pipe]` stage — the code language's own word for one transform of a pipe (code.md §6.4, §8.9), not a pipeline unit"]
+    [page path="docs-src/canonical/sections/19-xap-distribution.cxd" word=stage allow=12 why="the registry's growth stages (stage 1 a git registry, stage 2 served) — xap_dist.md's own term, not a pipeline unit"]
     [page path="docs-src/canonical/sections/05a-data-tooling.cxd" word=ruling allow=1 wave=5 why="the grammar's word is decision; the voice pass re-words it"]
-    [page path="docs-src/canonical/sections/06b-commands-effects.cxd" word=lane allow=1 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/canonical/sections/06b-commands-effects.cxd" word=campaign allow=1 wave=5 why="the grammar's words are release and epic; the voice pass re-words it"]
     [page path="docs-src/canonical/sections/06c-runtime-representation.cxd" word=ruling allow=1 wave=5 why="the grammar's word is decision; the voice pass re-words it"]
-    [page path="docs-src/canonical/sections/07-bindings.cxd" word=lane allow=2 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/canonical/sections/08-tooling.cxd" word=lane allow=1 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/canonical/sections/13-comparison.cxd" word=lane allow=2 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/canonical/sections/13-comparison.cxd" word=gate-run allow=1 why="the verb sense — a gate that runs at install, on every full test — not the pipeline noun"]
-    [page path="docs-src/canonical/sections/14-tour-data.cxd" word=lane allow=8 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/canonical/sections/17-operations.cxd" word=lane allow=8 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
     [page path="docs-src/canonical/sections/17-operations.cxd" word=landed allow=1 wave=5 why="the grammar's word is merged; the voice pass re-words it"]
     [page path="docs-src/canonical/sections/18-store.cxd" word=landed allow=1 wave=5 why="the grammar's word is merged; the voice pass re-words it"]
-    [page path="docs-src/canonical/sections/18a-time.cxd" word=lane allow=1 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/canonical/sections/18c-event-evolution.cxd" word=lane allow=1 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/canonical/sections/19-xap-distribution.cxd" word=lane allow=3 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/canonical/sections/19-xap-distribution.cxd" word=gate-run allow=1 why="the verb sense — a gate that runs at install, on every full test — not the pipeline noun"]
     [page path="docs-src/canonical/sections/19-xap-distribution.cxd" word=landed allow=1 wave=5 why="the grammar's word is merged; the voice pass re-words it"]
-    [page path="docs-src/canonical/sections/19a-ux-capability.cxd" word=lane allow=1 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
     [page path="docs-src/canonical/sections/19a-ux-capability.cxd" word=ruling allow=2 wave=5 why="the grammar's word is decision; the voice pass re-words it"]
     [page path="docs-src/canonical/about.html" word=landed allow=1 why="hand-authored by the owner; the everyday sense (landed on an approach)"]
-    [page path="docs-src/repos/cx-binding-go.cxd" word=lane allow=3 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/repos/cx-binding-python.cxd" word=lane allow=3 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/repos/cx-binding-rust.cxd" word=lane allow=2 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/repos/cx-binding-v.cxd" word=lane allow=3 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/repos/cx-decisions.cxd" word=campaign allow=1 wave=5 why="the grammar's words are release and epic; the voice pass re-words it"]
     [page path="docs-src/repos/cx-decisions.cxd" word=ruling allow=3 wave=5 why="the repository documents the ledger, whose pages are named rulings_<date>; the grammar's word is decision"]
-    [page path="docs-src/repos/cx-platform-agent.cxd" word=lane allow=1 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/repos/cx-platform-sso.cxd" word=lane allow=2 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/repos/cx-platform-xsp.cxd" word=lane allow=1 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/llm/contributor-architecture.md.tmpl" word=lane allow=1 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/llm/contributor-design.md.tmpl" word=lane allow=2 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/llm/contributor-test.md.tmpl" word=lane allow=1 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/llm/contributor.md.tmpl" word=lane allow=1 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
     [page path="docs-src/llm/contributor.md.tmpl" word=ruling allow=1 why="the template's projection token {{RULINGS}} (primer_build.cx's FACT-KINDS)"]
-    [page path="docs-src/llm/model-customization.md.tmpl" word=lane allow=2 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
     [page path="docs-src/llm/model-customization.md.tmpl" word=ruling allow=2 wave=5 why="the grammar's word is decision; the voice pass re-words it"]
-    [page path="docs-src/llm/playbook-xap.md.tmpl" word=lane allow=3 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
     [page path="docs-src/llm/playbook-xap.md.tmpl" word=ruling allow=1 wave=5 why="the grammar's word is decision; the voice pass re-words it"]
-    [page path="docs-src/llm/reference-data-language.md.tmpl" word=lane allow=3 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
-    [page path="docs-src/llm/primer-platform.chapter.md" word=lane allow=1 why="the data-lane sense: a fixture row, a codec lane, a binding's lanes/ directory — not a pipeline step (delivery-grammar §7)"]
     [page path="docs-src/llm/primer-platform.chapter.md" word=ruling allow=1 wave=5 why="the grammar's word is decision; the voice pass re-words it"]
     [page path="docs-src/llm/primer-platform.chapter.md" word=landed allow=1 why="regenerated from spec/03-approved/platform/composition.md — the sentence is the spec's"]
+        [page path="docs-src/repos/cx-platform-agent.cxd" word=task allow=2 why="the A2A protocol's own Task object, which the agent module's client shapes"]
+    [page path="docs-src/repos/cx-registry.cxd" word=stage allow=2 why="the registry's growth stages (stage 1 a git registry, stage 2 served) — xap_dist.md's own term, not a pipeline unit"]
+    [page path="docs-src/canonical/reference/directives.cx" word=green-red allow=1 why="the colour, a string attribute value in the ?element example"]
+    [page path="docs-src/canonical/reference/directives.cx" word=stage allow=3 why="the `[?pipe]` stage — the code language's own word for one transform of a pipe (code.md §6.4, §8.9), not a pipeline unit"]
+    [page path="docs-src/llm/reference-code-language.md.tmpl" word=stage allow=1 why="the `[?pipe]` stage — the code language's own word for one transform of a pipe (code.md §6.4, §8.9), not a pipeline unit"]
+    [page path="docs-src/llm/primer-platform.chapter.md" word=lane allow=1 why="regenerated from cx-platform-xap's spec/03-approved/platform/composition.md — the sentence (a host-lane case) is the spec's; its word moves with a decision on that page (a flag for that page's owner)"]
+    [page path="docs-src/llm/primer-platform.chapter.md" word=job allow=2 why="regenerated from composition.md — an outside system's export job, the bulk-export pattern's own domain word"]
     [page path="scripts/gen_guide/guide_build.cx" word=ruling allow=4 why="file comments citing #826's numbered rulings by their historical name"]]
 ]

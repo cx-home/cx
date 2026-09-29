@@ -146,7 +146,7 @@
     [fixture id=cx-069-to-format-yaml-nested-record]
 
     [body
-      """The lossless `$tag` envelope is the same encoding in both lanes
+      """The lossless `$tag` envelope is the same encoding in both projections
          ([`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §2.3.1):
          under `--lossless`, CX anchors and merges ride the envelope's
          `$anchor` / `$merge` keys."""]
@@ -272,7 +272,7 @@
   [child id=md n=3.6 title='Markdown projection'
     [intro
       """Markdown is a **typed-lossy codec**, not one of the lossless
-         data lanes ([`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §7).
+         data projections ([`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §7).
          MD → CX yields a `[doc]`-rooted prose tree: headings become
          `[h1] [h2] …`; paragraphs become `[p]`; lists become `[ul]` /
          `[ol]` / `[li]`; inline code becomes `[code]`. The MD → CX → MD
@@ -398,10 +398,10 @@
       [tr [td 'CXCol / Parquet'] [td 'binary column type'] [td 'native; zero-copy through the Arrow bridge']]]
 
     [body
-      """The table states the shipped behavior per lane: JSON / TOML
+      """The table states the shipped behavior per projection: JSON / TOML
          emit base64 strings, YAML emits `!!binary`, XML emits the hex
          text with the `cx:type="bytes"` sidecar, and the lossless
-         JSON lane recovers the bytes type via the `cx:type` sidecar /
+         JSON projection recovers the bytes type via the `cx:type` sidecar /
          `{"cx:bytes": …}` carrier."""]]
 
   [child id=roundtrip n=3.9 title='Round-trip guarantees and lossiness matrix'
@@ -411,12 +411,12 @@
 
     [note
       """For any CX document **D** in canonical form, and any
-         **lossless-lane** projection format **F** (XML, or JSON / YAML
+         **lossless** projection format **F** (XML, or JSON / YAML
          under `--lossless`), the following identity holds:
 
          `to_cx(to_F(D)) == D` (as canonical bytes)
 
-         For the lossy lanes the loss is documented and bounded — see
+         For the lossy projections the loss is documented and bounded — see
          the matrix below and
          [`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md)."""]
 
@@ -452,10 +452,10 @@
               structure envelope + value carriers
               ([`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §2.2.1 / §2.3.1)
               recover element documents byte-identically
-              (strict-canonical eq). The default (idiomatic) lane keeps
+              (strict-canonical eq). The default (idiomatic) projection keeps
               the ◊ losses. Program directives are outside every
-              lane's lossless domain."""]
-      [item """**◊** — CX → JSON/YAML/TOML/MD default lane with CXDM
+              projection's lossless domain."""]
+      [item """**◊** — CX → JSON/YAML/TOML/MD default projection with CXDM
               container Items (Array, Map, Sequence-as-Item):
               non-string Map keys are coerced to strings on emit
               (lossy); the Sequence-vs-Array distinction is lost
@@ -478,7 +478,7 @@
     [body
       """**Practically:** you can store data as JSON for the JS
          ecosystem, convert to CX for selection / transformation /
-         hashing, then convert back to lossless-lane JSON for delivery —
+         hashing, then convert back to lossless JSON for delivery —
          no information loss, no re-formatting drift, no string-mangling
          in between. The CSV / TSV / Markdown projections are
          documented one-way exports for their respective ecosystems;
@@ -490,7 +490,7 @@
     [body
       """The hash is taken over **strict canonical bytes** (see
          [[canonical-strict]]), not over the surface form. Two
-         documents that round-trip identically through a lossless lane
+         documents that round-trip identically through a lossless projection
          hash to the same SHA-256 — including across surfaces. This
          is the foundation of CX's content-addressing story (see
          [[hash]])."""]]]

@@ -138,8 +138,8 @@
          idempotency key. Being a value, the proposal has an address."""]
 
     [body
-      """**Approval is a signed claim binding that address** — a Lane-2
-         value about the proposal, never a nod to a name or an argument
+      """**Approval is a signed claim binding that address** — a detached
+         claim about the proposal, never a nod to a name or an argument
          list. Approving by name or args is forgeable; approving an
          address means any re-lowering, rewording, or effect-widening
          produces a *different* address and needs its own approval. At
@@ -151,7 +151,7 @@
       """The mode is decided by the **boundary**, not the caller: an
          agent-tool edge always proposes, and a delegation can carry a
          propose-only flag — the grant that lets an agent draft actions
-         all day and commit none of them. The campaign story this
+         all day and commit none of them. The story this
          enables: \"you have hand-approved thirty sub-$50 refunds —
          delegate that band?\" is a propose-mode history turning into a
          budget-bounded delegation, with every step of the transition

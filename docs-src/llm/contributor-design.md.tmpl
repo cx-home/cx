@@ -28,7 +28,7 @@
 | 1 | the DECISION: ring, group, directories, the option table | the issue, then a `ledger/` page citing `RULED: <id>` | `spec-freeze-gate` (a later spec+impl commit needs the id) |
 | 2 | the ROW | `registry/modules.cxd` — `status=planned` until every artifact exists | `placement-gate` |
 | 3 | the SPEC | `spec/03-approved/stdlib/<name>.md` / `spec/03-approved/platform/<name>.md`, in the owning repository | `spec-freeze-gate`, `check-code-spec-consistency` |
-| 4 | the CORPUS — fixtures first | `conformance/stdlib/<name>.cxd` / `conformance/platform/<name>.cxd`, its header's `ring=` the lane that grades it | the fixture graders; `check-fixture-shard-manifest` (a new file in no shard) |
+| 4 | the CORPUS — fixtures first | `conformance/stdlib/<name>.cxd` / `conformance/platform/<name>.cxd`, its header's `ring=` choosing the grader that runs it | the fixture graders; `check-fixture-shard-manifest` (a new file in no shard) |
 | 5 | the BUNDLED SOURCE with its `[module-doc]` | `stdlib/<name>.cx`, namespace `cx-stdlib/<name>` / `cx-platform/<name>` | `guide-check` (fn-doc examples match the corpus), `stdlib-catalog-gate` |
 | 6 | the V CODE, only where CX cannot express it | `vcx/code/` (the rings) / the product's `vcx/<vmodule>/` | `ring-import-gate`, `product-import-gate`, `check-no-stub-impl` |
 
@@ -104,7 +104,7 @@ its long-term consequence for CX. The table covers every dimension at once:
 |---|---|
 | code | which V module and directory; the imports it adds; the registration hook it uses |
 | spec | which page, which section, added or changed sentences |
-| conformance | which corpus file, which lane (`ring=`), which shard |
+| conformance | which corpus file, which grader (`ring=`), which shard |
 | gates | which step refuses the wrong tree, and whether one is added (`check-selection-manifest` then) |
 | docs | which generated document moves (`make docs` in the same commit) |
 | lockfile / pins | which `deps.cxd` row or `[module]` row changes |

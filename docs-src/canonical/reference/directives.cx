@@ -8,7 +8,7 @@
    conformance corpus backs it — a runnable [example] whose [code] and
    [expect] appear verbatim in conformance/code.cxd (so the drift gate
    scripts/gen_guide/directive_docs_check.cx can pin every example to a
-   green fixture, exactly as the stdlib reference pins [fn-doc] examples to
+   passing fixture, exactly as the stdlib reference pins [fn-doc] examples to
    conformance/stdlib/*.cxd).
 
    Single source of truth: edit here; the guide projects it. ]
