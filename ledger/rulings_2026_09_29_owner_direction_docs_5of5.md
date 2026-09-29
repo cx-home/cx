@@ -48,7 +48,7 @@ reader is sent back, not merged.
 9. **The owner's read.** The owner opens the landing, the guide home, the playground and three
    pages picked at random and finds nothing to iterate on. This is the tick; nothing else is.
 
-## PLAY-2 — the playground's own 5 of 5, inside DOCS-51
+## PLAY-2 — the playground's own 5 of 5, inside the nine criteria above
 
 The playground regressed from 4 of 5 to 1 of 5 under PLAY-1: its readings were assigned from the
 primer's chapter order (§5's neighbours became "Query"), its tabs said Document / Query / Program
@@ -61,3 +61,10 @@ itself and checked by a step that refuses an example filed against its shape; ev
 engine can run is offered, every one it cannot is marked with its reason by name; the page opens on an
 answer; the picker, the crumbs and the legacy sections use the same three words. A playground wave
 ticks on the owner's run of five examples of each reading, not on its gates.
+
+## The owner's spending rule, 2026-09-29 03:1xZ (verbatim: "one more chance. do NOT use usage credits to fix. work only within the allotted credits per window.")
+
+Every launch from here is paid from the 5-hour window's allotment alone: the usage is read before
+each launch, nothing launches past the window's taper, and no extra-usage credit is spent on a fix;
+a window that fills waits for its reset. This is a standing rule of the epic, beside "minimize
+usage spend", and the integrator's HANDOFF carries it (RULED: AGENTS-1).
