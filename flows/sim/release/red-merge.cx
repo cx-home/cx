@@ -1,0 +1,7 @@
+# THE MERGE TO MAIN REFUSED: dist/ removed, the tag deleted, the bump reset,
+# in reverse.
+[results
+  [step name="preflight" status=:done [result [preflight tag=vX.Y.Z version=X.Y.Z branch=line head=h notes=RELEASE_NOTES_vX.Y.Z.md from-bump=none mode=real]]]
+  [step name="tag" status=:done [result [tagged tag=vX.Y.Z sha=t before=h bumped=true]]]
+  [step name="package" status=:done [result [packaged tag=vX.Y.Z target=macos-arm64 public=darwin-arm64 linux=true assets=5]]]
+  [step name="merge-main" status=:failed [result [err code="cx-err:CXER0100" message="ci/release-merge-main: exit 1: CONFLICT"]]]]

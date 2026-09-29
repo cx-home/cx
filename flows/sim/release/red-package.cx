@@ -1,0 +1,6 @@
+# A PACKAGE GATE REFUSED (the asset links, or R2.2): dist/ is removed, the
+# local tag deleted and the bump reset — the tree is as the preflight found it.
+[results
+  [step name="preflight" status=:done [result [preflight tag=vX.Y.Z version=X.Y.Z branch=line head=h notes=RELEASE_NOTES_vX.Y.Z.md from-bump=none mode=real]]]
+  [step name="tag" status=:done [result [tagged tag=vX.Y.Z sha=t before=h bumped=true]]]
+  [step name="package" status=:failed [result [err code="cx-err:CXER0100" message="ci/release-package: R2.2, the per-profile install gate — exit 1"]]]]

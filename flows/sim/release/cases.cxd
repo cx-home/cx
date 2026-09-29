@@ -1,0 +1,39 @@
+# The case table of flows/release.flow.cx, read by scripts/ci_flow_gate.cx
+# (`make release-flow-gate`; RULED: RFLOW-1 L103, L104). The gate
+# SIMULATES the cut: a real cut tags, pushes and publishes, so the one real
+# run here is the preflight's own refusal. The dry mode over every phase is
+# proved by `make release-flow MODE=dry` itself. The fields:
+#   - `env` names the env the acts resolve through.
+#   - `verb` is validate | simulate | run.
+#   - `exit` is the exit code the case expects.
+#   - each `[s …]` is a substring the answer must carry. It is STRUCTURAL,
+#     never a byte golden.
+#   - `expectations` pins their number.
+# No version is written here: vX.Y.Z is the placeholder the arguments carry.
+[cases doc=release env='flows/release.env.cx' expectations=45
+  [case id=A verb=validate exit=0
+    [expect [s '[valid '] [s 'steps=8'] [s "[act name='ci/release-preflight'"] [s "[act name='ci/release-tag'"]
+            [s "[act name='ci/release-package'"] [s "[act name='ci/release-merge-main'"] [s "[act name='ci/release-push'"]
+            [s "[act name='ci/release-gh'"] [s "[act name='ci/release-org-page'"] [s "[act name='ci/release-vscode'"]]]
+  [case id=B-done verb=simulate results='flows/sim/release/done.cx' args='--tag=vX.Y.Z --from-bump=none --mode=real --publish=yes --linux=yes' exit=0
+    [expect [s 'status=:done'] [s 'step name=push status=:done pivot=true'] [s 'step name=vscode status=:done']]]
+  [case id=B-dry verb=simulate results='flows/sim/release/dry.cx' args='--tag=vX.Y.Z --from-bump=none --mode=dry --publish=yes --linux=yes' exit=0
+    [expect [s 'status=:done'] [s '[would-tag '] [s '[would-push ']]]
+  [case id=B-preflight verb=simulate results='flows/sim/release/red-preflight.cx' args='--tag=vX.Y.Z --from-bump=none --mode=real --publish=yes --linux=yes' exit=0
+    [expect [s 'status=:compensated'] [s 'step name=preflight status=:failed'] [s 'step name=tag status=:waiting']]]
+  [case id=B-tag verb=simulate results='flows/sim/release/red-tag.cx' args='--tag=vX.Y.Z --from-bump=none --mode=real --publish=yes --linux=yes' exit=0
+    [expect [s 'status=:compensated'] [s 'step name=preflight status=:compensated'] [s 'step name=tag status=:failed']]]
+  [case id=B-package verb=simulate results='flows/sim/release/red-package.cx' args='--tag=vX.Y.Z --from-bump=none --mode=real --publish=yes --linux=yes' exit=0
+    [expect [s 'status=:compensated'] [s 'step name=tag status=:compensated'] [s 'step name=package status=:failed']
+            [s 'step name=merge-main status=:waiting']]]
+  [case id=B-merge verb=simulate results='flows/sim/release/red-merge.cx' args='--tag=vX.Y.Z --from-bump=none --mode=real --publish=yes --linux=yes' exit=0
+    [expect [s 'status=:compensated'] [s 'step name=package status=:compensated'] [s 'step name=merge-main status=:failed']]]
+  [case id=B-push verb=simulate results='flows/sim/release/red-push.cx' args='--tag=vX.Y.Z --from-bump=none --mode=real --publish=yes --linux=yes' exit=0
+    [expect [s 'status=:compensated'] [s 'step name=merge-main status=:compensated'] [s 'step name=tag status=:compensated']
+            [s 'step name=push status=:failed pivot=true'] [s 'step name=gh-release status=:waiting']]]
+  [case id=B-gh verb=simulate results='flows/sim/release/red-gh.cx' args='--tag=vX.Y.Z --from-bump=none --mode=real --publish=yes --linux=yes' exit=0
+    [expect [s 'status=:incomplete'] [s 'incomplete=3'] [s 'step name=push status=:done pivot=true'] [s 'step name=gh-release status=:failed']]]
+  [case id=B-vscode verb=simulate results='flows/sim/release/red-vscode.cx' args='--tag=vX.Y.Z --from-bump=none --mode=real --publish=yes --linux=yes' exit=0
+    [expect [s 'status=:incomplete'] [s 'incomplete=1'] [s 'step name=vscode status=:failed']]]
+  [case id=C verb=run args='--tag=not-a-tag --from-bump=none --mode=dry --publish=yes --linux=yes' exit=1
+    [expect [s 'status=:compensated'] [s 'is not vX.Y.Z'] [s 'step name=preflight status=:failed'] [s 'step name=tag status=:waiting']]]]

@@ -1,0 +1,5 @@
+# THE GATE WAS RED (tag_release.sh refused before it tagged): the preflight's
+# read is wound back, and the run is :compensated.
+[results
+  [step name="preflight" status=:done [result [preflight tag=vX.Y.Z version=X.Y.Z branch=line head=h notes=RELEASE_NOTES_vX.Y.Z.md from-bump=none mode=real]]]
+  [step name="tag" status=:failed [result [err code="cx-err:CXER0100" message="ci/release-tag: scripts/tag_release.sh — exit 2: make test failed"]]]]
