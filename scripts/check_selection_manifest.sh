@@ -59,6 +59,26 @@ fi
 	exit 1
 }
 
+# PRIVMK-1: a step flows/private.mk adds must NOT also sit on the Makefile's
+# own `TEST_TARGETS :=` line. That line is the PUBLIC roster: the public tree's
+# `make test` runs it, and scripts/gen_docs/contributor_facts.cx projects it into
+# docs/llm/contributor-test.md. A private step there is a `make test` step with
+# no rule in the public tree, and a roster row whose bytes differ between the
+# trees (cx main cb0b22a78's Site run: docs-check DRIFT). A merge that
+# resolves the line against an older side re-adds them silently.
+if [ -f "$PRIVATE_MK" ]; then
+	public_line=$(grep -m1 '^TEST_TARGETS :=' "$MAKEFILE" | sed 's/^TEST_TARGETS := //')
+	leaked=""
+	for p in $(sed -n 's/^TEST_TARGETS += //p' "$PRIVATE_MK"); do
+		case " $public_line " in *" $p "*) leaked="$leaked $p" ;; esac
+	done
+	if [ -n "$leaked" ]; then
+		echo "check-selection-manifest: private step(s) on the Makefile's public TEST_TARGETS := line:$leaked"
+		echo "  They belong to flows/private.mk's TEST_TARGETS += alone (RULED: PRIVMK-1)."
+		exit 1
+	fi
+fi
+
 missing=""
 for t in $targets; do
 	case "
