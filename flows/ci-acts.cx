@@ -274,7 +274,7 @@
         [= $bad2 [$cat2 $bad
           [$cat2 [?if [not [$c-member [$string $linux] ('yes', 'no')]] [then ([$concat '--linux=`' [$string $linux] '` is neither yes nor no'])] [else ()]]
                  [?if [not [$c-member [$string $mode] ('real', 'dry')]] [then ([$concat '--mode=`' [$string $mode] '` is neither real nor dry'])] [else ()]]]]]
-        [= $pins [?if [or [$dry $mode] [> [$count $bad2] 0]] [then [ok]]
+        [= $pins [?if [or [$dry $mode] [> [$count $bad2] 0]] [then [skipped-pins exit-code='0']]
                    [else [$process:run ('devbox', 'run', '--', 'make', '-s', 'deps-check') timeout-ms=[$net-ms]]]]]
         [= $all [$cat2 $bad2 [?if [$ok $pins] [then ()] [else ('the pins are stale or a deps/ checkout drifted — make deps-sync (RS-7)')]]]]
         [?if [> [$count $all] 0]
@@ -366,7 +366,7 @@
                             r=[?if $lin [then [$process:run [$cat2 ('scripts/release_linux.sh')
                                                                    [$cat2 [?if [= [$env:var-or-default 'RELEASE_LINUX_AMD64' ''] ''] [then ()] [else ('--amd64')]] ($t)]]
                                                             env=$env timeout-ms=28800000]]
-                                 [else [ok exit-code='0']]]],
+                                 [else [skipped exit-code='0']]]],
                       [step what='SHA256SUMS over every platform' r=[$write-sums $t ()]])]
             [= $bad [?to-sequence [?for [in $s $more] [where [not [$ok $s/r]]] [yield [$concat [$string $s@what] ' — ' [$why $s/r]]]]]]
             [?if [> [$count $bad] 0] [then [$fail [$concat 'ci/release-package: ' [$strings:join $bad '; ']]]]
@@ -434,7 +434,7 @@
         [= $a [?if $exists
                 [then [$process:run ('gh', 'release', 'edit', $t, '--notes-file', $notes, '--title', $title) timeout-ms=[$net-ms]]]
                 [else [$process:run [$cat2 ('gh', 'release', 'create', $t, '--title', $title, '--notes-file', $notes) $versioned] timeout-ms=[$make-ms]]]]]
-        [= $b [?if $exists [then [$process:run [$cat2 ('gh', 'release', 'upload', $t) [$cat2 $versioned ('--clobber')]] timeout-ms=[$make-ms]]] [else [ok exit-code='0']]]]
+        [= $b [?if $exists [then [$process:run [$cat2 ('gh', 'release', 'upload', $t) [$cat2 $versioned ('--clobber')]] timeout-ms=[$make-ms]]] [else [skipped exit-code='0']]]]
         [= $c [$process:run [$cat2 ('gh', 'release', 'upload', $t) [$cat2 $flat ('--clobber')]] timeout-ms=[$make-ms]]]
         [?if [not [and [$ok $a] [$ok $b] [$ok $c]]]
           [then [$fail [$concat 'ci/release-gh: ' [$why [?if [not [$ok $a]] [then $a] [else [?if [not [$ok $b]] [then $b] [else $c]]]]]]]]
