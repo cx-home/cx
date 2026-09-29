@@ -4,7 +4,7 @@
 
 [repo name=cx-core-code
   [intro
-    """**TL;DR — Ring 1 adds execution and nothing else.** `cx-core-code` is
+    """Ring 1 adds execution and nothing else. `cx-core-code` is
        the evaluator, CXPath, the directive set, the bundled standard library
        below, the formatter, the linter and the language server. It adds no
        servers, no protocol stacks and no databases: a Ring-1 program still

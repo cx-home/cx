@@ -296,7 +296,7 @@
 [?def fixture-html scope=public impure ($fx $id)
   [$post-body [$xml:emit [$fixture-block $fx $id]]]]
 
-[# tldr-block: the one TL;DR (docs-src/site/tldr.cxd) as a section block —
+[# tldr-block: the one lead (docs-src/site/tldr.cxd) as a section block —
    the lead, the standard, and every clause with its fixture replayed beside
    it, so the standard we state is proved on the page that states it
    (RULED: DOCS-49, DOCS-47). The prose carries the site's inline Markdown,
@@ -368,7 +368,7 @@
     [case [output $t] [pre class="sample-output" [code $t]]]
     [case [example $code] [pre [code lang=$c@lang $code]]]
     [case [fixture] [$fixture-block $fx [$string $c@id]]]
-    [; DOCS-49 / the design's voice rule 2: a section opens on the one TL;DR of
+    [; DOCS-49 / the design's voice rule 2: a section opens on the one lead of
        docs-src/site/tldr.cxd — the lead, the standard stated as ours, then
        each clause beside the case that proves it, replayed like every other
        citation (the guide home and the primer §0 project the same source). ]
@@ -772,7 +772,7 @@
    rings.html and written as assets/rings.svg. #]
 
 [# index-body: the guide home (docs/guide/index.html, the site's guide.html)
-   body — the hero (the TL;DR of why to reach for CX, the ring ladder, the
+   body — the hero (the lead of why to reach for CX, the ring ladder, the
    Fig. 1 ring figure), then "what you can do with it": HOME-FIXTURES, each
    replayed when the guide is built, and the registry counts beside them
    (RULED: RS-30); then the grouped table of contents (reusing nav-group),
@@ -788,7 +788,7 @@
     '  <svg class="hero-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>\n',
     '  <h1>One syntax.<br>Data to platform.<br><span class="accent">Agentic ready.</span></h1>\n',
     '</div>\n',
-    [; the one TL;DR, from docs-src/site/tldr.cxd (RULED: DOCS-49): the same
+    [; the one lead, from docs-src/site/tldr.cxd (RULED: DOCS-49): the same
        text the landing page and the primer's §0 open with; its clauses'
        cases are replayed by this build like every fixture on the page. ]
     [$pb:tldr-html],

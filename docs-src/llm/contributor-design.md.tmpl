@@ -5,8 +5,6 @@
 > The two tables are projections; the procedure is the rules, each citing its
 > decision. Edit the template or the registry, never this file.
 
-## TL;DR
-
 - A surface is DECLARED before it is written: its decision states its ring,
   its group and its directories; its `registry/modules.cxd` row follows; then
   the spec, the corpus, the bundled source, the V code — in that order

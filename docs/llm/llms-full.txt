@@ -12,7 +12,7 @@
 
 ## 0. Twelve facts that carry most of the distance
 
-**TL;DR — reach for CX whenever the data is the point.** One bracketed syntax is the document, the query, the program and the compiler's own tree, so the file you read is the file you transform, validate, hash, store and serve — with no second language in between.
+Reach for CX whenever the data is the point. One bracketed syntax is the document, the query, the program and the compiler's own tree, so the file you read is the file you transform, validate, hash, store and serve — with no second language in between.
 
 We hold ourselves to a standard we can state in one line — **readable on day one, batteries included, exact by default, and effects you grant rather than inherit** — and we prove each term of it with a conformance case this page replayed when it was built:
 
@@ -8330,8 +8330,6 @@ vocabulary). The rulings behind the refusals: AD-10 (#1162) and 1161-Q1a in
 > PROJECT: how CX is built, changed and graded, so a change you make is the
 > one a maintainer would have made.
 
-## TL;DR
-
 - CX is built so that a claim can be checked: the spec states it, a corpus
   case pins it, a gate refuses the tree that breaks it. Contribute in that
   order and nothing you write has to be taken on trust.
@@ -8501,8 +8499,6 @@ read the page for the reason and the options refused.
 > prose is the rules, each citing its decision. Edit the template or the
 > registry, never this file.
 
-## TL;DR
-
 - Two rings, frozen: **Ring 0** the data format (`cx-core-data`), **Ring 1**
   the language and its standard library (`cx-core-code`). Everything else is a
   **group** — platform, binding, ecosystem, dist — importing the rings plus
@@ -8666,8 +8662,6 @@ tracked file no rule claims and a rule that claims nothing.
 > The two tables are projections; the procedure is the rules, each citing its
 > decision. Edit the template or the registry, never this file.
 
-## TL;DR
-
 - A surface is DECLARED before it is written: its decision states its ring,
   its group and its directories; its `registry/modules.cxd` row follows; then
   the spec, the corpus, the bundled source, the V code — in that order
@@ -8817,8 +8811,6 @@ its long-term consequence for CX. The table covers every dimension at once:
 > The facts it relies on are projected in `contributor-architecture.md`.
 > Edit the template, never this file.
 
-## TL;DR
-
 - Write CX first. The implementation language of the evaluator and the
   products is V; everything else — scripts, gates, generators, probes — is a
   CX program run with `cx FILE` (RULED: CXF-1).
@@ -8929,8 +8921,6 @@ $ deps/cx-core-code/vcx/target/cx deps sync --check   # every checkout at its pi
 > the pinned checkouts, assembled by `scripts/gen_docs/primer_build.cx`. The
 > two tables are projections; the procedure is the rules, each citing its
 > decision. Edit the template or the Makefile, never this file.
-
-## TL;DR
 
 - The corpus is the executable truth: a behaviour is a `[case …]` in a `.cxd`
   file, graded against the binary; a fix lands its failing case first

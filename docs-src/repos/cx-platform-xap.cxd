@@ -5,8 +5,8 @@
 
 [repo name=cx-platform-xap
   [intro
-    """**TL;DR — features compose into an application, and the composition is
-       an algebra.** `cx-platform-xap` is the host: a feature's grammar — its
+    """Features compose into an application, and the composition is
+       an algebra. `cx-platform-xap` is the host: a feature's grammar — its
        nouns, verbs and requirements — is a data document, two features
        compose into one grammar whichever order you name them in, and the
        host serves the composed grammar to a terminal, a browser and an agent

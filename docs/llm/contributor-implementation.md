@@ -6,8 +6,6 @@
 > The facts it relies on are projected in `contributor-architecture.md`.
 > Edit the template, never this file.
 
-## TL;DR
-
 - Write CX first. The implementation language of the evaluator and the
   products is V; everything else — scripts, gates, generators, probes — is a
   CX program run with `cx FILE` (RULED: CXF-1).

@@ -5,7 +5,7 @@
 
 [repo name=cx-platform-store
   [intro
-    """**TL;DR — state that outlives the program, addressed by content.**
+    """State that outlives the program, addressed by content.
        `cx-platform-store` is the storage engine: a document's handle is
        derived from its canonical bytes, the journal is a hash chain, the
        live and audit streams read from the same log, full-text search sits

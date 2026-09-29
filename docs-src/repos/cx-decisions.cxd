@@ -6,8 +6,8 @@
 
 [repo name=cx-decisions
   [intro
-    """**TL;DR — a decision is written down once, and a commit that cites it
-       has to find it.** `cx-decisions` is the record: the ledger of every
+    """A decision is written down once, and a commit that cites it
+       has to find it. `cx-decisions` is the record: the ledger of every
        ruling under its id, the process specs that give the work its
        vocabulary — release, epic, issue, decision; branch, merge; owner,
        integrator, agent; step, pipeline, run — the standing rules every

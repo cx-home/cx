@@ -5,7 +5,7 @@
 
 [repo name=cx-platform-mail
   [intro
-    """**TL;DR — both halves of mail, each in one call.** `cx-platform-mail`
+    """Both halves of mail, each in one call. `cx-platform-mail`
        is SMTP and IMAP as a CX program meets them: a submission client that
        dials, greets, upgrades, authenticates, sends and quits in one verb, a
        mailbox client that connects and reads by UID in one verb, the two

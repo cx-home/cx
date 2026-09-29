@@ -7,7 +7,7 @@
 
 [repo name=cx-platform-db
   [intro
-    """**TL;DR — a database is a URL, and the rows come back as a document.**
+    """A database is a URL, and the rows come back as a document.
        `cx-platform-db` is external database access: `$sql-open`,
        `$sql-exec`, `$sql-query` and `$sql-close`, `$redis-open`,
        `$redis-cmd` and `$redis-close` — builtins of the language, nothing

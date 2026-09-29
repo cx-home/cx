@@ -5,7 +5,7 @@
 
 [repo name=cx-platform-ux
   [intro
-    """**TL;DR — one semantic tree, two renderers, neither privileged.**
+    """One semantic tree, two renderers, neither privileged.
        `cx-platform-ux` is the projected surface: a closed vocabulary of
        headings, tables, forms, inputs and notices that a command, a query or
        a feature grammar projects onto, a web renderer that lowers it to

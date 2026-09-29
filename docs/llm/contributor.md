@@ -9,8 +9,6 @@
 > PROJECT: how CX is built, changed and graded, so a change you make is the
 > one a maintainer would have made.
 
-## TL;DR
-
 - CX is built so that a claim can be checked: the spec states it, a corpus
   case pins it, a gate refuses the tree that breaks it. Contribute in that
   order and nothing you write has to be taken on trust.

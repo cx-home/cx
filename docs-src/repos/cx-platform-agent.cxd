@@ -5,7 +5,7 @@
 
 [repo name=cx-platform-agent
   [intro
-    """**TL;DR — an agent is a peer, and its messages are ordinary values.**
+    """An agent is a peer, and its messages are ordinary values.
        `cx-platform-agent` is the tool and agent-protocol surface: a tool
        descriptor is projected from a command definition at list time, an
        MCP request or an A2A message is a CX value shaped to its wire form,

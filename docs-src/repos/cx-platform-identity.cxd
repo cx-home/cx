@@ -5,7 +5,7 @@
 
 [repo name=cx-platform-identity
   [intro
-    """**TL;DR — who is asking, as a value.** `cx-platform-identity` turns a
+    """Who is asking, as a value. `cx-platform-identity` turns a
        verified token into a session bound to a principal and a tenant,
        maps claims to that principal deterministically, resolves `did:web`
        identifiers, keeps authorization rows in the store and answers

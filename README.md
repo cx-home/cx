@@ -1,12 +1,12 @@
 # CX
 
 [![Version](https://img.shields.io/badge/version-v0.18.0-pre.1-blue.svg)](#status)
-[![CX](https://img.shields.io/badge/CX-57.2%25_of_source-1a1a17.svg)](#status)
+[![CX](https://img.shields.io/badge/CX-57.4%25_of_source-1a1a17.svg)](#status)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-cxhome.org-brightgreen.svg)](https://cxhome.org/)
 [![Status](https://img.shields.io/badge/status-pre--1.0_experimental-orange.svg)](#status)
 
-**TL;DR — reach for CX whenever the data is the point.** One bracketed syntax
+Reach for CX whenever the data is the point. One bracketed syntax
 is the document, the query, the program and the compiler's own tree, so the
 file you read is the file you transform, validate, hash, store and serve.
 Python set the standard a working language has to meet — readable on day one,

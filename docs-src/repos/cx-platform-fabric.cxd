@@ -5,7 +5,7 @@
 
 [repo name=cx-platform-fabric
   [intro
-    """**TL;DR — messaging with the durability written on it.** `cx-platform-fabric`
+    """Messaging with the durability written on it. `cx-platform-fabric`
        is publish/subscribe and request/reply over the primitives this site
        already ships: the durable plane rides the [[store]]'s journal — a
        published event is appended to a named stream, attributed, in a

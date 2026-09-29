@@ -6,8 +6,6 @@
 > two tables are projections; the procedure is the rules, each citing its
 > decision. Edit the template or the Makefile, never this file.
 
-## TL;DR
-
 - The corpus is the executable truth: a behaviour is a `[case …]` in a `.cxd`
   file, graded against the binary; a fix lands its failing case first
   (AGENTS.md rule 2, RULED: CFG-1).

@@ -36,7 +36,7 @@
 #                             (the spec's §4.1 table, as the primer projects it)
 #   {{COUNT:repositories}}    the rows {{REPO-MAP}} shows
 #   {{COUNT:examples}}        the fixtures this page cites, replayed green
-#   {{TLDR}}                  the one TL;DR, from docs-src/site/tldr.cxd (the
+#   {{TLDR}}                  the one lead, from docs-src/site/tldr.cxd (the
 #                             primer's own placeholder; its clauses' cases are
 #                             replayed here too, RULED: DOCS-49)
 #   {{FIGURE:rings}}          the ring figure, rendered from the registries by
@@ -46,7 +46,7 @@
 #                             names off (ring_svg.cx's ring-svg-plain): the
 #                             two rings and the groups above them, the full
 #                             figure a link away on rings.html (HOME-1)
-#   {{TLDR:lead}}             the TL;DR's lead paragraph alone, as the hero's
+#   {{TLDR:lead}}             the lead paragraph alone, as the hero's
 #                             lede (the one sentence in one place, DOCS-49)
 #   {{FIXTURE:<id>}}          one replayed case in the guide's fixture shape
 #                             (its files, the invocation with the LIVE output,
@@ -293,7 +293,7 @@
 
 # The ring figure rides through the Markdown pass as a bare token (raw HTML
 # would be escaped there) and is substituted into the rendered page after it;
-# so do the fixture blocks, the running example and the TL;DR's lead.
+# so do the fixture blocks, the running example and the one lead.
 [?const FIGURE-TOKEN "@@FIGURE:rings@@"]
 [?const FIGURE-PLAIN-TOKEN "@@FIGURE:rings-plain@@"]
 [?const TLDR-LEAD-TOKEN "@@TLDR:lead@@"]
@@ -365,7 +365,7 @@
       "</figure>\n"]]]
 
 # place-blocks: every token the Markdown pass carried — a fixture block, the
-# running example, the TL;DR's lead — replaced by its HTML; a token left
+# running example, the one lead — replaced by its HTML; a token left
 # over is refused, never printed.
 [?def place-blocks scope=public impure ($html $ctx)
   [?let [= $tmpl [$map:get $ctx "tmpl"]]

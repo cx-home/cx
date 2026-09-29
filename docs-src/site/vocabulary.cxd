@@ -45,6 +45,8 @@ never rises. Not scanned, by name: "landing" ("landing page").
     [word id=steward rx='\bstewards?\b' say='"steward"']
     [word id=ruling rx='\brulings?\b' say='"ruling"']
     [word id=landed rx='\blanded\b' say='"landed"']
+    [; the owner, 2026-09-29: "take out TL;DR from the docs... its way overused" (RULED: DOCS-51 §1 and §7, DOCS-43): a page opens on its one-sentence lead as plain prose, never behind the label — a heading, a bold prefix or a rendered block title. A code span keeps its spelling, as for every word ]
+    [word id=tldr rx='\btl;dr\b' say='the label "TL;DR"']
     [; the delivery grammar's verdict and unit words (RULED: DG-1, DOCS-51 §1; the owner, 2026-09-29: "we stick with our terminology"): a run passes or
        fails, and its units are steps in a pipeline — never green/red as a verdict, never a
        job, stage or task. An ordinary-English or language sense (a pipe's stage, a `job`

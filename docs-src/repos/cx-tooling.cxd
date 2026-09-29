@@ -5,8 +5,8 @@
 
 [repo name=cx-tooling
   [intro
-    """**TL;DR — the editor knows the language because the language tells
-       it.** `cx-tooling` is the editor and diagram surface: the VS Code
+    """The editor knows the language because the language tells
+       it. `cx-tooling` is the editor and diagram surface: the VS Code
        extension, the Neovim and Helix configuration, the tree-sitter
        grammar, the shell completions, the TextMate syntax, the installer
        scripts, the Linguist submission, the `<cx-diagram>` web component and

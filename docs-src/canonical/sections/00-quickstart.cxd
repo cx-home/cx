@@ -1,7 +1,7 @@
 [# Section 0 — Quickstart. Front-matter; appears before the §1 intro.
    Authored 2026-05-22.
    Goal: a developer who has never seen CX is running CX in under five
-   minutes. RS-30 (owner, 2026-09-23): the page opens with the TL;DR of
+   minutes. RS-30 (owner, 2026-09-23): the page opens with the lead of
    why to reach for CX, a claim the voice pass added stands beside a
    [fixture] the guide build replays against the running cx, and the
    install facts are what the release pipeline publishes (flows/release.flow.cx)
@@ -12,7 +12,7 @@
 [section id=quickstart group='Start here' n=0 title='Quickstart — first 5 minutes with CX'
 
   [intro
-    """**TL;DR — why reach for CX.** One bracket form is your data, your
+    """One bracket form is your data, your
        query and your program, so the first file you write is also the
        first thing you query, validate, hash and serve. Python set the
        standard for a language that is productive on day one; CX is built

@@ -4,7 +4,7 @@
 
 [repo name=cx-platform-flow
   [intro
-    """**TL;DR — a workflow is an ordinary CX document.** `cx-platform-flow`
+    """A workflow is an ordinary CX document. `cx-platform-flow`
        validates, simulates and runs a flow: steps with acts named by
        qualified name, a pivot after which nothing is undone, compensation
        for what came before it, and a run record that is a journal of
