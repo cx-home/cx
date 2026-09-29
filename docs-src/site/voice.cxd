@@ -43,10 +43,9 @@ Two ratchets, each read by a step:
        language; whether a binding page may is the bindings row's open letter ]
     [page path='docs-src/repos/cx-binding-python.cxd' allow=2 why='the repository is named cx-binding-python: its root element and the comment naming the file; the prose names no host language']
     [; floors for waves 5–7 (the voice pass), the count measured now; wave 5
-     took 01-intro, 01b-choosing, 03-surfaces and 04-identity to zero (their
-     rows are gone: a file with no row reads zero) ]
-    [page path='docs-src/canonical/sections/02-data-language.cxd' allow=2 wave=5 why='two aside comparisons']
-        [page path='docs-src/canonical/sections/06-code.cxd' allow=4 wave=5 why='aside comparisons']
+     took 01-intro, 01b-choosing, 03-surfaces and 04-identity to zero and
+     wave 5b 02-data-language and 06-code (their rows are gone: a file
+     with no row reads zero) ]
     [page path='docs-src/canonical/sections/07-bindings.cxd' allow=62 why='FIXED (RULED: HOSTL-1, L109 = (a)): the subject of the page is the bindings, and a page whose subject is a binding names its host language beside its fixtures; the count is the measured one and never rises']
         [page path='docs-src/canonical/sections/11-glossary.cxd' allow=1 wave=7 why='one glossary entry']
     [page path='docs-src/canonical/sections/12-faq.cxd' allow=12 wave=7 why='the FAQ answers questions asked from Python']
@@ -55,9 +54,5 @@ Two ratchets, each read by a step:
     [page path='docs/dev/v0130-capabilities.md' allow=1 wave=7 why='docs/dev folds into the guide (DOCS-46)']]
 
   [; ── the fixture-citation floor over docs-src/canonical/sections/*.cxd and docs-src/repos/*.cxd ── ]
-  [page path='docs-src/canonical/sections/01-intro.cxd' allow=7 wave=5 why='the standard-to-meet sentence and the bindings list']
-  [page path='docs-src/canonical/sections/01b-choosing.cxd' allow=1 wave=5 why='the bindings row']
-  [page path='docs-src/canonical/sections/03-surfaces.cxd' allow=1 wave=5 why='one aside comparison']
-  [page path='docs-src/canonical/sections/04-identity.cxd' allow=5 wave=5 why='the binding examples']
-  [fixtures floor=134]
+  [fixtures floor=224]
 ]
