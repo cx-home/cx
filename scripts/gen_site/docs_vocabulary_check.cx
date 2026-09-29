@@ -6,7 +6,8 @@
 # them, decision / merge / step / run. This step counts, in every served
 # SOURCE and in the playground's own page and script, the words the site
 # does not use — "Ring 2", "Ring 3", an "ecosystem ring", the "monorepo",
-# "lane", "campaign", "gate run", "steward", "ruling", "landed", the
+# "lane", "campaign", "gate run", "steward", "ruling", "landed", the label
+# "TL;DR" (a page opens on its lead, never behind the label), the
 # grammar's verdict and unit words "green"/"red", "job", "stage" and "task",
 # and the reading names Document / Program as a tab or crumb label — and holds each
 # file to docs-src/site/vocabulary.cxd, in the voice ratchet's shape: a file
