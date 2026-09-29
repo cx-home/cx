@@ -5,8 +5,9 @@ RS-30; the design's voice rule 2).
 
 One sentence lives in one place. scripts/gen_docs/primer_build.cx projects this
 file into the three pages that open with it — the landing page
-(docs-src/site/index.md, `{{TLDR}}`), the guide home
-(scripts/gen_guide/guide_build.cx, tldr-html) and the primer's §0
+(docs-src/site/index.md: `{{TLDR:lead}}`, the lead alone as the hero's lede
+since HOME-1; the clauses' cases are the guide home's and the primer's), the
+guide home (scripts/gen_guide/guide_build.cx, tldr-html) and the primer's §0
 (docs-src/llm/primer.md.tmpl, `{{TLDR}}`) — so the three cannot drift apart
 the way the three hand copies they replace had.
 
