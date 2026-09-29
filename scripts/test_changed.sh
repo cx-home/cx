@@ -69,7 +69,7 @@ cd "$(dirname "$0")/.."
 # A REGULAR FILE has no buffer to fill and no second end for a child to hold,
 # and — unlike `< <(…)`, which was the first fix and is a syntax error in POSIX
 # mode — it works when this file is run as `sh scripts/test_changed.sh`, which
-# is how every pipeline and gate.sh invokes it. The loops stay in THIS shell,
+# is how every pipeline and the post-merge runner invoke it. The loops stay in THIS shell,
 # so their `return`s, `break`s and variable assignments are unchanged.
 TC_TMP=$(mktemp -d) || { echo "test-changed: cannot create a scratch directory" >&2; exit 2; }
 trap 'rm -rf "$TC_TMP"' EXIT

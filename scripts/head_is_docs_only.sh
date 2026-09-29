@@ -8,7 +8,7 @@
 # the runner names the paths, so adding a path is a code change with a test and
 # not a spec edit.
 #
-#   exit 0  — docs-only: the runner may call `gate.sh test-docs`
+#   exit 0  — docs-only: the post-merge runner (flows/postmerge.flow.cx) runs `make test-docs`
 #   exit 1  — full run
 #   exit 2  — usage/infrastructure (a missing commit, a bad argument)
 #

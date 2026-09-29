@@ -11,7 +11,8 @@
 # that a snapshot is the wrong instrument. This prints the durable facts
 # instead: which step, how long, what has finished, and whether anything failed.
 #
-# Both marker spellings are read: RUN-EXIT= is what gate.sh writes now,
+# Both marker spellings are read: RUN-EXIT= is what the post-merge run writes
+# now (flows/postmerge.flow.cx's run act, which replaced gate.sh),
 # GATE-EXIT= is what the logs already on disk carry.
 #
 # Usage:  scripts/gate-status.sh            # once
@@ -25,7 +26,7 @@ show() {
 
 	marker=$(grep -E '^(RUN|GATE)-EXIT=' "$LOG" | tail -1)
 	# the exit code alone, so the status word can be derived for a log written
-	# before gate.sh printed one.
+	# before the run wrapper printed one.
 	code=$(printf '%s' "$marker" | sed -E 's/^(RUN|GATE)-EXIT=([0-9]+).*/\2/')
 	case "$code" in
 		'')            state='' ;;
@@ -34,14 +35,14 @@ show() {
 		*)             state=failed ;;
 	esac
 
-	# The WRAPPER only. `pgrep -f gate.sh` is too loose: a test step's recipe
-	# text mentions gate.sh, so the pattern matched a STEP and this script
-	# reported the wrong pid (and, with `pgrep -f`, would also match itself —
-	# the trap in feedback_background_wait_no_self_matching_pgrep). Match the
-	# exact argv of the wrapper and take the ancestor, not a descendant.
-	pid=$(ps -eo pid,args | awk '($2=="/bin/sh" || $2=="sh" || $2=="/bin/bash" || $2=="bash") && $3 ~ /gate\.sh$/ {print $1}' | head -1)
-	[ -z "$pid" ] && pid=$(ps -eo pid,ppid,args \
-		| awk '$4 ~ /gate\.sh$/ && $2==1 {print $1}' | head -1)
+	# The RUN only: the post-merge tick that owns it (RULED: RFLOW-1 L100). The
+	# tick is the cx process running flows/postmerge.flow.cx, whose run act
+	# holds the runner for the run's life. `pgrep -f` is too loose: a step's
+	# recipe text can mention the document, so the pattern could match a STEP
+	# and report the wrong pid (and, with `pgrep -f`, match itself — the trap in
+	# feedback_background_wait_no_self_matching_pgrep). Match the tick's exact
+	# argv words: `flow run flows/postmerge.flow.cx`.
+	pid=$(ps -eo pid,args | awk '$3=="flow" && $4=="run" && $5=="flows/postmerge.flow.cx" {print $1}' | head -1)
 
 	started=$(grep -m1 -E '^(run|gate): started' "$LOG" | sed -E 's/^(run|gate): started //')
 	if [ -n "$started" ]; then
@@ -59,7 +60,7 @@ show() {
 	elif [ -n "$pid" ]; then
 		printf 'state    running   pid %s\n' "$pid"
 	else
-		printf 'state    gone with no marker — the wrapper was SIGKILLed (only SIGKILL escapes the trap)\n'
+		printf 'state    gone with no marker — the tick was killed; the next tick reaps it as RUN-EXIT=70\n'
 	fi
 	[ -n "${elapsed:-}" ] && printf 'elapsed  %sm %ss   (a full post-merge run is typically 60-120m)\n' \
 		"$(( elapsed / 60 ))" "$(( elapsed % 60 ))"

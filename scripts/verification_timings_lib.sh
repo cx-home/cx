@@ -1,6 +1,6 @@
 # scripts/verification_timings_lib.sh — the WRITER behind
 # vcx/target/verification_timings.cxd (issue 1583, RULED: RUN-5). Sourceable,
-# not executable: `. scripts/gate_loop_lib.sh`-style.
+# not executable: `. scripts/verification_timings_lib.sh`.
 #
 # #1562 shipped `check-verification-budget` — the bounds, the idle/loaded rule,
 # the refusal — with NOTHING producing its input: every bound read NOT MEASURED
@@ -8,7 +8,8 @@
 # (issue 1583; the owner's 1562-a keeps #1562 open until this lands). Two
 # writers use these two functions:
 #
-#   * scripts/gate-loop.sh writes `union` or `selected-run` at RUN-EXIT,
+#   * the post-merge runner writes `union` or `selected-run` at RUN-EXIT
+#     (flows/postmerge.flow.cx's verdict act, the same row in cx, RULED: RFLOW-1),
 #     seconds counted from RUN-START and the load sampled at RUN-START;
 #   * scripts/run_fixture_shards.sh writes `fixture-grader` on an UNSELECTED
 #     run — a selected run grades a handful of corpus files and its seconds

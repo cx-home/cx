@@ -38,11 +38,11 @@ for cl in $(ps -eo pid,command | awk '/claude-code\/[0-9.]+\/claude\.app\/Conten
         /bin/zsh*|/bin/sh*|/bin/bash*|*"-c "*) continue;;   # the tool's wrapper shell, not the work
       esac
       case "$cmd" in
-        *devbox*|*make*|*third_party/v/v*|*vcx/target/cx*|*gate.sh*|*"gh "*|*"git "*|*"v test"*|*"v -"*)
+        *devbox*|*make*|*third_party/v/v*|*vcx/target/cx*|*postmerge.flow.cx*|*"gh "*|*"git "*|*"v test"*|*"v -"*)
           cwd=$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -1)
           case "$cwd" in "$HOME"/git-repos/cx/*) ;; *) continue;; esac
           mins=$(echo "$et" | awk -F: '{ if (NF==3) print $1*60+$2; else if (NF==2) print $1; else print 0 }' | sed 's/-.*//')
-          flag=""; case "$cmd" in *gate.sh*|*"make test"*) ;; *) [ "${mins:-0}" -ge 25 ] && flag="  <-- HUNG? ${mins}m";; esac
+          flag=""; case "$cmd" in *postmerge.flow.cx*|*"make test"*) ;; *) [ "${mins:-0}" -ge 25 ] && flag="  <-- HUNG? ${mins}m";; esac
           printf '  %-8s %-9s %s\n         cwd %s%s\n' "$pid" "$et" "$(echo "$cmd" | cut -c1-90)" "${cwd#$HOME/git-repos/cx/}" "$flag"
           echo 1 >> "$hits";;
       esac
