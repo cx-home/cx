@@ -159,7 +159,7 @@
     # a module is a vcx/ directory or a pinned V root's; a vcx/ one wins (and
     # deps-present refuses a tree where one shadows the other).
     [= $pinned-only [?for [in $o $pinned] [where [not [$member [$string $o@dir] $vdirs]]] [yield $o]]]
-    [= $dirs [?for [in $g ($vdirs, [?for [in $o $pinned-only] [yield [$string $o@dir]]])] [in $d $g] [yield $d]]]
+    [= $dirs [?for [in $g ($vdirs, ([?for [in $o $pinned-only] [yield [$string $o@dir]]]))] [in $d $g] [yield $d]]]
     [= $names [?for [in $x $repos] [yield [$string $x@name]]]]
     [= $vrows [?for [in $x $repos] [where [not [= [$string [?else $x@vmodule ""]] ""]]] [yield $x]]]
     [= $vmods [?for [in $x $vrows] [yield [$string $x@vmodule]]]]

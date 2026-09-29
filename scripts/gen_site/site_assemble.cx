@@ -228,8 +228,8 @@
 [?def links-of scope=public impure ($rel $text)
   [?let [= $html [?if [$strings:ends-with $rel ".html"] [then [$markup-only $text]] [else ""]]]
         [= $raw [?if [$strings:ends-with $rel ".html"]
-                  [then [$pb:cat-seqs ([?for [in $m [$re:find-all [$attr-rx] $html]] [yield [$re:group $m 1]]],
-                                       [?for [in $m [$re:find-all [$attr-rx-sq] $html]] [yield [$re:group $m 1]]])]]
+                  [then [$pb:cat-seqs (([?for [in $m [$re:find-all [$attr-rx] $html]] [yield [$re:group $m 1]]]),
+                                       ([?for [in $m [$re:find-all [$attr-rx-sq] $html]] [yield [$re:group $m 1]]]))]]
                   [else [?for [in $m [$re:find-all [$md-rx] $text]] [yield [$re:group $m 1]]]]]]
     [$distinct [?for [in $t $raw]
                  [= $t2 [$strings:trim-end-chars [$first [$strings:split $t "?"]] ""]]
