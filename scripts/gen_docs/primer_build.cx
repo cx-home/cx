@@ -111,16 +111,22 @@
 
 # ── fixture plumbing (the check_code_fixtures.cx idiom) ──────────────────
 
-# raw-of: the string payload of a section node carrying one [#…#] raw block.
+# raw-of: the string payload of a section node carrying [#…#] raw blocks.
 # RawText is opaque to [$text]; the serialization is the defined byte-exact
-# projection, so serialize and strip the delimiters.
+# projection, so serialize, take what lies between the first opener and the
+# last terminator, and join the blocks. A payload that must itself carry a
+# raw block's terminator is written in the corpus as two adjacent blocks
+# split inside it (`…##][#]…`, the idiom of core.cxd 012-rawtext and
+# fmt.cxd's header), and the serializer separates adjacent blocks with one
+# space, so every `#] [#` between the outer delimiters is a junction of two
+# blocks and never payload — a payload cannot hold `#]` (RULED: DOCSOK-1).
 [?def raw-of scope=public ($rt)
   [?let [= $s [$cx:serialize $rt]]
         [= $i [$strings:find $s "[#"]]
         [= $j [$strings:rfind $s "#]"]]
     [?if [or [not [$present $i]] [not [$present $j]] [< $j $i]]
       [then ""]
-      [else [$strings:slice $s [+ $i 2] [- $j 1]]]]]]
+      [else [$strings:replace [$strings:slice $s [+ $i 2] [- $j 1]] "#] [#" ""]]]]]
 
 # normalize: the fixture-loader rule — strip ONE leading and ONE trailing
 # newline (the [# ⏎ … ⏎ #] layout newlines), then any inline padding.
@@ -236,6 +242,26 @@
 #   XML document only    `cx --from=xml --to=cx input.xml` — the XML lane of
 #                        the same reading (conformance/xml.cxd fixtures carry
 #                        [in-xml] rather than [in-cx]).
+#
+# A document-only case that records no [out-cx] (nor [out-text]/[out-err])
+# pins another projection of the same reading, and is replayed by the
+# projection it records (RULED: DOCSOK-1) — so an identity or a JSON case of
+# cx-core-data is citable as it stands, graded by its own suite and replayed
+# here against the same expectation:
+#   [out-canonical]      `cx canonical input.cx` — the strict form
+#                        (identity.cxd, canonical.md §2.8)
+#   [out-json]           `cx --from=cx --to=json input.cx` — the JSON
+#                        projection (atoms.cxd, conversions.cxd)
+[?def data-projection scope=public ($sec)
+  [?if [or [$map:contains $sec "out-cx"]
+           [or [$map:contains $sec "out-text"] [$map:contains $sec "out-err"]]]
+    [then ("--from=cx", "--to=cx", "%DATA%")]
+    [else [?if [$map:contains $sec "out-canonical"]
+      [then ("canonical", "%DATA%")]
+      [else [?if [$map:contains $sec "out-json"]
+        [then ("--from=cx", "--to=json", "%DATA%")]
+        [else ("--from=cx", "--to=cx", "%DATA%")]]]]]]]
+
 [?def argv-tokens scope=public ($sec)
   [?let [= $raw [?else [$map:get $sec "cli-argv"] ""]]
         [= $code [?else [$map:get $sec "in-code"] ""]]
@@ -257,7 +283,7 @@
         [= $tail [?if [not [= $xml ""]]
                    [then ("--from=xml", "--to=cx", "%XML%")]
                    [else [?if [= $code ""]
-                     [then ("--from=cx", "--to=cx", "%DATA%")]
+                     [then [$data-projection $sec]]
                      [else [?if [= $data "[empty]"]
                              [then ("%FILE%",)]
                              [else ("--data=%DATA%", "%FILE%")]]]]]]]
@@ -277,26 +303,12 @@
         "%XML%" $xp]
       "%CODE%" $cd]]]
 
-# extractable: a fixture body carrying `[#` / `#]` of its own defeats the
-# naive delimiter slice `raw-of` uses (the same limitation
-# scripts/check_code_fixtures.cx lives with). Citing such a case would embed
-# a MANGLED program in the primer, so it is refused by name instead.
-[?def extractable scope=public impure ($id $what $body)
-  [?if [or [$strings:contains $body "[#"] [$strings:contains $body "#]"]]
-    [then [$die [$concat "case '" $id "': its [" $what "] nests raw-text "
-                         "delimiters, which raw-of cannot extract byte-exactly. "
-                         "Cite a different fixture for this section."]]]
-    [else 0]]]
-
 # replay: execute one case; returns [replay out=… rc=… cmd=…].
 [?def replay scope=public impure ($cxbin $tmpdir $id $sec)
   [?let
     [= $data [?else [$map:get $sec "in-cx"] "[empty]"]]
     [= $code [?else [$map:get $sec "in-code"] ""]]
     [= $xml [?else [$map:get $sec "in-xml"] ""]]
-    [= $_g1 [$extractable $id "in-cx" $data]]
-    [= $_g2 [$extractable $id "in-code" $code]]
-    [= $_g3 [$extractable $id "in-xml" $xml]]
     [= $data-path [$path:join $tmpdir [$concat $id ".data.cx"]]]
     [= $prog-path [$path:join $tmpdir [$concat $id ".prog.cx"]]]
     [= $xml-path  [$path:join $tmpdir [$concat $id ".data.xml"]]]
@@ -336,6 +348,10 @@
       [exp text=[$map:get $sec "out-err"] mode=[$err-mode [$map:get $sec "out-err"]]]]
     [when [$map:contains $sec "out-cx"]
       [exp text=[$map:get $sec "out-cx"] mode='exact']]
+    [when [$map:contains $sec "out-canonical"]
+      [exp text=[$map:get $sec "out-canonical"] mode='exact']]
+    [when [$map:contains $sec "out-json"]
+      [exp text=[$map:get $sec "out-json"] mode='exact']]
     [else [exp text="" mode='missing']]]]
 
 # matches: the freshness predicate for one mode.
@@ -355,7 +371,7 @@
         [= $rc-got [$string $rep@rc]]
     [?match $mode
       [case 'missing'
-        [$die [$concat "case '" $id "' records no [out-text]/[out-err]/[out-cx] -- "
+        [$die [$concat "case '" $id "' records no [out-text]/[out-err]/[out-cx]/[out-canonical]/[out-json] -- "
                        "the primer can only cite fixtures with a recorded output"]]]
       [when [not [$matches $mode $exp $got]]
         [$die [$concat "EXAMPLE FRESHNESS: case '" $id "' -- the binary no longer "

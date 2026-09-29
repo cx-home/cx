@@ -283,7 +283,13 @@
   [?let [= $sec [$map:get [$map:get $fx 'index'] $id]]
         [= $rep [$map:get [$map:get $fx 'replays'] $id]]
         [= $data [?else [$map:get $sec 'in-cx'] '[empty]']]
-        [= $code [?else [$map:get $sec 'in-code'] '']]
+        [; a program passed ON the command line (`cx -e '…'`, a [cli-argv]
+           naming %CODE% and no %FILE%) is shown once, in the invocation —
+           never also as a prog.cx file the command does not read
+           (RULED: DOCSOK-1) ]
+        [= $argv [?else [$map:get $sec 'cli-argv'] '']]
+        [= $inline [and [$strings:contains $argv '%CODE%'] [not [$strings:contains $argv '%FILE%']]]]
+        [= $code [?if $inline [then ''] [else [?else [$map:get $sec 'in-code'] '']]]]
         [= $parts [$pb:cat-seqs (
           [?if [= $data '[empty]'] [then ()]
             [else ([p class='fixture-file' [code 'input.cx']], [pre [code lang=cx $data]])]],
