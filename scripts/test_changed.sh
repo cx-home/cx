@@ -924,7 +924,7 @@ esac
 INFRA_HIT=0
 while IFS= read -r f; do
   case "$f" in
-    Makefile|flows/private.mk|vcx/Makefile|devbox.json|devbox.lock|VERSION|scripts/*) INFRA_HIT=1; break ;;
+    Makefile|vcx/Makefile|devbox.json|devbox.lock|VERSION|scripts/*) INFRA_HIT=1; break ;;
   esac
 done < "$TC_TMP/changed"
 
