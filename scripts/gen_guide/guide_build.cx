@@ -296,6 +296,19 @@
 [?def fixture-html scope=public impure ($fx $id)
   [$post-body [$xml:emit [$fixture-block $fx $id]]]]
 
+[# tldr-block: the one TL;DR (docs-src/site/tldr.cxd) as a section block —
+   the lead, the standard, and every clause with its fixture replayed beside
+   it, so the standard we state is proved on the page that states it
+   (RULED: DOCS-49, DOCS-47). The prose carries the site's inline Markdown,
+   which post-body renders as it does for every other block. #]
+[?def tldr-block scope=public impure ($fx)
+  [div class='tldr'
+    [p class='lede' [$pb:tldr-part 'lead']]
+    [p [$pb:tldr-part 'standard']]
+    [?splice [$pb:cat-seqs [?for [in $c [$pb:tldr-clauses]]
+      [yield ([p class='tldr-clause' [$string $c@text]],
+              [$fixture-block $fx [$string $c@fixture]])]]]]]]
+
 [# pair-block: a before/after panel from an anti-pattern PAIR of
    conformance/llm/antipatterns.cxd (the primer's {{PAIR:}} brought to the
    guide, RULED: DOCS-47): the wrong half's [title] as the panel's heading,
@@ -355,6 +368,11 @@
     [case [output $t] [pre class="sample-output" [code $t]]]
     [case [example $code] [pre [code lang=$c@lang $code]]]
     [case [fixture] [$fixture-block $fx [$string $c@id]]]
+    [; DOCS-49 / the design's voice rule 2: a section opens on the one TL;DR of
+       docs-src/site/tldr.cxd — the lead, the standard stated as ours, then
+       each clause beside the case that proves it, replayed like every other
+       citation (the guide home and the primer §0 project the same source). ]
+    [case [tldr] [$tldr-block $fx]]
     [; DOCS-42: a figure rendered from the registries rides through [$xml:emit]
        as a token (raw SVG would be escaped there) and is placed by
        expand-figures once the page is a string. ]
