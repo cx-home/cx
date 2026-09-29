@@ -534,6 +534,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `docs-48` | [rulings_2026_09_28_owner_decisions_l71_l79.md](rulings_2026_09_28_owner_decisions_l71_l79.md) | DOCS-48 — the value map becomes the enterprise page, each item re-backed (L78 = (a)) |
 | `docs-49` | [rulings_2026_09_28_owner_decisions_l71_l79.md](rulings_2026_09_28_owner_decisions_l71_l79.md) | DOCS-49 — the generators and the front pages first, the repository pages next, the voice pass last (L79 = (a)) |
 | `docs-50` | [rulings_2026_09_28_owner_decisions_l85.md](rulings_2026_09_28_owner_decisions_l85.md) | DOCS-50 — the bindings page is a fourth allowed page for a host language's name, as a binding's target only (L85 = (a)) |
+| `docs-51` | [rulings_2026_09_29_owner_direction_docs_5of5.md](rulings_2026_09_29_owner_direction_docs_5of5.md) | DOCS-51 — the acceptance criteria for a 5 of 5, each held by a step, none ticked on a step table alone |
+| `docs-51` | [rulings_2026_09_29_owner_direction_docs_5of5.md](rulings_2026_09_29_owner_direction_docs_5of5.md) | PLAY-2 — the playground's own 5 of 5, inside DOCS-51 |
 | `dr-1` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) | DR-1 … DR-11 — the design letter's eleven sub-rulings |
 | `dr-10` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) | DR-10 consult log (spec-sufficiency probe register) |
 | `dr-11` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) | DR-1 … DR-11 — the design letter's eleven sub-rulings |
@@ -717,6 +719,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pivot-2` | [rulings_2026_09_27_integrator_decisions_l57.md](rulings_2026_09_27_integrator_decisions_l57.md) | Integrator decision 2026-09-27 (afternoon), under the owner's delegation — Letter 57: a verb's `effect=` reaches both faces from the feature (PIVOT-2) |
 | `pivot-2` | [rulings_2026_09_27_integrator_decisions_l57.md](rulings_2026_09_27_integrator_decisions_l57.md) | PIVOT-2 — both faces copy a verb's `effect=` from the feature it came from (L57 = (b)) |
 | `pivot-2` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | 1690, #1498, #1434, PIVOT-2, SYNC-3, SYNC-6, KIT4-1, KIT4-2, RS-38, D83a, K10.** |
+| `play-2` | [rulings_2026_09_29_owner_direction_docs_5of5.md](rulings_2026_09_29_owner_direction_docs_5of5.md) | PLAY-2 — the playground's own 5 of 5, inside DOCS-51 |
 | `pq-1` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-1 — the ERD row comment carries a VALUE, and the `@` sigil is retired |
 | `pq-2` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-2 — every ERD column token is forced to a valid ATTRIBUTE_WORD |
 | `pq-3` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-3 — golden movement, adjudicated (DR-8) |
@@ -1304,7 +1307,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `dist-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) |
 | `dist-2` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md), [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) |
 | `docs-3` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) |
-| `docs-4` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md), [rulings_2026_09_28_owner_decisions_l85.md](rulings_2026_09_28_owner_decisions_l85.md), [rulings_2026_09_29_owner_decisions_l109.md](rulings_2026_09_29_owner_decisions_l109.md) |
+| `docs-4` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md), [rulings_2026_09_28_owner_decisions_l85.md](rulings_2026_09_28_owner_decisions_l85.md), [rulings_2026_09_29_owner_decisions_l109.md](rulings_2026_09_29_owner_decisions_l109.md), [rulings_2026_09_29_owner_direction_docs_5of5.md](rulings_2026_09_29_owner_direction_docs_5of5.md) |
 | `dr-2` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) |
 | `dr-2a` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md), [rulings_2026_08_20_diagram_wave3.md](rulings_2026_08_20_diagram_wave3.md) |
 | `dr-3` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md), [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md) |
@@ -1405,7 +1408,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ol-7` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
 | `ol-8` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
 | `ol-9` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
-| `play-1` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) |
+| `play-1` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md), [rulings_2026_09_29_owner_direction_docs_5of5.md](rulings_2026_09_29_owner_direction_docs_5of5.md) |
 | `pq-1a` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) |
 | `pq-1b` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) |
 | `pq-4a` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) |
@@ -1493,4 +1496,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*351 ledger pages; 778 ids declared, 390 cited only.*
+*352 ledger pages; 780 ids declared, 390 cited only.*
