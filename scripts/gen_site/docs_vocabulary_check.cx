@@ -1,0 +1,132 @@
+# scripts/gen_site/docs_vocabulary_check.cx — the docs-vocabulary step
+# (RULED: DOCS-51 §1 and §5, PLAY-2, RS-1, CXF-1).
+#
+# One vocabulary: the rings' and the delivery grammar's words everywhere —
+# data, code, a query is a program over data, two rings and the groups above
+# them, decision / merge / step / run. This step counts, in every served
+# SOURCE and in the playground's own page and script, the words the site
+# does not use — "Ring 2", "Ring 3", an "ecosystem ring", the "monorepo",
+# "lane", "campaign", "gate run", "steward", "ruling", "landed", and the
+# reading names Document / Program as a tab or crumb label — and holds each
+# file to docs-src/site/vocabulary.cxd, in the voice ratchet's shape: a file
+# with no row for a word must read ZERO of it; a file with a row may read at
+# most its `allow=`, and when it reads LESS the step refuses too, naming the
+# new count, so the number in the row is always the measured one and only
+# ever moves down. Every row carries its `why=` — the sense that is not the
+# grammar's (a codec lane, a page that records the words leaving), or the
+# floor a voice wave lowers to zero (`wave=`).
+#
+# What is scanned: the served sources docs_voice_check.cx scans (the landing,
+# the guide sections and about page, the repository pages, the reference
+# sources, the LLM templates, the dev pages) plus the playground's
+# playground.js and playground.html and the guide generator (the navigation's
+# labels are its strings).
+#
+# Not scanned, by name: the grammar's "green/red", "job/stage/task" and
+# "landing" — ordinary words in these pages ("landing page", a `job` element,
+# a task list) whose pipeline sense a word count cannot tell apart; a sentence
+# using one in the pipeline sense is the voice pass's to catch.
+#
+# Run (from the repository root):
+#   cx --allow-read --allow-write scripts/gen_site/docs_vocabulary_check.cx
+#   (or: make docs-vocabulary-check)
+# Exit: 0 green (the per-file table on stdout); 1 any file over or under an
+# allowance, a row naming a file that is not there, or a row naming no word.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?const VOCAB "docs-src/site/vocabulary.cxd"]
+[?const GLOBS ("docs-src/site/*.md", "docs-src/site/tldr.cxd",
+               "docs-src/canonical/sections/*.cxd", "docs-src/canonical/about.html",
+               "docs-src/repos/*.cxd",
+               "docs-src/canonical/reference/*.cx",
+               "docs-src/llm/*.tmpl", "docs-src/llm/primer-platform.chapter.md",
+               "docs/dev/*.md",
+               "scripts/gen_guide/playground/playground.js",
+               "scripts/gen_guide/playground/playground.html",
+               "scripts/gen_guide/guide_build.cx")]
+
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def attr scope=public ($e $k $d)
+  [?let [= $hits [?for [in $a [$attrs $e]] [where [= [$string $a@name] $k]] [yield [$string $a]]]]
+    [?if [$empty $hits] [then $d] [else [$first $hits]]]]]
+
+# words: the [words]/[word] rows — id, the pattern, its flags, an optional
+# path scope (a substring every scanned path must carry) and the words.
+[?def words scope=public impure ($doc)
+  [?for [in $w $doc//words/word]
+    [yield [w id=[$attr $w "id" ""] rx=[$attr $w "rx" ""] flags=[$attr $w "flags" "(?i)"]
+              scope=[$attr $w "scope" ""] say=[$attr $w "say" ""]]]]]
+
+# rows: the [allow]/[page] rows — {path, word, allow, wave, why}.
+[?def rows scope=public impure ($doc)
+  [?for [in $p $doc//allow/page]
+    [yield [row path=[$attr $p "path" ""] word=[$attr $p "word" ""]
+                allow=[$strings:to-number [$attr $p "allow" "0"]]
+                wave=[$attr $p "wave" ""] why=[$attr $p "why" ""]]]]]
+
+[?def count-in scope=public impure ($text $w)
+  [$count [$re:find-all [$re:compile [$concat [$string $w@flags] [$string $w@rx]]] $text]]]
+
+[?def in-scope scope=public ($w $path)
+  [?if [= [$string $w@scope] ""] [then true]
+    [else [$present [$strings:find $path [$string $w@scope]]]]]]
+
+[?def sources scope=public impure ()
+  [$fp:flat-map GLOBS [?fn ($g) [$io:glob $g]]]]
+
+[?def allow-for scope=public ($rows $path $word)
+  [?let [= $hits [?for [in $r $rows]
+                   [where [and [= [$string $r@path] $path] [= [$string $r@word] $word]]]
+                   [yield $r]]]
+    [?if [$empty $hits] [then [row path=$path word=$word allow=0 wave="" why=""]] [else [$first $hits]]]]]
+
+[?let
+  [= $doc [$cx:parse [$io:read-file VOCAB]]]
+  [= $words [$words $doc]]
+  [= $rows [$rows $doc]]
+  [= $files [$sources]]
+  [= $ids [?for [in $w $words] [yield [$string $w@id]]]]
+  [= $missing [?for [in $r $rows] [where [not [$io:is-file [$string $r@path]]]] [yield [$string $r@path]]]]
+  [= $unknown [?for [in $r $rows]
+                [where [not [> [$count [?for [in $i $ids] [where [= $i [$string $r@word]]] [yield 1]]] 0]]]
+                [yield [$concat [$string $r@path] " → word=" [$string $r@word]]]]]
+  [= $graded [$fp:flat-map $files [?fn ($f)
+               [?let [= $text [$io:read-file $f]]
+                 [?for [in $w $words]
+                   [where [$in-scope $w $f]]
+                   [= $n [$count-in $text $w]]
+                   [= $r [$allow-for $rows $f [$string $w@id]]]
+                   [yield [g path=$f word=[$string $w@id] say=[$string $w@say] n=$n allow=$r@allow wave=[$string $r@wave]]]]]]]]
+  [= $over [?for [in $g $graded] [where [> $g@n $g@allow]] [yield $g]]]
+  [= $under [?for [in $g $graded] [where [< $g@n $g@allow]] [yield $g]]]
+  [= $total [$fp:fold $graded 0 [?fn ($a $g) [+ $a $g@n]]]]
+  [= $_table [?for [in $g $graded] [where [> $g@n 0]]
+               [yield [$say [$concat "  " [$string $g@n] "\t" [$string $g@word] "\t" [$string $g@path]
+                                     [?if [= [$string $g@wave] ""] [then ""]
+                                       [else [$concat "\t(floor for wave " [$string $g@wave] ")"]]]]]]]]
+  [= $_m [?for [in $p $missing] [yield [$cry [$concat "docs-vocabulary-check: " VOCAB " names " $p " and it is not there — remove the row"]]]]]
+  [= $_k [?for [in $u $unknown] [yield [$cry [$concat "docs-vocabulary-check: " VOCAB " row " $u " names no [word] id"]]]]]
+  [= $_o [?for [in $g $over] [yield [$cry [$concat "docs-vocabulary-check: " [$string $g@path] " reads " [$string $g@say]
+                                                    " " [$string $g@n] " time(s); " VOCAB " allows "
+                                                    [$string $g@allow] " — one vocabulary (DOCS-51 §1): "
+                                                    "use the site's word, or add the row with the sense that is not the grammar's"]]]]]
+  [= $_u [?for [in $g $under] [yield [$cry [$concat "docs-vocabulary-check: " [$string $g@path] " reads " [$string $g@say]
+                                                     " " [$string $g@n] " time(s) and " VOCAB " still allows "
+                                                     [$string $g@allow] " — ratchet: lower allow= to "
+                                                     [$string $g@n] " in the same change"]]]]]
+  [?if [and [$empty $missing] [and [$empty $unknown] [and [$empty $over] [$empty $under]]]]
+    [then [?let [= $_s [$say [$concat "docs-vocabulary-check: " [$string [$count $files]] " sources, "
+                                      [$string [$count $words]] " words, " [$string $total]
+                                      " mention(s), every one within " VOCAB "'s allowance; "
+                                      [$string [$count [?for [in $g $graded] [where [= $g@n 0]] [yield 1]]]]
+                                      " file-word pairs read zero"]]]
+            [$env:exit 0]]]
+    [else [$env:exit 1]]]]
