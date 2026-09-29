@@ -318,12 +318,14 @@
     [child id=ent-flows n=9.3.8 title='Cross-system workflows that fail safely'
       [body
         """A workflow is a document; before its pivot a failed step is
-           compensated in reverse order, after it the run retries forward,
-           and the record says which. The half-committed transaction —
+           compensated — a bounded ladder of re-attempts first, each one
+           recorded, then the compensators in reverse order — and after
+           the pivot the run retries forward; the record says which. The
+           half-committed transaction —
            the worst outage class in distributed systems — is designed
            out; what remains is visible and recoverable. The runner law is
            [`spec/platform/flow.md`](https://github.com/cx-home/cx-platform-flow/blob/main/spec/03-approved/platform/flow.md)."""]
-      [fixture id=flow-032-compensation-triple]
+      [fixture id=flow-057-attempts-exhausted-compensates]
       [fixture id=flow-012-simulate-compensation-and-incomplete]]
 
     [child id=ent-evolution n=9.3.9 title='Data that survives schema change'
