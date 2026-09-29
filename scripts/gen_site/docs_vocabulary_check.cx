@@ -83,17 +83,18 @@
     [yield [row path=$path word=$word allow=$allow wave=$wave why=$why]]]]
 
 # prose: the text a reader reads as sentences — every code span removed
-# before a word is counted: a fenced block (```…```), a [fixture id=…]
-# citation (a case id is a name, not a sentence), an inline `…` span (it
+# before a word is counted: a fenced block (```…```), a fixture citation
+# (a case id is a name, not a sentence; spelled \\x5B…\\x5D so the data
+# reading balances this file too — reader-parity), an inline `…` span (it
 # may wrap one line, as the .cxd bodies do, never a paragraph), an HTML
 # <code>…</code>, and a path literal outside one (a token carrying a "/"
 # that ends in "/" or in a file extension — `lanes/`, examples/lanes/x.cx).
 # A directory, file or make-target name that carries a word keeps its
 # spelling there, and only there; "JSON/YAML" or "green/red" is not a path
 # and is still counted.
-[?const SPAN-RX "(?s)```.*?```|\\[fixture id=[^\\]]*\\]|`[^`\n]*(?:\n[^`\n]*)?`|<code>.*?</code>"]
+[?const SPAN-RX "(?s)```.*?```|\\x5Bfixture id=[^\\x5D]*\\x5D|`[^`\n]*(?:\n[^`\n]*)?`|<code>.*?</code>"]
 [?const PATH-RX "[A-Za-z0-9_.-]*[A-Za-z0-9_-]/[A-Za-z0-9_./-]*"]
-[?const PATH-EXT-RX "(?s).*(/|\\.[A-Za-z0-9]+)"]
+[?const PATH-EXT-RX "(?s).*(/|[.][A-Za-z0-9]+)"]
 [?def prose scope=public ($text)
   [?let [= $spanless [$re:replace [$re:compile SPAN-RX] $text " "]]
         [= $ext [$re:compile PATH-EXT-RX]]
