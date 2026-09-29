@@ -1,0 +1,51 @@
+[# docs-src/repos/cx-tooling.cxd — the editor and diagram surface's page,
+   repo-cx-tooling.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 4). Facts
+   from the registries; the one example from its own corpus (the diagram
+   suite). #]
+
+[repo name=cx-tooling
+  [intro
+    """**TL;DR — the editor knows the language because the language tells
+       it.** `cx-tooling` is the editor and diagram surface: the VS Code
+       extension, the Neovim and Helix configuration, the tree-sitter
+       grammar, the shell completions, the TextMate syntax, the installer
+       scripts, the Linguist submission, the `<cx-diagram>` web component and
+       the repository template every component repository starts from — plus
+       the CX half of `cx-stdlib/diagram`, the one bundled module that left
+       the frozen standard library for the product that consumes it."""]
+  [body
+    """Three layers stack on the `cx` binary — a TextMate grammar for display
+       contexts, the language server for live editing, tree-sitter for
+       structure and injection — and the front door holds them to the
+       binary: the completions are checked against the CLI's own subcommand
+       and flag catalog, the grammars and the parity register against the
+       lexer and the language server, each a step of the front door that
+       reads this repository from its pin. A verb added to `cx` without its
+       completion is a red step, not a stale editor. [[editors]] and [[cli]]
+       are the guide's pages."""]
+  [body
+    """The diagram renderer is a pure CX program: it renders a program's
+       image to Mermaid carrying the source as round-trip metadata, emits
+       DOT, splices the source into SVG and PNG, and recovers it from all
+       three; its rules table is a sealed value the completeness gate diffs
+       against the spec, the golden corpus and the grammar registry. Its V
+       half — the C ABI export, the goldens — stays with the language core,
+       so `diagram` is a two-repository module, like the others that
+       straddle a boundary ([[cli-diagram]] is the command surface)."""]
+  [gives
+    """One module of the standard library — pure, Ring 1 — bundled into the
+       build from the pin, its specification and corpus travelling with it;
+       it links to the reference page projected from its own documentation.
+       The editor surface ships as files, not a module: install it with the
+       scripts under `tooling/install/`."""]
+  [try
+    """Render a one-node program to Mermaid and read the source back out of
+       the rendering: the round trip is the contract — a diagram is a
+       projection of the program, never a drawing beside it."""]
+  [fixture id=diagram-001-render-mermaid]
+  [status
+    """The tooling repository ships as an editor surface: its module is
+       bundled into the build from the pin, and the front door's editor
+       checks read the completions, grammars and parity register from the
+       same checkout, so what the editor knows and what the binary does are
+       graded together."""]]

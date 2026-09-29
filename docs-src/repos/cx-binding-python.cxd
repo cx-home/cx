@@ -1,0 +1,50 @@
+[# docs-src/repos/cx-binding-python.cxd — the PyPI binding's page, served as
+   repo-<this file's name>.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 4).
+   Facts from the registries; the one example from the front door's ABI
+   vectors, the corpus the binding's own lane grades itself against. The
+   prose names no host language (DOCS-43; the letter on voice.cxd's
+   bindings row stands) — the repository's own name is the one mention. #]
+
+[repo name=cx-binding-python
+  [intro
+    """**TL;DR — the same C ABI, in the host's own idiom.** This binding is
+       `cxlib` on PyPI: a thin wrapper over `libcx`'s string-in, string-out
+       C ABI, so a program in the host language parses, canonicalises,
+       hashes, converts and evaluates CX with the very engine the `cx`
+       binary runs — byte-identical answers, nothing reimplemented."""]
+  [body
+    """Layer 1 is the contract every binding shares: sixteen canonical
+       methods — parse, bytes, hash, equals, eval, select, modify and the
+       node accessors — with identical semantics across hosts, so a document
+       hashed here is the document hashed from anywhere else. Identity rides
+       `cx_canonical`, `cx_hash` and `cx_eq`; selection, evaluation and
+       update delegate to `cx_code_eval`; nothing about a document is
+       retained inside `libcx` between calls. [[layer-1]] is the table,
+       [[c-abi]] the surface beneath it, [[layer-2]] the host-idiomatic
+       sugar above it — the idioms package — that desugars to Layer 1."""]
+  [body
+    """We grade the binding against the front door's published ABI vectors —
+       one case per entry point a wrapper covers, an input document and the
+       canonical output, hash or refusal it must answer — through the
+       binding's own lane, which loads the file from its pin and asserts
+       every vector through its own wrapper. The same file is checked
+       against `libcx` directly by the front door's C test, so the wrapper
+       and the engine are held to one witness."""]
+  [gives
+    """No CX module: a binding ships host code, not `.cx` files, so the table
+       below is the generator's note. What it gives you is the package
+       itself — the Layer-1 methods, and the idioms above them that desugar
+       to Layer 1."""]
+  [try
+    """One ABI vector, replayed by this site's `cx`: a document with a
+       presentation comment, kept through `cx_fmt` — the lossless canonical
+       text the wrapper's `fmt` answers. The binding's lane asserts the same
+       vector through the wrapper; this page shows the engine's own answer."""]
+  [fixture id=abi-001-fmt-lossless-retains-comment]
+  [status
+    """The binding is not consumed by `cx` — it consumes `cx`: its own
+       `deps.cxd` pins the front door for the C ABI and the V core it builds
+       `libcx` from, which is why the registry row carries no `at=` and the
+       figure draws no column on either side. It ships from its own
+       repository at its own cadence, and a pin moves there only when the
+       newer front door is green with it."""]]

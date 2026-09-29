@@ -1,0 +1,52 @@
+[# docs-src/repos/cx-registry.cxd — the package index's page,
+   repo-cx-registry.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 4). Facts
+   from the registries; the repository has no corpus of its own, so the one
+   example is the application host's case over the store shape the index
+   is laid out in (the xap-dist suite) — the substitution RESULTS.md names. #]
+
+[repo name=cx-registry
+  [intro
+    """**TL;DR — a git repository is a package registry, and the review is
+       the publish gate.** `cx-registry` is the package index: a `file://` CX
+       store laid out in a repository — content trees, sealed manifests and
+       `name@version` aliases — the publisher identity that signs them, and
+       the publish program that seals, signs, publishes and re-verifies in
+       one run. No service is needed to consume it: clone it, open the
+       store, install by alias."""]
+  [body
+    """Integrity is the artifact's, never the transport's: a package is a
+       canonical content tree addressed by its hash, a manifest sealed
+       beside it — the tag-object pattern — and a publisher's signature over
+       that hash; a released alias is immutable, so a new artifact is a new
+       version and a rollback is a hash identity rather than a guess.
+       Publishing is a reviewed commit: run the program, commit the new
+       store objects and the alias, open the pull request. Consuming runs
+       the whole verification chain offline on every install, and vendoring
+       is a store clone."""]
+  [body
+    """The same objects re-host without re-packaging: the next stage serves
+       the store over the wire, discovery becomes a catalog query pushed down
+       to the store, and fetch, verify and install run by hash exactly as
+       before. The guide's [[dist-registry]] and [[dist-consuming]] chapters
+       walk the two sides; the verbs are the application host's, which is
+       where the corpus that grades them lives."""]
+  [gives
+    """No module and no V code: the repository is a store, a key document
+       and one program written over the application host's package verbs
+       and the store, so the table below is the generator's note. What it
+       gives you is the index itself, and the shape every later stage
+       keeps."""]
+  [try
+    """The store object a package is: two content trees built from the same
+       entries named in two orders, put into a store, one hash — canonical
+       order is the tree's, not the author's, which is why re-publishing
+       identical sources yields byte-identical objects. The case is the
+       application host's; the store it writes to is the store the index
+       lays out on disk."""]
+  [fixture id=xap-dist-001-tree-canonical-order]
+  [status
+    """The front door pins nothing of the index — it is consumed by `file://`
+       and by the wire, not compiled in — so the registry row carries an
+       `at=` and `deps.cxd` carries no row, and the figure draws the
+       repository alone. Its own pin document names what it builds on; a
+       publish is a pull request against it."""]]

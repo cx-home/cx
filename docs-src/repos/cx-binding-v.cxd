@@ -1,0 +1,48 @@
+[# docs-src/repos/cx-binding-v.cxd — the V binding's page,
+   repo-cx-binding-v.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 4).
+   Facts from the registries; the one example from the front door's ABI
+   vectors, the corpus the binding's own lane grades itself against. #]
+
+[repo name=cx-binding-v
+  [intro
+    """**TL;DR — the native reference binding: the engine's own language,
+       with no ABI in between.** `cx-binding-v` is the V binding of CX, and
+       it is two things at once: the native path imports the reader and the
+       evaluator's V modules directly from its pin of the front door, and the
+       archived C-FFI path shows the same surface reached the way every
+       other binding reaches it — through `libcx`."""]
+  [body
+    """Layer 1 is the contract every binding shares: sixteen canonical
+       methods — parse, bytes, hash, equals, eval, select, modify and the
+       node accessors — with identical semantics across hosts, and this
+       binding is the reference the others are measured against: what it
+       answers natively is what `cx_canonical`, `cx_hash`, `cx_eq` and
+       `cx_code_eval` answer through the ABI, or one of them is wrong.
+       [[layer-1]] is the table, [[c-abi]] the surface the others wrap."""]
+  [body
+    """We grade the binding against the front door's published ABI vectors —
+       one case per entry point, an input document and the canonical output,
+       hash or refusal it must answer — through the binding's own lane,
+       written in V, which loads the file from its pin and asserts every
+       vector through its own calls. The same file is checked against
+       `libcx` directly by the front door's C test, so the native path, the
+       ABI and the engine are held to one witness."""]
+  [gives
+    """No CX module: a binding ships host code, not `.cx` files, so the table
+       below is the generator's note. What it gives you is the V module
+       itself — the Layer-1 methods over the engine's own types — and the
+       archived FFI implementation beside it, kept as the worked example of
+       wrapping the ABI."""]
+  [try
+    """One ABI vector, replayed by this site's `cx`: a document with a
+       presentation comment, kept through `cx_fmt` — the lossless canonical
+       text the binding's `fmt` answers. The binding's lane asserts the same
+       vector natively; this page shows the engine's own answer."""]
+  [fixture id=abi-001-fmt-lossless-retains-comment]
+  [status
+    """The binding is not consumed by `cx` — it consumes `cx`: its own
+       `deps.cxd` pins the front door for the V core the native path imports
+       and the `libcx` the archived path links, which is why the registry row
+       carries no `at=` and the figure draws no column on either side. It
+       ships from its own repository at its own cadence, and a pin moves
+       there only when the newer front door is green with it."""]]
