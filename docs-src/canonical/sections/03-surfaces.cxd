@@ -35,15 +35,7 @@
         [item """**Use cases:** opinionated source-file formatter; diff
                 stability across edits that don't change data; code
                 review where reviewers see only meaningful changes."""]]
-      [example lang=cx
-        """[; Source — author-friendly form (loose layout): ]
-           [user
-             email="ada@example.com"
-             id=42
-             active=true]
-
-           [; cx fmt output — presentation normalized, one line: ]
-           [user email="ada@example.com" id=42 active=true]"""]]
+      [fixture id=abi-001-fmt-lossless-retains-comment]]
 
     [child id=canonical-strict n=3.1.2 title='Strict canonical (cx canonical / cx hash)'
       [body
@@ -65,17 +57,7 @@
                 Two documents that "encode the same data" but differ on
                 comments, whitespace, quoting, or anchor names
                 still hash to the same bytes."""]]
-      [example lang=cx
-        """[; Source: ]
-           [user
-             [; regrettably noisy comment ]
-             email='ada@example.com'
-             id=42
-             active=true]
-
-           [; cx canonical output — comment stripped, attribute order
-              preserved, bare strings where bare-eligible: ]
-           [user email=ada@example.com id=42 active=true]"""]
+      [fixture id=cx-076-canonical-strips-comment-keeps-attr-order]
       [body
         """The strict-canonical bytes are what the SHA-256 hash is
            taken over (see [[hash]]) and what the round-trip guarantee
@@ -89,24 +71,13 @@
          [`spec/03-approved/core/canonical.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md) §5 and
          [`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §2.2 / §4."""]
 
-    [example lang=cx
-      """[user id=42 email='ada@example.com' active=true
-              [roles ('admin', 'editor')]]"""]
-
-    [example lang=json
-      """{
-           "user": {
-             "id": 42,
-             "email": "ada@example.com",
-             "active": true,
-             "roles": ["admin", "editor"]
-           }
-         }"""]
+    [fixture id=cx-075-to-format-json-nested-record]
 
     [body
       """**Basic mapping:** Attributes become object keys; element bodies
          of pure-element content become nested objects keyed by child
-         element name; sequences become arrays; scalars map directly."""]
+         element name; repeated identically-named children become an
+         array; scalars map directly."""]
 
     [child id=json-mixed-content n=3.2.1 title='Mixed content and the lossless $tag envelope'
       [body
@@ -119,10 +90,7 @@
            ([`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §2.2.1):
            `$children` is an ordered array of runs, so mixed content
            survives exactly."""]
-      [example lang=cx
-        """[para 'The function ' [code 'parse'] ' returns a value.']"""]
-      [example lang=json
-        """{ "$tag": "para", "$children": ["The function ", {"$tag": "code", "$children": ["parse"]}, " returns a value."] }"""]
+      [fixture id=cx-072-to-format-json-mixed-content-default]
       [body
         """JSON → CX reverses this unconditionally: a `$tag` envelope
            reconstructs the element with its body in order. The
@@ -172,27 +140,16 @@
   [child id=yaml n=3.3 title='YAML projection'
     [intro
       """YAML follows the JSON projection but uses YAML's mapping and
-         sequence syntax — including the lossless `$tag` envelope, which
-         is the same encoding in both lanes
+         sequence syntax — attributes and nested elements are mappings,
+         repeated children a sequence:"""]
+
+    [fixture id=cx-069-to-format-yaml-nested-record]
+
+    [body
+      """The lossless `$tag` envelope is the same encoding in both lanes
          ([`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §2.3.1):
-         CX anchors and merges ride the envelope's `$anchor` / `$merge`
-         keys in lossless mode."""]
-
-    [example lang=cx
-      """[defaults &server-base host='localhost' tls=true]
-         [service-a *server-base port=8001]"""]
-
-    [example lang=yaml
-      """$doc:
-           - $tag: defaults
-             $anchor: server-base
-             $attrs:
-               host: localhost
-               tls: true
-           - $tag: service-a
-             $merge: server-base
-             $attrs:
-               port: 8001"""]
+         under `--lossless`, CX anchors and merges ride the envelope's
+         `$anchor` / `$merge` keys."""]
 
     [body
       """YAML's loose schema (untyped scalars, multiple ways to spell
@@ -245,27 +202,7 @@
          identically-named children become an array of tables. Per
          [`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §2.4 / §6."""]
 
-    [example lang=cx
-      """[config
-           [server host='localhost' tls=true]
-           [users
-             [user id=1 email='ada@example.com']
-             [user id=2 email='grace@example.com']]]"""]
-
-    [example lang=toml
-      """[config]
-         ["config.server"]
-         host = "localhost"
-         tls = true
-
-         ["config.users"]
-         [["config.users.user"]]
-         id = 1
-         email = "ada@example.com"
-
-         [["config.users.user"]]
-         id = 2
-         email = "grace@example.com" """]
+    [fixture id=cx-068-to-format-toml-sections]
 
     [child id=toml-inline n=3.4.1 title='Section headers, not inline tables'
       [body
@@ -295,17 +232,7 @@
          Per [`spec/03-approved/core/canonical.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md) §8 and
          [`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §2.1 / §3."""]
 
-    [example lang=cx
-      '''[user id=42 email='ada@example.com'
-           [profile
-             [bio """Computing pioneer."""]]]''']
-
-    [example lang=xml
-      """<user id="42" email="ada@example.com">
-           <profile>
-             <bio>Computing pioneer.</bio>
-           </profile>
-         </user>"""]
+    [fixture id=cx-077-to-format-xml-nested-record]
 
     [body
       """Differences from XML: CX has no DTD validation layer (schemas
@@ -353,21 +280,7 @@
          CX ↔ MD in general is lossy — element names, attributes, and
          types outside the prose vocabulary do not survive."""]
 
-    [example lang=md
-      """# Hello
-
-         A paragraph with *emphasis* and `code`.
-
-         - item 1
-         - item 2"""]
-
-    [example lang=cx
-      """[doc
-           [h1 Hello]
-           [p 'A paragraph with ' [em emphasis] ' and ' [code code] '.']
-           [ul
-             [li item 1]
-             [li item 2]]]"""]
+    [fixture id=cx-074-from-format-md-prose-tree]
 
     [child id=md-tables n=3.6.1 title='GFM tables'
       [body
@@ -375,30 +288,19 @@
            `[tr]` / `[th]` / `[td]` structure — the table's source lines
            are carried as raw text inside a `[table]` element, and
            re-emit reproduces them byte-for-byte."""]
-      [example lang=md
-        """| Name | Age |
-           |:-----|----:|
-           | Ada  |  35 |"""]
-      [example lang=cx check=none
-        """[doc
-           [table [#| Name | Age |
-         |:-----|----:|
-         | Ada  |  35 |#]]]"""]
-      [; check=none — illustrative panel: the [# … #] raw-text payload
-         reproduces MD-importer output whose leading-pipe lines depend on
-         column-0 alignment that the guide's indented panel cannot carry. ]
       [body
         """In the other direction, a CX `[table[…]]` block (see
            [[tables]]) emits as a real GFM pipe table — header row from
            the declared column names, then one row per data row — per
-           [`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §7."""]]
+           [`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §7:"""]
+      [fixture id=cx-079-to-format-md-table-block-is-gfm]]
 
     [child id=md-fences n=3.6.2 title='Fenced code with language'
       [body
         """Fenced code blocks (` ```lang ... ``` `) project to a
            `[code]` element with a bare `lang` attribute and the code
-           carried verbatim as raw text — `[code lang=python
-           [#print(1)#]]`. There is no `[pre]` wrapper. The language
+           carried verbatim as raw text — `[code lang=v
+           [#println(1)#]]`. There is no `[pre]` wrapper. The language
            identifier round-trips."""]]
 
     [child id=md-frontmatter n=3.6.3 title='Frontmatter'
@@ -407,16 +309,7 @@
            projects to **attributes on the `[doc]` root element**.
            Values stay strings — a frontmatter `date:` is not
            auto-typed into a CX date."""]
-      [example lang=md
-        """---
-           title: My Post
-           date: 2026-05-22
-           ---
-
-           # Body"""]
-      [example lang=cx
-        """[doc title='My Post' date='2026-05-22'
-           [h1 Body]]"""]]
+      [fixture id=cx-071-from-format-md-frontmatter]]
 
     [child id=md-footnotes n=3.6.4 title='Footnotes'
       [body
@@ -447,16 +340,7 @@
          types are not preserved on emit, only on the in-memory
          CX side)."""]
 
-    [example lang=csv
-      """id,name,email,active
-         1,Ada,ada@example.com,true
-         2,Grace,grace@example.com,false"""]
-
-    [example lang=cx
-      """[table [table[id::int name email active::bool]]
-           1 Ada ada@example.com true
-           2 Grace grace@example.com false
-         ]"""]
+    [fixture id=cx-070-from-format-csv-typed-table]
 
     [child id=delim-header n=3.7.1 title='Header row'
       [body
@@ -490,7 +374,8 @@
            emit direction is defined only for table-shaped documents:
            a CX document that is not a single flattenable table
            refuses with a named `emit_delimited` error rather than
-           guessing a tabular shape."""]]]
+           guessing a tabular shape."""]
+      [fixture id=cx-073-to-format-csv-from-table]]]
 
   [child id=bytes-wire n=3.8 title='Bytes scalar across surfaces'
     [intro

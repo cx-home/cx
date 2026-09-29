@@ -58,13 +58,7 @@
            `[user id=1 email='a']` are two different documents with two
            different hashes. Order carries meaning in CX; nothing in
            either canonical tier sorts it away."""]
-      [example lang=cx
-        """[; Source (mixed quoting, loose layout): ]
-           [user id=42 email='ada@example.com' active=true]
-
-           [; cx canonical output — same attribute order, bare strings
-              where the value is bare-eligible: ]
-           [user id=42 email=ada@example.com active=true]"""]
+      [fixture id=cx-076-canonical-strips-comment-keeps-attr-order]
       [body
         """**Canonicalization rules (strict):**"""]
       [list
@@ -103,15 +97,7 @@
            projection (JSON / YAML / XML / etc.). This produces a key
            property: **a document's hash is stable through lossless
            round-trip projections**."""]
-      [example lang=sh
-        """# Original CX
-           cx hash users.cx
-           # → sha2-256:6c34f4e017fbbb93…
-
-           # Convert to lossless JSON and back
-           cx --from=cx --to=json --lossless users.cx > users.json
-           cx --from=json --to=cx users.json | cx hash -
-           # → sha2-256:6c34f4e017fbbb93…  (same address)"""]
+      [fixture id=cx-078-hash-stable-through-xml-round-trip]
       [body
         """The property holds for the **lossless lanes**: XML, and the
            `--lossless` JSON / YAML envelope encoding (see
@@ -137,31 +123,20 @@
          computed over the UTF-8 byte sequence of the canonical form,
          not over the AST or the in-memory value representation."""]
 
-    [example lang=v
-      """// V binding — Layer 1
-         doc := cx.parse(source)!
-         println(doc.hash())   // 'sha2-256:3a7bd3e2360a...'"""]
+    [body
+      """One document, one address. `[$cx:hash]` in a program, `cx hash` at
+         the command line and the `hash` method of every binding's `Doc`
+         answer the same tagged digest for the same canonical bytes — each
+         binding grades itself against the front door's ABI vectors
+         (`conformance/abi.cxd`), `abi-003-hash-single` among them:"""]
 
-    [example lang=python
-      """# Python binding — Layer 1
-         doc = cx.parse(source)
-         print(doc.hash())     # 'sha2-256:3a7bd3e2360a...'"""]
-
-    [example lang=go
-      """// Go binding — Layer 1
-         doc, _ := cx.Parse(source)
-         fmt.Println(doc.Hash())  // "sha2-256:3a7bd3e2360a..."""]
-
-    [example lang=rust
-      """// Rust binding — Layer 1
-         let doc = cx::parse(&source)?;
-         println!("{}", doc.hash());  // "sha2-256:3a7bd3e2360a..."""]
+    [fixture id=cx-024-hash-pins-cli-digest]
 
     [child id=hash-stability n=4.2.1 title='Stability across bindings + machines'
       [body
         """The hash function is **stable across bindings, OSes, and
-           architectures**. V, Python, Go, and Rust all produce
-           byte-identical hash strings for byte-identical input. The
+           architectures**. All four bindings produce byte-identical hash
+           strings for byte-identical input. The
            guarantee extends to architecture (x86-64, ARM64,
            little-endian, big-endian) and OS (macOS, Linux, Windows,
            BSD). Verified by [`conformance/binding_api.cxd`](https://github.com/cx-home/cx-core-code/blob/main/conformance/binding_api.cxd)
@@ -468,13 +443,7 @@
            In body position, the reference form is a `[ref @name]`
            element. `#` declares; `@` references — the two sigils are
            never interchangeable."""]
-      [example lang=cx
-        """[users
-           [user #ada email='ada@example.com']
-           [user #grace email='grace@example.com']]
-         [posts
-           [post author-id=@ada 'First post']
-           [post author-id=@grace 'Second']]"""]
+      [fixture id=id-009-multiple-refs-to-same-id]
       [body
         """**Reference cycles** (A references B references A) are not
            an error — the references are values, not container
@@ -510,8 +479,8 @@
 
   [child id=ffi-lifetime n=4.6 title='FFI lifetime and memory ownership'
     [intro
-      """Every binding wraps the libcx C ABI. A Python `Doc` (or Go,
-         Rust, V Doc) is a host-language value. **Who owns the memory?
+      """Every binding wraps the libcx C ABI. A binding's `Doc` is a
+         host-language value. **Who owns the memory?
          When does it get freed?** This section is the developer-facing
          answer; the normative contract is
          [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) §1.4–§1.5."""]
@@ -530,9 +499,8 @@
         [item """**A binding's `Doc` is host-owned:** it holds the
                 document in the host language's own memory (text and/or
                 a binding-native AST decoded from ast-bin). Its
-                lifetime is ordinary host memory management — V and Go
-                garbage-collect it, Python reference-counts it, Rust
-                drops it at end of scope. Nothing in libcx needs to be
+                lifetime is ordinary host memory management — the host's
+                collector, reference count or scope drop reclaims it. Nothing in libcx needs to be
                 notified."""]
         [item """**The exceptions are the streaming handles:** the
                 event reader (`cx_events_open` / `cx_events_next` /
@@ -628,10 +596,8 @@
            between them is something a human added, not something
            the data carries. (Attribute order is data, not
            presentation — it is preserved and hashed.)"""]
-      [example lang=shell
-        """cx canonical menu.cx     # canonical bytes
-           cx hash menu.cx          # sha2-256:<hex> over canonical bytes
-           cx eq a.cx b.cx          # exit 0 iff canonical(a) == canonical(b)"""]
+      [fixture id=cx-025-hash-value-and-source-agree]
+      [fixture id=cx-027-equal-true]
       [note
         """Canonical form is the basis for content-addressed
            identity (`cx hash` — a tagged address, `sha2-256:` being
@@ -645,11 +611,7 @@
            element to point at another by name. Declare with `#`;
            reference with `@`. IDs are unique within their scope;
            the scope is the document root by default."""]
-      [example lang=cx
-        """[order #main
-             [item #latte]
-             [item #scone]]
-           [receipt order=@main]"""]]
+      [fixture id=id-007-ref-in-nested-element]]
 
     [child id=anchors-merge n=4.7.3 title='Anchors and merge targets'
       [body
@@ -662,10 +624,7 @@
            into the canonical bytes, so two documents that bind the
            same data with different anchor names hash to the same
            identity."""]
-      [example lang=cx
-        """[defaults &shared timeout=30 retries=3]
-           [server *shared name=api]
-           [server *shared name=worker]"""]]
+      [fixture id=cx-029-equal-anchor-resolving]]
 
     [child id=ast-bin-quickref n=4.7.4 title='ast-bin quick reference'
       [body

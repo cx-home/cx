@@ -9,25 +9,18 @@
 [section id=intro group='Start here' n=1 title='Introduction'
 
   [child id=hello n=1.1 title='Hello, CX'
-    [intro
-      """**TL;DR — why reach for CX.** CX is one language for **data** and
-         **code**: the same brackets, the same sigils, the same evaluator.
-         You don't pick a templating engine for output, a query language for
-         selection, or a config dialect for deployment — there is one shape,
-         and you write everything in it. Python set the standard for a
-         language people are productive in on day one; CX is built to that
-         standard and past it where data work hurts
-         ([[cx-vs-python]] shows where, case by case). A query is a pattern
-         over the document it reads — here, every `user` that has a `name`
-         and an `email`:"""]
-
-    [fixture id=program-for-003-name-email-pair]
+    [; the one TL;DR (docs-src/site/tldr.cxd), projected here as on the
+       guide home and the primer's §0: the lead, the standard we hold
+       ourselves to, and each of its clauses beside the case that proves it
+       (RULED: DOCS-49, DOCS-47). ]
+    [tldr]
 
     [body
-      """The smallest document is one element:"""]
+      """The smallest document is one element. It is also its own canonical
+         form: the data reading projects it back to CX and answers the same
+         bytes it read."""]
 
-    [example lang=cx
-      """[hello greeting='world']"""]
+    [fixture id=004-element-attrs-only]
 
     [body
       """That is a complete CX document. It is also a complete CX program when
@@ -37,25 +30,13 @@
          canonical bytes."""]
 
     [body
-      """Here is one screen of CX that exercises every category covered later
-         in this guide — data, code, selection, update, and output:"""]
+      """One document, one query, one answer — the three things every later
+         section of this guide builds on. The document is data; the query is
+         a pattern over its shape (`[?for]` over every `user` whose `active`
+         is true, binding its `email`); the answer is what the pattern
+         yields:"""]
 
-    [example lang=cx
-      """[# 1. Data: a small document
-         #]
-         [users
-           [user id=1 email='ada@example.com' active=true]
-           [user id=2 email='grace@example.com' active=false]
-           [user id=3 email='linus@example.com' active=true]]
-
-         [# 2. Code: select active users with CXPath
-         #]
-         [?for [in $u //user[= $_@active true]] [yield
-           [active-user email=$u@email]]]
-
-         [# 3. Pure-functional update: mark one user verified
-         #]
-         [?modify $doc //user[= $_@id 1]/@status [set 'verified']]"""]
+    [fixture id=program-for-002-active-emails]
 
     [body
       """Three forms, one language. No string concatenation; no AST mismatch
@@ -144,10 +125,8 @@
          cases. It is not the same as simplicity: a language can be small yet
          riddled with privileged built-ins user code cannot reproduce, or large
          yet principled. The table below states CX's case on this one axis
-         against the languages CX binds to, plus Lisp-1 and Scala.
-         [[comparison]] states it against each data format, with Python as
-         the standard a general-purpose language is measured by
-         ([[cx-vs-python]])."""]
+         against a dozen languages readers arrive from; [[comparison]]
+         states it against each data format."""]
 
     [table
       [tr [th 'language'] [th 'tier'] [th 'why']]
@@ -157,7 +136,6 @@
       [tr [td 'Ruby'] [td 'High (uniform model)'] [td 'Smalltalk lineage — everything is an object, everything a message send, operators are methods. Uniform core, non-uniform surface (blocks vs procs vs lambdas, many sugars).']]
       [tr [td 'V'] [td 'Moderate'] [td 'Deliberately minimal, one canonical way to do things. Orthogonality by austerity; still carries privileged built-ins and a partial statement/expression split.']]
       [tr [td 'Kotlin'] [td 'Moderate'] [td 'Expression-oriented (if, when, try are expressions); operators by convention. Primitives-as-objects is a JVM fiction; much surface exists for Java interop.']]
-      [tr [td 'Python'] [td 'Moderate'] [td 'Real uniformity via the dunder protocol; but a hard statement/expression wall — def, class and import are statements, and a lambda is limited to a single expression.']]
       [tr [td 'Swift'] [td 'Moderate'] [td 'Genuine protocol-oriented uniformity, but a special-case-dense surface — optionals, guard, defer, property wrappers, result builders.']]
       [tr [td 'Rust'] [td 'Low–moderate'] [td 'Expression-oriented core, but a federation of subsystems with their own rules — ownership, lifetimes, traits plus coherence, a separate macro grammar, async, unsafe. Powerful is not orthogonal.']]
       [tr [td 'C#'] [td 'Low'] [td 'Multi-paradigm, accreted over many versions — LINQ, async, properties, events, pattern matching each a distinct syntax. Statement/expression divide.']]
@@ -208,8 +186,7 @@
               patterns, bindings, the six core constructs, builtins,
               errors-as-values, services / workers / async, resilience."""]
       [item """[[bindings]] — the C ABI, Layer 1 canonical method set,
-              Layer 2 host idiom packs, and per-language quickstarts for
-              V, Python, Go, and Rust."""]
+              Layer 2 host idiom packs, and a quickstart per binding."""]
       [item """[[tooling]] — LSP, tree-sitter, VS Code, Neovim, Helix,
               `make guide`, the playground."""]
       [item """[[value-model]], [[computation-identity]],
@@ -222,9 +199,8 @@
 
     [body
       """**Conventions used throughout.** Code blocks tagged `cx` are
-         literal CX (data or code; the same shape). Code blocks tagged
-         `python`, `go`, `rust`, or `v` are host-language
-         binding code. Cross-references to other sections use `[[anchor]]`.
+         literal CX (data or code; the same shape). Code blocks tagged with a host language are
+         binding code, and appear only in [[bindings]]. Cross-references to other sections use `[[anchor]]`.
          References to spec documents use ordinary markdown links."""]
 
     [note
