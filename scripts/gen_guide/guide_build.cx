@@ -545,7 +545,10 @@
    sub-headings (nav-sub), each open only on its own pages; inside Reference
    the module pages sit under one Modules sub-list, by ring, beside the
    codecs and the x/ tier — a module page is listed nowhere else; the
-   repositories are one sub-list of every served page; LLM is the door, the
+   Repositories group opens on the assessment page (group='Repositories',
+   RULED: DOCS-48 — the enterprise journey lands there and leaves from the
+   front door's page) and holds the repositories as one sub-list of every
+   served page; LLM is the door, the
    primer, llms.txt and the developer notes. `make nav-shape-check` holds
    the shape: five groups, at most seven visible items in a group and in a
    sub-heading, the module pages under Reference only, every served page
@@ -571,7 +574,8 @@
                       [$nav-sub 'nav-subsub' 'Codecs — core, synthesized' [$codec-tier-items $libfiles $active]],
                       [$nav-sub 'nav-subsub' 'x/ tier — experimental' [$x-tier-items $libfiles $active]])]])]],
     [$nav-section 'Repositories'
-      [$nav-sub 'nav-sub' [$cat ('All ', [$string [$count [$rp:repo-sources]]], ' repositories')] [$repo-nav-items $active]]],
+      [$cat ([$group-nav-items $metas 'Repositories' $active],
+             [$nav-sub 'nav-sub' [$cat ('All ', [$string [$count [$rp:repo-sources]]], ' repositories')] [$repo-nav-items $active]])]],
     [$nav-section 'LLM'
       [; these resolve on the assembled site (docs/llm/ under llm/, docs/dev/
          under dev/, the llms.txt pair at the root — the manifest's map); the
