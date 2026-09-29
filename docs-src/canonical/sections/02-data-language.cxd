@@ -28,13 +28,12 @@
       [body
         """An identifier starts with an ASCII letter or underscore and
            continues with letters, digits, underscores, and hyphens. Hyphens
-           are valid identifier characters (CX leans on the kebab-case
-           convention used by Lisp, Clojure, and Scheme). The reserved tokens
+           are valid identifier characters — kebab-case is our idiom, and
+           the fixture below reads two hyphenated names back. The reserved tokens
            `true`, `false`, `null`, and the directive names (starting with
            `?`) are excluded. See [[reserved-tokens]] for the complete
            reserved-name list."""]
-      [example lang=cx
-        """[user-profile first-name='Ada' last-name='Lovelace']"""]
+      [fixture id=program-cxpath-g2-01-hyphenated-names]
       [body
         """Names of CX elements are stored as Unicode code-point sequences;
            a single canonical byte form is used at the wire level (see
@@ -50,12 +49,7 @@
            — the parser drops it before AST construction. Comments are
            preserved by the lossless canonicalizer (`cx fmt`) and stripped
            by the strict canonicalizer (`cx canonical`); see [[canonical]]."""]
-      [example lang=cx
-        """[; A single-line note. ]
-           [config
-             [; A block comment can nest inside an element
-                and span lines. ]
-             [host 'localhost']]"""]
+      [fixture id=program-cxpath-g2-02-block-comments-are-dropped]
       [note
         """Older CX dialects used `[-` `-]` for block comments. CX currently uses
            the `[; … ]` form only; `[# … #]` is raw text / CDATA, not a
@@ -89,10 +83,7 @@
            identifier (or a string literal, if you need spaces, but that is
            unusual in idiomatic CX). Names starting with `?` denote
            directives (CX code, not data) — see [[code]]."""]
-      [example lang=cx
-        """[server]                       [# empty element                 #]
-           [server host='a.com']          [# attributes only               #]
-           [server [host 'a.com']]        [# nested elements as body       #]"""]]
+      [fixture id=program-cxpath-g2-03-three-element-shapes]]
 
     [child id=attributes n=2.2.2 title='Attributes'
       [body
@@ -100,8 +91,7 @@
            is an identifier; the value is a bare scalar, a quoted string,
            a numeric literal, a boolean literal, a date, or `null`. Multiple
            attributes are space-separated within the element header."""]
-      [example lang=cx
-        """[user id=42 email='ada@example.com' active=true]"""]
+      [fixture id=program-cxpath-g2-04-attribute-values]
       [note
         """A bare `:name` in body position is NOT attribute syntax — it is
            an **atom literal** (`:ok`, `:not-found`; see [[type]]). The
@@ -125,11 +115,7 @@
            and the closing `]`. A body may be empty, a single scalar, a
            sequence of scalars and elements (mixed content / prose — see
            [[prose]]), or a sequence of just elements."""]
-      [example lang=cx
-        """[empty]
-           [scalar 42]
-           [prose 'Some ' [em 'mixed'] ' content.']
-           [list [item 1] [item 2] [item 3]]"""]
+      [fixture id=program-cxpath-g2-05-body-content-shapes]
       [body
         """A bare scalar body is auto-typed per the rules in
            [`spec/03-approved/core/ast.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/ast.md)
@@ -157,14 +143,7 @@
            Triple-quoted (`'''…'''` or `\"\"\"…\"\"\"`) strings span lines,
            preserve internal whitespace, and need no escaping for the other
            quote characters."""]
-      [example lang=cx
-        """[greeting 'Hello, world']
-           [path "C:\\Users\\Ada"]
-           [readme \"\"\"
-             This is a
-             multi-line string
-             with 'embedded' quotes.
-           \"\"\"]"""]
+      [fixture id=program-cxpath-g2-06-three-string-forms]
       [body
         """Triple-quoted strings are the default for any body text longer
            than one line. They are the building block for the prose form
@@ -185,13 +164,7 @@
            float is IEEE-754 double. Sized variants are available via
            `::T` ascriptions when binding to host languages where the size
            matters; see [[sized-types]]."""]
-      [example lang=cx
-        """[answer 42]
-           [pi 3.14159]
-           [big 1e18]
-           [color 0xff8800]
-           [port::u16 8080]
-           [pixel-density::f32 1.5]"""]
+      [fixture id=program-cxpath-g2-07-number-literals]
       [body
         """`nan`, `inf`, and `-inf` are **not** float literals — those
            tokens parse as ordinary strings, and CX floats are
@@ -241,9 +214,7 @@
         """`:bytes` is the eighth scalar kind: a length-prefixed byte
            sequence with no character semantics. Use it for image data,
            hashes, encrypted payloads, or any opaque binary value."""]
-      [example lang=cx
-        """[hash::bytes 0x3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b]
-           [magic::bytes 0x89504e470d0a1a0a]"""]
+      [fixture id=program-cxpath-g2-08-bytes-literals]
       [body
         """A bytes value is a `0x`-prefixed hex literal (even digit count)
            under a `::bytes` ascription. The canonical form emits the hex
@@ -291,8 +262,7 @@
            Sequences are flat — concatenating sequences never produces a
            sequence-of-sequences (the XQuery sequence-flat rule, see
            [[seq-flat]])."""]
-      [example lang=cx
-        """[ports (80, 443, 8080)]"""]
+      [fixture id=program-cxpath-g2-09-sequence-literal]
       [body
         """A sequence with one element is equivalent to that single
            element: `(42)` ≡ `42`. The empty sequence is `()` — distinct
@@ -304,8 +274,7 @@
            by the absence of a name and the presence of commas) is an
            array. Arrays preserve nesting — an array of arrays stays
            shaped that way."""]
-      [example lang=cx
-        """[matrix [[1, 2, 3], [4, 5, 6], [7, 8, 9]]]"""]
+      [fixture id=program-cxpath-g2-10-array-literal]
       [body
         """Array indexing is **1-based**, like CXPath positional
            predicates (`$doc/item[1]` selects the first item) — per
@@ -325,14 +294,12 @@
            but not for canonical identity — two maps with the same
            key-value pairs hash to the same canonical bytes regardless of
            insertion order."""]
-      [example lang=cx
-        """[env {host: 'a.com', port: 8080, tls: true}]"""]
+      [fixture id=program-cxpath-g2-11-map-literal]
       [body
         """Entries separate by comma **or plain whitespace/newlines** — the
-           same rule arrays follow (`[1 2 3]` ≡ `[1, 2, 3]`):"""]
-      [example lang=cx
-        """[env {host: 'a.com' port: 8080
-                 tls: true}]"""]
+           same rule arrays follow (`[1 2 3]` ≡ `[1, 2, 3]`); the two
+           spellings compare equal:"""]
+      [fixture id=program-cxpath-g2-12-map-entries-by-whitespace]
       [body
         """The map key type is `ScalarKey` per cxdm §2: bool, int, float,
            string, date, datetime, or bytes. `null` is not a valid key
@@ -350,8 +317,7 @@
            tag like `5::bogus` is a loud `CXER0107` — never silent text).
            Standing **alone after the colon** it *declares* the field:
            typed, value ABSENT — not null:"""]
-      [example lang=cx
-        """[props {order: ::string, compact: ::bool, tags: ::string[]}]"""]
+      [fixture id=program-cxpath-g2-13-declared-map-entries]
       [body
         """A declared entry's kind draws from the same kind vocabulary bind
            patterns test (`int`, `string`, `element`, `array`, `path`, …,
@@ -432,19 +398,17 @@
            merge sigil `*name`. Anchors are document-scoped — they
            resolve within the same document and do not cross include
            boundaries (per [[include-capabilities]])."""]
-      [example lang=cx
-        """[defaults &server-base host='localhost' tls=true]
-           [service-a *server-base port=8001]
-           [service-b *server-base port=8002]"""]
+      [fixture id=program-lib-g2-14-anchors-expand-in-canonical]
       [body
         """A duplicate `&name` declaration is **not** an error — the first
            definition in document order wins, deterministically. The
            lossless canonicalizer preserves anchors and aliases; the strict
            canonicalizer expands them and the canonical bytes are the
-           expanded form. The lossy projections (`--json` / `--yaml` /
-           `--csv` / …) and a program's `$doc` read that same expanded
-           form — the semantic document — while default CX and XML
-           output keep the authored sharing."""]]
+           expanded form — the fixture above asks `[$cx:canonical]` for
+           it. The lossy projections (`--json` / `--yaml` / `--csv` / …)
+           and a program's `$doc` under `cx --data=` read that same
+           expanded form — the semantic document — while default CX and
+           XML output keep the authored sharing."""]]
 
     [child id=merge n=2.5.2 title='The * merge sigil'
       [body
@@ -462,9 +426,7 @@
            (data-level), identities are for cross-references (semantic
            link). Full semantics in
            [`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md) §4."""]
-      [example lang=cx
-        """[user #ada email='ada@example.com']
-           [post author-id=@ada 'First post']"""]
+      [fixture id=program-cxpath-g2-15-id-and-reference]
       [body
         """An `@name` reference (as in `author-id=@ada` above) resolves to
            the element bearing `#ada`. The reference does not embed; it
@@ -497,8 +459,7 @@
            `banned=false`. The bare tokens `true` and `false` auto-type
            as bool (see [[scalars]]); there is no shorthand sigil form —
            an attribute is always spelled `name=value`."""]
-      [example lang=cx
-        """[user email='ada@example.com' active=true banned=false]"""]]]
+      [fixture id=program-cxpath-g2-16-boolean-attributes]]]
 
   [child id=prose n=2.6 title='Mixed content and prose'
     [intro
@@ -508,9 +469,7 @@
          Markdown projection lossless: a paragraph with inline code is
          stored as a `[p]` element containing a text run, a `[code]`
          element, and more text."""]
-    [example lang=cx
-      """[para 'The function ' [code 'parse'] ' returns a '
-         [link to='spec/03-approved/core/cxdm.md' 'Document'] ' value.']"""]
+    [fixture id=program-cxpath-g2-17-mixed-content]
 
     [child id=entity-refs n=2.6.1 title='Entity references'
       [body
@@ -545,12 +504,7 @@
            attribute to switch. Internal runs of spaces and newlines
            inside a quoted or triple-quoted string survive parse,
            canonicalization, and round-trip exactly as authored."""]
-      [example lang=cx
-        """[poem
-           '  Roses are red,
-             Violets are blue,
-              Whitespace preserved,
-               just for you.']"""]
+      [fixture id=program-cxpath-g2-18-whitespace-verbatim]
       [body
         """The XML-interop attribute `xml:space` is accepted and carried
            as an **inert pass-through attribute** — it round-trips
@@ -573,16 +527,11 @@
          columns once, and the body is the cells. The physical wire
          format is CXCol (see [[cxcol]]) and the normative table API is
          in [`spec/03-approved/misc/table-api.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/misc/table-api.md)."""]
-    [example lang=cx
-      """[orders [table[id::int customer amount::float ts::datetime]]
-           1 Ada   42.50 2026-05-22T10:00:00Z
-           2 Grace 17.25 2026-05-22T10:15:00Z
-           3 Linus 99.00 2026-05-22T11:30:00Z
-         ]"""]
+    [fixture id=tab-003-mixed-typed-untyped]
     [body
       """**Column spec:** each column is a name with an optional glued
-         `::T` type (`id::int`); an untyped column defaults to string
-         (`customer` above). Types use the full scalar vocabulary
+         `::T` type (`age::int`); an untyped column defaults to string
+         (`name` and `tag` above). Types use the full scalar vocabulary
          (`::int`, `::float`, `::bool`, `::date`, `::datetime`,
          `::bytes`, plus sized variants `::i32`/`::u64`/`::f32` etc.).
          There is no nullable marker in the header — a `null` cell is
@@ -620,14 +569,12 @@
       """A `.cxs` file is a CX schema: an element-shape declaration that
          the validator can enforce. Schemas are CX documents themselves —
          no separate grammar to learn. Full spec in
-         [`spec/03-approved/core/schema.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/schema.md)."""]
-    [example lang=cx
-      """[; users.cxs ]
-         [schema of=user]
-         [user
-           [attr id::int [req]]
-           [attr email::string [req]]
-           [attr active::bool [default true]]]"""]
+         [`spec/03-approved/core/schema.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/schema.md).
+         The same declarations, written as a program's `[schema …]`
+         value, drive the `cx-stdlib/validate` module — the fixture below
+         validates one record against a two-field schema and reads the
+         verdict:"""]
+    [fixture id=validate-001-shape-ok]
 
     [child id=schema-modes n=2.8.1 title='Open / strict / closed modes'
       [body
@@ -712,10 +659,7 @@
          `cx canonical` / `cx hash` output. Resolve before you hash.
          The refusal catalog (`cx-err:E901`–`E905`) is in
          [`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md)."""]
-    [example lang=cx
-      """[config
-           [?cx include=base.cx]
-           [override port=9090]]"""]
+    [fixture id=program-cxpath-g2-20-include-left-in-place]
 
     [child id=include-paths n=2.9.1 title='Path resolution'
       [body
@@ -772,10 +716,7 @@
            declaring element and all of its descendants until a
            redeclaration ends the scope. A prefix is then a `prefix:local`
            qualified name on any element or attribute in scope."""]
-      [example lang=cx
-        """[doc xmlns:dc=http://purl.org/dc/elements/1.1/
-           [dc:title 'CX Spec']
-           [dc:author 'Ada Lovelace']]"""]]
+      [fixture id=program-cxpath-g2-21-namespace-prefix]]
 
     [child id=ns-default n=2.10.2 title='Default namespace'
       [body
@@ -783,9 +724,7 @@
            declaring element and all unprefixed descendant **elements**
            until redeclared. Per XML Namespaces 1.0 §6.2 it does **not**
            apply to attribute names."""]
-      [example lang=cx
-        """[doc xmlns=urn:doc
-           [section 'Unprefixed elements live in urn:doc']]"""]]
+      [fixture id=program-cxpath-g2-22-default-namespace]]
 
     [child id=ns-reserved n=2.10.3 title='Reserved prefixes'
       [body
@@ -813,13 +752,7 @@
          applies to the element and all descendants until a redeclaration.
          The reserved `cx:` prefix that carries it is pinned in
          [[ns-reserved]]."""]
-    [example lang=cx
-      """[doc cx:lang=en-US
-         [title 'Welcome']
-         [section cx:lang=fr-FR
-           [title 'Bienvenue']]
-         [section cx:lang=ja-JP
-           [title 'ようこそ']]]"""]
+    [fixture id=program-cxpath-g2-23-cx-lang-scopes]
     [body
       """The `xml:lang` attribute is accepted on input as an alias for
          `cx:lang` (per XML interop). On canonical emit, `cx:lang` is the
@@ -870,15 +803,11 @@
          delivers the event list, so today the API bounds the
          *consumer's* memory, not the parser's. Line-oriented inputs
          can be processed with genuinely bounded residency by iterating
-         lines and parsing each record separately:"""]
-    [example lang=cx
-      """[# Stream a large record-per-line log — one line resident
-            at a time, never the whole file. #]
-         [?lib 'cx-stdlib/io']
-         [?lib 'cx-stdlib/cx']
-         [?for [in $line [$io:line-iter [$io:open 'logs.cxl' 'r']]]
-           [where [= [$name [$cx:parse $line]] 'error']]
-           [yield [?let [= $rec [$cx:parse $line]] $rec/@code]]]"""]
+         lines and parsing each record separately — over a file, the lines
+         come from `[$io:line-iter [$io:open 'logs.cxl' 'r']]` under
+         `--allow-read`; the fixture below runs the same loop over three
+         in-memory records:"""]
+    [fixture id=program-cxpath-g2-24-record-per-line]
     [body
       """Performance is tracked against the per-operation budgets in
          [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)
@@ -948,10 +877,9 @@
          the following `00:00:00`. Bindings that need leap-second
          awareness use an external library."""]
     [body
-      """**Host language mapping:** Python `datetime` (aware, with
-         tzinfo); Go `time.Time`; Rust `chrono::DateTime<FixedOffset>`;
-         V `time.Time`. Each binding's Layer-1 surface preserves the
-         offset; conversion to UTC is opt-in via `.to_utc()`."""]]
+      """**In the bindings:** each binding's Layer-1 surface maps a
+         datetime to its host's zone-aware type and preserves the offset;
+         conversion to UTC is opt-in via `.to_utc()` (see [[bindings]])."""]]
 
   [child id=reserved-tokens n=2.17 title='Reserved tokens and keyword list'
     [intro
@@ -1038,16 +966,14 @@
            declared id, data type. Body items are Text nodes,
            Scalar nodes, child Elements, or the collection literals
            — Sequences, Arrays, Maps."""]
-      [example lang=cx
-        """[pizza #margherita :large size=14 crust=thin
-             [topping cheese]
-             [topping basil]
-             Stone-baked since 1987.]"""]
+      [fixture id=program-cxpath-g2-25-one-node-outside-in]
       [body
         """Reading this element from the outside in: name `pizza`,
-           declared id `margherita`, data-type annotation `:large`,
-           attributes `size=14` and `crust=thin`, then a body of
-           three items — two child elements and a text node."""]
+           declared id `margherita`, attributes `size=14` and
+           `crust=thin`, then a body of three items — two child
+           elements and a text node. A type ascription, when one is
+           wanted, is glued to the name as `::T` (see [[type]]); a bare
+           `:name` in the head is an atom in body position, not a type."""]
       [note
         """Whitespace inside a body is significant when it sits
            between text characters and collapses to a single space
@@ -1073,23 +999,14 @@
         [item """`:` — data type annotation (glued `::T`) and atom
                 literal (`:name`); the ascription pins the value
                 type, overriding auto-typing."""]]
-      [example lang=cx
-        """[menu
-             [pizza #margherita price=12]
-             [pizza #pepperoni  price=14]]
-           [order #o1234 customer=alice
-             [line item=@margherita count=2]  [; @-sigil reference to a declared id ]
-             [line item=@pepperoni  count=1]]"""]
+      [fixture id=program-cxpath-g2-26-references-by-id]
       [body
         """In CXPath the same `@` sigil is attribute access:"""]
-      [example lang=cx
-        """[order [line sku='margherita' count=2]]
-           [?for [in $line //order/line] [yield
-             [row sku=$line/@sku]]]            [; @-sigil attribute access in CXPath ]"""]
-      [example lang=cx
-        """[defaults &shared timeout=30 retries=3]
-           [server *shared name=api]
-           [server *shared name=worker]"""]
+      [fixture id=program-cxpath-g2-27-at-is-attribute-access]
+      [body
+        """An anchor's attributes fold into every element that merges
+           it; the strict canonical form is where the fold is visible:"""]
+      [fixture id=program-lib-g2-28-shared-defaults-expand]
       [note
         """The strict canonical form expands anchors and removes the
            anchor structure entirely, so two documents that bind the
@@ -1099,7 +1016,7 @@
       [body
         """Boolean attributes have no shorthand sigil — they are
            ordinary `name=value` pairs (see [[bool]])."""]
-      [example lang=cx """[pizza vegan=true nuts=false gluten=false organic=true]"""]]
+      [fixture id=program-cxpath-g2-29-bool-attributes-plain]]
 
     [child id=types-fold n=2.18.3 title='Types — auto-typing, sized, decimal, bigint'
       [body
@@ -1109,15 +1026,7 @@
            arrays of any of these. Most values are auto-typed from
            their lexical shape; explicit annotations cover the
            rest."""]
-      [example lang=cx
-        """[demo
-             count=42                      # int
-             pi=3.14                       # float
-             enabled=true                  # bool
-             name=Alice                    # string
-             missing=null                  # null
-             date=2026-05-09               # date
-             start=2026-05-09T10:00:00Z]   # datetime"""]
+      [fixture id=program-cxpath-g2-30-auto-typing]
       [note
         """**Leading-zero strings.** Tokens with a leading zero
            stay strings — `0x` (hex) is the **only** numeric radix
@@ -1125,39 +1034,25 @@
            codes, area codes, account numbers, BIC codes — anywhere
            the leading zero is data, not a numeric value — round-trip
            as the strings they are."""]
-      [example lang=cx
-        """[zip 02134]               # string '02134', not int 2134
-           [mask 0xFF00FF]           # int 16711935 (hex)
-           [perms 0o755]             # string '0o755' — no octal literals
-           [bits 0b1101]             # string '0b1101' — no binary literals"""]
+      [fixture id=program-cxpath-g2-31-leading-zero-stays-string]
       [body
         """**Sized integer and float.** A colon-type pins the
            runtime representation and (for sized variants) the
            legal range. Out-of-range values fail at parse time,
            not at runtime in some downstream consumer."""]
-      [example lang=cx
-        """[port::u16 8080]              # rejects values over 65535
-           [balance::i64 -1234567890]    # signed 64-bit
-           [ratio::f32 3.14]             # 32-bit float
-           [count::u8 200]               # rejects 256 and up"""]
+      [fixture id=program-cxpath-g2-32-sized-ascriptions]
       [body
         """**Decimal and bigint.** IEEE 754 floats lose precision
            for money and high-precision quantities; signed 64-bit
            overflows for some IDs. CX has `:decimal` and `:bigint`
            for both cases, with binding mappings to each language's
            native big-number type."""]
-      [example lang=cx
-        """[total::decimal 19.99]
-           [user-id::bigint 18446744073709551616]"""]
+      [fixture id=program-cxpath-g2-33-decimal-and-bigint]
       [body
         """**Typed bodies and arrays.** A glued `::T` ascription
            pins not just attribute values but body content as
            well."""]
-      [example lang=cx
-        """[count::int 42]
-           [ratio::decimal 3.14159]
-           [oven-temps::int[] 220 240 260 480]
-           [tags::[] cheap fast tasty]"""]]]
+      [fixture id=program-cxpath-g2-34-typed-bodies-and-arrays]]]
 
   [# Migrated from docs-src/content/reference/{schemas,includes,streaming,tables}.cx
      during Phase B docs → guide consolidation (2026-05-24). Compact
@@ -1185,12 +1080,9 @@
            (the default) admits it silently; **strict** reports it
            as warnings; **closed** rejects it as errors. The schema
            sets its own mode in the header; the `--mode` flag
-           overrides it."""]
-      [example lang=cx
-        """[schema of=pizza]
-           [pizza
-             [attr size::[enum small medium large]]
-             [attr crust::string]]"""]
+           overrides it. An enum-typed field refuses a value outside
+           its set, and the violation names its code:"""]
+      [fixture id=validate-012-shape-enum-mismatch]
       [example lang=shell
         """cx validate order.cx --schema=order.cxs
            cx validate order.cx --schema=order.cxs --mode=strict
@@ -1217,10 +1109,7 @@
            that needs a *computed* path reads the file itself with
            the standard library's `[$io:read-file]` + `[$cx:parse]`."""]
       [example lang=shell """cx --cx --include-root=./conf main.cx"""]
-      [example lang=cx
-        """[users
-             [?cx include=lib/admins.cx]
-             [user name=carol]]"""]
+      [fixture id=program-cxpath-g2-36-include-quickref]
       [note
         """**Unresolved includes and hashing.** Without a resolution
            root the directive rides along unresolved — and strict
@@ -1257,16 +1146,12 @@
            from the completed parse. The event contract is what
            consumers program against; bounded-memory parsing is the
            contract's headroom, not yet its implementation."""]
-      [example lang=python
-        """import cx
-           # cx.stream takes the document TEXT, not a file object.
-           text = open('events.cx').read()
-           for event in cx.stream(text):
-               if event.kind == 'StartElement' and event.name == 'error':
-                   print(event.attrs)
-
-           # Write side: the C ABI exposes the cx_events_writer_*
-           # family (14 emit events x 6 output formats)."""]
+      [body
+        """The read side is the C ABI's `cx_events_open` / `next` /
+           `close` triple over the document text, and every binding's
+           stream call wraps it; the write side is the
+           `cx_events_writer_*` family (14 emit events × 6 output
+           formats). See [[bindings]] for each binding's spelling."""]
       [note
         """**Backpressure.** The write side has no buffering knobs —
            emitted bytes flow to the destination and the only
@@ -1285,11 +1170,7 @@
            **ast-bin** (binary AST, cap bit 36 advertises v8) and
            **data-bin** (CXCol v1 — columnar, used by
            Arrow/Parquet bridges)."""]
-      [example lang=cx
-        """[inventory [table[size count::int]]
-             large 12
-             small 8
-           ]"""]
+      [fixture id=tab-001-typed-columns]
       [example lang=shell
         """cx table info orders.cx      # column / row counts, types, byte size
            cx table dump orders.cx --to=cx
