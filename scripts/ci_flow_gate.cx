@@ -177,7 +177,9 @@
   [= $bin [$locate-cx]]
   [= $home [$home-of $doc]]
   [= $flow [$cat ($home, '/', $doc, '.flow.cx')]]
-  [= $simdir [$cat ($home, '/sim/', $doc)]]
+  # a document not found still has a table where its home would be (flows/),
+  # so the refusals below name the real path.
+  [= $simdir [$cat ([?if [= $home ''] [then 'flows'] [else $home]], '/sim/', $doc)]]
   [= $table-path [$cat ($simdir, '/cases.cxd')]]
   [= $tdoc [?if [$io:is-file $table-path] [then [$cx:parse [$io:read-file $table-path]]] [else [none]]]]
   [= $table [$first [?to-sequence [?for [in $x $tdoc] [where [= [$name $x] 'cases']] [yield $x]]]]]
