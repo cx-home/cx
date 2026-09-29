@@ -616,6 +616,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `hostac-1` | [rulings_2026_09_27_integrator_decisions_l61.md](rulings_2026_09_27_integrator_decisions_l61.md) | HOSTAC-1 — strict handling of a session act's claims (L61 = (a)) |
 | `hostb-1` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | Owner decisions 2026-09-27 — Letters 46–50 and the org profile: KIT-4's shape (KIT4-1…3), the #1498 spec gaps (AA-7…9), HOST-4's seed made real (SEED-1), the host act's basis (HOSTB-1), the call spread's readings (SPREAD-2), the org-profile push (ORG-1) |
 | `hostb-1` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | HOSTB-1 — a session principal's act runs under a basis the host derives (L49 = (a)) |
+| `hostl-1` | [rulings_2026_09_29_owner_decisions_l109.md](rulings_2026_09_29_owner_decisions_l109.md) | HOSTL-1 — a page whose subject is a binding names its host language, as a fixed allowance the ratchet holds (L109 = (a)) |
 | `hyg-1` | [rulings_2026_08_20_hygiene_695.md](rulings_2026_08_20_hygiene_695.md) | Ruling HYG-1 (2026-08-20) — #695 stale-inventory reconciliation (pre-cut hygiene sweep) |
 | `int-1` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) | INT-1 — why |
 | `int-1` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) | INT-1 — the §6 reading |
@@ -1303,7 +1304,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `dist-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) |
 | `dist-2` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md), [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) |
 | `docs-3` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) |
-| `docs-4` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md), [rulings_2026_09_28_owner_decisions_l85.md](rulings_2026_09_28_owner_decisions_l85.md) |
+| `docs-4` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md), [rulings_2026_09_28_owner_decisions_l85.md](rulings_2026_09_28_owner_decisions_l85.md), [rulings_2026_09_29_owner_decisions_l109.md](rulings_2026_09_29_owner_decisions_l109.md) |
 | `dr-2` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) |
 | `dr-2a` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md), [rulings_2026_08_20_diagram_wave3.md](rulings_2026_08_20_diagram_wave3.md) |
 | `dr-3` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md), [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md) |
@@ -1492,4 +1493,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*350 ledger pages; 777 ids declared, 390 cited only.*
+*351 ledger pages; 778 ids declared, 390 cited only.*
