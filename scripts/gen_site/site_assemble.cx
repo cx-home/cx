@@ -16,7 +16,7 @@
 #   docs/llm/*              → llm/            (`make docs`; tracked, generated)
 #   docs/llm/llms.txt       → llms.txt        (the llmstxt.org convention: the
 #   docs/llm/llms-full.txt  → llms-full.txt    pair at the SITE ROOT, D51d)
-#   docs/dev/*              → dev/
+#   (rendered)              → dev/index.html  (the developer door, DOCS-46)
 #   docs/install, docs/CNAME → the site root  (the README's installer; the
 #                                              custom-domain binding)
 #   (empty)                 → .nojekyll       (Pages serves the tree as is)
@@ -44,8 +44,10 @@
 # external-link step's (check_external_links.cx, DOCS-45), not this one's.
 # A listing graded through SITE_CHECK_LIST has no file contents to walk, so
 # that mode grades the file set only and says so.
-# The assembly also writes llm/index.html, the LLM door (RULED: DOCS-46),
-# rendered by llm_index.cx from docs-src/llm/manifest.cxd.
+# The assembly also writes the two doors (RULED: DOCS-46): llm/index.html, the
+# LLM door rendered by llm_index.cx from docs-src/llm/manifest.cxd, and
+# dev/index.html, the developer door — the docs/dev/ pages folded into the
+# guide, and the old URL answers with where each page went.
 # Exit: 0 green; 1 a missing source, a missing or extra file, a dead link.
 
 [?lib 'cx-stdlib/io'      as=io]
@@ -144,9 +146,9 @@
               [$li:llm-index-html [$strings:trim [$io:read-file "VERSION"]]]]]
     [= $_l1 [$place $out "docs/llm/llms.txt" "llms.txt"]]
     [= $_l2 [$place $out "docs/llm/llms-full.txt" "llms-full.txt"]]
-    [= $dev [?for [in $rel [$files-under "docs/dev"]]
-              [= $_c [$place $out [$path:join "docs/dev" $rel] [$path:join "dev" $rel]]]
-              [yield $rel]]]
+    [= $_dd [$io:make-dirs [$path:join $out "dev"]]]
+    [= $_dx [$io:write-file [$path:join $out "dev/index.html"]
+              [$li:dev-index-html [$strings:trim [$io:read-file "VERSION"]]]]]
     [= $_r1 [$place $out "docs/install" "install"]]
     [= $_r2 [$place $out "docs/CNAME" "CNAME"]]
     [= $_nj [$io:write-file [$path:join $out ".nojekyll"] ""]]
@@ -158,7 +160,7 @@
              [else 0]]]
     [$say [$concat "site_assemble: " $out "/ — " [$string [$count $guide]] " guide files (index.html as guide.html), "
                    "the landing page, " [$string [$count $llm]] " llm/ files, the LLM door llm/index.html and the llms.txt pair at the root, "
-                   [$string [$count $dev]] " dev/ files, install, CNAME, .nojekyll"]]]]
+                   "the developer door dev/index.html, install, CNAME, .nojekyll"]]]]
 
 # report: the shared verdict over a LISTING $have (a sequence of paths,
 # however it was obtained) against the manifest. $label names what $have is,

@@ -90,6 +90,17 @@
 [?def repos-of scope=private pure ($text::string)
   [?for [in $r [$cx:parse $text]//repo] [yield $r]]]
 
+# repo-names: the names of one group's shipped repositories (the archived
+# rows left out), each in code font, comma-joined — a sentence's projection
+# of registry/repos.cxd (`{{REPOS:<group>}}` in an LLM template), so prose
+# that names the repositories of a group cannot name one that is not there.
+[?def repo-names scope=public pure [returns string] ($text::string $group::string)
+  [?let [= $names [?for [in $r [$repos-of $text]]
+                    [where [= [$attr-or $r "group" ""] $group]]
+                    [where [not [= [$attr-or $r "ships" ""] "archived"]]]
+                    [yield [$code [$attr-or $r "name" ""]]]]]
+    [$strings:join $names ", "]]]
+
 [?def repo-rows scope=public pure [returns string] ($text::string)
   [?let
     [= $rs [$repos-of $text]]

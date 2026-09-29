@@ -577,13 +577,13 @@
       [$cat ([$group-nav-items $metas 'Repositories' $active],
              [$nav-sub 'nav-sub' [$cat ('All ', [$string [$count [$rp:repo-sources]]], ' repositories')] [$repo-nav-items $active]])]],
     [$nav-section 'LLM'
-      [; these resolve on the assembled site (docs/llm/ under llm/, docs/dev/
-         under dev/, the llms.txt pair at the root — the manifest's map); the
+      [; these resolve on the assembled site (docs/llm/ under llm/, the dev/
+         door, the llms.txt pair at the root — the manifest's map); the
          guide directory alone does not serve them ]
       [$cat ([$nav-raw-link 'llm/index.html' 'For LLMs — the door'],
              [$nav-raw-link 'llm/primer.md' 'The primer'],
              [$nav-raw-link 'llms.txt' 'llms.txt'],
-             [$nav-raw-link 'dev/README.md' 'Developer notes'])]])]]
+             [$nav-raw-link 'dev/index.html' 'Developer notes — where they went'])]])]]
 
 [# nav-html: the sidebar <aside> — the five groups of nav-groups under the
    brand and the search box. #826's six ring-shaped groups, each appending

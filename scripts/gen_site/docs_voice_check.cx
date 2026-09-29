@@ -21,7 +21,7 @@
 #   docs-src/repos/*.cxd                               the repository pages
 #   docs-src/canonical/reference/*.cx                  the reference pages
 #   docs-src/llm/*.tmpl, primer-platform.chapter.md    the LLM layer
-#   docs/dev/*.md                                      the dev pages (served raw)
+#   (the dev pages retired into the guide under DOCS-46)
 #
 # Run (from the repository root):
 #   cx --allow-read scripts/gen_site/docs_voice_check.cx
@@ -41,8 +41,7 @@
                "docs-src/canonical/sections/*.cxd", "docs-src/canonical/about.html",
                "docs-src/repos/*.cxd",
                "docs-src/canonical/reference/*.cx",
-               "docs-src/llm/*.tmpl", "docs-src/llm/primer-platform.chapter.md",
-               "docs/dev/*.md")]
+               "docs-src/llm/*.tmpl", "docs-src/llm/primer-platform.chapter.md")]
 
 [?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
 [?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]

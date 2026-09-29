@@ -97,10 +97,10 @@
     [body
       """The end-to-end worked story is the ORIEL reference surface — a
          storefront with departments, baskets, checkout, and three
-         renderers, built entirely from declarations. Its developer
-         guide is `docs/dev/oriel-guide.md` (\"build a surface the ORIEL
-         way\"), and the task-oriented developer set under `docs/dev/`
-         walks authoring, consuming, and distributing features."""]]
+         renderers, built entirely from declarations; it lives with the
+         ux repository ([[dist-reference-surfaces]]), and
+         [[xap-distribution]] walks authoring, consuming, and
+         distributing features."""]]
 
   [child id=choose-operator n=1b.5 title='The platform operator'
     [body
@@ -113,8 +113,8 @@
               declared guarantees, and reading old events under new
               vocabulary."""]
       [item """[[operations]] — daemons, health, recovery, security
-              posture; the operator reading order continues in
-              `docs/dev/` (store service, management, security)."""]
+              posture, the clean-state bootstrap and the one authority
+              table."""]
       [item """[[xap-distribution]] — the distribution machinery your
               developers will ask you to operate."""]]
     [body

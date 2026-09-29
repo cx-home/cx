@@ -217,24 +217,27 @@ tier, integrating on the current release line:
 - **XAP** — the application/feature-distribution layer: features are sealed,
   signed CX artifacts served to clients over the XAP/XSP protocols. Spec:
   [`spec/03-approved/xap/xap.md`](https://github.com/cx-home/cx-platform-xap/blob/main/spec/03-approved/xap/xap.md); hands-on
-  intro: [`docs/dev/xap-quickstart.md`](docs/dev/xap-quickstart.md).
+  intro: the guide's [XAP feature distribution](https://cxhome.org/xap-distribution.html)
+  section and [the XAP host](https://cxhome.org/operations.html#ops-xap-host).
 - **cx store** — a content-addressed multimodel store, embeddable in-process
-  ([`docs/dev/store-embedded.md`](docs/dev/store-embedded.md)) across mem /
+  ([the store platform](https://cxhome.org/store.html)) across mem /
   file / sqlite / s3 substrates. Stdlib surface:
   [`spec/03-approved/platform/store.md`](https://github.com/cx-home/cx-platform-store/blob/main/spec/03-approved/platform/store.md).
 - **store-serve** — the store's single-node service tier: a daemon with auth,
   observability, and the XSP store-profile and gRPC remote transports
-  ([`docs/dev/store-service.md`](docs/dev/store-service.md)).
+  ([the store service daemon](https://cxhome.org/operations.html#ops-store-daemon)).
 
 ## Operations
 
-Running CX in anger is documented in the developer-onboarding set at
-[`docs/dev/`](docs/dev/README.md) — deploy artifacts and service operation
-([`docs/dev/store-service.md`](docs/dev/store-service.md)), store management
-and recovery ([`docs/dev/store-management.md`](docs/dev/store-management.md)),
-security posture ([`docs/dev/store-security.md`](docs/dev/store-security.md)),
-and registry setup/consumption for distributing features
-([`docs/dev/registry-setup.md`](docs/dev/registry-setup.md)).
+Running CX in anger is the guide's [Operations](https://cxhome.org/operations.html)
+section — the process model, the store daemon's clean-state bootstrap, its one
+authority table, observability and the deployment artifacts — beside
+[the store platform](https://cxhome.org/store.html) for management, recovery
+and the security posture, and
+[XAP feature distribution](https://cxhome.org/xap-distribution.html) for
+registry setup and consumption. The developer set that used to live under
+`docs/dev/` folded into those pages (RULED: DOCS-46); its old URL answers with
+where each page went.
 
 ## Embedding libcx
 

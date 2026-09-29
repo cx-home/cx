@@ -268,11 +268,11 @@ step_globs() {
     guide-check)                   echo 'docs-src/* vcx/* stdlib/*' ;;
     # docs-voice-check (RULED: DOCS-43): the served sources it counts, and its
     # allowlist docs-src/site/voice.cxd (under docs-src/*).
-    docs-voice-check)              echo 'docs-src/* docs/dev/* scripts/gen_site/docs_voice_check.cx' ;;
+    docs-voice-check)              echo 'docs-src/* scripts/gen_site/docs_voice_check.cx' ;;
     # docs-vocabulary-check (RULED: DOCS-51 §1): the same served sources, the
     # playground's page and script, the guide generator (the navigation's
     # labels), and its word list docs-src/site/vocabulary.cxd (under docs-src/*).
-    docs-vocabulary-check)         echo 'docs-src/* docs/dev/* scripts/gen_site/docs_vocabulary_check.cx scripts/gen_guide/playground/* scripts/gen_guide/guide_build.cx' ;;
+    docs-vocabulary-check)         echo 'docs-src/* scripts/gen_site/docs_vocabulary_check.cx scripts/gen_guide/playground/* scripts/gen_guide/guide_build.cx' ;;
     # nav-shape-check (RULED: DOCS-51 §3): the sidebar guide_build.cx renders and
     # the assembled tree it walks — site-check's inputs and the check itself.
     nav-shape-check)               echo 'docs-src/* docs/* scripts/gen_site/* scripts/gen_guide/* scripts/gen_docs/* deps.cxd registry/* VERSION' ;;
@@ -286,7 +286,7 @@ step_globs() {
     guide-render-gate)             echo 'scripts/gen_guide/* docs-src/* stdlib/*' ;;
     # cxhome.org (RULED: RS-28, D57a): the assembled site, listed against
     # docs-src/site/manifest.cxd. It renders the guide (its prerequisite is
-    # guide-render-gate) and copies the landing page, docs/llm/ and docs/dev/, and
+    # guide-render-gate) and copies the landing page and docs/llm/, renders the two doors, and
     # the guide projects the PINNED stdlib sources, so a pin bump moves it too.
     site-check)                    echo 'docs-src/* docs/* scripts/gen_site/* scripts/gen_guide/* scripts/gen_docs/* deps.cxd registry/* VERSION' ;;
     directive-docs-check)          echo 'vcx/* docs-src/* spec/*' ;;

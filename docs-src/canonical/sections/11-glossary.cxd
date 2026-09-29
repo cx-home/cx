@@ -59,7 +59,8 @@
       """A host-language wrapper around the compiled `libcx`. Layer 1
          is the 16 canonical methods every binding must implement
          identically; Layer 2 is host-idiomatic syntactic sugar that
-         varies per language. Currently ships V, Python, Go, and Rust.
+         varies per language. The four shipped bindings are repositories
+         of their own, named on the front door's repository pages.
          See [[bindings]]."""]]
 
   [child id=g-body title='body'
