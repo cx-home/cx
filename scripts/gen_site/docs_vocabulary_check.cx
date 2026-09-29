@@ -62,15 +62,22 @@
 # path scope (a substring every scanned path must carry) and the words.
 [?def words scope=public impure ($doc)
   [?for [in $w $doc//words/word]
-    [yield [w id=[$attr $w "id" ""] rx=[$attr $w "rx" ""] flags=[$attr $w "flags" "(?i)"]
-              scope=[$attr $w "scope" ""] say=[$attr $w "say" ""]]]]]
+    [= $id [$attr $w "id" ""]]
+    [= $rx [$attr $w "rx" ""]]
+    [= $flags [$attr $w "flags" "(?i)"]]
+    [= $scope [$attr $w "scope" ""]]
+    [= $say [$attr $w "say" ""]]
+    [yield [w id=$id rx=$rx flags=$flags scope=$scope say=$say]]]]
 
 # rows: the [allow]/[page] rows — {path, word, allow, wave, why}.
 [?def rows scope=public impure ($doc)
   [?for [in $p $doc//allow/page]
-    [yield [row path=[$attr $p "path" ""] word=[$attr $p "word" ""]
-                allow=[$strings:to-number [$attr $p "allow" "0"]]
-                wave=[$attr $p "wave" ""] why=[$attr $p "why" ""]]]]]
+    [= $path [$attr $p "path" ""]]
+    [= $word [$attr $p "word" ""]]
+    [= $allow [$strings:to-number [$attr $p "allow" "0"]]]
+    [= $wave [$attr $p "wave" ""]]
+    [= $why [$attr $p "why" ""]]
+    [yield [row path=$path word=$word allow=$allow wave=$wave why=$why]]]]
 
 [?def count-in scope=public impure ($text $w)
   [$count [$re:find-all [$re:compile [$concat [$string $w@flags] [$string $w@rx]]] $text]]]
@@ -103,8 +110,12 @@
                  [?for [in $w $words]
                    [where [$in-scope $w $f]]
                    [= $n [$count-in $text $w]]
-                   [= $r [$allow-for $rows $f [$string $w@id]]]
-                   [yield [g path=$f word=[$string $w@id] say=[$string $w@say] n=$n allow=$r@allow wave=[$string $r@wave]]]]]]]]
+                   [= $id [$string $w@id]]
+                   [= $say [$string $w@say]]
+                   [= $r [$allow-for $rows $f $id]]
+                   [= $allow $r@allow]
+                   [= $wave [$string $r@wave]]
+                   [yield [g path=$f word=$id say=$say n=$n allow=$allow wave=$wave]]]]]]]
   [= $over [?for [in $g $graded] [where [> $g@n $g@allow]] [yield $g]]]
   [= $under [?for [in $g $graded] [where [< $g@n $g@allow]] [yield $g]]]
   [= $total [$fp:fold $graded 0 [?fn ($a $g) [+ $a $g@n]]]]

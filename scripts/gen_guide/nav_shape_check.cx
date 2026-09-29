@@ -45,6 +45,8 @@
 
 [?const MANIFEST "docs-src/site/manifest.cxd"]
 [?const GROUPS ("Start here", "Guide", "Reference", "Repositories", "LLM")]
+[; the groups whose sub-headings are held to the limit ]
+[?const SUB-GROUPS ("Guide", "Reference")]
 [?const VISIBLE-LIMIT 7]
 [?const DEPTH 3]
 
@@ -112,9 +114,11 @@
 
 [?def links-of scope=public impure ($rel $text)
   [?let [= $html [?if [$strings:ends-with $rel ".html"] [then [$markup-only $text]] [else ""]]]
+        [= $dq [?for [in $m [$re:find-all [$attr-rx] $html]] [yield [$re:group $m 1]]]]
+        [= $sq [?for [in $m [$re:find-all [$attr-rx-sq] $html]] [yield [$re:group $m 1]]]]
+        [= $both ($dq, $sq)]
         [= $raw [?if [$strings:ends-with $rel ".html"]
-                  [then [$pb:cat-seqs ([?for [in $m [$re:find-all [$attr-rx] $html]] [yield [$re:group $m 1]]],
-                                       [?for [in $m [$re:find-all [$attr-rx-sq] $html]] [yield [$re:group $m 1]]])]]
+                  [then [$pb:cat-seqs $both]]
                   [else [?for [in $m [$re:find-all [$md-rx] $text]] [yield [$re:group $m 1]]]]]]
     [$distinct [?for [in $t0 $raw]
                  [= $t [$own-or-external [$site-base] $t0]]
@@ -128,12 +132,13 @@
                   [then [$strings:slice $rel 1 [- [$strings:rfind $rel "/"] 1]]] [else ""]]]
         [= $joined [?if [$strings:starts-with $target "/"] [then [$strings:slice $target 2 [$strings:length $target]]]
                      [else [?if [= $dir ""] [then $target] [else [$concat $dir "/" $target]]]]]]
-        [= $parts [$fp:fold [$strings:split $joined "/"] ()
+        [= $none ()]
+        [= $parts [$fp:fold [$strings:split $joined "/"] $none
                     [?fn ($acc $p)
                       [?if [or [= $p "."] [= $p ""]] [then $acc]
                         [else [?if [= $p ".."]
                           [then [?for [in $i [$range 1 [- [$count $acc] 1]]] [yield [$nth $acc $i]]]]
-                          [else [$pb:cat-seqs ($acc, ($p,))]]]]]]]]
+                          [else [?let [= $pair ($acc, ($p,))] [$pb:cat-seqs $pair]]]]]]]]]
     [$strings:join $parts "/"]]]
 
 # page-links: the served pages one page links, resolved.
@@ -150,14 +155,16 @@
 # reached: the pages within DEPTH links of index.html — breadth first, one
 # level per fold, the visited set carried as a map.
 [?def reached scope=public impure ($site $pages)
-  [$fp:fold [$range 1 DEPTH] {seen: {"index.html": 0}, frontier: ("index.html",)}
-    [?fn ($st $d)
-      [?let [= $seen0 [$map:get $st "seen"]]
-            [= $next [$distinct [$fp:flat-map [$map:get $st "frontier"]
-                                  [?fn ($f) [$page-links $site $f $pages]]]]]
-            [= $new [?for [in $n $next] [where [not [$present [$map:get $seen0 $n]]]] [yield $n]]]
-        {seen: [$fp:fold $new $seen0 [?fn ($m $n) [$map:put $m $n $d]]],
-         frontier: $new}]]]]
+  [?let [= $start {seen: {"index.html": 0}, frontier: ("index.html",)}]
+    [$fp:fold [$range 1 DEPTH] $start
+      [?fn ($st $d)
+        [?let [= $seen0 [$map:get $st "seen"]]
+              [= $next [$distinct [$fp:flat-map [$map:get $st "frontier"]
+                                    [?fn ($f) [$page-links $site $f $pages]]]]]
+              [= $new [?for [in $n $next] [where [not [$present [$map:get $seen0 $n]]]] [yield $n]]]
+              [= $seen1 [$fp:fold $new $seen0 [?fn ($m $n) [$map:put $m $n $d]]]]
+              [= $out {seen: $seen1, frontier: $new}]
+          $out]]]]]
 
 # ── the sidebar's shape ───────────────────────────────────────────────────
 [?def sidebar-of scope=public impure ($html)
@@ -179,7 +186,7 @@
     [?fn ($m) [$concat "<li><a class=\"folded\" data-level=\"" $level "\" data-title=\"" [$re:group $m 1]
                        "\" data-items=\"" [$string [$count-items [$re:group $m 0]]] "\"></a></li>"]]]]
 
-# sections: the groups as [group title= visible= html= folded=…], in order.
+# sections: the groups, in order, each with its title, its visible count, its raw html and its folded sub-headings.
 [?def sections scope=public impure ($sidebar)
   [?let [= $folded [$fold-subs "nav-sub" [$fold-subs "nav-subsub" $sidebar]]]
         [= $rx [$re:compile "(?s)<section><h4>([^<]*)</h4>(.*?)</section>"]]
@@ -188,10 +195,15 @@
     [?for [in $i [$range 1 [$count $raw-secs]]]
       [= $r [$nth $raw-secs $i]]
       [= $f [$nth $folded-secs $i]]
-      [yield [group title=[$re:group $r 1] visible=[$count-items [$re:group $f 2]]
-                [raw [$re:group $r 2]]
-                [?for [in $t [$re:find-all [$re:compile "data-level=\"([^\"]*)\" data-title=\"([^\"]*)\" data-items=\"([0-9]+)\""] [$re:group $f 2]]]
-                  [yield [sub level=[$re:group $t 1] title=[$re:group $t 2] items=[$strings:to-number [$re:group $t 3]]]]]]]]]]
+      [= $title [$re:group $r 1]]
+      [= $visible [$count-items [$re:group $f 2]]]
+      [= $raw [$re:group $r 2]]
+      [= $subs [?for [in $t [$re:find-all [$re:compile "data-level=\"([^\"]*)\" data-title=\"([^\"]*)\" data-items=\"([0-9]+)\""] [$re:group $f 2]]]
+                 [= $level [$re:group $t 1]]
+                 [= $stitle [$re:group $t 2]]
+                 [= $items [$strings:to-number [$re:group $t 3]]]
+                 [yield [sub level=$level title=$stitle items=$items]]]]
+      [yield [group title=$title visible=$visible [raw $raw] [?splice $subs]]]]]]
 
 [?def hrefs-in scope=public impure ($html)
   [$distinct [?for [in $m [$re:find-all [$attr-rx] $html]] [yield [$re:group $m 1]]]]]
@@ -209,7 +221,7 @@
   [= $sidebar [$sidebar-of [$io:read-file [$concat $site "/guide.html"]]]]
   [= $groups [$sections $sidebar]]
   [= $titles [?for [in $g $groups] [yield [$string $g@title]]]]
-  [= $problems [$pb:cat-seqs (
+  [= $problem-lists (
     [; (1) the five groups, in order ]
     [?if [= [$strings:join $titles " | "] [$strings:join GROUPS " | "]] [then ()]
       [else ([$concat "the groups are [" [$strings:join $titles " | "] "], not [" [$strings:join GROUPS " | "] "]"],)]],
@@ -219,7 +231,7 @@
       [where [> $g@visible VISIBLE-LIMIT]]
       [yield [$concat [$string $g@title] " shows " [$string $g@visible] " visible entries; at most " [$string VISIBLE-LIMIT]]]],
     [?for [in $g $groups]
-      [where [$member ("Guide", "Reference") [$string $g@title]]]
+      [where [$member SUB-GROUPS [$string $g@title]]]
       [in $s $g//sub]
       [where [= [$string $s@level] "nav-sub"]]
       [where [> $s@items VISIBLE-LIMIT]]
@@ -238,7 +250,8 @@
     [?let [= $ref [?for [in $g $groups] [where [= [$string $g@title] "Reference"]] [yield $g]]]
           [= $linked [?if [$empty $ref] [then ()] [else [$hrefs-in [$string [$first [$first $ref]/raw]]]]]]
       [?for [in $m $module-pages] [where [not [$member $linked $m]]]
-        [yield [$concat "Reference does not link the served module page " $m]]]])]]
+        [yield [$concat "Reference does not link the served module page " $m]]]])]
+  [= $problems [$pb:cat-seqs $problem-lists]]
   [; (4) the walk ]
   [= $walk [$reached $site $nodes]]
   [= $seen [$map:get $walk "seen"]]
