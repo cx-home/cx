@@ -173,7 +173,6 @@ make test-changed-dry the same selection, printed and not run
 make docs             regenerate the LLM layer, then run every doc check and assemble the site (the docs flow)
 make docs-check       the drift gate; fails if the layer is stale
 make guide            the human-facing documentation site
-scripts/gate.sh       run a pipeline and ALWAYS write a verdict marker
 ```
 
 `make test-changed` reads the change set, intersects it with a per-step input
@@ -198,29 +197,36 @@ pipeline is the whole union, and it is what a release exits on.
 
 ### Starting and waiting on a long run
 
-A run that outlives a single command goes through
-[`scripts/gate.sh`](scripts/gate.sh), started as a background job your session
-can see, with its output going to a log file you can read. `gate.sh` writes its
-verdict marker from a `trap ... EXIT`, so the marker is unconditional, and it
-signals make's whole process group on the way out instead of orphaning the run.
+A run that outlives a single command is started as a background job your
+session can see, with its output going to a log file you can read and an exit
+marker the log ends with:
+
+```sh
+scripts/build-slot.sh make test-changed BASE=origin/release/0.18 > run.log 2>&1; echo "RUN-EXIT=$?" >> run.log
+```
 
 The idiom to avoid is a detached wrapper whose output is discarded —
 `nohup sh -c 'make test' > /dev/null 2>&1 &` and its relatives. It writes no
-marker if the wrapper is killed, so an `until grep -q RUN-EXIT= ...` waiter
-polls forever; #1333 found three such waiters alive three hours after their run
-had died, and a piped run loses the per-step summaries besides. Read the
-verdict **from the log**:
+marker, so an `until grep -q RUN-EXIT= ...` waiter polls forever. #1333 found
+three such waiters alive three hours after their run had died, and a piped run
+loses the per-step summaries besides. Read the verdict **from the log**:
 
 ```sh
 until grep -q 'RUN-EXIT=' vcx/target/gate.log; do sleep 30; done
 ```
 
-The marker carries the exit code AND the status word: `RUN-EXIT=0 passed`,
-`RUN-EXIT=2 failed` (a real failure), `RUN-EXIT=130|143|129 cancelled`
-(interrupted / terminated / hung up), `RUN-EXIT=70 failed` (the wrapper died
-before make returned). Logs written before this change say `GATE-EXIT=`
-instead, and every reader in the tree still accepts that spelling; the file
-names (`gate.sh`, `gate.log`, `gate-loop.log`) have not moved either.
+The post-merge run writes that marker itself, in `vcx/target/gate.log` and as
+the `RUN-EXIT=` line of `vcx/target/gate-loop.log`. The marker carries the exit
+code AND the status word:
+- `RUN-EXIT=0 passed`;
+- `RUN-EXIT=2 failed` (a real failure);
+- `RUN-EXIT=130|143|129 cancelled` (interrupted, terminated, hung up);
+- `RUN-EXIT=70 failed`: the run was killed before its verdict, and the
+  runner's next tick wrote it.
+
+Older logs on disk say `GATE-EXIT=` instead, and every reader in
+the tree still accepts that spelling. The file names (`gate.log`,
+`gate-loop.log`) have not moved.
 
 `scripts/gate-status.sh` reads that log and prints the run in the same words:
 state `running`/`passed`/`failed`/`cancelled`, how many steps are failing, which
@@ -228,13 +234,16 @@ steps have finished, and what is running now.
 
 ### The post-merge runner on a box
 
-The loop that runs the post-merge pipeline on every new head lives under launchd
-as `ai.cx.gate-loop`, and its unit, the three runner directories and the
-install / status / restart / stop verbs are in
-[`scripts/runner/`](scripts/runner/README.md). A new box joins with
+The post-merge runner runs the post-merge pipeline on every new head. It is a
+launchd job, `ai.cx.postmerge-flow`, that runs one tick of a flow document
+every 120 seconds (RULED: RFLOW-1). The document classifies the head, runs make
+under `scripts/build-slot.sh`, and writes the verdict lines. It is the
+integrator protocol's, kept with the orchestration repository.
+[`scripts/runner/`](scripts/runner/README.md) describes it, the three runner
+directories, and the install / status / stop verbs. A new box joins with
 `devbox run runner` after `devbox run setup` and a green `devbox run baseline`
-(§First build above); a landed `scripts/gate-loop.sh`
-takes effect only after `devbox run runner-restart`, between runs.
+(§First build above). Each tick reads the document fresh, so a merge that edits
+it takes effect on the next tick, with no restart.
 
 ### Adding a test file costs more than adding a test function
 

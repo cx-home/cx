@@ -4,7 +4,7 @@
    minutes. RS-30 (owner, 2026-09-23): the page opens with the TL;DR of
    why to reach for CX, a claim the voice pass added stands beside a
    [fixture] the guide build replays against the running cx, and the
-   install facts are what the release pipeline stages (scripts/release.sh)
+   install facts are what the release pipeline stages (flows/release.flow.cx)
    and the latest release carries. Cross-links use [[anchor]] form; spec
    references use ordinary markdown links. File extension .cxd — data-only
    source. #]

@@ -803,7 +803,7 @@
 [# downloads-body: the Downloads page (ruled 2026-08-20: prebuilt profile
    tarballs land in the docs, top-nav slot between Playground and About).
    The build matrix IS the ring model as artifacts — the same cx binary name,
-   a build-decided surface. What a release carries is what scripts/release.sh
+   a build-decided surface. What a release carries is what the release flow
    stages: the four builds for darwin-arm64 (Phase 2) and for linux-arm64
    (Phase 2b, release_linux.sh, default-on; x86_64 only with
    RELEASE_LINUX_AMD64=1), the conformance bundle, the VS Code extension

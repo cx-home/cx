@@ -25,7 +25,7 @@
 #   scripts/release_asset_links_selftest.sh [--stage-dir DIR]
 #     --stage-dir DIR   a dist/public-shaped staging directory built by this
 #                       tree (default: builds one via `make build-vcx
-#                       build-profiles` + the same staging release.sh uses,
+#                       build-profiles` + the same staging the release flow uses,
 #                       into dist/_selftest_public/ — never dist/public/,
 #                       for the same reason release_profile_gate.sh keeps its
 #                       own dist/_precut_public/).

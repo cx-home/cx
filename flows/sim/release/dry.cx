@@ -1,0 +1,11 @@
+# A DRY RUN (release.sh's --dry-run): the preflight real, then every act
+# answers what it would do, and the run is :done with nothing moved.
+[results
+  [step name="preflight" status=:done [result [preflight tag=vX.Y.Z version=X.Y.Z branch=line head=h notes=RELEASE_NOTES_vX.Y.Z.md from-bump=none mode=real]]]
+  [step name="tag" status=:done [result [would-tag tag=vX.Y.Z on=h how="scripts/tag_release.sh"]]]
+  [step name="package" status=:done [result [would-package tag=vX.Y.Z target=macos-arm64 public=darwin-arm64 linux=true what=plan]]]
+  [step name="merge-main" status=:done [result [would-merge from=line into=main how=plan]]]
+  [step name="push" status=:done [result [would-push to=origin refs="main line vX.Y.Z"]]]
+  [step name="gh-release" status=:done [result [would-release tag=vX.Y.Z title="CX vX.Y.Z" notes=RELEASE_NOTES_vX.Y.Z.md]]]
+  [step name="org-page" status=:done [result [would-sync what="make release-all"]]]
+  [step name="vscode" status=:done [result [would-attach what=plan]]]]

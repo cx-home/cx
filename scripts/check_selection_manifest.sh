@@ -30,6 +30,13 @@ MAKEFILE=Makefile
 
 # The authoritative step list, the same line test_changed.sh itself reads.
 targets=$(grep -m1 '^TEST_TARGETS :=' "$MAKEFILE" | sed 's/^TEST_TARGETS := //')
+# ...plus the private flow steps flows/private.mk adds with `TEST_TARGETS +=`
+# (RULED: PRIVMK-1), when this tree carries that file. The public tree does
+# not, and there neither the steps nor their rows exist.
+PRIVATE_MK=flows/private.mk
+if [ -f "$PRIVATE_MK" ]; then
+	targets="$targets $(sed -n 's/^TEST_TARGETS += //p' "$PRIVATE_MK" | tr '\n' ' ')"
+fi
 [ -n "$targets" ] || {
 	echo "check-selection-manifest: derived NO targets from $MAKEFILE — refusing to vouch" >&2
 	exit 1
@@ -41,6 +48,12 @@ targets=$(grep -m1 '^TEST_TARGETS :=' "$MAKEFILE" | sed 's/^TEST_TARGETS := //')
 rows=$(sed -n '/^step_globs()/,/^}/p' "$MANIFEST" \
 	| grep -oE '^[[:space:]]+[a-zA-Z0-9][a-zA-Z0-9_.-]*\)[[:space:]]+echo' \
 	| sed -E 's/^[[:space:]]+//; s/\)[[:space:]]+echo$//')
+# ...plus the `<step>.globs := …` rows flows/private.mk carries for its own
+# steps (PRIVMK-1): the same row, kept beside the target it selects.
+if [ -f "$PRIVATE_MK" ]; then
+	rows="$rows
+$(sed -n 's/^\([a-zA-Z0-9][a-zA-Z0-9_-]*\)\.globs := .*/\1/p' "$PRIVATE_MK")"
+fi
 [ -n "$rows" ] || {
 	echo "check-selection-manifest: derived NO rows from $MANIFEST — refusing to vouch" >&2
 	exit 1

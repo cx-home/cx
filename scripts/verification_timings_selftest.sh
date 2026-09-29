@@ -4,7 +4,7 @@
 #
 # #1562's budget step shipped with no writer at all: every bound read NOT
 # MEASURED, so the step judged nothing. These are the properties the two
-# writers (scripts/gate-loop.sh at RUN-EXIT, scripts/run_fixture_shards.sh on
+# writers (the post-merge runner at RUN-EXIT, scripts/run_fixture_shards.sh on
 # an unselected grader run) rest on.
 #
 #   A  an ABSENT file → the document is created with exactly the row asked for

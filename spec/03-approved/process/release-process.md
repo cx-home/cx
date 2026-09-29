@@ -15,36 +15,38 @@ this document is the authoritative end-to-end *procedure* that ties them togethe
 A release is cut with a single command from a clean `release/X.Y.0` (#666:
 the version bump becomes the branch's final commit and the tag lands on that
 bump commit, so the branch tip, the tag, the VERSION file, and the artifact
-all name **one commit**; the script merges to `main` itself, which then
+all name **one commit**; the flow merges to `main` itself, which then
 contains the tag as the merge's second parent — `vX.Y.Z` patch releases cut
 from the same `release/X.Y.0` branch):
 
 ```sh
-make cut-release ARGS='--dry-run vX.Y.Z'   # preview every step, zero writes
-make cut-release ARGS='vX.Y.Z'             # cut + publish
+make release-flow TAG=vX.Y.Z MODE=dry   # preview every step, zero writes
+make release-flow TAG=vX.Y.Z            # cut + publish
 ```
 
-`make cut-release` runs `scripts/release.sh` (`scripts/release.sh --help`). The
-script is **sound** (gate-first, fail-fast) and **resilient** (pre-flight checks
-every prerequisite before any irreversible step; `--dry-run` previews the whole
-flow; `--no-publish` stops after the GitHub release). It **composes** the
+`make release-flow` runs `flows/release.flow.cx`, the flow document that
+replaced `scripts/release.sh` (RULED: RFLOW-1 L103). The procedure is
+**sound** (gate-first, fail-fast) and **resilient**: pre-flight checks every
+prerequisite before any irreversible step; `MODE=dry` previews the whole flow;
+`PUBLISH=no` stops after the GitHub release; and the local phases before the
+push are undone in reverse when a later one refuses. It **composes** the
 existing building blocks rather than duplicating them.
 
 ## 2 — Phases
 
 | # | Phase | What it does | Building block |
 |---|---|---|---|
-| 0 | Pre-flight | on the line branch, clean tree, `RELEASE_NOTES_<tag>.md` present, tag free, **the pins in sync** (`make deps-check` — RS-7's "a release cut ships whatever is pinned", and a cut that ships a stale pin ships a binary nobody can rebuild), `devbox`/`gh` ready — else abort (no `cx-v` clone to check for since D81a: see §3) | `release.sh` |
+| 0 | Pre-flight | on the line branch, clean tree, `RELEASE_NOTES_<tag>.md` present, tag free, **the pins in sync** (`make deps-check` — RS-7's "a release cut ships whatever is pinned", and a cut that ships a stale pin ships a binary nobody can rebuild), `devbox`/`gh` ready — else abort (no `cx-v` clone to check for since D81a: see §3) | `release.flow.cx` |
 | 1 | Gate | `make test` (the full version-agnostic `TEST_TARGETS`) + `make verify-doc-links` — **MUST** be green or the release aborts (no bump, no tag, no publish) | `tag_release.sh` under `devbox` |
 | 1b | Perf ratchet | `make perf-ratchet` — `bench-json` then `bench-compare STRICT=1` against the committed `bench/baseline.json`; any benchmark more than 10 % slower than the previous cut (or a `_mbps` throughput more than 10 % lower) **aborts the cut** like a red gate; on green the fresh `bench/current.json` becomes `bench/baseline.json` in the bump commit, so each cut re-pins the floor to its own measurement on the maintainer machine (#1249, RULED: 1249-Q1a) | `tag_release.sh` → `make perf-ratchet` |
 | 2 | Bump | `VERSION` + all manifests stamped, `check-version-consistency` verified, **bump committed before the build** so the artifact's stamped commit is the tag commit; the built binary's self-reported version+commit are then asserted clean (`-dirty` marks any tree that doesn't reproduce its stamp — #666) | `bump_version.sh` / `tag_release.sh` |
-| 3 | Build + package | `-prod` `cx`/`libcx`/`cx.h` for the maintainer platform → `cx-<tag>-<target>.tar.gz` + `cx-conformance-<tag>.zip` + `SHA256SUMS.txt`, and the four §4 profile tarballs, **each built from the pins**: `make deps-sync` fetches every `[dep]` row into `deps/`, and a module whose repository has left is embedded from that checkout, so the four builds are the pinned set and nothing else | `release.sh` |
-| 4 | Tag + merge + push | annotated tag **on the release branch's bump commit**, then `release.sh` merges the branch to `main` (`--no-ff`) and pushes `main` + the branch + the tag together (#666) | `tag_release.sh` / `release.sh` |
-| 5 | GitHub release | `gh release create <tag>` with `RELEASE_NOTES_<tag>.md` and **every** artifact — the version-named tarballs, the conformance bundle, and the flat stable-named set the quickstart's `releases/latest/download/cx-<plat>.tar.gz` resolves to, with ONE `SHA256SUMS.txt` over both sets (the installer verifies against it) | `release.sh` |
+| 3 | Build + package | `-prod` `cx`/`libcx`/`cx.h` for the maintainer platform → `cx-<tag>-<target>.tar.gz` + `cx-conformance-<tag>.zip` + `SHA256SUMS.txt`, and the four §4 profile tarballs, **each built from the pins**: `make deps-sync` fetches every `[dep]` row into `deps/`, and a module whose repository has left is embedded from that checkout, so the four builds are the pinned set and nothing else | `release.flow.cx` |
+| 4 | Tag + merge + push | annotated tag **on the release branch's bump commit**, then the flow merges the branch to `main` (`--no-ff`) and pushes `main` + the branch + the tag together (#666) | `tag_release.sh` / `release.flow.cx` |
+| 5 | GitHub release | `gh release create <tag>` with `RELEASE_NOTES_<tag>.md` and **every** artifact — the version-named tarballs, the conformance bundle, and the flat stable-named set the quickstart's `releases/latest/download/cx-<plat>.tar.gz` resolves to, with ONE `SHA256SUMS.txt` over both sets (the installer verifies against it) | `release.flow.cx` |
 | 6 | The org page | sync the organisation profile README (the `cx-v` mirror retired at the cut, RULED: D81a) | `make release-all` → `publish_org.sh` |
 
 The gate (phase 1) is the **single source of release confidence**: because
-`release.sh` refuses to proceed on a red gate, a published tag is gate-green by
+`release.flow.cx` refuses to proceed on a red gate, a published tag is gate-green by
 construction (the `code.md §11.6` evidence contract).
 
 ## 3 — One repository, one release (RULED: RS-11)
@@ -99,7 +101,7 @@ control; no GitHub-minutes cost), switch the workflows' `runs-on:` to
 `self-hosted`, and re-add the removed `push`/`tags`/`schedule` triggers. Verify
 with `gh workflow run release.yml -f tag=vX.Y.Z` before re-arming the trigger.
 
-Until then, `make cut-release` is the complete release path — local, gate-first,
+Until then, `make release-flow` is the complete release path — local, gate-first,
 zero-cost.
 
 ## 5 — Versioning (cross-reference)
@@ -117,4 +119,4 @@ also the body of the GitHub release (phase 5).
 - [`core/code.md §11.3–§11.7`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) — the normative release gates + evidence/sign-off.
 - [`process/governance.md §9`](governance.md) — the versioning axes.
 - [`process/v-dependency-management.md`](v-dependency-management.md) — the patched-V fork the build depends on.
-- `scripts/release.sh --help` — the executable procedure (§1/§2).
+- `flows/release.flow.cx` — the executable procedure (§1/§2), its header the usage.

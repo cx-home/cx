@@ -10,7 +10,7 @@
 #
 #   scripts/build-slot.sh make test-changed
 #   scripts/build-slot.sh devbox run -- make build-vcx-dev
-#   scripts/build-slot.sh scripts/gate.sh            # holds the runner for the whole run
+#   scripts/build-slot.sh make test                   # holds the runner for the whole run
 #
 # The runner is a directory (mkdir is atomic) shared by every worktree:
 # $CX_RUNNER (or its older spelling $CX_BUILD_SLOT), default

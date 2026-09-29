@@ -1,0 +1,4 @@
+# THE PREFLIGHT REFUSED (not on the line, a dirty tree, no notes, a taken
+# tag, no gh): nothing moved, :compensated at the first step.
+[results
+  [step name="preflight" status=:failed [result [err code="cx-err:CXER0100" message="ci/release-preflight: 1 defect(s): the tag vX.Y.Z already exists"]]]]

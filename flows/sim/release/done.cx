@@ -1,0 +1,15 @@
+# A RELEASE CUT: every phase done — tagged at the gate, packaged at the tag,
+# merged, pushed (the pivot), released, the org page synced, the extension
+# attached.
+#
+#   cx flow simulate flows/release.flow.cx flows/sim/release/done.cx --env flows/release.env.cx --allow-read=. \
+#     --tag=vX.Y.Z --from-bump=none --mode=real --publish=yes --linux=yes
+[results
+  [step name="preflight" status=:done [result [preflight tag=vX.Y.Z version=X.Y.Z branch=line head=h notes=RELEASE_NOTES_vX.Y.Z.md from-bump=none mode=real]]]
+  [step name="tag" status=:done [result [tagged tag=vX.Y.Z sha=t before=h bumped=true]]]
+  [step name="package" status=:done [result [packaged tag=vX.Y.Z target=macos-arm64 public=darwin-arm64 linux=true assets=5]]]
+  [step name="merge-main" status=:done [result [merged-main status=merged from=line main-before=m0 main=m1]]]
+  [step name="push" status=:done [result [pushed to=origin refs="main line vX.Y.Z"]]]
+  [step name="gh-release" status=:done [result [released tag=vX.Y.Z assets=9 existed=false]]]
+  [step name="org-page" status=:done [result [org-page status=synced]]]
+  [step name="vscode" status=:done [result [vscode status=attached vsix=cx-language.vsix marketplace=unset open-vsx=unset]]]]

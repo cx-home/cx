@@ -2,7 +2,7 @@
 # `simulate` result table (flow.md §3, §4.14): the runner law over SUPPLIED
 # results — a dry run that needs no journal and runs no make (RULED: CICD-1).
 #
-#   cx flow simulate docs-src/flow/docs.flow.cx docs-src/flow/sim/docs-green.cx \
+#   cx flow simulate docs-src/flow/docs.flow.cx docs-src/flow/sim/docs/docs-green.cx \
 #     --env docs-src/flow/docs.env.cx --allow-read=. --mode=write
 [results
   [step name="generate" status=:done

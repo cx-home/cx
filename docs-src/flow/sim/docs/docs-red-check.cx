@@ -4,7 +4,7 @@
 # are what the developer reads to fix it. The err names every red target
 # (docs/check runs all of them, RULED: CICD-1, RUN-2).
 #
-#   cx flow simulate docs-src/flow/docs.flow.cx docs-src/flow/sim/docs-red-check.cx \
+#   cx flow simulate docs-src/flow/docs.flow.cx docs-src/flow/sim/docs/docs-red-check.cx \
 #     --env docs-src/flow/docs.env.cx --allow-read=. --mode=check
 [results
   [step name="generate" status=:done [result [generated ran=false reason='--mode=check']]]

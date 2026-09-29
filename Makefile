@@ -557,7 +557,8 @@ build-profile-data: build-vcx
 build-profiles-dev: build-profile-data
 	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx $(PROFILE_BUILD_J) build-profiles-dev
 
-# build-profiles (PROD, no -dev) — release.sh phase 2 (R2.2 staging) calls
+# build-profiles (PROD, no -dev) — the release flow's package act (phase 2, the
+# R2.2 staging; flows/ci-acts.cx, scripts/release.sh's until RFLOW-1) calls
 # this to produce the data/embed/cli release profile tarballs alongside the
 # platform default. #1670 measurement: this target did not exist here (only
 # its -dev sibling did) and release.sh still spelled the call as `make -C vcx
@@ -1200,7 +1201,7 @@ check-portable-links: build-vcx
 # tarballs a `curl | sh` extracts), darwin AND linux. It is a normal
 # TEST_TARGETS member so a plain `make check`/`make test-changed` always
 # runs it — SKIPping cleanly when nothing is staged (the common case outside
-# a release), and blocking for real inside scripts/release.sh's R2.2 phase
+# a release), and blocking for real inside the release flow's package act (R2.2)
 # and scripts/release_profile_gate.sh (both call it directly; this target
 # is the ad hoc / CI entry point onto the same script). See RESULTS.md
 # _gate_evidence/pipeline_1670 for the red proof against v0.17.0's real
@@ -1761,7 +1762,14 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := docs-voice-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate merge-flow-gate premerge-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := docs-voice-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+
+# PRIVMK-1: the private flow targets add themselves to TEST_TARGETS from
+# flows/private.mk. That file is absent from the public tree, and `-include`
+# is what lets each tree grade exactly what it carries. It comes after the
+# `:=` above so that its `+=` extends the list, and before any rule whose
+# prerequisites expand TEST_TARGETS (test-no-parallel).
+-include flows/private.mk
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -2794,56 +2802,44 @@ docs-flow: build-vcx
 	@"$(CURDIR)/deps/cx-core-code/vcx/target/cx" flow run $(DOCS_FLOW) --env $(DOCS_FLOW_ENV) \
 	  --ephemeral --mode=$(DOCS_FLOW_MODE) $(DOCS_FLOW_CAPS)
 
-# ── docs-flow-gate — the documentation flow's own fixture (RULED: CICD-1) ────
-# scripts/docs_flow_gate.cx reads the REAL document through this tree's binary
-# — `cx flow validate`, `cx flow simulate` over docs-src/flow/sim/, and one
-# `cx flow run` of the generate act's own refusal — in flow-dogfood-gate's
-# shape: a corpus case embeds its document inline, so it cannot catch this
-# one rotting. It runs no make target (the flow's acts are the doc pipeline's
-# steps; running them here would nest the doc pipeline inside `make test`).
+# ── docs-flow-gate — the documentation flow's own fixture (RULED: CICD-1,
+# RFLOW-1 L104) ──────────────────────────────────────────────────────────────
+# scripts/ci_flow_gate.cx docs, the one gate of the repository's flow
+# documents (the docs flow gate folded onto it, L104). It reads the REAL
+# document through this tree's binary: `cx flow validate`, `cx flow simulate`
+# over docs-src/flow/sim/docs/, and one `cx flow run` of the generate act's
+# own refusal under the grants `make docs-flow` passes. It is shaped like
+# flow-dogfood-gate: a corpus case embeds its document inline, so it cannot
+# catch this one rotting. It runs no make target: the flow's acts are the
+# doc pipeline's steps, and running them here would nest the doc pipeline
+# inside `make test`.
 .PHONY: docs-flow-gate
 docs-flow-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 docs-flow-gate: build-vcx
-	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/docs_flow_gate.cx
+	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess --allow-clock scripts/ci_flow_gate.cx docs
 
-# ── the CI/CD flow documents (RULED: RFLOW-1) ────────────────────────────────
-# flows/merge.flow.cx (the integrator's merge protocol) and
-# flows/premerge.flow.cx (a branch's pre-merge pipeline) over the ONE acts
-# module flows/ci-acts.cx, resolved through flows/ci.env.cx. Each document's
-# fixture is scripts/ci_flow_gate.cx over flows/sim/<doc>/cases.cxd, one
-# TEST_TARGETS row per document so a red names its document (L104): validate,
-# every terminal status simulated, one real run of an act's own refusal, the
-# pinned expectation count — and for merge a REAL run against throwaway bare
-# repositories under the system temp directory, removed before the gate
-# answers (#1511): landed, landing refused and every component push undone,
-# and the unpush itself refused (:conflict). --allow-env: the premerge acts
-# read HOME for the runner paths.
-CI_FLOW_ENV  := flows/ci.env.cx
-CI_FLOW_CAPS := --allow-read --allow-write --allow-subprocess --allow-env
+# ── the private CI/CD flow targets (RULED: PRIVMK-1, RFLOW-1) ─────────────────
+# merge-flow-gate, premerge-flow-gate and premerge-flow run the integrator
+# protocol's flow documents under flows/. Those documents stay private, so the
+# targets, their TEST_TARGETS membership and their selection rows live in
+# flows/private.mk. The `-include` beside TEST_TARGETS pulls that file in. The
+# public `cx` carries no such file, so its `make test` never lists them.
 
-.PHONY: merge-flow-gate premerge-flow-gate
-merge-flow-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
-merge-flow-gate: build-vcx
-	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" $(CI_FLOW_CAPS) scripts/ci_flow_gate.cx merge
-
-premerge-flow-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
-premerge-flow-gate: build-vcx
-	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" $(CI_FLOW_CAPS) scripts/ci_flow_gate.cx premerge
-
-# ── premerge-flow — a branch's pre-merge pipeline (RULED: RFLOW-1) ───────────
-#   make premerge-flow EVIDENCE=_gate_evidence/pipeline_<x> [OWN='<targets>']
-# runs flows/premerge.flow.cx from this worktree's root under a COPY of this
-# tree's cx: the flow's build step (its pivot) relinks
-# deps/cx-core-code/vcx/target/cx, and a relink under the running flow is the
-# 'Exec format error' class docs-flow's header names. The copy is removed on
-# exit; the exit is the CLI's (0 = :done). OWN defaults to none.
-.PHONY: premerge-flow
-premerge-flow:
-	@test -n "$(EVIDENCE)" || { echo "premerge-flow: EVIDENCE=_gate_evidence/pipeline_<x> is required" >&2; exit 2; }
-	@test -x deps/cx-core-code/vcx/target/cx || $(MAKE) build-vcx
-	@d=$$(mktemp -d); cp deps/cx-core-code/vcx/target/cx "$$d/cx" && \
-	  "$$d/cx" flow run flows/premerge.flow.cx --env $(CI_FLOW_ENV) --ephemeral \
-	    --evidence=$(EVIDENCE) --own='$(or $(OWN),none)' $(CI_FLOW_CAPS); rc=$$?; rm -rf "$$d"; exit $$rc
+# ── release-flow-gate — the release document's own fixture (RULED: RFLOW-1
+# L103, L104) ────────────────────────────────────────────────────────────────
+# flows/release.flow.cx over flows/sim/release/cases.cxd, graded by the one
+# gate program the other flow documents use (scripts/ci_flow_gate.cx):
+#   - it validates against flows/release.env.cx;
+#   - every terminal status simulates, with the local phases compensated in
+#     reverse before the push, and :incomplete with the count after it;
+#   - the preflight's own refusal runs for real.
+# A real cut tags, pushes and publishes, so the gate simulates it. The
+# document, its env, flows/ci-acts.cx and this row are PUBLIC (L96, PRIVMK-1),
+# so the front door grades its own release document.
+.PHONY: release-flow-gate
+release-flow-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+release-flow-gate: build-vcx
+	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-env --allow-clock scripts/ci_flow_gate.cx release
 
 .PHONY: test-docs
 test-docs: export CX_GATE_OWNER := $(shell echo $$PPID)
@@ -4214,16 +4210,34 @@ publish-org:
 
 release-all: publish-org
 
-# ── The ONE end-to-end local release command ─────────────────────────────────
-# gate (make test + verify-doc-links) → bump → build → tag → push → GitHub
-# release → publish mirrors (release-all). The `release`/`release-all` targets
-# above are the building blocks it composes. Preview first:
-#   make cut-release ARGS='--dry-run vX.Y.Z'
-#   make cut-release ARGS='vX.Y.Z'
-# See scripts/release.sh --help. (Local because org CI runners are unavailable;
-# .github/workflows/release.yml is the CI equivalent once they're restored.)
-cut-release:
-	@bash scripts/release.sh $(ARGS)
+# ── release-flow — the ONE end-to-end local release command (RULED: RFLOW-1
+# L103) ──────────────────────────────────────────────────────────────────────
+# flows/release.flow.cx, the phases scripts/release.sh ran:
+#   preflight → the gate, bump, tag and build (scripts/tag_release.sh) →
+#   package → merge to main → push (the pivot) → GitHub release →
+#   org page (release-all) → editor extension.
+# The local phases before the push are undone in reverse when a later one
+# refuses. Preview first:
+#   make release-flow TAG=vX.Y.Z MODE=dry
+#   make release-flow TAG=vX.Y.Z
+#   make release-flow TAG=vX.Y.Z FROM_BUMP=<sha>     # D83a: the front door's bumped commit
+# PUBLISH=no skips the org page and the extension. LINUX=no ships no linux
+# tarballs, and says so. TAG is required: the tag is an argument, never
+# derived here. The flow runs under a COPY of this tree's cx, because phase 1
+# rebuilds deps/cx-core-code/vcx/target/cx at the tag, and relinking the
+# binary a running flow executes is the 'Exec format error' class. The copy
+# is removed on exit, and the exit is the CLI's (0 = :done). This is local
+# because org CI runners are unavailable; .github/workflows/release.yml is the
+# CI equivalent once they are restored.
+.PHONY: release-flow
+release-flow:
+	@test -n "$(TAG)" || { echo "release-flow: TAG=vX.Y.Z is required (the tag is an argument)" >&2; exit 2; }
+	@test -x deps/cx-core-code/vcx/target/cx || $(MAKE) build-vcx
+	@d=$$(mktemp -d); cp deps/cx-core-code/vcx/target/cx "$$d/cx" && \
+	  "$$d/cx" flow run flows/release.flow.cx --env flows/release.env.cx --ephemeral \
+	    --tag=$(TAG) --from-bump=$(or $(FROM_BUMP),none) --mode=$(or $(MODE),real) \
+	    --publish=$(or $(PUBLISH),yes) --linux=$(or $(LINUX),yes) \
+	    --allow-read --allow-write --allow-subprocess --allow-env; rc=$$?; rm -rf "$$d"; exit $$rc
 
 # ── Editor tooling ────────────────────────────────────────────────────────────
 #

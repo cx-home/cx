@@ -29,7 +29,7 @@ name: Site
 # with /nix hidden from PATH — see _gate_evidence/pipeline_1670/RESULTS.md.
 #
 # The runner stays Apple Silicon for parity with the release build this same
-# tree cuts (scripts/release.sh); nothing here depends on a released asset
+# tree cuts (make release-flow); nothing here depends on a released asset
 # any more, so an ubuntu runner would work too if org runner allocation ever
 # needs it split by cost — not changed here, out of #1670's scope.
 

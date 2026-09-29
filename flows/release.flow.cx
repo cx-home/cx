@@ -1,0 +1,69 @@
+# flows/release.flow.cx — a release cut as ONE flow document (RULED: RFLOW-1
+# L103; D83a, RS-7, RS-11, CO-4, CO-20, PGL-1, CXF-1). It replaces
+# scripts/release.sh: the same phases in the same order, over the same tools,
+# with the local phases undone when a later one before the push refuses.
+#
+# USAGE — from a clean checkout of the release line (or, under D83a, the
+# already-bumped commit of the front door):
+#
+#   make release-flow TAG=vX.Y.Z [FROM_BUMP=<sha>] [MODE=dry] [PUBLISH=no] [LINUX=no]
+#
+# The make target runs this document under a COPY of the tree's cx. Phase 1
+# (scripts/tag_release.sh) rebuilds deps/cx-core-code/vcx/target/cx at the
+# tag, and relinking the binary a running flow executes is the 'Exec format
+# error' class. The target then runs:
+#
+#   <copy of cx> flow run flows/release.flow.cx --env flows/release.env.cx --ephemeral \
+#     --tag=vX.Y.Z --from-bump=none|<sha> --mode=real|dry --publish=yes|no --linux=yes|no \
+#     --allow-read --allow-write --allow-subprocess --allow-env
+#
+# MODE=dry is what `release.sh --dry-run` was. The preflight runs for real,
+# and so does tag_release.sh --dry-run. Every later act answers `[would-… …]`,
+# and nothing is bumped, tagged, built, pushed or published. The tag is an
+# argument: no version is written anywhere here.
+#
+# THE ORDER.
+#   0. preflight: observe.
+#   1. tag: tag_release.sh — gate, bump, tag, build at the tag.
+#   2. package: 2 and 2b, every artifact at the tag (CO-4).
+#   3. merge-main: 2c, local.
+#   4. push: phase 3, THE PIVOT.
+#   5. gh-release: 4.
+#   6. org-page: 5.
+#   7. vscode: 7.
+# Phase 6 retired with RS-11. Before the pivot every act is compensated, in
+# reverse:
+#   - the merge reset;
+#   - dist/ removed;
+#   - the local tag deleted and the bump reset.
+# So a refusal before the push leaves the checkout as preflight found it,
+# `:compensated`. After the push, a red GitHub release, org page or extension
+# lands `:incomplete` with the count: the tag is public, and the record names
+# what to finish. `make release-flow-gate` validates the document and
+# simulates every one of those shapes.
+[flow name="release" stall-after=14h
+  [args [tag::string] [from-bump::string] [mode::string] [publish::string] [linux::string]]
+  [step name="preflight"
+        [do 'ci/release-preflight' [tag $args/tag] [from-bump $args/from-bump] [mode $args/mode]
+                                   [publish $args/publish] [linux $args/linux]]]
+  [step name="tag" needs="preflight"
+        [do 'ci/release-tag' [tag $args/tag] [from-bump $args/from-bump] [mode $args/mode]
+                             [publish $args/publish] [linux $args/linux] [preflight $steps/preflight/result]]]
+  [step name="package" needs="tag"
+        [do 'ci/release-package' [tag $args/tag] [from-bump $args/from-bump] [mode $args/mode]
+                                 [publish $args/publish] [linux $args/linux] [tagged $steps/tag/result]]]
+  [step name="merge-main" needs="package"
+        [do 'ci/release-merge-main' [tag $args/tag] [from-bump $args/from-bump] [mode $args/mode]
+                                    [publish $args/publish] [linux $args/linux] [preflight $steps/preflight/result]]]
+  [step name="push" needs="merge-main" pivot=true
+        [do 'ci/release-push' [tag $args/tag] [from-bump $args/from-bump] [mode $args/mode]
+                              [publish $args/publish] [linux $args/linux] [preflight $steps/preflight/result]]]
+  [step name="gh-release" needs="push"
+        [do 'ci/release-gh' [tag $args/tag] [from-bump $args/from-bump] [mode $args/mode]
+                            [publish $args/publish] [linux $args/linux] [preflight $steps/preflight/result]]]
+  [step name="org-page" needs="gh-release"
+        [do 'ci/release-org-page' [tag $args/tag] [from-bump $args/from-bump] [mode $args/mode]
+                                  [publish $args/publish] [linux $args/linux]]]
+  [step name="vscode" needs="org-page"
+        [do 'ci/release-vscode' [tag $args/tag] [from-bump $args/from-bump] [mode $args/mode]
+                                [publish $args/publish] [linux $args/linux]]]]
