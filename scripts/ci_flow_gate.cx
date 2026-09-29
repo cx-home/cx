@@ -108,18 +108,29 @@
                   [$string $c@exit], ' — ', [$strings:slice $out 0 600], ' ',
                   [$strings:slice [$strings:trim [$string $r@stderr]] 0 600])])]]]
 
+# ── the environment a world runs in ─────────────────────────────────────────
+# A case's `caller-env=` plants KEY=VALUE pairs: the box a gate can run in
+# (the union's make storm, the live runner's slot). world-env is the
+# environment every subprocess of a case is given.
+[?def caller-pairs scope=public pure [returns any] ($c)
+  [?to-sequence [?for [in $a [$argv-words [?else $c@caller-env '']]] [where [$strings:contains [$string $a] '=']]
+    [yield ([$first [$strings:split [$string $a] '=']], [$strings:join [?to-sequence [?drop 1 [$strings:split [$string $a] '=']]] '='])]]]]
+
+[?def world-env scope=public impure [returns any] ($c)
+  [?to-map [?for [in $kv [$caller-pairs $c]] [yield $kv]]]]
+
 [?def run-flow scope=public impure ($bin $flow $env $c $extra)
-  [?let [= $r [$process:run [$argv-of $bin $flow $env $c $extra] timeout-ms=900000]]
+  [?let [= $r [$process:run [$argv-of $bin $flow $env $c $extra] env=[$world-env $c] timeout-ms=900000]]
         [= $out [$string $r@stdout]]
         [= $em [$exit-miss $c $r $out]]
     [?if [> [$count $em] 0] [then $em] [else [$expect-misses $c $out]]]]]
 
 # ── F — a probe: a program beside the table, its answer read for the [s] ────
-[?def run-program scope=public impure ($bin $program $args)
-  [$process:run [$cat-seqs (($bin), $GRANTS, ($program), $args)] timeout-ms=900000]]
+[?def run-program scope=public impure ($bin $program $args $c)
+  [$process:run [$cat-seqs (($bin), $GRANTS, ($program), $args)] env=[$world-env $c] timeout-ms=900000]]
 
 [?def probe-case scope=public impure ($bin $c)
-  [?let [= $r [$run-program $bin [$string $c@program] [$argv-words $c@args]]]
+  [?let [= $r [$run-program $bin [$string $c@program] [$argv-words $c@args] $c]]
         [= $out [$cat ([$string $r@stdout], ' ', [$string $r@stderr])]]
         [= $em [$exit-miss $c $r $out]]
     [?if [> [$count $em] 0] [then $em] [else [$expect-misses $c $out]]]]]
@@ -144,14 +155,14 @@
 [?def real-case scope=public impure ($bin $flow $env $c)
   [?let [= $root [$io:temp-dir 'ci-flow-gate']]
         [= $program [$string $c@program]]
-        [= $b [$run-program $bin $program ('build', $root, [$string $c@scenario])]]
+        [= $b [$run-program $bin $program ('build', $root, [$string $c@scenario]) $c]]
         [= $w [$answer-of $b@stdout 'world']]
         [= $misses [?if [or [not [= [$name $w] 'world']] [not [= [$string $w@errs] '']]]
                      [then ([$cat ([$label-of $c], ': the world could not be built — ',
                                    [$string [?else $w@errs '']], ' ', [$strings:slice [$string $b@stdout] 0 400], ' ',
                                    [$strings:slice [$strings:trim [$string $b@stderr]] 0 400])])]
                      [else [?let [= $rm [$run-flow $bin $flow $env $c [$argv-words $w@args]]]
-                                 [= $o [$run-program $bin $program ('observe', $root)]]
+                                 [= $o [$run-program $bin $program ('observe', $root) $c]]
                                  [= $seen [$answer-of $o@stdout 'seen']]
                        [$cat-seqs ($rm, [$world-misses $c $seen])]]]]]
         [= $_rm [$io:remove-tree $root]]
