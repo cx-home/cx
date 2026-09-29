@@ -1,0 +1,51 @@
+[# docs-src/repos/cx-platform-ux.cxd — the surfaces' page,
+   repo-cx-platform-ux.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 3).
+   Facts from the registries; the one example from its own corpus (the ux
+   suite). #]
+
+[repo name=cx-platform-ux
+  [intro
+    """**TL;DR — one semantic tree, two renderers, neither privileged.**
+       `cx-platform-ux` is the projected surface: a closed vocabulary of
+       headings, tables, forms, inputs and notices that a command, a query or
+       a feature grammar projects onto, a web renderer that lowers it to
+       HTML and a pinned subset of htmx attributes, and a terminal renderer
+       that paints the same tree to a cell grid — so anything the vocabulary
+       silently assumed about a browser fails in the terminal instead of
+       passing unnoticed."""]
+  [body
+    """A fragment's identity is exactly a triple — route, feature instance,
+       path — hashed to a content address and a DOM id derived from it; the
+       same triple is the same fragment, and composing one feature twice on a
+       route without distinct instance names is a refusal. Renderer-private
+       intent — a swap mode, an out-of-band target, an event-stream endpoint
+       — is refused on a semantic element and lives in the render context a
+       renderer reads for itself; a region names a logical feed, an action
+       names the path it affects."""]
+  [body
+    """The projections are the point: a table's columns derive from the row
+       schema, and a row earns an address by declaring its key rather than
+       by spelling an attribute `id`; a form derives from a `[?def]` and its
+       documentation, with a required input for every parameter that has no
+       default; a feature grammar projects to its form and columns, and an
+       unknown verb refuses. A live feed's changes lower onto a small patch
+       algebra, an unkeyed feed collapses to a repaint, and the surface
+       document's routes and the resources behind them are checked against
+       each other in both directions. The [[ux-capability]] page walks the
+       whole capability."""]
+  [gives
+    """Three modules of the platform group: the semantic core, which contains
+       no renderer and imports no markup library, and its two peer renderers.
+       Each links to the reference page projected from its own
+       documentation."""]
+  [try
+    """A command definition with an `[effects]` clause and its documentation,
+       projected onto a form: the heading is the summary, each parameter is
+       an input with its kind and its help text, the one with a default is
+       optional, and the submit label is derived from the verb."""]
+  [fixture id=ux-060-form-projection-from-a-command-def]
+  [status
+    """The surfaces ship as a package: the three modules are bundled into the
+       build from the pin, where they keep the `x/` source path they
+       graduated from, and the application host serves the composed grammar
+       through them to a terminal and a browser."""]]

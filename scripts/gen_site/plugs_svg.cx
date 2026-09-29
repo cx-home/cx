@@ -126,9 +126,15 @@
       [text x=$lx y="22" font-family=[$rs:font] font-size="8" letter-spacing="1.6" fill=$muted "BUILDS ON"]
       [text x=$cx y="22" font-family=[$rs:font] font-size="8" letter-spacing="1.6" fill=$muted "THIS REPOSITORY · SHIPS"]
       [text x=$rx y="22" font-family=[$rs:font] font-size="8" letter-spacing="1.6" fill=$muted "BUILT ON BY"]
-      [; the pins, on the left ]
+      [; the pins, on the left — the front door's empty list is the root of
+         the graph (deps.cxd's fact); any other row's is the registry's
+         silence, the status table's own words (wave 3), never the front
+         door's line ]
       [?if [$empty $pins]
-        [then [text x=$lx y=[+ $y0 13] font-family=[$rs:font] font-size="8.5" font-style="italic" fill=$faint "nothing of CX — the root of the graph"]]
+        [then [text x=$lx y=[+ $y0 13] font-family=[$rs:font] font-size="8.5" font-style="italic" fill=$faint
+                    [?if [= $name [$rs:site-self]]
+                      [then "nothing of CX — the root of the graph"]
+                      [else "none recorded — no pins= on the registry row yet"]]]]
         [else [g [?splice [$column $pins $lx $y0 $ink $paper $faint]]]]]
       [; the repository itself, with its face below it ]
       [g class="pl-self"
@@ -182,6 +188,18 @@
         [= $_bare [?if [$empty $bare] [then 0]
                     [else [$die [$concat "a bare constant name in attribute position of the figure for: "
                                          [$strings:join $bare " "]]]]]]
+        [; the empty left column's line — "the root of the graph" — is deps.cxd's
+           and true of the front door alone; a shown row with no pins= column (a
+           package, a binding, an ecosystem row) draws the registry's silence
+           instead, so the front door's line on any other figure is refused ]
+        [= $rooted [?for [in $n $names]
+                     [where [not [= $n [$rs:site-self]]]]
+                     [where [= [$rs:attr [$repo-row $n] "status" ""] "extracted"]]
+                     [where [$strings:contains [$plugs-svg $n] "the root of the graph"]]
+                     [yield $n]]]
+        [= $_rooted [?if [$empty $rooted] [then 0]
+                      [else [$die [$concat "the front door's 'root of the graph' line on a figure that is not the front door's: "
+                                           [$strings:join $rooted " "]]]]]]
     [?if [$empty $miss]
       [then [$say [$concat "plugs-svg-check: " [$string [$count $drawn]] " repository figures, each drawing exactly "
                            "1 + pins + pinned-by + modules nodes ("

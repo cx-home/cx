@@ -1,0 +1,51 @@
+[# docs-src/repos/cx-platform-agent.cxd — the agent surface's page,
+   repo-cx-platform-agent.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 4).
+   Facts from the registries; the one example from its own corpus (the
+   tools suite). #]
+
+[repo name=cx-platform-agent
+  [intro
+    """**TL;DR — an agent is a peer, and its messages are ordinary values.**
+       `cx-platform-agent` is the tool and agent-protocol surface: a tool
+       descriptor is projected from a command definition at list time, an
+       MCP request or an A2A message is a CX value shaped to its wire form,
+       and any callable — a def, a closure, a tool behind a transport —
+       composes through one Runnable convention."""]
+  [body
+    """The projection is the point: a `[?def]` that carries an `[effects]`
+       clause is a command, and its descriptor — name, description, input
+       and output schema, the read-only and destructive annotations — derives
+       from the definition and its documentation when the tools are listed,
+       never from a hand-kept manifest, so a tool cannot say one thing and do
+       another. A feature grammar projects the same way: an observe verb is a
+       read-only tool, an act verb its complement, and two features that
+       share a verb name export two distinct tools."""]
+  [body
+    """The protocols compose the substrate this site already documents —
+       JSON-RPC, JSON Schema, the HTTP client — with no new transport: the
+       MCP client builds and reads the initialize, list-tools and call-tool
+       exchanges, the server half answers them from the same projection, and
+       the A2A client shapes messages and tasks and records a task's
+       lifecycle in a hash-chained journal, so its history replays and
+       verifies. `run` is the algebra over all of it — invoke, batch, pipe,
+       compose, fan out — `llm` is the first Runnable, and `adjudicate` turns
+       a review band's pairs into resolution records an agent decided and a
+       later run consumes deterministically."""]
+  [gives
+    """Eight modules of the platform group, pure CX with no V build: the tool
+       projection, the MCP client and server, A2A and its journal binding,
+       the Runnable algebra, the LLM provider and the adjudicator. Each links
+       to the reference page projected from its own documentation, and their
+       sources keep the `x/` path they graduated from."""]
+  [try
+    """A command definition with an empty `[effects]` clause and its
+       documentation, projected to a tool descriptor: the summary is the
+       description, the parameter is the input schema, and the empty effect
+       set is inside the read-only set, so the annotations say read-only and
+       not destructive — a command still, because the clause is present."""]
+  [fixture id=tools-004-zero-item-effects-is-a-command]
+  [status
+    """The agent surface ships as a package: its eight modules are bundled
+       into the build from the pin, its specification and corpus travel with
+       it, and its own repository grades the pins, the lint, the corpus and
+       the lanes before the front door moves the pin."""]]

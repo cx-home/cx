@@ -42,7 +42,10 @@
 #
 # Exit: 0 green; 1 a source naming no shown row, a missing or doubled
 # fixture, a manifest/source mismatch, a module with no reference page, a
-# spec or corpus directory the (pinned) tree does not hold.
+# spec or corpus directory the (pinned) tree does not hold. A shown row the
+# front door does not pin (no deps.cxd row: the bindings, the package index,
+# the decisions record — wave 4) has no tree to verify against; its links
+# are the registry's and its page says so (is-pinned below).
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
@@ -112,6 +115,16 @@
     [where [not [$rs:is-planned $m]]]
     [order-by $m/@name]
     [yield $m]]]
+
+# is-pinned: does the front door consume $name — the self row, or a row
+# deps.cxd pins (a deps/<name>/ checkout to read from). A shown row cx does
+# not consume — the four bindings, which pin the front door rather than the
+# reverse, and the two ecosystem rows nothing is compiled from (the package
+# index, the decisions record; wave 4) — has no checkout here: its page
+# links the repository and its README as the registry names them and
+# verifies nothing against a tree, saying so.
+[?def is-pinned scope=public impure ($name)
+  [or [$is-self $name] [$member [$plugs:pins-of [$rs:site-self]] $name]]]
 
 # tree-root: where the repository's own files are read from — this tree for
 # the front door, the pinned checkout for every other row (RS-7, RS-12).
@@ -214,12 +227,31 @@
             [td [?if [$is-self $name]
                   [then "the front door — the tree this site was built from"]
                   [else [$rs:attr $r "status" "in this tree"]]]]]
-        [tr [td "pinned at"]
-            [td [?if [= $at ""]
-                  [then "not pinned — it pins the others (deps.cxd)"]
-                  [else [a href=[$concat GITHUB $name "/commit/" $at] [code [$short-sha $at]]]]]]]
+        [; a row with no at= is the front door (it pins the others) or a
+           binding (it pins the front door; cx consumes nothing of it); a row
+           with an at= and no deps.cxd row (the package index, the decisions
+           record) records the sha the registry names, and the cell says the
+           front door pins nothing at it — wave 4 ]
+        [?if [= $at ""]
+          [then [tr [td "pinned at"]
+                    [td [?if [$is-self $name]
+                          [then "not pinned — it pins the others (deps.cxd)"]
+                          [else "not pinned — cx consumes nothing of it: the registry row carries no at= and deps.cxd no row"]]]]]
+          [else [?if [$is-pinned $name]
+            [then [tr [td "pinned at"]
+                      [td [a href=[$concat GITHUB $name "/commit/" $at] [code [$short-sha $at]]]]]]
+            [else [tr [td "pinned at"]
+                      [td [a href=[$concat GITHUB $name "/commit/" $at] [code [$short-sha $at]]]
+                          " — the registry's at=; deps.cxd carries no row for it, so nothing of it is in the build"]]]]]]
+        [; a row with no pins= column (the three packages of wave 3: secrets,
+           sso, ux) is not the root of anything — the registry has not recorded
+           what it builds on, and the page says exactly that rather than the
+           front door's line, which is deps.cxd's and true only of the self row ]
         [tr [td "builds on"]
-            [td [?if [$empty $pins] [then "nothing of CX — the root of the graph"]
+            [td [?if [$empty $pins]
+                  [then [?if [$is-self $name]
+                    [then "nothing of CX — the root of the graph"]
+                    [else "none recorded — the registry row carries no pins= column yet"]]]
                   [else [$strings:join $pins ", "]]]]]
         [tr [td "built on by"]
             [td [?if [$empty $by] [then "nothing pins it yet"]
@@ -227,17 +259,25 @@
         [tr [td "bundled modules"] [td [$string [$count [$face $name]]]]]]]]]
 
 # links: GitHub, the README, the spec directory, the corpus — each a path the
-# (pinned) tree holds, on the repository's own GitHub tree.
+# (pinned) tree holds, on the repository's own GitHub tree. A row with no
+# checkout here (is-pinned false) gets the repository and its README as the
+# registry names them — the site's external-link step fetches both — and a
+# line saying that nothing on this page was verified against its tree.
 [?def links scope=public impure ($name)
   [?let [= $tree [$concat GITHUB $name "/tree/main/"]]
         [= $blob [$concat GITHUB $name "/blob/main/"]]
-    [ul
-      [li [a href=[$concat GITHUB $name] [$concat "github.com/cx-home/" $name]] " — the repository"]
-      [li [a href=[$concat $blob [$readme $name]] "README"] " — what it is, how to install it, what it pins"]
-      [?for [in $d [$spec-dirs $name]] [yield
-        [li [a href=[$concat $tree $d] [code $d]] " — the specification, the only truth"]]]
-      [?for [in $d [$corpus-dirs $name]] [yield
-        [li [a href=[$concat $tree $d] [code $d]] " — the conformance corpus, the executable truth"]]]]]]
+    [?if [$is-pinned $name]
+      [then [ul
+        [li [a href=[$concat GITHUB $name] [$concat "github.com/cx-home/" $name]] " — the repository"]
+        [li [a href=[$concat $blob [$readme $name]] "README"] " — what it is, how to install it, what it pins"]
+        [?for [in $d [$spec-dirs $name]] [yield
+          [li [a href=[$concat $tree $d] [code $d]] " — the specification, the only truth"]]]
+        [?for [in $d [$corpus-dirs $name]] [yield
+          [li [a href=[$concat $tree $d] [code $d]] " — the conformance corpus, the executable truth"]]]]]
+      [else [ul
+        [li [a href=[$concat GITHUB $name] [$concat "github.com/cx-home/" $name]] " — the repository"]
+        [li [a href=[$concat $blob "README.md"] "README"] " — what it is, how to install it, what it pins"]
+        [li "The front door pins nothing of this repository, so no checkout of it is in the tree this page was built from: the two links above are the registry's row, fetched by the site's external-link step and verified against no tree here; its specification and its corpus, where it keeps them, are its own."]]]]]]
 
 # ── the self-test ───────────────────────────────────────────────────────
 

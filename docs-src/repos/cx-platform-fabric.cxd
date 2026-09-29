@@ -1,0 +1,46 @@
+[# docs-src/repos/cx-platform-fabric.cxd — the fabric's page,
+   repo-cx-platform-fabric.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 3).
+   Facts from the registries; the one example from its own corpus (the
+   fabric suite). #]
+
+[repo name=cx-platform-fabric
+  [intro
+    """**TL;DR — messaging with the durability written on it.** `cx-platform-fabric`
+       is publish/subscribe and request/reply over the primitives this site
+       already ships: the durable plane rides the [[store]]'s journal — a
+       published event is appended to a named stream, attributed, in a
+       per-stream total order on a hash chain — and the transient plane is
+       an emit whose latest value wins. A subscription says which plane it
+       reads from, so nothing is at-least-once by accident."""]
+  [body
+    """A subscription carries a pattern and, when it names a group, an
+       offset: receive a batch, `ack` it, and a second subscriber in the same
+       group resumes after the acknowledged sequence — the corpus opens a
+       fresh subscription to prove it. An observer with no group cannot
+       acknowledge, an ungrouped `ack` is refused, and an uncommitted tail is
+       redelivered. The offset is store data, readable by the same query
+       verbs as anything else in the journal."""]
+  [body
+    """Poison is a policy, not a surprise: a dead-letter rule names the
+       stream, the group and the attempt count, a message that keeps failing
+       is moved to the dead-letter stream in an envelope that says why, and
+       the group unblocks; a rule that would loop a stream into itself is
+       refused when it is declared. Request/reply registers a responder and
+       answers a synchronous call, or an error when no responder is
+       registered. The same handle opens embedded over a journal element or
+       remote over `xsp://`, where the dial needs the `net` grant and a
+       tenant, and `fabric-serve` is the daemon on the other end."""]
+  [gives
+    """One module of the platform group, the whole surface — open, publish,
+       subscribe, receive, ack, emit, read, respond, request — linking to the
+       reference page projected from its own documentation."""]
+  [try
+    """One durable publish to `orders`, then a subscription on a glob pattern
+       over the same stream and a batched receive: one event, matched by its
+       pattern, from an in-memory journal that needed no grant."""]
+  [fixture id=fabric-004-subscribe-glob-receive]
+  [status
+    """The fabric builds on the store, identity, the wire and the session
+       layer, and is built on by the application host; the front door
+       compiles its V module from the pin, and the module's own
+       initialisation registers `fabric-serve` as a verb of the binary."""]]

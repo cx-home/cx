@@ -82,6 +82,6 @@ An MCP request is an ordinary CX value projected to its wire form — no bespoke
 
 ## The repositories
 
-Each repository is thin — what it is, how to install it, what it pins — and this site, served from `cx`, carries the narrative for all of them. A row links to that repository's page of this site where one exists — the front door, the two cores and five of the platform repositories have theirs — and to the repository on GitHub otherwise; the rest arrive eight at a time, and a row switches over the day its page is served.
+Each repository is thin — what it is, how to install it, what it pins — and this site, served from `cx`, carries the narrative for all of them. Every row links to that repository's page of this site — the pages arrived eight at a time, and the last eight are the agent surface, the four bindings, the package index, the decisions record and the tooling — and each page links the repository on GitHub, its README, and the specification and corpus the front door's pin of it holds.
 
 {{REPO-MAP}}

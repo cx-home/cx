@@ -1,0 +1,48 @@
+[# docs-src/repos/cx-binding-rust.cxd — the Rust binding's page,
+   repo-cx-binding-rust.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 4).
+   Facts from the registries; the one example from the front door's ABI
+   vectors, the corpus every binding grades itself against. #]
+
+[repo name=cx-binding-rust
+  [intro
+    """**TL;DR — the same C ABI, in the host's own idiom.** `cx-binding-rust`
+       is the `cxlib` crate: a thin wrapper over `libcx`'s string-in,
+       string-out C ABI, so a Rust program parses, canonicalises, hashes,
+       converts and evaluates CX with the very engine the `cx` binary runs —
+       byte-identical answers, nothing reimplemented."""]
+  [body
+    """Layer 1 is the contract every binding shares: sixteen canonical
+       methods — parse, bytes, hash, equals, eval, select, modify and the
+       node accessors — with identical semantics across hosts, so a document
+       hashed from Rust is the document hashed from anywhere else. Identity
+       rides `cx_canonical`, `cx_hash` and `cx_eq`; selection, evaluation and
+       update delegate to `cx_code_eval`; nothing about a document is
+       retained inside `libcx` between calls. [[layer-1]] is the table,
+       [[c-abi]] the surface beneath it, [[layer-2]] the host-idiomatic
+       sugar above it that desugars to Layer 1."""]
+  [body
+    """The front door publishes the ABI vectors every binding grades itself
+       against — one case per entry point a wrapper covers, an input
+       document and the canonical output, hash or refusal it must answer —
+       and checks the same file against `libcx` directly in its C test. The
+       crate's own lane over those vectors is owed: its repository's check
+       grades the pins alone today, and its own build notes say so rather
+       than dressing a skip as a pass."""]
+  [gives
+    """No CX module: a binding ships host code, not `.cx` files, so the table
+       below is the generator's note. What it gives you is the crate itself —
+       the Layer-1 methods, and the host-idiomatic layer above them that
+       desugars to Layer 1."""]
+  [try
+    """One ABI vector, replayed by this site's `cx`: an XML document imported
+       to CX through the entry point the wrapper's XML-to-CX call wraps, and
+       the canonical text it must answer. A binding's lane asserts the same
+       vector through its wrapper; this page shows the engine's own answer."""]
+  [fixture id=abi-010-xml-to-cx]
+  [status
+    """The binding is not consumed by `cx` — it consumes `cx`: its own
+       `deps.cxd` pins the front door for the C ABI and the V core it builds
+       `libcx` from, which is why the registry row carries no `at=` and the
+       figure draws no column on either side. It ships from its own
+       repository at its own cadence, and a pin moves there only when the
+       newer front door is green with it."""]]

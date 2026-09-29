@@ -1,0 +1,51 @@
+[# docs-src/repos/cx-platform-db.cxd — the database drivers' page,
+   repo-cx-platform-db.html (RULED: DOCS-41, DOCS-47, DOCS-49 wave 3).
+   Facts from the registries; the one example from its own corpus (the db
+   suite). A V product that ships no bundled module: its surface is seven
+   builtins of the language, so the module table below is the generator's
+   'no bundled module' note and the corpus is cited from conformance/. #]
+
+[repo name=cx-platform-db
+  [intro
+    """**TL;DR — a database is a URL, and the rows come back as a document.**
+       `cx-platform-db` is external database access: `$sql-open`,
+       `$sql-exec`, `$sql-query` and `$sql-close`, `$redis-open`,
+       `$redis-cmd` and `$redis-close` — builtins of the language, nothing
+       to import — with the engine chosen by the URL's scheme: sqlite in the
+       default build, redis, postgres and mysql as packs."""]
+  [body
+    """A query answers `[rows [row …]]`, a statement answers its change count
+       and last row id, and every refusal is a value with a place in the
+       order: an operand of the wrong kind is refused before any engine is
+       consulted, an unknown handle is one uniform runtime error, closing a
+       handle twice is `null` rather than a fault, and a constraint violation
+       is an error carrying the backend's own state code — never an empty
+       success. A refused multi-row statement leaves nothing behind."""]
+  [body
+    """Opening a connection is an effect, so it needs the `write` grant, and a
+       connection URL that carries a credential is consumed at open — it
+       never reaches a log line or an error message afterwards. Parameters
+       bind by position as strings, and `[param null=true]` binds the
+       backend's own NULL, which is what a keyset walk needs for the page
+       before the first cursor. This is database access, not the CX store:
+       `sqlite://` as a store substrate belongs to the [[store]] platform —
+       two sqlites, one name."""]
+  [gives
+    """No module namespace: the surface is the seven builtins named above,
+       specified in the repository's `db_access` page and graded by one
+       corpus that covers every engine the default build carries. The
+       registry names the repository through three rows — the suite and its
+       two backends, `sql` and `redis` — none of them a module a program
+       imports, so the table the generator draws for a module-shipping
+       repository is the note below instead."""]
+  [try
+    """A whole lifecycle against an in-memory sqlite: open, create, insert,
+       sum, close — the rows as a document, the grant on the command line
+       because opening a database is an effect."""]
+  [fixture id=db-010-sqlite-open-exec-query-close]
+  [status
+    """The drivers build on the language and are built on by the application
+       host, their only in-tree consumer; the front door compiles the V
+       module from the pin with the default engines, and a build without
+       them answers that `sql-open` is not callable — a missing flag, not a
+       defect."""]]
