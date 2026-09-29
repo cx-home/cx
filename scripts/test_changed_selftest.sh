@@ -545,6 +545,24 @@ else
 	bad O "deps.cxd did not select test-sso-interop-lane: [$(targets "$T/m")]"
 fi
 
+# ── Q — the LLM layer's readers are named where they ARE (PLAY-2, RS-8) ─────
+# docs/llm/* is embedded in the binary and read by two CLI test files that
+# left with cx-core-code's extraction (RULED: RS-12). The row named them under
+# vcx/tests/, a path this tree no longer holds, and `v test` refused the
+# selection (exit 2) — a false RED that the union never shows, because the
+# union points at the whole pinned directory. Every suite file the row names
+# must be on disk.
+run docs/llm/primer.md > "$T/q"
+q_bad=""
+for f in $(suite_files_of "$T/q"); do
+	[ -f "$ROOT/$f" ] || q_bad="$q_bad $f"
+done
+if [ -z "$q_bad" ] && suite_files_of "$T/q" | grep -q 'cli_umbrella_test\.v$'; then
+	ok Q "docs/llm/* names the CLI readers at their pinned path: $(suite_files_of "$T/q" | tr '\n' ' ')"
+else
+	bad Q "docs/llm/* names a suite file that is not on disk:${q_bad:- (none named)} — [$(suite_line "$T/q")]"
+fi
+
 # ── P — the shipped grading core under vcx/corpus/ (#1634) ─────────────────
 # RS-16 moved the module-corpus grading loop into vcx/corpus/, which the cx
 # binary links for `cx corpus`, every fixtures shard calls, and (#1631) the
