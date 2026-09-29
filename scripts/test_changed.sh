@@ -527,7 +527,7 @@ step_globs() {
     # nothing — it SKIPs then) plus the gate itself and the release scripts
     # that stage/call it, so a change to the staging shape or the gate logic
     # re-runs it.
-    check-release-asset-links)     echo 'dist/public/* scripts/release_asset_links_gate.cx scripts/lib/r22_profile_gate.sh scripts/release.sh scripts/release_linux.sh scripts/release_profile_gate.sh' ;;
+    check-release-asset-links)     echo 'dist/public/* scripts/release_asset_links_gate.cx scripts/lib/r22_profile_gate.sh flows/release.flow.cx flows/ci-acts.cx scripts/release_linux.sh scripts/release_profile_gate.sh' ;;
     # #1012's resurrection guards over the umbrella manifests: the manifests,
     # the driver and its selftest, and the umbrella test files they hold to.
     check-consolidation-manifests) echo 'scripts/consolidation/* scripts/consolidate_tests.sh scripts/consolidate_tests.cx scripts/consolidate_tests_selftest.sh vcx/tests/*' ;;

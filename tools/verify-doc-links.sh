@@ -51,7 +51,7 @@ FAIL_DETAILS=()
 # CLOSING backtick with the next opening one and removes the text between
 # them — leaving `entry](tx-position, valid-instant)` and inventing a link
 # that does not exist in the source. That false positive is expensive:
-# scripts/release.sh runs this gate and must refuse to publish on a red one.
+# The release flow runs this gate (its phase 1, scripts/tag_release.sh) and must refuse to publish on a red one.
 #
 # Slurping alone is not enough either. A code span is delimited by a RUN of
 # backticks and closed by a run of the SAME length (CommonMark), so `code.md`'s

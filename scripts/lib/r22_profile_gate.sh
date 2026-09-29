@@ -14,7 +14,7 @@
 # file, and scripts/release_profile_gate.sh runs it WITHOUT a cut.
 #
 # Source it, then call. Every function expects the CWD to be the repo root
-# (release.sh does `cd "$ROOT"`; the linux lane runs from the container's
+# (the release flow runs from the root; the linux lane runs from the container's
 # /build copy, which carries scripts/ in its lean tar list).
 #
 #   r22_collect_platform_files <destdir>
@@ -38,7 +38,7 @@
 # r22_vcx_target — where build-vcx actually lands its artifacts. RS-12's
 # extraction moved vcx/ itself into the cx-core-code pin (deps/cx-core-code/vcx,
 # populated by `make deps-sync`); this front door's own vcx/ stays only as an
-# EXTRA V search-path entry (Makefile's CX_V_SEARCH). release.sh's staging
+# EXTRA V search-path entry (Makefile's CX_V_SEARCH). The release flow's staging
 # had not been touched by the split (#1670 measurement) and copied from the
 # pre-extraction path, so a real cut here found nothing to stage. Preferring
 # the pinned location and falling back to the front-door path keeps this
@@ -185,9 +185,9 @@ r22_profile_payload() {
 # `label` suffixes the failure text so a lane names itself — "" for the
 # darwin cut, "/linux" in the container, "/precut" for the standalone
 # lane. Failure calls `exit 1`, exactly as both original copies did: in
-# release.sh that aborts the cut before the phase-3 push, and in the
+# the release flow's package act, aborting the cut before the phase-3 push, and in the
 # container it fails the container, which fails release_linux.sh, which
-# fails release.sh.
+# fails the release flow.
 r22_profile_gate() {
   local pubdir="$1" plat="$2" label="${3:-}"
   local prof vtar vdir probe_rc probe_out probe_head

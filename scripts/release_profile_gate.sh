@@ -28,7 +28,7 @@ cd "$ROOT"
 . "$ROOT/scripts/lib/r22_profile_gate.sh"
 
 ARCH="$(uname -m)"; OS_RAW="$(uname -s | tr '[:upper:]' '[:lower:]')"
-PUB_PLAT="${OS_RAW}-${ARCH}"   # darwin-arm64 / linux-x86_64 — release.sh's stable public name
+PUB_PLAT="${OS_RAW}-${ARCH}"   # darwin-arm64 / linux-x86_64 — the release flow's stable public name
 
 PUB="dist/_precut_public"
 
@@ -47,7 +47,7 @@ rm -rf "$SRC"
 r22_stage_profiles "$PUB" "$PUB_PLAT"
 ls -1 "$PUB"/cx-*.tar.gz | sed 's/^/   /'
 
-# #1670 — same placement as release.sh: ahead of R2.2's install verification,
+# #1670 — same placement as the release flow: ahead of R2.2's install verification,
 # which extracts-and-probes but never reads a Mach-O/ELF dependency graph.
 echo "-- running the release-asset-links gate (#1670: no /nix/store dependency)"
 devbox run -- "$(r22_vcx_target)/cx" --allow-all scripts/release_asset_links_gate.cx --dir "$PUB"

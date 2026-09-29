@@ -557,7 +557,8 @@ build-profile-data: build-vcx
 build-profiles-dev: build-profile-data
 	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx $(PROFILE_BUILD_J) build-profiles-dev
 
-# build-profiles (PROD, no -dev) — release.sh phase 2 (R2.2 staging) calls
+# build-profiles (PROD, no -dev) — the release flow's package act (phase 2, the
+# R2.2 staging; flows/ci-acts.cx, scripts/release.sh's until RFLOW-1) calls
 # this to produce the data/embed/cli release profile tarballs alongside the
 # platform default. #1670 measurement: this target did not exist here (only
 # its -dev sibling did) and release.sh still spelled the call as `make -C vcx
@@ -1200,7 +1201,7 @@ check-portable-links: build-vcx
 # tarballs a `curl | sh` extracts), darwin AND linux. It is a normal
 # TEST_TARGETS member so a plain `make check`/`make test-changed` always
 # runs it — SKIPping cleanly when nothing is staged (the common case outside
-# a release), and blocking for real inside scripts/release.sh's R2.2 phase
+# a release), and blocking for real inside the release flow's package act (R2.2)
 # and scripts/release_profile_gate.sh (both call it directly; this target
 # is the ad hoc / CI entry point onto the same script). See RESULTS.md
 # _gate_evidence/pipeline_1670 for the red proof against v0.17.0's real
@@ -4205,16 +4206,34 @@ publish-org:
 
 release-all: publish-org
 
-# ── The ONE end-to-end local release command ─────────────────────────────────
-# gate (make test + verify-doc-links) → bump → build → tag → push → GitHub
-# release → publish mirrors (release-all). The `release`/`release-all` targets
-# above are the building blocks it composes. Preview first:
-#   make cut-release ARGS='--dry-run vX.Y.Z'
-#   make cut-release ARGS='vX.Y.Z'
-# See scripts/release.sh --help. (Local because org CI runners are unavailable;
-# .github/workflows/release.yml is the CI equivalent once they're restored.)
-cut-release:
-	@bash scripts/release.sh $(ARGS)
+# ── release-flow — the ONE end-to-end local release command (RULED: RFLOW-1
+# L103) ──────────────────────────────────────────────────────────────────────
+# flows/release.flow.cx, the phases scripts/release.sh ran:
+#   preflight → the gate, bump, tag and build (scripts/tag_release.sh) →
+#   package → merge to main → push (the pivot) → GitHub release →
+#   org page (release-all) → editor extension.
+# The local phases before the push are undone in reverse when a later one
+# refuses. Preview first:
+#   make release-flow TAG=vX.Y.Z MODE=dry
+#   make release-flow TAG=vX.Y.Z
+#   make release-flow TAG=vX.Y.Z FROM_BUMP=<sha>     # D83a: the front door's bumped commit
+# PUBLISH=no skips the org page and the extension. LINUX=no ships no linux
+# tarballs, and says so. TAG is required: the tag is an argument, never
+# derived here. The flow runs under a COPY of this tree's cx, because phase 1
+# rebuilds deps/cx-core-code/vcx/target/cx at the tag, and relinking the
+# binary a running flow executes is the 'Exec format error' class. The copy
+# is removed on exit, and the exit is the CLI's (0 = :done). This is local
+# because org CI runners are unavailable; .github/workflows/release.yml is the
+# CI equivalent once they are restored.
+.PHONY: release-flow
+release-flow:
+	@test -n "$(TAG)" || { echo "release-flow: TAG=vX.Y.Z is required (the tag is an argument)" >&2; exit 2; }
+	@test -x deps/cx-core-code/vcx/target/cx || $(MAKE) build-vcx
+	@d=$$(mktemp -d); cp deps/cx-core-code/vcx/target/cx "$$d/cx" && \
+	  "$$d/cx" flow run flows/release.flow.cx --env flows/release.env.cx --ephemeral \
+	    --tag=$(TAG) --from-bump=$(or $(FROM_BUMP),none) --mode=$(or $(MODE),real) \
+	    --publish=$(or $(PUBLISH),yes) --linux=$(or $(LINUX),yes) \
+	    --allow-read --allow-write --allow-subprocess --allow-env; rc=$$?; rm -rf "$$d"; exit $$rc
 
 # ── Editor tooling ────────────────────────────────────────────────────────────
 #
