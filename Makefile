@@ -5073,7 +5073,8 @@ test-agent-real-lanes: build-vcx
 CONNECTOR_REAL_LANES := deps/cx-platform-connector/vcx/tests/connector_live_test.v \
                         deps/cx-platform-connector/vcx/tests/connector_webhook_test.v \
                         deps/cx-platform-connector/vcx/tests/connector_bus_test.v \
-                        deps/cx-platform-connector/vcx/tests/sync_live_test.v
+                        deps/cx-platform-connector/vcx/tests/sync_live_test.v \
+                        deps/cx-platform-connector/vcx/tests/connector_mail_test.v
 .PHONY: test-connector-real-lanes
 test-connector-real-lanes: build-vcx
 	@for t in $(CONNECTOR_REAL_LANES); do \
@@ -5121,11 +5122,19 @@ db-lane-cx: check-gate-lock deps-present
 	@PKG_CONFIG_PATH="$(CURDIR)/.devbox/nix/profile/default/lib/pkgconfig$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
 	  $(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx cli-dev CLI_DEV=$(DB_LANE_CX) CX_DFLAGS='-d cx_db_pg -d cx_db_mysql' PORTABLE=true
 
+# THE CONNECTOR'S DB CASES (RULED: 1455-a, #1459). kind=db executes every backend
+# the build has, so the connector kit's walk on postgres and mysql is graded
+# HERE, on the same servers by the same driver: DB_REAL_EXTRA names
+# cx-platform-connector's two real-server files as ENGINE=FILE arguments,
+# paths from the db pin's root. A file the pinned connector does not carry
+# refuses with exit 2 — never a skip.
+DB_REAL_EXTRA := postgres=../cx-platform-connector/conformance/platform/connector_db_postgres.cxd \
+                 mysql=../cx-platform-connector/conformance/platform/connector_db_mysql.cxd
 test-db-real-lanes: build-vcx db-lane-cx
 	@test -f deps/cx-platform-db/tooling/db_real.cx || { \
 	  echo "test-db-real-lanes: deps/cx-platform-db/tooling/db_real.cx is not there — the lane lives in the pinned repository (RULED: DBLANE-1); run \`make deps-sync\`" >&2; \
 	  exit 2; }
-	@cd deps/cx-platform-db && CX_BIN="$(DB_LANE_CX)" "$(DB_LANE_CX)" --allow-all tooling/db_real.cx
+	@cd deps/cx-platform-db && CX_BIN="$(DB_LANE_CX)" "$(DB_LANE_CX)" --allow-all tooling/db_real.cx $(DB_REAL_EXTRA)
 
 ## test-sso-interop-lane  Identity-provider interop as its own CI step
 ##                  (#1403): boot the in-tree identity provider at
