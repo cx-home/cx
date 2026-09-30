@@ -784,6 +784,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pye-5` | [rulings_2026_08_22_python_eradication.md](rulings_2026_08_22_python_eradication.md) | PYE-5 (item 5a) — the exemption is all of `lang/python/**` |
 | `pye-6` | [rulings_2026_08_22_python_eradication.md](rulings_2026_08_22_python_eradication.md) | PYE-6 (item 6a) — an all-SKIP gate run is a failure |
 | `qdoc-1` | [rulings_2026_09_30_integrator_decisions_l149.md](rulings_2026_09_30_integrator_decisions_l149.md) | QDOC-1 — a head whose diff since the last graded head is confined to `flows/merge-queue.cxd` and `_gate_evidence/` takes the docs pipeline (L149 = (a)) |
+| `refl-1` | [rulings_2026_09_30_integrator_decisions_l150.md](rulings_2026_09_30_integrator_decisions_l150.md) | REFL-1 — the gate-protocol partition of code.md §11.4 is spelled `reference-only`; the governance row follows; the allowance retires (L150 = (a)) |
 | `reprm-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | REPRM-1 — W8's measurement runs in v0.18 and its finding is fixed in v0.18 (L129 = (b), amended by SHIP-1; #1119) |
 | `rflow-1` | [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) | RFLOW-1 — the whole CI/CD as five cx flow documents, the design's nine choices (L96…L104 = (a)) |
 | `rload-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | RLOAD-1 — the R2.2 release step loads each staged library (L130 = (a); #1131) |
@@ -819,6 +820,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rp-6` | [rulings_2026_09_02_cxdm_representation_1119.md](rulings_2026_09_02_cxdm_representation_1119.md) | Rulings 2026-09-02 — #1119 CXDM in-memory representation (RP-1..RP-6) |
 | `rp-6` | [rulings_2026_09_02_cxdm_representation_1119.md](rulings_2026_09_02_cxdm_representation_1119.md) | RP-6 — shape-shared record maps and columnar/lazy record arrays: ruled in principle, trigger-bound (RULED: RP-6 = a) |
 | `rp-6` | [rulings_2026_09_02_cxdm_representation_1119.md](rulings_2026_09_02_cxdm_representation_1119.md) | RP-6 — shape-shared record maps and columnar/lazy record arrays: ruled in principle, trigger-bound (RULED: RP-6 = a) |
+| `rp-6` | [rulings_2026_09_30_integrator_decisions_l151.md](rulings_2026_09_30_integrator_decisions_l151.md) | RTMEM-1 — #1119 closes when RSS ÷ live ≤ 2.5× at parse peak holds on both reads, met in the V fork's collector; RP-6 stays trigger-bound (L151 = (a)) |
 | `rs-1` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) | RS-1…RS-12 — the multi-repo split of cx-private (owner, 2026-09-21; shape approved in session) |
 | `rs-12` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) | RS-1…RS-12 — the multi-repo split of cx-private (owner, 2026-09-21; shape approved in session) |
 | `rs-13` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-13…RS-25 — the repo split's follow-up decisions (owner, 2026-09-22/23, in session on dev2) |
@@ -858,6 +860,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rs-38` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | 1690, #1498, #1434, PIVOT-2, SYNC-3, SYNC-6, KIT4-1, KIT4-2, RS-38, D83a, K10.** |
 | `rt-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | Owner decisions 2026-09-27 (afternoon) — Letters 52, 53 and 54: XCO's two readings (ACK-1, RT-1), a list verb through the host walks every page (WALK-1), the vendor budget is per process (BUDGET-1) |
 | `rt-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | RT-1 — the `[runtime …]` rows' sentence and the delegated-intent frame are written in the host rounds, fixture-backed (L52.2 = (a)) |
+| `rtmem-1` | [rulings_2026_09_30_integrator_decisions_l151.md](rulings_2026_09_30_integrator_decisions_l151.md) | RTMEM-1 — #1119 closes when RSS ÷ live ≤ 2.5× at parse peak holds on both reads, met in the V fork's collector; RP-6 stays trigger-bound (L151 = (a)) |
 | `run-1` | [rulings_2026_09_16_run_selection_run1.md](rulings_2026_09_16_run_selection_run1.md) | Owner decision 2026-09-16 ~05:05Z — the post-merge run tests what changed and what reads it (RULED: RUN-1) |
 | `run-2` | [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md) | Owner decisions 2026-09-19 ~04:45Z — a failed run reports every red class (RUN-2); the daily full union runs on an idle runner (RUN-3); an escalated branch runs the computed selection pre-merge (RUN-4); the run log carries step timing and the timings file (RUN-5); the two agents and their order (AGENTS-1); the budget step stays open until it measures (1562-a) |
 | `run-3` | [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md) | Owner decisions 2026-09-19 ~04:45Z — a failed run reports every red class (RUN-2); the daily full union runs on an idle runner (RUN-3); an escalated branch runs the computed selection pre-merge (RUN-4); the run log carries step timing and the timings file (RUN-5); the two agents and their order (AGENTS-1); the budget step stays open until it measures (1562-a) |
@@ -1186,6 +1189,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1217-q1` | [rulings_2026_09_05_xap_queue.md](rulings_2026_09_05_xap_queue.md) |
 | `1217-vf-1` | [rulings_2026_09_04_feature_verb_form_1217.md](rulings_2026_09_04_feature_verb_form_1217.md) |
 | `122-one` | [rulings_2026_09_04_feature_verb_form_1217.md](rulings_2026_09_04_feature_verb_form_1217.md) |
+| `1226-a` | [rulings_2026_09_30_integrator_decisions_l151.md](rulings_2026_09_30_integrator_decisions_l151.md) |
 | `1228-q1a` | [rulings_2026_09_03_monitor_batch_terminal_1228.md](rulings_2026_09_03_monitor_batch_terminal_1228.md) |
 | `1233-q1ab` | [rulings_2026_09_03_alias_amplification_1233.md](rulings_2026_09_03_alias_amplification_1233.md) |
 | `1249-q1a` | [rulings_2026_09_04_perf_ratchet_at_cut_1249.md](rulings_2026_09_04_perf_ratchet_at_cut_1249.md), [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
@@ -1479,7 +1483,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rs-5` | [issue_audit_2026_09_30_ship2.md](issue_audit_2026_09_30_ship2.md), [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
 | `rs-6` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
 | `rs-7` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md), [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) |
-| `rs-8` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_30_integrator_decisions_l120.md](rulings_2026_09_30_integrator_decisions_l120.md), [rulings_2026_09_30_integrator_decisions_l141_l142.md](rulings_2026_09_30_integrator_decisions_l141_l142.md) |
+| `rs-8` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_30_integrator_decisions_l120.md](rulings_2026_09_30_integrator_decisions_l120.md), [rulings_2026_09_30_integrator_decisions_l141_l142.md](rulings_2026_09_30_integrator_decisions_l141_l142.md), [rulings_2026_09_30_integrator_decisions_l150.md](rulings_2026_09_30_integrator_decisions_l150.md) |
 | `rs-9` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
 | `rsa-2048` | [rulings_2026_09_05_certificate_key_1287.md](rulings_2026_09_05_certificate_key_1287.md) |
 | `sea-1a` | [rulings_2026_08_20_schema_evolution_automation.md](rulings_2026_08_20_schema_evolution_automation.md) |
@@ -1537,10 +1541,11 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `utf-7` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `utf-8` | [audit_2026_08_30_text_format_surface.md](audit_2026_08_30_text_format_surface.md), [partition_I1_rebless.md](partition_I1_rebless.md), [partition_I5_stream17_runtime.md](partition_I5_stream17_runtime.md), [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md), [rulings_2026_08_28_zip_module_1078.md](rulings_2026_08_28_zip_module_1078.md), [rulings_2026_08_30_text_format_residuals.md](rulings_2026_08_30_text_format_residuals.md), [rulings_2026_09_11_saml_metadata_exchange_1402a.md](rulings_2026_09_11_saml_metadata_exchange_1402a.md), [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md), [rulings_2026_09_15_websocket_stream_placement_int19.md](rulings_2026_09_15_websocket_stream_placement_int19.md) |
 | `vg-2a` | [issue_audit_2026_09_30_ship2.md](issue_audit_2026_09_30_ship2.md) |
-| `vocab-1` | [rulings_2026_09_30_integrator_decisions_l120.md](rulings_2026_09_30_integrator_decisions_l120.md) |
+| `vocab-1` | [rulings_2026_09_30_integrator_decisions_l120.md](rulings_2026_09_30_integrator_decisions_l120.md), [rulings_2026_09_30_integrator_decisions_l150.md](rulings_2026_09_30_integrator_decisions_l150.md) |
 | `wave-3` | [rulings_2026_08_26_seq_classification.md](rulings_2026_08_26_seq_classification.md) |
 | `wf-26a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
 | `wf-27a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
+| `words-2` | [rulings_2026_09_30_integrator_decisions_l150.md](rulings_2026_09_30_integrator_decisions_l150.md) |
 | `xap-1` | [rulings_2026_09_26_xap_host_runner_xap1.md](rulings_2026_09_26_xap_host_runner_xap1.md), [rulings_2026_09_30_owner_decision_l125.md](rulings_2026_09_30_owner_decision_l125.md) |
 | `xd-1a` | [rulings_2026_08_21_x_tier_docs_and_domain_writes.md](rulings_2026_08_21_x_tier_docs_and_domain_writes.md) |
 | `xd-1b` | [rulings_2026_08_21_x_tier_docs_and_domain_writes.md](rulings_2026_08_21_x_tier_docs_and_domain_writes.md) |
@@ -1552,4 +1557,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*371 ledger pages; 824 ids declared, 393 cited only.*
+*373 ledger pages; 826 ids declared, 395 cited only.*
