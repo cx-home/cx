@@ -149,6 +149,9 @@ jobs:
       - name: The assembled site in headless Chrome — the engine loads, the page prints on load, every primer example answers as its fixture records
         run: make test-playground-primer PLAYGROUND_ROOT=site
 
+      - name: The landing page in headless Chrome — the engine loads, the running example answers on load as its fixture records, the doors and journey cards resolve
+        run: make test-landing-run PLAYGROUND_ROOT=site
+
       # DOCS-45: every external link of the assembled site, fetched once
       # (scripts/gen_site/check_external_links.cx; docs-src/site/links.cxd is
       # the allowlist). Not a pre-merge step — it needs the network — so it

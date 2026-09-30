@@ -75,7 +75,7 @@ breaks its callers and renaming a runner directory strands the runs holding it.
 
 | Prints | Means | Renamed by |
 |---|---|---|
-| `scripts/gate.sh`, `gate-loop.sh`, `gate-status.sh`, `build-slot.sh` | the run wrapper, the post-merge runner loop, the run reader, the runner | a file rename |
+| `flows/postmerge.flow.cx` (launchd `ai.cx.postmerge-flow`), `scripts/gate-status.sh`, `build-slot.sh` | the post-merge runner loop and the run it starts, the run reader, the runner | a file rename |
 | `vcx/target/gate.log`, `gate-loop.log`, `gate-prev-*.log`, `gate-loop.rerun` | one run's step output; the post-merge runner's own log; the rotated copies; the re-run flag | a file rename — other sessions tail these right now |
 | `GATE-EXIT=`, `GATE-START`, `gate: started` | the pre-OL-12 spelling of `RUN-EXIT=`, `RUN-START`, `run: started`, in logs already on disk; every reader accepts both | nothing — the old logs age out |
 | `check-python-test-lane`, `test-oriel-lane`, `test-sso-interop-lane` | make targets that are one step each | a target rename |

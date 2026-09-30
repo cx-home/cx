@@ -3022,8 +3022,8 @@ documents from the same answers (RULED: AA-3).
 **Graded by.** Each skeleton's case (flow-180 … flow-183) takes its reference
 `[answers …]` document and expects `fill`'s output byte for byte, then a clean
 `validate`, then `simulate` (`flow.md` §3) over a declared result table
-reaching `:done` and each skipped or refused path; a host-lane case,
-`case-host-automation`, then starts the run from a committed act on the real
+reaching `:done` and each skipped or refused path; a real-host case,
+`case-host-automation`, then starts the run from a committed act on that
 host and expects the folded run record (`flow.md` §4.23) (RULED: AA-6).
 Landed with **#1498**'s code wave: flow-180 … flow-185 and `case-host-automation`
 all exist and grade the four skeletons above (RULED: NAMES-1, AA-6).
