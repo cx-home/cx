@@ -59,7 +59,7 @@ the product compiles from (RULED: RS-24).
 | `cx-platform-flow` | platform | none | package | — | — | extracted | workflow; its CLI verbs stay in the binary |
 | `cx-platform-connector` | platform | none | package | — | — | extracted | the connector kit and sync |
 | `cx-platform-secrets` | platform | none | package | — | — | extracted | the minimal keystore: one handle grammar, one internal resolve seam, the PEP and the audit record, custody that rises by a provider row |
-| `cx-platform-sso` | platform | none | package | — | — | extracted | enterprise sign-on, the interop lane |
+| `cx-platform-sso` | platform | none | package | — | — | extracted | enterprise sign-on and its interop step |
 | `cx-platform-ux` | platform | none | package | — | — | extracted | the web and terminal surfaces |
 | `cx-platform-agent` | platform | none | package | — | — | extracted | tools, mcp, mcp-server, a2a, a2a-xap, llm, run, adjudicate |
 | `cx-binding-python` | binding | none | pypi | — | — | extracted | cxlib for Python |

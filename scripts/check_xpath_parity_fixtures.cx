@@ -1,10 +1,10 @@
 # scripts/check_xpath_parity_fixtures.cx — gate 28.5a, the CX-side XPath 3.1
-# alignment lane.  RULED: VC-7 (#945).
+# alignment step.  RULED: VC-7 (#945).
 #
 # WHAT THIS ROW IS.  Gate 28.5 used to be one row that claimed to compare
 # `cx` against Saxon-HE 12 in Docker, and had never run once.  VC-7 split it:
 #
-#   28.5a  (THIS lane)  the CX side — every case in
+#   28.5a  (THIS step)  the CX side — every case in
 #          conformance/xpath_31_parity.cxd is evaluated by THIS TREE's `cx`
 #          and graded against an expectation DERIVED from that same binary.
 #          No Docker, no network, no third-party image.  In TEST_TARGETS.
@@ -12,7 +12,7 @@
 #          scripts/test_xpath_parity.sh holds the recipe and the reason.
 #
 # The two rows read the SAME `[input-xml]` body, so the manual row can never
-# drift onto a different document than the lane grades.
+# drift onto a different document than the step grades.
 #
 # WHAT A CASE ASSERTS.  Per `[tag]`:
 #
@@ -51,7 +51,7 @@
 #   per-case gate= > per-suite default= > [gate-policy default=] > enforced
 # `enforced` failures block; `advisory` failures report; `pending`/`skip` are
 # not run.  The row is LIVE policy, not decoration — a MISSING row is exit 2,
-# because a lane whose tier is invisible is the defect class #945 filed.
+# because a step whose tier is invisible is the defect class #945 filed.
 #
 # The manifest is read through `cx select /gate-policy` rather than
 # `[$cx:parse]` on the file.  Measured 2026-08-24: `[$cx:parse]` on a document
@@ -77,7 +77,7 @@
 #         scripts/check_xpath_parity_fixtures.cx \
 #         [--filter RX] [--fixtures FILE.cxd] [--verbose]
 # (--allow-write is for the report on stdout: io:write-line to a std stream
-#  needs the write capability.  The lane creates no files.)
+#  needs the write capability.  The step creates no files.)
 # (or:  make test-xpath-parity-cx)
 
 [?lib 'cx-stdlib/io'      as=io]
@@ -150,7 +150,7 @@
 # ── subprocess plumbing ──────────────────────────────────────────────
 # Every stage is a read-only `cx` invocation over ~100 bytes of input and
 # takes ~70 ms unloaded (measured).  The budget is nonetheless generous and
-# a spawn failure or timeout is RETRIED ONCE, because this lane shares a
+# a spawn failure or timeout is RETRIED ONCE, because this step shares a
 # machine with parallel V builds and a transient spawn stall under load is a
 # FALSE verdict — the flake class the release-record work has been closing
 # out.  A stage that fails twice still reds, loudly, with "(retried once)"
@@ -275,7 +275,7 @@
     [else [$die2 [$concat "error: "
       [?if [= [$string [$map:get $tiers "err"]] ""]
         [then [$concat "conformance/gates.cxd has no [suite name=" $suite
-                "] row — this lane's gate tier is unset, so its verdict would"
+                "] row — this step's gate tier is unset, so its verdict would"
                 " depend on an invisible default. Add the row (see gate 28.5a"
                 " in conformance/GATE_REGISTER.md)."]]
         [else [$string [$map:get $tiers "err"]]]]]]]]]

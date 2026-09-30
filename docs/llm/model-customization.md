@@ -1031,7 +1031,7 @@ mechanism is worse than one that admits a gap:
   document are spec prose plus the ORIEL demo
   (`spec/03-approved/xap/demos/oriel/serve.cx:5165-5263`, routes at
   `surface.cx:66-67`, gate-enforced assertions at `drive.cx:1016-1025` and
-  `:1362-1381` — which is a real-socket step, `make test-oriel-lane`). The spec's own
+  `:1362-1381` — which is a real-socket step, `make test-oriel`). The spec's own
   status ladder scopes the claim (`ux.md:2114`): built *"for a candidate bundle
   and per-tenant adoption"*, with migration commands for breaking changes
   **unbuilt**.

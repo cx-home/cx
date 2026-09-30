@@ -931,7 +931,7 @@
   [= $pin-path [$path:join $self-dir 'examples.out.cxd']]
   [= $cxbin 'deps/cx-core-code/vcx/target/cx']
   # PER-RUN temp dir (the pid in the name). Measured 2026-09-10 00:20Z: the
-  # gate's run of this checker and an impl lane's run shared
+  # gate's run of this checker and an impl branch's run shared
   # $TMPDIR/cx-gen-examples, each read the other's probe files, and the
   # §C2 lint flagged eight entries that were clean alone; at 00:44Z the same
   # collision made the gate's --check DISAGREE on three examples whose

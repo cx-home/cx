@@ -184,7 +184,7 @@
                       [else ()]]]
         [= $ast [?if $ast-bad [then {}] [else [$json:parse $ast-raw]]]]
         [= $defs [?else $ast.defs []]]
-        # the doc lane: fn-doc/example elements from the VERBATIM docs spans
+        # the doc reading: fn-doc/example elements from the VERBATIM docs spans
         # (a whole-module data parse chokes on program-bearing def bodies).
         [= $spans [?else $ast.docs []]]
         [= $fn-docs [?for [in $sp $spans]

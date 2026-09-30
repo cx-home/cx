@@ -76,10 +76,10 @@ format, 1 = code, 2 = platform). A case may override with its own
 lane is Ring 0, the eval lane Ring 1; the lane is defined by the
 consuming gate). A ring's artifact MUST pass every fixture at or below
 its ring; the Ring-0 extraction gate additionally requires the extracted
-artifacts BYTE-IDENTICAL to the monolith over the Ring-0 lane
+artifacts BYTE-IDENTICAL to the monolith over the Ring-0 cases
 (`make test-extraction-gate`).
 
-Query the lanes with `make ring-query` (env: `RING=`, `LANE=`,
+Query the rings with `make ring-query` (env: `RING=`, `MODE=`,
 `FORMAT=`); `make ring-tag-gate` hard-fails any untagged suite.
 
 ## Grading semantics

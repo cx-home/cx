@@ -619,7 +619,7 @@ build-playground:
 	@# instrumentation entirely — sync exports get full depth (the
 	@# #319 guard trips catchably at ~40 levels) and the single-file
 	@# bundle drops 36MB → 13MB. Requires a JSPI-capable browser
-	@# (Chromium 137+); cxlib.js routes the async lanes through
+	@# (Chromium 137+); cxlib.js routes the async calls through
 	@# WebAssembly.promising wrappers when Module.cxAsyncifyMode == 2.
 	@# Build recipe mirrors scripts/gen_guide/guide.mk (build-playground-
 	@# wasm-for-guide) so `build-playground` and `guide` stay consistent.
@@ -1601,7 +1601,7 @@ test-migrate-namespace: build-vcx
 # The front door's union: SYNC THE PINS, THEN RUN THE SUITE — in that order and
 # in one step, so a stale pin fails before a single test compiles rather than
 # as a confusing failure an hour in. #1589's integration model: "`cx` is a
-# migration lane, not a gate. When any repo releases, `cx` tries the newest
+# migration path, not a gate. When any repo releases, `cx` tries the newest
 # mutually green set; green ⇒ the pins advance; red ⇒ the pins stay and the
 # finding lands on the repo that moved." This target is that attempt.
 #
@@ -1627,7 +1627,7 @@ union: deps-sync
 # THE FIXTURE MOVED AND THE STEP DID NOT (RULED: RS-12, #1591 item 12). The
 # module and its golden are cx-platform-agent's now; the VERB is this tree's
 # (`vcx/cmd/tools_verb.v`), so the step runs it over the pinned checkout
-# deps.cxd names, the test-sso-interop-lane shape. It refuses with exit 2 and
+# deps.cxd names, the test-sso-interop shape. It refuses with exit 2 and
 # names `make deps-sync` when the checkout is absent — never a skip.
 TOOLS_EXPORT_DIR := deps/cx-platform-agent/conformance/tools-export
 .PHONY: tools-export-gate
@@ -1650,15 +1650,15 @@ tools-export-gate: build-vcx
 # GENERATED from their .cx sources; regenerate them here so they cannot
 # drift from what the live binary actually emits (gen-docs discipline:
 # never hand-edit a companion). Run after any change to the sources or
-# to a conversion lane, then commit the results.
+# to a conversion path, then commit the results.
 # Override the binary with CX_BIN=path (default deps/cx-core-code/vcx/target/cx).
 #
-# ── LANE NOTES ─────────────────────────────────────────────────────────
-#   * books.json/books.xml use the explicit --from=cx conversion lane.
+# ── CONVERSION NOTES ─────────────────────────────────────────────────────
+#   * books.json/books.xml use the explicit --from=cx conversion.
 #     Since #443 the `--json FILE` shorthand no longer drops table rows,
 #     but it renders the AST-JSON projection (the eval-render shape,
 #     "table": {cols, rows}), NOT the semantic JSON image the companion
-#     pins — so books.json stays on the conversion lane by design.
+#     pins — so books.json stays on that conversion by design.
 .PHONY: examples-regen
 examples-regen: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 examples-regen:
@@ -1791,7 +1791,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-readings test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-db-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-readings test-oriel test-agent-real test-connector-real test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # PRIVMK-1: the private flow targets add themselves to TEST_TARGETS from
 # flows/private.mk. That file is absent from the public tree, and `-include`
@@ -2066,43 +2066,43 @@ flow-dogfood-gate: build-vcx
 	  exit 2; }
 	@cd deps/cx-platform-flow && CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/flow_dogfood_gate.cx
 
-# ── test-flow-umbrella — cx-platform-flow's process lanes, out of the pin ──
+# ── test-flow-umbrella — cx-platform-flow's real-process programs, out of the pin
 # deps/cx-core-code/vcx/tests/flow_umbrella_test.v was one file of test-vcx-suite's directory
 # until the extraction (RULED: RS-12, #1591 item 15) allocated it to
 # cx-platform-flow, and the owner's D54c split it by subject (RULED: RS-31):
 # what grades the PACKAGE — eight real `cx` processes advancing one journaled
 # run, a run resuming between two invocations, the resolver a real `--env`
 # scan builds, a `cx flow serve` runner that boots, binds, ticks and is
-# delivered to over HTTP — is the repository's own CX lanes, which a released
+# delivered to over HTTP — is the repository's own CX programs, which a released
 # cx runs alone; the `cx flow` command line's own shape (--help, usage exits,
 # the stdout/stderr split, the CLI's defaults) stays here, a section of
 # deps/cx-core-code/vcx/tests/cli_umbrella_test.v. What this step grades is still THIS tree's
-# binary: each lane runs from the checkout's root with CX_BIN naming
-# deps/cx-core-code/vcx/target/cx, which it starts for every process. The lane names are the
-# contract, so a lane the checkout lacks refuses with exit 2 naming
+# binary: each program runs from the checkout's root with CX_BIN naming
+# deps/cx-core-code/vcx/target/cx, which it starts for every process. The program names are the
+# contract, so a program the checkout lacks refuses with exit 2 naming
 # `make deps-sync` — a skip and a pass would be the same line. Real sockets
-# (the serve and host lanes bind 18700..19499): the shared runner's step. The
-# host lane is the one-law gate's host arm (RULED: XAP-1a, XAP-1b, WF-28b):
+# (the serve and host programs bind 18700..19499): the shared runner's step. The
+# host program is the one-law gate's host arm (RULED: XAP-1a, XAP-1b, WF-28b):
 # a deployment host and `cx flow serve` over two journals, byte-identical.
-# One lane case needs a SECOND binary: `fleet` refuses CXER4964 in a build
+# One case needs a SECOND binary: `fleet` refuses CXER4964 in a build
 # without the `live` pack (cx-platform-flow flow.md §4.12a), which only a
 # build without the platform group can show — the cli PROFILE, named to the
-# lanes as CX_NOLIVE_BIN, which is why the step builds the profile matrix
+# programs as CX_NOLIVE_BIN, which is why the step builds the profile matrix
 # (guarded: a current artifact is not relinked, #1449). The cross-company
-# lane is both halves of a delegated step on two deployment hosts across a
+# program is both halves of a delegated step on two deployment hosts across a
 # real socket (RULED: XCO-3, XCO-4, XCO-5): a did:web domain over TLS, an
 # XSP-AUTH attach, a handle-held identity key.
-FLOW_LANES := racing_advancers_lane.cx flow_cli_lane.cx flow_serve_lane.cx flow_host_lane.cx flow_xco_lane.cx
+FLOW_REAL_PROGS := racing_advancers.cx flow_cli.cx flow_serve.cx flow_host.cx flow_xco.cx
 .PHONY: test-flow-umbrella
 test-flow-umbrella: build-vcx build-profiles-dev
-	@for t in $(FLOW_LANES); do \
-	  test -f deps/cx-platform-flow/lanes/$$t || { \
-	    echo "test-flow-umbrella: deps/cx-platform-flow/lanes/$$t is not there — the lanes live in the pinned repository (RULED: RS-12, RS-31); run \`make deps-sync\`" >&2; \
+	@for t in $(FLOW_REAL_PROGS); do \
+	  test -f deps/cx-platform-flow/real/$$t || { \
+	    echo "test-flow-umbrella: deps/cx-platform-flow/real/$$t is not there — the programs live in the pinned repository (RULED: RS-12, RS-31); run \`make deps-sync\`" >&2; \
 	    exit 2; }; \
 	done
 	@cd deps/cx-platform-flow && st=0; \
-	for t in $(FLOW_LANES); do \
-	  CX_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/cx" CX_NOLIVE_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/profiles/cli/cx" "$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-all lanes/$$t || st=1; \
+	for t in $(FLOW_REAL_PROGS); do \
+	  CX_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/cx" CX_NOLIVE_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/profiles/cli/cx" "$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-all real/$$t || st=1; \
 	done; exit $$st
 
 # ── check-code-fixtures (gate 4; repaired + wired by the #805 gate-truth
@@ -2579,7 +2579,7 @@ test-ring2: test-ring1 test-vcx-suite test-vcx-cmd
 
 # ── RING QUERY (corpus audit §2 tagging mechanics; C8 repair, I0) — the
 # ring-step corpus query, dog-food CX. Parameters via env: RING=0|1|2,
-# LANE=doc|eval|both, FORMAT=summary|ids|count. `ring-tag-gate` is the
+# MODE=doc|eval|both, FORMAT=summary|ids|count. `ring-tag-gate` is the
 # no-parameter run wired into TEST_TARGETS: it hard-fails (exit 2) when any
 # suite header lacks ring= — an untagged suite silently falls out of every
 # ring step, which is exactly how C8's blanket-tag defect went unseen.
@@ -2649,7 +2649,7 @@ check-editor-surface-parity: build-vcx-dev
 # D77d; #1591 item K3): registry/publish.cx, registry/keys/cx-home.cxd and
 # registry/store/ left whole for cx-registry (RS-25-shaped gap — a
 # ships=none package repo carries no V toolchain of its own yet, so unlike
-# test-connector-real-lanes there is no lane to re-point the two targets
+# test-connector-real there is no step to re-point the two targets
 # through; cx-private's deps.cxd carries no row for cx-registry either,
 # since this repo consumes none of its namespaces, RS-7). Run these two
 # dev conveniences from a checkout of cx-home/cx-registry against a `cx`
@@ -3277,7 +3277,7 @@ SUITE_SERIAL_RETRY := deps/cx-core-code/vcx/tests/env_retention_test.v \
                       deps/cx-core-code/vcx/tests/code_eval_fixtures_shard_7_test.v
 
 # ── the grader's SHARDS carry its roster row too (#1448, RULED: 1448-a) ─────
-# 1448-a split the eval lane's stdlib walk out of code_eval_fixtures_test.v and
+# 1448-a split the eval grading's stdlib walk out of code_eval_fixtures_test.v and
 # across code_eval_fixtures_shard_<k>_test.v so the V runner's parallel jobs
 # carry it. The #1432 class below is a property of the GRADER, not of the file
 # it happened to live in — an early exit with no assertion while a parallel step
@@ -3306,14 +3306,14 @@ SUITE_SERIAL_RETRY := deps/cx-core-code/vcx/tests/env_retention_test.v \
 # ── connector_live_test.v / connector_webhook_test.v RETIRED FROM THIS ROSTER
 # (RULED: RS-12, RS-8, RS-27; #1591 item K3) — deps/cx-core-code/vcx/tests/connector_* left with
 # cx-platform-connector's extraction, byte-identical, into the pinned
-# repository's own deps/cx-core-code/vcx/tests/. The lane still boots `reference/acme/
+# repository's own deps/cx-core-code/vcx/tests/. The test still boots `reference/acme/
 # acme.mock.cx` — an in-tree [?http-service] — on a loopback port, so it still
 # binds a port and contends for one under -j exactly as the http/smtp/imap
 # rows above do; a `ships=package` repo carries no V toolchain of its own
-# (RS-25), so THE LANE MOVED AND THE STEP DID NOT (the test-sso-interop-lane
-# shape): `make test-connector-real-lanes` below runs it out of
+# (RS-25), so THE TEST MOVED AND THE STEP DID NOT (the test-sso-interop
+# shape): `make test-connector-real` below runs it out of
 # deps/cx-platform-connector/vcx/tests/, against this tree's binary, with no
-# serial-retry wrapper of its own (the sso/agent lane precedent).
+# serial-retry wrapper of its own (the sso/agent step precedent).
 
 # ── The TIMING / EARLY EXIT UNDER LOAD class (#1432, RULED: 1432-a) ─────────
 # Two rows above carry this class rather than a socket or a daemon cause. Both
@@ -3787,7 +3787,7 @@ CODE_SERIAL_RETRY := deps/cx-core-code/vcx/code/code_module_umbrella_test.v
 # tree keeps grading it FROM THE PIN rather than dropping the entry: RS-32
 # left "cx-core-code runs its own in-module gate" open (no gate of its own
 # exists there yet), so until it does, `deps/cx-core-code/vcx/code/` is this
-# step's one directory, the same way mail's real-socket lanes grade from
+# step's one directory, the same way mail's real-socket tests grade from
 # their pins. Repoint (or drop, once cx-core-code ships its own gate) then.
 CODE_TEST_DIRS := deps/cx-core-code/vcx/code/
 test-vcx-code: build-vcx-dev check-serial-retry-rosters
@@ -3889,7 +3889,7 @@ docs-voice-check: build-vcx
 
 # ── docs-vocabulary-check (RULED: DOCS-51 §1, PLAY-2) — one vocabulary ──────
 # Counts the words the site does not use — "Ring 2"/"Ring 3", an "ecosystem
-# ring", the "monorepo", lane, campaign, gate run, steward, ruling, landed,
+# ring", the "monorepo", "lane", campaign, gate run, steward, ruling, landed,
 # green/red, job, stage, task, and Document/Program as a playground tab or
 # crumb label — outside code spans, in every served source, the
 # playground's page and script and the guide generator, and holds
@@ -4747,9 +4747,9 @@ fmt-sweep-timed: build-vcx
 # parse succeeded, so a document the DATA grammar cannot read — a bracketed or
 # collection value in ARGUMENT or ATTRIBUTE position — reached the acceptance
 # test comparing the input against ITSELF: canonical text equal, shape equal,
-# comments equal, by construction. The lane blessed the source as "the data
+# comments equal, by construction. The data path blessed the source as "the data
 # format preserved meaning", returned it verbatim at exit 0, and never reached
-# the program lane that formats it.
+# the program path that formats it.
 #
 # Every DECLINED row in the log now carries the refusal line that names the
 # construct and its position (RULED: 1391-a) — a count with no names is what
@@ -4958,7 +4958,7 @@ repr-guard: build-vcx
 # The load-insensitive halves of this step ARE gated: the two per-item COUNT
 # rows are pinned exactly in conformance/platform/flow.cxd (flow-040), which
 # cx-platform-flow's own gate grades with `cx corpus` since the extraction, and
-# the racing-advancer count in the repository's lanes/racing_advancers_lane.cx,
+# the racing-advancer count in the repository's real/racing_advancers.cx,
 # which `test-flow-umbrella` runs out of the pinned checkout in `make test`.
 # Run this target deliberately — before a release, and at every #1265 wave
 # exit, whose ledger row re-pins what it improved. Contract + numbers:
@@ -4985,13 +4985,13 @@ clean:
 	# RS-8; #1591 item K3) — cx-home/cx-binding-{rust,python} own their own
 	# clean targets now.
 
-## test-oriel-lane  ORIEL, the reference XAP, as its own CI step (#869): boot
+## test-oriel  ORIEL, the reference XAP, as its own CI step (#869): boot
 ##                  the store at spec/03-approved/xap/demos/oriel/, run the
 ##                  five asserting instruments (drive 38, keys 9, voice,
 ##                  nokernel, diff drift=0), tear down. bench stays
 ##                  measured-not-asserted. Refuses if :8790 is already served.
 ##
-##                  THE LANE MOVED, THEN THE ESTATE DID TOO (RULED: RS-12,
+##                  THE SCRIPT MOVED, THEN THE ESTATE DID TOO (RULED: RS-12,
 ##                  RS-8, RS-7, RS-20; #1591 items 12 and K3). scripts/
 ##                  oriel_lane.sh is cx-platform-ux's; the ORIEL estate it
 ##                  drives (spec/03-approved/xap/demos/oriel/) was this
@@ -5001,43 +5001,43 @@ clean:
 ##                  checkout as the root it cds to. Both checkouts refuse by
 ##                  name with exit 2 and name `make deps-sync` when absent —
 ##                  never a skip.
-.PHONY: test-oriel-lane
-test-oriel-lane: build-vcx
+.PHONY: test-oriel
+test-oriel: build-vcx
 	@test -f deps/cx-platform-ux/scripts/oriel_lane.sh || { \
-	  echo "test-oriel-lane: deps/cx-platform-ux/ is not there — the lane script lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
+	  echo "test-oriel: deps/cx-platform-ux/ is not there — the step script lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
 	  exit 2; }
 	@test -f deps/cx-platform-xap/spec/03-approved/xap/demos/oriel/serve.cx || { \
-	  echo "test-oriel-lane: deps/cx-platform-xap/ is not there — the ORIEL estate lives in the pinned repository now (RS-12, RS-8; #1591 item K3); run \`make deps-sync\`" >&2; \
+	  echo "test-oriel: deps/cx-platform-xap/ is not there — the ORIEL estate lives in the pinned repository now (RS-12, RS-8; #1591 item K3); run \`make deps-sync\`" >&2; \
 	  exit 2; }
 	@ORIEL_ESTATE="$(CURDIR)/deps/cx-platform-xap" CX_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/cx" bash deps/cx-platform-ux/scripts/oriel_lane.sh
 
-## test-agent-real-lanes  The agent modules' four real-socket lanes as their
+## test-agent-real  The agent modules' four real-socket programs as their
 ##                  own step (RULED: RS-12, #1591 item 12): an MCP client and
 ##                  server, an A2A server and client, an Ollama-shaped chat
 ##                  endpoint — each a real loopback round trip between two
 ##                  cx processes. They were V test files this step copied
 ##                  under vcx/ to compile against testenv; the owner's D64c
-##                  made them CX lanes in cx-platform-agent (RULED: RS-31),
+##                  made them CX programs in cx-platform-agent (RULED: RS-31),
 ##                  runnable by a released cx alone, so this step runs them
 ##                  the way the repository does: from the checkout's root,
-##                  with CX_BIN naming THIS tree's deps/cx-core-code/vcx/target/cx. The lane
+##                  with CX_BIN naming THIS tree's deps/cx-core-code/vcx/target/cx. The program
 ##                  names are the contract; one the checkout lacks refuses
 ##                  with exit 2 and names `make deps-sync` — never a skip.
 ##                  Real sockets: the shared runner's step.
-AGENT_REAL_LANES := llm_real_lane.cx mcp_real_lane.cx mcp_server_real_lane.cx a2a_real_lane.cx
-.PHONY: test-agent-real-lanes
-test-agent-real-lanes: build-vcx
-	@for t in $(AGENT_REAL_LANES); do \
-	  test -f deps/cx-platform-agent/lanes/$$t || { \
-	    echo "test-agent-real-lanes: deps/cx-platform-agent/lanes/$$t is not there — the lanes live in the pinned repository (RULED: RS-12, RS-31); run \`make deps-sync\`" >&2; \
+AGENT_REAL_PROGS := llm_real.cx mcp_real.cx mcp_server_real.cx a2a_real.cx
+.PHONY: test-agent-real
+test-agent-real: build-vcx
+	@for t in $(AGENT_REAL_PROGS); do \
+	  test -f deps/cx-platform-agent/real/$$t || { \
+	    echo "test-agent-real: deps/cx-platform-agent/real/$$t is not there — the programs live in the pinned repository (RULED: RS-12, RS-31); run \`make deps-sync\`" >&2; \
 	    exit 2; }; \
 	done
 	@cd deps/cx-platform-agent && st=0; \
-	for t in $(AGENT_REAL_LANES); do \
-	  CX_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/cx" CX_NOLIVE_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/profiles/cli/cx" "$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-all lanes/$$t || st=1; \
+	for t in $(AGENT_REAL_PROGS); do \
+	  CX_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/cx" CX_NOLIVE_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/profiles/cli/cx" "$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-all real/$$t || st=1; \
 	done; exit $$st
 
-## test-connector-real-lanes  The connector package's four live lanes as
+## test-connector-real  The connector package's four live tests as
 ##                  their own step (RULED: RS-12, RS-8, RS-27; #1591 item
 ##                  K3): connector_live_test.v boots `reference/acme/
 ##                  acme.mock.cx` — an in-tree [?http-service] — and drives
@@ -5061,42 +5061,42 @@ test-agent-real-lanes: build-vcx
 ##                  kit's networked half against a cx the front door built,
 ##                  which is a different question from the component
 ##                  repository's own gate (`cx lint` plus `cx corpus`,
-##                  RS-16, over a released cx). THE LANE MOVED AND THE STEP
+##                  RS-16, over a released cx). THE TESTS MOVED AND THE STEP
 ##                  DID NOT (RULED: RS-12, #1591 item 11, the test-sso-
-##                  interop-lane shape): a `ships=package` repo carries no V
+##                  interop shape): a `ships=package` repo carries no V
 ##                  toolchain of its own (RS-25), so `v test` runs the four
 ##                  files straight out of the pinned checkout, from THIS
 ##                  tree's root, so every relative path inside them (the
 ##                  mock, the reference deployment) still resolves here.
 ##                  Refuses with exit 2 and names `make deps-sync` when the
 ##                  checkout is absent — never a skip.
-CONNECTOR_REAL_LANES := deps/cx-platform-connector/vcx/tests/connector_live_test.v \
+CONNECTOR_REAL_TESTS := deps/cx-platform-connector/vcx/tests/connector_live_test.v \
                         deps/cx-platform-connector/vcx/tests/connector_webhook_test.v \
                         deps/cx-platform-connector/vcx/tests/connector_bus_test.v \
                         deps/cx-platform-connector/vcx/tests/sync_live_test.v
-.PHONY: test-connector-real-lanes
-test-connector-real-lanes: build-vcx
-	@for t in $(CONNECTOR_REAL_LANES); do \
+.PHONY: test-connector-real
+test-connector-real: build-vcx
+	@for t in $(CONNECTOR_REAL_TESTS); do \
 	  test -f $$t || { \
-	    echo "test-connector-real-lanes: $$t is not there — the lanes live in the pinned repository now (RULED: RS-12); run \`make deps-sync\`" >&2; \
+	    echo "test-connector-real: $$t is not there — the tests live in the pinned repository now (RULED: RS-12); run \`make deps-sync\`" >&2; \
 	    exit 2; }; \
 	done
-	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) test $(CONNECTOR_REAL_LANES)
+	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) test $(CONNECTOR_REAL_TESTS)
 
-## test-db-real-lanes  The whole db corpus on sqlite, postgres AND mysql, the
+## test-db-real  The whole db corpus on sqlite, postgres AND mysql, the
 ##                  two servers real, as its own step (RULED: DBLANE-1,
-##                  DBSRV-1). The lane is cx-platform-db's: its driver,
-##                  tooling/db_real_lane.cx, starts postgres and mysql in
+##                  DBSRV-1). The driver is cx-platform-db's,
+##                  tooling/db_real.cx: it starts postgres and mysql in
 ##                  containers — the runtime is devbox's (colima's VM and the
 ##                  docker client, pinned in devbox.json; `devbox run
 ##                  containers` starts the VM, and the driver starts it itself
 ##                  when `colima status` says it is not running) — grades
 ##                  db.cxd, db_postgres.cxd and db_mysql.cxd, and removes the
 ##                  containers on every exit path. The step runs it out of the
-##                  pinned checkout, the test-agent-real-lanes shape.
-##                  THE BINARY. The lane needs a cx with the postgres and mysql
+##                  pinned checkout, the test-agent-real shape.
+##                  THE BINARY. The step needs a cx with the postgres and mysql
 ##                  engines, which no shipped build carries (they link libpq and
-##                  libmysqlclient, db_access.md §2), so DB_LANE_CX is built
+##                  libmysqlclient, db_access.md §2), so DB_REAL_CX is built
 ##                  here from THIS tree's pins with -d cx_db_pg -d cx_db_mysql,
 ##                  as a dev build at a path of its own: the shipped
 ##                  deps/cx-core-code/vcx/target/cx is never relinked with them.
@@ -5104,30 +5104,30 @@ test-connector-real-lanes: build-vcx
 ##                  libmysqlclient 8.4.11, libcurl for libpq's pkg-config), and
 ##                  PKG_CONFIG_PATH names the profile's .pc files, which V's
 ##                  pkg-config reads after its defaults — mysql's header is
-##                  found nowhere else. PORTABLE=true: the lane binary loads
+##                  found nowhere else. PORTABLE=true: the step binary loads
 ##                  those libraries from the Nix store on purpose; it is this
 ##                  box's test artifact and never shipped, and a shipped binary
 ##                  that loaded them is what portable_links.sh refuses.
 ##                  Refuses with exit 2 and names `make deps-sync` when the
 ##                  pinned checkout has no driver — never a skip. Real servers:
 ##                  the shared runner's step (flows/load.cxd).
-##                  `make db-lane-cx` builds the binary alone — cx-platform-db's
+##                  `make db-real-cx` builds the binary alone — cx-platform-db's
 ##                  own gate builds it through this front door, pinned, with its
-##                  commit under test as the db pin, and runs its `make lanes`
+##                  commit under test as the db pin, and runs its `make real`
 ##                  with it (its .github/workflows/gate.yml).
-DB_LANE_CX := $(CURDIR)/deps/cx-core-code/vcx/target/cx-db-lane
-.PHONY: db-lane-cx test-db-real-lanes
-db-lane-cx: check-gate-lock deps-present
+DB_REAL_CX := $(CURDIR)/deps/cx-core-code/vcx/target/cx-db-real
+.PHONY: db-real-cx test-db-real
+db-real-cx: check-gate-lock deps-present
 	@PKG_CONFIG_PATH="$(CURDIR)/.devbox/nix/profile/default/lib/pkgconfig$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
-	  $(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx cli-dev CLI_DEV=$(DB_LANE_CX) CX_DFLAGS='-d cx_db_pg -d cx_db_mysql' PORTABLE=true
+	  $(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx cli-dev CLI_DEV=$(DB_REAL_CX) CX_DFLAGS='-d cx_db_pg -d cx_db_mysql' PORTABLE=true
 
-test-db-real-lanes: build-vcx db-lane-cx
-	@test -f deps/cx-platform-db/tooling/db_real_lane.cx || { \
-	  echo "test-db-real-lanes: deps/cx-platform-db/tooling/db_real_lane.cx is not there — the lane lives in the pinned repository (RULED: DBLANE-1); run \`make deps-sync\`" >&2; \
+test-db-real: build-vcx db-real-cx
+	@test -f deps/cx-platform-db/tooling/db_real.cx || { \
+	  echo "test-db-real: deps/cx-platform-db/tooling/db_real.cx is not there — the driver lives in the pinned repository (RULED: DBLANE-1); run \`make deps-sync\`" >&2; \
 	  exit 2; }
-	@cd deps/cx-platform-db && CX_BIN="$(DB_LANE_CX)" "$(DB_LANE_CX)" --allow-all tooling/db_real_lane.cx
+	@cd deps/cx-platform-db && CX_BIN="$(DB_REAL_CX)" "$(DB_REAL_CX)" --allow-all tooling/db_real.cx
 
-## test-sso-interop-lane  Identity-provider interop as its own CI step
+## test-sso-interop  Identity-provider interop as its own CI step
 ##                  (#1403): boot the in-tree identity provider at
 ##                  scripts/sso_interop/idp.cx, drive a real relying party
 ##                  against it (discovery, the issuer mix-up refusal, all
@@ -5142,7 +5142,7 @@ test-db-real-lanes: build-vcx db-lane-cx
 ##                  served. This is the ONLY step that grades the
 ##                  networked half of the SSO stack.
 ##
-##                  THE LANE MOVED AND THE STEP DID NOT (RULED: RS-12,
+##                  THE SCRIPT MOVED AND THE STEP DID NOT (RULED: RS-12,
 ##                  #1591 item 11). The script and the four programs it
 ##                  drives are cx-platform-sso's now; the step runs them
 ##                  out of the pinned checkout deps.cxd names, against
@@ -5150,13 +5150,13 @@ test-db-real-lanes: build-vcx db-lane-cx
 ##                  only thing that grades the networked half against a
 ##                  cx the front door built: the component repository's
 ##                  own gate is `cx lint` plus `cx corpus` (RS-16) over a
-##                  RELEASED cx, which is a different question. The lane
+##                  RELEASED cx, which is a different question. The script
 ##                  cds to its own directory, so every path inside it
 ##                  resolves in the checkout; CX_BIN is what crosses.
-.PHONY: test-sso-interop-lane
-test-sso-interop-lane: build-vcx
+.PHONY: test-sso-interop
+test-sso-interop: build-vcx
 	@test -f deps/cx-platform-sso/scripts/sso_interop_lane.sh || { \
-	  echo "test-sso-interop-lane: deps/cx-platform-sso/ is not there — the lane lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
+	  echo "test-sso-interop: deps/cx-platform-sso/ is not there — the script lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
 	  exit 2; }
 	@CX_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/cx" bash deps/cx-platform-sso/scripts/sso_interop_lane.sh
 

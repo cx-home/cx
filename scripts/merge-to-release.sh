@@ -2,10 +2,10 @@
 # scripts/merge-to-release.sh BRANCH "MERGE MESSAGE" — land a verified branch on
 # release/0.18 WITHOUT touching the main checkout's working tree.
 #
-# Why: the gate lane runs `make test` in the main checkout (cx-private). A
+# Why: the post-merge runner runs `make test` in the main checkout (cx-private). A
 # `git merge` performed there rewrites tracked files under a RUNNING gate, so
 # the gate grades a mixed tree — measured 2026-09-09: the 16:06Z gate began at
-# 2a0597d52 and stamped cx_commit=7aab1dd75 after an impl-lane merge landed
+# 2a0597d52 and stamped cx_commit=7aab1dd75 after an impl-branch merge landed
 # mid-run. The main checkout is moved only by the gate loop, between gates
 # (`git pull --ff-only` before each gate). Every other landing goes through
 # here: a throwaway DETACHED worktree at origin/release/0.18, merge-tree gated,
