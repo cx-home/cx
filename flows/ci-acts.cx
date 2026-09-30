@@ -188,7 +188,7 @@
 # over the same tools underneath: scripts/tag_release.sh (the gate, the bump,
 # the tag and the build at the tag), scripts/lib/r22_profile_gate.sh (the R2.2
 # staging and the blocking install gate, PGL-1), scripts/release_linux.sh
-# (the docker lane), scripts/release_asset_links_gate.cx (#1670), git, gh and
+# (the docker build), scripts/release_asset_links_gate.cx (#1670), git, gh and
 # make. The fields:
 #   --tag=vX.Y.Z           the release; never derived here and never written:
 #                          the tag is an argument;
@@ -341,7 +341,7 @@
                            what=[$concat 'cx + libcx + cx.h for ' $tg '; the conformance bundle + deps.cxd; the flat dist/public/cx-' $pp
                                          '.tar.gz and the profile tarballs; one SHA256SUMS.txt; the asset-links gate; the R2.2 install gate, '
                                          'each staged library loaded through the extraction probe, its cx_codec_inventory and cx_features compared with the build\'s own'
-                                         [?if $lin [then '; the linux lane (docker)'] [else '; NO linux tarballs (--linux=no)']]]]]
+                                         [?if $lin [then '; the linux build (docker)'] [else '; NO linux tarballs (--linux=no)']]]]]
       [else [?let
         [= $env {R22_EXPECT_HEADLINE: [$concat 'cx v' [$rel-version $t]]}]
         [= $_c [?if [$io:exists [$concat 'dist/' $tg]] [then [$io:remove-tree [$concat 'dist/' $tg]]] [else null]]]
@@ -365,7 +365,7 @@
                       [step what='make build-extraction-probe (the R2.2 loading probe, RLOAD-1)'
                             r=[$process:run ('devbox', 'run', '--', 'make', 'build-extraction-probe') timeout-ms=[$make-ms]]],
                       [step what='R2.2, the per-profile install gate' r=[$r22 'r22_profile_gate' ('dist/public', $pp) $env]],
-                      [step what='the linux lane'
+                      [step what='the linux build'
                             r=[?if $lin [then [$process:run [$cat2 ('scripts/release_linux.sh')
                                                                    [$cat2 [?if [= [$env:var-or-default 'RELEASE_LINUX_AMD64' ''] ''] [then ()] [else ('--amd64')]] ($t)]]
                                                             env=$env timeout-ms=28800000]]

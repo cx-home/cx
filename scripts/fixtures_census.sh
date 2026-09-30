@@ -2,7 +2,7 @@
 # fixtures_census.sh (#1448, RULED: 1448-a) — the stdlib census line, summed
 # across the grader shards and printed ONCE.
 #
-# #1026 put this line in the tree so the eval lane STATES its coverage instead
+# #1026 put this line in the tree so the eval grading STATES its coverage instead
 # of leaving it inferred: the authz suite's 25 [out-err …] cases were long
 # ASSUMED green here because they showed red under a document runner that has
 # no evaluator. Every pre-merge RESULTS.md quotes the line, so 1448-a keeps its
@@ -12,7 +12,7 @@
 # It carries the two refusals the single-threaded walk made globally, and adds
 # the one the split makes possible:
 #   • zero fixtures ran over a non-empty corpus — the vacuous-pass shape;
-#   • no fixture exercised the [out-err …] channel — the negative lane is dead;
+#   • no fixture exercised the [out-err …] channel — the negative channel is dead;
 #   • a shard the manifest names wrote NO census — that shard did not run, and
 #     a total short by one shard is worse than no total, because it is believed.
 #
@@ -85,7 +85,7 @@ if [ "$files" -gt 0 ] && [ "$ran" -eq 0 ]; then
   exit 1
 fi
 if [ "$selected" -eq 0 ] && [ "$ran" -gt 0 ] && [ "$oer" -eq 0 ]; then
-  echo "fixtures-census: no fixture exercised the [out-err …] channel — the negative lane is not running" >&2
+  echo "fixtures-census: no fixture exercised the [out-err …] channel — the negative channel is not running" >&2
   exit 1
 fi
 

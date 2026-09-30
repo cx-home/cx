@@ -23,6 +23,12 @@
 # sources, the LLM templates, the dev pages) plus the playground's
 # playground.js and playground.html and the guide generator (the navigation's
 # labels are its strings).
+# And the tree's own prose (RULED: WORDS-1): the [tree] rows of the
+# vocabulary file name the words (today "lane") also held over the Makefile,
+# flows/, scripts/, the approved specs and the three root rule files, in the
+# same shape and against the same [allow] rows; a file a served glob reads is
+# graded there, once. The ledger and the git history are records, and not
+# scanned.
 #
 # Code spans are not prose (the `prose` def below): a word is counted only
 # outside them, so a make target or a directory named with a word keeps its
@@ -123,28 +129,56 @@
                    [yield $r]]]
     [?if [$empty $hits] [then [row path=$path word=$word allow=0 wave="" why=""]] [else [$first $hits]]]]]
 
+# has: whether a sequence of strings carries one.
+[?def has scope=public pure ($xs $x)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+# tree-words / tree-files: the [tree] row set (RULED: WORDS-1) — the [word]
+# ids it holds over the tree's own prose, and the files its [glob path=…]
+# rows match, less every file the served GLOBS already read (a file is
+# graded once, as a served source, with every word).
+[?def tree-words scope=public impure ($doc)
+  [$fp:flat-map [?for [in $t $doc//tree] [yield [$attr $t "words" ""]]]
+    [?fn ($s) [$strings:split-whitespace $s]]]]
+[?def tree-files scope=public impure ($doc $served)
+  [?for [in $p [$fp:flat-map [?for [in $g $doc//tree/glob] [yield [$attr $g "path" ""]]]
+                 [?fn ($pat) [$io:glob $pat]]]]
+    [where [not [$has $served $p]]]
+    [yield $p]]]
+
+# grade: one file's rows — its mentions of each word it is held to, beside
+# the allowance its [allow] row gives (zero with no row).
+[?def grade scope=public impure ($f $ws $rows)
+  [?let [= $text [$io:read-file $f]]
+        [= $plain [$prose $text]]
+    [?for [in $w $ws]
+      [where [$in-scope $w $f]]
+      [= $n [$count-in $text $plain $w]]
+      [= $id [$string $w@id]]
+      [= $say [$string $w@say]]
+      [= $r [$allow-for $rows $f $id]]
+      [= $allow $r@allow]
+      [= $wave [$string $r@wave]]
+      [yield [g path=$f word=$id say=$say n=$n allow=$allow wave=$wave]]]]]
+
 [?let
   [= $doc [$cx:parse [$io:read-file VOCAB]]]
   [= $words [$words $doc]]
   [= $rows [$rows $doc]]
   [= $files [$sources]]
+  [= $twords [$tree-words $doc]]
+  [= $tfiles [$tree-files $doc $files]]
+  [= $tws [?for [in $w $words] [where [$has $twords [$string $w@id]]] [yield $w]]]
   [= $ids [?for [in $w $words] [yield [$string $w@id]]]]
   [= $missing [?for [in $r $rows] [where [not [$io:is-file [$string $r@path]]]] [yield [$string $r@path]]]]
   [= $unknown [?for [in $r $rows]
                 [where [not [> [$count [?for [in $i $ids] [where [= $i [$string $r@word]]] [yield 1]]] 0]]]
                 [yield [$concat [$string $r@path] " → word=" [$string $r@word]]]]]
-  [= $graded [$fp:flat-map $files [?fn ($f)
-               [?let [= $text [$io:read-file $f]]
-                       [= $plain [$prose $text]]
-                 [?for [in $w $words]
-                   [where [$in-scope $w $f]]
-                   [= $n [$count-in $text $plain $w]]
-                   [= $id [$string $w@id]]
-                   [= $say [$string $w@say]]
-                   [= $r [$allow-for $rows $f $id]]
-                   [= $allow $r@allow]
-                   [= $wave [$string $r@wave]]
-                   [yield [g path=$f word=$id say=$say n=$n allow=$allow wave=$wave]]]]]]]
+  # the served sources with every word, then the tree's files with the [tree] words
+  [= $graded [$fp:flat-map [$strings:split-whitespace "served tree"]
+               [?fn ($k) [?if [= $k "served"]
+                           [then [$fp:flat-map $files [?fn ($f) [$grade $f $words $rows]]]]
+                           [else [$fp:flat-map $tfiles [?fn ($f) [$grade $f $tws $rows]]]]]]]]
   [= $over [?for [in $g $graded] [where [> $g@n $g@allow]] [yield $g]]]
   [= $under [?for [in $g $graded] [where [< $g@n $g@allow]] [yield $g]]]
   [= $total [$fp:fold $graded 0 [?fn ($a $g) [+ $a $g@n]]]]
@@ -163,7 +197,9 @@
                                                      [$string $g@allow] " — ratchet: lower allow= to "
                                                      [$string $g@n] " in the same change"]]]]]
   [?if [and [$empty $missing] [and [$empty $unknown] [and [$empty $over] [$empty $under]]]]
-    [then [?let [= $_s [$say [$concat "docs-vocabulary-check: " [$string [$count $files]] " sources, "
+    [then [?let [= $_s [$say [$concat "docs-vocabulary-check: " [$string [$count $files]] " sources and "
+                                      [$string [$count $tfiles]] " tree files ("
+                                      [$strings:join $twords " "] "), "
                                       [$string [$count $words]] " words, " [$string $total]
                                       " mention(s), every one within " VOCAB "'s allowance; "
                                       [$string [$count [?for [in $g $graded] [where [= $g@n 0]] [yield 1]]]]
