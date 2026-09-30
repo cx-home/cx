@@ -515,6 +515,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `deleg-3` | [rulings_2026_09_30_integrator_decisions_l141_l142.md](rulings_2026_09_30_integrator_decisions_l141_l142.md) | Integrator decisions 2026-09-30 — Letters 141 and 142, taken under DELEG-3: the two readers of a bare head that BARE-1's round found unfixed |
 | `deleg-3` | [rulings_2026_09_30_integrator_decisions_l143_l144.md](rulings_2026_09_30_integrator_decisions_l143_l144.md) | Integrator decisions 2026-09-30 — Letters 143 and 144, taken under DELEG-3 on the owner's "we want to speed up where possible": the merge flow admits a branch behind a head that moved only the ledger or other repositories' pins, and READY branches land from a queue the loop consumes |
 | `deleg-3` | [rulings_2026_09_30_integrator_decisions_l145_l147.md](rulings_2026_09_30_integrator_decisions_l145_l147.md) | Integrator decisions 2026-09-30 — Letters 145 to 147, taken under DELEG-3: bug batch A's three letter lines |
+| `deleg-3` | [rulings_2026_09_30_integrator_decisions_l148.md](rulings_2026_09_30_integrator_decisions_l148.md) | Integrator decision 2026-09-30 — Letter 148, taken under DELEG-3: the clock-free half of `time` is available at every profile |
 | `deleg-3` | [rulings_2026_09_30_owner_delegation_8h.md](rulings_2026_09_30_owner_delegation_8h.md) | DELEG-3 — what the integrator takes, how, and what stays the owner's |
 | `depsv-1` | [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) | DEPSV-1 — `cx deps sync` becomes a verb of the binary (L95 = (a)) |
 | `df-1` | [rulings_2026_09_05_computed_fields.md](rulings_2026_09_05_computed_fields.md) | Rulings 2026-09-05 — computed field values, and how a slug is declared (DF-1, DF-2) |
@@ -974,6 +975,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `thru-3` | [rulings_2026_09_19_owner_decisions_0505z.md](rulings_2026_09_19_owner_decisions_0505z.md) | Owner decisions 2026-09-19 ~05:05Z — the throughput bar: two closures an hour or the project is suspended (THRU-1); READY is the branch's own tree, no head-merge re-set (THRU-2); the batch is the unit of work (THRU-3); the union window holds only load-sensitive steps (THRU-4) |
 | `thru-4` | [rulings_2026_09_19_owner_decisions_0505z.md](rulings_2026_09_19_owner_decisions_0505z.md) | Owner decisions 2026-09-19 ~05:05Z — the throughput bar: two closures an hour or the project is suspended (THRU-1); READY is the branch's own tree, no head-merge re-set (THRU-2); the batch is the unit of work (THRU-3); the union window holds only load-sensitive steps (THRU-4) |
 | `ti-1` | [rulings_2026_08_21_table_image.md](rulings_2026_08_21_table_image.md) | TI-1 — the image carries the table, because the seam already parsed it |
+| `timep-1` | [rulings_2026_09_30_integrator_decisions_l148.md](rulings_2026_09_30_integrator_decisions_l148.md) | TIMEP-1 — `parse-duration` and the pure duration functions are in every profile; only the clock reads stay behind the `clock` capability and the cli/platform builds (L148 = (a); #1586) |
 | `tme-1` | [rulings_2026_08_22_typed_map_entry.md](rulings_2026_08_22_typed_map_entry.md) | TME-1 — a map key is a declaration site, so it takes the glued annotation |
 | `tme-1` | [rulings_2026_08_22_typed_map_entry.md](rulings_2026_08_22_typed_map_entry.md) | TME-1 is SUPERSEDED — its premise was FALSE (recorded 2026-08-22) |
 | `tmpdir-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | TMPDIR-1 — `system-temp-dir` honours `TMPDIR` (L113 = (a), delegated; #1649) |
@@ -1545,4 +1547,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*367 ledger pages; 821 ids declared, 391 cited only.*
+*368 ledger pages; 822 ids declared, 391 cited only.*
