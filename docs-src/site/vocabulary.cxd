@@ -16,6 +16,10 @@ carries and why ([allow]).
             `(?i)` unless said), `scope=` limits it to the paths carrying that
             substring, `say=` is how the step names it, `spans=keep` counts inside
             code spans too (a label the playground's script spells).
+  [tree]    the tree's own prose (RULED: WORDS-1): `words=` names the
+            [word] ids also held over the files its [glob path=…] rows match —
+            the Makefile, flows/, scripts/, the approved specs and the root
+            rule files — with the same exemptions and the same [allow] rows.
   [allow]   one [page] per file and word: a file with no row for a word must
             read ZERO of it; a file with a row may read at most its `allow=`,
             and when it reads LESS the step refuses too, naming the new count,
@@ -59,6 +63,21 @@ never rises. Not scanned, by name: "landing" ("landing page").
        names may not come back as a tab or crumb label — a quoted string or
        element text reading exactly Document or Program ]
     [word id=reading-label rx="(>|['\"])(Document|Program)(<|['\"])" flags='' scope='playground' spans=keep say='the reading label "Document" / "Program"']]
+
+  [; ── the tree's own prose (RULED: WORDS-1, Letter 120 = (a)): the words named
+     in `words=` are held over the tooling and process prose of the tree as well
+     as over the served sources above — the Makefile, flows/, scripts/, the
+     approved specs and the three root rule files — in the same shape: code
+     spans, path literals and [fixture id=…] citations are exempt, a file with
+     no [allow] row for the word reads zero of it, and a row's count only
+     moves down. A file the served GLOBS already read is graded there, once.
+     Not scanned, by name: ledger/ and the git history, which are records. ── ]
+  [tree words='lane'
+    [glob path='Makefile']
+    [glob path='flows/**/*.cx'] [glob path='flows/**/*.cxd'] [glob path='flows/**/*.mk']
+    [glob path='scripts/**/*.cx'] [glob path='scripts/**/*.sh']
+    [glob path='spec/03-approved/**/*.md']
+    [glob path='AGENTS.md'] [glob path='AGENT-STANDING-RULES.md'] [glob path='CONTRIBUTING.md']]
 
   [; ── the allowances, measured on the PLAY-2 tree and re-measured 2026-09-29: no row for lane, campaign, gate run or steward but the one generated from a spec sentence; rows with wave= are floors the voice pass lowers ── ]
   [allow
