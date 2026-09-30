@@ -52,7 +52,7 @@
            PE-format `cx.exe` and `cxlib.dll` — is on the
            roadmap; the bottleneck is the V toolchain's Windows
            support, not CX itself. Track issue
-           [#windows-native](https://github.com/cx-home/cx/issues/windows-native)
+           [#1724](https://github.com/cx-home/cx-private/issues/1724)
            for the current state."""]]]
 
   [child id=faq-parsing n=12.2 title='Parsing and syntax'
@@ -77,10 +77,12 @@
            `[user :id 42]` is a `user` element whose body is two
            items: the atom `:id` and the int `42`. No error is
            raised; it just doesn't mean "the id attribute is 42".
-           Inside a `[?directive …]`, the same `:name value` spelling
-           is the *labeled-slot* syntax (per
-           `spec/03-approved/formal/grammar.ebnf [127e]`), so
-           `:id 42` there is the slot named `id` bound to `42`. And
+           Inside a `[?directive …]` it is the same: a directive is
+           slot-free (`spec/03-approved/formal/grammar.ebnf [59]`, no
+           `:name value` slots), so `:id` there is the atom literal
+           and `42` a positional value; a directive takes its named
+           arguments as clause-children `[name …]` and `name=value`
+           attributes (`grammar.ebnf [127a]`–`[127c]`). And
            if you wanted a type annotation, that is the double-colon
            glue: `[user::int 42]`. The JSON projection tells the two
            data forms apart — the attribute becomes a key, the atom
