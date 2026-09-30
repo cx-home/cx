@@ -819,6 +819,8 @@ struct OneTreeShape {
 const one_tree_shapes = [
 	OneTreeShape{'[p [| a | b, 2b here [em x] |]]', '#1577 — a `|`, a comma and a digit-led run inside a block span are block text'},
 	OneTreeShape{'[p [|\n  Visit our [a href=https://example.com site] or\n  read the [a href=https://docs.example.com docs].\n|]]', '#1577 — examples/vcore.cx line 80, the block paragraph'},
+	OneTreeShape{'[title examples/books.yaml verbatim — block seq of 3 four-key mappings (#412 repro)]', '#1576 — conformance/yaml.cxd line 19: a parenthetical that is no sequence literal, glued to a `#`, inside a body a bareword makes prose'},
+	OneTreeShape{'[p see the ratio a#b and (x#y) here]', '#1576 — a `#` glued inside a prose run or after a non-literal paren is prose in both readers, never a comment'},
 ]
 
 fn test_split_divergences_answer_one_tree() {
