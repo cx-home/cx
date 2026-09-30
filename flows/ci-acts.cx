@@ -339,7 +339,8 @@
     [?if [$dry $mode]
       [then [would-package tag=$t target=$tg public=$pp linux=[$string $lin]
                            what=[$concat 'cx + libcx + cx.h for ' $tg '; the conformance bundle + deps.cxd; the flat dist/public/cx-' $pp
-                                         '.tar.gz and the profile tarballs; one SHA256SUMS.txt; the asset-links gate; the R2.2 install gate'
+                                         '.tar.gz and the profile tarballs; one SHA256SUMS.txt; the asset-links gate; the R2.2 install gate, '
+                                         'each staged library loaded through the extraction probe, its cx_codec_inventory and cx_features compared with the build\'s own'
                                          [?if $lin [then '; the linux lane (docker)'] [else '; NO linux tarballs (--linux=no)']]]]]
       [else [?let
         [= $env {R22_EXPECT_HEADLINE: [$concat 'cx v' [$rel-version $t]]}]
@@ -361,6 +362,8 @@
                       [step what='the asset-links gate (#1670)'
                             r=[$process:run ('devbox', 'run', '--', [$concat $cxdir '/cx'], '--allow-all', 'scripts/release_asset_links_gate.cx', '--dir', 'dist/public')
                                             timeout-ms=[$net-ms]]],
+                      [step what='make build-extraction-probe (the R2.2 loading probe, RLOAD-1)'
+                            r=[$process:run ('devbox', 'run', '--', 'make', 'build-extraction-probe') timeout-ms=[$make-ms]]],
                       [step what='R2.2, the per-profile install gate' r=[$r22 'r22_profile_gate' ('dist/public', $pp) $env]],
                       [step what='the linux lane'
                             r=[?if $lin [then [$process:run [$cat2 ('scripts/release_linux.sh')

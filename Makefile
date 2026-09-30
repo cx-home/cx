@@ -2406,14 +2406,22 @@ EXTRACTION_GATE_FLOOR := 1564
 EXTRACTION_GATE_JOBS ?= $(TEST_JOBS)
 LIBCX_ART      := deps/cx-core-code/vcx/target/$(LIB_NAME).$(if $(filter Darwin,$(shell uname -s)),dylib,so)
 LIBCX_CORE_ART := deps/cx-core-code/vcx/target/libcx-core.$(if $(filter Darwin,$(shell uname -s)),dylib,so)
+# build-extraction-probe — the extraction step's dlopen probe, built once for
+# its two readers: test-extraction-gate (the corpus transcripts) and the R2.2
+# release step, which loads every staged library through its --artifact mode
+# and compares the answers with the build's own (RULED: RLOAD-1, #1131).
+EXTRACTION_PROBE := deps/cx-core-code/vcx/target/extraction_gate/probe
+.PHONY: build-extraction-probe
+build-extraction-probe:
+	@mkdir -p deps/cx-core-code/vcx/target/extraction_gate
+	@$(V) -n -w -cc cc $(CX_GC) -o $(EXTRACTION_PROBE) deps/cx-core-code/vcx/tests/runners/extraction_gate/probe/
+
 .PHONY: test-extraction-gate
 # #902 — depends on the SHIPPED library (build-vcx), not build-vcx-dev.
 # These gates dlopen $(LIBCX_ART); pinning them to the -prod artifact makes
 # "which build is under test" a decision instead of a race, and it is the
 # only honest subject for a gate — the dev library is not what ships.
-test-extraction-gate: build-vcx build-profile-data
-	@mkdir -p deps/cx-core-code/vcx/target/extraction_gate
-	@$(V) -n -w -cc cc $(CX_GC) -o deps/cx-core-code/vcx/target/extraction_gate/probe deps/cx-core-code/vcx/tests/runners/extraction_gate/probe/
+test-extraction-gate: build-vcx build-profile-data build-extraction-probe
 	@$(V) -n -w -cc cc $(CX_GC) -o deps/cx-core-code/vcx/target/extraction_gate/cli_gate deps/cx-core-code/vcx/tests/runners/extraction_gate/cli/
 	@deps/cx-core-code/vcx/target/extraction_gate/probe $(LIBCX_ART) deps/cx-core-code/vcx/target/conformance-merged --min-cases=$(EXTRACTION_GATE_FLOOR) > deps/cx-core-code/vcx/target/extraction_gate/transcript_monolith.txt
 	@deps/cx-core-code/vcx/target/extraction_gate/probe $(LIBCX_CORE_ART) deps/cx-core-code/vcx/target/conformance-merged --min-cases=$(EXTRACTION_GATE_FLOOR) > deps/cx-core-code/vcx/target/extraction_gate/transcript_core.txt
@@ -2861,14 +2869,21 @@ docs-flow-gate: build-vcx
 #   - it validates against flows/release.env.cx;
 #   - every terminal status simulates, with the local phases compensated in
 #     reverse before the push, and :incomplete with the count after it;
-#   - the preflight's own refusal runs for real.
+#   - the preflight's own refusal runs for real;
+#   - the R2.2 step's library load (RULED: RLOAD-1, #1131) runs for real
+#     against staged trees scripts/r22_profile_load_selftest.cx lays out: a
+#     libcx-core whose inventory lacks json, one whose cx_features differs,
+#     one that cannot be loaded, an absent build library and an absent probe
+#     each refuse naming the file; a matching library, and the build's real
+#     libcx, pass.
 # A real cut tags, pushes and publishes, so the gate simulates it. The
 # document, its env, flows/ci-acts.cx and this row are PUBLIC (L96, PRIVMK-1),
 # so the front door grades its own release document.
 .PHONY: release-flow-gate
 release-flow-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
-release-flow-gate: build-vcx
+release-flow-gate: build-vcx build-extraction-probe
 	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-env --allow-clock scripts/ci_flow_gate.cx release
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-env scripts/r22_profile_load_selftest.cx $(EXTRACTION_PROBE) deps/cx-core-code/vcx/target
 
 .PHONY: test-docs
 test-docs: export CX_GATE_OWNER := $(shell echo $$PPID)
