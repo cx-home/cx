@@ -473,7 +473,7 @@ fn accepted_by_one_scan() ([]AcceptedByOne, map[string]string) {
 // syntax", and a program form the data grammar has no production for is not a
 // defect of either.
 
-const reason_1576 = "#1576, its COMMA half — a top-level comma beside a bareword. The data reader answers ONE ARRAY ([L25c], normative) whose multi-token slots are prose strings, every [L70a] BareChar included (`full cx.lock — https + file resolvers`); the program reader treats a comma slot as an EXPRESSION position (1559-a names a collection slot among them), so a `+` or a `.` in a multi-token slot is program text and the slot refuses. Whether a multi-token [L25c] slot is prose or an expression is the one question [L25c] does not answer (its QUOTE OPENING example even reads a comma body as prose) — a letter on #1576. The PARENTHETICAL half (yaml.cxd) is fixed: a `(…)` that is no sequence literal is prose and a glued `#` in it is no comment (RULED: CXF-5). Split from #1559."
+const reason_1576 = "#1576, its COMMA half — a top-level comma beside a bareword. The data reader answers ONE ARRAY ([L25c], normative) whose multi-token slots are prose strings, every [L70a] BareChar included (`full cx.lock — https + file resolvers`); the program reader treats a comma slot as an EXPRESSION position (1559-a names a collection slot among them), so a `+` or a `.` in a multi-token slot is program text and the slot refuses. Whether a multi-token [L25c] slot is prose or an expression is the one question [L25c] does not answer (its QUOTE OPENING example even reads a comma body as prose) — a letter on #1576. The PARENTHETICAL half (yaml.cxd line 19) is fixed: a `(…)` that is no sequence literal is prose and a glued `#` in it is no comment (RULED: CXF-5). yaml.cxd stays under the same question at line 155, a bareword beside a whitespace-separated sequence LITERAL whose slots are multi-token prose (`keys unquote (the CX→YAML emitter quotes keys, so roundtrip …)`): the data reader answers the prose run then the sequence, the program reader reads the literal's slots as expressions and refuses `unquote (` as a paren-call — the same letter. Split from #1559."
 
 const reason_1578 = "#1578 — a bare URL in an ATTRIBUTE VALUE. 1559-a narrowed 1384-a's `/` sentence so a bare URL in a BODY is prose in both rings, but an attribute value is an EXPRESSION position (1559-d) and #923/BC-1's attr-value run sends a `/`-bearing value whose prefix reads as a path head to the CXPath lane. Whether that lane should prefer the data reading's string is the one question 1559-a's row does not settle; the refusal is at least loud and carries its own fix. Split from #1559."
 
@@ -508,6 +508,7 @@ const accepted_by_one_table = [
 	// cx-core-code's extraction (RULED: RS-12, D68a); the scan walks conformance/
 	// of THIS tree and does not follow deps/.
 	AcceptedByOne{'deps/cx-core-data/conformance/lockfile.cxd', .data, reason_1576},
+	AcceptedByOne{'deps/cx-core-data/conformance/yaml.cxd', .data, reason_1576},
 	AcceptedByOne{'examples/article.cx', .data, reason_1579},
 	// ── #1559 — a bare URL's `://` (RULED: 1384-a keeps `/` out of the run) (3) ──
 	AcceptedByOne{'examples/chapter.cx', .data, reason_1578},
