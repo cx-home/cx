@@ -3040,10 +3040,10 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
   [src [#
 [?def double ($x) [* $x 2]]
 [?def twice ($f $x) [$f [$f $x]]]
-[twice double 3]
+[$twice double 3]
 #]]
   [note [#
-**Introduces:** callable values (code.md §6.3b). Inside a program body a bare def name in VALUE position — `double` passed to `twice` — denotes the function itself, and a parameter holding a function is called with `[$f …]`. No quoting, no `[?fn]` wrapper: `[twice double 3]` → `12`. (In a DATA body the same word is text — see example on bare words.)
+**Introduces:** callable values (code.md §6.3b). Inside a program body a bare def name in VALUE position — `double` passed to `twice` — denotes the function itself, and a parameter holding a function is called with `[$f …]`. No quoting, no `[?fn]` wrapper: `[$twice double 3]` → `12`. (In a DATA body the same word is text — see example on bare words.)
 #]]
   [expect [# 12 #]]
  ]
@@ -3077,8 +3077,8 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
   [section [# code/effects #]]
   [src [#
 [?def inc ($x) [+ $x 1]]
-[?def twice-inc ($x) [inc [inc $x]]]
-[twice-inc 1]
+[?def twice-inc ($x) [$inc [$inc $x]]]
+[$twice-inc 1]
 #]]
   [note [#
 **Introduces:** load-time purity checking (code.md §8). A `[?def]` is PURE unless it says `impure [effects …]`; a pure def calling pure defs loads and runs → `3`. Change `inc` to `[?def inc impure [effects [write]] ($x) [+ $x 1]]` and keep `twice-inc` as written, and the module refuses to LOAD before anything runs:
@@ -3097,11 +3097,11 @@ The message names the offending call. The next example shows the honest declarat
   [section [# code/effects #]]
   [src [#
 [?def bump impure [effects [write]] ($x) [+ $x 1]]
-[?def loud impure [effects [write]] ($x) [bump $x]]
-[loud 1]
+[?def loud impure [effects [write]] ($x) [$bump $x]]
+[$loud 1]
 #]]
   [note [#
-**Introduces:** the `[effects …]` clause (code.md §8). `loud` declares the same effect its callee `bump` declares, so the static check passes and `[loud 1]` → `2`. Effects compose upward: whatever a def calls, it must admit. `[effects]` is a NARROWING declaration — it never grants a capability the program does not hold (see the caps examples).
+**Introduces:** the `[effects …]` clause (code.md §8). `loud` declares the same effect its callee `bump` declares, so the static check passes and `[$loud 1]` → `2`. Effects compose upward: whatever a def calls, it must admit. `[effects]` is a NARROWING declaration — it never grants a capability the program does not hold (see the caps examples).
 #]]
   [expect [# 2 #]]
  ]
@@ -3111,10 +3111,10 @@ The message names the offending call. The next example shows the honest declarat
   [section [# code/functions #]]
   [src [#
 [?def area ($w::int $h::int) [returns int] [* $w $h]]
-[area 3 4]
+[$area 3 4]
 #]]
   [note [#
-**Introduces:** parameter and return ascriptions on `[?def]` (code.md §8.4). `($w::int $h::int)` declares the parameter kinds and `[returns int]` the result kind. The playground runs the default profile, where the ascriptions DOCUMENT and the arithmetic still refuses a non-number by its own rule; under `cx --strict` the call `[area 3 "four"]` refuses at the boundary with `CXER0206 E_TYPE_ARG_MISMATCH: argument for \`h\` does not match declared type \`int\``.
+**Introduces:** parameter and return ascriptions on `[?def]` (code.md §8.4). `($w::int $h::int)` declares the parameter kinds and `[returns int]` the result kind. The playground runs the default profile, where the ascriptions DOCUMENT and the arithmetic still refuses a non-number by its own rule; under `cx --strict` the call `[$area 3 "four"]` refuses at the boundary with `CXER0206 E_TYPE_ARG_MISMATCH: argument for \`h\` does not match declared type \`int\``.
 #]]
   [expect [# 12 #]]
  ]
@@ -3215,7 +3215,7 @@ The message names the offending call. The next example shows the honest declarat
 [?const RATE 0.08]
 [?def total ($sub) [* $sub [+ 1 RATE]]]
 [?let [= $name "Ada"] [= $n 3]
-  [bill for=[?str "{$name}, {$n} items"] amount=[total 100]]]
+  [bill for=[?str "{$name}, {$n} items"] amount=[$total 100]]]
 #]]
   [note [#
 **Introduces:** three module-level forms together (code.md §5). `[?const RATE 0.08]` is a module-level constant, read bare (`RATE`) inside `total`; `[?str "{$name}, {$n} items"]` interpolates bindings into text; the amount is exact decimal arithmetic → `108.00`. The flat `[?let]` binds two names in one form — the ruled idiom, not a cascade.
@@ -4075,7 +4075,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
 [?lib 'cx-stdlib/env']
 [?lib 'cx-stdlib/process']
 [?lib 'cx-stdlib/strings']
-[?const READER "[?lib 'cx-stdlib/io']\n[?lib 'cx-stdlib/env']\n[?def drain impure [effects [read]] ($h $n)\n  [?let [= $l [$io:read-line $h]] [?if [= $l ''] [then $n] [else [drain $h [+ $n 1]]]]]]\n[?let [= $h [$env:stdin]] [= $first [$io:read-line $h]]\n  [from-stdin first=$first rest=[drain $h 0]]]\n"]
+[?const READER "[?lib 'cx-stdlib/io']\n[?lib 'cx-stdlib/env']\n[?def drain impure [effects [read]] ($h $n)\n  [?let [= $l [$io:read-line $h]] [?if [= $l ''] [then $n] [else [$drain $h [+ $n 1]]]]]]\n[?let [= $h [$env:stdin]] [= $first [$io:read-line $h]]\n  [from-stdin first=$first rest=[$drain $h 0]]]\n"]
 [?let [= $dir [$io:temp-dir 'cx-play-']]
       [= $f [$path:join $dir 'reader.cx']]
       [= $w [$io:write-file $f READER]]
@@ -4244,7 +4244,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
             [err code='cold-cache' message='the cache was cold — warmed it, ask again']]]]]
 [?let [= $dir [$io:temp-dir 'cx-play-']]
       [= $m [$path:join $dir 'cache.marker']]
-      [= $settled [?retry max=2 backoff=constant delay=1ms jitter=none [fetch $m]]]
+      [= $settled [?retry max=2 backoff=constant delay=1ms jitter=none [$fetch $m]]]
       [= $never [?retry max=2 backoff=constant delay=1ms jitter=none [err code='always-down' message='no']]]
       [= $rm [$io:remove-tree $dir]]
   [railway [second-attempt $settled] give-up=[$string $never@code] attempts=$never@attempts]]
