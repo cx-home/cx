@@ -507,7 +507,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `dbnul-1` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | DBNUL-1 — a kind=db parameter may be absent, and the kit binds NULL for a cursor on page one (L64 = (a)) |
 | `dbnul-1` | [rulings_2026_09_28_owner_decisions_l89_l90.md](rulings_2026_09_28_owner_decisions_l89_l90.md) | DBLANE-1 — DBNUL-1 merges on sqlite's proof; a real-server lane grades every db case on postgres and mysql (L89 = (a)) |
 | `dbspec-1` | [rulings_2026_09_30_integrator_decisions_l119.md](rulings_2026_09_30_integrator_decisions_l119.md) | DBSPEC-1 — the stale sentences of db_access.md §2, §7.2, §9 and §12 are trued, each with the case ids that hold it (L119 = (a), delegated) |
-| `dbsrv-1` | [rulings_2026_09_29_integrator_decisions_l110.md](rulings_2026_09_29_integrator_decisions_l110.md) | DBSRV-1 — the container runtime comes from devbox; the lane runs the vendors' images (L110 = (b′)) |
+| `dbsrv-1` | [rulings_2026_09_29_integrator_decisions_l110.md](rulings_2026_09_29_integrator_decisions_l110.md) | DBSRV-1 — the container runtime comes from devbox; the step runs the vendors' images (L110 = (b′)) |
 | `depsv-1` | [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) | DEPSV-1 — `cx deps sync` becomes a verb of the binary (L95 = (a)) |
 | `df-1` | [rulings_2026_09_05_computed_fields.md](rulings_2026_09_05_computed_fields.md) | Rulings 2026-09-05 — computed field values, and how a slug is declared (DF-1, DF-2) |
 | `df-1` | [rulings_2026_09_05_computed_fields.md](rulings_2026_09_05_computed_fields.md) | DF-1 — may the grammar compute a field's value? — RULED (c): NO |
@@ -1096,6 +1096,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `wf-7` | [rulings_2026_09_03_workflow_789.md](rulings_2026_09_03_workflow_789.md) | WF-7 — fleet observability (item 3) — RECOMMENDED: (a) |
 | `wf-8` | [rulings_2026_09_03_workflow_789.md](rulings_2026_09_03_workflow_789.md) | WF-8 — the cross-company profile (item 4) — RECOMMENDED: (a) |
 | `wf-9` | [rulings_2026_09_03_workflow_789.md](rulings_2026_09_03_workflow_789.md) | WF-9 — sequencing; what this track delivers now — RECOMMENDED: (a) |
+| `words-1` | [rulings_2026_09_30_integrator_decisions_l120.md](rulings_2026_09_30_integrator_decisions_l120.md) | WORDS-1 — the five step names, the two component directories, the rows and the prose lose the word; the vocabulary step measures the tree (L120 = (a), delegated) |
 | `xap-1a` | [rulings_2026_09_26_xap_host_runner_xap1.md](rulings_2026_09_26_xap_host_runner_xap1.md) | XAP-1a, XAP-1b — the xap host embeds the flow runner (owner: Letter 14 = 1a 2b, 2026-09-26) |
 | `xap-1a` | [rulings_2026_09_26_xap_host_runner_xap1.md](rulings_2026_09_26_xap_host_runner_xap1.md) | XAP-1a — the deployment face serves schedule, intent and webhook |
 | `xap-1b` | [rulings_2026_09_26_xap_host_runner_xap1.md](rulings_2026_09_26_xap_host_runner_xap1.md) | XAP-1a, XAP-1b — the xap host embeds the flow runner (owner: Letter 14 = 1a 2b, 2026-09-26) |
@@ -1437,7 +1438,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rs-5` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
 | `rs-6` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
 | `rs-7` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md), [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) |
-| `rs-8` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) |
+| `rs-8` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_30_integrator_decisions_l120.md](rulings_2026_09_30_integrator_decisions_l120.md) |
 | `rs-9` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
 | `rsa-2048` | [rulings_2026_09_05_certificate_key_1287.md](rulings_2026_09_05_certificate_key_1287.md) |
 | `sea-1a` | [rulings_2026_08_20_schema_evolution_automation.md](rulings_2026_08_20_schema_evolution_automation.md) |
@@ -1494,6 +1495,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `utf-16` | [audit_2026_08_30_text_format_surface.md](audit_2026_08_30_text_format_surface.md), [rulings_2026_08_30_text_format_residuals.md](rulings_2026_08_30_text_format_residuals.md) |
 | `utf-7` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `utf-8` | [audit_2026_08_30_text_format_surface.md](audit_2026_08_30_text_format_surface.md), [partition_I1_rebless.md](partition_I1_rebless.md), [partition_I5_stream17_runtime.md](partition_I5_stream17_runtime.md), [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md), [rulings_2026_08_28_zip_module_1078.md](rulings_2026_08_28_zip_module_1078.md), [rulings_2026_08_30_text_format_residuals.md](rulings_2026_08_30_text_format_residuals.md), [rulings_2026_09_11_saml_metadata_exchange_1402a.md](rulings_2026_09_11_saml_metadata_exchange_1402a.md), [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md), [rulings_2026_09_15_websocket_stream_placement_int19.md](rulings_2026_09_15_websocket_stream_placement_int19.md) |
+| `vocab-1` | [rulings_2026_09_30_integrator_decisions_l120.md](rulings_2026_09_30_integrator_decisions_l120.md) |
 | `wave-3` | [rulings_2026_08_26_seq_classification.md](rulings_2026_08_26_seq_classification.md) |
 | `wf-26a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
 | `wf-27a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
@@ -1508,4 +1510,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*357 ledger pages; 792 ids declared, 390 cited only.*
+*358 ledger pages; 793 ids declared, 391 cited only.*
