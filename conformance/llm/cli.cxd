@@ -13,7 +13,7 @@ output moved stops the build, naming it (`make guide`, `make guide-check`).
 Why a suite of its own, beside `antipatterns.cxd`: these cases are not
 wrong/right pairs, and an invocation-level case has no expression in the
 subject corpora of cx-core-data (`identity_hash.cxd`, `fmt.cxd`, `diff.cxd`,
-`lint.cxd`), whose grading cores compare the lane's own result, not what the
+`lint.cxd`), whose grading cores compare the verb's own result, not what the
 command prints. Those suites stay the normative grade of each verb; a case
 here pins the one invocation a reader copies. Like `antipatterns.cxd`, it
 lives under `conformance/llm/` so the top-level corpus scanners keep their
