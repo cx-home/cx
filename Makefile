@@ -4881,8 +4881,20 @@ fmt-sweep-timed: build-vcx
 # that repository's own `make lint` never runs `cx fmt` at all. Measured on
 # the branch's own binary: SWEEP-FILES=226 FORMATTED=214 DECLINED=8
 # TREE-REFUSED=4 UNSTABLE=0 ERROR=0
-FMT_SWEEP_MAX_DECLINED ?= 8
-FMT_SWEEP_MAX_TREE_REFUSED ?= 9
+#
+# 8 -> 6 and TREE-REFUSED 9 -> 3 by bug batch B (RULED: FMT-2, #1436): the map
+# literal gains its break site after an entry's comma, and CXER0301 now names
+# the comment the layout could not place. The two numbers move to the
+# measurement (FMT-1); the six declines of this tree are unchanged in count —
+# FMT-2 cleared the class in three component files (sso's deployment.cx,
+# xap's shop-web-client/serve.cx, agent's mcp-server.cx), which no sweep here
+# reads — and #1436's class here is bench_report.cx (a comment in a [?const]
+# value, which 1318-A copies verbatim) and examples/vcore.cx (a map of
+# declaration-only entries has no value spans to break between; since #1577
+# the program lane reaches it). Measured on the branch's own binary:
+# SWEEP-FILES=195 FORMATTED=186 DECLINED=6 TREE-REFUSED=3 UNSTABLE=0 ERROR=0
+FMT_SWEEP_MAX_DECLINED ?= 6
+FMT_SWEEP_MAX_TREE_REFUSED ?= 3
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate
 fmt-sweep-gate: build-vcx

@@ -473,9 +473,7 @@ fn accepted_by_one_scan() ([]AcceptedByOne, map[string]string) {
 // syntax", and a program form the data grammar has no production for is not a
 // defect of either.
 
-const reason_1576 = "#1576 — a parenthetical `(…)` or a COMMA inside a body §9 [L25b] has classified as bare prose. The data reader answers ONE prose run; the program reader applies ASP-3's structure-token rule (a ws-delimited `(…)` is discrete) and [L25c]'s comma-array rule, both of which are written for bodies that carry NO bareword. Which rule wins when a bareword IS present is what [L25b] does not say. Split from #1559 by 1559-a's measurement."
-
-const reason_1577 = "#1577 — a `[| … ]` BLOCK SPAN's content. The data reader carries it verbatim (ast.md's BlockContent); the program reader tokenizes inside it, so a `|` or a digit-led run in that content is read as program text — and in one of these the LEXER refuses before any parser could re-scan, which is why 1559-a's parser-driven span cannot reach it. Split from #1559."
+const reason_1576 = "#1576, its COMMA half — a top-level comma beside a bareword. The data reader answers ONE ARRAY ([L25c], normative) whose multi-token slots are prose strings, every [L70a] BareChar included (`full cx.lock — https + file resolvers`); the program reader treats a comma slot as an EXPRESSION position (1559-a names a collection slot among them), so a `+` or a `.` in a multi-token slot is program text and the slot refuses. Whether a multi-token [L25c] slot is prose or an expression is the one question [L25c] does not answer (its QUOTE OPENING example even reads a comma body as prose) — a letter on #1576. The PARENTHETICAL half (yaml.cxd) is fixed: a `(…)` that is no sequence literal is prose and a glued `#` in it is no comment (RULED: CXF-5). Split from #1559."
 
 const reason_1578 = "#1578 — a bare URL in an ATTRIBUTE VALUE. 1559-a narrowed 1384-a's `/` sentence so a bare URL in a BODY is prose in both rings, but an attribute value is an EXPRESSION position (1559-d) and #923/BC-1's attr-value run sends a `/`-bearing value whose prefix reads as a path head to the CXPath lane. Whether that lane should prefer the data reading's string is the one question 1559-a's row does not settle; the refusal is at least loud and carries its own fix. Split from #1559."
 
@@ -510,9 +508,7 @@ const accepted_by_one_table = [
 	// cx-core-code's extraction (RULED: RS-12, D68a); the scan walks conformance/
 	// of THIS tree and does not follow deps/.
 	AcceptedByOne{'deps/cx-core-data/conformance/lockfile.cxd', .data, reason_1576},
-	AcceptedByOne{'deps/cx-core-data/conformance/yaml.cxd', .data, reason_1576},
 	AcceptedByOne{'examples/article.cx', .data, reason_1579},
-	AcceptedByOne{'examples/vcore.cx', .data, reason_1577},
 	// ── #1559 — a bare URL's `://` (RULED: 1384-a keeps `/` out of the run) (3) ──
 	AcceptedByOne{'examples/chapter.cx', .data, reason_1578},
 	AcceptedByOne{'examples/post.cx', .data, reason_1578},
