@@ -36,7 +36,7 @@ runs ONE TICK every 120 seconds (`StartInterval`). It execs cx directly with
 the environment and file limits in the plist, so there is no `/bin/sh`, and it
 never starts a tick while the last one is still running.
 
-A tick is four steps:
+A tick is five steps:
 
 1. **tip** fetches the integration branch (the checkout's `VERSION` names it).
    It reads the log: the last sha that ran, the last that passed, the last RUN
@@ -57,10 +57,20 @@ A tick is four steps:
    `scripts/build-slot.sh` with both streams in `vcx/target/gate.log`.
 4. **verdict** writes `RUN-EXIT=<n> <status>` and the RUN-5 timings row. After
    a pass it refreshes the runner's own copy of cx.
+5. **merge-queue** (RULED: MQUE-1, MADM-1) consumes `flows/merge-queue.cxd`, the
+   READY branches the integrator queued. With rows, a `RUN-EXIT` last, the
+   checkout on origin's head and the runner free, it runs
+   `flows/merge.flow.cx` over every row the shape admits as one union, under
+   the post-merge runner; the union's last commit removes the landed rows, so
+   the removal rides in the landing push, and the next tick grades the new
+   head. A refused row stays in the file and its refusal is one `QUEUE
+   refused …` line in the log (nothing is pushed for it). An empty queue
+   writes nothing.
 
 The state is `vcx/target/gate-loop.log`, whose line shapes did not change:
-`RUN-START`, `RUN-EXIT=`, `PENDING`, `WAITING`, `SKIP` and `SUPERSEDED`. So
-every reader of it keeps working: the merge gap, the load-sensitive steps' gap
+`RUN-START`, `RUN-EXIT=`, `PENDING`, `WAITING`, `SKIP` and `SUPERSEDED`. The
+merge queue adds `QUEUE` lines, which carry no `RUN-` token. So every
+reader of it keeps working: the merge gap, the load-sensitive steps' gap
 check, `scripts/gate-status.sh`, and the boards. A tick that was killed
 mid-run leaves a `RUN-START` with no `RUN-EXIT`. The next tick finds the
 runner's holder dead, which build-slot.sh's own stale-holder check decides,
@@ -69,8 +79,9 @@ forces the full union on an unchanged tip, as before.
 
 Each tick reads the document fresh from the checkout. A merge that edits the
 loop takes effect on the next tick, with no restart and no reload.
-`make postmerge-flow-gate` grades the document, including nine ticks run for
-real against scratch clones of the tree.
+`make postmerge-flow-gate` grades the document, including fourteen ticks run
+for real against scratch clones of the tree (five of them consume a merge
+queue).
 
 ## Install, status, restart, stop
 

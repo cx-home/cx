@@ -40,6 +40,12 @@
 #                       the doc run, and it is graded more there, not less.
 #                       The rest of docs-src/ is NOT admitted: the .cxd guide
 #                       sources and the LLM templates feed steps outside it
+#   flows/merge-queue.cxd  the MERGE QUEUE (RULED: MQUE-1; Letter 149): the
+#                       integrator's queueing commit. Only the post-merge
+#                       loop's merge-queue step reads it, and every branch it
+#                       names is graded when that step lands it, so a head
+#                       that moves only the queue costs the doc run. This one
+#                       file, never the rest of flows/
 #   *.md                anywhere EXCEPT spec/03-approved/ — an approved spec is
 #                       normative, read by spec-freeze-gate,
 #                       check-code-spec-consistency and the citation checker,
@@ -99,6 +105,7 @@ offenders=$(printf '%s\n' "$files" | while IFS= read -r f; do
 		(ledger/*|docs/*|_gate_evidence/*) continue ;;
 		(registry/README.md)               continue ;;
 		(docs-src/flow/*)                  continue ;;
+		(flows/merge-queue.cxd)            continue ;;
 		(spec/03-approved/*)               echo "$f" ;;  # normative, even as .md
 		(*.md)                             continue ;;
 		(*)                                echo "$f" ;;
