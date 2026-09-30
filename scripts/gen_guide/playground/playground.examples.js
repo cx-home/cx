@@ -1732,8 +1732,8 @@
     },
     "212-a-bare-def-name-is-the-callable": {
       label: "[212] a bare def name in value position IS the callable",
-      input: "[?def double ($x) [* $x 2]]\n[?def twice ($f $x) [$f [$f $x]]]\n[twice double 3]",
-      note:  "**Introduces:** callable values (code.md \u00a76.3b). Inside a program body a bare def name in VALUE position \u2014 `double` passed to `twice` \u2014 denotes the function itself, and a parameter holding a function is called with `[$f \u2026]`. No quoting, no `[?fn]` wrapper: `[twice double 3]` \u2192 `12`. (In a DATA body the same word is text \u2014 see example on bare words.)",
+      input: "[?def double ($x) [* $x 2]]\n[?def twice ($f $x) [$f [$f $x]]]\n[$twice double 3]",
+      note:  "**Introduces:** callable values (code.md \u00a76.3b). Inside a program body a bare def name in VALUE position \u2014 `double` passed to `twice` \u2014 denotes the function itself, and a parameter holding a function is called with `[$f \u2026]`. No quoting, no `[?fn]` wrapper: `[$twice double 3]` \u2192 `12`. (In a DATA body the same word is text \u2014 see example on bare words.)",
       tags:  ["def", "mul"],
       section: "code/functions",
       runnable: true,
@@ -1756,7 +1756,7 @@
     },
     "215-purity-is-checked-at-load": {
       label: "[215] purity is checked at LOAD \u2014 a default-pure `[?def]` may only call pure defs",
-      input: "[?def inc ($x) [+ $x 1]]\n[?def twice-inc ($x) [inc [inc $x]]]\n[twice-inc 1]",
+      input: "[?def inc ($x) [+ $x 1]]\n[?def twice-inc ($x) [$inc [$inc $x]]]\n[$twice-inc 1]",
       note:  "**Introduces:** load-time purity checking (code.md \u00a78). A `[?def]` is PURE unless it says `impure [effects \u2026]`; a pure def calling pure defs loads and runs \u2192 `3`. Change `inc` to `[?def inc impure [effects [write]] ($x) [+ $x 1]]` and keep `twice-inc` as written, and the module refuses to LOAD before anything runs:\n\n```\nerror: cx-err:CXER0233: cx-err:CXER0233 E_PURITY_VIOLATION: call to impure `[?def] inc`\n```\n\nThe message names the offending call. The next example shows the honest declaration on the caller.",
       tags:  ["add", "def"],
       section: "code/effects",
@@ -1764,16 +1764,16 @@
     },
     "216-declared-effects": {
       label: "[216] `impure [effects [write]]` \u2014 the caller declares what its callee does",
-      input: "[?def bump impure [effects [write]] ($x) [+ $x 1]]\n[?def loud impure [effects [write]] ($x) [bump $x]]\n[loud 1]",
-      note:  "**Introduces:** the `[effects \u2026]` clause (code.md \u00a78). `loud` declares the same effect its callee `bump` declares, so the static check passes and `[loud 1]` \u2192 `2`. Effects compose upward: whatever a def calls, it must admit. `[effects]` is a NARROWING declaration \u2014 it never grants a capability the program does not hold (see the caps examples).",
+      input: "[?def bump impure [effects [write]] ($x) [+ $x 1]]\n[?def loud impure [effects [write]] ($x) [$bump $x]]\n[$loud 1]",
+      note:  "**Introduces:** the `[effects \u2026]` clause (code.md \u00a78). `loud` declares the same effect its callee `bump` declares, so the static check passes and `[$loud 1]` \u2192 `2`. Effects compose upward: whatever a def calls, it must admit. `[effects]` is a NARROWING declaration \u2014 it never grants a capability the program does not hold (see the caps examples).",
       tags:  ["add", "def"],
       section: "code/effects",
       runnable: true,
     },
     "217-typed-params-and-returns": {
       label: "[217] `[?def area ($w::int $h::int) [returns int] \u2026]` \u2014 typed parameters",
-      input: "[?def area ($w::int $h::int) [returns int] [* $w $h]]\n[area 3 4]",
-      note:  "**Introduces:** parameter and return ascriptions on `[?def]` (code.md \u00a78.4). `($w::int $h::int)` declares the parameter kinds and `[returns int]` the result kind. The playground runs the default profile, where the ascriptions DOCUMENT and the arithmetic still refuses a non-number by its own rule; under `cx --strict` the call `[area 3 \"four\"]` refuses at the boundary with `CXER0206 E_TYPE_ARG_MISMATCH: argument for \\`h\\` does not match declared type \\`int\\``.",
+      input: "[?def area ($w::int $h::int) [returns int] [* $w $h]]\n[$area 3 4]",
+      note:  "**Introduces:** parameter and return ascriptions on `[?def]` (code.md \u00a78.4). `($w::int $h::int)` declares the parameter kinds and `[returns int]` the result kind. The playground runs the default profile, where the ascriptions DOCUMENT and the arithmetic still refuses a non-number by its own rule; under `cx --strict` the call `[$area 3 \"four\"]` refuses at the boundary with `CXER0206 E_TYPE_ARG_MISMATCH: argument for \\`h\\` does not match declared type \\`int\\``.",
       tags:  ["def", "in", "mul", "parallel"],
       section: "code/functions",
       runnable: true,
@@ -1836,7 +1836,7 @@
     },
     "225-const-str-and-a-module-def": {
       label: "[225] `[?const]`, `[?str]` interpolation and a module `[?def]` in one bill",
-      input: "[?const RATE 0.08]\n[?def total ($sub) [* $sub [+ 1 RATE]]]\n[?let [= $name \"Ada\"] [= $n 3]\n  [bill for=[?str \"{$name}, {$n} items\"] amount=[total 100]]]",
+      input: "[?const RATE 0.08]\n[?def total ($sub) [* $sub [+ 1 RATE]]]\n[?let [= $name \"Ada\"] [= $n 3]\n  [bill for=[?str \"{$name}, {$n} items\"] amount=[$total 100]]]",
       note:  "**Introduces:** three module-level forms together (code.md \u00a75). `[?const RATE 0.08]` is a module-level constant, read bare (`RATE`) inside `total`; `[?str \"{$name}, {$n} items\"]` interpolates bindings into text; the amount is exact decimal arithmetic \u2192 `108.00`. The flat `[?let]` binds two names in one form \u2014 the ruled idiom, not a cascade.",
       tags:  ["add", "const", "def", "eq", "let", "mul", "str"],
       section: "code/bindings",
@@ -2257,7 +2257,7 @@
     },
     "276-read-standard-input": {
       label: "[276] read standard input \u2014 a program fed by another",
-      input: "[?lib 'cx-stdlib/io']\n[?lib 'cx-stdlib/path']\n[?lib 'cx-stdlib/env']\n[?lib 'cx-stdlib/process']\n[?lib 'cx-stdlib/strings']\n[?const READER \"[?lib 'cx-stdlib/io']\\n[?lib 'cx-stdlib/env']\\n[?def drain impure [effects [read]] ($h $n)\\n  [?let [= $l [$io:read-line $h]] [?if [= $l ''] [then $n] [else [drain $h [+ $n 1]]]]]]\\n[?let [= $h [$env:stdin]] [= $first [$io:read-line $h]]\\n  [from-stdin first=$first rest=[drain $h 0]]]\\n\"]\n[?let [= $dir [$io:temp-dir 'cx-play-']]\n      [= $f [$path:join $dir 'reader.cx']]\n      [= $w [$io:write-file $f READER]]\n      [= $argv ([$env:executable-path], '--allow-read', $f)]\n      [= $r [$process:run $argv stdin=\"alpha\\nbeta\\ngamma\\n\"]]\n      [= $answer [$strings:trim [$string $r@stdout]]]\n      [= $rm [$io:remove-tree $dir]]\n  [piped exit=$r@exit-code answer=$answer]]",
+      input: "[?lib 'cx-stdlib/io']\n[?lib 'cx-stdlib/path']\n[?lib 'cx-stdlib/env']\n[?lib 'cx-stdlib/process']\n[?lib 'cx-stdlib/strings']\n[?const READER \"[?lib 'cx-stdlib/io']\\n[?lib 'cx-stdlib/env']\\n[?def drain impure [effects [read]] ($h $n)\\n  [?let [= $l [$io:read-line $h]] [?if [= $l ''] [then $n] [else [$drain $h [+ $n 1]]]]]]\\n[?let [= $h [$env:stdin]] [= $first [$io:read-line $h]]\\n  [from-stdin first=$first rest=[$drain $h 0]]]\\n\"]\n[?let [= $dir [$io:temp-dir 'cx-play-']]\n      [= $f [$path:join $dir 'reader.cx']]\n      [= $w [$io:write-file $f READER]]\n      [= $argv ([$env:executable-path], '--allow-read', $f)]\n      [= $r [$process:run $argv stdin=\"alpha\\nbeta\\ngamma\\n\"]]\n      [= $answer [$strings:trim [$string $r@stdout]]]\n      [= $rm [$io:remove-tree $dir]]\n  [piped exit=$r@exit-code answer=$answer]]",
       note:  "**Introduces:** `[$env:stdin]` (env.md \u00a73.4), which answers a `[std-stream name=stdin fd=0]` handle you pass to `cx-stdlib/io` for the actual reading, and `[$process:run ARGV stdin=TEXT]` (process.md \u00a73.1), which feeds a child a fixed string. A program that reads stdin has no deterministic answer on its own, so the example supplies both halves: it writes a tiny reader, runs it with `stdin=`, and grades what came back. Two things are worth knowing before you write one. `[$io:read-all]` does NOT accept a std-stream handle today \u2014 it refuses with a missing-FILE diagnostic (#1535) \u2014 so the drain here is a `[$io:read-line]` recursion, and at end of input `read-line` answers `''`. And reading stdin needs `--allow-read`: the child is launched with it, which is why the grant list on this example is four flags long.",
       tags:  ["add", "attr", "const", "def", "eq", "if", "let", "lib"],
       section: "everyday/process",
@@ -2326,7 +2326,7 @@
     },
     "284-retry-once-then-give-up": {
       label: "[284] retry once, then give up \u2014 the railway",
-      input: "[?lib 'cx-stdlib/io']\n[?lib 'cx-stdlib/path']\n[?def fetch impure [effects [read] [write]] ($marker)\n  [?if [$io:exists $marker]\n    [then [ok source='the warm cache']]\n    [else [?let [= $w [$io:write-file $marker 'warm']]\n            [err code='cold-cache' message='the cache was cold \u2014 warmed it, ask again']]]]]\n[?let [= $dir [$io:temp-dir 'cx-play-']]\n      [= $m [$path:join $dir 'cache.marker']]\n      [= $settled [?retry max=2 backoff=constant delay=1ms jitter=none [fetch $m]]]\n      [= $never [?retry max=2 backoff=constant delay=1ms jitter=none [err code='always-down' message='no']]]\n      [= $rm [$io:remove-tree $dir]]\n  [railway [second-attempt $settled] give-up=[$string $never@code] attempts=$never@attempts]]",
+      input: "[?lib 'cx-stdlib/io']\n[?lib 'cx-stdlib/path']\n[?def fetch impure [effects [read] [write]] ($marker)\n  [?if [$io:exists $marker]\n    [then [ok source='the warm cache']]\n    [else [?let [= $w [$io:write-file $marker 'warm']]\n            [err code='cold-cache' message='the cache was cold \u2014 warmed it, ask again']]]]]\n[?let [= $dir [$io:temp-dir 'cx-play-']]\n      [= $m [$path:join $dir 'cache.marker']]\n      [= $settled [?retry max=2 backoff=constant delay=1ms jitter=none [$fetch $m]]]\n      [= $never [?retry max=2 backoff=constant delay=1ms jitter=none [err code='always-down' message='no']]]\n      [= $rm [$io:remove-tree $dir]]\n  [railway [second-attempt $settled] give-up=[$string $never@code] attempts=$never@attempts]]",
       note:  "**Introduces:** `[?retry max=N backoff=\u2026 delay=\u2026 jitter=\u2026]` (code.md \u00a710.2.1) \u2014 the resilience directive, so retrying is a wrapper around the step rather than a hand-rolled loop with its own bug. `max` counts TOTAL ATTEMPTS, not extra ones, so one retry is `max=2`; the budget running out is `cx-err:CXER0140` carrying `attempts=` and the last failure under `[cause \u2026]`, so giving up is still data you can report. The step here is genuinely fallible \u2014 the first call finds no cache and warms it, the second finds it \u2014 which is the shape retry is for: a step that a later attempt can legitimately win. `[?retry]` is impure, so a `[?def]` around one must say `impure`.",
       tags:  ["attr", "def", "eq", "if", "let", "lib", "retry"],
       section: "everyday/cli-errors",

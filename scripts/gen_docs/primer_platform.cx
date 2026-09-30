@@ -258,8 +258,8 @@ skeleton with an authoring TODO wherever the pattern fixes no value."]
 # ── the chapter ──────────────────────────────────────────────────────────
 
 [?def chapter scope=public impure ()
-  [?let [= $comp [$io:read-file [platform-path COMP-PATH]]]
-        [= $topo [$io:read-file [platform-path TOPO-PATH]]]
+  [?let [= $comp [$io:read-file [$platform-path COMP-PATH]]]
+        [= $topo [$io:read-file [$platform-path TOPO-PATH]]]
     [$strings:join (
       CHAPTER-HEAD,
       HEAD-SHAPES,

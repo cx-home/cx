@@ -252,7 +252,7 @@
           # decl-start line indices (1-based)
           [= $starts
             [?for [in $i [$range 1 $n]]
-              [where [is-decl-start $lines[$i]]]
+              [where [$is-decl-start $lines[$i]]]
               [yield $i]]]
 
           # pull each start upward over the contiguous attach block
@@ -289,12 +289,12 @@
                 [$strings:join
                   [?for [in $i [$range $from $to]] [yield $lines[$i]]] "\n"]]
               [yield [$strings:trim-end $body]]]]
-          [= $chunks [$strings:join $chunk-list [fence]]]
+          [= $chunks [$strings:join $chunk-list [$fence]]]
           # the dedupe keys, precomputed once per file (fence-joined,
           # positionally parallel to chunks=)
           [= $keys
             [$strings:join
-              [?for [in $c $chunk-list] [yield [chunk-key $c]]] [fence]]]
+              [?for [in $c $chunk-list] [yield [$chunk-key $c]]] [$fence]]]
 
           [= $tfns
             [$count
@@ -337,7 +337,7 @@
       [= $decl-records
         [$sort
           [?for [in $p $parts]
-            [in $k [$strings:split [$string $p@keys] [fence]]]
+            [in $k [$strings:split [$string $p@keys] [$fence]]]
             [where [not [= $k ""]]]
             [= $l1 [?let [= $kls [$strings:split $k "\n"]] $kls[1]]]
             [= $l1x [?if [$strings:starts-with $l1 "pub "] [then [$strings:slice $l1 5 [$strings:length $l1]]] [else $l1]]]
@@ -358,12 +358,12 @@
             [= $end [?if [= [$count $cands] 0] [then [$strings:length $rest]] [else $cands[1]]]]
             [= $nm [$strings:slice $rest 1 $end]]
             [where [not [$strings:starts-with $nm "test_"]]]
-            [yield [$concat $nm [fence] $k [fence] [$string $p@file]]]]]]
+            [yield [$concat $nm [$fence] $k [$fence] [$string $p@file]]]]]]
       [= $conflicts
         [$distinct
           [?for [in $i [$range 2 [$count $decl-records]]]
-            [= $cur [$strings:split $decl-records[$i] [fence]]]
-            [= $prv [$strings:split $decl-records[[- $i 1]] [fence]]]
+            [= $cur [$strings:split $decl-records[$i] [$fence]]]
+            [= $prv [$strings:split $decl-records[[- $i 1]] [$fence]]]
             [where [= $cur[1] $prv[1]]]
             [where [not [= $cur[2] $prv[2]]]]
             [yield [$concat $cur[1] " (" $prv[3] " vs " $cur[3] ")"]]]]]
@@ -417,14 +417,14 @@
               [yield $l]]]
           [= $sel-mods
             [$sort [$distinct
-              [?for [in $l $sel-lines] [yield [sel-mod $l]]]]]]
+              [?for [in $l $sel-lines] [yield [$sel-mod $l]]]]]]
           [= $sel-merged
             [?for [in $m $sel-mods]
               [= $mems-raw
                 [$strings:join
                   [?for [in $l $sel-lines]
-                    [where [= [sel-mod $l] $m]]
-                    [yield [sel-members $l]]] ","]]
+                    [where [= [$sel-mod $l] $m]]
+                    [yield [$sel-members $l]]] ","]]
               [= $mems
                 [$sort [$distinct
                   [?for [in $mm [$strings:split $mems-raw ","]]
@@ -457,7 +457,7 @@
                       [then
                         [?let [= $ml
                                 [?for [in $k [$range 1 [$count $sel-mods]]]
-                                  [where [= $sel-mods[$k] [sel-mod $l]]]
+                                  [where [= $sel-mods[$k] [$sel-mod $l]]]
                                   [yield $sel-merged[$k]]]]
                           $ml[1]]]
                       [else $l]]]]]]
@@ -469,15 +469,15 @@
           [= $sections
             [?for [in $pi [$range 1 [$count $parts]]]
               [= $p $parts[$pi]]
-              [= $clist [$strings:split [$string $p@chunks] [fence]]]
-              [= $klist [$strings:split [$string $p@keys] [fence]]]
+              [= $clist [$strings:split [$string $p@chunks] [$fence]]]
+              [= $klist [$strings:split [$string $p@keys] [$fence]]]
               [= $earlier-fence
-                [$concat [fence]
+                [$concat [$fence]
                   [$strings:join
                     [?for [in $qj [$range 1 [- $pi 1]]]
                       [= $q $parts[$qj]]
-                      [yield [$string $q@keys]]] [fence]]
-                  [fence]]]
+                      [yield [$string $q@keys]]] [$fence]]
+                  [$fence]]]
               # per-chunk verdicts: keep the chunk, or (on a duplicate)
               # keep only its trailing narrative so no commentary is lost
               [= $emits
@@ -488,17 +488,17 @@
                     [or [$strings:starts-with $c "fn test_"]
                         [$strings:contains $c "\nfn test_"]]]
                   [= $same-file-fence
-                    [$concat [fence]
+                    [$concat [$fence]
                       [$strings:join
-                        [?for [in $cj [$range 1 [- $ci 1]]] [yield $klist[$cj]]] [fence]]
-                      [fence]]]
+                        [?for [in $cj [$range 1 [- $ci 1]]] [yield $klist[$cj]]] [$fence]]
+                      [$fence]]]
                   [= $dup
                     [and [not [= $k ""]]
                          [not $carries-test]
-                         [or [$strings:contains $earlier-fence [$concat [fence] $k [fence]]]
-                             [$strings:contains $same-file-fence [$concat [fence] $k [fence]]]]]]
+                         [or [$strings:contains $earlier-fence [$concat [$fence] $k [$fence]]]
+                             [$strings:contains $same-file-fence [$concat [$fence] $k [$fence]]]]]]
                   [yield [emit dropped=[?if $dup [then 1] [else 0]]
-                           text=[?if $dup [then [chunk-tail $c]] [else $c]]]]]]
+                           text=[?if $dup [then [$chunk-tail $c]] [else $c]]]]]]
               [= $kept
                 [?for [in $e $emits]
                   [= $t [$string $e@text]]

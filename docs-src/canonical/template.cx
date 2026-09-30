@@ -125,7 +125,7 @@
       [?for [in $sec $top-sections]
         [yield [?match $sec
           [case [section file=$file]
-            [$render-section $sec [load-section $file]]]
+            [$render-section $sec [$load-section $file]]]
           [else
             [err section=$sec@id
                  message='manifest entry missing file= attribute']]]]]]]]]]
