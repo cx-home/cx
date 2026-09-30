@@ -1,0 +1,356 @@
+# scripts/ledger_edit_map_check.cx -- a decision's edit map, read against the
+# history of the repository that owns each path (#1329, RULED: 1329-a,
+# EDMAP-1). Written in CX (AGENTS.md rule 6, RULED: CXF-1).
+#
+# WHAT IT IS FOR. A decision in `ledger/` often states an EDIT MAP -- the files
+# it owes edits to. #1329: nothing tracked whether those edits were made, so an
+# edit executed in the same commit, one deliberately sequenced to a later
+# wave, and one forgotten looked the same until somebody `git log`-ed every
+# target by hand. 1329-a gives each row a STATE and this step reads it.
+#
+# WHAT AN EDIT MAP IS (1329-a). A ledger table whose header row is exactly
+# `| path | edit | state |`. A table without that header is not an edit map
+# and is exempt (forward-only). `state` is one of
+#   landed                  -- the edit was made: at least one commit touching
+#                              the path cites the page's decision id in its
+#                              subject's `RULED:` clause, else the row FAILS,
+#                              named by page, line, path and id
+#   pending                 -- still owed: counted and listed; FAILS only under
+#                              --at-cut (1329-a: "zero `pending` rows across the
+#                              store" at the final tag; EDMAP-1: the step
+#                              "refuses `pending` at the cut")
+#   sequenced=<issue or decision id>
+#                           -- deliberately later: counted and listed with its
+#                              reason quoted, never failed here. Whether the
+#                              named issue is still open in the release is the
+#                              integrator's check at the cut -- a step has no
+#                              tracker (1329-a)
+# The path cell names one or more paths in backticks (`a`, `b`); text after
+# them (`§4`, "running instance") qualifies the row and is not a path. Every
+# path of a landed row needs its own citing commit.
+#
+# WHOSE HISTORY (EDMAP-1). Since the split, an edit map's target may live in a
+# component repository that `cx` pins under deps/<repo>/ (deps.cxd), not in
+# this tree. A path is owned by:
+#   1. this tree, when it is tracked at HEAD;
+#   2. else the ONE pinned repository whose tree at its pinned sha carries it
+#      (two is a refusal: the owner is ambiguous);
+#   3. else the repository the first matching `[path]` rule of
+#      registry/repos.cxd allocates it to -- this tree's history when that is
+#      `cx` or `cx-private` (the front door's own paths, a deleted file's
+#      history included), a pinned repository's otherwise;
+#   4. else nobody, and the row FAILS whatever its state: a map that points at
+#      nothing records nothing.
+# A pinned repository's history is read at its pin: `git -C deps/<repo> log
+# <sha> -- <path>`, so a commit on a branch the pin never took does not count.
+# `make deps-sync` fetches each pin with `--depth 1`, which keeps the tree and
+# drops the history; when a landed row is not found in a SHALLOW pin, the step
+# deepens that pin once from the same URL deps-sync fetched it from
+# (scripts/deps_pins.cx's url-for) and reads again, and a pin it cannot deepen
+# fails the row by name rather than passing it unread.
+#
+# THE DECISION ID of an edit map is what the nearest heading above it declares
+# -- the ledger indexer's id shape and its date exclusion
+# (scripts/ledger_index.cx), any of the heading's ids. A map under no heading
+# that declares an id FAILS: there is nothing to cite.
+#
+# MODES.
+#   (no flag)   verify landed rows, list pending and sequenced ones; exit 1 on
+#               any refusal (`make ledger-edit-map-check`, in TEST_TARGETS and
+#               in the doc pipeline beside ledger-index-check)
+#   --at-cut    the same, and every pending row is a refusal
+#               (`make ledger-edit-map-check AT_CUT=1`, the release-process.md
+#               checklist row)
+#   --status    list pending and sequenced rows only, verify nothing, exit 0
+#               (`make ledger-edit-map-status`)
+#   --ledger D  read the pages under D instead of ledger/ (the selftest's
+#               mutation of the real store)
+#
+# Capabilities: read (the pages, the registries), write (standard streams),
+# subprocess (git). Run from the checkout root:
+#   cx --allow-read --allow-write --allow-subprocess scripts/ledger_edit_map_check.cx [--at-cut|--status] [--ledger DIR]
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+[; From the checkout root, as scripts/deps_sync.cx imports it (#1604). ]
+[?lib './scripts/deps_pins.cx' as=pins]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def member scope=private pure [returns bool] ($x::string $xs)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+# flag-value: the argument after --<name>, or $d when it is not given.
+[?def flag-value scope=private pure [returns string] ($argv $name::string $d::string)
+  [?let [= $n [$count $argv]]
+        [= $hits [?for [in $i [$range 1 $n]]
+                   [where [= [$nth $argv $i] [$concat "--" $name]]]
+                   [where [< $i $n]]
+                   [yield [$nth $argv [+ $i 1]]]]]
+    [?if [= [$count $hits] 0] [then $d] [else [$first $hits]]]]]
+
+[?def attr-or scope=private pure [returns string] ($e $k::string $d::string)
+  [?let [= $hits [?for [in $a [$attrs $e]] [where [= [$string $a@name] $k]] [yield [$string $a]]]]
+    [?if [= [$count $hits] 0] [then $d] [else [$first $hits]]]]]
+
+# git: run a git command, answering an r element: its exit status and its
+# trimmed stdout and stderr.
+[?def git scope=private impure ($argv)
+  [?let [= $r [$process:run [?for [in $a ("git", [?splice $argv])] [yield $a]]]]
+    [r exit=[$string $r@exit-code]
+       out=[$strings:trim [$string $r@stdout]]
+       err=[$strings:trim [$string $r@stderr]]]]]
+
+[?def short scope=private pure [returns string] ($sha::string)
+  [$strings:slice $sha 1 9]]
+
+# -- decision ids (the ledger indexer's shape, scripts/ledger_index.cx) ----
+
+[?const ID-PATTERN "\\b([1-9][0-9]{2,3}-(?:[A-Za-z][0-9]?[0-9A-Za-z.]{0,2}|[A-Z]{1,3}-[0-9]+[a-z]?)(?:-[0-9A-Za-z]{1,3})?|[A-Z]{2,6}-[0-9]+[a-z]?)\\b"]
+
+[?def ids-in scope=private pure ($text::string)
+  [?let [= $id-rx   [$re:compile ID-PATTERN]]
+        [= $date-rx [$re:compile "^(19|20)[0-9]{2}-[0-9]{2}"]]
+    [?for [in $m [$re:find-all $id-rx $text]]
+      [where [?match [$re:find $date-rx [$re:group $m 1]] [case [no-match] true] [else false]]]
+      [yield [$strings:lower [$re:group $m 1]]]]]]
+
+# cites: does any subject's `RULED:` clause name one of $ids?
+[?def cites scope=private pure [returns bool] ($subjects $ids)
+  [?let [= $clause-rx [$re:compile "RULED:[^)]*"]]
+    [> [$count [?for [in $s $subjects]
+                 [in $c [$re:find-all $clause-rx $s]]
+                 [in $id [$ids-in [$re:group $c 0]]]
+                 [where [$member $id $ids]]
+                 [yield 1]]]
+       0]]]
+
+# -- reading the edit maps -------------------------------------------------
+
+[?const HEADER '| path | edit | state |']
+
+# cells: a table row's cells, trimmed.
+[?def cells scope=private pure ($line::string)
+  [?let [= $t [$strings:trim $line]]
+        [= $inner [$strings:slice $t 2 [- [$strings:length $t] 1]]]
+    [?to-array [?for [in $c [$strings:split $inner "|"]] [yield [$strings:trim $c]]]]]]
+
+# paths-of: the backticked paths of a path cell, or its first word when it
+# quotes none.
+[?def paths-of scope=private pure ($cell::string)
+  [?let [= $quoted [?to-array [?for [in $m [$re:find-all [$re:compile "`([^`]+)`"] $cell]]
+                                [yield [$strings:trim [$re:group $m 1]]]]]]
+    [?if [> [$count $quoted] 0]
+      [then $quoted]
+      [else [?to-array [?for [in $w [$strings:split-whitespace $cell]] [where [= $w [$first [$strings:split-whitespace $cell]]]] [yield $w]]]]]]]
+
+[?def is-separator scope=private pure [returns bool] ($line::string)
+  [$re:matches [$re:compile "^\\|[\\s:|-]+\\|$"] [$strings:trim $line]]]
+
+[?def is-row scope=private pure [returns bool] ($line::string)
+  [$strings:starts-with [$strings:trim $line] "|"]]
+
+# maps-of: every edit-map row of one page, as maps. A map with no decision id
+# answers one {kind: no-id} entry naming its header line.
+[?def maps-of scope=private impure ($file::string)
+  [?let
+    [= $page  [$path:basename $file]]
+    [= $lines [?to-array [$strings:split-lines [$io:read-file $file]]]]
+    [= $n [$count $lines]]
+    [= $headers [?to-array [?for [in $i [$range 1 $n]] [where [= [$strings:trim [$nth $lines $i]] HEADER]] [yield $i]]]]
+    [?to-array [?for [in $h $headers]
+      [= $ids [?let [= $above [?to-array [?for [in $j [$range 1 [- $h 1]]]
+                                           [where [$strings:starts-with [$nth $lines $j] "#"]]
+                                           [where [> [$count [$ids-in [$nth $lines $j]]] 0]]
+                                           [yield $j]]]]
+                [?if [= [$count $above] 0]
+                  [then ()]
+                  [else [?to-array [$ids-in [$nth $lines [$nth $above [$count $above]]]]]]]]]
+      [= $stop [$first ([?splice [?for [in $k [$range [+ $h 1] $n]] [where [not [$is-row [$nth $lines $k]]]] [yield $k]]],
+                        [+ $n 1])]]
+      [in $entry [?if [= [$count $ids] 0]
+                   [then ({kind: 'no-id', page: $page, line: $h})]
+                   [else [?for [in $k [$range [+ $h 1] [- $stop 1]]]
+                           [where [not [$is-separator [$nth $lines $k]]]]
+                           [= $cs [$cells [$nth $lines $k]]]
+                           [= $nc [$count $cs]]
+                           [yield {kind: 'row', page: $page, line: $k, ids: $ids,
+                                   paths: [$paths-of [$nth $cs 1]],
+                                   edit: [$strings:join [?for [in $x [$range 2 [- $nc 1]]] [yield [$nth $cs $x]]] " | "],
+                                   state: [$strings:trim-chars [$nth $cs $nc] "`"]}]]]]]
+      [yield $entry]]]]]
+
+# -- who owns a path -------------------------------------------------------
+
+[?def front-door scope=private pure () {kind: 'front', repo: 'the front door'}]
+
+[?def rule-matches scope=private pure [returns bool] ($rule $p::string)
+  [?let [= $ex [$attr-or $rule "exact" ""]]
+        [= $px [$attr-or $rule "prefix" ""]]
+    [or [and [not [= $ex ""]] [= $ex $p]]
+        [and [not [= $px ""]] [$strings:starts-with $p $px]]]]]
+
+# owner: {kind: front} | {kind: pin, repo, dir, sha, row} | {kind: refused, what}.
+[?def owner scope=private impure ($p::string $rules $deps)
+  [?let
+    [= $obj [$strings:trim-end-chars $p "/"]]
+    [= $here [$git ("cat-file", "-e", [$concat "HEAD:" $obj])]]
+    [?if [= [$string $here@exit] "0"]
+      [then [$front-door]]
+      [else [?let
+        [= $pinned [?to-array [?for [in $d $deps]
+                     [where [= [$string [$git ("-C", $d.dir, "cat-file", "-e",
+                                              [$concat $d.sha ":" $obj])]@exit] "0"]]
+                     [yield $d]]]]
+        [?if [> [$count $pinned] 1]
+          [then {kind: 'refused', what: [$concat "present in more than one pinned tree ("
+                                                  [$strings:join [?for [in $d $pinned] [yield $d.repo]] ", "]
+                                                  ") -- the owner is ambiguous"]}]
+          [else [?if [= [$count $pinned] 1]
+            [then [?let [= $d [$first $pinned]]
+                    {kind: 'pin', repo: $d.repo, dir: $d.dir, sha: $d.sha, row: $d.row}]]
+            [else [?let
+              [= $hits [?to-array [?for [in $r $rules] [where [$rule-matches $r $p]] [yield $r]]]]
+              [?if [= [$count $hits] 0]
+                [then {kind: 'refused', what: "no repository owns it -- not tracked here, in no pinned tree, and no [path] rule of registry/repos.cxd allocates it"}]
+                [else [?let
+                  [= $repo [$attr-or [$first $hits] "repo" ""]]
+                  [= $dep [?to-array [?for [in $d $deps] [where [= $d.repo $repo]] [yield $d]]]]
+                  [?if [$member $repo ("cx", "cx-private")]
+                    [then [$front-door]]
+                    [else [?if [> [$count $dep] 0]
+                      [then [?let [= $d [$first $dep]]
+                              {kind: 'pin', repo: $repo, dir: $d.dir, sha: $d.sha, row: $d.row}]]
+                      [else {kind: 'refused', what: [$concat "it belongs to " $repo
+                                                             " (registry/repos.cxd), and deps.cxd pins no such repository -- its history cannot be read"]}]]]]]]]]]]]]]]]]]
+
+# -- reading a path's history -----------------------------------------------
+
+[?def subjects scope=private impure ($o $p::string)
+  [?let [= $r [?if [= $o.kind 'front']
+                [then [$git ("log", "--format=%s", "HEAD", "--", $p)]]
+                [else [$git ("-C", $o.dir, "log", "--format=%s", $o.sha, "--", $p)]]]]
+    [?if [= [$string $r@exit] "0"] [then [$strings:split-lines [$string $r@out]]] [else ()]]]]
+
+[?def is-shallow scope=private impure [returns bool] ($dir::string)
+  [= [$string [$git ("-C", $dir, "rev-parse", "--is-shallow-repository")]@out] "true"]]
+
+# deepen: fetch the pin's whole history from the URL deps-sync fetched it
+# from. Answers "" or git's own words.
+[?def deepen scope=private impure [returns string] ($o $origin::string)
+  [?let [= $url [$pins:url-for $o.row $origin]]
+        [= $f [$git ("-C", $o.dir, "fetch", "-q", "--unshallow", $url, $o.sha)]]
+    [?if [= [$string $f@exit] "0"] [then ""] [else [$strings:replace [$string $f@err] "\n" " / "]]]]]
+
+# verify-path: "" when a commit touching $p in its owner's history cites one
+# of $ids, else the reason it does not.
+[?def verify-path scope=private impure [returns string] ($o $p::string $ids $origin::string)
+  [?let
+    [= $where [?if [= $o.kind 'front'] [then "the front door"]
+                [else [$concat $o.repo "'s history at its pin " [$short $o.sha]]]]]
+    [= $idtext [$strings:upper [$strings:join $ids " or "]]]
+    [= $none [$concat "no commit in " $where " touches it with a subject citing " $idtext]]
+    [?if [$cites [$subjects $o $p] $ids]
+      [then ""]
+      [else [?if [?if [= $o.kind 'pin'] [then [$is-shallow $o.dir]] [else false]]
+        [then [?let [= $err [$deepen $o $origin]]
+                [?if [not [= $err ""]]
+                  [then [$concat "pinned history unavailable: deps/" $o.repo
+                                 " is a shallow fetch and deepening it failed: " $err]]
+                  [else [?if [$cites [$subjects $o $p] $ids] [then ""] [else $none]]]]]]
+        [else $none]]]]]]
+
+# -- one row -----------------------------------------------------------------
+
+# judge: a row's verdict -- {refusals: (...), listed: (...)}.
+[?def judge scope=private impure ($e $rules $deps $origin::string $at-cut::bool $status::bool)
+  [?let
+    [= $at [$concat $e.page ":" [$string $e.line]]]
+    [= $state $e.state]
+    [= $kind [?if [= $state 'landed'] [then 'landed']
+              [else [?if [= $state 'pending'] [then 'pending']
+              [else [?if [and [$strings:starts-with $state 'sequenced='] [> [$strings:length $state] 10]] [then 'sequenced']
+              [else 'unknown']]]]]]]
+    [= $owners [?to-array [?for [in $p $e.paths] [yield {path: $p, o: [$owner $p $rules $deps]}]]]]
+    [= $owned-by [$strings:join [$distinct [?for [in $x $owners] [where [not [= $x.o.kind 'refused']]] [yield $x.o.repo]]] ", "]]
+    [= $shown [$strings:join [?for [in $x $owners] [yield [$concat "`" $x.path "`"]]] ", "]]
+    [= $unowned [?for [in $x $owners] [where [= $x.o.kind 'refused']]
+                  [yield [$concat $at ": `" $x.path "` (" $state ") -- " $x.o.what]]]]
+    [= $bad-state [?if [= $kind 'unknown']
+                    [then ([$concat $at ": " $shown " -- state `" $state "` is not landed, pending or sequenced=<issue or decision id> (1329-a)"])]
+                    [else ()]]]
+    [= $unlanded [?if [and [= $kind 'landed'] [not $status]]
+                   [then [?for [in $x $owners] [where [not [= $x.o.kind 'refused']]]
+                           [= $why [$verify-path $x.o $x.path $e.ids $origin]]
+                           [where [not [= $why ""]]]
+                           [yield [$concat $at ": `" $x.path "` (landed) -- " $why]]]]
+                   [else ()]]]
+    [= $cut [?if [and [= $kind 'pending'] $at-cut]
+              [then ([$concat $at ": " $shown " (pending) -- pending at the cut: \"" $e.edit
+                              "\" is still owed, and the final tag takes zero pending rows (1329-a)"])]
+              [else ()]]]
+    [= $refusals [?to-array [?for [in $xs ($unowned, $bad-state, $unlanded, $cut)] [in $x $xs] [yield $x]]]]
+    [= $line [?if [= $kind 'landed']
+               [then [?if [or $status [> [$count $refusals] 0]] [then ()]
+                       [else ([$concat "  landed     " $at " " $shown " [" $owned-by "]"])]]]
+               [else [?if [= $kind 'pending']
+                 [then ([$concat "  pending    " $at " " $shown " [" $owned-by "] -- " $e.edit])]
+                 [else [?if [= $kind 'sequenced']
+                   [then ([$concat "  sequenced  " $at " " $shown " [" $owned-by "] " $state " -- \"" $e.edit "\""])]
+                   [else ()]]]]]]]
+    {kind: $kind, refusals: $refusals, listed: $line, ok: [= [$count $refusals] 0]}]]
+
+# -- the run ---------------------------------------------------------------
+
+[?let
+  [= $argv   [$env:argv]]
+  [= $at-cut [$member "--at-cut" $argv]]
+  [= $status [$member "--status" $argv]]
+  [= $dir    [$flag-value $argv "ledger" "ledger"]]
+  [= $files  [?to-array [?for [in $f [$io:glob [$concat $dir "/*.md"]]]
+                          [where [not [= [$path:basename $f] "README.md"]]]
+                          [yield $f]]]]
+  [= $entries [?to-array [?for [in $f $files] [in $e [$maps-of $f]] [yield $e]]]]
+  [= $rows    [?to-array [?for [in $e $entries] [where [= $e.kind 'row']] [yield $e]]]]
+  [= $no-ids  [?to-array [?for [in $e $entries] [where [= $e.kind 'no-id']]
+                            [yield [$concat $e.page ":" [$string $e.line]
+                                            ": an edit map with no decision id -- no heading above it declares one, so no commit can cite it (1329-a)"]]]]]
+  [= $map-pages [$count [$distinct [?for [in $e $entries] [yield $e.page]]]]]
+  [= $maps [$count [$distinct [?for [in $e $entries]
+                                [yield [$concat $e.page ":" [?if [= $e.kind 'no-id'] [then [$string $e.line]] [else [$string [$first $e.ids]]]]]]]]]]
+  [= $alloc [$cx:parse [$io:read-file "registry/repos.cxd"]]]
+  [= $rules [?to-array [?for [in $r $alloc/path] [yield $r]]]]
+  [= $pins-doc [$pins:read [$io:read-file "deps.cxd"]]]
+  [= $deps [?to-array [?for [in $d [$pins:rows $pins-doc]]
+             [yield {repo: [$string $d@repo], sha: [$string $d@sha], dir: [$concat "deps/" [$string $d@repo]], row: $d}]]]]
+  [= $absent [?to-array [?for [in $d $deps] [where [not [$io:is-directory [$concat $d.dir "/.git"]]]] [yield $d.repo]]]]
+  [= $_absent [?if [and [> [$count $rows] 0] [> [$count $absent] 0]]
+                [then [?let [= $_ [$cry [$concat "ledger-edit-map-check: deps/ lacks " [$strings:join $absent ", "]
+                                                 " -- run `make deps-sync`; a pinned repository's history cannot be read without its checkout (EDMAP-1)"]]]
+                        [$env:exit 2]]]
+                [else ()]]]
+  [= $origin [?let [= $r [$git ("remote", "get-url", "origin")]]
+               [?if [= [$string $r@exit] "0"] [then [$string $r@out]] [else ""]]]]
+  [= $verdicts [?to-array [?for [in $e $rows] [yield [$judge $e $rules $deps $origin $at-cut $status]]]]]
+  [= $refusals [?to-array [?for [in $xs ($no-ids, [?for [in $v $verdicts] [in $x $v.refusals] [yield $x]])] [in $x $xs] [yield $x]]]]
+  [= $_listed [?for [in $v $verdicts] [in $l $v.listed] [yield [$say $l]]]]
+  [= $n-of [?fn ($k) [$count [?for [in $v $verdicts] [where [= $v.kind $k]] [yield 1]]]]]
+  [= $landed-ok [$count [?for [in $v $verdicts] [where [and [= $v.kind 'landed'] $v.ok]] [yield 1]]]]
+  [= $mode [?if $status [then " (--status: nothing verified)"] [else [?if $at-cut [then " (--at-cut)"] [else ""]]]]]
+  [= $_census [$say [$concat "ledger-edit-map-check: " [$string $maps] " edit map(s) on " [$string $map-pages] " page(s), "
+                             [$string [$count $rows]] " row(s): "
+                             [$string $landed-ok] " landed verified, "
+                             [$string [$n-of 'pending']] " pending, "
+                             [$string [$n-of 'sequenced']] " sequenced; "
+                             [$string [$count $refusals]] " refused" $mode]]]
+  [?if [or $status [= [$count $refusals] 0]]
+    [then [$env:exit 0]]
+    [else [?let [= $_r [?for [in $x $refusals] [yield [$cry [$concat "REFUSED " $x]]]]]
+                [= $_t [$cry "ledger-edit-map-check: an edit map says an edit was made that no citing commit made, points at a path nobody owns, or owes an edit at the cut -- this is a FAILURE (#1329)"]]
+            [$env:exit 1]]]]]
