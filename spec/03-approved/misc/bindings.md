@@ -326,7 +326,7 @@ blocks the release. Tracked in
 [`misc/parity-matrix.md`](parity-matrix.md). (RULED: D75a, RS-31 —
 the four bindings left this repository for their own, and this gate's
 successor is each binding repository grading itself against the ABI
-test vectors cx publishes at `conformance/abi.cxd`, in its own lane,
+test vectors cx publishes at `conformance/abi.cxd`, in its own step,
 with the released cx.)
 
 ---

@@ -324,7 +324,7 @@ Declared in `core/grammar.ebnf` header and in `[?cx version=X.Y]`
 directives:
 
 - **Major** (`X+1.0`): incompatible grammar changes. **Source** migration
-  is tooling-assisted sweeps over the corpus (the shipped fmt-sweep lane —
+  is tooling-assisted sweeps over the corpus (the shipped fmt-sweep step —
   closed template set, loud residue, output oracle, fail-closed per file,
   never regex); **data** never migrates destructively — values, events,
   and stored docs evolve **additively** per

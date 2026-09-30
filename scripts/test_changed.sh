@@ -421,7 +421,7 @@ step_globs() {
     # The private flow gates' rows (merge-flow-gate, premerge-flow-gate, and
     # the ones added after them) live in flows/private.mk, beside their
     # targets (RULED: PRIVMK-1). The catch-all below reads them from there.
-    # the pinned flow lanes (RS-31, D54c): CX programs run by this tree's
+    # the pinned flow programs (RS-31, D54c): CX programs run by this tree's
     # binary, so the pin and everything that builds the binary.
     test-flow-umbrella)            echo 'deps.cxd registry/modules.cxd vcx/* stdlib/*' ;;
     address-baseline-gate)         echo "$RING_LIB $RING_SUP vcx/tests/runners/address_baseline/* conformance/*" ;;
@@ -452,7 +452,7 @@ step_globs() {
     # without these two globs the dev loop would skip the step that says so.
     test-code-diagram)             echo "conformance/* $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/check_code_diagram_fixtures.cx scripts/gen_guide/playground/playground.examples.js vcx/tests/testdata/code_diagram_golden/*" ;;
     # the oriel surface step drives spec/03-approved/xap/demos/oriel/
-    test-oriel-lane)               echo 'spec/03-approved/xap/demos/* vcx/* stdlib/* deps.cxd' ;;
+    test-oriel)                    echo 'spec/03-approved/xap/demos/* vcx/* stdlib/* deps.cxd' ;;
     # #1403 — the ONLY step that puts the SSO stack on a socket. Its inputs are
     # every module and native file the relying-party path bottoms out in: a
     # change to oidc's request forming or saml's verification that nothing else
@@ -460,7 +460,7 @@ step_globs() {
     # step's proxy and Retry-After rows grade the client's transport map, so a
     # change there that never touches oidc must still re-run this step.
     #
-    # THE FIRST INPUT IS NOW `deps.cxd` (RULED: RS-12, #1591 item 11). The lane
+    # THE FIRST INPUT IS NOW `deps.cxd` (RULED: RS-12, #1591 item 11). The step's
     # script, the four programs it drives, the module and its corpus are
     # cx-platform-sso's; they cannot appear in a diff of THIS repository, and a
     # glob naming them would be a row that can never fire. What CAN appear is
@@ -468,20 +468,20 @@ step_globs() {
     # — a new sso release met by this tree's oidc, saml, session and transport.
     # `registry/modules.cxd` rides with it because that is where the pinned
     # paths the build reads are declared.
-    test-sso-interop-lane)         echo 'deps.cxd registry/modules.cxd stdlib/oidc.cx stdlib/saml.cx stdlib/session.cx stdlib/crypto.cx stdlib/http.cx stdlib/net.cx vcx/code/stdlib_oidc.v vcx/code/stdlib_saml*.v vcx/identity/stdlib_session.v vcx/code/stdlib_crypto.v vcx/code/stdlib_http_notd_cx_no_pack_http_client.v vcx/code/net_core_notd_cx_no_pack_http_client.v' ;;
+    test-sso-interop)              echo 'deps.cxd registry/modules.cxd stdlib/oidc.cx stdlib/saml.cx stdlib/session.cx stdlib/crypto.cx stdlib/http.cx stdlib/net.cx vcx/code/stdlib_oidc.v vcx/code/stdlib_saml*.v vcx/identity/stdlib_session.v vcx/code/stdlib_crypto.v vcx/code/stdlib_http_notd_cx_no_pack_http_client.v vcx/code/net_core_notd_cx_no_pack_http_client.v' ;;
     tools-export-gate)             echo 'deps.cxd registry/modules.cxd vcx/* stdlib/*' ;;
-    # the four agent real-socket lanes, CX programs run from the pinned
+    # the four agent real-socket programs, CX programs run from the pinned
     # checkout by this tree's binary (RS-12, RS-31)
-    test-agent-real-lanes)         echo 'deps.cxd registry/modules.cxd vcx/* stdlib/*' ;;
-    # connector's two real-socket lanes, V test files run from the pinned
+    test-agent-real)               echo 'deps.cxd registry/modules.cxd vcx/* stdlib/*' ;;
+    # connector's two real-socket tests, V test files run from the pinned
     # checkout by this tree's binary (RULED: RS-12, RS-8, RS-27; #1591 item
-    # K3) — a pin bump, plus the in-tree mock the lanes still boot
-    test-connector-real-lanes)     echo 'deps.cxd registry/modules.cxd reference/acme/*' ;;
+    # K3) — a pin bump, plus the in-tree mock the tests still boot
+    test-connector-real)           echo 'deps.cxd registry/modules.cxd reference/acme/*' ;;
     # the db corpus on sqlite, postgres and mysql against real servers in
-    # containers, run from the pinned checkout by a lane binary this tree builds
+    # containers, run from the pinned checkout by a cx binary this tree builds
     # with the two engines (RULED: DBLANE-1, DBSRV-1) — a pin bump, the
     # runtime and client libraries devbox pins, and the front door's own vcx/
-    test-db-real-lanes)            echo 'deps.cxd registry/modules.cxd devbox.json devbox.lock vcx/*' ;;
+    test-db-real)                  echo 'deps.cxd registry/modules.cxd devbox.json devbox.lock vcx/*' ;;
     # the roster rows live in the Makefile and name files under vcx/
     check-serial-retry-rosters)    echo 'Makefile vcx/*' ;;
     # #1448: the partition guard reads the manifest, the corpus it partitions
