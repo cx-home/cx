@@ -562,6 +562,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `dsc-1a` | [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md) | DSC-1a — the SVG carrier belongs inside the root element |
 | `dsc-1b` | [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md) | DSC-1b — PNG is CLEAN; no analogous defect |
 | `dsc-1c` | [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md) | DSC-1c — the graphviz formats require an explicit grant |
+| `dursc-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | DURSC-1 — `time:parse-duration` and `time:duration-*` answer the duration scalar (L112 = (a), delegated; #1681) |
 | `edl-1` | [rulings_2026_08_21_diagram_vector_data.md](rulings_2026_08_21_diagram_vector_data.md) | EDL-1 — the examples-diagram gate (the #910 suggestion, homed) |
 | `en-1` | [rulings_2026_08_31_enum_campaign.md](rulings_2026_08_31_enum_campaign.md) | EN-1 — exhaustiveness: a `[?match]` over a schema-closed set knows when its arms cover it (#1154) |
 | `en-2` | [rulings_2026_08_31_enum_campaign.md](rulings_2026_08_31_enum_campaign.md) | EN-2 — closed-key maps: the schema `[keys …]` constraint, the honest EnumMap (#1155) |
@@ -573,6 +574,9 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ent-1` | [rulings_2026_08_20_cx_pragma_registry.md](rulings_2026_08_20_cx_pragma_registry.md) | ENT-1 rider — attribute-position entity references (#878, corrected) |
 | `fabr-1` | [rulings_2026_09_28_owner_decisions_l80_l84.md](rulings_2026_09_28_owner_decisions_l80_l84.md) | FABR-1 — the host context carries the fabric the host built on the deployment's journal (L81 = (a)) |
 | `fdisp-1` | [rulings_2026_09_28_owner_decisions_l80_l84.md](rulings_2026_09_28_owner_decisions_l80_l84.md) | FDISP-1 — the host dispatches a verb through a feature→package map built at boot (L80 = (d)) |
+| `fdisp-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | Integrator decisions 2026-09-29 — Letters 111 to 114 and 117 to 118, taken as delegated: four spec-silent stdlib defects the Ring-1 batch left out by name, and the two xap sentences FDISP-1 flagged |
+| `fdisp-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | PKGFILE-1 — a package's module file is `<package-name>.cx`, in the spec and on the pages (L117 = (a), delegated; FDISP-1's flag 1, posted 00:1xZ 09-30) |
+| `fdisp-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | PKGIMP-1 — a `pkg:` import exposes every feature of the package (L118 = (a), delegated; FDISP-1's flag 2, posted 00:1xZ 09-30) |
 | `fe-1` | [rulings_2026_08_30_functional_ergonomics.md](rulings_2026_08_30_functional_ergonomics.md) | FE-1 — operator-form holes are the first-class-operator mechanism |
 | `fe-2` | [rulings_2026_08_30_functional_ergonomics.md](rulings_2026_08_30_functional_ergonomics.md) | FE-2 — single-arm `[?match]` honors grammar [136]; it is the destructuring bind form |
 | `fe-3` | [rulings_2026_08_30_functional_ergonomics.md](rulings_2026_08_30_functional_ergonomics.md) | FE-3 — `[?for]` pattern position extends to the full pattern grammar, refuse-on-miss |
@@ -622,6 +626,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `hostb-1` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | Owner decisions 2026-09-27 — Letters 46–50 and the org profile: KIT-4's shape (KIT4-1…3), the #1498 spec gaps (AA-7…9), HOST-4's seed made real (SEED-1), the host act's basis (HOSTB-1), the call spread's readings (SPREAD-2), the org-profile push (ORG-1) |
 | `hostb-1` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | HOSTB-1 — a session principal's act runs under a basis the host derives (L49 = (a)) |
 | `hostl-1` | [rulings_2026_09_29_owner_decisions_l109.md](rulings_2026_09_29_owner_decisions_l109.md) | HOSTL-1 — a page whose subject is a binding names its host language, as a fixed allowance the ratchet holds (L109 = (a)) |
+| `httpto-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | HTTPTO-1 — a non-duration `timeout=` is refused by name, and `duration_to_ns` is bounded for every caller (L111 = (a), delegated; #1702) |
 | `hyg-1` | [rulings_2026_08_20_hygiene_695.md](rulings_2026_08_20_hygiene_695.md) | Ruling HYG-1 (2026-08-20) — #695 stale-inventory reconciliation (pre-cut hygiene sweep) |
 | `int-1` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) | INT-1 — why |
 | `int-1` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) | INT-1 — the §6 reading |
@@ -723,6 +728,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pivot-2` | [rulings_2026_09_27_integrator_decisions_l57.md](rulings_2026_09_27_integrator_decisions_l57.md) | Integrator decision 2026-09-27 (afternoon), under the owner's delegation — Letter 57: a verb's `effect=` reaches both faces from the feature (PIVOT-2) |
 | `pivot-2` | [rulings_2026_09_27_integrator_decisions_l57.md](rulings_2026_09_27_integrator_decisions_l57.md) | PIVOT-2 — both faces copy a verb's `effect=` from the feature it came from (L57 = (b)) |
 | `pivot-2` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | 1690, #1498, #1434, PIVOT-2, SYNC-3, SYNC-6, KIT4-1, KIT4-2, RS-38, D83a, K10.** |
+| `pkgimp-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | PKGIMP-1 — a `pkg:` import exposes every feature of the package (L118 = (a), delegated; FDISP-1's flag 2, posted 00:1xZ 09-30) |
 | `play-2` | [rulings_2026_09_29_owner_direction_docs_5of5.md](rulings_2026_09_29_owner_direction_docs_5of5.md) | PLAY-2 — the playground's own 5 of 5, inside the nine criteria above |
 | `pq-1` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-1 — the ERD row comment carries a VALUE, and the `@` sigil is retired |
 | `pq-2` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-2 — every ERD column token is forced to a valid ATTRIBUTE_WORD |
@@ -865,6 +871,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `sk-1` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) | What SK-1 got wrong |
 | `sk-2` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) | SK-2 — 2026-09-06, the OWNER REVISED SK-1 (asked "is (a) the best long term?") |
 | `sk-2` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) | SK-2 — RULED: (a), three parts |
+| `spawnf-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | SPAWNF-1 — an exec-time ENOENT is the same refusal a pre-spawn one is, as a round of its own (L114 = (a), delegated; #1630) |
 | `spf-1` | [rulings_2026_08_21_supervise_profile_and_python.md](rulings_2026_08_21_supervise_profile_and_python.md) | SPF-1 — a unique id is not a scheduler's to lend; a missing pack refuses at composition |
 | `spf-2` | [rulings_2026_08_21_supervise_profile_and_python.md](rulings_2026_08_21_supervise_profile_and_python.md) | SPF-2 — the third release-blocking red, unreported until now |
 | `spg-1` | [rulings_2026_08_22_gate_hygiene.md](rulings_2026_08_22_gate_hygiene.md) | SPG-1 — the SIGPIPE pipe class becomes a gate (#916) |
@@ -937,6 +944,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ti-1` | [rulings_2026_08_21_table_image.md](rulings_2026_08_21_table_image.md) | TI-1 — the image carries the table, because the seam already parsed it |
 | `tme-1` | [rulings_2026_08_22_typed_map_entry.md](rulings_2026_08_22_typed_map_entry.md) | TME-1 — a map key is a declaration site, so it takes the glued annotation |
 | `tme-1` | [rulings_2026_08_22_typed_map_entry.md](rulings_2026_08_22_typed_map_entry.md) | TME-1 is SUPERSEDED — its premise was FALSE (recorded 2026-08-22) |
+| `tmpdir-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | TMPDIR-1 — `system-temp-dir` honours `TMPDIR` (L113 = (a), delegated; #1649) |
 | `trap-1` | [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) | The traps become fixtures — two batch branches for the CXF-8 defects, and the one ruling they need (RULED: TRAP-1, 1527-a) |
 | `triage-1` | [rulings_2026_09_18_owner_decisions_1640z.md](rulings_2026_09_18_owner_decisions_1640z.md) | Owner decisions 2026-09-18 ~16:40Z — "recommendations accepted": twenty-one issues closed by the owner's word on the triage list (TRIAGE-1); the soap version is the string '1.1' (1575-b); unknown Security members are carried (1456-b) |
 | `uom-1` | [rulings_2026_08_20_universal_object_model.md](rulings_2026_08_20_universal_object_model.md) | UOM-1 — the universal object/subtree model IS the store contract; execute |
@@ -1501,4 +1509,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*355 ledger pages; 785 ids declared, 390 cited only.*
+*356 ledger pages; 790 ids declared, 390 cited only.*
