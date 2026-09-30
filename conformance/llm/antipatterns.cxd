@@ -88,7 +88,7 @@ below and the exit status are exactly what they were.
 --allow-env
 #]]
   [out-text [#
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var-or-default; none granted (grant via --allow-env)']
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var-or-default; none granted (grant via --allow-env)' at='2:39']
 #]]
   [exit-code [#1#]]
  ]
@@ -584,7 +584,7 @@ the two halves below; the grant does.
 [probe exists=[$io:exists '/']]
 #]]
   [out-text [#
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-exists; none granted (grant via --allow-read)']
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-exists; none granted (grant via --allow-read)' at='2:15']
 #]]
   [exit-code [#1#]]
  ]
