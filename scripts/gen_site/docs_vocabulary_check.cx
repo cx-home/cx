@@ -174,9 +174,11 @@
   [= $unknown [?for [in $r $rows]
                 [where [not [> [$count [?for [in $i $ids] [where [= $i [$string $r@word]]] [yield 1]]] 0]]]
                 [yield [$concat [$string $r@path] " → word=" [$string $r@word]]]]]
-  [= $graded [$fp:flat-map ([$fp:flat-map $files [?fn ($f) [$grade $f $words $rows]]],
-                              [$fp:flat-map $tfiles [?fn ($f) [$grade $f $tws $rows]]])
-                [?fn ($part) $part]]]
+  # the served sources with every word, then the tree's files with the [tree] words
+  [= $graded [$fp:flat-map [$strings:split-whitespace "served tree"]
+               [?fn ($k) [?if [= $k "served"]
+                           [then [$fp:flat-map $files [?fn ($f) [$grade $f $words $rows]]]]
+                           [else [$fp:flat-map $tfiles [?fn ($f) [$grade $f $tws $rows]]]]]]]]
   [= $over [?for [in $g $graded] [where [> $g@n $g@allow]] [yield $g]]]
   [= $under [?for [in $g $graded] [where [< $g@n $g@allow]] [yield $g]]]
   [= $total [$fp:fold $graded 0 [?fn ($a $g) [+ $a $g@n]]]]
