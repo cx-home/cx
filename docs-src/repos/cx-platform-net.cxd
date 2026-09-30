@@ -27,12 +27,15 @@
        that maps a request to a response, with Server-Sent Events for
        held-open push and the WebSocket handshake graded frame by frame;
        what it serves and how a deployment runs it is the [[operations]]
-       page. The `ftp` and `sftp` rows the registry carries are planned, and
-       the table below shows only what ships today."""]
+       page. The `sftp` module is the third: an SSH session whose host key is
+       checked against the rows a deployment pinned before any credential is
+       used, and the seven-verb file surface over it, every decision a pure
+       function the corpus grades with no peer. The `ftp` row the registry
+       carries is planned, and the table below shows only what ships today."""]
   [gives
-    """Two modules of the platform group: the transport layer and the HTTP
-       server built over it. Each links to the reference page the guide
-       projects from the module's own documentation; the transports the
+    """Three modules of the platform group: the transport layer, the HTTP
+       server built over it, and SSH file transfer. Each links to the
+       reference page the guide projects from the module's own documentation; the transports the
        store, the fabric and the application host speak over are these."""]
   [try
     """A transport URL parsed into an address value — the host, the port and
