@@ -22,6 +22,10 @@
 #   N  docs-src/flow/ (the docs flow) + ledger/  → docs   (RULED: CICD-1 — the doc
 #                                                        pipeline runs the flow)
 #   O  docs-src/ OUTSIDE flow/ (a guide source)  → FULL   (only flow/ is admitted)
+#   P  flows/merge-queue.cxd + _gate_evidence/   → docs   (a queueing commit: MQUE-1,
+#                                                        Letter 149)
+#   Q  flows/merge-queue.cxd + code              → FULL   (the queue admits no code)
+#   R  another file under flows/                 → FULL   (only the queue is admitted)
 #
 # Exit 0 and the count line only when every case matches.
 set -u
@@ -171,8 +175,28 @@ printf '[section]\n' > docs-src/canonical/page.cxd
 git add -A && git commit -qm "O"
 check O full "$NBASE"
 
+# P — the merge queue + evidence: a queueing commit costs the doc run
+mkdir -p flows
+printf '[merge-queue\n]\n' > flows/merge-queue.cxd
+printf 'evidence\n' >> _gate_evidence/seed.log
+git add -A && git commit -qm "P"
+check P docs "$BASE"
+
+# Q — the queue beside code: a full run
+mkdir -p flows
+printf '[merge-queue\n]\n' > flows/merge-queue.cxd
+printf 'more code\n' >> vcx/tests/thing_test.v
+git add -A && git commit -qm "Q"
+check Q full "$BASE"
+
+# R — any other flows/ file: a full run
+mkdir -p flows
+printf '[flow name="merge"]\n' > flows/merge.flow.cx
+git add -A && git commit -qm "R"
+check R full "$BASE"
+
 if [ "$fails" -ne 0 ]; then
 	echo "head_is_docs_only selftest: $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "head_is_docs_only selftest: 15/15 (docs A/D/H/N; full B/C/E/F/G/I/J/K/O and L/M, the #1427 stdlib/ + platform/ split)"
+echo "head_is_docs_only selftest: 18/18 (docs A/D/H/N/P; full B/C/E/F/G/I/J/K/O/Q/R and L/M, the #1427 stdlib/ + platform/ split)"
