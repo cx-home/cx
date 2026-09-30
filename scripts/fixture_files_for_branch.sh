@@ -287,7 +287,7 @@ if [ -n "$outside" ]; then
 	echo "fixture-files: conformance file(s) this grader does not walk, left out of the selection —" >&2
 	for f in $outside; do echo "    $f" >&2; done
 	echo "  they are graded by their own steps (check-code-fixtures, the document" >&2
-	echo "  lane, corpus-audit), not by make fixtures, and naming one would fail it." >&2
+	echo "  reading, corpus-audit), not by make fixtures, and naming one would fail it." >&2
 fi
 
 if [ "$all" -eq 1 ]; then

@@ -78,7 +78,6 @@ breaks its callers and renaming a runner directory strands the runs holding it.
 | `flows/postmerge.flow.cx` (launchd `ai.cx.postmerge-flow`), `scripts/gate-status.sh`, `build-slot.sh` | the post-merge runner loop and the run it starts, the run reader, the runner | a file rename |
 | `vcx/target/gate.log`, `gate-loop.log`, `gate-prev-*.log`, `gate-loop.rerun` | one run's step output; the post-merge runner's own log; the rotated copies; the re-run flag | a file rename — other sessions tail these right now |
 | `GATE-EXIT=`, `GATE-START`, `gate: started` | the pre-OL-12 spelling of `RUN-EXIT=`, `RUN-START`, `run: started`, in logs already on disk; every reader accepts both | nothing — the old logs age out |
-| `check-python-test-lane`, `test-oriel-lane`, `test-sso-interop-lane` | make targets that are one step each | a target rename |
 | the `*-gate` targets (`spec-freeze-gate`, `test-profile-gate`, `fmt-sweep-gate`, `guide-render-gate`, `abi-gc-gate`, `ring-import-gate`, …) and the Makefile messages that name them | one step each | a target rename |
 | `TEST_TARGETS`, `test-changed`, `check-gate-lock`, `gate-lock-status` | the post-merge pipeline's step list; the pre-merge pipeline; the build lock — which §6 reads as protecting the main checkout, so a step held by the pre-merge runner (`CX_BUILD_SLOT` not `.build-slot`) is exempt from it (RULED: INT-1) | a target/variable rename |
 | `CX_BUILD_SLOT`, `BUILD_SLOT_TIMEOUT` | the runner directory and its wait bound; `CX_RUNNER` is a synonym for the first |  a variable rename |
