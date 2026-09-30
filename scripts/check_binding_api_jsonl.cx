@@ -17,7 +17,7 @@
 # The rule this enforces is already RULED for the sibling gate — PYE-6
 # (ledger/rulings_2026_08_22_python_eradication.md): "an all-SKIP run is a
 # FAILURE. Zero passes means the gate proved nothing, and a gate that
-# proves nothing must not report success." The binding-api lane had the
+# proves nothing must not report success." The binding-api step had the
 # same hole and no equivalent guard. This is that guard.
 #
 # What it checks, per line:

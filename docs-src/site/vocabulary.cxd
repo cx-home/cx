@@ -16,6 +16,10 @@ carries and why ([allow]).
             `(?i)` unless said), `scope=` limits it to the paths carrying that
             substring, `say=` is how the step names it, `spans=keep` counts inside
             code spans too (a label the playground's script spells).
+  [tree]    the tree's own prose (RULED: WORDS-1): `words=` names the
+            [word] ids also held over the files its [glob path=…] rows match —
+            the Makefile, flows/, scripts/, the approved specs and the root
+            rule files — with the same exemptions and the same [allow] rows.
   [allow]   one [page] per file and word: a file with no row for a word must
             read ZERO of it; a file with a row may read at most its `allow=`,
             and when it reads LESS the step refuses too, naming the new count,
@@ -60,7 +64,22 @@ never rises. Not scanned, by name: "landing" ("landing page").
        element text reading exactly Document or Program ]
     [word id=reading-label rx="(>|['\"])(Document|Program)(<|['\"])" flags='' scope='playground' spans=keep say='the reading label "Document" / "Program"']]
 
-  [; ── the allowances, measured on the PLAY-2 tree and re-measured 2026-09-29: no row for lane, campaign, gate run or steward; rows with wave= are floors the voice pass lowers ── ]
+  [; ── the tree's own prose (RULED: WORDS-1, Letter 120 = (a)): the words named
+     in `words=` are held over the tooling and process prose of the tree as well
+     as over the served sources above — the Makefile, flows/, scripts/, the
+     approved specs and the three root rule files — in the same shape: code
+     spans, path literals and [fixture id=…] citations are exempt, a file with
+     no [allow] row for the word reads zero of it, and a row's count only
+     moves down. A file the served GLOBS already read is graded there, once.
+     Not scanned, by name: ledger/ and the git history, which are records. ── ]
+  [tree words='lane'
+    [glob path='Makefile']
+    [glob path='flows/**/*.cx'] [glob path='flows/**/*.cxd'] [glob path='flows/**/*.mk']
+    [glob path='scripts/**/*.cx'] [glob path='scripts/**/*.sh']
+    [glob path='spec/03-approved/**/*.md']
+    [glob path='AGENTS.md'] [glob path='AGENT-STANDING-RULES.md'] [glob path='CONTRIBUTING.md']]
+
+  [; ── the allowances, measured on the PLAY-2 tree and re-measured 2026-09-29: no served row for lane, campaign, gate run or steward (the tree's lane rows, WORDS-1's, close the list); rows with wave= are floors the voice pass lowers ── ]
   [allow
     [page path="docs-src/canonical/sections/01a-rings.cxd" word=ring-2-3 allow=2 why="the page records, in its file comment and prose, that Ring 2 and Ring 3 left under RS-1 and that no such ring exists"]
     [page path="docs-src/canonical/sections/00-quickstart.cxd" word=stage allow=1 why="the `[?pipe]` stage — the code language's own word for one transform of a pipe (code.md §6.4, §8.9), not a pipeline unit"]
@@ -91,5 +110,12 @@ never rises. Not scanned, by name: "landing" ("landing page").
     [page path="docs-src/canonical/reference/directives.cx" word=stage allow=3 why="the `[?pipe]` stage — the code language's own word for one transform of a pipe (code.md §6.4, §8.9), not a pipeline unit"]
     [page path="docs-src/llm/reference-code-language.md.tmpl" word=stage allow=1 why="the `[?pipe]` stage — the code language's own word for one transform of a pipe (code.md §6.4, §8.9), not a pipeline unit"]
     [page path="docs-src/llm/primer-platform.chapter.md" word=job allow=2 why="regenerated from composition.md — an outside system's export job, the bulk-export pattern's own domain word"]
-    [page path="scripts/gen_guide/guide_build.cx" word=ruling allow=4 why="file comments citing #826's numbered rulings by their historical name"]]
+    [page path="scripts/gen_guide/guide_build.cx" word=ruling allow=4 why="file comments citing #826's numbered rulings by their historical name"]
+    [; the tree's own prose (RULED: WORDS-1): a sentence that NAMES the refused word, or quotes it as history, and nothing else ]
+    [page path="Makefile" word=lane allow=1 why="docs-vocabulary-check's own comment names the words the step counts"]
+    [page path="scripts/gen_site/docs_vocabulary_check.cx" word=lane allow=2 why="the program's header names the words it counts and the one the [tree] rows hold"]
+    [page path="AGENTS.md" word=lane allow=1 why="the Words rule names the refused word: not ruling, not campaign, not lane, not gate run"]
+    [page path="AGENT-STANDING-RULES.md" word=lane allow=3 why="the vocabulary line names the refused word; two handoff rules of 2026-09-26 and 09-27 quoted verbatim as history"]
+    [page path="scripts/spec_freeze_gate.sh" word=lane allow=1 why="an exemption row quoting commit efd780b17's recorded note, history"]
+    [page path="spec/03-approved/process/governance.md" word=lane allow=1 why="the status table cites code.md §11.4's own term reference-lane-only (cx-core-code's spec, a different sense; its word moves with a decision on that page)"]]
 ]

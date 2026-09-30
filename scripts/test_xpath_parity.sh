@@ -4,9 +4,9 @@
 # corpus. MANUAL, by ruling. RULED: VC-7 (#945).
 #
 # ###########################################################################
-# ## THIS IS NOT A LANE AND MUST NOT BECOME ONE WITHOUT A RULING.           ##
+# ## THIS IS NOT A STEP AND MUST NOT BECOME ONE WITHOUT A RULING.           ##
 # ## It prints the operator recipe and its preconditions, then exits 2.     ##
-# ## The CX side of the same corpus IS a lane: `make test-xpath-parity-cx`  ##
+# ## The CX side of the same corpus IS a step: `make test-xpath-parity-cx`  ##
 # ## (gate 28.5a), in TEST_TARGETS, no Docker.                              ##
 # ###########################################################################
 #
@@ -61,7 +61,7 @@
 #      above);
 #   6. `spec/cxpath_alignment.md`, cited as normative for the divergence
 #      cases, did not exist in the tree.
-# Findings 1-5 are fixed by the 28.5a lane and the re-derived fixture.
+# Findings 1-5 are fixed by the 28.5a step and the re-derived fixture.
 # Finding 6 is fixed by spec/02-working/cxpath_alignment.md (authored under
 # VC-7; PROPOSED for graduation to spec/03-approved/, NOT graduated — G3 is
 # owner-only).

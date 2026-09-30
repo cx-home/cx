@@ -14,7 +14,7 @@ and, on the options posted: **letter (a)**; "this was the stated plan days ago".
 | `scripts/gate-loop.sh` | the `selected` branch after the docs-only check | landed |
 | `scripts/gate_loop_lib.sh`, `scripts/gate_loop_lib_selftest.sh` | `full_union_due` + cases I–L | landed |
 | `spec/03-approved/process/delivery-grammar.md` §4 | the pipeline row's sentence | landed |
-| `scripts/gate-loop.sh` running instance | restarted from a Terminal after the landing (a running `sh` does not reload) | pending |
+| `scripts/gate-loop.sh` running instance | restarted from a Terminal after the landing (a running `sh` does not reload) — superseded: the loop moved under launchd on 2026-09-16 and became `flows/postmerge.flow.cx` under `ai.cx.postmerge-flow` (RFLOW-1, LSWAP-1); no running `sh` remains | landed |
 
 Why: measured 2026-09-15/16 — a full run is 66–70 min (a 36-min `-j12` storm of 72 V test files + 39 doc/conformance
 steps, then a ~30-min serial tail of graders and gauges) on EVERY head, whatever it touched; closes arrive once an hour.

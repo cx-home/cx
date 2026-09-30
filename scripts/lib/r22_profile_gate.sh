@@ -14,7 +14,7 @@
 # file, and scripts/release_profile_gate.sh runs it WITHOUT a cut.
 #
 # Source it, then call. Every function expects the CWD to be the repo root
-# (the release flow runs from the root; the linux lane runs from the container's
+# (the release flow runs from the root; the linux build runs from the container's
 # /build copy, which carries scripts/ in its lean tar list).
 #
 #   r22_collect_platform_files <destdir>
@@ -25,15 +25,15 @@
 # R22_EXPECT_HEADLINE (env, optional) — when set, r22_profile_gate additionally
 # requires every staged binary's `cx -v` FIRST LINE to equal it exactly. A cut
 # sets it to "cx vX.Y.Z" so an artifact built off the release tag cannot ship
-# (#979, RULED: CO-4); the standalone pre-cut lane leaves it unset, where the
+# (#979, RULED: CO-4); the standalone pre-cut step leaves it unset, where the
 # honest headline is the `-dev+` pre-release form.
 #
 # The staging keeps the tolerant `cp … 2>/dev/null || true` form it has
 # always had for the dual .dylib/.so lib names: this landing changes NO
-# lane's strictness. The linux lane's own staging is deliberately NOT
+# caller's strictness. The linux build's own staging is deliberately NOT
 # unified here (different make target, different lib set) — see PGL-1
 # point 4 for why, and the ruling's closing note for the lib-content hole
-# that neither lane checks.
+# that neither caller checks.
 
 # r22_vcx_target — where build-vcx actually lands its artifacts. RS-12's
 # extraction moved vcx/ itself into the cx-core-code pin (deps/cx-core-code/vcx,
@@ -124,7 +124,7 @@ r22_stage_profiles() {
 # waved through — and the `data`/`embed` profiles ARE a library surface.
 #
 # Libs match by GLOB on either extension, so one implementation serves both
-# lanes. The globs are disjoint: `libcx.*` cannot match `libcx-core.dylib`,
+# callers. The globs are disjoint: `libcx.*` cannot match `libcx-core.dylib`,
 # because what follows `libcx` there is `-`, not `.`.
 #
 # `cli` is checked by EXCLUSION as well as inclusion: "the binary is the
@@ -182,9 +182,9 @@ r22_profile_payload() {
 # profile line. This is the mechanical closure of the I4 exit-gate
 # deferral (audit F-8): "assets ship at the next cut" enforced AT the cut.
 #
-# `label` suffixes the failure text so a lane names itself — "" for the
+# `label` suffixes the failure text so a caller names itself — "" for the
 # darwin cut, "/linux" in the container, "/precut" for the standalone
-# lane. Failure calls `exit 1`, exactly as both original copies did: in
+# step. Failure calls `exit 1`, exactly as both original copies did: in
 # the release flow's package act, aborting the cut before the phase-3 push, and in the
 # container it fails the container, which fails release_linux.sh, which
 # fails the release flow.
@@ -219,14 +219,14 @@ r22_profile_gate() {
         exit 1 ;;
     esac
     # Provenance headline (#979, RULED: CO-4). A cut sets R22_EXPECT_HEADLINE
-    # to the release headline ("cx vX.Y.Z"); the standalone pre-cut lane leaves
+    # to the release headline ("cx vX.Y.Z"); the standalone pre-cut step leaves
     # it unset, because outside a cut the honest headline IS the `-dev+` one
-    # and demanding otherwise would make the lane un-runnable.
+    # and demanding otherwise would make the step un-runnable.
     #
     # This is the assertion that catches a profile or platform artifact built
     # off the tag — the failure mode the phase ordering (#979) exists to
     # prevent, checked on the STAGED TARBALL rather than on the build inputs,
-    # so it holds for the linux lane's container builds too.
+    # so it holds for the linux build's containers too.
     if [ -n "${R22_EXPECT_HEADLINE:-}" ]; then
       probe_head="$(printf '%s\n' "$probe_out" | head -1)"
       if [ "$probe_head" != "$R22_EXPECT_HEADLINE" ]; then

@@ -148,7 +148,7 @@ if ! "$CX_BIN" --allow-read --allow-write "$COMPILER" "$FIXTURES" \
 fi
 
 # #1180: the compiled stream must be USABLE before parity means anything.
-# This lane once reported 51/51 green on a compiler emitting `"ops": ,` —
+# This step once reported 51/51 green on a compiler emitting `"ops": ,` —
 # malformed JSON with zero operations. Every driver failed to parse it,
 # exited 2 and printed nothing; four empty strings compare equal, so the
 # comparison below scored every fixture a pass. The numbers were identical
