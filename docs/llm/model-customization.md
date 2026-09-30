@@ -248,7 +248,7 @@ demonstration that `of=` is derivable rather than magic:
 
 ```console
 $ cx prog.cx
-[probe [name 'wax-seal'] [cq 'irreversible'] [rule 'wax-seal/see'] [fields 3] [sel 1] [prov 1] [composes 'true']]
+[probe [name wax-seal] [cq irreversible] [rule wax-seal/see] [fields 3] [sel 1] [prov 1] [composes 'true']]
 ```
 
 An instance may also add views onto a noun it inherited:
@@ -305,7 +305,7 @@ Repurposing an inherited name:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4877 message='E_XAP_ARCHETYPE_REPURPOSE: verb "press" is inherited — an [add] may not repurpose it (§4.3)']
+[err code=cx-err:CXER4877 message='E_XAP_ARCHETYPE_REPURPOSE: verb "press" is inherited — an [add] may not repurpose it (§4.3)' at='10:2']
 ```
 
 Widening what was inherited. `xap_grammar_composition.md:358` is blunt about
@@ -330,7 +330,7 @@ valve is authoring your own feature."*
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4878 message='E_XAP_ARCHETYPE_LOOSEN: verb "press" consequence irreversible → reversible widens (§4.3)']
+[err code=cx-err:CXER4878 message='E_XAP_ARCHETYPE_LOOSEN: verb "press" consequence irreversible → reversible widens (§4.3)' at='10:2']
 ```
 
 A refinement naming a field the archetype does not declare — the typo class,
@@ -354,7 +354,7 @@ caught at instantiation rather than at first render:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4877 message='E_XAP_ARCHETYPE_REPURPOSE: [add [views [sort field=colour]]] on "mark" names a field the archetype does not declare (§4.3/§4.5)']
+[err code=cx-err:CXER4877 message='E_XAP_ARCHETYPE_REPURPOSE: [add [views [sort field=colour]]] on "mark" names a field the archetype does not declare (§4.3/§4.5)' at='10:2']
 ```
 
 A withdrawn verb refuses at resolution, **before** the policy check, and with
@@ -386,7 +386,7 @@ its own code:
 
 ```console
 $ cx prog.cx
-[probe [qualified [code 'cx-err:CXER4864'] [verb 'stamp/purge'] [why 'This deployment does not permit purging.']] [bare [code 'cx-err:CXER4864'] [verb 'stamp/purge']] [offered-verb 'stamp/press']]
+[probe [qualified [code cx-err:CXER4864] [verb stamp/purge] [why This deployment does not permit purging.]] [bare [code cx-err:CXER4864] [verb stamp/purge]] [offered-verb stamp/press]]
 ```
 
 A withdrawal removes a *verb*, not a *word* — a bare term still resolves
@@ -419,7 +419,7 @@ through another feature that offers one:
 
 ```console
 $ cx prog.cx
-[probe [purge 'vault/purge'] [bare 'press' 'purge']]
+[probe [purge vault/purge] [bare 'press' 'purge']]
 ```
 
 ## 2. Why behaviour is not tenant-customizable
@@ -493,7 +493,7 @@ it the new archetype **refuses**, naming both addresses:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4879 message='E_XAP_INSTANCE_INVALID: of= pins sha2-256:999a55929a571983e0909d5fa312c401857b3319c35f83918b6fd5ad817473bf but the archetype presented is sha2-256:0416a467110492c86d98f8597bfc2d51e0376ce75394fc0af33ad9aef93caf21 — an instance derives from an EXACT base (§4.3); re-bless by moving the pin deliberately']
+[err code=cx-err:CXER4879 message='E_XAP_INSTANCE_INVALID: of= pins sha2-256:999a55929a571983e0909d5fa312c401857b3319c35f83918b6fd5ad817473bf but the archetype presented is sha2-256:0416a467110492c86d98f8597bfc2d51e0376ce75394fc0af33ad9aef93caf21 — an instance derives from an EXACT base (§4.3); re-bless by moving the pin deliberately' at='20:2']
 ```
 
 The upgrade is one deliberate act — *"Re-bless, never silent propagation"*
@@ -529,7 +529,7 @@ vendor's additions:
 
 ```console
 $ cx prog.cx
-[probe [name 'asset'] [fields 4] [cq 'irreversible'] [rebased true]]
+[probe [name asset] [fields 4] [cq irreversible] [rebased true]]
 ```
 
 And *"the gate holds at every generation"* is not decoration. A refinement
@@ -554,7 +554,7 @@ refuses rather than lowering the vendor's new floor for one tenant:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4878 message='E_XAP_ARCHETYPE_LOOSEN: verb "create" consequence irreversible → reversible widens (§4.3)']
+[err code=cx-err:CXER4878 message='E_XAP_ARCHETYPE_LOOSEN: verb "create" consequence irreversible → reversible widens (§4.3)' at='12:2']
 ```
 
 The control proves the refusal is about the *base*, not the binding — the same
@@ -580,7 +580,7 @@ refinement against v1 is fine:
 
 ```console
 $ cx prog.cx
-[probe [legal-on-v1 'asset'] [cq 'reversible']]
+[probe [legal-on-v1 asset] [cq reversible]]
 ```
 
 Two rejected alternatives are on the record (`xap_grammar_composition.md:381`):
@@ -860,7 +860,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[probe [n '2'] [split [part [x 'piano'] [x 'tune']] [part [x 'sale'] [x 'ring-up']]]]
+[probe [n '2'] [split [part [x piano] [x tune]] [part [x sale] [x ring-up]]]]
 ```
 
 ## 6. The worked arc, and what is missing
@@ -924,7 +924,7 @@ field and tightens `create` to irreversible; `borough` renames and withdraws
 
 ```console
 $ cx prog.cx
-[probe [acme-name 'asset'] [acme-cq 'irreversible'] [acme-fields 5] [borough-name 'permit'] [borough-cq 'reversible'] [borough-fields 4] [acme-base-is-pin true] [borough-base-is-pin true]]
+[probe [acme-name asset] [acme-cq irreversible] [acme-fields 5] [borough-name permit] [borough-cq reversible] [borough-fields 4] [acme-base-is-pin true] [borough-base-is-pin true]]
 ```
 
 Read the output: two contracts, one implementation. That is §0's sentence,
@@ -1009,7 +1009,7 @@ vendor made the floor) and `135` (clean, both faces agreeing):
 
 ```console
 $ cx prog.cx
-[probe [ok 'true'] [st 'redundant']]
+[probe [ok 'true'] [st redundant]]
 ```
 
 The fleet-level command that walks a tenant list and calls this per tenant
