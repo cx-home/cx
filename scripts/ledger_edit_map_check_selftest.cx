@@ -1,0 +1,251 @@
+# scripts/ledger_edit_map_check_selftest.cx -- the edit-map step's detection
+# power, proved on planted ledger pages (#1329, RULED: 1329-a, EDMAP-1).
+# Written in CX (AGENTS.md rule 6, RULED: CXF-1).
+#
+# 1329-a: "Mutation-tested before landing: flip one `landed` row on a page
+# whose path has no citing commit, confirm the step fails, revert (the
+# vacuous-gate lesson of `verify-playground-examples` and
+# `test-binding-api-parity`)." A step that is only ever run against a store it
+# already agrees with proves nothing, so every verdict it can reach is planted
+# here and read back.
+#
+# THE FIXTURE is a front door in a temporary root, built the way the real one
+# is laid out since the split (EDMAP-1: "the edit maps' targets live under
+# `deps/<repo>` since the split"):
+#   up/cx-platform-demo      a component repository's own history
+#   up/cx-platform-shallow   a second one, whose citing commit is NOT its tip
+#   fd/                      the front door: registry/repos.cxd, deps.cxd,
+#                            scripts/ (the step's pin reader beside it, as in
+#                            the real tree), README.md, and its own history
+#   fd/deps/cx-platform-demo      a FULL clone at the pin
+#   fd/deps/cx-platform-shallow   a `--depth 1` fetch at the pin -- exactly
+#                                 what `make deps-sync` leaves -- so the step
+#                                 must reach the pin's history to answer
+# Each case writes ONE ledger page into fd/ledger/, runs the step from fd/
+# under the grants the make target passes, and holds its exit status and one
+# or more phrases of its output.
+#
+# The last two cases run on the REAL tree: the store as it is must pass, and
+# the same pages with one planted `landed` row whose path carries no citing
+# commit must fail naming that row -- the mutation 1329-a asks for, on the
+# real history rather than a planted one.
+#
+# Nothing is left under the system temp directory (#1511).
+#
+# Exit 0 when every case matches, 1 otherwise.
+# Run from the checkout root:
+#   cx --allow-all scripts/ledger_edit_map_check_selftest.cx
+# (or: make ledger-edit-map-check, which runs it after the step itself)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+# run-in: run argv in $dir, answering an r element: the exit status and the
+# output, stdout and stderr together.
+[?def run-in scope=private impure ($dir::string $argv)
+  [?let [= $r [$process:run $argv cwd=$dir]]
+    [r exit=[$string $r@exit-code]
+       out=[$concat [$string $r@stdout] [$string $r@stderr]]]]]
+
+[?def git-in scope=private impure ($dir::string $args)
+  [$run-in $dir [?for [in $a ("git", [?splice $args])] [yield $a]]]]
+
+# put: write $text at $dir/$file, making its directory first.
+[?def put scope=private impure ($dir::string $file::string $text::string)
+  [?let [= $p [$concat $dir "/" $file]]
+        [= $_d [$io:make-dirs [$path:dirname $p]]]
+    [$io:write-file $p $text]]]
+
+# commit: write one file and commit it with $msg as the subject.
+[?def commit scope=private impure ($dir::string $file::string $text::string $msg::string)
+  [?let [= $_w [$put $dir $file $text]]
+        [= $_a [$git-in $dir ("add", "--", $file)]]
+    [$git-in $dir ("-c", "user.name=edmap", "-c", "user.email=edmap@example.invalid",
+                   "-c", "commit.gpgsign=false", "commit", "-q", "-m", $msg)]]]
+
+[?def head-sha scope=private impure [returns string] ($dir::string)
+  [$strings:trim [$string [$git-in $dir ("rev-parse", "HEAD")]@out]]]
+
+# -- the fixture ----------------------------------------------------------
+
+[?def build-fixture scope=private impure ($root::string $real::string)
+  [?let
+    [= $demo [$concat $root "/up/cx-platform-demo"]]
+    [= $_d0 [$io:make-dirs $demo]]
+    [= $_d1 [$git-in $demo ("init", "-q", ".")]]
+    [= $_d2 [$commit $demo "src/demo.v" "seed\n" "seed the component"]]
+    [= $_d3 [$commit $demo "src/demo.v" "the thing\n" "feat(demo): the thing (RULED: TST-1)"]]
+    [= $_d4 [$commit $demo "src/other.v" "other\n" "feat(demo): another decision's edit (RULED: OTH-9)"]]
+    [= $demo-sha [$head-sha $demo]]
+
+    [= $shal [$concat $root "/up/cx-platform-shallow"]]
+    [= $_s0 [$io:make-dirs $shal]]
+    [= $_s1 [$git-in $shal ("init", "-q", ".")]]
+    [= $_s2 [$commit $shal "src/deep.v" "deep\n" "feat(shallow): the deep edit (RULED: TST-1)"]]
+    [= $_s3 [$commit $shal "src/later.v" "later\n" "chore(shallow): a later commit citing nothing"]]
+    [= $shal-sha [$head-sha $shal]]
+
+    [= $fd [$concat $root "/fd"]]
+    [= $_f0 [$io:make-dirs $fd]]
+    [= $_f1 [$git-in $fd ("init", "-q", ".")]]
+    [= $_f2 [$put $fd "registry/repos.cxd" [$concat
+      "[repo-allocation name=fixture\n"
+      "  [repo name=cx group=dist ring=none ships=binary about='the front door']\n"
+      "  [repo name=cx-private group=dist ring=none ships=none about='orchestration']\n"
+      "  [repo name=cx-platform-demo group=platform ring=none ships=binary status=extracted at=" $demo-sha " about='a component']\n"
+      "  [repo name=cx-platform-shallow group=platform ring=none ships=binary status=extracted at=" $shal-sha " about='a component fetched shallow']\n"
+      "  [repo name=cx-binding-ghost group=binding ring=none ships=package about='a planned repository, never pinned']\n"
+      "  [path prefix='_gate_evidence/' repo=cx-private]\n"
+      "  [path prefix='lang/ghost/' repo=cx-binding-ghost]\n"
+      "  [path prefix='ledger/' repo=cx]\n"
+      "  [path prefix='scripts/' repo=cx]\n"
+      "  [path prefix='registry/' repo=cx]\n"
+      "  [path exact='deps.cxd' repo=cx]\n"
+      "  [path exact='README.md' repo=cx]]\n"]]]
+    [= $_f3 [$put $fd "deps.cxd" [$concat
+      "[deps\n"
+      "  [dep repo=cx-platform-demo sha=" $demo-sha " module='cx-platform/demo' url='file://" $demo "']\n"
+      "  [dep repo=cx-platform-shallow sha=" $shal-sha " module='cx-platform/shallow' url='file://" $shal "']]\n"]]]
+    [= $_f4 [$put $fd "scripts/deps_pins.cx" [$io:read-file [$concat $real "/scripts/deps_pins.cx"]]]]
+    [= $_f5 [$put $fd "README.md" "front door\n"]]
+    [= $_f6 [$git-in $fd ("add", "--", "registry/repos.cxd", "deps.cxd", "scripts/deps_pins.cx", "README.md")]]
+    [= $_f7 [$git-in $fd ("-c", "user.name=edmap", "-c", "user.email=edmap@example.invalid",
+                          "-c", "commit.gpgsign=false", "commit", "-q", "-m", "seed the front door")]]
+    [= $_f8 [$commit $fd "scripts/tool.sh" "echo tool\n" "fix(tool): the front door's own edit (RULED: TST-1)"]]
+    [= $_ig [$put $fd ".git/info/exclude" "deps/\nledger/\n"]]
+
+    [= $dd [$concat $fd "/deps/cx-platform-demo"]]
+    [= $_c0 [$git-in $fd ("clone", "-q", $demo, $dd)]]
+    [= $_c1 [$git-in $dd ("checkout", "-q", "--detach", $demo-sha)]]
+    [= $ds [$concat $fd "/deps/cx-platform-shallow"]]
+    [= $_c2 [$io:make-dirs $ds]]
+    [= $_c3 [$git-in $ds ("init", "-q", ".")]]
+    [= $_c4 [$git-in $ds ("fetch", "-q", "--depth", "1", [$concat "file://" $shal], $shal-sha)]]
+    [= $_c5 [$git-in $ds ("checkout", "-q", "--detach", "FETCH_HEAD")]]
+    $fd]]
+
+# page: one ledger page -- a heading, then an edit map with $rows.
+[?def page scope=private pure [returns string] ($heading::string $rows)
+  [$concat $heading "\n\nProse.\n\n## Edit map\n\n| path | edit | state |\n|---|---|---|\n"
+           [$strings:join $rows "\n"] "\n\nTrailing prose.\n"]]
+
+
+# a-case: plant the page, run the step, compare.
+[?def a-case scope=private impure ($fd::string $cx::string $step::string $c)
+  [?let
+    [= $_rm [?if [$io:is-directory [$concat $fd "/ledger"]] [then [$io:remove-tree [$concat $fd "/ledger"]]] [else ()]]]
+    [= $_pg [$put $fd [$concat "ledger/rulings_" [$string $c@id] ".md"] [$string $c@text]]]
+    [= $argv [?for [in $a ($cx, "--allow-read", "--allow-write", "--allow-subprocess", $step,
+                           [?splice [$strings:split-whitespace [$string $c@args]]])]
+               [yield $a]]]
+    [= $r [$run-in $fd $argv]]
+    [= $missing [?for [in $w [$strings:split [$string $c@want] " && "]]
+                  [where [not [$strings:contains [$string $r@out] $w]]]
+                  [yield $w]]]
+    [= $ok [and [= [$string $r@exit] [$string $c@exit]] [= [$count $missing] 0]]]
+    [r id=[$string $c@id] ok=$ok exit=[$string $r@exit] want-exit=[$string $c@exit]
+       missing=[$strings:join $missing " | "] out=[$string $r@out]]]]
+
+[?let
+  [= $head-ok "# Integrator decision -- a planted test decision (RULED: TST-1)"]
+  [= $real [$strings:trim [$string [$run-in "." ("pwd", "-P")]@out]]]
+  [= $cx [$env:var-or-default "CX_BIN" [$concat $real "/deps/cx-core-code/vcx/target/cx"]]]
+  [= $step [$concat $real "/scripts/ledger_edit_map_check.cx"]]
+  [= $tmp [$io:temp-dir "cx-edmap-"]]
+  [= $root [$strings:trim [$string [$run-in $tmp ("pwd", "-P")]@out]]]
+  [= $fd [$build-fixture $root $real]]
+  [= $cases (
+      [c id=pinned-landed args=''
+         text=[$page $head-ok ("| `src/demo.v` | the thing | landed |")]
+         exit=0 want='1 landed verified && cx-platform-demo'],
+      [c id=pinned-landed-uncited args=''
+         text=[$page $head-ok ("| `src/other.v` | an edit no TST-1 commit made | landed |")]
+         exit=1 want='rulings_pinned-landed-uncited.md:9 && src/other.v && no commit in cx-platform-demo'],
+      [c id=pending-listed args=''
+         text=[$page $head-ok ("| `src/demo.v` | the edit still owed | pending |")]
+         exit=0 want='pending && the edit still owed && 1 pending'],
+      [c id=pending-at-cut args='--at-cut'
+         text=[$page $head-ok ("| `src/demo.v` | the edit still owed | pending |")]
+         exit=1 want='rulings_pending-at-cut.md:9 && pending at the cut'],
+      [c id=sequenced args='--at-cut'
+         text=[$page $head-ok ("| `src/demo.v` | the W3 half | sequenced=#1234 |")]
+         exit=0 want='sequenced=#1234 && "the W3 half" && 1 sequenced'],
+      [c id=unowned args=''
+         text=[$page $head-ok ("| `nowhere/x.v` | a path nothing allocates | pending |")]
+         exit=1 want='nowhere/x.v && no repository owns'],
+      [c id=unpinned-owner args=''
+         text=[$page $head-ok ("| `lang/ghost/a.py` | a planned repository's file | pending |")]
+         exit=1 want='lang/ghost/a.py && cx-binding-ghost && deps.cxd pins no such repository'],
+      [c id=front-door-landed args=''
+         text=[$page $head-ok ("| `scripts/tool.sh` | the tool | landed |")]
+         exit=0 want='1 landed verified && front door'],
+      [c id=front-door-uncited args=''
+         text=[$page $head-ok ("| `README.md` | a README edit | landed |")]
+         exit=1 want='README.md && no commit in the front door'],
+      [c id=shallow-pin args=''
+         text=[$page $head-ok ("| `src/deep.v` | the deep edit | landed |")]
+         exit=0 want='1 landed verified && cx-platform-shallow'],
+      [c id=multi-path args=''
+         text=[$page $head-ok ("| `scripts/tool.sh`, `README.md` | two files | landed |")]
+         exit=1 want='README.md && no commit in the front door'],
+      [c id=unknown-state args=''
+         text=[$page $head-ok ("| `scripts/tool.sh` | the tool | done |")]
+         exit=1 want='scripts/tool.sh && state `done`'],
+      [c id=no-decision-id args=''
+         text=[$page '# A page whose headings name no decision' ("| `scripts/tool.sh` | the tool | landed |")]
+         exit=1 want='no decision id'],
+      [c id=not-an-edit-map args='--at-cut'
+         text=[$concat "# A plain table (RULED: TST-1)\n\n| file | edit |\n|---|---|\n" "| `nowhere/x.v` | exempt: forward-only |\n"]
+         exit=0 want='0 edit map(s)'])]
+  [= $results [?for [in $c $cases] [yield [$a-case $fd $cx $step $c]]]]
+
+  [; the REAL store, as it is and with one planted row (1329-a's mutation).
+     The copy is of every page that carries an edit map; the planted row names
+     a tracked file no commit citing the page's decision ever touched. ]
+  [= $mut [$concat $root "/ledger-mutated"]]
+  [= $_m0 [$io:make-dirs $mut]]
+  [= $maps [?for [in $f [$io:glob [$concat $real "/ledger/*.md"]]]
+             [where [$strings:contains [$io:read-file $f] "\n| path | edit | state |\n"]]
+             [yield $f]]]
+  [= $_m1 [?for [in $f $maps]
+            [yield [$io:write-file [$concat $mut "/" [$path:basename $f]]
+                     [$strings:replace-first [$io:read-file $f] "\n| path | edit | state |\n|---|---|---|\n"
+                       "\n| path | edit | state |\n|---|---|---|\n| `CODE_OF_CONDUCT.md` | a planted edit no citing commit made | landed |\n"]]]]]
+  [= $real-args ($cx, "--allow-read", "--allow-write", "--allow-subprocess", $step)]
+  [= $r-real [$run-in $real $real-args]]
+  [= $r-mut  [$run-in $real [?for [in $a ($cx, "--allow-read", "--allow-write", "--allow-subprocess", $step, "--ledger", $mut)] [yield $a]]]]
+  [= $real-results (
+      [r id=real-store ok=[and [= [$string $r-real@exit] "0"] [> [$count $maps] 0]]
+         exit=[$string $r-real@exit] want-exit=0 missing=[?if [> [$count $maps] 0] [then ''] [else 'no page with an edit map']]
+         out=[$string $r-real@out]],
+      [r id=real-store-mutated
+         ok=[and [= [$string $r-mut@exit] "1"] [$strings:contains [$string $r-mut@out] "CODE_OF_CONDUCT.md"]
+                 [= [$count $maps] [$count [?for [in $l [$strings:split-lines [$string $r-mut@out]]]
+                                              [where [$strings:contains $l "CODE_OF_CONDUCT.md"]] [yield 1]]]]]
+         exit=[$string $r-mut@exit] want-exit=1 missing='a refusal naming CODE_OF_CONDUCT.md on every copied page'
+         out=[$string $r-mut@out]])]
+  [= $every [?for [in $xs ($results, $real-results)] [in $x $xs] [yield $x]]]
+  [= $_rm [$io:remove-tree $tmp]]
+  [= $bad [?for [in $x $every] [where [not $x@ok]] [yield $x]]]
+  [= $_out [?for [in $x $every]
+             [yield [?if $x@ok
+                      [then [$say [$concat "  ok    " [$string $x@id]]]]
+                      [else [$cry [$concat "  FAIL  " [$string $x@id]
+                                           "\n    exit " [$string $x@exit] " (want " [$string $x@want-exit] ")"
+                                           "\n    missing: " [$string $x@missing]
+                                           "\n    output:\n" [$string $x@out]]]]]]]]
+  [?if [= [$count $bad] 0]
+    [then [?let [= $_ [$say [$concat "ledger-edit-map-check selftest: " [$string [$count $every]] "/" [$string [$count $every]]
+                                     " (landed in a pin, in a shallow pin and in the front door; uncited; pending listed and"
+                                     " refused at the cut; sequenced quoted; unowned; unpinned owner; two paths; an unknown"
+                                     " state; no decision id; the header exemption; the real store and its mutation)"]]]
+            [$env:exit 0]]]
+    [else [?let [= $_ [$cry [$concat "ledger-edit-map-check selftest: " [$string [$count $bad]] " of "
+                                     [$string [$count $every]] " case(s) FAILED"]]]
+            [$env:exit 1]]]]]
