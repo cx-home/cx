@@ -24,7 +24,7 @@ kind list gains array and comment, §2.16.3 says so with the oracle table's case
 six kinds with the rest mapped to text (structure the parser holds hidden); a token view by design
 (one source, two readings). One opus round, Ring 0 cx-core-data.
 
-## ERRSF-1 — #1062 closes on 1099-a; CO-19's `--errs=refuse` is withdrawn (L127 = (a))
+## ERRSF-1 — #1062 closes on the shipped exit rule; the opt-in refuse flag is withdrawn (L127 = (a))
 
 Measured: a computed `[err]` at any depth already exits 1 with one stderr line naming its path
 (1099-a); `--errs=refuse` is an unknown flag. Taken: the flag would be a second spelling of the
@@ -67,7 +67,7 @@ flag's only reader is the evaluator's `new_env()`. Taken: split by meaning, abi.
 their ring and says a Ring-0 wasm build carries the two memory controls. Rejected: moving the pair to
 Ring 0 (a seam with no consumer in its ring); no change. One small sonnet round, cx-core-data, abi.md.
 
-## KEYV-1 — the declarable key vocabulary stays bound to 1190-a's trigger; #1199 is the one item put to the owner at the cut (L132 = (b); #1199)
+## KEYV-1 — the declarable key vocabulary stays bound to its ruled trigger; #1199 is the one item put to the owner at the cut (L132 = (b))
 
 Measured: `xap_grammar_composition.md` §4 says the vocabulary "is deliberately not specified here";
 no composition in the tree meets the trigger (a two-party composition proving what one key means —
@@ -76,7 +76,7 @@ issue is presented to the owner at the cut as the one v0.18 item needing their w
 one by one, never a page). Rejected: designing the artifact now (a format frozen before its second
 party); `from=pkg:` as an unverified citation.
 
-## EDMAP-1 — 1329-a's edit-map step reads each path's owning repository (L133 = (a); #1329)
+## EDMAP-1 — the ruled edit-map step reads each path's owning repository (L133 = (a); #1329)
 
 Measured: no `scripts/ledger_edit_map_check.cx`, no target, no `release-process.md` row; the edit
 maps' targets live under `deps/<repo>` since the split. Taken: the step reads a path's pinned history
@@ -84,7 +84,7 @@ under `deps/` for its `landed` rows and refuses `pending` at the cut; the checkl
 it. Rejected: the front door only; withdrawing 1329-a. One opus round, cx-private, fixtures first,
 mutation-tested.
 
-## ERRAT-1 — 1545-a's paused branch is ported onto cx-core-code (L134 = (a); #1545)
+## ERRAT-1 — the paused source-position branch is ported onto cx-core-code (L134 = (a); #1545)
 
 Measured: err values carry no `at=`; `origin/impl/cx-F-batch-a5` (paused 09-19, `458e27a88`) holds
 1545-a's §9.1 sentence, five fixtures and four closed gaps, unmerged. Taken: port those commits with
@@ -127,7 +127,7 @@ opus round, cx-core-data `include.v` + cx-core-code cases, in the Ring-0 bug bat
 
 ## SSHL-1 — the sftp module's SSH transport is libssh2 behind the V fork, mbedtls its crypto backend (L140 = (a); #1457)
 
-#1457 (1430-c) says the choice is taken before code: (a) a vetted C library behind the fork — the
+The sftp issue (#1457, under 1430-c) says the choice is taken before code: (a) a vetted C library behind the fork — the
 mbedtls precedent, a `v_fork_register.cxd` row, the wasm stub rule — or (b) an SSH transport written
 in V over `net` and `crypto`. Taken: (a) libssh2 with the mbedtls backend the fork already carries —
 one crypto stack, a vetted key exchange, cipher and MAC implementation, the version pinned and its
@@ -137,7 +137,7 @@ protocol whose every primitive would be ours to get right, for no gain the libra
 host and a path. The module stays out of the data and embed wasm builds (platform group), so the
 stubs cover only the symbols the linker sees.
 
-## SOAPV-1 — #1595 closes on RS-26 (L139 = (a))
+## SOAPV-1 — #1595 closes on the trued soap version spelling (L139 = (a))
 
 Measured: connector.md and `connector.cxd` spell `version='1.1'` (25 cases, no `:1.x`); the atom
 grammar still refuses `:1.1`, unchanged by RS-26. Taken: closed as fixed; atoms stay identifiers.
