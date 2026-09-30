@@ -7,7 +7,7 @@
 # Why this exists: the R2.2 gate lived only inside scripts/release.sh
 # phase 2, in the arm that `--dry-run` skips, so its first execution was
 # always inside a real cut — a blocking gate nobody had ever run. This
-# lane stages the same four tarballs a cut stages, from the same -prod
+# step stages the same four tarballs a cut stages, from the same -prod
 # build targets, and runs the same shared gate function against them.
 #
 # Deliberately stages into dist/_precut_public/ and NOT dist/public/: a

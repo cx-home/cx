@@ -353,7 +353,7 @@
                       [where [= $row/verdict 'ERROR']] [yield [$string $row/path]]]]]
         [; WITHOUT a roster every ERROR is trivially "not on the roster", so an
            unguarded UNEXPECTED count turns the bare REPORT into a red — which
-           is exactly what it did the first time this lane ran, taking
+           is exactly what it did the first time this step ran, taking
            `make fmt-sweep` from a census to `Error 1`. The roster columns exist
            only when a roster was given; `stale` is empty in that case anyway,
            but it is guarded alongside so the pair cannot drift apart. ]
@@ -392,7 +392,7 @@
         [$say [$cat ('SWEEP-FILES=', [$string $n])]]]]]]
   [= $_rm [$io:remove-tree $dir]]
   [; The program's VALUE is printed by `cx FILE`, and a report whose last line
-     is a bare `null` glued to the caller's next byte is a report a lane cannot
+     is a bare `null` glued to the caller's next byte is a report a runner cannot
      parse — lane_A_1348 read `nullSWEEP-EXIT=0` and scored two green markers
      as missing. Exiting explicitly makes the census the whole of stdout.
      `$out` and `$_rm` above are ordinary bindings, evaluated in order before

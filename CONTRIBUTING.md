@@ -120,13 +120,13 @@ because they are thin wrappers around `libcx`.
 If you change the grammar, the conversion logic, or anything format-
 adjacent, `make conform` must pass before you push.
 
-### Bare / out-of-tree checkouts and lane skips
+### Bare / out-of-tree checkouts and test skips
 
-Many `vcx/tests/` lanes (the http/net/xap/store service lanes) exec the
+Many `vcx/tests/` test files (the http/net/xap/store service tests) exec the
 built CLI. They resolve it through `testenv.cx_bin()`, which prefers the
 dev artifact `vcx/target/cx-dev` and falls back to the shipped
 `vcx/target/cx` — two paths since #1312, because `make test` runs dev and
-prod lanes in one `-j` storm and a single shared path let them clobber
+prod tests in one `-j` storm and a single shared path let them clobber
 each other. The one setup step a fresh checkout needs before invoking
 `v test` directly is:
 
@@ -134,19 +134,19 @@ each other. The one setup step a fresh checkout needs before invoking
 make build-vcx-dev
 ```
 
-`make test-vcx-suite` performs that build for you. A lane whose
+`make test-vcx-suite` performs that build for you. A test file whose
 environment prerequisite is absent — the unbuilt binary, an opt-in
 external service such as `CX_TEST_S3_ENDPOINT`/`CX_TEST_FTP_URL`/
 `CX_TEST_SFTP_URL`, or a missing host tool like `openssl` — **self-skips
 with a named reason instead of failing**, so a bare checkout never reads
-as a wall of phantom regressions. Whole-lane skips are recorded in
-`vcx/target/test-skips.d/` — one file per skipping lane, so concurrent
-lanes under `make -j` cannot overwrite each other's entry — and `make
+as a wall of phantom regressions. Whole-file skips are recorded in
+`vcx/target/test-skips.d/` — one file per skipping test, so concurrent
+tests under `make -j` cannot overwrite each other's entry — and `make
 test-vcx-suite` merges them into the skipped-with-reason digest it prints
 after the run (they are counted separately,
 never as failures). Plain `v test` suppresses the output of passing
-lanes; use `v -stats test …` to see `SKIP` lines inline. The binary
-path is resolved relative to the source tree, so lanes behave the same
+tests; use `v -stats test …` to see `SKIP` lines inline. The binary
+path is resolved relative to the source tree, so tests behave the same
 from any invocation directory.
 
 ### The development loop — `make test-changed`

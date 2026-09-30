@@ -37,7 +37,7 @@
 #   4. the class: silent | no-case | weak | covered.
 #   5. position-carrier — how the code's diagnostic delivers position TODAY,
 #      read from the emission sites: `message-text` where the site returns a
-#      V error that the reader lane wraps (vcx/cx/error.v's `CxError.msg()`
+#      V error that the reader path wraps (vcx/cx/error.v's `CxError.msg()`
 #      = `L:C: message`, with parser.v appending `(unterminated <head>
 #      opened at L:C)`), `attribute` where the site writes a `line=`/`col=`
 #      attribute, `none` where the site builds an err VALUE — `mk_err` /
@@ -91,7 +91,7 @@
      what='[?if] whose condition is an err value takes NEITHER branch'
      cases='program-err-017..019 (conformance/code.cxd)'],
   [silent id=SILENT-2 code=none issue='1529' state=fixed
-     what='cx lint arbitration reports the DATA-lane diagnostic and hides the program-lane failure'
+     what='cx lint arbitration reports the DATA-reading diagnostic and hides the program-reading failure'
      cases='lint.cxd 080..082 (conformance/lint.cxd)'],
   [silent id=SILENT-3 code=CXER0301 issue='1436' state=open
      what='cx fmt names the FIRST comment rather than the one it could not place'
