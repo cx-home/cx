@@ -71,7 +71,9 @@ fine, and a wasm file no line declares still fails EXTRA.
 deps/cx-core-code/conformance/code
 ../deps/cx-core-data/conformance/core
 ../deps/cx-core-data/conformance/identity
+../deps/cx-core-data/conformance/atoms
 llm/antipatterns
+llm/cli
 ../deps/cx-core-data/conformance/table
 deps/cx-core-code/conformance/stdlib/json
 deps/cx-core-code/conformance/stdlib/io

@@ -197,7 +197,7 @@
 
 [?def row-bands scope=public ($ln)
   [$fp:flat-map ([$scan-ranges [$row-body $ln]],
-                 [?for [in $c [$scan-singles [$row-body $ln]]] [yield {lo: $c, hi: $c}]])
+                 ([?for [in $c [$scan-singles [$row-body $ln]]] [yield {lo: $c, hi: $c}]]))
     [?fn ($x) $x]]]
 
 # short-owner: the module name a §9.6 row opens with — the row's owner
@@ -346,9 +346,9 @@
         # singly in its code column (a registered code emitted nowhere is a
         # row too).
         [= $observed [$distinct [$fp:flat-map (
-             [?for [in $e $all-emissions] [yield [$map:get $e "code"]]],
-             [?for [in $a $assertions] [yield [$map:get $a "code"]]],
-             [?for [in $n $singles] [yield [$code-of $n]]])
+             ([?for [in $e $all-emissions] [yield [$map:get $e "code"]]]),
+             ([?for [in $a $assertions] [yield [$map:get $a "code"]]]),
+             ([?for [in $n $singles] [yield [$code-of $n]]]))
            [?fn ($x) $x]]]]
         [= $universe [$sort [?for [in $c $observed]
            [where [not [$member ('CXER0000','CXER9999') $c]]] [yield $c]]]]
@@ -414,7 +414,7 @@
              " cases=" [$string [$count [?for [in $r $in-band]
                  [where [not [$empty [$map:get $r "cases"]]]] [yield $r]]]]
              " " [$attr "owner" [$short-owner [?else [$map:get [$first [$fp:flat-map (
-                 [?for [in $x $bands] [where [= [$map:get $x "label"] $b]] [yield $x]],
+                 ([?for [in $x $bands] [where [= [$map:get $x "label"] $b]] [yield $x]]),
                  ({owner: "", spec: ""},)) [?fn ($y) $y]]] "owner"] ""]]] "]"]]]]
 
         [= $silent-lines [?for [in $s SILENT-CLASSES]

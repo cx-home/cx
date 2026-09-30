@@ -79,7 +79,7 @@ never rises. Not scanned, by name: "landing" ("landing page").
     [glob path='spec/03-approved/**/*.md']
     [glob path='AGENTS.md'] [glob path='AGENT-STANDING-RULES.md'] [glob path='CONTRIBUTING.md']]
 
-  [; ── the allowances, measured on the PLAY-2 tree and re-measured 2026-09-29: no row for lane, campaign, gate run or steward but the one generated from a spec sentence; rows with wave= are floors the voice pass lowers ── ]
+  [; ── the allowances, measured on the PLAY-2 tree and re-measured 2026-09-29: no served row for lane, campaign, gate run or steward (the tree's lane rows, WORDS-1's, close the list); rows with wave= are floors the voice pass lowers ── ]
   [allow
     [page path="docs-src/canonical/sections/01a-rings.cxd" word=ring-2-3 allow=2 why="the page records, in its file comment and prose, that Ring 2 and Ring 3 left under RS-1 and that no such ring exists"]
     [page path="docs-src/canonical/sections/00-quickstart.cxd" word=stage allow=1 why="the `[?pipe]` stage — the code language's own word for one transform of a pipe (code.md §6.4, §8.9), not a pipeline unit"]
@@ -109,7 +109,6 @@ never rises. Not scanned, by name: "landing" ("landing page").
     [page path="docs-src/canonical/reference/directives.cx" word=green-red allow=1 why="the colour, a string attribute value in the ?element example"]
     [page path="docs-src/canonical/reference/directives.cx" word=stage allow=3 why="the `[?pipe]` stage — the code language's own word for one transform of a pipe (code.md §6.4, §8.9), not a pipeline unit"]
     [page path="docs-src/llm/reference-code-language.md.tmpl" word=stage allow=1 why="the `[?pipe]` stage — the code language's own word for one transform of a pipe (code.md §6.4, §8.9), not a pipeline unit"]
-    [page path="docs-src/llm/primer-platform.chapter.md" word=lane allow=1 why="regenerated from cx-platform-xap's spec/03-approved/platform/composition.md — the sentence (a host-lane case) is the spec's; its word moves with a decision on that page (a flag for that page's owner)"]
     [page path="docs-src/llm/primer-platform.chapter.md" word=job allow=2 why="regenerated from composition.md — an outside system's export job, the bulk-export pattern's own domain word"]
     [page path="scripts/gen_guide/guide_build.cx" word=ruling allow=4 why="file comments citing #826's numbered rulings by their historical name"]
     [; the tree's own prose (RULED: WORDS-1): a sentence that NAMES the refused word, or quotes it as history, and nothing else ]

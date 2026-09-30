@@ -1035,7 +1035,7 @@
       [$cat ('// CX Playground — ', [$string $n],
              ' progressive eval examples (every entry CLI-audited).')],
       HEADER-TAIL,
-      [?for [in $x $rows] [where [= [$string $x@status] 'ok']] [yield [$string $x@block]]],
+      ([?for [in $x $rows] [where [= [$string $x@status] 'ok']] [yield [$string $x@block]]]),
       FOOTER-LINES)] '\n'], '\n')]]
 
   # ── §C2: the bare-builtin-head lint (RULED: 1170-b) ────────────────

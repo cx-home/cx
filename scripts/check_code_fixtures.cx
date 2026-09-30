@@ -265,15 +265,15 @@ program-viz-
                 [yield {id: [$map:get $f "name"], level: [$map:get $f "level"]}]]]
 
               [= $bad-format [$cat-seqs (
-                [?for [in $f $fixtures] [in $r ('in_cx','in_code')]
+                ([?for [in $f $fixtures] [in $r ('in_cx','in_code')]
                   [where [not [$map:contains [$map:get $f "sections"] $r]]]
-                  [yield {id: [$map:get $f "name"], missing: $r}]],
-                [?for [in $f $fixtures]
+                  [yield {id: [$map:get $f "name"], missing: $r}]]),
+                ([?for [in $f $fixtures]
                   [= $outs [?for [in $k ('out_text','out_err','out_multiset')]
                     [where [$map:contains [$map:get $f "sections"] $k]]
                     [yield $k]]]
                   [where [not [= [$count $outs] 1]]]
-                  [yield {id: [$map:get $f "name"], out_keys: [$to-arr [$sort $outs]]}]])]]
+                  [yield {id: [$map:get $f "name"], out_keys: [$to-arr [$sort $outs]]}]]))]]
 
               # id-category prefix registry (level → prefixes).
               [= $prefix-by-level [$fp:fold PREFIX-MAP {}

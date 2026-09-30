@@ -161,8 +161,8 @@
     # comes from is the loader's business, not theirs.
     [?let [= $modules
       [?for [in $src (
-              [?for [in $f $bundle-files] [yield {name: [$path:stem $f], text: [$io:read-file $f], source: $f}]],
-              [?for [in $n [$synth-names]]  [yield {name: $n, text: [$synth-source $n], source: "none"}]])]
+              ([?for [in $f $bundle-files] [yield {name: [$path:stem $f], text: [$io:read-file $f], source: $f}]]),
+              ([?for [in $n [$synth-names]]  [yield {name: $n, text: [$synth-source $n], source: "none"}]]))]
             [in $mod $src]
             [yield $mod]]]
           [= $reg-rows [$registry-corpus]]
