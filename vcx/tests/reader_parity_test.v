@@ -801,3 +801,32 @@ fn test_accepted_by_one_shapes_are_graded_by_both_readers() {
 		assert prog_ok == sh.program_ok, 'reader-parity accepted-by-one shape: the PROGRAM reader ${if prog_ok { 'accepts' } else { 'refuses' }} `${sh.src}`, the step says it must ${if sh.program_ok { 'accept' } else { 'refuse' }} it: ${prog_msg}\n  ${sh.reason}'
 	}
 }
+
+// ── ONE TREE for the split-out divergences of #1559 (RULED: CXF-5) ──────────
+//
+// Each shape below was in the accepted-by-one column: the data reader
+// accepted it and the program reader refused it. The fix for each makes the
+// PROGRAM reader answer the data reading's tree, so the step asserts the
+// stronger property the column cannot: BOTH readers accept the bytes and their
+// canonical renders are byte-equal. A shape moves here with the fix that
+// closes its issue, and its file leaves accepted_by_one_table in the same
+// change.
+struct OneTreeShape {
+	src   string
+	issue string
+}
+
+const one_tree_shapes = [
+	OneTreeShape{'[p [| a | b, 2b here [em x] |]]', '#1577 — a `|`, a comma and a digit-led run inside a block span are block text'},
+	OneTreeShape{'[p [|\n  Visit our [a href=https://example.com site] or\n  read the [a href=https://docs.example.com docs].\n|]]', '#1577 — examples/vcore.cx line 80, the block paragraph'},
+]
+
+fn test_split_divergences_answer_one_tree() {
+	for sh in one_tree_shapes {
+		a := data_render(sh.src)
+		b := program_render(sh.src)
+		assert !a.starts_with('REJECT'), 'reader-parity one-tree: the DATA reader refuses `${sh.src}`: ${a}\n  ${sh.issue}'
+		assert !b.starts_with('REJECT'), 'reader-parity one-tree: the PROGRAM reader refuses `${sh.src}`: ${b}\n  ${sh.issue}'
+		assert a == b, 'reader-parity one-tree: the two readers answer DIFFERENT trees for `${sh.src}`:\n  data: ${a}\n  prog: ${b}\n  ${sh.issue} (RULED: CXF-5)'
+	}
+}
