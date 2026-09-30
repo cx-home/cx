@@ -612,6 +612,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `grader-1` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | Integrator decisions, 2026-09-17 — the Ring 0 rulings owed (1363-b, 1387-a, FMT-2, GRADER-1, 1150-a, 1250-b) |
 | `hc-1` | [rulings_2026_09_04_host_context_1210.md](rulings_2026_09_04_host_context_1210.md) | HC-1 — the shape of "a journal beside the store" — RECOMMENDED: (a) |
 | `hc-1` | [rulings_2026_09_05_xap_queue.md](rulings_2026_09_05_xap_queue.md) | 1210 HC-1), `xap.md` §3.1.1, `std-lib/journal.md`. |
+| `hkey-1` | [rulings_2026_09_30_owner_decision_l125.md](rulings_2026_09_30_owner_decision_l125.md) | HKEY-1 — xap#1 closes on items 1–4 as measured; item 5 (the signing key and connector credentials through a `cx-platform/secrets` handle) is filed for after the cut (L125 = (a)) |
 | `host-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | Owner decisions 2026-09-26 — the four designs of Letters 26–29: the connector kit (KIT-1…KIT-6), cross-company (XCO-1…XCO-5), the minimal keystore (SEC-1), the host's four choices (HOST-1…HOST-4) |
 | `host-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | HOST-1 — a projected command def's parameters are the intent list verbatim |
 | `host-2` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | HOST-2 — one code for the host's internal boot faults |
@@ -1502,7 +1503,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `wave-3` | [rulings_2026_08_26_seq_classification.md](rulings_2026_08_26_seq_classification.md) |
 | `wf-26a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
 | `wf-27a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
-| `xap-1` | [rulings_2026_09_26_xap_host_runner_xap1.md](rulings_2026_09_26_xap_host_runner_xap1.md) |
+| `xap-1` | [rulings_2026_09_26_xap_host_runner_xap1.md](rulings_2026_09_26_xap_host_runner_xap1.md), [rulings_2026_09_30_owner_decision_l125.md](rulings_2026_09_30_owner_decision_l125.md) |
 | `xd-1a` | [rulings_2026_08_21_x_tier_docs_and_domain_writes.md](rulings_2026_08_21_x_tier_docs_and_domain_writes.md) |
 | `xd-1b` | [rulings_2026_08_21_x_tier_docs_and_domain_writes.md](rulings_2026_08_21_x_tier_docs_and_domain_writes.md) |
 | `xd-2a` | [rulings_2026_08_21_x_tier_docs_and_domain_writes.md](rulings_2026_08_21_x_tier_docs_and_domain_writes.md) |
@@ -1513,4 +1514,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*360 ledger pages; 796 ids declared, 391 cited only.*
+*361 ledger pages; 797 ids declared, 391 cited only.*
