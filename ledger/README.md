@@ -36,7 +36,6 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1085-d` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) | 1085-d — `[delivery]` carries BOTH the parsed `[message …]` and the raw `[body <bytes>]` |
 | `1085-e` | [rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md](rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md) | RULED: 1085-e — CX does not host mailboxes (now); CX owns protocols, not system connectors (owner, 2026-09-13) |
 | `1099-a` | [rulings_2026_09_10_run_surface_err_at_rest_1099.md](rulings_2026_09_10_run_surface_err_at_rest_1099.md) | RULED: 1099-a — the run surface's exit status counts a COMPUTED err at any depth of the result; a WRITTEN err is data wherever it sits |
-| `1099-a` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | ERRSF-1 — #1062 closes on 1099-a; CO-19's `--errs=refuse` is withdrawn (L127 = (a)) |
 | `1103-a` | [rulings_2026_09_10_scim_attribute_projection_1103.md](rulings_2026_09_10_scim_attribute_projection_1103.md) | RULED: 1103-a — SCIM attribute projection ships in v0.18, and `returned: never` is not narrowable in either direction |
 | `1150-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | Integrator decisions, 2026-09-17 — the Ring 0 rulings owed (1363-b, 1387-a, FMT-2, GRADER-1, 1150-a, 1250-b) |
 | `1151-a` | [rulings_2026_09_07_doc_drift_1342_1151_1152.md](rulings_2026_09_07_doc_drift_1342_1151_1152.md) | RULED 1151-A — diagram.md's retired match-cost figure is replaced by the record |
@@ -53,7 +52,6 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1174-b` | [rulings_2026_09_17_owner_decisions_0345z.md](rulings_2026_09_17_owner_decisions_0345z.md) | Owner decisions 2026-09-17 ~03:45Z — three of the integrator's declines reversed: libcx-sync gets an inline pump (1387-b), sets get a module (1173-b), closure's bound gets a default (1174-b); #1389's close confirmed |
 | `1175-b` | [rulings_2026_09_17_owner_decisions_0410z.md](rulings_2026_09_17_owner_decisions_0410z.md) | Owner decisions 2026-09-17 ~04:10Z — chained destructuring gets a flat form: `[?match]` takes a chain (RULED: 1175-b) |
 | `1177-a` | [rulings_2026_09_01_index_base_1177.md](rulings_2026_09_01_index_base_1177.md) | RULED: 1177-a — #1177 index base: 1-based across the value surface |
-| `1190-a` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | KEYV-1 — the declarable key vocabulary stays bound to 1190-a's trigger; #1199 is the one item put to the owner at the cut (L132 = (b); #1199) |
 | `1192-a` | [rulings_2026_09_10_else_no_callable_1192.md](rulings_2026_09_10_else_no_callable_1192.md) | RULED: 1192-a — `[?else]` does not coalesce E_NO_CALLABLE; every other failure and absence still does |
 | `1195-a` | [rulings_2026_09_07_contract_check_at_seal_and_boot_1195.md](rulings_2026_09_07_contract_check_at_seal_and_boot_1195.md) | RULED: 1195-a — the §1.2 runtime contract is checked wherever a package is |
 | `1196-a` | [rulings_2026_09_07_deployment_doc_two_stages_1196.md](rulings_2026_09_07_deployment_doc_two_stages_1196.md) | RULED: 1196-a — a deployment document has TWO STAGES, and `xap.cxs` describes |
@@ -178,7 +176,6 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1320-w2` | [rulings_2026_09_07_fmt_interior_comments_and_text_run_1320_1319.md](rulings_2026_09_07_fmt_interior_comments_and_text_run_1320_1319.md) | RULED 1320-W2 — placement is decided by the comment's WRITTEN bracket depth |
 | `1327-a` | [rulings_2026_09_08_flow_verb_status_table_1327.md](rulings_2026_09_08_flow_verb_status_table_1327.md) | RULED: 1327-a — §3's verb list says which verbs answer, and a gate holds it |
 | `1328-a` | [rulings_2026_09_06_fmt_shape_spelling_and_idempotence_1328_1330.md](rulings_2026_09_06_fmt_shape_spelling_and_idempotence_1328_1330.md) | RULED 1328-A — `src` is fingerprinted only when it differs from `str_val` |
-| `1329-a` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | EDMAP-1 — 1329-a's edit-map step reads each path's owning repository (L133 = (a); #1329) |
 | `1330-a` | [rulings_2026_09_06_fmt_shape_spelling_and_idempotence_1328_1330.md](rulings_2026_09_06_fmt_shape_spelling_and_idempotence_1328_1330.md) | RULED 1330-A — idempotence is checked, not trusted |
 | `1338-a` | [rulings_2026_09_06_fmt_emitter_quoting_and_directive_surface_1338_1339.md](rulings_2026_09_06_fmt_emitter_quoting_and_directive_surface_1338_1339.md) | RULED 1338-A — one quoting rule, and it is the one the language specifies |
 | `1339-a` | [rulings_2026_09_06_fmt_emitter_quoting_and_directive_surface_1338_1339.md](rulings_2026_09_06_fmt_emitter_quoting_and_directive_surface_1338_1339.md) | RULED 1339-A — the generic directive path emits the attribute form |
@@ -286,7 +283,6 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1427-j` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) | RULED: 1427-a…1427-j — the ring-legible tree (owner, 2026-09-12 ~13:40Z, option (a) on every dimension of the integrator's table) |
 | `1430-b` | [rulings_2026_09_14_owner_letters_1430_1434.md](rulings_2026_09_14_owner_letters_1430_1434.md) | Owner letters 2026-09-14 ~04:50Z — #1430 and #1434 (RULED: 1430-b, 1434-b) |
 | `1430-c` | [rulings_2026_09_14_connector_transports_1430c.md](rulings_2026_09_14_connector_transports_1430c.md) | Owner letter 2026-09-14 ~05:20Z — the connector kit executes every protocol, DB included (RULED: 1430-c) |
-| `1430-c` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | 1457 (1430-c) says the choice is taken before code: (a) a vetted C library behind the fork — the |
 | `1430-d` | [rulings_2026_09_14_connector_transports_1430c.md](rulings_2026_09_14_connector_transports_1430c.md) | 1430-d — the kit is an OPEN adapter contract, wide and specialized (owner, 2026-09-14 ~05:35Z) |
 | `1430-e` | [rulings_2026_09_14_connector_catalog_1430e.md](rulings_2026_09_14_connector_catalog_1430e.md) | Owner letter 2026-09-14 ~05:50Z — every connection type, every database, the reference set (RULED: 1430-e, 1455-a, 1430-f) |
 | `1430-f` | [rulings_2026_09_14_connector_catalog_1430e.md](rulings_2026_09_14_connector_catalog_1430e.md) | Owner letter 2026-09-14 ~05:50Z — every connection type, every database, the reference set (RULED: 1430-e, 1455-a, 1430-f) |
@@ -331,7 +327,6 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1544-b` | [rulings_2026_09_18_owner_decisions_1220z.md](rulings_2026_09_18_owner_decisions_1220z.md) | Owner decisions 2026-09-18 ~12:20Z — "all recommendations": the work continues past the clock with umbrella steps for Ring 0 (VERIFY-2); the twelve open letters ruled (1563-a, 1559-a, 1515-a, 1566-c, 1534-a, 1552-a, 1556-a, 1540-a, 1551-b, 1544-b, 1509-a) and the integrator's 1559-d recorded |
 | `1544-c` | [rulings_2026_09_18_owner_decisions_2100z.md](rulings_2026_09_18_owner_decisions_2100z.md) | Owner decisions 2026-09-18 ~18:30Z–21:00Z — the design backlog leaves the release label (BACKLOG-1); the store's wire field is `wire-version` (1544-c); the sched restore cases carry their ring |
 | `1545-a` | [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md) | Owner decision 2026-09-18 ~02:00Z — an err value carries its position (1545-a); the diagnostics audit's fix batches are decided (DIAG-1) |
-| `1545-a` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | ERRAT-1 — 1545-a's paused branch is ported onto cx-core-code (L134 = (a); #1545) |
 | `1548-c` | [rulings_2026_09_18_owner_decisions_0155z.md](rulings_2026_09_18_owner_decisions_0155z.md) | Owner decisions 2026-09-18 ~01:55Z — CSRP does not exist in cx: every live reference goes (1544-a); the two readers' divergence is a named property and the em-dash refusal a lexer bug (1548-c) |
 | `1551-b` | [rulings_2026_09_18_owner_decisions_1220z.md](rulings_2026_09_18_owner_decisions_1220z.md) | Owner decisions 2026-09-18 ~12:20Z — "all recommendations": the work continues past the clock with umbrella steps for Ring 0 (VERIFY-2); the twelve open letters ruled (1563-a, 1559-a, 1515-a, 1566-c, 1534-a, 1552-a, 1556-a, 1540-a, 1551-b, 1544-b, 1509-a) and the integrator's 1559-d recorded |
 | `1552-a` | [rulings_2026_09_18_owner_decisions_1220z.md](rulings_2026_09_18_owner_decisions_1220z.md) | Owner decisions 2026-09-18 ~12:20Z — "all recommendations": the work continues past the clock with umbrella steps for Ring 0 (VERIFY-2); the twelve open letters ruled (1563-a, 1559-a, 1515-a, 1566-c, 1534-a, 1552-a, 1556-a, 1540-a, 1551-b, 1544-b, 1509-a) and the integrator's 1559-d recorded |
@@ -466,7 +461,6 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `co-18` | [rulings_2026_08_25_0170_closeout.md](rulings_2026_08_25_0170_closeout.md) | CO-18 (#1042/#1048 dispositions, owner "1a 1a", 2026-08-26) |
 | `co-18` | [rulings_2026_08_25_0170_closeout.md](rulings_2026_08_25_0170_closeout.md) | CO-18 execution note — the authorized sentence overclaimed; corrected to |
 | `co-19` | [rulings_2026_08_25_0170_closeout.md](rulings_2026_08_25_0170_closeout.md) | CO-19 (release-eve letters, owner "1a 2a 3a 4a", 2026-08-27) |
-| `co-19` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | ERRSF-1 — #1062 closes on 1099-a; CO-19's `--errs=refuse` is withdrawn (L127 = (a)) |
 | `co-2` | [rulings_2026_08_25_0170_closeout.md](rulings_2026_08_25_0170_closeout.md) | CO-2 (#975, ruled 2a) — refusals refuse at the EFFECT boundary |
 | `co-2` | [rulings_2026_08_25_0170_closeout.md](rulings_2026_08_25_0170_closeout.md) | AMENDMENT 1 (2026-08-25) — CO-2 scope resolutions from implementation |
 | `co-2` | [rulings_2026_09_10_run_surface_err_at_rest_1099.md](rulings_2026_09_10_run_surface_err_at_rest_1099.md) | Why this is not CO-2's question |
@@ -574,7 +568,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `dsc-1c` | [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md) | DSC-1c — the graphviz formats require an explicit grant |
 | `dursc-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | DURSC-1 — `time:parse-duration` and `time:duration-*` answer the duration scalar (L112 = (a), delegated; #1681) |
 | `edl-1` | [rulings_2026_08_21_diagram_vector_data.md](rulings_2026_08_21_diagram_vector_data.md) | EDL-1 — the examples-diagram gate (the #910 suggestion, homed) |
-| `edmap-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | EDMAP-1 — 1329-a's edit-map step reads each path's owning repository (L133 = (a); #1329) |
+| `edmap-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | EDMAP-1 — the ruled edit-map step reads each path's owning repository (L133 = (a); #1329) |
 | `en-1` | [rulings_2026_08_31_enum_campaign.md](rulings_2026_08_31_enum_campaign.md) | EN-1 — exhaustiveness: a `[?match]` over a schema-closed set knows when its arms cover it (#1154) |
 | `en-2` | [rulings_2026_08_31_enum_campaign.md](rulings_2026_08_31_enum_campaign.md) | EN-2 — closed-key maps: the schema `[keys …]` constraint, the honest EnumMap (#1155) |
 | `en-2` | [rulings_2026_08_31_enum_campaign.md](rulings_2026_08_31_enum_campaign.md) | EN-2 — schema side ([keys] is ordinary schema vocabulary, data reading) |
@@ -583,8 +577,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `en-4` | [rulings_2026_08_31_enum_campaign.md](rulings_2026_08_31_enum_campaign.md) | EN-4 — the one-page enum story: primer section + cxdm §2.6 rationale (#1157) |
 | `en-5` | [rulings_2026_08_31_enum_campaign.md](rulings_2026_08_31_enum_campaign.md) | EN-5 — the enum refusals register (#1158) |
 | `ent-1` | [rulings_2026_08_20_cx_pragma_registry.md](rulings_2026_08_20_cx_pragma_registry.md) | ENT-1 rider — attribute-position entity references (#878, corrected) |
-| `errat-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | ERRAT-1 — 1545-a's paused branch is ported onto cx-core-code (L134 = (a); #1545) |
-| `errsf-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | ERRSF-1 — #1062 closes on 1099-a; CO-19's `--errs=refuse` is withdrawn (L127 = (a)) |
+| `errat-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | ERRAT-1 — the paused source-position branch is ported onto cx-core-code (L134 = (a); #1545) |
+| `errsf-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | ERRSF-1 — #1062 closes on the shipped exit rule; the opt-in refuse flag is withdrawn (L127 = (a)) |
 | `fabr-1` | [rulings_2026_09_28_owner_decisions_l80_l84.md](rulings_2026_09_28_owner_decisions_l80_l84.md) | FABR-1 — the host context carries the fabric the host built on the deployment's journal (L81 = (a)) |
 | `fabt-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | FABT-1 — the standby-delivery panic is the test's defect, not the fabric's (L137 = (a); #1506) |
 | `fdisp-1` | [rulings_2026_09_28_owner_decisions_l80_l84.md](rulings_2026_09_28_owner_decisions_l80_l84.md) | FDISP-1 — the host dispatches a verb through a feature→package map built at boot (L80 = (d)) |
@@ -659,7 +653,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1.3 — #898: `[err …]` in the source contaminates the injected image |
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1.4 — #899: the `/Name` → `//Name` source rewrite RETIRES |
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1.5 — #894: the missing comma in an array literal |
-| `keyv-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | KEYV-1 — the declarable key vocabulary stays bound to 1190-a's trigger; #1199 is the one item put to the owner at the cut (L132 = (b); #1199) |
+| `keyv-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | KEYV-1 — the declarable key vocabulary stays bound to its ruled trigger; #1199 is the one item put to the owner at the cut (L132 = (b)) |
 | `kit-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | Owner decisions 2026-09-26 — the four designs of Letters 26–29: the connector kit (KIT-1…KIT-6), cross-company (XCO-1…XCO-5), the minimal keystore (SEC-1), the host's four choices (HOST-1…HOST-4) |
 | `kit-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | KIT-1 — a reference connector declares one verb per kit mechanism it proves |
 | `kit-2` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | KIT-2 — a tool is named by the composition-qualified verb |
@@ -829,7 +823,6 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rs-25` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-13…RS-25 — the repo split's follow-up decisions (owner, 2026-09-22/23, in session on dev2) |
 | `rs-25` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-25 — the mock adapter is declared by the kit's own CX, and the compile-time gate retires (owner: D30d) |
 | `rs-26` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-26…RS-31 — five spec-sentence authorizations, the afternoon letters, documentation and CI/CD, the documentation voice and the evening letters (owner, 2026-09-23, in session on dev2) |
-| `rs-26` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | SOAPV-1 — #1595 closes on RS-26 (L139 = (a)) |
 | `rs-27` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-27 — the afternoon letters of 2026-09-23 (owner: D49a, D50a, D51d, D52a, D53a) |
 | `rs-27` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | Not decided here (RS-27) |
 | `rs-28` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-28 — one site, thin repositories, and cx created by the recipe (owner: D57a, D58a, D59a) |
@@ -895,7 +888,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `sk-1` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) | What SK-1 got wrong |
 | `sk-2` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) | SK-2 — 2026-09-06, the OWNER REVISED SK-1 (asked "is (a) the best long term?") |
 | `sk-2` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) | SK-2 — RULED: (a), three parts |
-| `soapv-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | SOAPV-1 — #1595 closes on RS-26 (L139 = (a)) |
+| `soapv-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | SOAPV-1 — #1595 closes on the trued soap version spelling (L139 = (a)) |
 | `spawnf-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | SPAWNF-1 — an exec-time ENOENT is the same refusal a pre-spawn one is, as a round of its own (L114 = (a), delegated; #1630) |
 | `spf-1` | [rulings_2026_08_21_supervise_profile_and_python.md](rulings_2026_08_21_supervise_profile_and_python.md) | SPF-1 — a unique id is not a scheduler's to lend; a missing pack refuses at composition |
 | `spf-2` | [rulings_2026_08_21_supervise_profile_and_python.md](rulings_2026_08_21_supervise_profile_and_python.md) | SPF-2 — the third release-blocking red, unreported until now |
@@ -1169,6 +1162,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1174-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md), [rulings_2026_09_17_owner_decisions_0345z.md](rulings_2026_09_17_owner_decisions_0345z.md), [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) |
 | `1175-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md), [rulings_2026_09_17_owner_decisions_0410z.md](rulings_2026_09_17_owner_decisions_0410z.md) |
 | `118-odd` | [rulings_2026_09_08_playground_output_pin_1170.md](rulings_2026_09_08_playground_output_pin_1170.md) |
+| `1190-a` | [rulings_2026_09_07_solitary_key_is_a_note_1190.md](rulings_2026_09_07_solitary_key_is_a_note_1190.md), [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) |
 | `1190-b` | [rulings_2026_09_07_solitary_key_is_a_note_1190.md](rulings_2026_09_07_solitary_key_is_a_note_1190.md) |
 | `1191-a` | [rulings_2026_09_07_feature_name_one_segment_1191.md](rulings_2026_09_07_feature_name_one_segment_1191.md) |
 | `1210-hc-1` | [rulings_2026_09_04_host_context_1210.md](rulings_2026_09_04_host_context_1210.md) |
@@ -1225,6 +1219,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1314-c` | [rulings_2026_09_08_sched_wall_clock_1358.md](rulings_2026_09_08_sched_wall_clock_1358.md) |
 | `1324-sk-1` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) |
 | `1324-sk-2` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) |
+| `1329-a` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md), [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) |
 | `1349-a` | [rulings_2026_09_09_diagram_node_id_ordinals_1349.md](rulings_2026_09_09_diagram_node_id_ordinals_1349.md) |
 | `1349-b` | [rulings_2026_09_09_diagram_node_id_ordinals_1349.md](rulings_2026_09_09_diagram_node_id_ordinals_1349.md) |
 | `1349-c` | [rulings_2026_09_09_diagram_node_id_ordinals_1349.md](rulings_2026_09_09_diagram_node_id_ordinals_1349.md) |
@@ -1538,4 +1533,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*364 ledger pages; 816 ids declared, 389 cited only.*
+*364 ledger pages; 814 ids declared, 391 cited only.*

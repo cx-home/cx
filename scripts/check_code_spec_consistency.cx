@@ -237,8 +237,8 @@
           [yield $i]]] [+ $n 1]]]
         [= $block [$strings:join [$cat-seqs (
           ($head),
-          [?for [in $i [$range [+ $i0 1] [- $endi 1]]]
-            [yield [$nth $lines $i]]])] "\n"]]
+          ([?for [in $i [$range [+ $i0 1] [- $endi 1]]]
+            [yield [$nth $lines $i]]]))] "\n"]]
     [?for [in $q [$re:find-all QUOTED-NAME-RX $block]] [yield [$re:group $q 1]]]]]
 
 [?def audit-grammar scope=public impure ($gpath $expected)

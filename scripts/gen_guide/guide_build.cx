@@ -251,9 +251,9 @@
   [$string [$first [$sb:child-named [$site-manifest] 'site']]@repo]]
 
 [?def fixture-ids-in scope=public ($doc)
-  [$pb:cat-seqs ([?for [in $f $doc//fixture] [yield [$string $f@id]]],
-                 [?for [in $p $doc//pair] [yield [$string $p@wrong]]],
-                 [?for [in $p $doc//pair] [yield [$string $p@right]]])]]
+  [$pb:cat-seqs (([?for [in $f $doc//fixture] [yield [$string $f@id]]]),
+                 ([?for [in $p $doc//pair] [yield [$string $p@wrong]]]),
+                 ([?for [in $p $doc//pair] [yield [$string $p@right]]]))]]
 
 [# load-fixtures: index the site's suites, then replay and verify every case
    the guide home and the sections cite, once each. The replay scratch lives
@@ -1327,11 +1327,11 @@
      every nav group assumes. A pinned x/ path is NOT the retired x/ tier
      (D63a): is-x-file reads the front door's own top-level x/ only. ]
   [= $libfiles [$fp:flat-map (
-                   [?for [in $f [$fp:flat-map ([$io:glob 'stdlib/*.cx'], [$io:glob 'x/*.cx'],
+                   ([?for [in $f [$fp:flat-map ([$io:glob 'stdlib/*.cx'], [$io:glob 'x/*.cx'],
                                                [$io:glob 'deps/*/stdlib/*.cx'], [$io:glob 'deps/*/x/*.cx'])
                                   [?fn ($g) $g]]]
                      [order-by [$stdlib-slug $f]]
-                     [yield $f]],
+                     [yield $f]]),
                    [$synth-libfiles])
                  [?fn ($g) $g]]]
   [= $ver [$strings:trim [$io:read-file 'VERSION']]]
@@ -1360,10 +1360,10 @@
   [= $expected-pages [$fp:flat-map (
                          ('index.html', 'about.html', 'downloads.html',
                           'directives.html', 'syntax.html', 'xap.html'),
-                         [?for [in $m $metas] [yield [$cat ($m@slug, '.html')]]],
-                         [?for [in $r $repos] [yield [$cat ($r@slug, '.html')]]],
-                         [?for [in $f $libfiles] [yield [$cat ([$module-page $f], '.html')]]],
-                         [?for [in $d [$xap-demos]] [yield [$cat ($d@slug, '.html')]]])
+                         ([?for [in $m $metas] [yield [$cat ($m@slug, '.html')]]]),
+                         ([?for [in $r $repos] [yield [$cat ($r@slug, '.html')]]]),
+                         ([?for [in $f $libfiles] [yield [$cat ([$module-page $f], '.html')]]]),
+                         ([?for [in $d [$xap-demos]] [yield [$cat ($d@slug, '.html')]]]))
                        [?fn ($g) $g]]]
   (
     [$clean-stale-pages $out $expected-pages],
