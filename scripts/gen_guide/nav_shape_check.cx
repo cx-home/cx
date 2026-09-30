@@ -226,27 +226,27 @@
     [?if [= [$strings:join $titles " | "] [$strings:join GROUPS " | "]] [then ()]
       [else ([$concat "the groups are [" [$strings:join $titles " | "] "], not [" [$strings:join GROUPS " | "] "]"],)]],
     [; (2) the limits ]
-    [?for [in $g $groups]
+    ([?for [in $g $groups]
       [where [not [= [$string $g@title] "Repositories"]]]
       [where [> $g@visible VISIBLE-LIMIT]]
-      [yield [$concat [$string $g@title] " shows " [$string $g@visible] " visible entries; at most " [$string VISIBLE-LIMIT]]]],
-    [?for [in $g $groups]
+      [yield [$concat [$string $g@title] " shows " [$string $g@visible] " visible entries; at most " [$string VISIBLE-LIMIT]]]]),
+    ([?for [in $g $groups]
       [where [$member SUB-GROUPS [$string $g@title]]]
       [in $s $g//sub]
       [where [= [$string $s@level] "nav-sub"]]
       [where [> $s@items VISIBLE-LIMIT]]
-      [yield [$concat [$string $g@title] " › " [$string $s@title] " holds " [$string $s@items] " items; at most " [$string VISIBLE-LIMIT]]]],
-    [?for [in $g $groups]
+      [yield [$concat [$string $g@title] " › " [$string $s@title] " holds " [$string $s@items] " items; at most " [$string VISIBLE-LIMIT]]]]),
+    ([?for [in $g $groups]
       [where [= [$string $g@title] "Repositories"]]
       [in $s $g//sub]
       [where [not [= $s@items [$count $repo-pages]]]]
-      [yield [$concat "Repositories › " [$string $s@title] " holds " [$string $s@items] " items; the site serves " [$string [$count $repo-pages]] " repository pages"]]],
+      [yield [$concat "Repositories › " [$string $s@title] " holds " [$string $s@items] " items; the site serves " [$string [$count $repo-pages]] " repository pages"]]]),
     [; (3) module pages under Reference only ]
-    [?for [in $g $groups]
+    ([?for [in $g $groups]
       [where [not [= [$string $g@title] "Reference"]]]
       [= $mods [?for [in $h [$hrefs-in [$string [$first $g/raw]]]] [where [$is-module-page $h]] [yield $h]]]
       [where [not [$empty $mods]]]
-      [yield [$concat [$string $g@title] " links " [$string [$count $mods]] " module page(s) (" [$first $mods] ", …); a module page is listed under Reference only"]]],
+      [yield [$concat [$string $g@title] " links " [$string [$count $mods]] " module page(s) (" [$first $mods] ", …); a module page is listed under Reference only"]]]),
     [?let [= $ref [?for [in $g $groups] [where [= [$string $g@title] "Reference"]] [yield $g]]]
           [= $linked [?if [$empty $ref] [then ()] [else [$hrefs-in [$string [$first [$first $ref]/raw]]]]]]
       [?for [in $m $module-pages] [where [not [$member $linked $m]]]

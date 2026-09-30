@@ -186,7 +186,7 @@
       [?if [$strings:starts-with $l "- "]
         [then [$pb:cat-seqs ($acc, ([$strings:slice $l 3 [$strings:length $l]],))]]
         [else [?let [= $k [$count $acc]]
-          [$pb:cat-seqs ([?for [in $i [$range 1 [- $k 1]]] [yield [$nth $acc $i]]],
+          [$pb:cat-seqs (([?for [in $i [$range 1 [- $k 1]]] [yield [$nth $acc $i]]]),
                          ([$concat [$nth $acc $k] " " [$strings:trim $l]],))]]]]]]]
 
 [?def render-list scope=public impure ($rows $where)

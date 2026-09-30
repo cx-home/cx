@@ -138,10 +138,10 @@
 [?def self-test scope=public ()
   [?let [= $marked "// kept as history v0.8.0  // version-literal-ok"]
     [$cat-seqs (
-      [?for [in $s MUST-MATCH] [where [not [$rx-hits $s]]]
-        [yield [$concat "self-test: matcher FAILED to flag a stray literal: '" $s "'"]]],
-      [?for [in $s MUST-NOT-MATCH] [where [$rx-hits $s]]
-        [yield [$concat "self-test: matcher false-positived on: '" $s "'"]]],
+      ([?for [in $s MUST-MATCH] [where [not [$rx-hits $s]]]
+        [yield [$concat "self-test: matcher FAILED to flag a stray literal: '" $s "'"]]]),
+      ([?for [in $s MUST-NOT-MATCH] [where [$rx-hits $s]]
+        [yield [$concat "self-test: matcher false-positived on: '" $s "'"]]]),
       [?if [and [$strings:contains $marked STRAY-MARKER] [$rx-hits $marked]]
         [then ()]
         [else ("self-test: marker fixture is malformed")]])]]]

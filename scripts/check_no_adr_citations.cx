@@ -105,13 +105,13 @@
 
         [= $failures
           [$fp:flat-map (
-             [?for [in $s $must-catch]
+             ([?for [in $s $must-catch]
                [where [not [$matched [$re:find $citation-rx $s]]]]
-               [yield [$cat ("MISSED (should catch): ", $s)]]],
-             [?for [in $s $must-not-catch]
+               [yield [$cat ("MISSED (should catch): ", $s)]]]),
+             ([?for [in $s $must-not-catch]
                [= $m [$re:find $citation-rx $s]]
                [where [$matched $m]]
-               [yield [$cat ("FALSE POSITIVE on '", [$re:group $m 0], "': ", $s)]]])
+               [yield [$cat ("FALSE POSITIVE on '", [$re:group $m 0], "': ", $s)]]]))
            [?fn ($x) $x]]]
 
         [?if [> [$count $failures] 0]

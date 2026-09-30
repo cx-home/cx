@@ -320,14 +320,14 @@
     [then [$cat-seqs (
       [$diff-two-sets "entities" [$set-of [$map:keys [$map:get $exp "entities"]]]
                                  [$set-of [$map:keys [$map:get $act "entities"]]]],
-      [?for [in $name [$sorted-keys [$map:get $exp "entities"]]]
+      ([?for [in $name [$sorted-keys [$map:get $exp "entities"]]]
         [where [$map:contains [$map:get $act "entities"] $name]]
         [where [not [= [$map:get [$map:get $exp "entities"] $name]
                        [$map:get [$map:get $act "entities"] $name]]]]
         [yield [$concat $name ": rows ["
           [$strings:replace [$map:get [$map:get $act "entities"] $name] SEP "; "]
           "] != expected ["
-          [$strings:replace [$map:get [$map:get $exp "entities"] $name] SEP "; "] "]"]]],
+          [$strings:replace [$map:get [$map:get $exp "entities"] $name] SEP "; "] "]"]]]),
       [$diff-two-sets "relationships" [$map:get $exp "relationships"] [$map:get $act "relationships"]])]]
   [else [$cat-seqs (
     [$diff-two-sets "nodes" [$map:get $exp "nodes"] [$map:get $act "nodes"]],
