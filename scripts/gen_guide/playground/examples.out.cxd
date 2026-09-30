@@ -67,14 +67,14 @@ the defect #1170 was filed for.
 [order [customer name=Alice] [item name=pizza qty=2] [item name=salad qty=1]]
 #]]
  ]
- [ex key=09-attrs-vs-children chars=58
+ [ex key=09-attrs-vs-children chars=56
   [out-text [#
-[user id=1 active=true [email 'a@x.com'] [phone '+1-555']]
+[user id=1 active=true [email a@x.com] [phone '+1-555']]
 #]]
  ]
- [ex key=10-mixed-content chars=50
+ [ex key=10-mixed-content chars=48
   [out-text [#
-[link href='https://cx-home.github.io' 'CX Guide']
+[link href='https://cx-home.github.io' CX Guide]
 #]]
  ]
  [ex key=11-sequence chars=15
@@ -197,9 +197,9 @@ true
 42
 #]]
  ]
- [ex key=35-cast-float-int chars=108 err-chars=67
+ [ex key=35-cast-float-int chars=117 err-chars=67
   [out-text [#
-[err code=cx-err:CXER0290 message='cast: decimal `3.7` is not integral — :int requires a whole value (L44)']
+[err code=cx-err:CXER0290 message='cast: decimal `3.7` is not integral — :int requires a whole value (L44)' at='1:1']
 #]]
   [err-text [#
 error: the result carries an error value — cx-err:CXER0290 at /err
@@ -387,9 +387,9 @@ error: the result carries an error value — cx-err:CXER0290 at /err
 [users [user id=1 name=Alice banned=false] [user id=3 name=Carol banned=false]]
 #]]
  ]
- [ex key=62-modify-set-attr chars=87
+ [ex key=62-modify-set-attr chars=83
   [out-text [#
-[users [user id=1 status=active [name 'Alice']] [user id=2 status=active [name 'Bob']]]
+[users [user id=1 status=active [name Alice]] [user id=2 status=active [name Bob]]]
 #]]
  ]
  [ex key=63-modify-chain chars=103
@@ -420,9 +420,9 @@ error: the result carries an error value — cx-err:CXER0290 at /err
 22
 #]]
  ]
- [ex key=68-pipe-modify chars=77
+ [ex key=68-pipe-modify chars=73
   [out-text [#
-[users [user verified=true [name 'Alice']] [user verified=true [name 'Bob']]]
+[users [user verified=true [name Alice]] [user verified=true [name Bob]]]
 #]]
  ]
  [ex key=69-fallback-recover chars=25 err-chars=66
@@ -570,12 +570,12 @@ error: the result carries an error value — cx-err:CXER0140 at /err
 error: the result carries an error value — cx-err:CXER0141 at /err
 #]]
  ]
- [ex key=95-circuit-breaker-trips chars=253 err-chars=64
+ [ex key=95-circuit-breaker-trips chars=257 err-chars=64
   [out-text [#
 [err code=test-failure message='test failure']
 [err code=test-failure message='test failure']
-[err code=cx-err:CXER0150 message='circuit breaker open' [until [instant 10s]]]
-[err code=cx-err:CXER0150 message='circuit breaker open' [until [instant 10s]]]
+[err code=cx-err:CXER0150 message='circuit breaker open' [until [instant '10s']]]
+[err code=cx-err:CXER0150 message='circuit breaker open' [until [instant '10s']]]
 #]]
   [err-text [#
 error: the result carries an error value — test-failure at /err
@@ -671,10 +671,10 @@ c
 [carrot qty=2]
 #]]
  ]
- [ex key=110-attr-to-child chars=51
+ [ex key=110-attr-to-child chars=47
   [out-text [#
-[user id=1 [name 'Alice']]
-[user id=2 [name 'Bob']]
+[user id=1 [name Alice]]
+[user id=2 [name Bob]]
 #]]
  ]
  [ex key=111-child-to-attr chars=43
@@ -792,12 +792,12 @@ d
 y
 #]]
  ]
- [ex key=128-flatten-one-level chars=45
+ [ex key=128-flatten-one-level chars=39
   [out-text [#
-[item 'a']
-[item 'b']
+[item a]
+[item b]
 c
-[item 'd']
+[item d]
 [item 'e']
 #]]
  ]
@@ -808,11 +808,11 @@ c
 [section type=logging]
 #]]
  ]
- [ex key=130-siblings chars=61
+ [ex key=130-siblings chars=55
   [out-text [#
-[title 'On X']
-[author 'Alice']
-[body '...']
+[title On X]
+[author Alice]
+[body ...]
 [tags 'T1' 'T2']
 #]]
  ]
@@ -928,11 +928,11 @@ C
 [totals us=150 eu=280]
 #]]
  ]
- [ex key=150-join-by-key chars=136
+ [ex key=150-join-by-key chars=130
   [out-text [#
-[joined order-id=1 amt=100 [email 'a@x.com']]
-[joined order-id=2 amt=200 [email 'b@x.com']]
-[joined order-id=3 amt=50 [email 'a@x.com']]
+[joined order-id=1 amt=100 [email a@x.com]]
+[joined order-id=2 amt=200 [email b@x.com]]
+[joined order-id=3 amt=50 [email a@x.com]]
 #]]
  ]
  [ex key=151-range-by-stride chars=9
@@ -1018,9 +1018,9 @@ C
 [service-handle name=hello]
 #]]
  ]
- [ex key=164-graph-state-machine-data chars=197
+ [ex key=164-graph-state-machine-data chars=191
   [out-text [#
-[state-machine [state 'idle'] [state 'running'] [state 'stopped'] [transition from=idle to=running on=start] [transition from=running to=stopped on=stop] [transition from=stopped to=idle on=reset]]
+[state-machine [state idle] [state running] [state stopped] [transition from=idle to=running on=start] [transition from=running to=stopped on=stop] [transition from=stopped to=idle on=reset]]
 #]]
  ]
  [ex key=165-graph-workflow-dag chars=137
@@ -1124,9 +1124,9 @@ error: the result carries an error value — cx-err:CXER9999 at /err
 ()
 #]]
  ]
- [ex key=182-fp-traverse-http chars=132 err-chars=67
+ [ex key=182-fp-traverse-http chars=141 err-chars=67
   [out-text [#
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: net capability required for example.com:443; none granted (grant via --allow-net)']
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: net capability required for example.com:443; none granted (grant via --allow-net)' at='4:1']
 #]]
   [err-text [#
 error: the result carries an error value — cx-err:CXER0271 at /err
@@ -1161,9 +1161,9 @@ null
 [checks present-empty=true count-empty=0 present-missing=false]
 #]]
  ]
- [ex key=188-err-operand-consuming chars=53 err-chars=67
+ [ex key=188-err-operand-consuming chars=62 err-chars=67
   [out-text [#
-[err code=cx-err:CXER0101 message='division by zero']
+[err code=cx-err:CXER0101 message='division by zero' at='1:9']
 #]]
   [err-text [#
 error: the result carries an error value — cx-err:CXER0101 at /err
@@ -1214,9 +1214,9 @@ error: the result carries an error value — cx-err:CXER0101 at /err
 [config [api-key '‹redacted›']]
 #]]
  ]
- [ex key=198-checked-int-overflow chars=137 err-chars=67
+ [ex key=198-checked-int-overflow chars=146 err-chars=67
   [out-text [#
-[err code=cx-err:CXER3000 message='E_MATH_OVERFLOW: int64 overflow in `*` (checked by default; use wrapping-mul for modular arithmetic)']
+[err code=cx-err:CXER3000 message='E_MATH_OVERFLOW: int64 overflow in `*` (checked by default; use wrapping-mul for modular arithmetic)' at='1:1']
 #]]
   [err-text [#
 error: the result carries an error value — cx-err:CXER3000 at /err
@@ -1257,9 +1257,9 @@ default
 [names 'ADA' 'BO']
 #]]
  ]
- [ex key=206-head-bind-captures-the-whole-element chars=38
+ [ex key=206-head-bind-captures-the-whole-element chars=36
   [out-text [#
-[found id=7 [user id=7 [given 'Ada']]]
+[found id=7 [user id=7 [given Ada]]]
 #]]
  ]
  [ex key=207-attribute-rest chars=44
@@ -1329,9 +1329,9 @@ default
 [divisions [exact [refused code=cx-err:CXER3002]] [rounded 0.33] [float 3.333333333333333e-1]]
 #]]
  ]
- [ex key=220-checked-overflow chars=137 err-chars=67
+ [ex key=220-checked-overflow chars=146 err-chars=67
   [out-text [#
-[err code=cx-err:CXER3000 message='E_MATH_OVERFLOW: int64 overflow in `*` (checked by default; use wrapping-mul for modular arithmetic)']
+[err code=cx-err:CXER3000 message='E_MATH_OVERFLOW: int64 overflow in `*` (checked by default; use wrapping-mul for modular arithmetic)' at='1:1']
 #]]
   [err-text [#
 error: the result carries an error value — cx-err:CXER3000 at /err
@@ -1355,9 +1355,9 @@ error: the result carries an error value — cx-err:CXER3000 at /err
 error: the result carries an error value — cx-err:CXER9999 at /err
 #]]
  ]
- [ex key=224-no-callable-is-a-coded-refusal chars=70 err-chars=67
+ [ex key=224-no-callable-is-a-coded-refusal chars=79 err-chars=67
   [out-text [#
-[err code=cx-err:CXER0136 message='E_NO_CALLABLE: no callable "nope"']
+[err code=cx-err:CXER0136 message='E_NO_CALLABLE: no callable "nope"' at='1:1']
 #]]
   [err-text [#
 error: the result carries an error value — cx-err:CXER0136 at /err
@@ -1394,9 +1394,9 @@ error: the result carries an error value — cx-err:CXER0136 at /err
 {name: 1}
 #]]
  ]
- [ex key=231-a-bare-word-in-a-data-body-is-text chars=18
+ [ex key=231-a-bare-word-in-a-data-body-is-text chars=16
   [out-text [#
-[greeting 'hello']
+[greeting hello]
 #]]
  ]
  [ex key=232-of-clause-closed-match chars=6
@@ -1424,9 +1424,9 @@ other
 [reading a=-0.0 b=0.0 c=-0.00]
 #]]
  ]
- [ex key=237-xml-refuses-a-duplicate-attribute chars=196 err-chars=67
+ [ex key=237-xml-refuses-a-duplicate-attribute chars=205 err-chars=67
   [out-text [#
-[err code=cx-err:CXER0100 message='cx-err:CXER0100 PARSE_ERROR: XML — 1:10: duplicate attribute `x` on <r> (XML 1.0 §3.1 WFC: Unique Att Spec — an attribute name may appear at most once per tag)']
+[err code=cx-err:CXER0100 message='cx-err:CXER0100 PARSE_ERROR: XML — 1:10: duplicate attribute `x` on <r> (XML 1.0 §3.1 WFC: Unique Att Spec — an attribute name may appear at most once per tag)' at='2:1']
 #]]
   [err-text [#
 error: the result carries an error value — cx-err:CXER0100 at /err
@@ -1442,9 +1442,9 @@ error: the result carries an error value — cx-err:CXER0100 at /err
 [both count=2 first=3]
 #]]
  ]
- [ex key=240-constructors-keep-strict-typing chars=192 err-chars=67
+ [ex key=240-constructors-keep-strict-typing chars=201 err-chars=67
   [out-text [#
-[err code=cx-err:CXER0100 message='concat: argument 2 is a 2-item sequence — a single scalar (or a node atomizing to one) is required; bind it or default it with [?else] first (code.md §6.5)']
+[err code=cx-err:CXER0100 message='concat: argument 2 is a 2-item sequence — a single scalar (or a node atomizing to one) is required; bind it or default it with [?else] first (code.md §6.5)' at='1:1']
 #]]
   [err-text [#
 error: the result carries an error value — cx-err:CXER0100 at /err
@@ -1465,9 +1465,9 @@ error: the result carries an error value — cx-err:CXER0100 at /err
 [round-trip [as-cx {service: api, replicas: 3, ports: [8080, 8443]}] [replicas 3] [back 'service: api\nreplicas: 3\nports:\n  - 8080\n  - 8443']]
 #]]
  ]
- [ex key=244-toml-in-and-out chars=142
+ [ex key=244-toml-in-and-out chars=140
   [out-text [#
-[round-trip [as-cx {title: cx, owner: {name: Ada, year: 2026}}] [owner 'Ada'] [back 'title = "cx"\n\n[owner]\nname = "Ada"\nyear = 2026\n\n']]
+[round-trip [as-cx {title: cx, owner: {name: Ada, year: 2026}}] [owner Ada] [back 'title = "cx"\n\n[owner]\nname = "Ada"\nyear = 2026\n\n']]
 #]]
  ]
  [ex key=245-csv-in-and-out chars=117
@@ -1612,14 +1612,14 @@ error: the result carries an error value — cx-err:CXER0100 at /err
 [document root=parsing cases=3 elements=10 deep=1]
 #]]
  ]
- [ex key=270-query-a-document-with-a-path chars=116
+ [ex key=270-query-a-document-with-a-path chars=112
   [out-text [#
-[paths matches=2 one-descendant=1 one-field-read=2 one-select=1 [ids 'p-1' 'p-2'] [attr-axis [id 'p-1'] [id 'p-2']]]
+[paths matches=2 one-descendant=1 one-field-read=2 one-select=1 [ids 'p-1' 'p-2'] [attr-axis [id p-1] [id p-2]]]
 #]]
  ]
- [ex key=271-two-readers-over-one-file chars=62
+ [ex key=271-two-readers-over-one-file chars=60
   [out-text [#
-[two-readers parser=3 markers=4 agree=false [swallowed 'r-4']]
+[two-readers parser=3 markers=4 agree=false [swallowed r-4]]
 #]]
  ]
  [ex key=272-diff-two-documents chars=145
@@ -1692,9 +1692,9 @@ summarized 3 rows
 [report read=1 [diagnoses "shipped: '09/03/2026' is not a date — cx reads ISO 8601 (yyyy-mm-dd) and refused with cx-err:CXER3301" "closed: 'yesterday' is not a date — cx reads ISO 8601 (yyyy-mm-dd) and refused with cx-err:CXER3301"]]
 #]]
  ]
- [ex key=286-assert-your-own-function chars=45
+ [ex key=286-assert-your-own-function chars=43
   [out-text [#
-[checks assertions=3 [example 'hello-world']]
+[checks assertions=3 [example hello-world]]
 #]]
  ]
  [ex key=287-a-table-of-cases-in-a-cxd chars=108
@@ -1707,9 +1707,9 @@ summarized 3 rows
 [shape fields=3 accepted=true drift-caught=true]
 #]]
  ]
- [ex key=289-a-failing-assertion-is-the-exit-status chars=95 err-chars=67
+ [ex key=289-a-failing-assertion-is-the-exit-status chars=105 err-chars=67
   [out-text [#
-[err code=cx-err:CXER2200 message='E_TEST_ASSERTION_FAILED: expected two_words, got two-words']
+[err code=cx-err:CXER2200 message='E_TEST_ASSERTION_FAILED: expected two_words, got two-words' at='5:13']
 #]]
   [err-text [#
 error: the result carries an error value — cx-err:CXER2200 at /err
@@ -1735,9 +1735,9 @@ error: the result carries an error value — cx-err:CXER2200 at /err
 [lookup found=true item='desk lamp' missing-ok=false missing-status=404 answer-name=response]
 #]]
  ]
- [ex key=294-a-local-sqlite-file chars=128
+ [ex key=294-a-local-sqlite-file chars=122
   [out-text [#
-[notes inserted=3 on-disk=true [by-tag [row [tag 'idea'] [n '1']] [row [tag 'todo'] [n '2']]] [first-idea [row [body 'maybe']]]]
+[notes inserted=3 on-disk=true [by-tag [row [tag idea] [n '1']] [row [tag todo] [n '2']]] [first-idea [row [body maybe]]]]
 #]]
  ]
  [ex key=295-send-mail-to-a-server-you-started chars=134

@@ -2964,7 +2964,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
   [note [#
 **Introduces:** the head-bind (code.md §5.1). A binding GLUED to a pattern's name — `[user$u …]` — captures the whole matched element, attributes and body included, while the rest of the pattern still destructures it (`id=$id`). Whitespace matters: `[user $u]` is a body item (rule 5's auto-unwrap), `[user$u]` is the head-bind. On wildcard, deep and type-guard heads the binding MAY be separated (`[* $x]`).
 #]]
-  [expect [# [found id=7 [user id=7 [given 'Ada']]] #]]
+  [expect [# [found id=7 [user id=7 [given Ada]]] #]]
  ]
 
  [ex key=207-attribute-rest
@@ -3301,7 +3301,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [note [#
 **Introduces:** a bare word in a data body is TEXT, never a binding read. `[greeting hello]` is data: `hello` is the text `'hello'` even if a `$hello` binding exists nearby. To place a binding's value in a body you write `$hello`. One rule for readers and tools: data bodies never reach into scope.
 #]]
-  [expect [# [greeting 'hello'] #]]
+  [expect [# [greeting hello] #]]
  ]
 
  [ex key=232-of-clause-closed-match
@@ -3484,7 +3484,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [note [#
 **Introduces:** a TOML `[owner]` table is a nested map after `[$toml:parse]`, so `$cfg.owner.name` walks it like any map, and `[$toml:emit]` turns a nested map back into a table with its header. Top-level keys come first, tables after — the emitter orders the document the way TOML requires.
 #]]
-  [expect [# [owner 'Ada'] #]]]
+  [expect [# [owner Ada] #]]]
 
  [ex key=245-csv-in-and-out
   [label [#[245] CSV in, CX out — rows as maps keyed by the header#]]
@@ -3977,7 +3977,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [note [#
 **Introduces:** the probe that answers "does the parser see every case I think I wrote?" — one pass with `[$cx:parse]`, one pass over the raw lines, and the difference between them. This is the bisect an integrator reaches for when a suite silently grades fewer cases than its file appears to hold (#1523), and both halves are ordinary CX: the parser's ids come from `[?for]` over `//case`, the text's come from `[$re:find]` over the lines `[$strings:contains]` kept. Note `[$re:matches]` is NOT the filter to use here — re.md §4 defines it as true only when the ENTIRE string matches, so a line containing the marker answers false; `find` searches. Here the parked case inside a `[; … ]` comment is invisible to the parser and visible to the text scan, which is exactly the divergence the probe exists to name.
 #]]
-  [expect [# [swallowed 'r-4'] #]]
+  [expect [# [swallowed r-4] #]]
  ]
 
  [ex key=272-diff-two-documents
@@ -4300,7 +4300,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [note [#
 **Introduces:** `cx-stdlib/test` (test.md §3.1) — `assert`, `assert-equal`, `assert-not-equal`, `assert-contains`, `assert-throws`, `assert-near`, `assert-shape`, `assert-match`, `fail` and `skip`. This is the whole of what a `pytest` reflex is reaching for: a program that calls them and ends IS the test, and its exit status is the verdict (287 loads its cases from a file, 289 shows the failure). `assert-throws` takes a **thunk** — a nullary `[?fn () …]`, code.md §8.6 — and accepts your own refusal code, not only a `CXERnnnn`, because a function answering `[err code='slug:empty' …]` is refusing exactly the way the stdlib does. What is NOT here yet is the command-line runner: test.md §2.3 names `cx test` and cli.md §2's registry has no such subcommand, so there is no "run my suite" and no `test-*` discovery — that is #1552, and the example that runs a suite from a shell waits for it. `[$test:configure]` is accepted and has no effect for the same reason: its `on-fail`, `reporter` and `fixture-dir` keys are the runner's.
 #]]
-  [expect [# [checks assertions=3 [example 'hello-world']] #]]
+  [expect [# [checks assertions=3 [example hello-world]] #]]
  ]
 
  [ex key=287-a-table-of-cases-in-a-cxd
