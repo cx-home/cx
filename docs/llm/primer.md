@@ -1909,6 +1909,7 @@ visible in the import line.
 | `did-web` | Resolving a did:web — the one DID method whose document is not derivable from the identifier and has to be fetched. |
 | `flow` | General workflow on the saga substrate: flows as documents, runs as journaled records, and a runner that is a pure function rather than an engine. |
 | `fabric` | Platform-level eventing over the shipped primitives: one subscribe/emit surface with an explicit durability axis. |
+| `ftp` | FTP and FTPS (RFC 959, explicit AUTH TLS and implicit TLS, both channels protected) over cx-platform/net, and the seven-verb file surface of file_surface.md instantiated over it: list, stat, get, put, rename, delete, mkdir under a bound root no path and no link escapes, resumable transfers over REST, size, time and stall bounds. |
 | `http` | The HTTP/1.1 SERVER: an event-loop accept/respond surface over the `cx-platform/net` transport, with Server-Sent Events streaming for held-open push. |
 | `imap` | Both halves of IMAP4rev2 (RFC 9051) on one token grammar: the client an agent or a human client reads a mailbox with, and the server core a CX process serves a mailbox from. |
 | `journal` | An append-only, hash-chained, tenant-partitioned event log and the deterministic projection of that log into state. |

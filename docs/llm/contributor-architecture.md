@@ -89,7 +89,7 @@ the product compiles from (RULED: RS-24).
 | `cx-core-data` | 1 | yes | `cx-core-data` |
 | `cx-core-code` | 52 | yes | `cx-stdlib/array` `cx-stdlib/authz` `cx-stdlib/bus` `cx-stdlib/bytes` `cx-stdlib/crypto` `cx-stdlib/csv` `cx-stdlib/cx` `cx-stdlib/did` `cx-stdlib/email` `cx-stdlib/env` `cx-stdlib/format` `cx-stdlib/fp` `cx-stdlib/geo` `cx-stdlib/graphql` `cx-stdlib/hash` `cx-stdlib/html` `cx-stdlib/http-client` `cx-stdlib/i18n` `cx-stdlib/io` `cx-stdlib/json` `cx-stdlib/jsonrpc` `cx-stdlib/jsonschema` `cx-stdlib/locale` `cx-stdlib/log` `cx-stdlib/map` `cx-stdlib/math` `cx-stdlib/mime` `cx-stdlib/oidc` `cx-stdlib/path` `cx-stdlib/process` `cx-stdlib/prof` `cx-stdlib/random` `cx-stdlib/re` `cx-stdlib/saml` `cx-stdlib/sched` `cx-stdlib/scim` `cx-stdlib/similar` `cx-stdlib/soap` `cx-stdlib/strings` `cx-stdlib/supervise` `cx-stdlib/tar` `cx-stdlib/term` `cx-stdlib/test` `cx-stdlib/time` `cx-stdlib/url` `cx-stdlib/uuid` `cx-stdlib/validate` `cx-stdlib/vc` `cx-stdlib/ws` `cx-stdlib/xml` `cx-stdlib/zip` `term` |
 | `cx-platform-db` | 3 | yes | `db` `sql` `redis` |
-| `cx-platform-net` | 2 | yes | `cx-platform/net` `cx-platform/http` |
+| `cx-platform-net` | 3 | yes | `cx-platform/net` `cx-platform/http` `cx-platform/ftp` |
 | `cx-platform-mail` | 3 | yes | `cx-platform/imap` `cx-platform/smtp` `cx-stdlib/sasl` |
 | `cx-platform-store` | 5 | yes | `cx-platform/store` `cx-platform/journal` `cx-platform/live` `cx-platform/audit` `cx-stdlib/ft` |
 | `cx-platform-identity` | 4 | yes | `cx-platform/session` `cx-platform/authz-store` `cx-platform/did-web` `cx-platform/vc-revocation` |
