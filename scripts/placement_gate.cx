@@ -72,8 +72,8 @@
 # platform directories whatever its ring. A row's PLACE is therefore
 # `platform` for a group=platform row and its ring otherwise, and every
 # directory check below compares places. A corpus header's `ring=` is a
-# DIFFERENT attribute -- the lane that grades the suite -- which RS-1 does not
-# rename: a group=platform row's corpus grades in the platform lane, ring=2.
+# DIFFERENT attribute -- the ring that grades the suite -- which RS-1 does not
+# rename: a group=platform row's corpus grades at the platform ring, ring=2.
 #   [orphan ...]     a spec, corpus or bundled source that no row and no
 #                    `[move]` claims
 #   [dep path]       a `repo=` row -- an EXTRACTED module (RULED: RS-7,
@@ -218,11 +218,11 @@
   [?let [= $d [$place-of-dir $p $pdirs]]
     [?if [= $d ""] [then true] [else [$strings:contains $d $place]]]]]
 
-# suite-lane: the `ring=` a row's corpus HEADER must carry -- the lane that
+# suite-grade-ring: the `ring=` a row's corpus HEADER must carry -- the ring that
 # grades the suite, the corpus's own attribute, which RS-1 does not rename.
-# A group=platform row's corpus grades in the platform lane (ring=2); any
+# A group=platform row's corpus grades at the platform ring (ring=2); any
 # other row's, in its ring's.
-[?def suite-lane scope=private pure [returns string] ($ring::string $group::string)
+[?def suite-grade-ring scope=private pure [returns string] ($ring::string $group::string)
   [?if [= $group "platform"] [then "2"] [else $ring]]]
 
 # -- the self-test (RULED: COMP-1, RS-12, RS-1) --------------------------
@@ -299,12 +299,12 @@
                 [then ""]
                 [else "FALSE POSITIVE: a group=platform row's spec is in spec/03-approved/platform/"]]]
       # the corpus header: its `ring=` is the corpus's own attribute -- the
-      # lane that grades it -- and RS-1 does not rename it. A group=platform
-      # row's corpus is graded in the platform lane, ring=2.
-      [= $r12 [?if [and [= [$suite-lane "1" "platform"] "2"]
-                        [and [= [$suite-lane "1" ""] "1"] [= [$suite-lane "0" ""] "0"]]]
+      # ring that grades it -- and RS-1 does not rename it. A group=platform
+      # row's corpus is graded at the platform ring, ring=2.
+      [= $r12 [?if [and [= [$suite-grade-ring "1" "platform"] "2"]
+                        [and [= [$suite-grade-ring "1" ""] "1"] [= [$suite-grade-ring "0" ""] "0"]]]
                 [then ""]
-                [else "FALSE POSITIVE: a group=platform row's corpus header carries ring=2 (the platform lane); a row with no group, its ring"]]]
+                [else "FALSE POSITIVE: a group=platform row's corpus header carries ring=2 (the platform ring); a row with no group, its ring"]]]
       # RS-24 read through RS-1: a split product's directory is a
       # platform-group place, and without the declaration it reads as nothing
       # -- the vacuity [code ring] must not have.
@@ -485,8 +485,8 @@
               [else ""]]]
 
           # -- [suite ring]: the corpus header against the row.
-          [= $lane       [$suite-lane $ring $group]]
-          [= $want-suite [?if [= $suite-ring ""] [then $lane] [else $suite-ring]]]
+          [= $grade-ring [$suite-grade-ring $ring $group]]
+          [= $want-suite [?if [= $suite-ring ""] [then $grade-ring] [else $suite-ring]]]
           [= $v-suite
             [$strings:join
               [?for [in $c [$words $corpus]]
@@ -494,12 +494,12 @@
                 [where [not [= $sr ""]]]
                 [where [not [= $sr $want-suite]]]
                 [yield [$concat "  [suite ring]     " $tag "  -- " $c
-                         " carries ring=" $sr ", the row (" $rg ") grades it in lane ring=" $want-suite]]]
+                         " carries ring=" $sr ", the row (" $rg ") grades it at ring=" $want-suite]]]
               "\n"]]
           [= $v-stale-suite
-            [?if [= $suite-ring $lane]
+            [?if [= $suite-ring $grade-ring]
               [then [$concat "  [stale]          " $tag
-                       "  -- suite-ring=" $suite-ring " repeats the row's lane; drop it"]]
+                       "  -- suite-ring=" $suite-ring " repeats the row's grading ring; drop it"]]
               [else ""]]]
 
           # -- [code ring] / [half ring].

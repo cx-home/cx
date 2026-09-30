@@ -23,7 +23,7 @@
 # Usage:
 #   scripts/release_linux.sh vX.Y.Z            # linux-arm64 (native on Apple Silicon)
 #   scripts/release_linux.sh --amd64 vX.Y.Z    # + linux-x86_64 (qemu emulation; slow)
-#   scripts/release_linux.sh --dev vX.Y.Z      # dev-shape build (fast; lane validation only)
+#   scripts/release_linux.sh --dev vX.Y.Z      # dev-shape build (fast; build validation only)
 #
 # Docker-on-this-machine note: pulls hang behind the credsStore=desktop
 # helper; this script exports the documented bypass (anonymous auths config
@@ -155,12 +155,12 @@ build_one() {
       done
       echo "-- engines probe:"; "/tmp/$T/cx" -v || true
       # R2.2 (#651/#516 remediation register, ruled (a) 2026-08-09): BLOCKING
-      # per-profile install verification, linux lane — the same contract as
+      # per-profile install verification, linux build — the same contract as
       # the package act of the release flow: every staged tarball must extract the way the
       # installer extracts it and its binary must report the expected profile
       # line, or the cut dies here (this script failing fails the release flow).
       # RULED: PGL-1 (#741) — ONE implementation, shared with the release flow and
-      # with the standalone pre-cut lane. The lean container copy above
+      # with the standalone pre-cut step. The lean container copy above
       # includes scripts/, so the file is here at /build; cwd is /build.
       . scripts/lib/r22_profile_gate.sh
       r22_profile_gate /out/public "$T" /linux

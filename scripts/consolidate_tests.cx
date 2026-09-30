@@ -11,7 +11,7 @@
 # The merge is deliberately conservative -- it can refuse, it can fail a
 # compile, it can NEVER silently drop or alter behavior:
 #   - module clause: every input must declare the SAME module (main for
-#     vcx/tests/, code/platform for the in-module lanes); mixed = refuse.
+#     vcx/tests/, code/platform for the in-module tests); mixed = refuse.
 #   - imports: multi-line selective imports (`import X {` with the
 #     member list on following lines -- the vfmt form) are collapsed to
 #     one line per file first; the union then merges selective imports

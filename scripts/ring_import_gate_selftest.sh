@@ -30,7 +30,7 @@ for d in cx code cxstore arrow transport cli cmd_data grading deps target fixtur
   mkdir -p "$FAKE/vcx/$d"
 done
 # RS-24: two declared V product modules -- a lower one (net) and xap, the one
-# above the residue since xap's split -- so the product lanes are probed too.
+# above the residue since xap's split -- so the product checks are probed too.
 mkdir -p "$FAKE/vcx/cxnet" "$FAKE/vcx/xap" "$FAKE/registry"
 printf '%s\n' "[repo-allocation [repo name=cx-platform-net vmodule=cxnet] [repo name=cx-platform-xap vmodule=xap]]" > "$FAKE/registry/repos.cxd"
 
@@ -84,17 +84,17 @@ probe "allowlist-not-blanket" "cx/selftest_re2_blanket.v" \
 #flag -I @VMODROOT/deps/some_other_dir
 #flag -L @VMODROOT/code'
 
-# ── new lane: arrow (leaf) importing a non-cx sibling ──
+# ── new check: arrow (leaf) importing a non-cx sibling ──
 probe "arrow-leaf" "arrow/selftest_arrow_probe.v" \
   'module arrow
 import cxnet'
 
-# ── new lane: cli must stay platform-free ──
+# ── new check: cli must stay platform-free ──
 probe "cli-platform-free" "cli/selftest_cli_probe.v" \
   'module cli
 import cxnet'
 
-# ── new lane: cmd_data must stay platform-free ──
+# ── new check: cmd_data must stay platform-free ──
 probe "cmd_data-platform-free" "cmd_data/selftest_cmddata_probe.v" \
   'module main
 import cxstore'
