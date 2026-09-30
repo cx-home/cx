@@ -674,6 +674,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `mss-6` | [rulings_2026_08_22_map_syntax_settlement.md](rulings_2026_08_22_map_syntax_settlement.md) | MSS-6 (= letter Q6a) — the fences |
 | `mss-7` | [rulings_2026_08_22_map_syntax_settlement.md](rulings_2026_08_22_map_syntax_settlement.md) | MSS-7 — the prefix family completes: `::T VALUE` types the value (RULED "1a", 2026-08-22, same day) |
 | `names-1` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | NAMES-1 — the names #1498 wave 2 chose get fixture-backed sentences (L66 = (a)) |
+| `ncnam-1` | [rulings_2026_09_30_owner_decisions_l115_l116.md](rulings_2026_09_30_owner_decisions_l115_l116.md) | NCNAM-1 — a computed attribute named `null`, `true` or `false` stays refused, CXER0236 (L115 = (a); #1699) |
 | `nt-1` | [rulings_2026_08_26_diagram_nested_tables_1031.md](rulings_2026_08_26_diagram_nested_tables_1031.md) | NT-1 — the defect, and why `cd-label` was not the place to fix it |
 | `nt-10` | [rulings_2026_08_26_diagram_nested_tables_1031.md](rulings_2026_08_26_diagram_nested_tables_1031.md) | NT-10 — the visual pass is part of the deliverable |
 | `nt-2` | [rulings_2026_08_26_diagram_nested_tables_1031.md](rulings_2026_08_26_diagram_nested_tables_1031.md) | NT-2 — the form is a flowchart HTML label; #992's measurement is not re-litigated |
@@ -884,6 +885,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `spread-2` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | Owner decisions 2026-09-27 — Letters 46–50 and the org profile: KIT-4's shape (KIT4-1…3), the #1498 spec gaps (AA-7…9), HOST-4's seed made real (SEED-1), the host act's basis (HOSTB-1), the call spread's readings (SPREAD-2), the org-profile push (ORG-1) |
 | `spread-2` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | SPREAD-2 — the call spread's three readings (L50 = (a), (a), (a)) |
 | `sse-1` | [rulings_2026_08_20_sse_downstream.md](rulings_2026_08_20_sse_downstream.md) | Ruling SSE-1 (2026-08-20) — the v1 web binding's SSE downstream: negotiated XSP-envelope carriage (owner "1b") |
+| `strq-1` | [rulings_2026_09_30_owner_decisions_l115_l116.md](rulings_2026_09_30_owner_decisions_l115_l116.md) | STRQ-1 — a string whose text would read back as another type is quoted when rendered (L116 = (a); #1691) |
 | `sup-1` | [rulings_2026_08_20_supervise.md](rulings_2026_08_20_supervise.md) | SUP-1 — graduate the contract AND implement pre-cut |
 | `sync-1` | [rulings_2026_09_27_owner_decisions_l55.md](rulings_2026_09_27_owner_decisions_l55.md) | Owner decisions 2026-09-27 (afternoon) — Letter 55: the code phase of the sync module, SYNC-1…SYNC-9 |
 | `sync-1` | [rulings_2026_09_27_owner_decisions_l55.md](rulings_2026_09_27_owner_decisions_l55.md) | SYNC-1 — the source is pure CX in the connector package, with a bench bound (L55.1 = (a)) |
@@ -1510,4 +1512,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*358 ledger pages; 793 ids declared, 391 cited only.*
+*359 ledger pages; 795 ids declared, 391 cited only.*
