@@ -1271,7 +1271,7 @@
    [else 'deps/cx-platform-xap/spec/03-approved/xap/demos/']]]
 
 [?def xap-demo-page scope=public impure ($d)
-  [?let [= $base [$cat ([xap-demos-root], $d@dir, '/')]]
+  [?let [= $base [$cat ([$xap-demos-root], $d@dir, '/')]]
         [= $src [$io:read-file [$cat ($base, $d@file)]]]
         [= $out [$io:read-file [$cat ($base, 'expected-output.txt')]]]
     [$post-body [$xml:emit

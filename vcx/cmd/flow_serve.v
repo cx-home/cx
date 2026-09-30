@@ -735,16 +735,16 @@ const flow_serve_helpers = "
   [\$string [\$time-now]]]
 
 [?def fs--at-opts scope=private impure [effects [clock]] [returns map] (\$fl \$o::map)
-  [?if [fs--has-cal \$fl] [then [\$map-put \$o \"at\" [fs--now]]] [else \$o]]]
+  [?if [\$fs--has-cal \$fl] [then [\$map-put \$o \"at\" [\$fs--now]]] [else \$o]]]
 
 [?def fs--tick-for scope=private impure [effects [clock]] [returns any] (\$fl)
-  [?if [fs--has-cal \$fl] [then [tick at=[fs--now]]] [else ()]]]
+  [?if [\$fs--has-cal \$fl] [then [tick at=[\$fs--now]]] [else ()]]]
 
 [; a delivered act of a calendar document that states no instant is given
    this runner's — rebuilt through its canonical text, the one form that
    carries every attribute and child it arrived with. ]
 [?def fs--act-at scope=private impure [effects [clock]] [returns any] (\$fl \$a)
-  [?if [or [not [fs--has-cal \$fl]] [\$exists \$a@at]] [then \$a]
+  [?if [or [not [\$fs--has-cal \$fl]] [\$exists \$a@at]] [then \$a]
     [else [?let [= \$s [\$str-trim [\$cx:serialize \$a]]]
       [\$cx:parse [\$concat \"[act at=\\\"\" [fs--now] \"\\\"\" [\$str-slice \$s 5 [\$str-length \$s]]]]]]]]
 
@@ -806,14 +806,14 @@ const flow_serve_helpers = "
    (1265-PB-3) — which is what makes this face transitions comparable with
    `cx flow run` byte for byte. ]
 [?def fs--start scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$o \$fs \$b \$nonce::string \$args)
-  [?let [= \$ds [fs--doc-by \$fs [\$string \$b@addr]]]
+  [?let [= \$ds [\$fs--doc-by \$fs [\$string \$b@addr]]]
     [?if [\$empty \$ds]
-      [then [fs--no-doc [\$string \$b@addr]]]
+      [then [\$fs--no-doc [\$string \$b@addr]]]
       [else [?let [= \$fl [\$first \$ds]]
         [; a bad delivery arrives here as an [err …] \$args and short-circuits
            this call to itself — the refusal surfaces without a guard. ]
         [\$cxflow:start \$j \$fl \$args
-          [fs--at-opts \$fl [fs--with \$o {env: \$e flow: \$fl actor: [\$string \$b@as] authority: [\$string \$b@authority] nonce: \$nonce}]]]]]]]]
+          [\$fs--at-opts \$fl [\$fs--with \$o {env: \$e flow: \$fl actor: [\$string \$b@as] authority: [\$string \$b@authority] nonce: \$nonce}]]]]]]]]
 
 [; ── the four served kinds (RULED: WF-36) ────────────────────────────────── ]
 
@@ -839,13 +839,13 @@ const flow_serve_helpers = "
        [fs--start …] element rather than start a run (measured). A bound name
        is unambiguous. ]
     [= \$none [args]]
-    [fs--start \$j \$e \$o \$fs \$b [\$string \$occ] \$none]]]
+    [\$fs--start \$j \$e \$o \$fs \$b [\$string \$occ] \$none]]]
 
 [; file — the nonce is the FILE CONTENT ADDRESS, so the same bytes reappearing
    start nothing and changed bytes are a new event. ]
 [?def fs--tick-file-one scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$o \$fs \$b \$path::string)
   [?let [= \$t [\$cxio:read-file \$path]]
-    [fs--start \$j \$e \$o \$fs \$b [\$cx:hash \$t] [fs--args-of \$t]]]]
+    [\$fs--start \$j \$e \$o \$fs \$b [\$cx:hash \$t] [\$fs--args-of \$t]]]]
 
 [; the count is READ, into the answer this returns, and that is what FORCES the
    comprehension: a bound-but-unread sequence is never walked, so a tick whose
@@ -857,16 +857,16 @@ const flow_serve_helpers = "
       [then [ticked kind=file n=0]]
       [else [ticked kind=file n=[\$count [?to-sequence [?for [in \$n [\$cxio:list-dir \$d]]
         [where [\$cxre:matches \$rx [\$string \$n]]]
-        [yield [\$name [fs--tick-file-one \$j \$e \$o \$fs \$b [\$concat \$d \"/\" [\$string \$n]]]]]]]]]]]]]
+        [yield [\$name [\$fs--tick-file-one \$j \$e \$o \$fs \$b [\$concat \$d \"/\" [\$string \$n]]]]]]]]]]]]]
 
 [; intent — the nonce is the committed intent stream + seq, so a replay starts
    no second run. The intent is served as a JOURNAL CONSUMER over the runner own
    journal (§4.9 offers a fabric subscription OR a journal consumer, and the
    consumer needs no [fabric …] row this document carries). ]
 [?def fs--tick-intent-one scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$o \$fs \$b \$stream::string \$en)
-  [fs--start \$j \$e \$o \$fs \$b
+  [\$fs--start \$j \$e \$o \$fs \$b
     [\$concat \$stream \":\" [\$string \$en@seq]]
-    [fs--entry-args \$en]]]
+    [\$fs--entry-args \$en]]]
 
 [; act= — a SELECTION, not a mapping (flow.md §4.24, RULED: AA-2): a row
    naming act= starts a run only for a committed entry whose do-form names
@@ -878,19 +878,19 @@ const flow_serve_helpers = "
     [?if [\$empty \$ds] [then \"\"] [else [\$string [\$first [\$first \$ds]/node()]]]]]]
 
 [?def fs--selects scope=private pure [returns bool] (\$b \$en)
-  [?if [\$present \$b@act] [then [= [fs--entry-act \$en] [\$string \$b@act]]] [else true]]]
+  [?if [\$present \$b@act] [then [= [\$fs--entry-act \$en] [\$string \$b@act]]] [else true]]]
 
 [?def fs--tick-intent scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$o \$fs \$b)
   [?let [= \$s [\$string \$b@stream]]
     [ticked kind=intent n=[\$count [?to-sequence [?for [in \$en [\$cxjournal:since \$j 1 \$s]]
-      [where [fs--selects \$b \$en]]
-      [yield [\$name [fs--tick-intent-one \$j \$e \$o \$fs \$b \$s \$en]]]]]]]]]
+      [where [\$fs--selects \$b \$en]]
+      [yield [\$name [\$fs--tick-intent-one \$j \$e \$o \$fs \$b \$s \$en]]]]]]]]]
 
 [?def fs--tick-one scope=private impure [effects [read] [write] [clock]] [returns any] (\$j \$e \$o \$fs \$b)
   [?match [\$string \$b@kind]
-    [case \"schedule\" [fs--tick-schedule \$j \$e \$o \$fs \$b]]
-    [case \"file\" [fs--tick-file \$j \$e \$o \$fs \$b]]
-    [case \"intent\" [fs--tick-intent \$j \$e \$o \$fs \$b]]
+    [case \"schedule\" [\$fs--tick-schedule \$j \$e \$o \$fs \$b]]
+    [case \"file\" [\$fs--tick-file \$j \$e \$o \$fs \$b]]
+    [case \"intent\" [\$fs--tick-intent \$j \$e \$o \$fs \$b]]
     [else ()]]]
 
 [; ── the courier (RULED: WF-32) ──────────────────────────────────────────── ]
@@ -907,7 +907,7 @@ const flow_serve_helpers = "
     [then \$acc]
     [else [?let [= \$x [\$first \$xs]]
       [= \$nm [\$string \$x/name]]
-      [fs--pending-fold
+      [\$fs--pending-fold
         [?if [= [\$string \$x/status] \"pending\"]
           [then [\$map-put \$acc \$nm \$nm]]
           [else [\$map-remove \$acc \$nm]]]
@@ -921,10 +921,10 @@ const flow_serve_helpers = "
 
 [?def fs--courier-runs scope=private impure [returns any] (\$j)
   [?let [= \$ints [\$cx:select [\$cxjournal:since \$j 1 \"\"] \"//sched-intent\"]]
-    [= \$pending [fs--pending-fold {} \$ints]]
+    [= \$pending [\$fs--pending-fold {} \$ints]]
     [?to-sequence [?for [in \$nm [\$map-keys \$pending]]
       [where [\$str-starts-with [\$string \$nm] \"flow:\"]]
-      [yield [fs--run-of [\$string \$nm]]]]]]]
+      [yield [\$fs--run-of [\$string \$nm]]]]]]]
 
 [; a run is advanced with ITS OWN pinned document — the record carries the
    address, and this runner knows its documents by address. A run whose document
@@ -944,25 +944,25 @@ const flow_serve_helpers = "
   [?match [\$cxflow:status \$j \$id {}]
     [case [err @code=\$c] [skipped run=\$id reason=[\$string \$c]]]
     [else [?let [= \$rec [\$cxflow:status \$j \$id {}]]
-      [= \$ds [fs--doc-by \$fs [\$string \$rec@flow]]]
+      [= \$ds [\$fs--doc-by \$fs [\$string \$rec@flow]]]
       [?if [\$empty \$ds]
         [then [skipped run=\$id reason=\"unbound-document\"]]
-        [else [?match [\$cxflow:advance \$j \$id [fs--tick-for [\$first \$ds]]
-                [fs--with \$o {env: \$e flow: [\$first \$ds] actor: [\$string \$rec@actor] authority: [\$string \$rec@authority]}]]
+        [else [?match [\$cxflow:advance \$j \$id [\$fs--tick-for [\$first \$ds]]
+                [\$fs--with \$o {env: \$e flow: [\$first \$ds] actor: [\$string \$rec@actor] authority: [\$string \$rec@authority]}]]
           [case [err @code=\$c] [skipped run=\$id reason=[\$string \$c]]]
           [else [ticked run=\$id]]]]]]]]]
 
 [?def fs--courier scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$o \$fs)
-  [couriered n=[\$count [?to-sequence [?for [in \$id [fs--courier-runs \$j]]
+  [couriered n=[\$count [?to-sequence [?for [in \$id [\$fs--courier-runs \$j]]
     [where [not [= \$id \"\"]]]
-    [yield [\$name [fs--advance-run \$j \$e \$o \$fs \$id]]]]]]]]
+    [yield [\$name [\$fs--advance-run \$j \$e \$o \$fs \$id]]]]]]]]
 
 [; ── the ingress (§4.23): two inputs and no third, told apart BY PATH ────── ]
 [?def fs--reply scope=private pure [returns element] (\$code::int \$body::string)
   [response status=\$code [content-type \"application/cx\"] [body \$body]]]
 
 [?def fs--refuse scope=private pure [returns element] (\$code::int \$cxer::string \$msg::string)
-  [fs--reply \$code [\$concat \"[err code=cx-err:\" \$cxer \" message=\" \$msg \"]\"]]]
+  [\$fs--reply \$code [\$concat \"[err code=cx-err:\" \$cxer \" message=\" \$msg \"]\"]]]
 
 [?def fs--webhook-row scope=private pure [returns any] (\$bs \$path::string)
   [?to-sequence [?for [in \$b \$bs/*]
@@ -982,12 +982,12 @@ const flow_serve_helpers = "
    (RULED: WF-28b). The bound is a safety net, not a stop condition. ]
 [?def fs--drive-on scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$o \$doc \$id::string \$rec \$n::int)
   [?if [< \$n 1] [then \$rec]
-    [else [?let [= \$next [\$cxflow:advance \$j \$id [fs--tick-for \$doc]
-                   [fs--with \$o {env: \$e flow: \$doc actor: [\$string \$rec@actor] authority: [\$string \$rec@authority]}]]]
+    [else [?let [= \$next [\$cxflow:advance \$j \$id [\$fs--tick-for \$doc]
+                   [\$fs--with \$o {env: \$e flow: \$doc actor: [\$string \$rec@actor] authority: [\$string \$rec@authority]}]]]
       [?match \$next
         [case [err] \$rec]
         [else [?if [= [\$cx:hash \$next] [\$cx:hash \$rec]] [then \$next]
-                [else [fs--drive-on \$j \$e \$o \$doc \$id \$next [- \$n 1]]]]]]]]]]
+                [else [\$fs--drive-on \$j \$e \$o \$doc \$id \$next [- \$n 1]]]]]]]]]]
 
 [; a CORRELATED ACT — the [act run= step= …] shape `advance` already takes. The
    run own pinned document is the one it advances against, which is why this
@@ -1018,7 +1018,7 @@ const flow_serve_helpers = "
     [case [err] ()]
     [else [?let [= \$d [\$cx:parse \$text]]
       [?if [not [\$str-starts-with [\$str-trim [\$cx:serialize \$d]] \"[\"]] [then ()]
-        [else [?if [fs--op-word [\$name \$d]] [then (\$d)] [else ()]]]]]]]]
+        [else [?if [\$fs--op-word [\$name \$d]] [then (\$d)] [else ()]]]]]]]]
 
 [?def fs--kid-of scope=private pure [returns any] (\$a \$n::string \$none)
   [?let [= \$ks [?to-sequence [?for [in \$k \$a/*] [where [= [\$name \$k] \$n]] [yield \$k]]]]
@@ -1027,13 +1027,13 @@ const flow_serve_helpers = "
 [?def fs--ingress-op scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$o \$fs \$a)
   [?let [= \$id [\$string \$a@run]]
     [?match [\$cxflow:status \$j \$id {}]
-      [case [err @code=\$c @message=\$m] [fs--reply 400 [fs--err-text \$c \$m]]]
+      [case [err @code=\$c @message=\$m] [\$fs--reply 400 [\$fs--err-text \$c \$m]]]
       [else [?let [= \$rec [\$cxflow:status \$j \$id {}]]
-        [= \$ds [fs--doc-by \$fs [\$string \$rec@flow]]]
+        [= \$ds [\$fs--doc-by \$fs [\$string \$rec@flow]]]
         [?if [\$empty \$ds]
-          [then [fs--refuse 400 \"CXER4956\"
+          [then [\$fs--refuse 400 \"CXER4956\"
                   \"E_COORD_RUN_NOT_FOUND: this runner holds no bound document at the address this run pins\"]]
-          [else [?let [= \$ro [fs--with \$o {env: \$e flow: [\$first \$ds] actor: [\$string \$a@actor] authority: [\$string \$a@authority] at: [\$time-now]}]]
+          [else [?let [= \$ro [\$fs--with \$o {env: \$e flow: [\$first \$ds] actor: [\$string \$a@actor] authority: [\$string \$a@authority] at: [\$time-now]}]]
             [= \$why [\$fs--kid-of \$a \"reason\" {}]]
             [= \$r [?match [\$name \$a]
                      [case \"cancel\"    [\$cxflow:cancel \$j \$id \$why \$ro]]
@@ -1043,47 +1043,47 @@ const flow_serve_helpers = "
                      [case \"retry-now\" [\$cxflow:retry-now \$j \$id \$ro]]
                      [else              [\$cxflow:resolve \$j \$id [\$fs--kid-of \$a \"resolution\" [resolution]] \$ro]]]]
             [?match \$r
-              [case [err @code=\$c @message=\$m] [fs--reply 400 [fs--err-text \$c \$m]]]
-              [else [fs--reply 200 [\$cx:emit \$r]]]]]]]]]]]]
+              [case [err @code=\$c @message=\$m] [\$fs--reply 400 [\$fs--err-text \$c \$m]]]
+              [else [\$fs--reply 200 [\$cx:emit \$r]]]]]]]]]]]]
 
 [?def fs--ingress-act scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$o \$fs \$text::string)
-  [?let [= \$ops [fs--op-of \$text]]
-    [?if [\$empty \$ops] [then [fs--ingress-step-act \$j \$e \$o \$fs \$text]]
-      [else [fs--ingress-op \$j \$e \$o \$fs [\$first \$ops]]]]]]
+  [?let [= \$ops [\$fs--op-of \$text]]
+    [?if [\$empty \$ops] [then [\$fs--ingress-step-act \$j \$e \$o \$fs \$text]]
+      [else [\$fs--ingress-op \$j \$e \$o \$fs [\$first \$ops]]]]]]
 
 [?def fs--ingress-step-act scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$o \$fs \$text::string)
   [?let [= \$acts [\$cx:select [\$cx:parse \$text] \"//act\"]]
     [?if [\$empty \$acts]
-      [then [fs--refuse 400 \"CXER4965\"
+      [then [\$fs--refuse 400 \"CXER4965\"
               \"E_COORD_ARG_INVALID: the reserved ingress path carries a correlated act - [act run= step= …], the shape advance already takes - or an operator act on the run - [cancel|pause|resume|skip|retry-now|resolve run= actor= authority= …]\"]]
       [else [?let [= \$a [\$first \$acts]]
         [= \$id [\$string \$a@run]]
         [?match [\$cxflow:status \$j \$id {}]
-          [case [err @code=\$c @message=\$m] [fs--reply 400 [fs--err-text \$c \$m]]]
+          [case [err @code=\$c @message=\$m] [\$fs--reply 400 [\$fs--err-text \$c \$m]]]
           [else [?let [= \$rec [\$cxflow:status \$j \$id {}]]
-            [= \$ds [fs--doc-by \$fs [\$string \$rec@flow]]]
+            [= \$ds [\$fs--doc-by \$fs [\$string \$rec@flow]]]
             [?if [\$empty \$ds]
-              [then [fs--refuse 400 \"CXER4956\"
+              [then [\$fs--refuse 400 \"CXER4956\"
                       \"E_COORD_RUN_NOT_FOUND: this runner holds no bound document at the address this run pins\"]]
-              [else [?let [= \$adv [\$cxflow:advance \$j \$id [fs--act-at [\$first \$ds] \$a]
-                      [fs--with \$o {env: \$e flow: [\$first \$ds] actor: [\$string \$a@actor] authority: [\$string \$a@authority]}]]]
+              [else [?let [= \$adv [\$cxflow:advance \$j \$id [\$fs--act-at [\$first \$ds] \$a]
+                      [\$fs--with \$o {env: \$e flow: [\$first \$ds] actor: [\$string \$a@actor] authority: [\$string \$a@authority]}]]]
                 [?match \$adv
-                  [case [err @code=\$c @message=\$m] [fs--reply 400 [fs--err-text \$c \$m]]]
-                  [else [fs--reply 200 [\$cx:emit [fs--drive-on \$j \$e \$o [\$first \$ds] \$id \$adv 256]]]]]]]]]]]]]]]]
+                  [case [err @code=\$c @message=\$m] [\$fs--reply 400 [\$fs--err-text \$c \$m]]]
+                  [else [\$fs--reply 200 [\$cx:emit [\$fs--drive-on \$j \$e \$o [\$first \$ds] \$id \$adv 256]]]]]]]]]]]]]]]]
 
 [?def fs--ingress scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$o \$fs \$bs \$act-path::string \$req)
   [?let [= \$p [\$string \$req@path]]
     [= \$text [\$cxhttpc:body-text \$req]]
     [?if [= \$p \$act-path]
-      [then [fs--ingress-act \$j \$e \$o \$fs \$text]]
-      [else [?let [= \$hits [fs--webhook-row \$bs \$p]]
+      [then [\$fs--ingress-act \$j \$e \$o \$fs \$text]]
+      [else [?let [= \$hits [\$fs--webhook-row \$bs \$p]]
         [?if [\$empty \$hits]
-          [then [fs--refuse 404 \"CXER4965\"
+          [then [\$fs--refuse 404 \"CXER4965\"
                   \"E_COORD_ARG_INVALID: this runner declares no binding at that path, and the reserved act path is the only other input its ingress takes\"]]
-          [else [?let [= \$r [fs--start \$j \$e \$o \$fs [\$first \$hits] [\$cx:hash \$text] [fs--args-of \$text]]]
+          [else [?let [= \$r [\$fs--start \$j \$e \$o \$fs [\$first \$hits] [\$cx:hash \$text] [\$fs--args-of \$text]]]
             [?match \$r
-              [case [err @code=\$c @message=\$m] [fs--reply 400 [fs--err-text \$c \$m]]]
-              [else [fs--reply 200 [\$cx:emit \$r]]]]]]]]]]]]
+              [case [err @code=\$c @message=\$m] [\$fs--reply 400 [\$fs--err-text \$c \$m]]]
+              [else [\$fs--reply 200 [\$cx:emit \$r]]]]]]]]]]]]
 "
 
 // flow_serve_program renders the driver. `flow_cli_resolver` builds the resolver
@@ -1126,10 +1126,10 @@ fn flow_serve_program(r FlowRunner, directives []string, acts []FlowCliAct, tick
          walked, so a tick whose only purpose is its EFFECTS has to be counted
          to happen at all (measured — the first loop that bound it and did not
          read it started no run). ]
-      [= \$w [\$count [?to-sequence [?for [in \$b \$bs/*] [yield [fs--tick-one \$j \$e \$o \$fs \$b]]]]]]
-      [= \$c [\$string [fs--courier \$j \$e \$o \$fs]@n]]
+      [= \$w [\$count [?to-sequence [?for [in \$b \$bs/*] [yield [\$fs--tick-one \$j \$e \$o \$fs \$b]]]]]]
+      [= \$c [\$string [\$fs--courier \$j \$e \$o \$fs]@n]]
       [= \$s [?sleep ${tick_ms}ms]]
-      [fs--loop \$j \$e \$o \$fs \$bs [?if [< \$n 0] [then -1] [else [- \$n 1]]] [+ \$done 1]]]]]]'
+      [\$fs--loop \$j \$e \$o \$fs \$bs [?if [< \$n 0] [then -1] [else [- \$n 1]]] [+ \$done 1]]]]]]'
 	// THE RESOLVER CARRIES THE DOCUMENTS (flow.md §4.20, RULED: WF-22): a `flow=`
 	// step's reference resolves through the ONE resolver (§4.1), so beside the
 	// act rows the `--env` scan built it carries every flow document this runner
@@ -1214,7 +1214,7 @@ fn flow_serve_program(r FlowRunner, directives []string, acts []FlowCliAct, tick
 		}
 		seen << x.start
 		v := 'r${i}'
-		b << '[= \$${v} [\$cxflow:rearm \$j [fs--with \$o {env: \$e flow: [\$first [fs--doc-by \$fs "${flow_cli_quote(x.start)}"]] actor: "${flow_cli_quote(x.binder)}" authority: "${flow_cli_quote(x.binder)}"}]]]'
+		b << '[= \$${v} [\$cxflow:rearm \$j [\$fs--with \$o {env: \$e flow: [\$first [\$fs--doc-by \$fs "${flow_cli_quote(x.start)}"]] actor: "${flow_cli_quote(x.binder)}" authority: "${flow_cli_quote(x.binder)}"}]]]'
 		rearm_parts << '[rearm flow="${flow_cli_quote(x.start)}" rearmed=\$${v}@rearmed skipped=\$${v}@skipped orphaned=\$${v}@orphaned]'
 	}
 	// RULED: 1411-a — the ingress is SERIAL with the courier: its handler runs
@@ -1226,7 +1226,7 @@ fn flow_serve_program(r FlowRunner, directives []string, acts []FlowCliAct, tick
 	// bookkeeping (→ CXER1140) — a valid delivery answered 400 about once in
 	// forty under load (#1411, measured).
 	b << '[= \$srv [\$cxhttp:serve "tcp://${flow_cli_quote(r.bind)}"' +
-		' [?fn (\$req) [fs--ingress \$j \$e \$o \$fs \$bs "${flow_serve_act_path}" \$req]] {serial: true}]]'
+		' [?fn (\$req) [\$fs--ingress \$j \$e \$o \$fs \$bs "${flow_serve_act_path}" \$req]] {serial: true}]]'
 	// The BOOT REPORT, twice over, because the two readers are different and
 	// CX has no stdout write. An operator watching a runner that has not
 	// stopped needs it NOW, so it goes to the log sink (stderr by default);
