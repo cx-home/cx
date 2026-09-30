@@ -574,9 +574,6 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ent-1` | [rulings_2026_08_20_cx_pragma_registry.md](rulings_2026_08_20_cx_pragma_registry.md) | ENT-1 rider — attribute-position entity references (#878, corrected) |
 | `fabr-1` | [rulings_2026_09_28_owner_decisions_l80_l84.md](rulings_2026_09_28_owner_decisions_l80_l84.md) | FABR-1 — the host context carries the fabric the host built on the deployment's journal (L81 = (a)) |
 | `fdisp-1` | [rulings_2026_09_28_owner_decisions_l80_l84.md](rulings_2026_09_28_owner_decisions_l80_l84.md) | FDISP-1 — the host dispatches a verb through a feature→package map built at boot (L80 = (d)) |
-| `fdisp-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | Integrator decisions 2026-09-29 — Letters 111 to 114 and 117 to 118, taken as delegated: four spec-silent stdlib defects the Ring-1 batch left out by name, and the two xap sentences FDISP-1 flagged |
-| `fdisp-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | PKGFILE-1 — a package's module file is `<package-name>.cx`, in the spec and on the pages (L117 = (a), delegated; FDISP-1's flag 1, posted 00:1xZ 09-30) |
-| `fdisp-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | PKGIMP-1 — a `pkg:` import exposes every feature of the package (L118 = (a), delegated; FDISP-1's flag 2, posted 00:1xZ 09-30) |
 | `fe-1` | [rulings_2026_08_30_functional_ergonomics.md](rulings_2026_08_30_functional_ergonomics.md) | FE-1 — operator-form holes are the first-class-operator mechanism |
 | `fe-2` | [rulings_2026_08_30_functional_ergonomics.md](rulings_2026_08_30_functional_ergonomics.md) | FE-2 — single-arm `[?match]` honors grammar [136]; it is the destructuring bind form |
 | `fe-3` | [rulings_2026_08_30_functional_ergonomics.md](rulings_2026_08_30_functional_ergonomics.md) | FE-3 — `[?for]` pattern position extends to the full pattern grammar, refuse-on-miss |
@@ -728,7 +725,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pivot-2` | [rulings_2026_09_27_integrator_decisions_l57.md](rulings_2026_09_27_integrator_decisions_l57.md) | Integrator decision 2026-09-27 (afternoon), under the owner's delegation — Letter 57: a verb's `effect=` reaches both faces from the feature (PIVOT-2) |
 | `pivot-2` | [rulings_2026_09_27_integrator_decisions_l57.md](rulings_2026_09_27_integrator_decisions_l57.md) | PIVOT-2 — both faces copy a verb's `effect=` from the feature it came from (L57 = (b)) |
 | `pivot-2` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | 1690, #1498, #1434, PIVOT-2, SYNC-3, SYNC-6, KIT4-1, KIT4-2, RS-38, D83a, K10.** |
-| `pkgimp-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | PKGIMP-1 — a `pkg:` import exposes every feature of the package (L118 = (a), delegated; FDISP-1's flag 2, posted 00:1xZ 09-30) |
+| `pkgfl-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | PKGFL-1 — a package's module file is `<package-name>.cx`, in the spec and on the pages (L117 = (a), delegated) |
+| `pkgimp-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | PKGIMP-1 — a `pkg:` import exposes every feature of the package (L118 = (a), delegated) |
 | `play-2` | [rulings_2026_09_29_owner_direction_docs_5of5.md](rulings_2026_09_29_owner_direction_docs_5of5.md) | PLAY-2 — the playground's own 5 of 5, inside the nine criteria above |
 | `pq-1` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-1 — the ERD row comment carries a VALUE, and the `@` sigil is retired |
 | `pq-2` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-2 — every ERD column token is forced to a valid ATTRIBUTE_WORD |
@@ -1509,4 +1507,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*356 ledger pages; 790 ids declared, 390 cited only.*
+*356 ledger pages; 791 ids declared, 390 cited only.*
