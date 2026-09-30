@@ -239,7 +239,7 @@
 #                        emits the strict form — but neither is the projection
 #                        the fixture pins, and citing a fixture against the
 #                        wrong projection is how a primer starts lying.)
-#   XML document only    `cx --from=xml --to=cx input.xml` — the XML lane of
+#   XML document only    `cx --from=xml --to=cx input.xml` — the XML side of
 #                        the same reading (conformance/xml.cxd fixtures carry
 #                        [in-xml] rather than [in-cx]).
 #

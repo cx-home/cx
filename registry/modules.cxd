@@ -42,7 +42,7 @@ to name.
 #1427's cutover is SPENT: no row carries a `-to` or an `ns-to` any more,
 and the census the check prints reads zero on every dimension but one: five
 rows carry a `suite-ring` again since the x/ graduation (RULED: RS-4, RS-1 —
-D45a) — their suites grade in lane ring=1 while their group's lane is 2 —
+D45a) — their suites grade at ring=1 while their group's grading ring is 2 —
 so "5 corpus-header ring" is owed, by the repository that owns the headers.
 The columns stay because the mechanism is not the cutover — the
 next decision that moves an artifact writes one, and the same two refusals
@@ -74,7 +74,7 @@ COLUMNS
           (spec/03-approved/platform/, conformance/platform/, its product's
           vcx/<vmodule>/ -- registry/repos.cxd names it, RULED: RS-24)
           whatever its ring, and its corpus header grades in the platform
-          lane (`ring=2` — the CORPUS's attribute, the lane that grades the
+          ring (`ring=2` — the CORPUS's attribute, the ring that grades the
           suite, which RS-1 does not rename). Namespace and group agree:
           `cx-stdlib` ↔ no group, `cx-platform` ↔ `group=platform`, `none`
           ↔ either
@@ -119,7 +119,7 @@ COLUMNS
           became its own Ring-1 module (1427-e)
   suite-ring
           the `ring=` the corpus header carries TODAY, when it disagrees
-          with the row's lane (its ring, or 2 for group=platform). Same
+          with the row's grading ring (its ring, or 2 for group=platform). Same
           contract as a `-to`: it exists only while the
           disagreement does, and the check refuses one that is already
           resolved
@@ -423,8 +423,8 @@ needs becomes its own Ring-1 module.
        under xap/ — because RS-1 and RS-4 do not move a graduated module's
        directories; none of those is a ring directory, so the placement check
        reads what follows the prefix as outside the split. Five suites (a2a,
-       llm, mcp, run, tools) grade in lane ring=1 by their own headers while
-       the group's lane is ring=2: their rows declare that with
+       llm, mcp, run, tools) grade at ring=1 by their own headers while
+       the group's grading ring is ring=2: their rows declare that with
        `suite-ring=1`, and the header is the owning repository's to move. ── ]
   [module name=a2a ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-agent spec=deps/cx-platform-agent/spec/03-approved/x/a2a.md corpus=deps/cx-platform-agent/conformance/x/a2a.cxd source=deps/cx-platform-agent/x/a2a.cx code=none half=none suite-ring=1 status=current]
   [module name=a2a-xap ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-agent spec=deps/cx-platform-agent/spec/03-approved/x/a2a-xap.md corpus=deps/cx-platform-agent/conformance/x/a2a-xap.cxd source=deps/cx-platform-agent/x/a2a-xap.cx code=none half=none status=current]

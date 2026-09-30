@@ -39,7 +39,7 @@ for a in libcx_re2_shim.a libcx_arrow_shim.a; do
 done
 
 # The FOURTH prerequisite, found the way the first three were — by a failed
-# lane. `make test-playground-mermaid` in a fresh worktree builds the whole
+# step. `make test-playground-mermaid` in a fresh worktree builds the whole
 # wasm bundle (minutes), reports `[wasm-fresh] OK`, and THEN refuses:
 #
 #   [playground-mermaid] SETUP FAILURE: the gate's dev dependencies are not installed.

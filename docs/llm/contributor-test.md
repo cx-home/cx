@@ -221,11 +221,11 @@ reading what the step checks.
 | 85 | `test-playground-mermaid` |  | `scripts/test_playground_mermaid.mjs` |
 | 86 | `test-playground-nav` |  | `scripts/test_playground_nav.mjs` |
 | 87 | `test-playground-readings` |  | `scripts/gen_guide/playground/readings_check.cx` |
-| 88 | `test-oriel-lane` |  | `deps/cx-platform-ux/scripts/oriel_lane.sh` |
-| 89 | `test-agent-real-lanes` |  | — |
-| 90 | `test-connector-real-lanes` |  | — |
-| 91 | `test-db-real-lanes` |  | — |
-| 92 | `test-sso-interop-lane` |  | `deps/cx-platform-sso/scripts/sso_interop_lane.sh` |
+| 88 | `test-oriel` |  | `deps/cx-platform-ux/scripts/oriel_lane.sh` |
+| 89 | `test-agent-real` |  | — |
+| 90 | `test-connector-real` |  | — |
+| 91 | `test-db-real` |  | — |
+| 92 | `test-sso-interop` |  | `deps/cx-platform-sso/scripts/sso_interop_lane.sh` |
 | 93 | `test-xpath-parity-cx` |  | `scripts/check_xpath_parity_fixtures.cx` |
 | 94 | `corpus-audit` |  | `scripts/corpus_audit.sh` |
 | 95 | `repr-guard` |  | `bench/repr/run.sh` |

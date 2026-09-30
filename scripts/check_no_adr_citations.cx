@@ -33,7 +33,7 @@
 # Allowlist ($allow-relpaths): legitimate mentions that are NOT citations —
 # citation-processing tooling (which must contain the strings to strip/track
 # them); the Makefile target name + comments describing this gate; the #700
-# lane-input skip manifest (its case arms spell the exact target names);
+# step-input skip manifest (its case arms spell the exact target names);
 # meta-text that *states the no-record policy* or *describes* the archived
 # record; a generic third-party convention tutorial; and shipped/frozen
 # release notes (a historical record of what was true at release —
@@ -142,7 +142,7 @@
         [= $allow-relpaths (
           # the gate's own Makefile target name + descriptive comments
           "Makefile",
-          # the #700 lane-input skip manifest: its rows are `case` arms keyed
+          # the #700 step-input skip manifest: its rows are `case` arms keyed
           # on the EXACT make-target names in TEST_TARGETS, so the row for
           # this gate must spell this gate's own name.
           "scripts/test_changed.sh",
