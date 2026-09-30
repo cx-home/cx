@@ -81,16 +81,16 @@ echo "test_changed selftest:"
 # cannot happen here. Its successor is the PIN, as case O's is for sso:
 # `deps.cxd` moving is a new agent or ux release meeting this tree's binary,
 # and the three steps that grade those modules against it — the four
-# real-socket lanes, the tools-export golden and the ORIEL lane — must each be
+# real-socket programs, the tools-export golden and the ORIEL step — must each be
 # selected by it. A false skip here is the #1516 defect one repository up.
 run deps.cxd > "$T/a"
 a_t=$(targets "$T/a")
 a_miss=''
-for s in test-agent-real-lanes tools-export-gate test-oriel-lane; do
+for s in test-agent-real tools-export-gate test-oriel; do
 	printf '%s\n' $a_t | grep -q "^$s$" || a_miss="$a_miss $s"
 done
 if [ -z "$a_miss" ]; then
-	ok A "an agent/ux pin bump (deps.cxd) selects test-agent-real-lanes, tools-export-gate and test-oriel-lane"
+	ok A "an agent/ux pin bump (deps.cxd) selects test-agent-real, tools-export-gate and test-oriel"
 else
 	bad A "deps.cxd did not select:$a_miss — [$a_t]"
 fi
@@ -527,8 +527,8 @@ else
 	bad N4 "a runner selected a step it is not an input to:$n_cross"
 fi
 
-# ── O — a PIN BUMP selects the interop lane ────────────────────────────────
-# The lane is the ONLY step that grades the networked half of the sso stack,
+# ── O — a PIN BUMP selects the interop step ────────────────────────────────
+# The interop step is the ONLY step that grades the networked half of the sso stack,
 # and until 2026-09-22 its row named the transport modules but not the module
 # itself: a change to exactly stdlib/sso.cx + conformance/platform/sso.cxd put
 # the step in the SKIP list (#1591 item 11, flag F-6).
@@ -536,13 +536,13 @@ fi
 # Since the extraction (RULED: RS-12) the module is not in this repository and
 # that shape of change cannot happen here. Its successor is the PIN: `deps.cxd`
 # moving is a new sso release meeting this tree's oidc, saml, session and
-# transport, which is the change most likely to break the lane and the one a
+# transport, which is the change most likely to break the step and the one a
 # false skip would hide. Same defect, one repository up.
 run deps.cxd > "$T/m"
-if targets "$T/m" | tr " " "\n" | grep -q "^test-sso-interop-lane$"; then
-	ok O "an sso pin bump (deps.cxd) selects test-sso-interop-lane"
+if targets "$T/m" | tr " " "\n" | grep -q "^test-sso-interop$"; then
+	ok O "an sso pin bump (deps.cxd) selects test-sso-interop"
 else
-	bad O "deps.cxd did not select test-sso-interop-lane: [$(targets "$T/m")]"
+	bad O "deps.cxd did not select test-sso-interop: [$(targets "$T/m")]"
 fi
 
 # ── Q — the LLM layer's readers are named where they ARE (PLAY-2, RS-8) ─────
@@ -566,7 +566,7 @@ fi
 # ── P — the shipped grading core under vcx/corpus/ (#1634) ─────────────────
 # RS-16 moved the module-corpus grading loop into vcx/corpus/, which the cx
 # binary links for `cx corpus`, every fixtures shard calls, and (#1631) the
-# document runner reaches for its document-lane core (the profile gate is not
+# document runner reaches for its document-reading core (the profile gate is not
 # among them: profile_gate.v carries its own mirror and imports no corpus
 # module). No ring row named the directory, so a change to exactly that loop
 # SKIPPED every step that runs it — the false-skip direction this selftest
@@ -586,4 +586,4 @@ if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop lane; P the vcx/corpus grading core selects the steps that run it)"
+echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop step; P the vcx/corpus grading core selects the steps that run it)"
