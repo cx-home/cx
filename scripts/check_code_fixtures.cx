@@ -94,7 +94,7 @@
 # CXER0275 (E_ERR_AT_BOUNDARY, RULED: CO-2) fires only at externalizing
 # EFFECTS — store document writes and http response emission — which
 # code.cxd's core-language surface cannot reach; its pins live in the store
-# fixture lane (store-err-boundary-001..004) and the live-listener serve
+# fixture corpus (store-err-boundary-001..004) and the live-listener serve
 # tests. (A [# #] comment cannot sit inside this paren sequence — the #826
 # authoring trap — so the note lives here.)
 # CXER0282 (E_VIEW_NOT_CARRIED, RULED: 1377-a) is the diagram VIEW axis's

@@ -3,7 +3,7 @@
 #
 # Partition spec (spec/03-approved/core/cx_partition.md §3): rings are pure import
 # contracts. This gate lands at I0 BEFORE any code moves, so the seam can never
-# regress silently — a synthetic violation MUST fail the lane.
+# regress silently — a synthetic violation MUST fail the step.
 #
 # Two rings, then groups (partition spec §2–§3, RULED: RS-1):
 #   Ring 0  = vcx/cx        — imports nothing internal (V stdlib only).
@@ -23,7 +23,7 @@
 #                             platform-FREE (no platform-group import), or the
 #                             data/cli profiles would pull the daemon stack (§4).
 #   grading = cx-core-data's corpus grading cores (RULED: D56a) — the document,
-#                             diff, lint, fmt and streaming-write lanes and the
+#                             diff, lint, fmt and streaming-write cores and the
 #                             `cx corpus` body both profiles run: MAY import cx
 #                             and fixtures only (never code), so the data profile
 #                             can link it; cmd_data may import it.
@@ -35,7 +35,7 @@
 #          future sibling can never escape by omission.
 #   M35  — `import` is not the only edge: `#flag`/`#include` can link a ring's
 #          objects against a sibling's C artifacts.
-#   F-17 (R3.10) — the C-edge lane is widened to EVERY way a sibling path can
+#   F-17 (R3.10) — the C-edge check is widened to EVERY way a sibling path can
 #          be named, and to the C sources themselves:
 #            • `@VMODROOT/<sib>`                (V #flag/#include)
 #            • `@VMODROOT/../vcx/<sib>`         (up-and-back-down escape)
@@ -44,7 +44,7 @@
 #          sibling header bypassed the .v-only scan). The regex_re2.v allowlist
 #          is narrowed to the TWO EXACT edge PATHS (deps/re2_shim, target), not
 #          the whole sibling dir. arrow/transport and the platform-free
-#          cli/cmd_data lanes are added. Each new class is red-on-synthetic
+#          cli/cmd_data checks are added. Each new class is red-on-synthetic
 #          (scripts/ring_import_gate_selftest.sh).
 #
 # Tests (*_test.v) may import anything — spec §3.
@@ -191,7 +191,7 @@ scan_ring "$VCX/code" "Ring-1 (code)" 0 $(deny_but cx code)
 # the platform group (RULED: RS-1), so the same contract holds for each: the
 # rings (cx, code), cxstore/arrow/transport, plus one another -- WHICH product
 # may import which is the pin graph, and scripts/product_import_gate.cx holds
-# that; this lane only keeps every product off the non-platform siblings (cli,
+# that; this check only keeps every product off the non-platform siblings (cli,
 # cmd, tests, ...) and off xap above it. Read grep-level from the registry so
 # a product split is gated the moment its row declares it; a tree with no
 # registry has no products.
@@ -228,7 +228,7 @@ scan_ring "$(ring_dir cli)" "platform-free (cli)" 0 $(deny_but cx code cli cmd_d
 scan_ring "$(ring_dir cmd_data)" "platform-free (cmd_data)" 0 $(deny_but cx code cli cmd_data grading)
 
 # The corpus grading cores (RULED: D56a): Ring 0, so the data profile links
-# them -- cx and the fixture loader only, never the evaluator. The PROGRAM lane
+# them -- cx and the fixture loader only, never the evaluator. The PROGRAM core
 # (vcx/corpus, which imports code) is the full cx's and is not this module.
 scan_ring "$(ring_dir grading)" "Ring-0 grading (grading)" 0 $(deny_but cx fixtures grading)
 

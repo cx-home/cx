@@ -623,7 +623,7 @@ const accepted_by_one_table = [
 	// strip_attribution_fixture.cx (K12b) did before it, unexempted only
 	// because that fixture was never wired into scripts/ or this scan.
 	AcceptedByOne{'scripts/public_history_replace_selftest.cx', .program, reason_1536},
-	// ── recorded exception — a computed attribute `name=[EXPR]` (23) ──
+	// ── recorded exception — a computed attribute `name=[EXPR]` (25) ──
 	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
 	// 21 -> 22: scripts/check_migrate_namespace_fixtures.cx, RS-4's sweep grader.
 	// 22 -> 26: the front door's bundled-source table, its tree check, and the two
@@ -639,6 +639,9 @@ const accepted_by_one_table = [
 	// extraction (RULED: RS-12, D68a).
 	// 22 -> 23: scripts/secrets_scan.cx, K13's secrets-scan gate (RULED: D59a,
 	// RS-28, CXF-1) -- its hit-record's computed `line=[…]`/`match=[…]` attributes.
+	// 23 -> 25: the edit-map step and its selftest (#1329, RULED: 1329-a, EDMAP-1) --
+	// the step's git record `[r exit=[…] out=[…]]` (deps_sync.cx's shape) and the
+	// selftest's per-case record `[r id=… ok=[…] …]`.
 	AcceptedByOne{'examples/code-tour.cx', .program, reason_attr},
 	AcceptedByOne{'examples/cxpath-tour.cx', .program, reason_attr},
 	AcceptedByOne{'examples/match-multi.cx', .program, reason_attr},
@@ -654,6 +657,8 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/consolidate_tests.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/deps_pins.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/deps_sync.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/ledger_edit_map_check.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/ledger_edit_map_check_selftest.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/gates_register.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/gates_register_check.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/gen_guide/guide_build.cx', .program, reason_attr},

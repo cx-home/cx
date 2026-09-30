@@ -69,17 +69,17 @@ keys: `in_cx`, `out_ast`, …), so runner logic is portable.
 
 ## Ring tags
 
-Every suite header carries `ring=N` — the partition lane (0 = data
+Every suite header carries `ring=N` — the partition ring (0 = data
 format, 1 = code, 2 = platform). A case may override with its own
 `ring=` (resolution: per-case → per-suite). MIXED suites carry
 `eval-ring=` (today: `code.cxd`, `ring=0 eval-ring=1` — the parse/doc
-lane is Ring 0, the eval lane Ring 1; the lane is defined by the
-consuming gate). A ring's artifact MUST pass every fixture at or below
+mode is Ring 0, the eval mode Ring 1; the mode is defined by the
+consuming step). A ring's artifact MUST pass every fixture at or below
 its ring; the Ring-0 extraction gate additionally requires the extracted
-artifacts BYTE-IDENTICAL to the monolith over the Ring-0 lane
+artifacts BYTE-IDENTICAL to the monolith over the Ring-0 cases
 (`make test-extraction-gate`).
 
-Query the lanes with `make ring-query` (env: `RING=`, `LANE=`,
+Query the rings with `make ring-query` (env: `RING=`, `MODE=`,
 `FORMAT=`); `make ring-tag-gate` hard-fails any untagged suite.
 
 ## Grading semantics
@@ -129,15 +129,15 @@ travels with the file and from which `gates.cxd` is derived; unset everywhere
 = enforced. Advisory cases run and report but never block; pending/skip are
 excluded and counted.
 
-## Runners and gate lanes (reference implementation)
+## Runners and steps (reference implementation)
 
-| Lane | Runner | Make target |
+| Suite | Runner | Make target |
 |------|--------|-------------|
 | Format/document families | `vcx/tests/runners/conformance/conformance_run.v` | `make -C vcx conform` (per-family: `conform-core`, `conform-xml`, …) |
 | diff/lint families | `vcx/tests/runners/diff_lint/diff_lint_conform.v` — the ONLY runner for `diff.cxd` / `lint.cxd` (#1134: they left `conformance_run.v`'s suite list, where their assertion shape had no branch and all 34 cases printed PASS unrun) | `conform-diff`, `conform-lint` — both in `make test-vcx-conform` |
 | streaming-write family | `vcx/tests/runners/streaming_write/streaming_write_run.v` | `conform-streaming-write` |
-| code.cxd parse lane (Ring 0) | `vcx/tests/code_parse_fixtures_test.v` | `make test-vcx-suite` |
-| code.cxd + stdlib eval lanes (Ring 1+) | `vcx/tests/code_eval_fixtures_test.v` | `make test-vcx-suite` |
+| code.cxd parse mode (Ring 0) | `vcx/tests/code_parse_fixtures_test.v` | `make test-vcx-suite` |
+| code.cxd + stdlib eval mode (Ring 1+) | `vcx/tests/code_eval_fixtures_test.v` | `make test-vcx-suite` |
 | Binding parity (FFI) | RETIRED here (RULED: RS-12, RS-8; #1591 item K3): the four active bindings left cx-private whole (cx-home/cx-binding-{v,python,go,rust}); `binding_api.cxd` stays but no step in this repository drives it any more | none — see `_gate_evidence/pipeline_xbindings/RESULTS.md`'s LETTER |
 | Ring-0 extraction gate | `vcx/tests/runners/extraction_gate/` (ABI + CLI differential) | `make test-extraction-gate` |
 

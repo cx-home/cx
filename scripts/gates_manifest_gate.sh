@@ -2,7 +2,7 @@
 # gates_manifest_gate.sh — validate conformance/gates.cxd (corpus audit G17).
 #
 # gates.cxd is unvalidated policy that governs whether EVERY other fixture
-# blocks its gate; a stale/typo'd row silently downgrades a lane. This gate
+# blocks its gate; a stale/typo'd row silently downgrades a step. This gate
 # checks, suite-aware:
 #   1. it parses (well-formed CX);
 #   2. every gate= AND default= value — bare, single- or double-quoted —

@@ -8287,7 +8287,7 @@ mechanism is worse than one that admits a gap:
   document are spec prose plus the ORIEL demo
   (`spec/03-approved/xap/demos/oriel/serve.cx:5165-5263`, routes at
   `surface.cx:66-67`, gate-enforced assertions at `drive.cx:1016-1025` and
-  `:1362-1381` — which is a real-socket step, `make test-oriel-lane`). The spec's own
+  `:1362-1381` — which is a real-socket step, `make test-oriel`). The spec's own
   status ladder scopes the claim (`ux.md:2114`): built *"for a candidate bundle
   and per-tenant adoption"*, with migration commands for breaking changes
   **unbuilt**.
@@ -8552,7 +8552,7 @@ the product compiles from (RULED: RS-24).
 | `cx-platform-flow` | platform | none | package | — | — | extracted | workflow; its CLI verbs stay in the binary |
 | `cx-platform-connector` | platform | none | package | — | — | extracted | the connector kit and sync |
 | `cx-platform-secrets` | platform | none | package | — | — | extracted | the minimal keystore: one handle grammar, one internal resolve seam, the PEP and the audit record, custody that rises by a provider row |
-| `cx-platform-sso` | platform | none | package | — | — | extracted | enterprise sign-on, the interop lane |
+| `cx-platform-sso` | platform | none | package | — | — | extracted | enterprise sign-on and its interop step |
 | `cx-platform-ux` | platform | none | package | — | — | extracted | the web and terminal surfaces |
 | `cx-platform-agent` | platform | none | package | — | — | extracted | tools, mcp, mcp-server, a2a, a2a-xap, llm, run, adjudicate |
 | `cx-binding-python` | binding | none | pypi | — | — | extracted | cxlib for Python |
@@ -8580,7 +8580,7 @@ the product compiles from (RULED: RS-24).
 | `cx-platform-sso` | 1 | no | `cx-platform/sso` |
 | `cx-platform-flow` | 1 | no | `cx-platform/flow` |
 | `cx-core-data` | 1 | yes | `cx-core-data` |
-| `cx-core-code` | 52 | yes | `cx-stdlib/array` `cx-stdlib/authz` `cx-stdlib/bus` `cx-stdlib/bytes` `cx-stdlib/crypto` `cx-stdlib/csv` `cx-stdlib/cx` `cx-stdlib/did` `cx-stdlib/email` `cx-stdlib/env` `cx-stdlib/format` `cx-stdlib/fp` `cx-stdlib/geo` `cx-stdlib/graphql` `cx-stdlib/hash` `cx-stdlib/html` `cx-stdlib/http-client` `cx-stdlib/i18n` `cx-stdlib/io` `cx-stdlib/json` `cx-stdlib/jsonrpc` `cx-stdlib/jsonschema` `cx-stdlib/locale` `cx-stdlib/log` `cx-stdlib/map` `cx-stdlib/math` `cx-stdlib/mime` `cx-stdlib/oidc` `cx-stdlib/path` `cx-stdlib/process` `cx-stdlib/prof` `cx-stdlib/random` `cx-stdlib/re` `cx-stdlib/saml` `cx-stdlib/sched` `cx-stdlib/scim` `cx-stdlib/similar` `cx-stdlib/soap` `cx-stdlib/strings` `cx-stdlib/supervise` `cx-stdlib/tar` `cx-stdlib/term` `cx-stdlib/test` `cx-stdlib/time` `cx-stdlib/url` `cx-stdlib/uuid` `cx-stdlib/validate` `cx-stdlib/vc` `cx-stdlib/ws` `cx-stdlib/xml` `cx-stdlib/zip` `term` |
+| `cx-core-code` | 53 | yes | `cx-stdlib/array` `cx-stdlib/authz` `cx-stdlib/bus` `cx-stdlib/bytes` `cx-stdlib/crypto` `cx-stdlib/csv` `cx-stdlib/cx` `cx-stdlib/did` `cx-stdlib/email` `cx-stdlib/env` `cx-stdlib/format` `cx-stdlib/fp` `cx-stdlib/geo` `cx-stdlib/graphql` `cx-stdlib/hash` `cx-stdlib/html` `cx-stdlib/http-client` `cx-stdlib/i18n` `cx-stdlib/io` `cx-stdlib/json` `cx-stdlib/jsonrpc` `cx-stdlib/jsonschema` `cx-stdlib/locale` `cx-stdlib/log` `cx-stdlib/map` `cx-stdlib/math` `cx-stdlib/mime` `cx-stdlib/oidc` `cx-stdlib/path` `cx-stdlib/process` `cx-stdlib/prof` `cx-stdlib/random` `cx-stdlib/re` `cx-stdlib/saml` `cx-stdlib/sched` `cx-stdlib/scim` `cx-stdlib/set` `cx-stdlib/similar` `cx-stdlib/soap` `cx-stdlib/strings` `cx-stdlib/supervise` `cx-stdlib/tar` `cx-stdlib/term` `cx-stdlib/test` `cx-stdlib/time` `cx-stdlib/url` `cx-stdlib/uuid` `cx-stdlib/validate` `cx-stdlib/vc` `cx-stdlib/ws` `cx-stdlib/xml` `cx-stdlib/zip` `term` |
 | `cx-platform-db` | 3 | yes | `db` `sql` `redis` |
 | `cx-platform-net` | 2 | yes | `cx-platform/net` `cx-platform/http` |
 | `cx-platform-mail` | 3 | yes | `cx-platform/imap` `cx-platform/smtp` `cx-stdlib/sasl` |
@@ -8712,17 +8712,17 @@ row is refused by name (RULED: RS-1).
 
 | column | rows carrying it | its values (six or fewer), or how many |
 |---|---|---|
-| `name=` | 98 | 97 distinct values |
-| `ring=` | 98 | `1` `0` |
-| `ns=` | 98 | `cx-stdlib` `cx-platform` `none` |
-| `kind=` | 98 | `module` `natives` `backend` `design` `suite` `codec` |
-| `repo=` | 98 | 16 distinct values |
-| `spec=` | 98 | 96 distinct values |
-| `corpus=` | 98 | 94 distinct values |
-| `source=` | 98 | 87 distinct values |
-| `code=` | 98 | 73 distinct values |
-| `half=` | 98 | `none` |
-| `status=` | 98 | `current` `planned` |
+| `name=` | 99 | 98 distinct values |
+| `ring=` | 99 | `1` `0` |
+| `ns=` | 99 | `cx-stdlib` `cx-platform` `none` |
+| `kind=` | 99 | `module` `natives` `backend` `design` `suite` `codec` |
+| `repo=` | 99 | 16 distinct values |
+| `spec=` | 99 | 97 distinct values |
+| `corpus=` | 99 | 95 distinct values |
+| `source=` | 99 | 88 distinct values |
+| `code=` | 99 | 74 distinct values |
+| `half=` | 99 | `none` |
+| `status=` | 99 | `current` `planned` |
 | `group=` | 42 | `platform` |
 | `suite-ring=` | 5 | `1` |
 
@@ -8744,11 +8744,11 @@ What the columns mean (the file's own `[doc]` block is the full text):
 
 ## 4. Where the rows live today
 
-<sub>Generated by `scripts/gen_docs/contributor_facts.cx` from `registry/modules.cxd`'s `[module]` rows, grouped by `repo=` (98 rows) — do not edit here: change the source, run `make docs`.</sub>
+<sub>Generated by `scripts/gen_docs/contributor_facts.cx` from `registry/modules.cxd`'s `[module]` rows, grouped by `repo=` (99 rows) — do not edit here: change the source, run `make docs`.</sub>
 
 | repository | rows | ring 0 | ring 1 | `group=platform` | `status=planned` | the rows (`name=`) |
 |---|---|---|---|---|---|---|
-| `cx-core-code` | 52 | 1 | 51 | 0 | 0 | authz, array, bus, bytes, crypto, csv, cx, did, email, env, format, fp, geo, graphql, hash, html, http-client, i18n, io, json, jsonrpc, jsonschema, locale, log, map, math, mime, oidc, path, process, prof, random, re, saml, sched, scim, similar, soap, strings, supervise, tar, term, test, time, url, uuid, validate, vc, ws, zip, term, xml |
+| `cx-core-code` | 53 | 1 | 52 | 0 | 0 | authz, array, bus, bytes, crypto, csv, cx, did, email, env, format, fp, geo, graphql, hash, html, http-client, i18n, io, json, jsonrpc, jsonschema, locale, log, map, math, mime, oidc, path, process, prof, random, re, saml, sched, scim, set, similar, soap, strings, supervise, tar, term, test, time, url, uuid, validate, vc, ws, zip, term, xml |
 | `cx-tooling` | 1 | 0 | 1 | 0 | 0 | diagram |
 | `cx-platform-store` | 7 | 0 | 1 | 6 | 0 | ft, audit, journal, live, store, distributed_store, erasure_compliance |
 | `cx-platform-mail` | 3 | 0 | 1 | 2 | 0 | sasl, imap, smtp |
@@ -9046,7 +9046,7 @@ The union `make test` runs, in order. A step marked in the doc pipeline also
 runs in `make test-docs` (RULED: INT-10); the third column is where to start
 reading what the step checks.
 
-<sub>Generated by `scripts/gen_docs/contributor_facts.cx` from the Makefile's `TEST_TARGETS` (in order), `DOC_TARGETS`, the targets `docs-src/flow/docs.flow.cx` names, and each step's own rule (106 rows) — do not edit here: change the source, run `make docs`.</sub>
+<sub>Generated by `scripts/gen_docs/contributor_facts.cx` from the Makefile's `TEST_TARGETS` (in order), `DOC_TARGETS`, the targets `docs-src/flow/docs.flow.cx` names, and each step's own rule (107 rows) — do not edit here: change the source, run `make docs`.</sub>
 
 | # | step | in the doc pipeline | the first program its recipe names |
 |---|---|---|---|
@@ -9137,11 +9137,11 @@ reading what the step checks.
 | 85 | `test-playground-mermaid` |  | `scripts/test_playground_mermaid.mjs` |
 | 86 | `test-playground-nav` |  | `scripts/test_playground_nav.mjs` |
 | 87 | `test-playground-readings` |  | `scripts/gen_guide/playground/readings_check.cx` |
-| 88 | `test-oriel-lane` |  | `deps/cx-platform-ux/scripts/oriel_lane.sh` |
-| 89 | `test-agent-real-lanes` |  | — |
-| 90 | `test-connector-real-lanes` |  | — |
-| 91 | `test-db-real-lanes` |  | — |
-| 92 | `test-sso-interop-lane` |  | `deps/cx-platform-sso/scripts/sso_interop_lane.sh` |
+| 88 | `test-oriel` |  | `deps/cx-platform-ux/scripts/oriel_lane.sh` |
+| 89 | `test-agent-real` |  | — |
+| 90 | `test-connector-real` |  | — |
+| 91 | `test-db-real` |  | — |
+| 92 | `test-sso-interop` |  | `deps/cx-platform-sso/scripts/sso_interop_lane.sh` |
 | 93 | `test-xpath-parity-cx` |  | `scripts/check_xpath_parity_fixtures.cx` |
 | 94 | `corpus-audit` |  | `scripts/corpus_audit.sh` |
 | 95 | `repr-guard` |  | `bench/repr/run.sh` |
@@ -9151,11 +9151,12 @@ reading what the step checks.
 | 99 | `fmt-sweep-gate` |  | `scripts/fmt_corpus_sweep.cx` |
 | 100 | `test-playground-wasm-traps` |  | `scripts/test_playground_wasm_traps.mjs` |
 | 101 | `ledger-index-check` | yes | `scripts/ledger_index.cx` |
-| 102 | `check-profile-gate-selection` |  | `scripts/profile_gate_selection_selftest.sh` |
-| 103 | `check-verification-budget` |  | `scripts/check_verification_budget.cx` |
-| 104 | `check-verification-budget-selftest` |  | `scripts/verification_budget_selftest.sh` |
-| 105 | `check-storm-keep-going` |  | `scripts/storm_keep_going_selftest.sh` |
-| 106 | `check-verification-timings` |  | `scripts/verification_timings_selftest.sh` |
+| 102 | `ledger-edit-map-check` | yes | `scripts/ledger_edit_map_check.cx` |
+| 103 | `check-profile-gate-selection` |  | `scripts/profile_gate_selection_selftest.sh` |
+| 104 | `check-verification-budget` |  | `scripts/check_verification_budget.cx` |
+| 105 | `check-verification-budget-selftest` |  | `scripts/verification_budget_selftest.sh` |
+| 106 | `check-storm-keep-going` |  | `scripts/storm_keep_going_selftest.sh` |
+| 107 | `check-verification-timings` |  | `scripts/verification_timings_selftest.sh` |
 
 
 <!-- https://cxhome.org/llm/reference-platform.md -->
