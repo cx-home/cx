@@ -44,7 +44,7 @@
 # Not in the default TEST_TARGETS ring: it proves the COMPILER's cache, so it
 # belongs to fork-touching changes — run it whenever third_party/v changes
 # (check-v-fork territory), before any release cut, and before widening
-# -usecache to more lanes. Recorded in the audit file.
+# -usecache to more steps. Recorded in the audit file.
 #
 # Usage: bash scripts/vcache_soundness_gate.sh [--prove-red]
 #        (devbox is NOT required since #1337 - see PORTABLE PRIMITIVES below.

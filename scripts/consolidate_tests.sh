@@ -10,7 +10,7 @@
 #                  (scratch), re-verify the test-fn count with grep
 #                  (independent of the generator's own claim), and
 #                  prove idempotency (second run byte-identical).
-#   apply <area>   gen + move the umbrella into the lane directory +
+#   apply <area>   gen + move the umbrella into the area directory +
 #                  compile-and-run it green + `git rm` the originals.
 #                  The caller reviews and commits — ONE COMMIT PER AREA.
 #   verify <area>  the gen-time checks only (no move, no git).
@@ -108,18 +108,18 @@ while IFS= read -r line; do
   history_rows+=("$line")
 done < <(awk '$1 == "#absorbed" || $1 == "#retired" { print $2 }' "$manifest")
 
-# The umbrella's home. Normally the lane every pending row shares; when an
+# The umbrella's home. Normally the directory every pending row shares; when an
 # area has no pending rows left (fully absorbed) that is unavailable, so
-# fall back to the lane dirs the tree actually uses (vcx/store/ since RS-24
+# fall back to the area dirs the tree actually uses (vcx/store/ since RS-24
 # moved the store's umbrellas with their product).
 if [ "${#pending[@]}" -ge 1 ]; then
-  lane_dir="$(dirname "${pending[0]}")"
+  area_dir="$(dirname "${pending[0]}")"
   for f in "${pending[@]}"; do
-    [ "$(dirname "$f")" = "$lane_dir" ] || { echo "consolidate_tests: inputs span directories ($lane_dir vs $(dirname "$f")) — one area, one lane dir"; exit 2; }
+    [ "$(dirname "$f")" = "$area_dir" ] || { echo "consolidate_tests: inputs span directories ($area_dir vs $(dirname "$f")) — one area, one directory"; exit 2; }
   done
-  umbrella="${lane_dir}/${area}_umbrella_test.v"
+  umbrella="${area_dir}/${area}_umbrella_test.v"
 else
-  lane_dir=""
+  area_dir=""
   umbrella=""
   for d in vcx/tests vcx/code vcx/platform vcx/store; do
     cand="${d}/${area}_umbrella_test.v"
@@ -127,7 +127,7 @@ else
     # is exactly the state R4 exists to catch, and a filesystem-only lookup
     # would lose the name it needs to refuse with.
     if [ -f "$cand" ] || git ls-files --error-unmatch -- "$cand" >/dev/null 2>&1; then
-      lane_dir="$d"
+      area_dir="$d"
       umbrella="$cand"
       break
     fi

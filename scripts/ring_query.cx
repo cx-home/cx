@@ -1,4 +1,4 @@
-# scripts/ring_query.cx -- the partition ring-lane corpus query (I0).
+# scripts/ring_query.cx -- the partition ring corpus query (I0).
 #
 # Eat-our-own-dog-food: written entirely in CX; runs via `cx <file>`.
 # Implements the ring-tag resolution the corpus audit §2 "Tagging
@@ -6,37 +6,37 @@
 #
 #   ring(case) = case@ring  ->  nearest enclosing [module]@ring  ->  suite@ring
 #
-# and the MIXED-suite lane discriminator: a suite whose header carries
+# and the MIXED-suite mode discriminator: a suite whose header carries
 # `eval-ring=N` (today: conformance/code.cxd, ring=0 eval-ring=1)
-# contributes EVERY case a second time in the EVAL lane -- per case at
+# contributes EVERY case a second time in the EVAL mode -- per case at
 #
 #   eval-ring(case) = case@eval-ring -> case@ring -> suite@eval-ring
 #
 # (I4: code.cxd's svc family carries eval-ring=2 -- its programs need the
-# platform services substrate while the doc lane stays ring 0) -- and
-# the parse/document lane stays at the resolved `ring=`. This is the
-# machine-readable form of "the eval lane elevates to 1": the Ring-N
-# lane is a corpus QUERY, never a maintained external list (§2), and
+# platform services substrate while the doc mode stays ring 0) -- and
+# the parse/document mode stays at the resolved `ring=`. This is the
+# machine-readable form of "the eval mode elevates to 1": the Ring-N
+# set is a corpus QUERY, never a maintained external list (§2), and
 # this tool is that query. gates.cxd (policy manifest, no suite header)
 # is excluded by name.
 #
 # The tool doubles as the tagging-completeness gate: any suite whose
 # header lacks `ring=` is a hard failure (stderr report, exit 2) -- an
-# untagged suite would silently fall out of every ring lane.
+# untagged suite would silently fall out of every ring set.
 #
 # -- Interface (env vars; `cx FILE` takes no program argv, cli.md §3) --
 #   RING    0 | 1 | 2      restrict to one ring        (unset = all)
-#   LANE    doc | eval | both   lane selector          (default doc)
+#   MODE    doc | eval | both   mode selector          (default doc)
 #   FORMAT  summary | ids | count                      (default summary)
 #
-# FORMAT=ids prints matching case ids one per line (in LANE=both a
-# MIXED-suite case id legitimately appears once per lane). FORMAT=count
+# FORMAT=ids prints matching case ids one per line (in MODE=both a
+# MIXED-suite case id legitimately appears once per mode). FORMAT=count
 # prints the single total. FORMAT=summary prints one line per suite
 # with a matched count, then a TOTAL line.
 #
 # Run from the repo root (glob is cwd-relative):
 #   vcx/target/cx --allow-read --allow-env scripts/ring_query.cx
-# (or: make ring-query [RING=n] [LANE=l] [FORMAT=f])
+# (or: make ring-query [RING=n] [MODE=m] [FORMAT=f])
 #
 # Exit: 0 on success (a zero-match query is a valid census answer),
 #       2 when any suite is untagged.
@@ -47,7 +47,7 @@
 [?lib 'cx-stdlib/strings' as=strings]
 
 [?let [= $ring-want   [?else [$env:var "RING"]   ""]]
-      [= $lane-want   [?else [$env:var "LANE"]   "doc"]]
+      [= $mode-want   [?else [$env:var "MODE"]   "doc"]]
       [= $format-want [?else [$env:var "FORMAT"] "summary"]]
 
       # The corpus: every fixture suite, top-level + stdlib. gates.cxd is
@@ -77,7 +77,7 @@
               "|"]]
           [= $mod-ids-fenced [$concat "|" $mod-ids "|"]]
 
-          # Doc lane, module-scoped cases: case@ring -> module@ring -> suite.
+          # Doc mode, module-scoped cases: case@ring -> module@ring -> suite.
           [= $mod-block
             [$strings:join
               [?for [in $m $t//module]
@@ -89,7 +89,7 @@
                     [yield [$string $mc@id]]] "\n"]]]
               "\n"]]
 
-          # Doc lane, top-level cases (not under any [module]).
+          # Doc mode, top-level cases (not under any [module]).
           [= $top-block
             [$strings:join
               [?for [in $c $t//case]
@@ -106,7 +106,7 @@
                 [then $mod-block]
                 [else [$concat $mod-block "\n" $top-block]]]]]]
 
-          # Eval lane: only MIXED suites (eval-ring= on the header) have
+          # Eval mode: only MIXED suites (eval-ring= on the header) have
           # one; each case joins it at case@eval-ring -> case@ring ->
           # suite@eval-ring (I4 per-case override, fixtures.cxs).
           [= $eval-block
@@ -124,7 +124,7 @@
                    doc-ids=$doc-block eval-ids=$eval-block]]]]
 
       # Tagging-completeness gate: an untagged suite falls out of every
-      # ring lane silently -- hard failure.
+      # ring set silently -- hard failure.
       [= $untagged
         [?for [in $r $reports]
           [where [= [$string $r@ring] ""]]
@@ -135,7 +135,7 @@
       # Ring 2 -- that is the whole point of splitting the corpus the way the
       # specs are split. A header that disagrees with the directory it sits
       # in is the drift the split exists to make unrepresentable, and two
-      # lanes would read it two ways, so it is a hard failure here beside the
+      # readers would read it two ways, so it is a hard failure here beside the
       # untagged one. Directories the split does not govern (the top level,
       # x/, xap/) answer "" and are held to their header alone.
       [= $misplaced
@@ -150,14 +150,14 @@
           [yield [$concat $f " carries ring=" [$string $r@ring]
                    ", the directory it sits in says ring=" $want]]]]
 
-      # Lane selection per report -> the final per-suite id block.
+      # Mode selection per report -> the final per-suite id block.
       [= $picked-blocks
         [?for [in $r $reports]
           [= $doc-ids  [$string $r@doc-ids]]
           [= $eval-ids [$string $r@eval-ids]]
           [= $sel
-            [?if [= $lane-want "doc"]  [then $doc-ids]
-            [else [?if [= $lane-want "eval"] [then $eval-ids]
+            [?if [= $mode-want "doc"]  [then $doc-ids]
+            [else [?if [= $mode-want "eval"] [then $eval-ids]
             [else [?if [= $doc-ids ""] [then $eval-ids]
             [else [?if [= $eval-ids ""] [then $doc-ids]
             [else [$concat $doc-ids "\n" $eval-ids]]]]]]]]]]
@@ -204,7 +204,7 @@
           [else [?if [= $format-want "ids"] [then $all-ids]
           [else
             [$concat "ring-query  ring=" [?if [= $ring-want ""] [then "all"] [else $ring-want]]
-              "  lane=" $lane-want "\n"
+              "  mode=" $mode-want "\n"
               [$strings:join $summary-lines "\n"]
               "\n  TOTAL matched=" [$string $total]]]]]]]
         [?let [= $_w [$io:write-line [$env:stdout] $out]]

@@ -93,12 +93,12 @@ TERMS=(
 #
 # #842: the gate builds ONE pattern and hands it to two DIFFERENT engines —
 # `git grep -inE` for tracked files, plain `grep -inE` for the --gh-metadata
-# lane. They do not agree on `\b`: plain grep honours it, `git grep -E`
+# scan. They do not agree on `\b`: plain grep honours it, `git grep -E`
 # silently ignores it and matches nothing. So a term written with `\b` would be
-# LIVE on the metadata lane and DEAD on the tracked lane, and the gate would
+# LIVE on the metadata scan and DEAD on the tracked scan, and the gate would
 # report OK on a tree containing the term while flagging it in the tracker.
 # That is the same hollow-gate failure the pathspec note below records,
-# reached by a different route, and invisible because the other lane still
+# reached by a different route, and invisible because the other scan still
 # fires. No current term uses `\b`, so this was latent — which is exactly when
 # to nail it down.
 #
@@ -136,15 +136,15 @@ for i in "${!TERMS[@]}"; do
 	esac
 	printf '%s\n' "$probe" > "$selftest_file"
 	if ! grep -qiE "$term" "$selftest_file"; then
-		echo "check-no-consumer-terms: FAIL — term '$term' does not match its own probe '$probe' under \`grep -E\` (the --gh-metadata lane)"
+		echo "check-no-consumer-terms: FAIL — term '$term' does not match its own probe '$probe' under \`grep -E\` (the --gh-metadata scan)"
 		selftest_failed=1
 	fi
 	# Run from INSIDE the temp dir: `git grep --no-index` still refuses a path
 	# outside the repository, and the probe deliberately lives outside so it is
 	# never itself scanned by the real gate below.
 	if ! ( cd "$selftest_dir" && git grep --no-index -qiE "$term" -- probe.txt ); then
-		echo "check-no-consumer-terms: FAIL — term '$term' does not match its own probe '$probe' under \`git grep -E\` (the tracked-file lane)"
-		echo "  the gate's two lanes disagree about its own vocabulary; neither can be trusted"
+		echo "check-no-consumer-terms: FAIL — term '$term' does not match its own probe '$probe' under \`git grep -E\` (the tracked-file scan)"
+		echo "  the gate's two scans disagree about its own vocabulary; neither can be trusted"
 		selftest_failed=1
 	fi
 done
@@ -169,7 +169,7 @@ if [ "${1:-}" = "--gh-metadata" ]; then
 	command -v gh >/dev/null || { echo "check-no-consumer-terms(gh): FAIL — gh CLI not available"; exit 2; }
 	repo="$(gh repo view --json nameWithOwner -q .nameWithOwner)" || { echo "check-no-consumer-terms(gh): FAIL — cannot resolve repo"; exit 2; }
 	fail=0
-	scan() { # $1=lane-name  $2=jq-projection  $3=endpoint
+	scan() { # $1=scan-name  $2=jq-projection  $3=endpoint
 		local out status
 		out="$(gh api "$3" --paginate -q "$2" 2>&1)"
 		status=$?
