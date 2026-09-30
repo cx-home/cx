@@ -116,7 +116,12 @@ COLUMNS
           stays in vcx/code and is named HERE, so the placement check reads
           it as declared rather than as a ring violation. The split trigger
           is the first Ring-1 CONSUMER of a half — that is how `http-client`
-          became its own Ring-1 module (1427-e)
+          became its own Ring-1 module (1427-e). A Ring-1 module whose
+          code= is a local-effect PACK (a `_notd_cx_no_pack_<name>.v` file,
+          which an embed build leaves out) declares its pack-free rest the
+          same way: the half is what every profile composes, and code= is
+          only the effect the pack excludes — `time`, whose pack is the
+          clock (RULED: TIMEP-1)
   suite-ring
           the `ring=` the corpus header carries TODAY, when it disagrees
           with the row's lane (its ring, or 2 for group=platform). Same
@@ -256,7 +261,13 @@ needs becomes its own Ring-1 module.
      term.md / term.cxd — so this row names term-module.md / term-module.cxd. ]
   [module name=term ring=1 ns=cx-stdlib kind=module repo=cx-core-code spec=deps/cx-core-code/spec/03-approved/stdlib/term-module.md corpus=deps/cx-core-code/conformance/stdlib/term-module.cxd source=deps/cx-core-code/stdlib/term.cx code=none half=none status=current]
   [module name=test ring=1 ns=cx-stdlib kind=module repo=cx-core-code spec=deps/cx-core-code/spec/03-approved/stdlib/test.md corpus=deps/cx-core-code/conformance/stdlib/test.cxd source=deps/cx-core-code/stdlib/test.cx code=deps/cx-core-code/vcx/code/stdlib_testkit.v half=none status=current]
-  [module name=time ring=1 ns=cx-stdlib kind=module repo=cx-core-code spec=deps/cx-core-code/spec/03-approved/stdlib/time.md corpus=deps/cx-core-code/conformance/stdlib/time.cxd source=deps/cx-core-code/stdlib/time.cx code='deps/cx-core-code/vcx/code/stdlib_time_notd_cx_no_pack_time.v deps/cx-core-code/vcx/code/datetime_core.v' half=none status=current]
+  [; time splits by effect (RULED: TIMEP-1, #1586), as http split into
+     http-client and http: the `time` pack, the one file an embed build leaves
+     out, is the six clock reads (code=); the clock-free rest of the module --
+     parsing, formatting, construction, duration and calendar arithmetic, the
+     recurrence and business-calendar surfaces -- is the row's declared half,
+     composed into every profile. ]
+  [module name=time ring=1 ns=cx-stdlib kind=module repo=cx-core-code spec=deps/cx-core-code/spec/03-approved/stdlib/time.md corpus=deps/cx-core-code/conformance/stdlib/time.cxd source=deps/cx-core-code/stdlib/time.cx code=deps/cx-core-code/vcx/code/stdlib_time_clock_notd_cx_no_pack_time.v half='deps/cx-core-code/vcx/code/stdlib_time.v deps/cx-core-code/vcx/code/datetime_core.v' status=current]
   [module name=url ring=1 ns=cx-stdlib kind=module repo=cx-core-code spec=deps/cx-core-code/spec/03-approved/stdlib/url.md corpus=deps/cx-core-code/conformance/stdlib/url.cxd source=deps/cx-core-code/stdlib/url.cx code=deps/cx-core-code/vcx/code/stdlib_url.v half=none status=current]
   [module name=uuid ring=1 ns=cx-stdlib kind=module repo=cx-core-code spec=deps/cx-core-code/spec/03-approved/stdlib/uuid.md corpus=deps/cx-core-code/conformance/stdlib/uuid.cxd source=deps/cx-core-code/stdlib/uuid.cx code=deps/cx-core-code/vcx/code/stdlib_uuid.v half=none status=current]
   [module name=validate ring=1 ns=cx-stdlib kind=module repo=cx-core-code spec=deps/cx-core-code/spec/03-approved/stdlib/validate.md corpus=deps/cx-core-code/conformance/stdlib/validate.cxd source=deps/cx-core-code/stdlib/validate.cx code=deps/cx-core-code/vcx/code/stdlib_validate.v half=none status=current]
