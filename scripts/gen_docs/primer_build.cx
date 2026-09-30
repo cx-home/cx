@@ -861,7 +861,7 @@
 # declared-outputs: every basename `make docs` is responsible for — one per
 # [output] entry, plus the two llmstxt.org files the generator always emits.
 [?def declared-outputs scope=public ($docs)
-  [$cat-seqs ([?for [in $d $docs] [yield [$string $d@out]]],
+  [$cat-seqs (([?for [in $d $docs] [yield [$string $d@out]]]),
               ("llms.txt", "llms-full.txt"))]]
 
 # orphans: files under OUT-DIR that no manifest entry claims.
