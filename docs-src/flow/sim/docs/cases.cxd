@@ -24,7 +24,7 @@
     [expect [s 'status=:done'] [s 'step name=generate status=:done pivot=true']
             [s 'step name=check status=:done'] [s 'step name=assemble status=:done']]]
   [case id=B-check-mode verb=simulate results='docs-src/flow/sim/docs/docs-check-mode.cx' args='--mode=check' exit=0
-    [expect [s 'status=:done'] [s 'ran=false'] [s "[mode 'check']"]]]
+    [expect [s 'status=:done'] [s 'ran=false'] [s '[mode check]']]]
   [case id=B-generate verb=simulate results='docs-src/flow/sim/docs/docs-red-generate.cx' args='--mode=write' exit=0
     [expect [s 'status=:compensated'] [s 'step name=generate status=:failed']
             [s 'step name=check status=:waiting']]]
