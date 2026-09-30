@@ -16,12 +16,12 @@ first extraction -- quietest first -- and this row is what makes `cx` a
 consumer of it rather than its owner. The pinned checkout is a BUILD INPUT:
 registry/modules.cxd's sso row names its spec, corpus and bundled source under
 deps/cx-platform-sso/, vcx/code/stdlib_bundle.v embeds that source into the
-four profile builds, and `make test-sso-interop-lane` runs the lane script out
+four profile builds, and `make test-sso-interop` runs the step script out
 of the same checkout. So `make deps-sync` is not a convenience here -- a tree
 without deps/ cannot build the profile that carries sso, and it says so by
 name instead of dropping the module (Makefile, `deps-present`).
 
-`cx` is a migration lane, never a gate (RS-7): when any repository releases,
+`cx` is a migration path, never a gate (RS-7): when any repository releases,
 `cx` tries the newest mutually green set; green advances the pins, red leaves
 them and the finding lands on the repository that moved. No merge anywhere
 waits on `cx`. A release cut ships whatever is pinned.
@@ -33,12 +33,12 @@ a question the default already answers correctly, and it would rot the day the
 organisation moves.
 #]]
 
-  [dep repo=cx-platform-agent sha=df3d48a436325c15133e0329f116bf6c06f9c64f module='cx-platform/tools cx-platform/mcp cx-platform/mcp-server cx-platform/a2a cx-platform/a2a-xap cx-platform/llm cx-platform/run cx-platform/adjudicate']
+  [dep repo=cx-platform-agent sha=69e8b24e122b3b01a727e234f0ef31457e3c78bd module='cx-platform/tools cx-platform/mcp cx-platform/mcp-server cx-platform/a2a cx-platform/a2a-xap cx-platform/llm cx-platform/run cx-platform/adjudicate']
   [dep repo=cx-platform-ux sha=14e4ac4b4e7bfe2414797f9b2a100b1a371e58a0 module='cx-platform/ux cx-platform/ux-web cx-platform/ux-tui']
   [dep repo=cx-platform-sso sha=a024bc3351023b39b63b14af4d6a9584c0f6d822 module='cx-platform/sso']
-  [dep repo=cx-platform-flow sha=e69d7a4d5cb51e68fe6217880e962817e9385f76 module='cx-platform/flow']
+  [dep repo=cx-platform-flow sha=b5a2eec5184c4ce8ee60aa560e7889c8176f403b module='cx-platform/flow']
   [dep repo=cx-core-data sha=6ca54d276f6710c2ec5c173a76f7c25a0a2c2347 module=cx-core-data v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
-  [dep repo=cx-core-code sha=a5ecd6afe03e177677b404fbc58f94dbf94e8a04 module='cx-stdlib/array cx-stdlib/authz cx-stdlib/bus cx-stdlib/bytes cx-stdlib/crypto cx-stdlib/csv cx-stdlib/cx cx-stdlib/did cx-stdlib/email cx-stdlib/env cx-stdlib/format cx-stdlib/fp cx-stdlib/geo cx-stdlib/graphql cx-stdlib/hash cx-stdlib/html cx-stdlib/http-client cx-stdlib/i18n cx-stdlib/io cx-stdlib/json cx-stdlib/jsonrpc cx-stdlib/jsonschema cx-stdlib/locale cx-stdlib/log cx-stdlib/map cx-stdlib/math cx-stdlib/mime cx-stdlib/oidc cx-stdlib/path cx-stdlib/process cx-stdlib/prof cx-stdlib/random cx-stdlib/re cx-stdlib/saml cx-stdlib/sched cx-stdlib/scim cx-stdlib/similar cx-stdlib/soap cx-stdlib/strings cx-stdlib/supervise cx-stdlib/tar cx-stdlib/term cx-stdlib/test cx-stdlib/time cx-stdlib/url cx-stdlib/uuid cx-stdlib/validate cx-stdlib/vc cx-stdlib/ws cx-stdlib/xml cx-stdlib/zip term' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
+  [dep repo=cx-core-code sha=a5ecd6afe03e177677b404fbc58f94dbf94e8a04 module='cx-stdlib/array cx-stdlib/authz cx-stdlib/bus cx-stdlib/bytes cx-stdlib/crypto cx-stdlib/csv cx-stdlib/cx cx-stdlib/did cx-stdlib/email cx-stdlib/env cx-stdlib/format cx-stdlib/fp cx-stdlib/geo cx-stdlib/graphql cx-stdlib/hash cx-stdlib/html cx-stdlib/http-client cx-stdlib/i18n cx-stdlib/io cx-stdlib/json cx-stdlib/jsonrpc cx-stdlib/jsonschema cx-stdlib/locale cx-stdlib/log cx-stdlib/map cx-stdlib/math cx-stdlib/mime cx-stdlib/oidc cx-stdlib/path cx-stdlib/process cx-stdlib/prof cx-stdlib/random cx-stdlib/re cx-stdlib/saml cx-stdlib/sched cx-stdlib/scim cx-stdlib/set cx-stdlib/similar cx-stdlib/soap cx-stdlib/strings cx-stdlib/supervise cx-stdlib/tar cx-stdlib/term cx-stdlib/test cx-stdlib/time cx-stdlib/url cx-stdlib/uuid cx-stdlib/validate cx-stdlib/vc cx-stdlib/ws cx-stdlib/xml cx-stdlib/zip term' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-db sha=b7ee622b1935e055a767c9c7726d71456f2f4cc2 module='db sql redis' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-net sha=f3aec21b5d0333a875502009269cbc721db092e7 module='cx-platform/net cx-platform/http cx-platform/sftp' v-fork=77a460e265f86d882878d749c2bca48390d940e7]
   [dep repo=cx-platform-mail sha=80d899d34bc81a0e08c77de951de417a0671330c module='cx-platform/imap cx-platform/smtp cx-stdlib/sasl' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
