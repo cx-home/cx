@@ -64,7 +64,7 @@ row is refused by name (RULED: RS-1).
 | `corpus=` | 98 | 94 distinct values |
 | `source=` | 98 | 87 distinct values |
 | `code=` | 98 | 73 distinct values |
-| `half=` | 98 | `none` |
+| `half=` | 98 | `none` `deps/cx-core-code/vcx/code/stdlib_time.v deps/cx-core-code/vcx/code/datetime_core.v` |
 | `status=` | 98 | `current` `planned` |
 | `group=` | 42 | `platform` |
 | `suite-ring=` | 5 | `1` |
