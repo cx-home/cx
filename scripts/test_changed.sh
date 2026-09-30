@@ -477,6 +477,11 @@ step_globs() {
     # checkout by this tree's binary (RULED: RS-12, RS-8, RS-27; #1591 item
     # K3) — a pin bump, plus the in-tree mock the lanes still boot
     test-connector-real-lanes)     echo 'deps.cxd registry/modules.cxd reference/acme/*' ;;
+    # the db corpus on sqlite, postgres and mysql against real servers in
+    # containers, run from the pinned checkout by a lane binary this tree builds
+    # with the two engines (RULED: DBLANE-1, DBSRV-1) — a pin bump, the
+    # runtime and client libraries devbox pins, and the front door's own vcx/
+    test-db-real-lanes)            echo 'deps.cxd registry/modules.cxd devbox.json devbox.lock vcx/*' ;;
     # the roster rows live in the Makefile and name files under vcx/
     check-serial-retry-rosters)    echo 'Makefile vcx/*' ;;
     # #1448: the partition guard reads the manifest, the corpus it partitions

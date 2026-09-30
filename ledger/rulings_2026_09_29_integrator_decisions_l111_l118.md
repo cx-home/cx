@@ -1,4 +1,4 @@
-# Integrator decisions 2026-09-29 — Letters 111 to 114 and 117 to 118, taken as delegated: four spec-silent stdlib defects the Ring-1 batch left out by name, and the two xap sentences FDISP-1 flagged
+# Integrator decisions 2026-09-29 — Letters 111 to 114 and 117 to 118, taken as delegated: four spec-silent stdlib defects the Ring-1 batch left out by name, and the two xap sentences the feature-dispatch round flagged
 
 **Status: RULED BY DELEGATION (the owner, 2026-09-29 ~03:5xZ, in session: "I will only review
 doc/playground final output. you have your assignment." — every open letter outside the docs and
@@ -53,7 +53,7 @@ because the posix_spawn path with process groups and the §3.1.1/§3.2 fd dispos
 hour's fix (FIX-1's small-defect clause does not reach it). Rejected: keeping the shell's
 convention — a missing binary and a program that ran and failed would be one answer.
 
-## PKGFILE-1 — a package's module file is `<package-name>.cx`, in the spec and on the pages (L117 = (a), delegated; FDISP-1's flag 1, posted 00:1xZ 09-30)
+## PKGFL-1 — a package's module file is `<package-name>.cx`, in the spec and on the pages (L117 = (a), delegated)
 
 distribution §1.2 and three documentation pages say the module file is `<feature-name>.cx`; the
 host reads `<package-name>.cx`, and FDISP-1 — the feature→package map built at boot — makes the
@@ -65,10 +65,10 @@ regenerated, as a small xap round after FDISP-1 merges. Rejected: the code readi
 treats them as one package, so the boot refusal list and the market's package row would name a
 file that is not there.
 
-## PKGIMP-1 — a `pkg:` import exposes every feature of the package (L118 = (a), delegated; FDISP-1's flag 2, posted 00:1xZ 09-30)
+## PKGIMP-1 — a `pkg:` import exposes every feature of the package (L118 = (a), delegated)
 
 A `pkg:` import of a package carrying several features exposes only its first feature, while the
 host dispatches all of them. Taken: the import exposes every feature, its verbs named
 `<feature>/<verb>` — the projection FDISP-1 already fixed for one feature — fixture first, in the
-same small xap round as PKGFILE-1. Rejected: first feature only, documented — a two-feature
+same small xap round as PKGFL-1. Rejected: first feature only, documented — a two-feature
 package (KIT4-2's shape) importable by half.
