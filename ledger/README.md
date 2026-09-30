@@ -513,6 +513,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `dbsrv-1` | [rulings_2026_09_29_integrator_decisions_l110.md](rulings_2026_09_29_integrator_decisions_l110.md) | DBSRV-1 — the container runtime comes from devbox; the step runs the vendors' images (L110 = (b′)) |
 | `deleg-3` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | Integrator decisions 2026-09-30 — Letters 126 to 140, taken under DELEG-3: the eleven design issues and the three bugs that needed a decision, and the sftp module's SSH transport, each at the long-term-best option |
 | `deleg-3` | [rulings_2026_09_30_integrator_decisions_l141_l142.md](rulings_2026_09_30_integrator_decisions_l141_l142.md) | Integrator decisions 2026-09-30 — Letters 141 and 142, taken under DELEG-3: the two readers of a bare head that BARE-1's round found unfixed |
+| `deleg-3` | [rulings_2026_09_30_integrator_decisions_l143_l144.md](rulings_2026_09_30_integrator_decisions_l143_l144.md) | Integrator decisions 2026-09-30 — Letters 143 and 144, taken under DELEG-3 on the owner's "we want to speed up where possible": the merge flow admits a branch behind a head that moved only the ledger or other repositories' pins, and READY branches land from a queue the loop consumes |
+| `deleg-3` | [rulings_2026_09_30_integrator_decisions_l145_l147.md](rulings_2026_09_30_integrator_decisions_l145_l147.md) | Integrator decisions 2026-09-30 — Letters 145 to 147, taken under DELEG-3: bug batch A's three letter lines |
 | `deleg-3` | [rulings_2026_09_30_owner_delegation_8h.md](rulings_2026_09_30_owner_delegation_8h.md) | DELEG-3 — what the integrator takes, how, and what stays the owner's |
 | `depsv-1` | [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) | DEPSV-1 — `cx deps sync` becomes a verb of the binary (L95 = (a)) |
 | `df-1` | [rulings_2026_09_05_computed_fields.md](rulings_2026_09_05_computed_fields.md) | Rulings 2026-09-05 — computed field values, and how a slug is declared (DF-1, DF-2) |
@@ -681,7 +683,10 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `lt-5` | [rulings_2026_08_26_diagram_let_node_ids_1036.md](rulings_2026_08_26_diagram_let_node_ids_1036.md) | LT-5 — golden movement, adjudicated (DR-8) |
 | `lt-6` | [rulings_2026_08_26_diagram_let_node_ids_1036.md](rulings_2026_08_26_diagram_let_node_ids_1036.md) | LT-6 — one conformance fixture moves with them |
 | `lt-7` | [rulings_2026_08_26_diagram_let_node_ids_1036.md](rulings_2026_08_26_diagram_let_node_ids_1036.md) | LT-7 — red-proof |
+| `madm-1` | [rulings_2026_09_30_integrator_decisions_l143_l144.md](rulings_2026_09_30_integrator_decisions_l143_l144.md) | MADM-1 — the merge flow admits a branch behind the head when the head's diff since the branch's merge-base is confined to ledger additions and to pin rows of repositories the branch did not move (L143 = (a)) |
+| `mapc-1` | [rulings_2026_09_30_integrator_decisions_l145_l147.md](rulings_2026_09_30_integrator_decisions_l145_l147.md) | MAPC-1 — the map carrier becomes persistent: a hash-trie in cx-core-data, O(log N) put (L146 = (a); #1692 part 3) |
 | `mexa-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | MEXA-1 — `sign`, `round`, `truncate`, `clamp` and `gcd` answer exactly on decimal and bigint (L128 = (a); #1070) |
+| `mque-1` | [rulings_2026_09_30_integrator_decisions_l143_l144.md](rulings_2026_09_30_integrator_decisions_l143_l144.md) | MQUE-1 — READY branches land from a queue the post-merge loop consumes in its own gap (L144 = (a)) |
 | `mss-1` | [rulings_2026_08_22_map_syntax_settlement.md](rulings_2026_08_22_map_syntax_settlement.md) | MSS-1 (= letter Q1a) — map values are expression-shaped; prose is quoted |
 | `mss-2` | [rulings_2026_08_22_map_syntax_settlement.md](rulings_2026_08_22_map_syntax_settlement.md) | MSS-2 (= letter Q2a) — entries separate by comma OR whitespace, both readers |
 | `mss-3` | [rulings_2026_08_22_map_syntax_settlement.md](rulings_2026_08_22_map_syntax_settlement.md) | MSS-3 (= letter Q3, all seven confirmed) — refuse, never invent |
@@ -722,6 +727,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pace-2` | [rulings_2026_09_27_owner_decisions_l41_l44.md](rulings_2026_09_27_owner_decisions_l41_l44.md) | PACE-2 — no new agent from this session; the switch to the other account when reasonable (owner, 01:1xZ, on Letter 45) |
 | `pace-3` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | PACE-3 — this session runs the kit overnight (owner, 2026-09-27 ~04:2xZ: "a") |
 | `part-1` | [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) | PART-1 — the six unmade sentence moves of the repo-split edit map land now, and item 5 ticks on the page that names them (L94 = (a)) |
+| `pathu-1` | [rulings_2026_09_30_integrator_decisions_l145_l147.md](rulings_2026_09_30_integrator_decisions_l145_l147.md) | PATHU-1 — a multi-step path in an operand slot keeps unwrapping its terminal field; #1580 closes on the ruled behaviour (L145 = (a)) |
 | `pb-1` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-1 — how the runner performs a step's act — RULED (a) |
 | `pb-2` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-2 — the run id preimage — RULED (a) |
 | `pb-3` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-3 — the home stream default — RULED (a) |
@@ -884,6 +890,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `sha-1` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) | RULED: 1400-a, 1401-a — XML Encryption comes IN: `saml:verify` decrypts `EncryptedAssertion` / `EncryptedID` / `EncryptedAttribute` with `opts.decryption-keys`; `crypto` gains RSA key transport (OAEP, SHA-1 inside OAEP allowed; PKCS#1 v1.5 behind a loud opt-in with implicit rejection) and AES-CBC + AES-128/192-GCM; encryption is detected BEFORE the signature search |
 | `ship-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | REPRM-1 — W8's measurement runs in v0.18 and its finding is fixed in v0.18 (L129 = (b), amended by SHIP-1; #1119) |
 | `ship-1` | [rulings_2026_09_30_owner_decision_l121.md](rulings_2026_09_30_owner_decision_l121.md) | SHIP-1 — the v0.18.0 scope is the milestone as ruled; the cut when it is empty (L121 = (a)) |
+| `sidec-1` | [rulings_2026_09_30_integrator_decisions_l145_l147.md](rulings_2026_09_30_integrator_decisions_l145_l147.md) | SIDEC-1 — the `cx:attr-types` sidecar omits an entry when the image re-types to its own type (L147 = (a); #1585) |
 | `since-1` | [rulings_2026_09_28_owner_decisions_l89_l90.md](rulings_2026_09_28_owner_decisions_l89_l90.md) | SINCE-1 — an absent `:since` on a baseline sync run binds NULL, and it lands today (L90 = (a), today) |
 | `site-1` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | Owner decisions 2026-09-26 (evening) — Letters 35, 37, 38 and 39: the site token (SITE-1), the pace past the weekly meter (PACE-1), shared-slot steps beside a selected run (RUN-5), #1498 stays in v0.18 (SD-2) |
 | `site-1` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | SITE-1 — the public site builds on GitHub's runner with a read-only token (Letter 35 = (a)) |
@@ -1403,7 +1410,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `imap-3` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `imap-4` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `imap-5` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
-| `int-10` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_16_run_selection_run1.md](rulings_2026_09_16_run_selection_run1.md), [rulings_2026_09_28_owner_decisions_l105.md](rulings_2026_09_28_owner_decisions_l105.md), [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md), [rulings_2026_09_28_owner_direction_cicd1.md](rulings_2026_09_28_owner_direction_cicd1.md), [rulings_2026_09_29_integrator_decisions_l106_l108.md](rulings_2026_09_29_integrator_decisions_l106_l108.md) |
+| `int-10` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_16_run_selection_run1.md](rulings_2026_09_16_run_selection_run1.md), [rulings_2026_09_28_owner_decisions_l105.md](rulings_2026_09_28_owner_decisions_l105.md), [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md), [rulings_2026_09_28_owner_direction_cicd1.md](rulings_2026_09_28_owner_direction_cicd1.md), [rulings_2026_09_29_integrator_decisions_l106_l108.md](rulings_2026_09_29_integrator_decisions_l106_l108.md), [rulings_2026_09_30_integrator_decisions_l143_l144.md](rulings_2026_09_30_integrator_decisions_l143_l144.md) |
 | `int-11` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-12` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-2` | [rulings_2026_09_12_audit_sink_1422.md](rulings_2026_09_12_audit_sink_1422.md), [rulings_2026_09_12_fmt_1384_1391.md](rulings_2026_09_12_fmt_1384_1391.md), [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md), [rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md](rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md), [rulings_2026_09_15_default_in_campaign_int17.md](rulings_2026_09_15_default_in_campaign_int17.md), [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md), [rulings_2026_09_15_owner_decisions_1145z.md](rulings_2026_09_15_owner_decisions_1145z.md) |
@@ -1442,7 +1449,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ol-12` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
 | `ol-13` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
 | `ol-2` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
-| `ol-3` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
+| `ol-3` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md), [rulings_2026_09_30_integrator_decisions_l143_l144.md](rulings_2026_09_30_integrator_decisions_l143_l144.md) |
 | `ol-4` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
 | `ol-5` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
 | `ol-6` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
@@ -1538,4 +1545,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*365 ledger pages; 816 ids declared, 391 cited only.*
+*367 ledger pages; 821 ids declared, 391 cited only.*
