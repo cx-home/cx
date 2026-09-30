@@ -1791,7 +1791,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-readings test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-readings test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-db-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # PRIVMK-1: the private flow targets add themselves to TEST_TARGETS from
 # flows/private.mk. That file is absent from the public tree, and `-include`
@@ -5082,6 +5082,50 @@ test-connector-real-lanes: build-vcx
 	    exit 2; }; \
 	done
 	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) test $(CONNECTOR_REAL_LANES)
+
+## test-db-real-lanes  The whole db corpus on sqlite, postgres AND mysql, the
+##                  two servers real, as its own step (RULED: DBLANE-1,
+##                  DBSRV-1). The lane is cx-platform-db's: its driver,
+##                  tooling/db_real_lane.cx, starts postgres and mysql in
+##                  containers — the runtime is devbox's (colima's VM and the
+##                  docker client, pinned in devbox.json; `devbox run
+##                  containers` starts the VM, and the driver starts it itself
+##                  when `colima status` says it is not running) — grades
+##                  db.cxd, db_postgres.cxd and db_mysql.cxd, and removes the
+##                  containers on every exit path. The step runs it out of the
+##                  pinned checkout, the test-agent-real-lanes shape.
+##                  THE BINARY. The lane needs a cx with the postgres and mysql
+##                  engines, which no shipped build carries (they link libpq and
+##                  libmysqlclient, db_access.md §2), so DB_LANE_CX is built
+##                  here from THIS tree's pins with -d cx_db_pg -d cx_db_mysql,
+##                  as a dev build at a path of its own: the shipped
+##                  deps/cx-core-code/vcx/target/cx is never relinked with them.
+##                  The client libraries are devbox.json's (libpq 18.6, mysql84's
+##                  libmysqlclient 8.4.11, libcurl for libpq's pkg-config), and
+##                  PKG_CONFIG_PATH names the profile's .pc files, which V's
+##                  pkg-config reads after its defaults — mysql's header is
+##                  found nowhere else. PORTABLE=true: the lane binary loads
+##                  those libraries from the Nix store on purpose; it is this
+##                  box's test artifact and never shipped, and a shipped binary
+##                  that loaded them is what portable_links.sh refuses.
+##                  Refuses with exit 2 and names `make deps-sync` when the
+##                  pinned checkout has no driver — never a skip. Real servers:
+##                  the shared runner's step (flows/load.cxd).
+##                  `make db-lane-cx` builds the binary alone — cx-platform-db's
+##                  own gate builds it through this front door, pinned, with its
+##                  commit under test as the db pin, and runs its `make lanes`
+##                  with it (its .github/workflows/gate.yml).
+DB_LANE_CX := $(CURDIR)/deps/cx-core-code/vcx/target/cx-db-lane
+.PHONY: db-lane-cx test-db-real-lanes
+db-lane-cx: check-gate-lock deps-present
+	@PKG_CONFIG_PATH="$(CURDIR)/.devbox/nix/profile/default/lib/pkgconfig$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
+	  $(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx cli-dev CLI_DEV=$(DB_LANE_CX) CX_DFLAGS='-d cx_db_pg -d cx_db_mysql' PORTABLE=true
+
+test-db-real-lanes: build-vcx db-lane-cx
+	@test -f deps/cx-platform-db/tooling/db_real_lane.cx || { \
+	  echo "test-db-real-lanes: deps/cx-platform-db/tooling/db_real_lane.cx is not there — the lane lives in the pinned repository (RULED: DBLANE-1); run \`make deps-sync\`" >&2; \
+	  exit 2; }
+	@cd deps/cx-platform-db && CX_BIN="$(DB_LANE_CX)" "$(DB_LANE_CX)" --allow-all tooling/db_real_lane.cx
 
 ## test-sso-interop-lane  Identity-provider interop as its own CI step
 ##                  (#1403): boot the in-tree identity provider at
