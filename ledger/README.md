@@ -509,6 +509,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `dbnul-1` | [rulings_2026_09_28_owner_decisions_l89_l90.md](rulings_2026_09_28_owner_decisions_l89_l90.md) | DBLANE-1 — DBNUL-1 merges on sqlite's proof; a real-server lane grades every db case on postgres and mysql (L89 = (a)) |
 | `dbspec-1` | [rulings_2026_09_30_integrator_decisions_l119.md](rulings_2026_09_30_integrator_decisions_l119.md) | DBSPEC-1 — the stale sentences of db_access.md §2, §7.2, §9 and §12 are trued, each with the case ids that hold it (L119 = (a), delegated) |
 | `dbsrv-1` | [rulings_2026_09_29_integrator_decisions_l110.md](rulings_2026_09_29_integrator_decisions_l110.md) | DBSRV-1 — the container runtime comes from devbox; the step runs the vendors' images (L110 = (b′)) |
+| `deleg-3` | [rulings_2026_09_30_owner_delegation_8h.md](rulings_2026_09_30_owner_delegation_8h.md) | DELEG-3 — what the integrator takes, how, and what stays the owner's |
 | `depsv-1` | [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) | DEPSV-1 — `cx deps sync` becomes a verb of the binary (L95 = (a)) |
 | `df-1` | [rulings_2026_09_05_computed_fields.md](rulings_2026_09_05_computed_fields.md) | Rulings 2026-09-05 — computed field values, and how a slug is declared (DF-1, DF-2) |
 | `df-1` | [rulings_2026_09_05_computed_fields.md](rulings_2026_09_05_computed_fields.md) | DF-1 — may the grammar compute a field's value? — RULED (c): NO |
@@ -1515,4 +1516,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*362 ledger pages; 798 ids declared, 391 cited only.*
+*363 ledger pages; 799 ids declared, 391 cited only.*
