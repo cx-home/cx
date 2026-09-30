@@ -20,23 +20,17 @@
 
     [child id=faq-not-found title='Why does `cx --version` fail with "command not found"?'
       [body
-        """`cx` is on disk but not on your shell `PATH`. If you used
-           Homebrew, run `brew --prefix cx` to find the install
-           prefix and confirm `$(brew --prefix cx)/bin` is on
-           `PATH`. If you used the devbox build (`make install`),
-           the binary lives at `~/.local/bin/cx` — add that to
-           `PATH`. If you used Docker, you do not actually have
-           `cx` installed; use `docker run cx-lang/cx cx …`
-           instead."""]
-      [example lang=shell
-        """[# Confirm the binary exists                                #]
-           which cx || ls -l ~/.local/bin/cx
-
-           [# Add ~/.local/bin to PATH for this shell                  #]
-           export PATH="$HOME/.local/bin:$PATH"
-
-           [# Persist it (zsh)                                         #]
-           echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc"""]]
+        """`cx` is on disk but not on your shell `PATH`. The installer
+           (`curl -sSL https://cxhome.org/install | sh`) puts the
+           binary under its `PREFIX`, `~/.local` unless you set one, so
+           it lives at `~/.local/bin/cx`: confirm it with
+           `ls -l ~/.local/bin/cx`, add the directory for this shell
+           with `export PATH="$HOME/.local/bin:$PATH"`, and put the same
+           line in your shell's startup file to keep it. A source build
+           leaves the binary where the build wrote it — see
+           [[install-status]]. Then check that `cx` answers: a
+           one-line program with `-e`, which prints its value:"""]
+      [fixture id=cli-e-one-liner]]
 
     [child id=faq-v-not-found title='Build fails with "V not found"'
       [body
@@ -44,9 +38,8 @@
            version. If you ran `make build` outside a devbox shell
            and got "V not found," either install V manually
            (https://vlang.io) or — better — wrap the build in
-           devbox so the toolchain matches CI:"""]
-      [example lang=shell
-        """devbox run -- make build"""]
+           devbox so the toolchain matches CI:
+           `devbox run -- make build`."""]
       [note
         """Devbox is at https://www.jetify.com/devbox — `brew
            install jetify-com/devbox/devbox` or
@@ -59,7 +52,7 @@
            PE-format `cx.exe` and `cxlib.dll` — is on the
            roadmap; the bottleneck is the V toolchain's Windows
            support, not CX itself. Track issue
-           [#windows-native](https://github.com/cx-home/cx/issues/windows-native)
+           [#1724](https://github.com/cx-home/cx-private/issues/1724)
            for the current state."""]]]
 
   [child id=faq-parsing n=12.2 title='Parsing and syntax'
@@ -84,25 +77,17 @@
            `[user :id 42]` is a `user` element whose body is two
            items: the atom `:id` and the int `42`. No error is
            raised; it just doesn't mean "the id attribute is 42".
-           Inside a `[?directive …]`, the same `:name value` spelling
-           is the *labeled-slot* syntax (per
-           `spec/03-approved/formal/grammar.ebnf [127e]`), so
-           `:id 42` there is the slot named `id` bound to `42`. And
+           Inside a `[?directive …]` it is the same: a directive is
+           slot-free (`spec/03-approved/formal/grammar.ebnf [59]`, no
+           `:name value` slots), so `:id` there is the atom literal
+           and `42` a positional value; a directive takes its named
+           arguments as clause-children `[name …]` and `name=value`
+           attributes (`grammar.ebnf [127a]`–`[127c]`). And
            if you wanted a type annotation, that is the double-colon
-           glue: `[user::int 42]`."""]
-      [; check=none: an illustrative three-form panel, not a program — the
-         middle form is the labeled-slot SPELLING shown on a directive head
-         with an elided body (…), which the snippet gate cannot run
-         (measured 2026-09-28: the gate read it as a parse failure). ]
-      [example lang=cx check=none
-        """[# Attribute — the id attribute is 42                      #]
-           [user id=42 email='ada@example.com']
-
-           [# Directive labeled slot — slot id bound to 'users'       #]
-           [?service :id 'users' :port 8080 [route '/users' …]]
-
-           [# Atom + int body — NOT an attribute, NOT a type tag      #]
-           [user :id 42]"""]
+           glue: `[user::int 42]`. The JSON projection tells the two
+           data forms apart — the attribute becomes a key, the atom
+           body a list of its two items:"""]
+      [fixture id=atom-028-attribute-vs-atom-body-json]
       [note
         """The two-form distinction is by design — see the body
            discussion at [[attributes]]."""]]
@@ -110,16 +95,12 @@
     [child id=faq-count-container title='What is the difference between `[…]` and `(…)` collections?'
       [body
         """A sequence (`(…)`) is the flat iteration shape — every CX
-           value is a sequence, and directives iterate them. An
-           array (`[…]`) is a container Item that **preserves
-           nesting**: `[[1, 2], [3, 4]]` is two items (two inner
-           arrays), not four. `[$count]` counts the top-level items
-           of either:"""]
-      [example lang=cx
-        """[?let [= $flat   (1, 2, 3)]
-               [= $nested [[1, 2], [3, 4]]]
-           ([$count $flat], [$count $nested])]"""]
-      [output """(3, 2)"""]
+           value is a sequence, directives iterate them, and a sequence
+           never nests inside another. An array (`[…]`) is a container
+           Item that **preserves nesting**: a matrix written as an array
+           of three rows is ONE item of its element, and the rows stay
+           rows — not nine numbers:"""]
+      [fixture id=program-cxpath-g2-10-array-literal]
       [body
         """The distinction is the **container vs atom** principle in
            [`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md) §2.0. See
@@ -128,49 +109,59 @@
 
     [child id=faq-hash-mismatch title='Why does my hash differ on Linux vs macOS?'
       [body
-        """It should not. The strict canonical bytes (and therefore
-           the SHA-256) are platform-independent by construction —
-           the canonicalizer normalises line endings, quotes,
-           whitespace, attribute order, and Unicode (NFC). If you
-           observe a divergent hash for the same source on two
-           platforms, that is a **gate 28.6 violation** and a release
-           blocker."""]
-      [example lang=shell
-        """[# Reproduce on both platforms and bisect                   #]
-           cx canonical doc.cx | shasum -a 256
-           cx fmt doc.cx | cx canonical | shasum -a 256
-           [# Both should produce identical hex output on every host. #]"""]
+        """It should not. `cx hash` is the SHA-256 of the strict
+           canonical bytes, and those are platform-independent by
+           construction: the canonical form drops comments, normalises
+           quotes and whitespace, and always writes LF line endings. The
+           same document written two ways is one digest:"""]
+      [fixture id=cli-hash-presentation-a]
+      [fixture id=cli-hash-presentation-b]
+      [body
+        """What the canonical form never normalises is attribute order —
+           it is data in CX
+           ([`spec/03-approved/core/canonical.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md)
+           §2.1), and strings are stored as written, with no Unicode
+           normalisation — so two attributes swapped are a different
+           document and a different digest:"""]
+      [fixture id=cli-hash-attribute-order]
+      [body
+        """Run `cx hash` on both platforms over the same bytes. If the
+           digests differ, that is a defect and a release blocker."""]
       [note
         """File a bug at https://github.com/cx-home/cx/issues with
            the source document and the divergent hashes from both
            platforms. Include `cx --version` output from each."""]]
 
-    [child id=faq-attr-reorder title='Why is my JSON output attribute-reordered?'
+    [child id=faq-attr-reorder title='Does the JSON projection reorder my attributes?'
       [body
-        """The canonical form sorts attributes lexicographically by
-           key — that is what makes the hash stable. The JSON
-           projection inherits this sort. If you need to preserve
-           authored order for human consumption, use `cx fmt` (the
-           lossless canonical) for the source file and reserve the
-           JSON projection for machine consumers, which do not care
-           about key order."""]
-      [example lang=shell
-        """cx fmt doc.cx                   [# preserves attr order    #]
-           cx --to=json doc.cx             [# sorts attr keys         #]"""]]
+        """No — attribute order is data in CX, and nothing sorts it.
+           The canonical form keeps the authored order (canonical.md
+           §2.1: attribute order is never a normalisation axis), so
+           `cx fmt` tidies the spacing and the quotes and leaves the
+           order alone, and the JSON projection writes its keys in the
+           same order:"""]
+      [fixture id=cli-fmt-keeps-attribute-order]
+      [fixture id=cli-json-keeps-attribute-order]
+      [body
+        """Because the order is part of the document, two orders are
+           two identities — the hash question above shows the two
+           digests."""]]
 
     [child id=faq-double-anchor title='Can I have two `&anchor` declarations with the same name?'
       [body
         """You can, and it is not an error: when a name is declared twice
            the first definition in document order wins, deterministically
            ([`spec/03-approved/core/canonical.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md)
-           §2.8, rule 6). We measured it: `cx` reads
-           `[doc [a &x value=1] [b &x value=2]]` with exit 0. So keep a
-           name to one declaration, and to reuse its content in two
-           places, declare it once and merge it twice with `*foo`:"""]
-      [example lang=cx
-        """[defaults &x timeout=30 retries=3]
-           [service-a *x]
-           [service-b *x]"""]]]
+           §2.8, rule 6). Here the merge `[c *x]` and the alias `[*x]`
+           both resolve to the first `&x`, and the strict form strips
+           both declarations:"""]
+      [fixture id=id-037-duplicate-anchor-first-definition-wins]
+      [body
+        """So keep a name to one declaration, and to reuse its content,
+           declare it once and merge it where you need it with `*name` —
+           a host attribute of the same name replaces the merged one in
+           its place:"""]
+      [fixture id=id-035-merge-inlines-with-host-override]]]
 
   [child id=faq-code n=12.3 title='Code language'
 
@@ -295,10 +286,10 @@
 
     [child id=faq-lint-tree title='How do I lint a tree of CX files?'
       [body
-        """`cx lint` works file-by-file; chain it through `find`
-           for a tree. The standard recipe:"""]
-      [example lang=shell
-        """find . -name '*.cx' -print0 | xargs -0 cx lint"""]
+        """`cx lint` works file by file; for a tree, hand it every file
+           `find` lists: `find . -name '*.cx' -print0 | xargs -0 cx lint`.
+           One file and its finding — an anchor nothing references:"""]
+      [fixture id=cli-lint-unused-anchor]
       [body
         """`cx lint` runs the built-in rule set (CX-L001 and
            CX-L003 through CX-L008; the codes are registered in
@@ -318,28 +309,28 @@
            there is no other mode. Output shape is
            `--format=unified|json|summary` (default unified), with
            `--color[=always|never|auto]` / `--no-color` for the
-           unified view."""]
-      [example lang=shell
-        """cx diff before.cx after.cx
-           cx diff before.cx after.cx --format=summary"""]
+           unified view. Here the second file re-quotes, re-spaces and
+           comments the first and changes one value; the diff names the
+           value alone and exits 1, because there is a change:"""]
+      [fixture id=cli-diff-semantic]
       [body
         """See [[diff]] for the algorithm and the JSON-output mode
            used by CI integrations."""]]
 
     [child id=faq-make-docs title='How do I run the canonical guide locally?'
       [body
-        """The doc-gen pipeline is wired into the top-level
-           `Makefile`. From a devbox shell:"""]
-      [example lang=shell
-        """devbox run -- make docs                [# build staging tree    #]
-           devbox run -- make docs-diff           [# diff vs live           #]
-           devbox run -- make docs-publish        [# promote staging→live  #]"""]
+        """The guide is generated by the top-level `Makefile`. From a
+           devbox shell, `devbox run -- make guide` renders it into
+           `docs/guide/`, and `devbox run -- make guide-http` renders it
+           and serves it locally, with the headers the playground's
+           threaded build needs. `make docs` regenerates the LLM layer
+           under `docs/llm/` and runs every documentation check."""]
       [body
         """The generator reads `docs-src/canonical/manifest.cxd`,
-           assembles the section files, expands example
-           placeholders against `conformance/*.cxd`, and writes
-           the rendered guide into `_docs_staging/`. See
-           [[docgen]]."""]]
+           assembles the section files, replays every `[fixture]` a
+           page cites against the running `cx` — a case whose output
+           moved stops the render, naming it — and writes the rendered
+           pages. See [[docgen]]."""]]
 
     [child id=faq-vscode-highlight title="Why doesn't VS Code highlight my CX file?"
       [body
@@ -374,13 +365,11 @@
            [[streaming-data]]. The release gate holds streaming
            throughput to a ≥200 MB/s floor; that gate does not pass
            yet (`[?for]` measures around the line, `[?map]` below
-           it), so treat the floor as the target, not a promise."""]
-      [example lang=shell
-        """[# Whole-document — fine while the tree fits in memory      #]
-           cx big.cx
-
-           [# Streaming comprehension output — bounded memory          #]
-           cx --data=big.cx program.cx"""]]
+           it), so treat the floor as the target, not a promise.
+           `cx big.cx` reads the whole document, which is fine while the
+           tree fits in memory; the streamed shape is a comprehension
+           over the document bound with `--data`:"""]
+      [fixture id=program-for-002-active-emails]]
 
     [child id=faq-single-threaded title='Is parsing single-threaded?'
       [body
@@ -449,15 +438,14 @@
            evaluation is pure-only, so includes (which ride the
            `read` capability) stay unresolved and no directive can
            touch the filesystem or network. That makes the bare
-           invocation the safe one for untrusted input:"""]
-      [example lang=shell
-        """[# Pure-only — untrusted input cannot reach fs or network  #]
-           cx untrusted.cx
-
-           [# Trusted input that needs includes: grant read + a root  #]
-           cx --allow-read --include-root=./conf main.cx"""]
+           invocation the safe one for untrusted input — an include
+           reaching outside its directory is left exactly as written:"""]
+      [fixture id=cli-include-ungranted-unresolved]
       [body
-        """The full capability model lives at
+        """Trusted input that needs its includes grants the read and
+           names the root they resolve against:
+           `cx --allow-read --include-root=./conf main.cx`.
+           The full capability model lives at
            [[include-capabilities]] and in
            [`spec/03-approved/core/security.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/security.md).
            The `cx_features()` bitmask exposes what the loaded libcx
@@ -472,12 +460,11 @@
            gates every effect an evaluation can perform, the
            **streaming surfaces** bound resident memory to a chunk,
            and per-process ceilings come from the operating system
-           (`ulimit`, cgroups, container limits) like any other
-           process. See [[limits]] and [[security]]."""]
-      [example lang=shell
-        """[# OS-level ceilings around a pure-only evaluation          #]
-           ulimit -v 1048576        [# 1 GiB address-space cap         #]
-           cx input.cx"""]]]
+           (`ulimit -v 1048576` before `cx input.cx` caps the address
+           space at 1 GiB; cgroups and container limits work the same)
+           like any other process. See [[limits]] and [[security]]. An
+           effect the grant set does not hold is refused, as a value:"""]
+      [fixture id=io-001-read-file-cap-denied]]]
 
   [child id=faq-migration n=12.8 title='Migration'
 
@@ -564,13 +551,12 @@
     [child id=faq-logfmt n=12.9.4 title='What is logfmt mode?'
       [body
         """A CX file made entirely of bare top-level `key=value`
-           attributes. Each line parses as a synthetic Element.
-           Log streams are valid CX. You can `cx --json logs.cx`
-           and get a JSON array of typed log records — no
-           separate logfmt parser needed."""]
-      [example lang=cx
-        """ts=2026-05-07T10:30:00Z level=info svc=api req_id=abc123 latency_ms=45
-           ts=2026-05-07T10:30:01Z level=warn svc=api req_id=def456 latency_ms=210 slow=true"""]]
+           attributes. Each line reads as one anonymous `_` element
+           carrying that line's attributes, auto-typed like any other
+           attribute, so a log stream is a CX document — it projects,
+           queries and hashes like one, with no separate logfmt
+           parser:"""]
+      [fixture id=logfmt-001-each-line-one-element]]
 
     [child id=faq-thread-safety n=12.9.5 title='Is CX thread-safe?'
       [body
@@ -587,18 +573,13 @@
 
     [child id=faq-confusion-raw n=12.9.6 title='Why does my embedded code get garbled?'
       [body
-        """The bracket-pipe block-content form is parsed as CX, so
-           child-element brackets inside it open new elements. If
-           your code contains brackets, braces, or quotes, the
-           parser will mangle it. Use the bracket-hash raw-text
-           form instead — nothing inside is parsed, and the
-           terminator is `#]`."""]
-      [example lang=cx
-        """[code [#
-             for (let i = 0; i < arr.length; i++) {
-               console.log(arr[i]);
-             }
-           #]]"""]]
+        """The bracket-pipe block-content form keeps its bytes but still
+           reads a `[` as CX, so an index like `arr[i]` inside it opens
+           an element named `i`. Use the bracket-hash raw-text form
+           instead — nothing inside is parsed, and the terminator is
+           `#]`. The brackets, the `<` and the braces come back byte
+           for byte:"""]
+      [fixture id=012-rawtext]]
 
     [child id=faq-license n=12.9.7 title='License and contributing'
       [body

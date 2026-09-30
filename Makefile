@@ -5086,7 +5086,7 @@ test-connector-real-lanes: build-vcx
 ## test-db-real-lanes  The whole db corpus on sqlite, postgres AND mysql, the
 ##                  two servers real, as its own step (RULED: DBLANE-1,
 ##                  DBSRV-1). The lane is cx-platform-db's: its driver,
-##                  tooling/db_real_lane.cx, starts postgres and mysql in
+##                  tooling/db_real.cx, starts postgres and mysql in
 ##                  containers — the runtime is devbox's (colima's VM and the
 ##                  docker client, pinned in devbox.json; `devbox run
 ##                  containers` starts the VM, and the driver starts it itself
@@ -5113,7 +5113,7 @@ test-connector-real-lanes: build-vcx
 ##                  the shared runner's step (flows/load.cxd).
 ##                  `make db-lane-cx` builds the binary alone — cx-platform-db's
 ##                  own gate builds it through this front door, pinned, with its
-##                  commit under test as the db pin, and runs its `make lanes`
+##                  commit under test as the db pin, and runs its `make real`
 ##                  with it (its .github/workflows/gate.yml).
 DB_LANE_CX := $(CURDIR)/deps/cx-core-code/vcx/target/cx-db-lane
 .PHONY: db-lane-cx test-db-real-lanes
@@ -5122,10 +5122,10 @@ db-lane-cx: check-gate-lock deps-present
 	  $(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx cli-dev CLI_DEV=$(DB_LANE_CX) CX_DFLAGS='-d cx_db_pg -d cx_db_mysql' PORTABLE=true
 
 test-db-real-lanes: build-vcx db-lane-cx
-	@test -f deps/cx-platform-db/tooling/db_real_lane.cx || { \
-	  echo "test-db-real-lanes: deps/cx-platform-db/tooling/db_real_lane.cx is not there — the lane lives in the pinned repository (RULED: DBLANE-1); run \`make deps-sync\`" >&2; \
+	@test -f deps/cx-platform-db/tooling/db_real.cx || { \
+	  echo "test-db-real-lanes: deps/cx-platform-db/tooling/db_real.cx is not there — the lane lives in the pinned repository (RULED: DBLANE-1); run \`make deps-sync\`" >&2; \
 	  exit 2; }
-	@cd deps/cx-platform-db && CX_BIN="$(DB_LANE_CX)" "$(DB_LANE_CX)" --allow-all tooling/db_real_lane.cx
+	@cd deps/cx-platform-db && CX_BIN="$(DB_LANE_CX)" "$(DB_LANE_CX)" --allow-all tooling/db_real.cx
 
 ## test-sso-interop-lane  Identity-provider interop as its own CI step
 ##                  (#1403): boot the in-tree identity provider at

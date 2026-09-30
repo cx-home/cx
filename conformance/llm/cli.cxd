@@ -1,0 +1,206 @@
+[test-suite name=llm-cli ring=1
+  [doc [#
+# CLI invocation cases the guide cites (RULED: DOCSOK-1, DOCS-51 §4, RS-30)
+
+The executable backing for the guide's examples that ARE a shell invocation
+of `cx` — the FAQ's `cx hash`, `cx fmt`, `cx diff`, `cx lint`, the JSON
+projection and the one-liner. A guide page cites a case here with
+`[fixture id=…]` and shows the invocation and its LIVE output, the way the
+primer's console blocks do: `scripts/gen_docs/primer_build.cx` replays every
+cited case against the running `cx` when the guide is built, and a case whose
+output moved stops the build, naming it (`make guide`, `make guide-check`).
+
+Why a suite of its own, beside `antipatterns.cxd`: these cases are not
+wrong/right pairs, and an invocation-level case has no expression in the
+subject corpora of cx-core-data (`identity_hash.cxd`, `fmt.cxd`, `diff.cxd`,
+`lint.cxd`), whose grading cores compare the verb's own result, not what the
+command prints. Those suites stay the normative grade of each verb; a case
+here pins the one invocation a reader copies. Like `antipatterns.cxd`, it
+lives under `conformance/llm/` so the top-level corpus scanners keep their
+pinned baselines, and it is graded by the replay, not by a corpus shard.
+
+## Format
+
+The `antipatterns.cxd` vocabulary: `[in-cx]` (the document; `[empty]` for
+none), `[in-code]` (the program, or the second document of a two-file verb),
+`[cli-argv]` (one argv token per line; `%DATA%` = the `[in-cx]` file, shown
+as `input.cx`; `%FILE%` = the `[in-code]` file, shown as `prog.cx`; `%CODE%`
+= the `[in-code]` body as one token), `[out-text]` (stdout when non-empty,
+else stderr, byte-exact after edge newlines), `[exit-code]`.
+#]]
+
+ [; ── the one-liner: the first thing to run once cx is on PATH ── ]
+
+ [case id=cli-e-one-liner level=core
+  [title [#an inline program with -e#]]
+  [tags cli run-surface expression faq]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[+ 1 2]
+#]]
+  [cli-argv [#
+-e
+%CODE%
+#]]
+  [out-text [#
+3
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── identity: the hash is over the strict-canonical bytes ── ]
+
+ [case id=cli-hash-presentation-a level=core
+  [title [#cx hash over a document with a comment, double quotes and a line break#]]
+  [tags cli hash identity canonical presentation faq]
+  [in-cx [#
+[; the service, as one team wrote it]
+[server   host="localhost"
+        port=8080]
+#]]
+  [cli-argv [#
+hash
+%DATA%
+#]]
+  [out-text [#
+sha2-256:d8ff354eba4f49456ef0d364f18ef3d772a4faab862da34d49f3ea40172f2825
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [case id=cli-hash-presentation-b level=core
+  [title [#cx hash over the same document written tidily — the same digest#]]
+  [tags cli hash identity canonical presentation faq]
+  [in-cx [#
+[server host=localhost port=8080]
+#]]
+  [cli-argv [#
+hash
+%DATA%
+#]]
+  [out-text [#
+sha2-256:d8ff354eba4f49456ef0d364f18ef3d772a4faab862da34d49f3ea40172f2825
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [case id=cli-hash-attribute-order level=core
+  [title [#cx hash with the two attributes swapped — a different digest#]]
+  [tags cli hash identity canonical attribute-order faq]
+  [in-cx [#
+[server port=8080 host=localhost]
+#]]
+  [cli-argv [#
+hash
+%DATA%
+#]]
+  [out-text [#
+sha2-256:2ea0b5acdae2502d7d0c6b85796f7c0e397ccf0a9ad2126b0f72af57a6330aab
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── attribute order is data: fmt and the JSON projection keep it ── ]
+
+ [case id=cli-fmt-keeps-attribute-order level=core
+  [title [#cx fmt tidies spacing and quotes and keeps the authored attribute order#]]
+  [tags cli fmt attribute-order faq]
+  [in-cx [#
+[server   port=8080  host="localhost"]
+#]]
+  [cli-argv [#
+fmt
+%DATA%
+#]]
+  [out-text [#
+[server port=8080 host=localhost]
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [case id=cli-json-keeps-attribute-order level=core
+  [title [#the JSON projection keeps the authored attribute order#]]
+  [tags cli conversion json attribute-order faq]
+  [in-cx [#
+[server port=8080 host=localhost]
+#]]
+  [cli-argv [#
+--from=cx
+--to=json
+%DATA%
+#]]
+  [out-text [#
+{
+  "server": {
+    "port": 8080,
+    "host": "localhost"
+  }
+}
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── the semantic diff: presentation is no change, a value is one ── ]
+
+ [case id=cli-diff-semantic level=core
+  [title [#cx diff reports the one changed value and nothing of the re-quoting#]]
+  [tags cli diff canonical faq]
+  [in-cx [#
+[server host=localhost port=8080]
+#]]
+  [in-code [#
+[; re-quoted and re-spaced; one value changed]
+[server host="acme.com"   port=8080]
+#]]
+  [cli-argv [#
+diff
+%DATA%
+%FILE%
+#]]
+  [out-text [#
+@@ /server/@host @@
+- host=localhost
++ host=acme.com
+#]]
+  [exit-code [#1#]]
+ ]
+
+ [; ── lint: one file's findings; a warning is below the default --fail-on ── ]
+
+ [case id=cli-lint-unused-anchor level=core
+  [title [#cx lint names an anchor nothing references#]]
+  [tags cli lint l003 faq]
+  [in-cx [#
+[base &b host=localhost]
+[other host=acme.com]
+#]]
+  [cli-argv [#
+lint
+%DATA%
+#]]
+  [out-text [#
+warn CX-L003: anchor 'b' declared but never referenced [/base]
+ suggestion: remove the anchor declaration, or add a *b reference
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── deny-by-default: an include with no read grant stays unresolved ── ]
+
+ [case id=cli-include-ungranted-unresolved level=core
+  [title [#with no --allow-read an include directive is left as it is, unresolved#]]
+  [tags cli include capability deny-by-default faq]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[config [?cx include='../secrets.cx'] [app name=demo]]
+#]]
+  [out-text [#
+[config [?cx include=../secrets.cx] [app name=demo]]
+#]]
+  [exit-code [#0#]]
+ ]
+]
