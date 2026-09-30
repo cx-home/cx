@@ -1247,7 +1247,7 @@ fn flow_serve_program(r FlowRunner, directives []string, acts []FlowCliAct, tick
 	// two assertions written against `ticks=` were vacuous, which is what
 	// WF-28b retired.
 	b << '[= \$w0 [\$time-to-unix-ms [\$time-now]]]'
-	b << '[= \$ran [fs--loop \$j \$e \$o \$fs \$bs ${ticks} 0]]'
+	b << '[= \$ran [\$fs--loop \$j \$e \$o \$fs \$bs ${ticks} 0]]'
 	b << '[= \$w1 [\$time-to-unix-ms [\$time-now]]]'
 	b << '  [runner-stopped ticks=\$ran elapsed-ms=[- \$w1 \$w0] \$rep]]'
 	return b.join('\n')
