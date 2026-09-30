@@ -1269,6 +1269,31 @@ ledger-index-check: build-vcx
 	@"$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/ledger_index.cx --check
 	@CX_BIN="$(CX_BIN)" sh scripts/ledger_subject_ids_selftest.sh
 
+# ── ledger-edit-map-check / ledger-edit-map-status (#1329, RULED: 1329-a,
+# EDMAP-1) ────────────────────────────────────────────────────────────────────
+# A decision's edit map is a ledger table headed exactly `| path | edit | state |`,
+# each row `landed`, `pending` or `sequenced=<issue or decision id>` (1329-a).
+# The check reads every one against the history of the repository that owns
+# the path — this tree's, or a pinned repository's under deps/<repo>/ at its
+# pin (EDMAP-1) — and fails a `landed` row with no commit touching the path
+# whose subject cites the map's decision id, a path no repository owns, and an
+# unknown state; `pending` and `sequenced=` rows are listed and never failed,
+# except that `AT_CUT=1` (the release-process.md checklist row) refuses every
+# `pending` one. The selftest runs HERE, the way ledger-index-check runs its
+# own: it plants each verdict on a temporary front door with a full and a
+# shallow pin, and mutates the real store with one uncited `landed` row.
+# `--allow-subprocess` is git; `--allow-write` is `write-line` to a stream.
+# `ledger-edit-map-status` lists the owed rows and verifies nothing.
+.PHONY: ledger-edit-map-check ledger-edit-map-status
+ledger-edit-map-check: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+ledger-edit-map-check: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/ledger_edit_map_check.cx $(if $(AT_CUT),--at-cut)
+	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-all scripts/ledger_edit_map_check_selftest.cx
+
+ledger-edit-map-status: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+ledger-edit-map-status: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/ledger_edit_map_check.cx --status
+
 # ── primer-platform / primer-platform-check (#1487, RULED: COMP-1) ────────────
 # `cx primer` is the door an adopter's agent walks through before it writes a
 # line, and its PLATFORM chapter is the material two specifications already
@@ -1791,7 +1816,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-readings test-oriel test-agent-real test-connector-real test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-readings test-oriel test-agent-real test-connector-real test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check ledger-edit-map-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # PRIVMK-1: the private flow targets add themselves to TEST_TARGETS from
 # flows/private.mk. That file is absent from the public tree, and `-include`
@@ -2794,6 +2819,8 @@ test-no-parallel: $(TEST_TARGETS)
 #                            TEST_TARGETS row too)
 #   spec-freeze-gate         a spec+impl commit carries its recorded ruling
 #   ledger-index-check       ledger/README.md still matches the decision store
+#   ledger-edit-map-check    every edit map's landed row has its citing commit
+#                            in the owning repository's history (1329-a)
 #   check-version-consistency  every stamped manifest still matches VERSION
 #
 # `docs-flow` needs the binary, so the serial `build-vcx` pre-build comes first
@@ -2808,7 +2835,7 @@ test-no-parallel: $(TEST_TARGETS)
 # is what releases a killed one. Nothing about INT-10 makes a doc run a second
 # concurrent gate.
 DOC_TARGETS := docs-flow docs-flow-gate spec-freeze-gate ledger-index-check \
-  check-version-consistency
+  ledger-edit-map-check check-version-consistency
 
 # ── docs-flow — the documentation flow (RULED: CICD-1) ──────────────────────
 # docs-src/flow/docs.flow.cx — generate → check → assemble — run by `cx flow
