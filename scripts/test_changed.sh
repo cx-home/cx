@@ -377,6 +377,10 @@ step_globs() {
     # ledger-index-check (#1438) regenerates ledger/README.md from the store and
     # compares: its inputs are every ledger page and the generator itself.
     ledger-index-check)            echo 'ledger/* scripts/ledger_index.cx' ;;
+    # ledger-edit-map-check (#1329, RULED: 1329-a, EDMAP-1) reads every edit map
+    # against the owning repository's history: the pages, the allocation that
+    # names the owner, the pins that name its sha, and the step with its selftest.
+    ledger-edit-map-check)         echo 'ledger/* registry/repos.cxd deps.cxd scripts/ledger_edit_map_check.cx scripts/ledger_edit_map_check_selftest.cx scripts/deps_pins.cx' ;;
     stdlib-catalog-gate)           echo 'stdlib/* vcx/* docs-src/* registry/modules.cxd registry/repos.cxd' ;;
     # the placement declaration and every artifact class it compares against
     # (RULED: 1427-f) — a spec, a corpus, a bundled source or a ring's V
