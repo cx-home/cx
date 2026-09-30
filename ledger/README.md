@@ -612,6 +612,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `grader-1` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | Integrator decisions, 2026-09-17 — the Ring 0 rulings owed (1363-b, 1387-a, FMT-2, GRADER-1, 1150-a, 1250-b) |
 | `hc-1` | [rulings_2026_09_04_host_context_1210.md](rulings_2026_09_04_host_context_1210.md) | HC-1 — the shape of "a journal beside the store" — RECOMMENDED: (a) |
 | `hc-1` | [rulings_2026_09_05_xap_queue.md](rulings_2026_09_05_xap_queue.md) | 1210 HC-1), `xap.md` §3.1.1, `std-lib/journal.md`. |
+| `hkey-1` | [rulings_2026_09_30_owner_decision_l125.md](rulings_2026_09_30_owner_decision_l125.md) | HKEY-1 — xap#1 closes on items 1–4 as measured; item 5 (the signing key and connector credentials through a `cx-platform/secrets` handle) is filed for after the cut (L125 = (a)) |
 | `host-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | Owner decisions 2026-09-26 — the four designs of Letters 26–29: the connector kit (KIT-1…KIT-6), cross-company (XCO-1…XCO-5), the minimal keystore (SEC-1), the host's four choices (HOST-1…HOST-4) |
 | `host-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | HOST-1 — a projected command def's parameters are the intent list verbatim |
 | `host-2` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | HOST-2 — one code for the host's internal boot faults |
@@ -863,6 +864,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `sf-6` | [rulings_2026_09_02_standard_features.md](rulings_2026_09_02_standard_features.md) | SF-6 — the spec pointer |
 | `sf-7` | [rulings_2026_09_02_standard_features.md](rulings_2026_09_02_standard_features.md) | SF-7 — `retention`'s scope: it carries a sweep that actually erases |
 | `sha-1` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) | RULED: 1400-a, 1401-a — XML Encryption comes IN: `saml:verify` decrypts `EncryptedAssertion` / `EncryptedID` / `EncryptedAttribute` with `opts.decryption-keys`; `crypto` gains RSA key transport (OAEP, SHA-1 inside OAEP allowed; PKCS#1 v1.5 behind a loud opt-in with implicit rejection) and AES-CBC + AES-128/192-GCM; encryption is detected BEFORE the signature search |
+| `ship-1` | [rulings_2026_09_30_owner_decision_l121.md](rulings_2026_09_30_owner_decision_l121.md) | SHIP-1 — the v0.18.0 scope is the milestone as ruled; the cut when it is empty (L121 = (a)) |
 | `since-1` | [rulings_2026_09_28_owner_decisions_l89_l90.md](rulings_2026_09_28_owner_decisions_l89_l90.md) | SINCE-1 — an absent `:since` on a baseline sync run binds NULL, and it lands today (L90 = (a), today) |
 | `site-1` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | Owner decisions 2026-09-26 (evening) — Letters 35, 37, 38 and 39: the site token (SITE-1), the pace past the weekly meter (PACE-1), shared-slot steps beside a selected run (RUN-5), #1498 stays in v0.18 (SD-2) |
 | `site-1` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | SITE-1 — the public site builds on GitHub's runner with a read-only token (Letter 35 = (a)) |
@@ -1502,7 +1504,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `wave-3` | [rulings_2026_08_26_seq_classification.md](rulings_2026_08_26_seq_classification.md) |
 | `wf-26a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
 | `wf-27a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
-| `xap-1` | [rulings_2026_09_26_xap_host_runner_xap1.md](rulings_2026_09_26_xap_host_runner_xap1.md) |
+| `xap-1` | [rulings_2026_09_26_xap_host_runner_xap1.md](rulings_2026_09_26_xap_host_runner_xap1.md), [rulings_2026_09_30_owner_decision_l125.md](rulings_2026_09_30_owner_decision_l125.md) |
 | `xd-1a` | [rulings_2026_08_21_x_tier_docs_and_domain_writes.md](rulings_2026_08_21_x_tier_docs_and_domain_writes.md) |
 | `xd-1b` | [rulings_2026_08_21_x_tier_docs_and_domain_writes.md](rulings_2026_08_21_x_tier_docs_and_domain_writes.md) |
 | `xd-2a` | [rulings_2026_08_21_x_tier_docs_and_domain_writes.md](rulings_2026_08_21_x_tier_docs_and_domain_writes.md) |
@@ -1513,4 +1515,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*360 ledger pages; 796 ids declared, 391 cited only.*
+*362 ledger pages; 798 ids declared, 391 cited only.*
