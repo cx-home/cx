@@ -864,6 +864,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `sf-6` | [rulings_2026_09_02_standard_features.md](rulings_2026_09_02_standard_features.md) | SF-6 — the spec pointer |
 | `sf-7` | [rulings_2026_09_02_standard_features.md](rulings_2026_09_02_standard_features.md) | SF-7 — `retention`'s scope: it carries a sweep that actually erases |
 | `sha-1` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) | RULED: 1400-a, 1401-a — XML Encryption comes IN: `saml:verify` decrypts `EncryptedAssertion` / `EncryptedID` / `EncryptedAttribute` with `opts.decryption-keys`; `crypto` gains RSA key transport (OAEP, SHA-1 inside OAEP allowed; PKCS#1 v1.5 behind a loud opt-in with implicit rejection) and AES-CBC + AES-128/192-GCM; encryption is detected BEFORE the signature search |
+| `ship-1` | [rulings_2026_09_30_owner_decision_l121.md](rulings_2026_09_30_owner_decision_l121.md) | SHIP-1 — the v0.18.0 scope is the milestone as ruled; the cut when it is empty (L121 = (a)) |
 | `since-1` | [rulings_2026_09_28_owner_decisions_l89_l90.md](rulings_2026_09_28_owner_decisions_l89_l90.md) | SINCE-1 — an absent `:since` on a baseline sync run binds NULL, and it lands today (L90 = (a), today) |
 | `site-1` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | Owner decisions 2026-09-26 (evening) — Letters 35, 37, 38 and 39: the site token (SITE-1), the pace past the weekly meter (PACE-1), shared-slot steps beside a selected run (RUN-5), #1498 stays in v0.18 (SD-2) |
 | `site-1` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | SITE-1 — the public site builds on GitHub's runner with a read-only token (Letter 35 = (a)) |
@@ -1514,4 +1515,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*361 ledger pages; 797 ids declared, 391 cited only.*
+*362 ledger pages; 798 ids declared, 391 cited only.*
