@@ -5115,7 +5115,7 @@ test-agent-real: build-vcx
 	  CX_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/cx" CX_NOLIVE_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/profiles/cli/cx" "$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-all real/$$t || st=1; \
 	done; exit $$st
 
-## test-connector-real  The connector package's five live tests as
+## test-connector-real  The connector package's six live tests as
 ##                  their own step (RULED: RS-12, RS-8, RS-27; #1591 item
 ##                  K3): connector_live_test.v boots `reference/acme/
 ##                  acme.mock.cx` — an in-tree [?http-service] — and drives
@@ -5133,10 +5133,15 @@ test-agent-real: build-vcx
 ##                  the orders-db package's sqlite source, no socket (sync.md
 ##                  §10, RULED: SYNC-9); connector_mail_test.v (#1462) submits
 ##                  through a `kind=smtp` sink to cx-platform/smtp's in-process
-##                  server on loopback (connector.md §3.8.1, RULED: 1430-e).
-##                  All five are V test files in the pinned repository's
+##                  server on loopback (connector.md §3.8.1, RULED: 1430-e);
+##                  connector_mail_login_test.v (cx-platform-connector#13)
+##                  walks a `kind=imap` folder and delivers through an
+##                  authenticated `kind=smtp` sink, both logged in over TLS by
+##                  a STORED credential the secrets seam resolves (§3.16,
+##                  §3.17, RULED: SEC-1).
+##                  All six are V test files in the pinned repository's
 ##                  own vcx/tests/ — the first four left cx-private whole
-##                  with the extraction, byte-identical, the fifth was born there —
+##                  with the extraction, byte-identical, the fifth and sixth were born there —
 ##                  because they are the ONLY thing that grades the connector
 ##                  kit's networked half against a cx the front door built,
 ##                  which is a different question from the component
@@ -5144,7 +5149,7 @@ test-agent-real: build-vcx
 ##                  RS-16, over a released cx). THE TESTS MOVED AND THE STEP
 ##                  DID NOT (RULED: RS-12, #1591 item 11, the test-sso-
 ##                  interop shape): a `ships=package` repo carries no V
-##                  toolchain of its own (RS-25), so `v test` runs the five
+##                  toolchain of its own (RS-25), so `v test` runs the six
 ##                  files straight out of the pinned checkout, from THIS
 ##                  tree's root, so every relative path inside them (the
 ##                  mock, the reference deployment) still resolves here.
@@ -5154,7 +5159,8 @@ CONNECTOR_REAL_TESTS := deps/cx-platform-connector/vcx/tests/connector_live_test
                         deps/cx-platform-connector/vcx/tests/connector_webhook_test.v \
                         deps/cx-platform-connector/vcx/tests/connector_bus_test.v \
                         deps/cx-platform-connector/vcx/tests/sync_live_test.v \
-                        deps/cx-platform-connector/vcx/tests/connector_mail_test.v
+                        deps/cx-platform-connector/vcx/tests/connector_mail_test.v \
+                        deps/cx-platform-connector/vcx/tests/connector_mail_login_test.v
 .PHONY: test-connector-real
 test-connector-real: build-vcx
 	@for t in $(CONNECTOR_REAL_TESTS); do \
