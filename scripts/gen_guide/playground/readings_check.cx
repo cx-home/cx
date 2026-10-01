@@ -1,18 +1,19 @@
 # scripts/gen_guide/playground/readings_check.cx — the playground READINGS
-# step, `make test-playground-readings` (RULED: PLAY-2, DOCS-51 §4, CXF-1).
+# step, `make test-playground-readings` (RULED: PLAY-3, amending PLAY-2;
+# DOCS-51 §4, CXF-1; #1741).
 #
 # The picker the page serves (scripts/gen_guide/playground/playground.primer.js,
-# projected by primer_examples.cx) files every example under one of three
-# readings — data, query, code — and this step holds each entry to WHAT IT
-# IS, by reading.cx's rule over the entry's own document and program:
+# projected by primer_examples.cx) files every example under one of TWO
+# readings — data, code — and this step holds each entry to WHAT IT IS, by
+# reading.cx's rule over the entry's own document and program:
 #
-#   - an entry whose reading is not one of the three words is refused;
-#   - a `data` entry carries no program; a `query` entry reads a REAL document
-#     (`$doc`/`$input`, a bare CXPath, an element-pattern `[?for]`) — never a
-#     stub such as `[doc]`; a `code` entry either has no document or reads
-#     none — an entry filed against the rule is refused BY NAME with the
-#     reading the rule gives and why;
-#   - the three counts are printed, and every example the page cannot run is
+#   - an entry whose reading is not one of the two words is refused;
+#   - a `data` entry carries no program; a `code` entry is every other
+#     program — one that reads no document, or one that reads a REAL
+#     document (`$doc`/`$input`, a bare CXPath, an element-pattern `[?for]`)
+#     shown beside it, never a stub such as `[doc]` — an entry filed against
+#     the rule is refused BY NAME with the reading the rule gives and why;
+#   - the two counts are printed, and every example the page cannot run is
 #     listed by name with its reason (`runnable: false`, the fixture's own
 #     invocation) or the engine difference primer_wasm.cxd declares.
 #
@@ -23,7 +24,7 @@
 #
 # Red-proof: the file PLAY-1 shipped filed `program-match-multi-005-when-arm-
 # predicate` — a `[?match]` over a literal, graded beside a `[doc]` stub —
-# under Query; this step refuses that file naming it.
+# under the old Query grouping; this step refuses that file naming it.
 #
 # Run (from the repository root):
 #   cx --allow-read scripts/gen_guide/playground/readings_check.cx [<file>]
@@ -40,7 +41,7 @@
 
 [?const DEFAULT "scripts/gen_guide/playground/playground.primer.js"]
 [?const MARK "window.cxPlaygroundPrimer = "]
-[?const READINGS ("data", "query", "code")]
+[?const READINGS ("data", "code")]
 
 [?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
 [?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
@@ -98,9 +99,9 @@
            [yield [$say [$concat "  marked (the engine differs): " [$string $g@id] " — " [$string $g@marked]]]]]]
   [= $_u [?if [$empty $unknown] [then ()]
            [else [$cry [$concat "test-playground-readings: " [$string [$count $unknown]]
-                                " entr(ies) carry a reading that is not data/query/code (the first: "
+                                " entr(ies) carry a reading that is not data/code (the first: "
                                 [$string [$first $unknown]@id] " filed as '" [$string [$first $unknown]@filed]
-                                "') — the three words are the site's (PLAY-2)"]]]]]
+                                "') — the two words are the site's (PLAY-3, amending PLAY-2)"]]]]]
   [= $_w [?for [in $g $wrong]
            [yield [$cry [$concat "test-playground-readings: " [$string $g@id] " is filed as " [$string $g@filed]
                                  "; by what it is it is " [$string $g@rule] " — " [$string $g@why]]]]]]

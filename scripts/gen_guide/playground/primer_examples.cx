@@ -14,20 +14,25 @@
 # the page loads to the same recorded answers.
 #
 # Each entry carries its READING — WHAT the example is, decided by
-# reading.cx's rule over the example's own text (RULED: PLAY-2, DOCS-51 §4),
-# in the site's three words:
+# reading.cx's rule over the example's own text (RULED: PLAY-3, amending
+# PLAY-2; DOCS-51 §4; #1741), in the site's two words:
 #
 #   data    a document alone (no program): `cx --from=cx --to=cx input.cx`
-#   query   a program that reads a bound, REAL document — `$doc`/`$input`
-#           named, a bare CXPath, or a `[?for]` opening with an element
-#           pattern: `cx --data=input.cx prog.cx`
-#   code    every other program: `cx prog.cx`; a stub document the fixture
-#           carries for its grader (`[doc]`, `[ignored]`) is never shown
+#   code    every other program: `cx prog.cx` — or, when it reads a bound,
+#           REAL document (`$doc`/`$input` named, a bare CXPath, or a
+#           `[?for]` opening with an element pattern), shown beside it:
+#           `cx --data=input.cx prog.cx`. A stub document the fixture
+#           carries for its grader (`[doc]`, `[ignored]`) is never shown,
+#           and a program that does not read the document it is given also
+#           hides it — there is no separate query grouping (the owner,
+#           2026-10-01: "doesn't make sense for the playground to have a
+#           separate 'query' grouping. role those examples into 'code' as
+#           appropriate").
 #
 # A program that reads the document by the rule while its fixture binds a
 # stub is a corpus defect: this generator refuses the tree by name.
 # `make test-playground-readings` (readings_check.cx) applies the same rule
-# to the projected file and prints the three counts.
+# to the projected file and prints the two counts.
 #
 # An entry the browser cannot run as the fixture runs it — its invocation
 # carries program arguments (`[cli-argv]`) or an XML input — says so
@@ -167,11 +172,19 @@
         [= $xml [?else [$map:get $sec "in-xml"] ""]]
         [= $argv [?else [$map:get $sec "cli-argv"] ""]]
         [= $reading [$reading-of $id $sec]]
+        [; $doc-for-rule mirrors reading-of's own $doc — the text rd:reads-doc-why
+           / rd:has-doc / rd:is-stub-doc grade — so shows-doc agrees with the
+           reading the rule already gave this entry (CXF-8) ]
+        [= $doc-for-rule [?if [= $xml ""] [then $data0] [else $xml]]]
+        [= $shows-doc [$rd:reads-real-doc $code $doc-for-rule]]
         [= $toks [$pb:argv-tokens $sec]]
         [; the command line that gives the same answer natively: the fixture's
            own argv when it has one, else the reading's shape — a code example
-           graded beside a stub document answers the same with no --data ]
-        [= $cmd [?if [and [= $argv ""] [and [= $reading 'code'] [not [= $data ""]]]]
+           that does not read its fixture's document (one it ignores, or a
+           stub kept only for the grader) answers the same with no --data;
+           one that DOES read a real document (PLAY-3's former query) keeps
+           the tokens' own --data=input.cx ]
+        [= $cmd [?if [and [= $argv ""] [and [= $reading 'code'] [not $shows-doc]]]
                   [then "cx prog.cx"]
                   [else [$concat "cx " [$strings:join [?for [in $t $toks]
                     [yield [$pb:resolve-token $t "show" "" "" "" $code]]] " "]]]]]
@@ -188,7 +201,12 @@
      role: [$string [$map:get $r "role"]],
      title: [$string [?else [$map:get $sec "title"] ""]],
      reading: $reading,
-     doc: [?if [= $reading 'code'] [then ""] [else [?if [= $xml ""] [then $data] [else $xml]]]],
+     [; the data pane: always real for the data reading (the document IS the
+        value); for code, only when the program actually reads a real one
+        (PLAY-3 — a former query example keeps its input shown, never a stub) ]
+     doc: [?if [or [= $reading 'data'] $shows-doc]
+            [then [?if [= $xml ""] [then $data] [else $xml]]]
+            [else ""]],
      src: $code,
      cmd: $cmd,
      expected: [$string $e@text],
@@ -233,7 +251,7 @@
   [= $entries [?for [in $i [$range 1 [$count $refs]]]
                 [yield [$entry $i [$nth $refs $i] $index $differs]]]]
   [= $body [$render $entries]]
-  [= $readings [?for [in $w ('data', 'query', 'code')]
+  [= $readings [?for [in $w ('data', 'code')]
                  [yield [$concat $w " " [$string [$count [?for [in $x $entries]
                           [where [= [$map:get $x "reading"] $w]] [yield 1]]]]]]]]
   [= $line [$concat "primer_examples: " [$string [$count $entries]] " fixture(s) from "
