@@ -689,6 +689,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `lt-6` | [rulings_2026_08_26_diagram_let_node_ids_1036.md](rulings_2026_08_26_diagram_let_node_ids_1036.md) | LT-6 — one conformance fixture moves with them |
 | `lt-7` | [rulings_2026_08_26_diagram_let_node_ids_1036.md](rulings_2026_08_26_diagram_let_node_ids_1036.md) | LT-7 — red-proof |
 | `madm-1` | [rulings_2026_09_30_integrator_decisions_l143_l144.md](rulings_2026_09_30_integrator_decisions_l143_l144.md) | MADM-1 — the merge flow admits a branch behind the head when the head's diff since the branch's merge-base is confined to ledger additions and to pin rows of repositories the branch did not move (L143 = (a)) |
+| `madm-2` | [rulings_2026_10_01_owner_decision_l160.md](rulings_2026_10_01_owner_decision_l160.md) | MADM-2 — a branch behind a head whose extra diff is only generated output is admitted (L160 = (a)) |
 | `mapc-1` | [rulings_2026_09_30_integrator_decisions_l145_l147.md](rulings_2026_09_30_integrator_decisions_l145_l147.md) | MAPC-1 — the map carrier becomes persistent: a hash-trie in cx-core-data, O(log N) put (L146 = (a); #1692 part 3) |
 | `mexa-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | MEXA-1 — `sign`, `round`, `truncate`, `clamp` and `gcd` answer exactly on decimal and bigint (L128 = (a); #1070) |
 | `mque-1` | [rulings_2026_09_30_integrator_decisions_l143_l144.md](rulings_2026_09_30_integrator_decisions_l143_l144.md) | MQUE-1 — READY branches land from a queue the post-merge loop consumes in its own gap (L144 = (a)) |
@@ -726,6 +727,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ord-2` | [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md) | Sequencing (ORD-2 amended again) |
 | `org-1` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | Owner decisions 2026-09-27 — Letters 46–50 and the org profile: KIT-4's shape (KIT4-1…3), the #1498 spec gaps (AA-7…9), HOST-4's seed made real (SEED-1), the host act's basis (HOSTB-1), the call spread's readings (SPREAD-2), the org-profile push (ORG-1) |
 | `org-1` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | ORG-1 — the org-profile README is pushed (`go .github` = (a)) |
+| `over-1` | [rulings_2026_10_01_owner_decision_overage.md](rulings_2026_10_01_owner_decision_overage.md) | OVER-1 — a $100 extra-usage allowance, spent only against a stop that would lose running agents' context |
 | `pace-1` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | Owner decisions 2026-09-26 (evening) — Letters 35, 37, 38 and 39: the site token (SITE-1), the pace past the weekly meter (PACE-1), shared-slot steps beside a selected run (RUN-5), #1498 stays in v0.18 (SD-2) |
 | `pace-1` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | PACE-1 — the post-split epic crosses the weekly meter on extra usage (Letter 37 = (a), 23:1xZ) |
 | `pace-2` | [rulings_2026_09_27_owner_decisions_l41_l44.md](rulings_2026_09_27_owner_decisions_l41_l44.md) | Owner decisions 2026-09-27 — Letters 41–45: the call spread (SPREAD-1), the orders-db partial (ODB-1), R-1492 as graded (BEX-1), the bus audit subject (BUS-1), no new agents (PACE-2) |
@@ -1367,6 +1369,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `cxf-5` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md), [rulings_2026_09_18_owner_decisions_0155z.md](rulings_2026_09_18_owner_decisions_0155z.md), [rulings_2026_09_18_owner_decisions_0235z.md](rulings_2026_09_18_owner_decisions_0235z.md), [rulings_2026_09_18_owner_decisions_0440z.md](rulings_2026_09_18_owner_decisions_0440z.md), [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md), [rulings_2026_09_30_owner_decision_l122.md](rulings_2026_09_30_owner_decision_l122.md) |
 | `cxf-6` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md), [rulings_2026_09_18_owner_decisions_0235z.md](rulings_2026_09_18_owner_decisions_0235z.md), [rulings_2026_09_18_owner_decisions_0250z.md](rulings_2026_09_18_owner_decisions_0250z.md) |
 | `cxf-7` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md), [rulings_2026_09_18_owner_decisions_0250z.md](rulings_2026_09_18_owner_decisions_0250z.md) |
+| `dbvol-1` | [rulings_2026_10_01_owner_decision_l160.md](rulings_2026_10_01_owner_decision_l160.md), [rulings_2026_10_01_owner_decision_overage.md](rulings_2026_10_01_owner_decision_overage.md) |
 | `dist-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) |
 | `dist-2` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md), [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) |
 | `docs-3` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) |
@@ -1429,14 +1432,14 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `int-11` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-12` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-2` | [rulings_2026_09_12_audit_sink_1422.md](rulings_2026_09_12_audit_sink_1422.md), [rulings_2026_09_12_fmt_1384_1391.md](rulings_2026_09_12_fmt_1384_1391.md), [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md), [rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md](rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md), [rulings_2026_09_15_default_in_campaign_int17.md](rulings_2026_09_15_default_in_campaign_int17.md), [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md), [rulings_2026_09_15_owner_decisions_1145z.md](rulings_2026_09_15_owner_decisions_1145z.md) |
-| `int-21` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md), [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md), [rulings_2026_09_19_owner_decisions_0505z.md](rulings_2026_09_19_owner_decisions_0505z.md) |
+| `int-21` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md), [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md), [rulings_2026_09_19_owner_decisions_0505z.md](rulings_2026_09_19_owner_decisions_0505z.md), [rulings_2026_10_01_owner_decision_l160.md](rulings_2026_10_01_owner_decision_l160.md) |
 | `int-22` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
 | `int-4` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_15_owner_decisions_1830z.md](rulings_2026_09_15_owner_decisions_1830z.md) |
 | `int-5` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_13_claude_context_audit.md](rulings_2026_09_13_claude_context_audit.md), [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md) |
 | `int-6` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
 | `int-7` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-8` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md), [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) |
-| `int-9` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_15_integrator_decisions_int15.md](rulings_2026_09_15_integrator_decisions_int15.md), [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md), [rulings_2026_09_19_owner_decisions_0505z.md](rulings_2026_09_19_owner_decisions_0505z.md) |
+| `int-9` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_15_integrator_decisions_int15.md](rulings_2026_09_15_integrator_decisions_int15.md), [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md), [rulings_2026_09_19_owner_decisions_0505z.md](rulings_2026_09_19_owner_decisions_0505z.md), [rulings_2026_10_01_owner_decision_l160.md](rulings_2026_10_01_owner_decision_l160.md) |
 | `ir-1` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) |
 | `ir-2` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) |
 | `ir-3` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) |
@@ -1478,6 +1481,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pq-4a` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) |
 | `pq-5a` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) |
 | `pq-9a` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) |
+| `readr-1` | [rulings_2026_10_01_owner_decision_l160.md](rulings_2026_10_01_owner_decision_l160.md), [rulings_2026_10_01_owner_decision_overage.md](rulings_2026_10_01_owner_decision_overage.md) |
 | `rfc-7540` | [rulings_2026_08_20_h2_surface.md](rulings_2026_08_20_h2_surface.md) |
 | `ring-1` | [batch_796_post_gate_defects.md](batch_796_post_gate_defects.md), [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
 | `ring-2` | [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
@@ -1551,7 +1555,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `wave-3` | [rulings_2026_08_26_seq_classification.md](rulings_2026_08_26_seq_classification.md) |
 | `wf-26a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
 | `wf-27a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
-| `words-2` | [rulings_2026_09_30_integrator_decisions_l150.md](rulings_2026_09_30_integrator_decisions_l150.md) |
+| `words-2` | [rulings_2026_09_30_integrator_decisions_l150.md](rulings_2026_09_30_integrator_decisions_l150.md), [rulings_2026_10_01_owner_decision_l160.md](rulings_2026_10_01_owner_decision_l160.md), [rulings_2026_10_01_owner_decision_overage.md](rulings_2026_10_01_owner_decision_overage.md) |
 | `xap-1` | [rulings_2026_09_26_xap_host_runner_xap1.md](rulings_2026_09_26_xap_host_runner_xap1.md), [rulings_2026_09_30_owner_decision_l125.md](rulings_2026_09_30_owner_decision_l125.md) |
 | `xd-1a` | [rulings_2026_08_21_x_tier_docs_and_domain_writes.md](rulings_2026_08_21_x_tier_docs_and_domain_writes.md) |
 | `xd-1b` | [rulings_2026_08_21_x_tier_docs_and_domain_writes.md](rulings_2026_08_21_x_tier_docs_and_domain_writes.md) |
@@ -1563,4 +1567,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*375 ledger pages; 831 ids declared, 395 cited only.*
+*377 ledger pages; 833 ids declared, 397 cited only.*
