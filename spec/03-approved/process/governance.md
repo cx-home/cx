@@ -565,7 +565,7 @@ work (D→A via pin + witness), recorded here:
 | code.md §14 evaluation core + EV register | A | stream 22 (pins + discriminator pairs; was D across §6.1/§8.5/§8.6/§6.4.1/§6.7/§10.5.1/§10.5.3) |
 | code.md §6.7 iterators — EV-PULL engine conformance | D | pinned rule; engine lands with the runtime-representation stream (#710) — blocker for iterator-engine work until then |
 | code.md §6.5.1 | C→A | the effect table moved to security.md §2.1 (stream 6; EV-EFFECT-SET) |
-| code.md §11.4 gate protocols | C→B | partitioned reference-lane vs conformance-bar (L75) |
+| code.md §11.4 gate protocols | C→B | partitioned reference-only vs conformance-bar (L75) |
 | security.md §4 | C | scope text still impl-anchored; move with the next security amendment |
 | fp.md, jsonschema.md | A | de-anchored at I2 (#707) |
 | conformance front door | A | #707 items 1–7 + the out-effects channel (stream 22 W1) |
