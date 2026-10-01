@@ -52,9 +52,9 @@ NOT WRITTEN YET is a different statement from NOT MOVED YET, and it is
 `status=planned`, never a `-to`. A planned row's columns name where the
 artifact WILL be, the check holds it to its ring and its directories but not
 to existence, and it refuses the row once every artifact is on disk — so the
-declaration cannot outlive the writing. Two rows are planned today: `ftp` and
-`sftp` (#1430's transports) — each spec-first by its own decision, none of
-them #1427's debt. `connector`, `graphql`, `soap`, `ws` and `sync` (#1434, its
+declaration cannot outlive the writing. One row is planned today: `sftp` (#1430's
+transport) — spec-first by its own decision, not
+#1427's debt. `connector`, `graphql`, `soap`, `ws`, `ftp` and `sync` (#1434, its
 pure half since SYNC-9's first wave) were planned until their code landed and
 their rows read `current`.
 
@@ -333,9 +333,9 @@ needs becomes its own Ring-1 module.
      source and code columns did not move with the namespace. ]
   [module name=fabric ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-fabric spec=deps/cx-platform-fabric/spec/03-approved/platform/fabric.md corpus=deps/cx-platform-fabric/conformance/platform/fabric.cxd source=deps/cx-platform-fabric/stdlib/fabric.cx code='deps/cx-platform-fabric/vcx/fabric/stdlib_fabric.v deps/cx-platform-fabric/vcx/fabric/stdlib_fabric_remote.v deps/cx-platform-fabric/vcx/fabric/fabric_service.v deps/cx-platform-fabric/vcx/fabric/stdlib_fabric_register.v' half=none status=current]
   [; ftp and sftp — the connector kit's two file-transfer transports (RULED:
-     1430-c, 1430-e), spec first: planned, their columns naming where #1430
-     writes them. ]
-  [module name=ftp ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-net spec=deps/cx-platform-net/spec/03-approved/platform/ftp.md corpus=deps/cx-platform-net/conformance/platform/ftp.cxd source=deps/cx-platform-net/stdlib/ftp.cx code=deps/cx-platform-net/vcx/cxnet/stdlib_ftp.v half=none status=planned]
+     1430-c, 1430-e), spec first: ftp current since its code landed (#1458),
+     sftp planned, its columns naming where #1457 writes it. ]
+  [module name=ftp ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-net spec=deps/cx-platform-net/spec/03-approved/platform/ftp.md corpus=deps/cx-platform-net/conformance/platform/ftp.cxd source=deps/cx-platform-net/stdlib/ftp.cx code='deps/cx-platform-net/vcx/cxnet/stdlib_ftp_notd_wasm32_emcc.v deps/cx-platform-net/vcx/cxnet/stdlib_ftp_d_wasm32_emcc.v deps/cx-platform-net/vcx/cxnet/stdlib_ftp_register.v deps/cx-platform-net/vcx/cxnet/ftp_test_server_notd_wasm32_emcc.v' half=none status=current]
   [; http is the 1427-e split: the serve half stays here and keeps the name,
      the client+codec half is the `http-client` row above. ]
   [module name=http ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-net spec=deps/cx-platform-net/spec/03-approved/platform/http.md corpus=deps/cx-platform-net/conformance/platform/http.cxd source=deps/cx-platform-net/stdlib/http.cx code='deps/cx-platform-net/vcx/cxnet/stdlib_http_serve.v deps/cx-platform-net/vcx/cxnet/http_h2_serve_notd_wasm32_emcc.v deps/cx-platform-net/vcx/cxnet/serve_file.v deps/cx-platform-net/vcx/cxnet/stdlib_http_serve_register.v deps/cx-platform-net/vcx/cxnet/serve_file_register.v' half=none status=current]
