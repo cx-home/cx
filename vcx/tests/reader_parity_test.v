@@ -829,6 +829,11 @@ const one_tree_shapes = [
 	OneTreeShape{'[title examples/books.yaml verbatim — block seq of 3 four-key mappings (#412 repro)]', '#1576 — conformance/yaml.cxd line 19: a parenthetical that is no sequence literal, glued to a `#`, inside a body a bareword makes prose'},
 	OneTreeShape{'[p see the ratio a#b and (x#y) here]', '#1576 — a `#` glued inside a prose run or after a non-literal paren is prose in both readers, never a comment'},
 	OneTreeShape{"[title under --strict `filter`'s `::array` + `::function` signature admits the ordinary call]", '#1579 — stdlib/array.cxd line 309: an apostrophe glued after a backtick run is inside the bareword (1521-a), never a string opener'},
+	OneTreeShape{'[title full cx.lock — https + file resolvers, an SRI pin, and a transitive-graph block]', '#1576 (RULED: SLOT-1) — conformance/lockfile.cxd line 42: a sigil-free multi-word comma slot is prose in both readers'},
+	OneTreeShape{'[title quoted mapping keys unquote (the CX→YAML emitter quotes keys, so roundtrip depends on this)]', '#1576 (RULED: SLOT-1) — conformance/yaml.cxd line 155: a prose run beside a sequence literal whose slots are sigil-free multi-word prose'},
+	OneTreeShape{'[a href=https://github.com/ardec Erik Paulson]', '#1578 (RULED: ATTRU-1) — examples/post.cx line 7\'s link: a sigil-free attribute value is the data ring\'s string, a bare URL included'},
+	OneTreeShape{'[chapter id=getting-started lang=en xmlns=tag:cxhome.org,2026:ns/doc xmlns:dc=http://purl.org/dc/elements/1.1/ Getting Started]', '#1578 (RULED: ATTRU-1) and #1745 — examples/chapter.cx line 5: a tag URI value is one string, and a namespaced attribute name is one name'},
+	OneTreeShape{"[p\n  Note that [code 8080] auto-types as an [em integer]; [code :u16]\n  pins it to the 0..65535 range &mdash; out-of-range values fail at\n  parse time. [code '+tls'] is shorthand for [code tls=true].\n]", '#1579 (RULED: PROSE-1) — examples/article.cx lines 25-29: the data reading is the program reader\'s oracle for a prose body, inline elements and the trailing `.` included'},
 ]
 
 fn test_split_divergences_answer_one_tree() {
