@@ -4918,7 +4918,7 @@ fmt-sweep-timed: build-vcx
 # reads — and #1436's class here is bench_report.cx (a comment in a [?const]
 # value, which 1318-A copies verbatim) and examples/vcore.cx (a map of
 # declaration-only entries has no value spans to break between; since #1577
-# the program lane reaches it). Measured on the branch's own binary:
+# the program reading reaches it). Measured on the branch's own binary:
 # SWEEP-FILES=195 FORMATTED=186 DECLINED=6 TREE-REFUSED=3 UNSTABLE=0 ERROR=0
 FMT_SWEEP_MAX_DECLINED ?= 6
 FMT_SWEEP_MAX_TREE_REFUSED ?= 3
