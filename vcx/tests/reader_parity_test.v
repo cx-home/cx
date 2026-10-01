@@ -524,7 +524,7 @@ const accepted_by_one_table = [
 	AcceptedByOne{'examples/env.cx', .data, reason_entity},
 	// ── recorded exception — a token-initial operator head (1) ──
 	AcceptedByOne{'examples/logs.cx', .data, reason_ophead},
-	// ── recorded exception — a DATA-only lane the program grammar has no form for (6) ──
+	// ── recorded exception — a DATA-only lane the program grammar has no form for (5) ──
 	// 4 -> 6: the front door's two corpora (#1589 item 23, RULED: RS-7, RS-9) -- a
 	// [title] of bare prose carrying a word the program reader takes as a keyword
 	// (`module`, `shape`). The three data-language suites are read at cx-core-data's
@@ -535,7 +535,10 @@ const accepted_by_one_table = [
 	// 7 -> 6: conformance/xml_codec.cxd left with cx-core-code's extraction
 	// (RULED: RS-12, D68a); the scan walks conformance/ of THIS tree and does
 	// not follow deps/.
-	AcceptedByOne{'conformance/bundle_sources.cxd', .data, reason_datalane},
+	// 6 -> 5: conformance/bundle_sources.cxd left with PROSE-1 (RULED: PROSE-1,
+	// #1579): its bare-prose [title]s are the data reading's text in the program
+	// reader too, so both readers answer one tree; the judgement below forced
+	// the removal.
 	AcceptedByOne{'deps/cx-core-data/conformance/conversions.cxd', .data, reason_datalane},
 	AcceptedByOne{'conformance/docs_fragment.cxd', .data, reason_datalane},
 	AcceptedByOne{'conformance/gates_register.cxd', .data, reason_datalane},
