@@ -25,7 +25,7 @@ when the names come from data rather than from source.
 ## Control flow
 
 `[?if COND [then …] [else …]]`. The clause names are mandatory: `[?if c a b]`
-is a syntax error (`cx-err:CXER0001`), not a positional shorthand.
+is a clause-shape refusal (`cx-err:CXER0111`), not a positional shorthand.
 
 {{EXAMPLE:program-if-bare-then-else-err block}}
 
