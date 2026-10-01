@@ -570,12 +570,12 @@ error: the result carries an error value — cx-err:CXER0140 at /err
 error: the result carries an error value — cx-err:CXER0141 at /err
 #]]
  ]
- [ex key=95-circuit-breaker-trips chars=257 err-chars=64
+ [ex key=95-circuit-breaker-trips chars=253 err-chars=64
   [out-text [#
 [err code=test-failure message='test failure']
 [err code=test-failure message='test failure']
-[err code=cx-err:CXER0150 message='circuit breaker open' [until [instant '10s']]]
-[err code=cx-err:CXER0150 message='circuit breaker open' [until [instant '10s']]]
+[err code=cx-err:CXER0150 message='circuit breaker open' [until [instant 10s]]]
+[err code=cx-err:CXER0150 message='circuit breaker open' [until [instant 10s]]]
 #]]
   [err-text [#
 error: the result carries an error value — test-failure at /err
