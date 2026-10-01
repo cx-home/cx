@@ -4935,8 +4935,26 @@ fmt-sweep-timed: build-vcx
 # declaration-only entries has no value spans to break between; since #1577
 # the program reading reaches it). Measured on the branch's own binary:
 # SWEEP-FILES=195 FORMATTED=186 DECLINED=6 TREE-REFUSED=3 UNSTABLE=0 ERROR=0
-FMT_SWEEP_MAX_DECLINED ?= 6
-FMT_SWEEP_MAX_TREE_REFUSED ?= 3
+#
+# 6 -> 3 and TREE-REFUSED 3 -> 0 by READR-1 (RULED: FMT-3, SLOT-1, PROSE-1,
+# FIX-1; #1436): FMT-3's two break sites (between the entries of a map inside
+# a directive's value, after a declaration-only map entry's trailing comment)
+# place bench_report.cx's and vcore.cx's line-41 comments (fmt-072, fmt-073);
+# the program emitter's three defects they exposed are fixed (fmt-074,
+# fmt-075), so nav_shape_check.cx and run_bench_json.cx format; the §1 guard
+# walks a map like every other container (fmt-076), so stdlib_docs_check.cx
+# and primer_examples.cx format; contributor_facts.cx formats under SLOT-1
+# and PROSE-1. TREE-REFUSED is empty. The three that still decline are each
+# named by their refusal and none is FMT-3's: corpus/rosetta/06-bfs.cx (the
+# comment-bearing layout re-parses to a different program shape),
+# examples/code-tour.cx (not its own fixed point, formatting.md §7) and
+# examples/vcore.cx — its line-41 comment is placed now; it declines on line
+# 54's upper-case hex `0xCAFE`, the letter-case limit 1347-a declared out of
+# scope (program_emit_head_ascription_test.v pins it fail-closed until a §2.5
+# letter-case decision). Measured on the branch's own binary:
+# SWEEP-FILES=206 FORMATTED=203 DECLINED=3 TREE-REFUSED=0 UNSTABLE=0 ERROR=0
+FMT_SWEEP_MAX_DECLINED ?= 3
+FMT_SWEEP_MAX_TREE_REFUSED ?= 0
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate
 fmt-sweep-gate: build-vcx
