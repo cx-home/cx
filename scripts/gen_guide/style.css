@@ -250,6 +250,7 @@ main {
   max-width: 860px;
   padding: 2.2rem 2.4rem 3.5rem;
   width: 100%;
+  min-width: 0;
 }
 
 h1, h2, h3, h4 {
@@ -648,7 +649,12 @@ p.fn-sig code { font-size: 0.82em; color: var(--ink); background: rgba(26,24,18,
   .toc-groups ul { columns: 1; }
 }
 @media (max-width: 640px) {
-  body { grid-template-columns: 1fr; margin: 12px; outline-offset: 4px; }
+  /* #1740 — minmax(0, …), not a bare 1fr: a grid track's automatic minimum
+     is its content's min-content size, so a bare 1fr still refuses to
+     shrink narrower than the widest nowrap child (the header's link row),
+     which is exactly what pushed the whole sheet past the viewport and
+     forced horizontal page scroll on a phone. */
+  body { grid-template-columns: minmax(0, 1fr); margin: 12px; outline-offset: 4px; }
   aside.sidebar {
     grid-column: 1;
     grid-row: 2;
@@ -656,11 +662,31 @@ p.fn-sig code { font-size: 0.82em; color: var(--ink); background: rgba(26,24,18,
     height: auto;
     border-right: none;
     border-bottom: 0.5px solid var(--rule);
+    min-width: 0;
   }
-  header.sheet-bar { grid-column: 1; grid-row: 1; }
-  main { grid-column: 1; grid-row: 3; padding: 1.2rem 1.3rem 2.5rem; }
-  footer.title-block { grid-column: 1; grid-row: 4; flex-wrap: wrap; }
-  .hero h1 { font-size: 2.4rem; }
+  header.sheet-bar {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    padding: 0.85rem 1.1rem;
+  }
+  /* The page title and the secondary link row repeat what the sidebar
+     already lists (Home, Playground, Github, Downloads, About) one scroll
+     down — dropped here, not hidden-but-still-measured, so they cannot
+     reintroduce the overflow a future edit widens back out. */
+  header.sheet-bar .sb-title, header.sheet-bar .sb-right { display: none; }
+  main { grid-column: 1; grid-row: 3; padding: 1.2rem 1.3rem 2.5rem; min-width: 0; }
+  footer.title-block { grid-column: 1; grid-row: 4; flex-wrap: wrap; min-width: 0; }
+  .hero h1 { font-size: 2.4rem; white-space: normal; }
+  .ring-ladder .rr { flex-wrap: wrap; row-gap: 0.15rem; }
+  /* Tap targets ≥ 44px (DOCS-51 / #1740): the sidebar's own link rows and
+     the nav-group summary toggles are the primary phone navigation now
+     that the header's link row is gone. */
+  aside.sidebar a, aside.sidebar summary, .toc-groups summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
 }
 
 /* ── DOCS-4: the generated figures and the before/after panels ──────────

@@ -102,6 +102,7 @@ html, body {
   max-width: 440px;
   font-family: inherit;
 }
+.cxp-search-wrap { position: relative; display: inline-flex; }
 .cxp-search {
   padding: 4px 8px;
   font-size: 12.5px;
@@ -114,6 +115,48 @@ html, body {
 }
 .cxp-search:focus { outline: none; border-color: var(--accent); }
 .cxp-search::placeholder { color: var(--text-dim); }
+/* Full-text search results (#1742) — a dropdown list beside the picker,
+   never instead of it. */
+.cxp-search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  margin: 4px 0 0;
+  padding: 4px;
+  list-style: none;
+  width: 340px;
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--bg-pane);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+.cxp-search-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  font-size: 12.5px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text);
+}
+.cxp-search-result:hover, .cxp-search-result:focus {
+  background: var(--bg-hover);
+  outline: none;
+}
+.cxp-search-result-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cxp-search-result-reading {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+.cxp-search-empty { padding: 6px 8px; font-size: 12.5px; color: var(--text-dim); }
 .cxp-btn {
   padding: 4px 12px;
   font-size: 12.5px;
