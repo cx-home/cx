@@ -55,8 +55,11 @@
 #                    product's vcx/<vmodule>/ -- registry/repos.cxd
 #                    declares them; the one other declaration read here)
 #   [half ring]      a declared half outside vcx/code, or declared by a row
-#                    that is not in the platform group -- a half exists only
-#                    to let a platform module keep a pure Ring-1 piece
+#                    that is neither in the platform group nor a Ring-1 pack
+#                    module -- a half exists only to let a platform module
+#                    keep a pure Ring-1 piece, or a module whose code= is a
+#                    local-effect pack name the rest every profile composes
+#                    (RULED: TIMEP-1)
 #   [spec ring] / [corpus ring]
 #                    an artifact under a directory that belongs to the other
 #                    side of the rings/platform line, with no `-to` declaring
@@ -162,6 +165,19 @@
 # in-repo-all: `in-repo` over a whitespace-joined column.
 [?def in-repo-all scope=private pure [returns string] ($col::string $repo::string)
   [$strings:join [?for [in $f [$words $col]] [yield [$in-repo $f $repo]]] " "]]
+
+# half-declarer: may this row declare a `half=`? A group=platform row keeps
+# its pure Ring-1 piece there (1427-d). A Ring-1 row whose code= is nothing
+# but local-effect PACK files (`..._notd_cx_no_pack_<name>.v`, which an embed
+# build leaves out) declares its pack-free rest there -- the half every
+# profile composes, `time`'s clock-free half beside its clock pack (RULED:
+# TIMEP-1). Any other row has no half to declare.
+[?def half-declarer scope=private pure [returns bool] ($ring::string $group::string $code::string)
+  [?if [= $group "platform"] [then true]
+    [else [?let [= $fs [$words $code]]
+      [and [= $ring "1"]
+           [and [> [$count $fs] 0]
+                [= [$count [?for [in $f $fs] [where [not [$strings:contains $f "_notd_cx_no_pack_"]]] [yield 1]]] 0]]]]]]]
 
 
 # suite-ring-of: the `ring=` on a suite header, "" when the file is
@@ -327,7 +343,23 @@
                      "spec/03-approved/platform/file_surface.md"]
                [then ""]
                [else "FALSE POSITIVE: a pinned catalog path must read its ring from what follows deps/<repo>/"]]]
-      [= $failures [?for [in $x ($f1, $f2, $f3, $f4, $f5, $f6, $f7, $f8, $f9, $r1, $r2, $r3, $r4, $r5, $r6, $r7, $r8, $r9, $r10, $r11, $r12)] [where [not [= $x ""]]] [yield $x]]]
+      # [half ring] (RULED: TIMEP-1): a Ring-1 row whose code= is a local-effect
+      # pack declares its pack-free rest as its half; a Ring-1 row with plain
+      # code does not; and a pinned half reads its directory from what follows
+      # deps/<repo>/, as every other column does.
+      [= $h1 [?if [$half-declarer "1" "" "deps/cx-core-code/vcx/code/stdlib_time_clock_notd_cx_no_pack_time.v"]
+               [then ""]
+               [else "FALSE POSITIVE: a Ring-1 row whose code= is a local-effect pack declares its pack-free half"]]]
+      [= $h2 [?if [$half-declarer "1" "" "deps/cx-core-code/vcx/code/stdlib_json.v"]
+               [then "MISSED (should catch): a Ring-1 row whose code= is no pack declaring a half"]
+               [else ""]]]
+      [= $h3 [?if [$half-declarer "1" "" "none"]
+               [then "MISSED (should catch): a Ring-1 row with no code declaring a half"]
+               [else ""]]]
+      [= $h4 [?if [$strings:starts-with [$in-repo "deps/cx-core-code/vcx/code/stdlib_time.v" "cx-core-code"] "vcx/code/"]
+               [then ""]
+               [else "FALSE POSITIVE: a pinned half under deps/<repo>/vcx/code/ lives in vcx/code/"]]]
+      [= $failures [?for [in $x ($f1, $f2, $f3, $f4, $f5, $f6, $f7, $f8, $f9, $r1, $r2, $r3, $r4, $r5, $r6, $r7, $r8, $r9, $r10, $r11, $r12, $h1, $h2, $h3, $h4)] [where [not [= $x ""]]] [yield $x]]]
       [?if [> [$count $failures] 0]
         [then
           [?let [= $_bad [$io:write-line [$env:stderr]
@@ -336,7 +368,7 @@
             [$env:exit 1]]]
         [else
           [?let [= $_ok [$io:write-line [$env:stdout]
-                  "placement-gate self-test OK -- 1 catch + 1 no-catch case for [integration map], 1 catch + 2 no-catch cases for [dep path] and the ring read beneath deps/<repo>/ (RS-12), 1 catch + 1 no-catch case for a split product's directory reading as the platform group (RS-24), 1 catch + 1 no-catch case for a catalog row's own repo= (RS-12), and 7 catch + 5 no-catch cases for the two rings and the platform group (RS-1, RS-31), pass."]]
+                  "placement-gate self-test OK -- 1 catch + 1 no-catch case for [integration map], 1 catch + 2 no-catch cases for [dep path] and the ring read beneath deps/<repo>/ (RS-12), 1 catch + 1 no-catch case for a split product's directory reading as the platform group (RS-24), 1 catch + 1 no-catch case for a catalog row's own repo= (RS-12), 7 catch + 5 no-catch cases for the two rings and the platform group (RS-1, RS-31), and 2 catch + 2 no-catch cases for a pack module's declared half (TIMEP-1), pass."]]
             [$env:exit 0]]]]]]
   [else ""]]
 
@@ -521,15 +553,15 @@
           [= $v-half-ring
             [$strings:join
               [?for [in $f [$words $half]]
-                [where [not [$strings:starts-with $f "vcx/code/"]]]
+                [where [not [$strings:starts-with [$in-repo $f $repo] "vcx/code/"]]]
                 [yield [$concat "  [half ring]      " $tag
                          "  -- a declared half is Ring 1 and lives in vcx/code/, found " $f]]]
               "\n"]]
           [= $v-half-ring1
-            [?if [= $group "platform"] [then ""]
+            [?if [$half-declarer $ring $group $code] [then ""]
               [else [?if [= [$count [$words $half]] 0] [then ""]
                 [else [$concat "  [half ring]      " $tag
-                         "  -- only a group=platform module declares a half; this row is " $rg]]]]]]
+                         "  -- only a group=platform module, or a Ring-1 module whose code= is a local-effect pack, declares a half (TIMEP-1); this row is " $rg]]]]]]
 
           # -- [spec ring] / [corpus ring]: the directory IS the ring, unless
           #    the row declares the move.
