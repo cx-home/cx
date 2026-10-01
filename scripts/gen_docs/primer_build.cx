@@ -79,6 +79,8 @@
 #   cx --allow-read --allow-write --allow-subprocess --allow-env \
 #      scripts/gen_docs/primer_build.cx [--check]
 #   (or: make docs / make docs-check)
+#   cx --allow-read --allow-write --allow-env scripts/gen_docs/primer_build.cx --outputs
+#      prints the paths it writes, one per line (make generated-outputs)
 #
 # Exit: 0 green; 1 any failure (missing case, output mismatch, drift).
 
@@ -978,6 +980,14 @@
   [= $_f3 [?if [$frag:ok $collide] [then 0]
             [else [$die [$concat "the document union collides:\n"
                           [$strings:join [?for [in $l [$frag:render $collide]] [yield [$concat "  " $l]]] "\n"]]]]]]
+  [; --outputs (RULED: MADM-2): every path this run would write, one per
+     line, from the union just computed — `make generated-outputs` reads it,
+     and the merge flow's shape step admits a head that moved only these. It
+     replays nothing and writes nothing. ]
+  [= $_lo [?if [$member $argv "--outputs"]
+            [then [?let [= $_p [?for [in $x [$declared-outputs $docs]] [yield [$say [$path:join OUT-DIR $x]]]]]
+                    [$env:exit 0]]]
+            [else 0]]]
   [; A fragment is read WHEN PRESENT: with no deps/ checkout, or no pinned
      repository publishing one, the union is the front door's own rows and the
      line says `none` rather than a count of zero that reads like a failure. ]

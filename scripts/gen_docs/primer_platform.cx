@@ -39,6 +39,7 @@
 #   cx --allow-read --allow-write scripts/gen_docs/primer_platform.cx
 #   cx --allow-read              scripts/gen_docs/primer_platform.cx --check
 #   (or: make primer-platform / make primer-platform-check)
+#   cx --allow-read --allow-write scripts/gen_docs/primer_platform.cx --outputs   the path it writes (make generated-outputs)
 #
 # The chapter reaches `cx primer` through the ordinary docs layer: it is the
 # `{{PLATFORM-CHAPTER}}` placeholder in docs-src/llm/primer.md.tmpl, so
@@ -283,6 +284,9 @@ skeleton with an authoring TODO wherever the pattern fixes no value."]
 [?let
   [= $argv [$env:argv]]
   [= $check [$member $argv "--check"]]
+  [; --outputs (RULED: MADM-2): the file this run writes — `make
+     generated-outputs` reads it. ]
+  [= $_lo [?if [$member $argv "--outputs"] [then [?let [= $_p [$say OUT-PATH]] [$env:exit 0]]] [else 0]]]
   [= $body [$chapter]]
   [= $old [?if [$io:is-file OUT-PATH] [then [$io:read-file OUT-PATH]] [else "absent"]]]
   [?if $check
