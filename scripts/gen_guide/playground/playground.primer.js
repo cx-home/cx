@@ -1886,7 +1886,7 @@ window.cxPlaygroundPrimer = {
       "doc": "",
       "src": "[?if true 'a' 'b']",
       "cmd": "cx prog.cx",
-      "expected": "cx-err:CXER0001",
+      "expected": "cx-err:CXER0111",
       "match": "contains",
       "exit": "",
       "runnable": true,

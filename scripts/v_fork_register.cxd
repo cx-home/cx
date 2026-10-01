@@ -89,6 +89,9 @@
   [family id=bench
     reason='bench/parallel-alloc drivers moved into per-program subdirectories so v test works over that directory again. Carried because the allocator benchmarks in that tree are the measurement harness for the vgc family.']
 
+  [family id=ssh
+    reason='The SSH client and its SFTP v3 subsystem behind cx-platform/sftp (cx-private#1457, RULED: SSHL-1): libssh2, vendored in thirdparty/libssh2 and built over the fork own thirdparty/mbedtls as its crypto backend, so CX carries one crypto stack, with vlib/net/ssh2 the only V code that names a libssh2 symbol. Upstream V has no SSH client and no plan for one; a fresh SSH implementation in V was the rejected option, a security-critical protocol whose every primitive would be ours to get right. Retires only if upstream V grows an SSH client over its own TLS stack.']
+
   [patch sha=06ad7981133ed078bfb311cd5b92c4ce5de8cfc4 family=libgc]
   [patch sha=1877171d9b61d660bd3ec67cc9797945f1a4e3d5 family=cgen]
   [patch sha=b1349b9dcabbcfeffd23ed515f6e70b0334feb00 family=net]
@@ -188,4 +191,5 @@
   [patch sha=8396dca29d12ce8bfcb89b30581275a26b4ba199 family=vgc issue='cx-private#1605']
   [patch sha=3537ee7b9d79478ef6b742a796fea4c1ff96fbb5 family=vgc issue='cx-private#1605']
   [patch sha=27cbbcdb10d2f8b208e530d17ec78488dfb7999f family=vgc issue='cx-private#1605']
+  [patch sha=77a460e265f86d882878d749c2bca48390d940e7 family=ssh issue='cx-private#1457']
 ]
