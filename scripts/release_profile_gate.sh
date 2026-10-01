@@ -34,9 +34,10 @@ PUB="dist/_precut_public"
 
 printf '\n== R2.2 pre-cut profile gate (%s) ==\n' "$PUB_PLAT"
 
-echo "-- building the cut's artifacts (-prod: build-vcx + build-profiles)"
+echo "-- building the cut's artifacts (-prod: build-vcx + build-profiles) and the loading probe"
 devbox run -- make build-vcx
 devbox run -- make build-profiles
+devbox run -- make build-extraction-probe
 
 echo "-- staging the four tarballs the cut stages → $PUB/"
 rm -rf "$PUB"; mkdir -p "$PUB"
@@ -52,9 +53,9 @@ ls -1 "$PUB"/cx-*.tar.gz | sed 's/^/   /'
 echo "-- running the release-asset-links gate (#1670: no /nix/store dependency)"
 devbox run -- "$(r22_vcx_target)/cx" --allow-all scripts/release_asset_links_gate.cx --dir "$PUB"
 
-echo "-- running the BLOCKING gate (extract installer-style + profile probe)"
+echo "-- running the BLOCKING gate (extract installer-style + profile probe + each library loaded, RLOAD-1)"
 r22_profile_gate "$PUB" "$PUB_PLAT" /precut
 
-echo "   release gate (R2.2/precut): per-profile install verification PASSED (platform/data/embed/cli extract + profile probe)"
+echo "   release gate (R2.2/precut): per-profile install verification PASSED (platform/data/embed/cli extract + profile probe; each staged library's inventory and cx_features identical to the build's own)"
 echo "   NOTE: this proves #741 item 1 only. Item 2 (CX_PROFILE= install from the"
 echo "         PUBLISHED assets on macOS + Linux) requires the cut to have happened."

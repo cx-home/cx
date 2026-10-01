@@ -754,6 +754,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pkgfl-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | PKGFL-1 — a package's module file is `<package-name>.cx`, in the spec and on the pages (L117 = (a), delegated) |
 | `pkgimp-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | PKGIMP-1 — a `pkg:` import exposes every feature of the package (L118 = (a), delegated) |
 | `play-2` | [rulings_2026_09_29_owner_direction_docs_5of5.md](rulings_2026_09_29_owner_direction_docs_5of5.md) | PLAY-2 — the playground's own 5 of 5, inside the nine criteria above |
+| `play-3` | [rulings_2026_10_01_owner_decision_play3.md](rulings_2026_10_01_owner_decision_play3.md) | PLAY-3 — two readings: data and code; a former query example is re-filed by what it is |
 | `pq-1` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-1 — the ERD row comment carries a VALUE, and the `@` sigil is retired |
 | `pq-2` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-2 — every ERD column token is forced to a valid ATTRIBUTE_WORD |
 | `pq-3` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-3 — golden movement, adjudicated (DR-8) |
@@ -1541,7 +1542,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `utf-7` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `utf-8` | [audit_2026_08_30_text_format_surface.md](audit_2026_08_30_text_format_surface.md), [partition_I1_rebless.md](partition_I1_rebless.md), [partition_I5_stream17_runtime.md](partition_I5_stream17_runtime.md), [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md), [rulings_2026_08_28_zip_module_1078.md](rulings_2026_08_28_zip_module_1078.md), [rulings_2026_08_30_text_format_residuals.md](rulings_2026_08_30_text_format_residuals.md), [rulings_2026_09_11_saml_metadata_exchange_1402a.md](rulings_2026_09_11_saml_metadata_exchange_1402a.md), [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md), [rulings_2026_09_15_websocket_stream_placement_int19.md](rulings_2026_09_15_websocket_stream_placement_int19.md) |
 | `vg-2a` | [issue_audit_2026_09_30_ship2.md](issue_audit_2026_09_30_ship2.md) |
-| `vocab-1` | [rulings_2026_09_30_integrator_decisions_l120.md](rulings_2026_09_30_integrator_decisions_l120.md), [rulings_2026_09_30_integrator_decisions_l150.md](rulings_2026_09_30_integrator_decisions_l150.md) |
+| `vocab-1` | [rulings_2026_09_30_integrator_decisions_l120.md](rulings_2026_09_30_integrator_decisions_l120.md), [rulings_2026_09_30_integrator_decisions_l150.md](rulings_2026_09_30_integrator_decisions_l150.md), [rulings_2026_10_01_owner_decision_play3.md](rulings_2026_10_01_owner_decision_play3.md) |
 | `wave-3` | [rulings_2026_08_26_seq_classification.md](rulings_2026_08_26_seq_classification.md) |
 | `wf-26a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
 | `wf-27a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
@@ -1557,4 +1558,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*373 ledger pages; 826 ids declared, 395 cited only.*
+*374 ledger pages; 827 ids declared, 395 cited only.*
