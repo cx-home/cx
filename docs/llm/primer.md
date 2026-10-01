@@ -2443,7 +2443,7 @@ than guessed at:
 
 ```console
 $ cx prog.cx
-error: cx-err:CXER0001: [?if] expects [then …] / [else …] clause children after the condition — got a bare positional branch expression; write [?if cond [then thenExpr] [else elseExpr]?]
+error: cx-err:CXER0111: [?if] expects [then …] / [else …] clause children after the condition — got a bare positional branch expression; write [?if cond [then thenExpr] [else elseExpr]?]
 ```
 
 ## 10. Before you emit CX, check these

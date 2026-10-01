@@ -4923,8 +4923,20 @@ fmt-sweep-timed: build-vcx
 # that repository's own `make lint` never runs `cx fmt` at all. Measured on
 # the branch's own binary: SWEEP-FILES=226 FORMATTED=214 DECLINED=8
 # TREE-REFUSED=4 UNSTABLE=0 ERROR=0
-FMT_SWEEP_MAX_DECLINED ?= 8
-FMT_SWEEP_MAX_TREE_REFUSED ?= 9
+#
+# 8 -> 6 and TREE-REFUSED 9 -> 3 by bug batch B (RULED: FMT-2, #1436): the map
+# literal gains its break site after an entry's comma, and CXER0301 now names
+# the comment the layout could not place. The two numbers move to the
+# measurement (FMT-1); the six declines of this tree are unchanged in count —
+# FMT-2 cleared the class in three component files (sso's deployment.cx,
+# xap's shop-web-client/serve.cx, agent's mcp-server.cx), which no sweep here
+# reads — and #1436's class here is bench_report.cx (a comment in a [?const]
+# value, which 1318-A copies verbatim) and examples/vcore.cx (a map of
+# declaration-only entries has no value spans to break between; since #1577
+# the program reading reaches it). Measured on the branch's own binary:
+# SWEEP-FILES=195 FORMATTED=186 DECLINED=6 TREE-REFUSED=3 UNSTABLE=0 ERROR=0
+FMT_SWEEP_MAX_DECLINED ?= 6
+FMT_SWEEP_MAX_TREE_REFUSED ?= 3
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate
 fmt-sweep-gate: build-vcx
@@ -5079,7 +5091,7 @@ test-agent-real: build-vcx
 	  CX_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/cx" CX_NOLIVE_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/profiles/cli/cx" "$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-all real/$$t || st=1; \
 	done; exit $$st
 
-## test-connector-real  The connector package's four live tests as
+## test-connector-real  The connector package's five live tests as
 ##                  their own step (RULED: RS-12, RS-8, RS-27; #1591 item
 ##                  K3): connector_live_test.v boots `reference/acme/
 ##                  acme.mock.cx` — an in-tree [?http-service] — and drives
@@ -5095,10 +5107,12 @@ test-agent-real: build-vcx
 ##                  PROCESSES over one file:// journal — a restart reads the
 ##                  committed watermark back, a pause survives one — against
 ##                  the orders-db package's sqlite source, no socket (sync.md
-##                  §10, RULED: SYNC-9). All four
-##                  are V test files that
-##                  left cx-private whole with the extraction — byte-
-##                  identical, into the pinned repository's own deps/cx-core-code/vcx/tests/ —
+##                  §10, RULED: SYNC-9); connector_mail_test.v (#1462) submits
+##                  through a `kind=smtp` sink to cx-platform/smtp's in-process
+##                  server on loopback (connector.md §3.8.1, RULED: 1430-e).
+##                  All five are V test files in the pinned repository's
+##                  own vcx/tests/ — the first four left cx-private whole
+##                  with the extraction, byte-identical, the fifth was born there —
 ##                  because they are the ONLY thing that grades the connector
 ##                  kit's networked half against a cx the front door built,
 ##                  which is a different question from the component
@@ -5106,7 +5120,7 @@ test-agent-real: build-vcx
 ##                  RS-16, over a released cx). THE TESTS MOVED AND THE STEP
 ##                  DID NOT (RULED: RS-12, #1591 item 11, the test-sso-
 ##                  interop shape): a `ships=package` repo carries no V
-##                  toolchain of its own (RS-25), so `v test` runs the four
+##                  toolchain of its own (RS-25), so `v test` runs the five
 ##                  files straight out of the pinned checkout, from THIS
 ##                  tree's root, so every relative path inside them (the
 ##                  mock, the reference deployment) still resolves here.
@@ -5115,7 +5129,8 @@ test-agent-real: build-vcx
 CONNECTOR_REAL_TESTS := deps/cx-platform-connector/vcx/tests/connector_live_test.v \
                         deps/cx-platform-connector/vcx/tests/connector_webhook_test.v \
                         deps/cx-platform-connector/vcx/tests/connector_bus_test.v \
-                        deps/cx-platform-connector/vcx/tests/sync_live_test.v
+                        deps/cx-platform-connector/vcx/tests/sync_live_test.v \
+                        deps/cx-platform-connector/vcx/tests/connector_mail_test.v
 .PHONY: test-connector-real
 test-connector-real: build-vcx
 	@for t in $(CONNECTOR_REAL_TESTS); do \
@@ -5163,11 +5178,19 @@ db-real-cx: check-gate-lock deps-present
 	@PKG_CONFIG_PATH="$(CURDIR)/.devbox/nix/profile/default/lib/pkgconfig$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
 	  $(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx cli-dev CLI_DEV=$(DB_REAL_CX) CX_DFLAGS='-d cx_db_pg -d cx_db_mysql' PORTABLE=true
 
+# THE CONNECTOR'S DB CASES (RULED: 1455-a, #1459). kind=db executes every backend
+# the build has, so the connector kit's walk on postgres and mysql is graded
+# HERE, on the same servers by the same driver: DB_REAL_EXTRA names
+# cx-platform-connector's two real-server files as ENGINE=FILE arguments,
+# paths from the db pin's root. A file the pinned connector does not carry
+# refuses with exit 2 — never a skip.
+DB_REAL_EXTRA := postgres=../cx-platform-connector/conformance/platform/connector_db_postgres.cxd \
+                 mysql=../cx-platform-connector/conformance/platform/connector_db_mysql.cxd
 test-db-real: build-vcx db-real-cx
 	@test -f deps/cx-platform-db/tooling/db_real.cx || { \
 	  echo "test-db-real: deps/cx-platform-db/tooling/db_real.cx is not there — the driver lives in the pinned repository (RULED: DBLANE-1); run \`make deps-sync\`" >&2; \
 	  exit 2; }
-	@cd deps/cx-platform-db && CX_BIN="$(DB_REAL_CX)" "$(DB_REAL_CX)" --allow-all tooling/db_real.cx
+	@cd deps/cx-platform-db && CX_BIN="$(DB_REAL_CX)" "$(DB_REAL_CX)" --allow-all tooling/db_real.cx $(DB_REAL_EXTRA)
 
 ## test-sso-interop  Identity-provider interop as its own CI step
 ##                  (#1403): boot the in-tree identity provider at

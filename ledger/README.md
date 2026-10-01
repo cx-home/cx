@@ -393,6 +393,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `atc-1` | [rulings_2026_08_20_authoring_toolchain.md](rulings_2026_08_20_authoring_toolchain.md) | ATC-1 — client.cxs authored; the surface derivation check graduates to `cx xap check-surface` |
 | `atc-2` | [rulings_2026_08_20_runnable_client.md](rulings_2026_08_20_runnable_client.md) | ATC-2 — `cx xap init --client` produces a RUNNABLE client |
 | `atc-2` | [rulings_2026_08_20_runnable_client.md](rulings_2026_08_20_runnable_client.md) | ATC-2 riders resolved at integration (parent session, same day) |
+| `attru-1` | [rulings_2026_10_01_owner_decisions_l153_l156.md](rulings_2026_10_01_owner_decisions_l153_l156.md) | ATTRU-1 — a bare URL in an attribute value is the data ring's string; a CXPath needs `$` (L154 = (a); #1578) |
 | `bare-1` | [rulings_2026_09_28_owner_decisions_l80_l84.md](rulings_2026_09_28_owner_decisions_l80_l84.md) | BARE-1 — a bare head is data, namespaced or not; `$` is the only call sigil (L84 = (a)) |
 | `bare-1` | [rulings_2026_09_30_integrator_decisions_l141_l142.md](rulings_2026_09_30_integrator_decisions_l141_l142.md) | Integrator decisions 2026-09-30 — Letters 141 and 142, taken under DELEG-3: the two readers of a bare head that BARE-1's round found unfixed |
 | `bare-1` | [rulings_2026_09_30_integrator_decisions_l141_l142.md](rulings_2026_09_30_integrator_decisions_l141_l142.md) | 1664 found a bare head with a `[cast …]` argument "loud nowhere": under BARE-1 it is data, silently, |
@@ -608,6 +609,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `fl-3` | [rulings_2026_08_20_columnar_lineage.md](rulings_2026_08_20_columnar_lineage.md) | FL-3 — the columnar backend joins the FL-1/FL-2 durability contract |
 | `fmt-1` | [rulings_2026_09_16_fmt_ratchet_fmt1.md](rulings_2026_09_16_fmt_ratchet_fmt1.md) | Integrator decision 2026-09-16 ~11:30Z — the fmt-sweep ratchet moves one way, and a decline fixed under it needs no spec sentence (RULED: FMT-1) |
 | `fmt-2` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | Integrator decisions, 2026-09-17 — the Ring 0 rulings owed (1363-b, 1387-a, FMT-2, GRADER-1, 1150-a, 1250-b) |
+| `fmt-2` | [rulings_2026_10_01_owner_decisions_l153_l156.md](rulings_2026_10_01_owner_decisions_l153_l156.md) | FMT-3 — FMT-2 gains the two break sites it lacks; a formatter places every comment it reads (L156 = (a); #1436) |
+| `fmt-3` | [rulings_2026_10_01_owner_decisions_l153_l156.md](rulings_2026_10_01_owner_decisions_l153_l156.md) | FMT-3 — FMT-2 gains the two break sites it lacks; a formatter places every comment it reads (L156 = (a); #1436) |
 | `fw-1` | [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) | RULED: FW-1, FW-2 — every named landing of `flow.md` lands in v0.18, end-user automation authoring (#1498) with it, and the v0.18.0 tag waits for them while the repo split lands (owner, 2026-09-24, in session on dev2) |
 | `fw-2` | [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) | RULED: FW-1, FW-2 — every named landing of `flow.md` lands in v0.18, end-user automation authoring (#1498) with it, and the v0.18.0 tag waits for them while the repo split lands (owner, 2026-09-24, in session on dev2) |
 | `ga-1` | [rulings_2026_08_20_guest_attach.md](rulings_2026_08_20_guest_attach.md) | Ruling GA-1 (2026-08-20) — attach-guest: the anonymous-floor transport (#857, owner "857a") |
@@ -766,6 +769,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pq-8` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-8 — diagram validity is a gate, driven from the shipped files |
 | `pq-9` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-9 — an operator-headed element's NAME is its head (owner feedback) |
 | `privmk-1` | [rulings_2026_09_28_owner_decisions_l105.md](rulings_2026_09_28_owner_decisions_l105.md) | PRIVMK-1 — the private flow gates and their rows live in `flows/private.mk`, pulled in by `-include` (L105 = (a)) |
+| `prose-1` | [rulings_2026_10_01_owner_decisions_l153_l156.md](rulings_2026_10_01_owner_decisions_l153_l156.md) | PROSE-1 — the data reader is the oracle for a prose body (L155 = (a); #1579) |
 | `ps-1` | [rulings_2026_08_20_postfix_uniformity.md](rulings_2026_08_20_postfix_uniformity.md) | PS-1 — every program-position bracketed form's closing bracket takes the [135a] compact-step postfix |
 | `pubfix-1` | [rulings_2026_09_27_owner_decisions_l56.md](rulings_2026_09_27_owner_decisions_l56.md) | Owner decision 2026-09-27 (afternoon) — Letter 56: the public-history replacements file must survive its own pass (PUBFIX-1) |
 | `pubfix-1` | [rulings_2026_09_27_owner_decisions_l56.md](rulings_2026_09_27_owner_decisions_l56.md) | PUBFIX-1 — fix first, then REFRESH-5 (L56 = (a)) |
@@ -908,6 +912,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `sk-1` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) | What SK-1 got wrong |
 | `sk-2` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) | SK-2 — 2026-09-06, the OWNER REVISED SK-1 (asked "is (a) the best long term?") |
 | `sk-2` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) | SK-2 — RULED: (a), three parts |
+| `slot-1` | [rulings_2026_10_01_owner_decisions_l153_l156.md](rulings_2026_10_01_owner_decisions_l153_l156.md) | SLOT-1 — a sigil-free multi-token comma slot is prose in both readers (L153 = (a); #1576) |
 | `soapv-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | SOAPV-1 — #1595 closes on the trued soap version spelling (L139 = (a)) |
 | `spawnf-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | SPAWNF-1 — an exec-time ENOENT is the same refusal a pre-spawn one is, as a round of its own (L114 = (a), delegated; #1630) |
 | `spf-1` | [rulings_2026_08_21_supervise_profile_and_python.md](rulings_2026_08_21_supervise_profile_and_python.md) | SPF-1 — a unique id is not a scheduler's to lend; a missing pack refuses at composition |
@@ -1558,4 +1563,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*374 ledger pages; 827 ids declared, 395 cited only.*
+*375 ledger pages; 831 ids declared, 395 cited only.*
