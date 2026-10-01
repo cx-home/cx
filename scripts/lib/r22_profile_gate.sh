@@ -21,6 +21,7 @@
 #   r22_tar_platform           <srcdir> <pubdir_abs> <plat>
 #   r22_stage_profiles         <pubdir> <plat>
 #   r22_profile_gate           <pubdir> <plat> [label]
+#   r22_profile_load           <dir> <prof> <vtar> [label] [build target dir]
 #
 # R22_EXPECT_HEADLINE (env, optional) — when set, r22_profile_gate additionally
 # requires every staged binary's `cx -v` FIRST LINE to equal it exactly. A cut
@@ -32,8 +33,8 @@
 # always had for the dual .dylib/.so lib names: this landing changes NO
 # caller's strictness. The linux build's own staging is deliberately NOT
 # unified here (different make target, different lib set) — see PGL-1
-# point 4 for why, and the ruling's closing note for the lib-content hole
-# that neither caller checks.
+# point 4 for why. The ruling's closing note named a lib-content hole that
+# neither caller checked; r22_profile_load closes it (RULED: RLOAD-1, #1131).
 
 # r22_vcx_target — where build-vcx actually lands its artifacts. RS-12's
 # extraction moved vcx/ itself into the cx-core-code pin (deps/cx-core-code/vcx,
@@ -174,6 +175,79 @@ r22_profile_payload() {
   fi
 }
 
+# r22_profile_load — RULED: RLOAD-1 (#1131; CR-3, CR-6). The payload check
+# above proves a library is PRESENT; it never loaded one, so a libcx-core
+# that could not parse json shipped green through this blocking gate (the
+# #1126 class). Here every staged library is loaded through the extraction
+# step's own probe (`extraction_gate_probe --artifact`), which answers the
+# artifact's `cx_codec_inventory` and `cx_features` and verifies the mask
+# against the export surface. The same probe binary then loads the build's
+# own library — the one the staging copied: libcx for the platform tarball,
+# libcx-core for data, profiles/embed/libcx for embed — and the two answers
+# must be byte-identical. A library that cannot be loaded, a build library
+# that is absent, a probe that is not built, or any difference refuses the
+# cut, naming the file and the differing lines. `cli` ships no library.
+#
+# The probe is `R22_PROBE` when set, else <build target>/extraction_gate/probe
+# (`make build-extraction-probe` builds it). The build target dir defaults to
+# r22_vcx_target; the selftest (scripts/r22_profile_load_selftest.cx, run by
+# `make release-flow-gate`) passes its own.
+r22_profile_load() {
+  local dir="$1" prof="$2" vtar="$3" label="${4:-}" t="${5:-}"
+  [ -n "$t" ] || t="$(r22_vcx_target)"
+  local probe="${R22_PROBE:-$t/extraction_gate/probe}"
+  local pat sub lib base ref work rc n feat
+  case "$prof" in
+    platform) pat='libcx.*';      sub='' ;;
+    embed)    pat='libcx.*';      sub='profiles/embed/' ;;
+    data)     pat='libcx-core.*'; sub='' ;;
+    *)        return 0 ;;
+  esac
+  if [ ! -x "$probe" ]; then
+    echo "RELEASE GATE FAILED (R2.2${label}): the loading probe $probe is not built (make build-extraction-probe) — no staged library of $vtar was loaded" >&2
+    exit 1
+  fi
+  work="$(mktemp -d)"
+  for lib in $dir/$pat; do
+    [ -e "$lib" ] || continue
+    base="$(basename "$lib")"
+    ref="$t/$sub$base"
+    if [ ! -e "$ref" ]; then
+      rm -rf "$work"
+      echo "RELEASE GATE FAILED (R2.2${label}): $vtar stages $base but the build's own $ref is absent — nothing to compare it with" >&2
+      exit 1
+    fi
+    rc=0; "$probe" --artifact "$lib" > "$work/staged" 2> "$work/staged.err" || rc=$?
+    if [ "$rc" -ne 0 ]; then
+      echo "RELEASE GATE FAILED (R2.2${label}): $vtar — the probe refused the staged $base (exit $rc): it cannot be loaded, lacks an entry, or its cx_features disagrees with its own exports" >&2
+      sed 's/^/    /' "$work/staged.err" >&2
+      rm -rf "$work"
+      exit 1
+    fi
+    rc=0; "$probe" --artifact "$ref" > "$work/build" 2> "$work/build.err" || rc=$?
+    if [ "$rc" -ne 0 ]; then
+      echo "RELEASE GATE FAILED (R2.2${label}): the probe refused the build's own $ref (exit $rc): it cannot be loaded, lacks an entry, or its cx_features disagrees with its own exports" >&2
+      sed 's/^/    /' "$work/build.err" >&2
+      rm -rf "$work"
+      exit 1
+    fi
+    if ! cmp -s "$work/build" "$work/staged"; then
+      echo "RELEASE GATE FAILED (R2.2${label}): $vtar — the staged $base answers cx_codec_inventory / cx_features differently from the build's own $ref" >&2
+      echo "  (< the build's own, > the staged library)" >&2
+      # diff answers 1 for a difference; under a caller's pipefail + errexit
+      # (release_profile_gate.sh) that status must not end the shell before
+      # the scratch dir is removed and the refusal's own exit is taken.
+      diff "$work/build" "$work/staged" | sed 's/^/    /' >&2 || true
+      rm -rf "$work"
+      exit 1
+    fi
+    n="$(sed -n '/#cx_codec_inventory$/,/^»»» /p' "$work/staged" | grep -c "$(printf '	')" || true)"
+    feat="$(sed -n '/#cx_features$/{n;n;p;}' "$work/staged")"
+    echo "   R2.2${label} load: $(basename "$vtar") $base — $n codecs, cx_features $feat — identical to the build's own $ref"
+  done
+  rm -rf "$work"
+}
+
 # r22_profile_gate — R2.2 (#651/#516 remediation register, ruled (a) BY
 # OWNER 2026-08-09): BLOCKING per-profile install verification. The cut
 # does not proceed unless EVERY staged tarball (default platform + the
@@ -239,6 +313,7 @@ r22_profile_gate() {
       fi
     fi
     r22_profile_payload "$vdir" "$prof" "$vtar" "$label"
+    r22_profile_load "$vdir" "$prof" "$vtar" "$label"
     rm -rf "$vdir"
   done
 }
