@@ -84,7 +84,7 @@
 
     [child id=lint-catalog n='16a.3.1' title='Rule catalog'
       [body
-        """Seven lint checks are currently shipped:"""]
+        """Ten lint checks are currently shipped:"""]
 
       [table
         [tr [th 'id'] [th 'severity'] [th 'name']]
@@ -95,7 +95,9 @@
         [tr [td 'CX-L006'] [td 'info'] [td 'flatten nested single-binding [?let] staircases']]
         [tr [td 'CX-L007'] [td 'warn'] [td 'aggregation over a simple field accessor']]
         [tr [td 'CX-L008'] [td 'warn'] [td 'declared shape flow across [?pipe] stages']]
-        [tr [td 'CX-L009'] [td 'warn'] [td '[?match] exhaustiveness over an [of TypeName] closed set']]]
+        [tr [td 'CX-L009'] [td 'warn'] [td '[?match] exhaustiveness over an [of TypeName] closed set']]
+        [tr [td 'CX-L010'] [td 'warn'] [td '[$exists …] over a single node — use [$present …] for presence']]
+        [tr [td 'CX-L011'] [td 'warn'] [td 'a bare head naming a [?def] in scope or a public member of an import — data, not a call; write [$name …]']]]
 
       [body
         """Each check has a normative ID, a default severity, and a
