@@ -217,7 +217,8 @@ async function measure(cdp, port, page, width, height) {
     const small = [...document.querySelectorAll(
       'aside.sidebar a, aside.sidebar summary, header.sheet-bar a, ' +
       '.toc-groups a, .toc-groups summary, .hero-cta a, .fig-caption a, ' +
-      '.cxp-reading-tab, #cxp-run, #cxp-reset, #cxp-share')]
+      '.cxp-reading-tab, #cxp-run, #cxp-reset, #cxp-share, ' +
+      '.cxp-brand, .cxp-tab, .cxp-viz-tab, .cxp-subject-tab, .cxp-gview-tab, .cxp-mini-btn')]
       .filter(e => {
         const r = e.getBoundingClientRect();
         const vis = r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden' && e.offsetParent !== null;
@@ -238,7 +239,8 @@ async function measure(cdp, port, page, width, height) {
     // unscaled SVG user-unit value, not the on-screen size after the
     // viewBox scales it — not measurable this way regardless.
     const tinyText = [...document.querySelectorAll(
-      'main p, main li, .toc-groups a, .hero-cta, .hero-cta a, .fig-caption, .fig-caption a')]
+      'main p, main li, .toc-groups a, .hero-cta, .hero-cta a, .fig-caption, .fig-caption a, ' +
+      '.cxp-brand, .cxp-tab, .cxp-viz-tab, .cxp-subject-tab, .cxp-gview-tab, .cxp-mini-btn')]
       .filter(e => e.textContent.trim().length > 0 && e.offsetParent !== null && !e.closest('svg'))
       .map(e => ({ fs: parseFloat(getComputedStyle(e).fontSize), text: e.textContent.trim().slice(0, 30), tag: e.tagName }))
       .filter(t => t.fs > 0 && t.fs < 16);

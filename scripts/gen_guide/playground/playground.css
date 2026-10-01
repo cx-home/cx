@@ -893,4 +893,18 @@ body[data-reading="query"] .cxp-doc-block { flex-grow: 0.8; }
     display: inline-flex;
     align-items: center;
   }
+  /* Round 2 (the integrator's re-read of 807b2de9f): the toolbar's brand
+     link, format tabs (CX/JSON/XML), the Pretty/Minified mini-button and
+     the View pane's subject/viz tabs (Source/Output/Both, Tree/Graph) were
+     20-22px tall and 11-12px text. The toolbar already wraps at this width
+     (.cxp-toolbar, @media max-width:900px above) rather than forcing the
+     page to scroll horizontally, so there is room to grow each control
+     without widening the page itself. */
+  .cxp-brand, .cxp-tab, .cxp-viz-tab, .cxp-subject-tab, .cxp-gview-tab, .cxp-mini-btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 16px;
+  }
+  .cxp-brand span { font-size: 16px; }
 }
