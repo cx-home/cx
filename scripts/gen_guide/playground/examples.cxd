@@ -1317,7 +1317,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
     [ok value='too-slow']]]
 #]]
   [note [#
-**Introduces:** a `[?timeout]` that elapses. The body's 200ms mock-sleep exceeds the 50ms budget, so the result is `[err code=cx-err:CXER0141 message='operation timed out after 50ms' elapsed=50ms]` rather than the body value — `elapsed=` reports the budget that was spent, not the body's own logical time.
+**Introduces:** a `[?timeout]` that elapses. The body's 200ms mock-sleep exceeds the 50ms budget, so the result is `[err code=cx-err:CXER0141 message='operation timed out after 50ms' elapsed::duration=50ms]` rather than the body value — `elapsed=`, a typed duration, reports the budget that was spent, not the body's own logical time.
 #]]
  ]
 
@@ -1356,7 +1356,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
            [ok i=$i]]]]
 #]]
   [note [#
-**Introduces:** over-limit behaviour. After `max=N` admits, further calls return `[err code=cx-err:CXER0151 message='rate limit exceeded' retry-after=1s]`.
+**Introduces:** over-limit behaviour. After `max=N` admits, further calls return `[err code=cx-err:CXER0151 message='rate limit exceeded' retry-after::duration=1s]` — `retry-after=` is a typed duration.
 #]]
  ]
 

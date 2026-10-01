@@ -488,9 +488,9 @@ error: the result carries an error value — down-secondary at /err
 'hello world'
 #]]
  ]
- [ex key=81-sleep-mock-timeout chars=82 err-chars=67
+ [ex key=81-sleep-mock-timeout chars=92 err-chars=67
   [out-text [#
-[err code=cx-err:CXER0141 message='operation timed out after 100ms' elapsed=100ms]
+[err code=cx-err:CXER0141 message='operation timed out after 100ms' elapsed::duration=100ms]
 #]]
   [err-text [#
 error: the result carries an error value — cx-err:CXER0141 at /err
@@ -562,9 +562,9 @@ error: the result carries an error value — cx-err:CXER0260 at /err
 error: the result carries an error value — cx-err:CXER0140 at /err
 #]]
  ]
- [ex key=94-timeout-fires chars=80 err-chars=67
+ [ex key=94-timeout-fires chars=90 err-chars=67
   [out-text [#
-[err code=cx-err:CXER0141 message='operation timed out after 50ms' elapsed=50ms]
+[err code=cx-err:CXER0141 message='operation timed out after 50ms' elapsed::duration=50ms]
 #]]
   [err-text [#
 error: the result carries an error value — cx-err:CXER0141 at /err
@@ -588,13 +588,13 @@ error: the result carries an error value — test-failure at /err
 [ok i=3]
 #]]
  ]
- [ex key=97-rate-limit-over chars=233 err-chars=67
+ [ex key=97-rate-limit-over chars=263 err-chars=67
   [out-text [#
 [ok i=1]
 [ok i=2]
-[err code=cx-err:CXER0151 message='rate limit exceeded' retry-after=1s]
-[err code=cx-err:CXER0151 message='rate limit exceeded' retry-after=1s]
-[err code=cx-err:CXER0151 message='rate limit exceeded' retry-after=1s]
+[err code=cx-err:CXER0151 message='rate limit exceeded' retry-after::duration=1s]
+[err code=cx-err:CXER0151 message='rate limit exceeded' retry-after::duration=1s]
+[err code=cx-err:CXER0151 message='rate limit exceeded' retry-after::duration=1s]
 #]]
   [err-text [#
 error: the result carries an error value — cx-err:CXER0151 at /err

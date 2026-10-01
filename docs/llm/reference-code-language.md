@@ -43,7 +43,7 @@ $ cx prog.cx
 ## Control flow
 
 `[?if COND [then …] [else …]]`. The clause names are mandatory: `[?if c a b]`
-is a syntax error (`cx-err:CXER0001`), not a positional shorthand.
+is a clause-shape refusal (`cx-err:CXER0111`), not a positional shorthand.
 
 `prog.cx`
 ```cx
@@ -52,7 +52,7 @@ is a syntax error (`cx-err:CXER0001`), not a positional shorthand.
 
 ```console
 $ cx prog.cx
-error: cx-err:CXER0001: [?if] expects [then …] / [else …] clause children after the condition — got a bare positional branch expression; write [?if cond [then thenExpr] [else elseExpr]?]
+error: cx-err:CXER0111: [?if] expects [then …] / [else …] clause children after the condition — got a bare positional branch expression; write [?if cond [then thenExpr] [else elseExpr]?]
 ```
 
 `[else]` may be omitted, and a false condition then yields empty:
