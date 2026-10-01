@@ -185,8 +185,11 @@
       # way (http_client_stdlib_builtin Ring 1 / http_serve_stdlib_builtin
       # Ring 2) and #1085's smtp the same way (smtp_stdlib_builtin Ring 1,
       # the pure codec and state machine / smtp_wire_stdlib_builtin Ring 2,
-      # the dialer and the serve loop) — the catalog modules are `http` and
-      # `smtp`. `ring2` is the seam probe itself, not a module, and is
+      # the dialer and the serve loop), and TIMEP-1's time the same way
+      # (time_pure_stdlib_builtin, the clock-free half every profile composes /
+      # time_clock_stdlib_builtin, the six clock reads behind `clock`) — the
+      # catalog modules are `http`, `smtp` and `time`. `ring2` is the seam
+      # probe itself, not a module, and is
       # excluded; so are `register` and `registered` -- code's builtin-dispatch
       # hook (register_stdlib_builtin, which a product's register file calls,
       # and the chain's registered_stdlib_builtin probe), the mechanism and
@@ -216,11 +219,14 @@
             [yield [?if [or [= [$re:group $dm 1] "http_client"]
                             [= [$re:group $dm 1] "http_serve"]]
               [then "http"]
+              [else [?if [or [= [$re:group $dm 1] "time_pure"]
+                             [= [$re:group $dm 1] "time_clock"]]
+                [then "time"]
               [else [?if [= [$re:group $dm 1] "smtp_wire"]
                 [then "smtp"]
                 [else [?if [$has-name $bundle-set [$strings:replace [$re:group $dm 1] "_" "-"]]
                   [then [$strings:replace [$re:group $dm 1] "_" "-"]]
-                  [else [$re:group $dm 1]]]]]]]]]]
+                  [else [$re:group $dm 1]]]]]]]]]]]]
 
           # -- Direction (1): specced modules with no implementation.
           # A spec module is satisfied iff it is a member of BUNDLE_SET
