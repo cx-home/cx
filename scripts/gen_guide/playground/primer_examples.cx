@@ -46,6 +46,7 @@
 #   cx --allow-read --allow-write scripts/gen_guide/playground/primer_examples.cx          write
 #   cx --allow-read --allow-write scripts/gen_guide/playground/primer_examples.cx --check  drift
 #   (or: make docs / make docs-check, which run it beside the primer)
+#   cx --allow-read --allow-write scripts/gen_guide/playground/primer_examples.cx --outputs   the path it writes (make generated-outputs)
 #
 # Exit: 0 green; 1 an unknown fixture id, a template with no example, or drift.
 
@@ -225,6 +226,9 @@
 
 [?let
   [= $check [$member [$env:argv] "--check"]]
+  [; --outputs (RULED: MADM-2): the file this run writes — `make
+     generated-outputs` reads it. ]
+  [= $_lo [?if [$member [$env:argv] "--outputs"] [then [?let [= $_p [$say OUT]] [$env:exit 0]]] [else 0]]]
   [= $manifest [$cx:parse [$io:read-file MANIFEST]]]
   [= $suites [$fp:flat-map [?for [in $k $manifest/*]
       [where [= [?else [$name $k] ""] "suites"]]

@@ -93,6 +93,32 @@ docs-generate: $(DOCS_CX_DEP) primer-platform ring-svg site-index
 	# docs layer (Linguist can't count CX until cx-tooling's tooling/linguist/ upstreams).
 	@$(DOCS_CX_BIN) --allow-read --allow-write --allow-subprocess scripts/lang_stats.cx
 
+## generated-outputs  Print every tracked file the documentation generators
+##                                   write, one path per line: each generator
+##                                   names its own outputs (--outputs) from the
+##                                   same declarations it writes them from —
+##                                   primer_build.cx the docs/llm/ union of
+##                                   docs-src/llm/manifest.cxd's [output] rows,
+##                                   the pins' fragments and the llmstxt.org
+##                                   pair; site_build.cx the landing page
+##                                   docs-src/site/manifest.cxd's [page out=]
+##                                   names; primer_platform.cx the platform
+##                                   chapter; primer_examples.cx the
+##                                   playground's primer picker. The merge
+##                                   flow's shape step reads it in the checkout
+##                                   at HEAD: a head that moved only these is
+##                                   admitted behind (RULED: MADM-2). Not here:
+##                                   lang_stats.cx's README badge (one line of
+##                                   a hand-written page), and what is
+##                                   gitignored (docs/guide/, the ring figure).
+##                                   It builds nothing and replays nothing.
+.PHONY: generated-outputs
+generated-outputs:
+	@$(DOCS_CX_BIN) --allow-read --allow-write --allow-env $(DOCS_GEN)/primer_build.cx --outputs
+	@$(DOCS_CX_BIN) --allow-read --allow-write --allow-env scripts/gen_site/site_build.cx --outputs
+	@$(DOCS_CX_BIN) --allow-read --allow-write $(DOCS_GEN)/primer_platform.cx --outputs
+	@$(DOCS_CX_BIN) --allow-read --allow-write scripts/gen_guide/playground/primer_examples.cx --outputs
+
 ## docs-check   DRIFT GATE. Regenerates the layer without writing and fails if
 ##                                   (a) any cited fixture's live output no longer
 ##                                   matches what the fixture records, (b) the
