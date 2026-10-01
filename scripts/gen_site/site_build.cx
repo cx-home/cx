@@ -85,6 +85,8 @@
 #   cx --allow-read --allow-write --allow-subprocess --allow-env \
 #      scripts/gen_site/site_build.cx [--check]
 #   (or: make site-index; make docs / make docs-check run it too)
+#   cx --allow-read --allow-write --allow-env scripts/gen_site/site_build.cx --outputs
+#      prints the page it writes (make generated-outputs)
 #
 # Exit: 0 green; 1 any failure (a missing case, an output mismatch, a link to a
 # file the site does not serve, drift).
@@ -553,6 +555,9 @@
   [= $self [$string $site@repo]]
   [= $src [$string $page@src]]
   [= $out [$string $page@out]]
+  [; --outputs (RULED: MADM-2): the one tracked file this run writes, the
+     [page out=] — `make generated-outputs` reads it. ]
+  [= $_lo [?if [$pb:member $argv "--outputs"] [then [?let [= $_p [$say $out]] [$env:exit 0]]] [else 0]]]
   [= $files [$site-files $m]]
   [= $_f [?if [$empty $files] [then [$die [$concat MANIFEST " declares no [files]"]]] [else 0]]]
   [= $suites [$fp:flat-map [$child-named $m "suites"] [?fn ($k) [$raw-lines $k]]]]
