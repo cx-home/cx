@@ -113,7 +113,8 @@
 
 # The id-category prefix registry — ported from the Python at HEAD
 # (grew all week: program-callstep- @f277e47d, program-map-101..113 @MSS,
-# program-attr-bare-/program-body-bare-/program-computed-step- @#923).
+# program-attr-bare-/program-body-bare-/program-computed-step- @#923,
+# program-body-block- @#1577, program-body-prose- @#1576/#1579).
 # One whitespace-separated token per prefix; level= is authoritative.
 [?const PREFIX-MAP (
   [prefixes level=core [#
@@ -131,6 +132,7 @@ cmd- eff-trace- ev-budget- ev-pull- ev-select-fair- program-callstep-
 cxast- ev-let- img- ev-park- cxtape-
 program-ascription- program-attr-ascription- program-attr-bare-
 program-body-bare- program-computed-step- program-body-ascription-
+program-body-block- program-body-prose-
 program-bytes-ascription- program-int-ascription- program-float-ascription-
 program-call- program-caps- program-collection-kind-
 program-construction-err- program-cx-pi- program-delivery-
