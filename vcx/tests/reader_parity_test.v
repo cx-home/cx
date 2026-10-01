@@ -626,6 +626,11 @@ const accepted_by_one_table = [
 	// strip_attribution_fixture.cx (K12b) did before it, unexempted only
 	// because that fixture was never wired into scripts/ or this scan.
 	AcceptedByOne{'scripts/public_history_replace_selftest.cx', .program, reason_1536},
+	// 81 -> 82: RLOAD-1's scripts/r22_profile_load_selftest.cx, the R2.2
+	// library-load case table -- the class's own shape, `[$process:run ('sh',
+	// '-c', $script) timeout-ms=120000]` and `[$process:run ('cc', '-shared',
+	// ...)]` building its fake libraries (RULED: RLOAD-1, CXF-1).
+	AcceptedByOne{'scripts/r22_profile_load_selftest.cx', .program, reason_1536},
 	// ── recorded exception — a computed attribute `name=[EXPR]` (25) ──
 	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
 	// 21 -> 22: scripts/check_migrate_namespace_fixtures.cx, RS-4's sweep grader.
