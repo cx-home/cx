@@ -22,7 +22,7 @@
 [directive-doc name='?modify' category="Core — pure-functional update" spec="§8.10"
   [sig """[?modify TREE PATH ACTION…] -> tree"""]
   [summary """Pure-functional update: walk a CXPath selection in a tree and apply actions ([set]/[delete]/[rename]/[set-attr]/[append]/[insert-before]…), returning a new tree; a path that matches nothing returns the tree unchanged."""]
-  [example [code """[?modify $doc //missing [delete]]"""] [expect """[users [user [name 'Alice']]]"""]]
+  [example [code """[?modify $doc //missing [delete]]"""] [expect """[users [user [name Alice]]]"""]]
 ]
 
 [directive-doc name='?with-open' category="Core — scoped-resource RAII" spec="§8.10.7"
