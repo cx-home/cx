@@ -240,18 +240,18 @@ fn flow_cli_local_act(span string) ?FlowCliAct {
 }
 
 // flow_cli_module_acts answers the resolver rows for one `[?lib]` import's
-// public command defs, named `alias/def`. A lib that does not resolve is REFUSED
-// here, naming the import and the loader's own reason (#1709): dropping it left
-// every act it defines "resolving to nothing", which sent the reader to the act
-// name instead of the import. The table is the program loader's own seeded one
-// (bundled stdlib AND the codec modules), so a lib the driver loads resolves
-// here too.
-fn flow_cli_module_acts(env_path string, span string, mut table code.ModuleTable) []FlowCliAct {
+// public command defs, named `alias/def`. A lib that does not resolve yields no
+// rows: the driver program carries the SAME `[?lib]` span and refuses there with
+// the loader's own CXER (CXER0210 for a missing module, CXER0271 for a missing
+// read grant — #1539), which is the message the reader needs. That holds only
+// because the scan resolves through the program loader's OWN seeded table —
+// the bundled stdlib AND the codec modules: with the stdlib alone, an acts
+// module importing cx-stdlib/cx resolved here to nothing while the driver
+// loaded it, so no refusal ever came and every act it defines "resolved to
+// nothing" (#1709).
+fn flow_cli_module_acts(span string, mut table code.ModuleTable) []FlowCliAct {
 	ln := cx.parse_lib(span) or { return [] }
-	m := code.resolve_lib(ln, mut table) or {
-		eprintln('cx flow: --env "${env_path}": its import `${span.trim_space()}` does not resolve, so none of its acts can: ${err.msg()}')
-		exit(1)
-	}
+	m := code.resolve_lib(ln, mut table) or { return [] }
 	prefix := code.module_call_prefix(ln)
 	only := ln.only_imports
 	effects := flow_cli_pkg_effects(ln, m)
@@ -334,7 +334,7 @@ fn flow_cli_env_scan(path string) ([]string, []FlowCliAct) {
 		match sp.kind {
 			.lib {
 				directives << sp.text
-				acts << flow_cli_module_acts(path, sp.text, mut table)
+				acts << flow_cli_module_acts(sp.text, mut table)
 			}
 			.const_ {
 				directives << sp.text
