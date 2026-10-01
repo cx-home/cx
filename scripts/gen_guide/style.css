@@ -837,3 +837,23 @@ p.pair-title {
 @media (max-width: 900px) {
   .pair { grid-template-columns: 1fr; }
 }
+
+
+/* ── Text ≥ 16px on a phone (DOCS-51 / #1740) ────────────────────────────
+   The handful of classed captions set smaller than the body copy on
+   purpose at desktop reading distance — a fixture's file/source line, a
+   directive's signature and its one-line note, the home hero's engine note
+   and run verdict — read too small at arm's length on a phone. Raised to
+   the body size here ONLY (this block is deliberately the last rule in the
+   sheet, so it wins a same-specificity tie with every rule above, media
+   query or not); the desktop hierarchy (unchanged) still sets them off from
+   the surrounding prose by colour and a left rule, not by shrinking below
+   16px. */
+@media (max-width: 640px) {
+  .fixture p.fixture-file, .fixture p.fixture-src,
+  figure.home-run p.fixture-file, figure.home-run p.fixture-src,
+  p.fn-sig, .note, p.note,
+  .home-hero-note, .home-run-verdict {
+    font-size: 16px;
+  }
+}
