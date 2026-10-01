@@ -1,0 +1,179 @@
+# scripts/r22_profile_load_selftest.cx — the case table of the R2.2 release
+# step's library load (RULED: RLOAD-1, cx-private #1131; CR-3, CR-6).
+#
+# R2.2 (scripts/lib/r22_profile_gate.sh) checked that a staged library was
+# PRESENT and never loaded one, so a libcx-core that could not parse json
+# shipped green through the blocking cut gate. `r22_profile_load` now loads
+# each staged library through the extraction step's probe (`--artifact`) and
+# compares its cx_codec_inventory and cx_features with the build's own
+# library. This program lays out staged profile directories and build target
+# directories under a scratch root and runs the REAL shell step against each,
+# grading its exit status and the text it must carry. The step is shell because
+# R2.2 already is (CXF-1); only the fixture libraries are C, because the thing
+# under test is a native library loaded with dlopen and a cx program cannot
+# emit one (the cx-gap is #1728).
+#
+# Run from the repo root (make release-flow-gate runs it):
+#   cx --allow-read --allow-write --allow-subprocess --allow-env \
+#     scripts/r22_profile_load_selftest.cx <probe> <build target dir> [--fn NAME] [--lib FILE]
+#
+# <probe> is the built extraction probe; <build target dir> holds the build's
+# real libcx (the match-real case stages a copy of it). `--fn` runs the cases
+# against another function of the library with the same arguments and `--lib`
+# against another copy of the library: `--fn r22_profile_payload --lib
+# <the head's r22_profile_gate.sh>` is the red-first proof on the pinned step,
+# where the presence check waves the json-lacking, unloadable and mismatched
+# libraries through.
+#
+# Exit 0 when every case holds, 1 with the failures named on stderr, 2 usage.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+# opt — the value after `--name` in argv, or the default.
+[?def opt scope=private impure [returns string] ($argv $name::string $default::string)
+  [?let [= $at [?for [in $i [$range 1 [$count $argv]]] [where [= [$nth $argv $i] $name]] [yield $i]]]
+    [?if [> [$count $at] 0]
+      [then [$string [$nth $argv [+ [$first $at] 1]]]]
+      [else $default]]]]
+
+# the codec inventory the build's libcx-core answers, cut to two lines, and
+# the same without json — the #1126 class: a library whose registry lost a codec.
+[?const INV-JSON "cx\\t1\\t0\\t1\\t0\\t1\\njson\\t1\\t0\\t1\\t0\\t1\\n"]
+[?const INV-NOJSON "cx\\t1\\t0\\t1\\t0\\t1\\n"]
+
+# fake-src — a library exporting the four symbols the probe's artifact mode
+# calls. Its mask sets no symbol-gated bit (CR-6's eight) and it exports none
+# of their symbols, so the probe's mask check holds and the case grades only
+# the comparison.
+[?def fake-src scope=private pure [returns string] ($inv::string $feat::string)
+  [$concat "#include <stdlib.h>\n#include <string.h>\n"
+           "int cx_init(void) { return 0; }\n"
+           "void cx_free(char *p) { free(p); }\n"
+           "char *cx_features(void) { return strdup(\"" $feat "\"); }\n"
+           "char *cx_codec_inventory(void) { return strdup(\"" $inv "\"); }\n"]]
+
+[?def sh scope=private impure ($script::string)
+  [$process:run ('sh', '-c', $script) timeout-ms=120000]]
+
+# fake-lib — compile a fake library to $out; answer '' or the failure.
+[?def fake-lib scope=private impure [returns string] ($root::string $out::string $inv::string $feat::string)
+  [?let [= $src [$concat $out '.c']]
+        [= $_w [$io:write-file $src [$fake-src $inv $feat]]]
+        [= $r [$process:run ('cc', '-shared', '-fPIC', '-o', $out, $src) timeout-ms=120000]]
+        [= $_rm [$io:remove $src]]
+    [?if [= $r@exit-code 0] [then ''] [else [$concat 'cc failed for ' $out ': ' [$string $r@stderr]]]]]]
+
+# stage — a staged profile directory the way r22_stage_profiles lays one out
+# (cx, cx.h, the re2 license, the library), so the pinned presence check
+# passes it and only the load can tell the cases apart.
+[?def stage scope=private impure ($dir::string)
+  [?let [= $_m [$io:make-dirs $dir]]
+        [= $_a [$io:write-file [$concat $dir '/cx'] "#!/bin/sh\n"]]
+        [= $_b [$io:write-file [$concat $dir '/cx.h'] "/* cx.h */\n"]]
+    [$io:write-file [$concat $dir '/LICENSE-re2.txt'] "re2\n"]]]
+
+# run-step — `. <lib> && <fn> <dir> <prof> <vtar> /selftest <target>` under
+# bash, R22_PROBE set; answers [got exit= out=] with the scratch root written <root>.
+[?def run-step scope=private impure ($lib::string $fn::string $probe::string $root::string
+                                      $dir::string $prof::string $target::string)
+  [?let [= $r [$process:run ('bash', '-c', [$concat '. "' $lib '" && "$0" "$@"'], $fn,
+                             $dir, $prof, [$concat 'cx-' $prof '-selftest.tar.gz'], '/selftest', $target)
+                  env={R22_PROBE: $probe} timeout-ms=120000]]
+    [got exit=[$string $r@exit-code]
+         out=[$strings:replace [$concat [$string $r@stdout] [$string $r@stderr]] $root '<root>']]]]
+
+# has-all — every substring of $want is in $text.
+[?def has-all scope=private pure [returns bool] ($text::string $want)
+  [= [$count [?for [in $w $want] [where [not [$strings:contains $text $w]]] [yield $w]]] 0]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $_u [?if [< [$count $argv] 3]
+           [then ([$cry 'usage: r22_profile_load_selftest.cx <probe> <build target dir> [--fn NAME] [--lib FILE]'], [$env:exit 2])]
+           [else ()]]]
+  [= $probe [$string [$nth $argv 2]]]
+  [= $build [$string [$nth $argv 3]]]
+  [= $fn  [$opt $argv '--fn' 'r22_profile_load']]
+  [= $lib [$opt $argv '--lib' 'scripts/lib/r22_profile_gate.sh']]
+  [= $ext [?if [= [$strings:trim [$string [$sh 'uname -s']@stdout]] 'Darwin'] [then 'dylib'] [else 'so']]]
+  [= $core [$concat 'libcx-core.' $ext]]
+  [= $mono [$concat 'libcx.' $ext]]
+  [= $tmp [$io:temp-dir 'cx-r22-load-']]
+  [= $root [$strings:trim [$string [$sh [$concat "cd '" $tmp "' && pwd -P"]]@stdout]]]
+
+  # the fixture libraries, compiled once
+  [= $f-json   [$concat $root '/fake-json.' $ext]]
+  [= $f-nojson [$concat $root '/fake-nojson.' $ext]]
+  [= $f-feat   [$concat $root '/fake-feat.' $ext]]
+  [= $builds ([$fake-lib $root $f-json   INV-JSON   '0x1'],
+              [$fake-lib $root $f-nojson INV-NOJSON '0x1'],
+              [$fake-lib $root $f-feat   INV-JSON   '0x3'])]
+  [= $cc-bad [?to-sequence [?for [in $b $builds] [where [not [= $b '']]] [yield $b]]]]
+
+  # each case: the staged library (a fixture, a copy of the build's libcx,
+  # garbage, or none), the build's own (a fixture, the real target, or none),
+  # the probe, and what the step must answer.
+  [= $cases (
+      [c id=lacks-json prof=data staged=nojson build=json probe=built exit=1
+         want='the staged libcx-core|answers cx_codec_inventory / cx_features differently|< json'],
+      [c id=features-differ prof=data staged=feat build=json probe=built exit=1
+         want='answers cx_codec_inventory / cx_features differently|< 0x1|> 0x3'],
+      [c id=unloadable prof=data staged=garbage build=json probe=built exit=1
+         want='the probe refused the staged libcx-core|cannot be loaded|cannot load <root>/unloadable/staged/libcx-core'],
+      [c id=build-absent prof=data staged=json build=none probe=built exit=1
+         want="but the build's own <root>/build-absent/target/libcx-core|is absent"],
+      [c id=probe-absent prof=data staged=json build=json probe=none exit=1
+         want='the loading probe <root>/no-probe is not built'],
+      [c id=match prof=data staged=json build=json probe=built exit=0
+         want="libcx-core|2 codecs, cx_features 0x1|identical to the build's own <root>/match/target/libcx-core"],
+      [c id=match-real prof=platform staged=real build=real probe=built exit=0
+         want="libcx.|identical to the build's own"])]
+
+  [= $results [?for [in $c $cases]
+    [yield [?let
+      [= $id [$string $c@id]]
+      [= $dir [$concat $root '/' $id '/staged']]
+      [= $tdir [$concat $root '/' $id '/target']]
+      [= $_s [$stage $dir]]
+      [= $_t [$io:make-dirs $tdir]]
+      [= $name [?if [= [$string $c@prof] 'platform'] [then $mono] [else $core]]]
+      [= $st [$string $c@staged]]
+      [= $_1 [?if [= $st 'json'] [then [$sh [$concat "cp '" $f-json "' '" $dir '/' $name "'"]]]
+             [else [?if [= $st 'nojson'] [then [$sh [$concat "cp '" $f-nojson "' '" $dir '/' $name "'"]]]
+             [else [?if [= $st 'feat'] [then [$sh [$concat "cp '" $f-feat "' '" $dir '/' $name "'"]]]
+             [else [?if [= $st 'real'] [then [$sh [$concat "cp '" $build '/' $name "' '" $dir '/' $name "'"]]]
+             [else [$io:write-file [$concat $dir '/' $name] "not a library\n"]]]]]]]]]]
+      [= $bd [$string $c@build]]
+      [= $_2 [?if [= $bd 'json'] [then [$sh [$concat "cp '" $f-json "' '" $tdir '/' $name "'"]]] [else null]]]
+      [= $target [?if [= $bd 'real'] [then $build] [else $tdir]]]
+      [= $pr [?if [= [$string $c@probe] 'none'] [then [$concat $root '/no-probe']] [else $probe]]]
+      [= $g [$run-step $lib $fn $pr $root $dir [$string $c@prof] $target]]
+      [= $want [$strings:split [$string $c@want] '|']]
+      [r id=$id ok=[and [= $g@exit [$string $c@exit]] [$has-all [$string $g@out] $want]]
+         exit=$g@exit want-exit=[$string $c@exit] out=[$string $g@out] want=[$strings:join $want ' | ']]]]]]
+
+  [= $_rm [$io:remove-tree $tmp]]
+  [= $bad [?to-sequence [?for [in $r $results] [where [not $r@ok]] [yield $r]]]]
+  [= $_out [?for [in $r $results]
+             [yield [?if $r@ok
+                      [then [$say [$concat '  ok    ' [$string $r@id]]]]
+                      [else [$cry [$concat '  FAIL  ' [$string $r@id] ' — exit ' [$string $r@exit]
+                                           ' (want ' [$string $r@want-exit] '), want: ' [$string $r@want]
+                                           "\n    got: " [$strings:replace [$string $r@out] "\n" "\n         "]]]]]]]]
+  [?if [> [$count $cc-bad] 0]
+    [then [?let [= $_c [?for [in $b $cc-bad] [yield [$cry [$concat 'r22-load selftest: ' $b]]]]]
+            [$env:exit 1]]]
+    [else [?if [= [$count $bad] 0]
+      [then [?let [= $_ [$say [$concat 'r22-load selftest: ' [$string [$count $results]] '/' [$string [$count $results]]
+                                       ' via ' $fn ' (json lacking, cx_features differing, unloadable, build library absent,'
+                                       ' probe absent: refused naming the file; a matching library and the real libcx: identical)']]]
+              [$env:exit 0]]]
+      [else [?let [= $_ [$cry [$concat 'r22-load selftest: ' [$string [$count $bad]] ' of '
+                                       [$string [$count $results]] ' case(s) FAILED via ' $fn]]]
+              [$env:exit 1]]]]]]]

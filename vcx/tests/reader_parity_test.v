@@ -473,9 +473,7 @@ fn accepted_by_one_scan() ([]AcceptedByOne, map[string]string) {
 // syntax", and a program form the data grammar has no production for is not a
 // defect of either.
 
-const reason_1576 = "#1576 — a parenthetical `(…)` or a COMMA inside a body §9 [L25b] has classified as bare prose. The data reader answers ONE prose run; the program reader applies ASP-3's structure-token rule (a ws-delimited `(…)` is discrete) and [L25c]'s comma-array rule, both of which are written for bodies that carry NO bareword. Which rule wins when a bareword IS present is what [L25b] does not say. Split from #1559 by 1559-a's measurement."
-
-const reason_1577 = "#1577 — a `[| … ]` BLOCK SPAN's content. The data reader carries it verbatim (ast.md's BlockContent); the program reader tokenizes inside it, so a `|` or a digit-led run in that content is read as program text — and in one of these the LEXER refuses before any parser could re-scan, which is why 1559-a's parser-driven span cannot reach it. Split from #1559."
+const reason_1576 = "#1576, its COMMA half — a top-level comma beside a bareword. The data reader answers ONE ARRAY ([L25c], normative) whose multi-token slots are prose strings, every [L70a] BareChar included (`full cx.lock — https + file resolvers`); the program reader treats a comma slot as an EXPRESSION position (1559-a names a collection slot among them), so a `+` or a `.` in a multi-token slot is program text and the slot refuses. Whether a multi-token [L25c] slot is prose or an expression is the one question [L25c] does not answer (its QUOTE OPENING example even reads a comma body as prose) — a letter on #1576. The PARENTHETICAL half (yaml.cxd line 19) is fixed: a `(…)` that is no sequence literal is prose and a glued `#` in it is no comment (RULED: CXF-5). yaml.cxd stays under the same question at line 155, a bareword beside a whitespace-separated sequence LITERAL whose slots are multi-token prose (`keys unquote (the CX→YAML emitter quotes keys, so roundtrip …)`): the data reader answers the prose run then the sequence, the program reader reads the literal's slots as expressions and refuses `unquote (` as a paren-call — the same letter. Split from #1559."
 
 const reason_1578 = "#1578 — a bare URL in an ATTRIBUTE VALUE. 1559-a narrowed 1384-a's `/` sentence so a bare URL in a BODY is prose in both rings, but an attribute value is an EXPRESSION position (1559-d) and #923/BC-1's attr-value run sends a `/`-bearing value whose prefix reads as a path head to the CXPath lane. Whether that lane should prefer the data reading's string is the one question 1559-a's row does not settle; the refusal is at least loud and carries its own fix. Split from #1559."
 
@@ -512,7 +510,6 @@ const accepted_by_one_table = [
 	AcceptedByOne{'deps/cx-core-data/conformance/lockfile.cxd', .data, reason_1576},
 	AcceptedByOne{'deps/cx-core-data/conformance/yaml.cxd', .data, reason_1576},
 	AcceptedByOne{'examples/article.cx', .data, reason_1579},
-	AcceptedByOne{'examples/vcore.cx', .data, reason_1577},
 	// ── #1559 — a bare URL's `://` (RULED: 1384-a keeps `/` out of the run) (3) ──
 	AcceptedByOne{'examples/chapter.cx', .data, reason_1578},
 	AcceptedByOne{'examples/post.cx', .data, reason_1578},
@@ -626,6 +623,11 @@ const accepted_by_one_table = [
 	// strip_attribution_fixture.cx (K12b) did before it, unexempted only
 	// because that fixture was never wired into scripts/ or this scan.
 	AcceptedByOne{'scripts/public_history_replace_selftest.cx', .program, reason_1536},
+	// 81 -> 82: RLOAD-1's scripts/r22_profile_load_selftest.cx, the R2.2
+	// library-load case table -- the class's own shape, `[$process:run ('sh',
+	// '-c', $script) timeout-ms=120000]` and `[$process:run ('cc', '-shared',
+	// ...)]` building its fake libraries (RULED: RLOAD-1, CXF-1).
+	AcceptedByOne{'scripts/r22_profile_load_selftest.cx', .program, reason_1536},
 	// ── recorded exception — a computed attribute `name=[EXPR]` (25) ──
 	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
 	// 21 -> 22: scripts/check_migrate_namespace_fixtures.cx, RS-4's sweep grader.
@@ -804,5 +806,37 @@ fn test_accepted_by_one_shapes_are_graded_by_both_readers() {
 		}
 		assert data_ok == sh.data_ok, 'reader-parity accepted-by-one shape: the DATA reader ${if data_ok { 'accepts' } else { 'refuses' }} `${sh.src}`, the step says it must ${if sh.data_ok { 'accept' } else { 'refuse' }} it: ${data_msg}\n  ${sh.reason}'
 		assert prog_ok == sh.program_ok, 'reader-parity accepted-by-one shape: the PROGRAM reader ${if prog_ok { 'accepts' } else { 'refuses' }} `${sh.src}`, the step says it must ${if sh.program_ok { 'accept' } else { 'refuse' }} it: ${prog_msg}\n  ${sh.reason}'
+	}
+}
+
+// ── ONE TREE for the split-out divergences of #1559 (RULED: CXF-5) ──────────
+//
+// Each shape below was in the accepted-by-one column: the data reader
+// accepted it and the program reader refused it. The fix for each makes the
+// PROGRAM reader answer the data reading's tree, so the step asserts the
+// stronger property the column cannot: BOTH readers accept the bytes and their
+// canonical renders are byte-equal. A shape moves here with the fix that
+// closes its issue, and its file leaves accepted_by_one_table in the same
+// change.
+struct OneTreeShape {
+	src   string
+	issue string
+}
+
+const one_tree_shapes = [
+	OneTreeShape{'[p [| a | b, 2b here [em x] |]]', '#1577 — a `|`, a comma and a digit-led run inside a block span are block text'},
+	OneTreeShape{'[p [|\n  Visit our [a href=https://example.com site] or\n  read the [a href=https://docs.example.com docs].\n|]]', '#1577 — examples/vcore.cx line 80, the block paragraph'},
+	OneTreeShape{'[title examples/books.yaml verbatim — block seq of 3 four-key mappings (#412 repro)]', '#1576 — conformance/yaml.cxd line 19: a parenthetical that is no sequence literal, glued to a `#`, inside a body a bareword makes prose'},
+	OneTreeShape{'[p see the ratio a#b and (x#y) here]', '#1576 — a `#` glued inside a prose run or after a non-literal paren is prose in both readers, never a comment'},
+	OneTreeShape{"[title under --strict `filter`'s `::array` + `::function` signature admits the ordinary call]", '#1579 — stdlib/array.cxd line 309: an apostrophe glued after a backtick run is inside the bareword (1521-a), never a string opener'},
+]
+
+fn test_split_divergences_answer_one_tree() {
+	for sh in one_tree_shapes {
+		a := data_render(sh.src)
+		b := program_render(sh.src)
+		assert !a.starts_with('REJECT'), 'reader-parity one-tree: the DATA reader refuses `${sh.src}`: ${a}\n  ${sh.issue}'
+		assert !b.starts_with('REJECT'), 'reader-parity one-tree: the PROGRAM reader refuses `${sh.src}`: ${b}\n  ${sh.issue}'
+		assert a == b, 'reader-parity one-tree: the two readers answer DIFFERENT trees for `${sh.src}`:\n  data: ${a}\n  prog: ${b}\n  ${sh.issue} (RULED: CXF-5)'
 	}
 }

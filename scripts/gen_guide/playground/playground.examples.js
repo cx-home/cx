@@ -786,7 +786,7 @@
     "94-timeout-fires": {
       label: "[94] [?timeout] \u2014 fires after mock sleep",
       input: "[?timeout 50ms\n  [?let [= $_ [?sleep 200ms mock]]\n    [ok value='too-slow']]]",
-      note:  "**Introduces:** a `[?timeout]` that elapses. The body's 200ms mock-sleep exceeds the 50ms budget, so the result is `[err code=cx-err:CXER0141 message='operation timed out after 50ms' elapsed=50ms]` rather than the body value \u2014 `elapsed=` reports the budget that was spent, not the body's own logical time.",
+      note:  "**Introduces:** a `[?timeout]` that elapses. The body's 200ms mock-sleep exceeds the 50ms budget, so the result is `[err code=cx-err:CXER0141 message='operation timed out after 50ms' elapsed::duration=50ms]` rather than the body value \u2014 `elapsed=`, a typed duration, reports the budget that was spent, not the body's own logical time.",
       tags:  ["eq", "let", "mock", "sleep", "timeout"],
       section: "code/resilience",
       runnable: true,
@@ -810,7 +810,7 @@
     "97-rate-limit-over": {
       label: "[97] [?rate-limit] \u2014 exceeds the limit",
       input: "[?for [in $i (1, 2, 3, 4, 5)]\n  [yield [?rate-limit max=2 per=1s\n           [ok i=$i]]]]",
-      note:  "**Introduces:** over-limit behaviour. After `max=N` admits, further calls return `[err code=cx-err:CXER0151 message='rate limit exceeded' retry-after=1s]`.",
+      note:  "**Introduces:** over-limit behaviour. After `max=N` admits, further calls return `[err code=cx-err:CXER0151 message='rate limit exceeded' retry-after::duration=1s]` \u2014 `retry-after=` is a typed duration.",
       tags:  ["for", "rate-limit", "resilience"],
       section: "code/resilience",
       runnable: true,
