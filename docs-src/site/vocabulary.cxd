@@ -116,6 +116,5 @@ never rises. Not scanned, by name: "landing" ("landing page").
     [page path="scripts/gen_site/docs_vocabulary_check.cx" word=lane allow=2 why="the program's header names the words it counts and the one the [tree] rows hold"]
     [page path="AGENTS.md" word=lane allow=1 why="the Words rule names the refused word: not ruling, not campaign, not lane, not gate run"]
     [page path="AGENT-STANDING-RULES.md" word=lane allow=3 why="the vocabulary line names the refused word; two handoff rules of 2026-09-26 and 09-27 quoted verbatim as history"]
-    [page path="scripts/spec_freeze_gate.sh" word=lane allow=1 why="an exemption row quoting commit efd780b17's recorded note, history"]
-    [page path="spec/03-approved/process/governance.md" word=lane allow=1 why="the status table cites code.md §11.4's own term reference-lane-only (cx-core-code's spec, a different sense; its word moves with a decision on that page)"]]
+    [page path="scripts/spec_freeze_gate.sh" word=lane allow=1 why="an exemption row quoting commit efd780b17's recorded note, history"]]
 ]

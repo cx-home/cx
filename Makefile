@@ -5047,7 +5047,7 @@ clean:
 ##
 ##                  THE SCRIPT MOVED, THEN THE ESTATE DID TOO (RULED: RS-12,
 ##                  RS-8, RS-7, RS-20; #1591 items 12 and K3). scripts/
-##                  oriel_lane.sh is cx-platform-ux's; the ORIEL estate it
+##                  oriel_real.sh is cx-platform-ux's; the ORIEL estate it
 ##                  drives (spec/03-approved/xap/demos/oriel/) was this
 ##                  tree's and is cx-platform-xap's now (K3's leave). So the
 ##                  step runs the script out of the UX pin, against THIS
@@ -5057,13 +5057,13 @@ clean:
 ##                  never a skip.
 .PHONY: test-oriel
 test-oriel: build-vcx
-	@test -f deps/cx-platform-ux/scripts/oriel_lane.sh || { \
+	@test -f deps/cx-platform-ux/scripts/oriel_real.sh || { \
 	  echo "test-oriel: deps/cx-platform-ux/ is not there — the step script lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
 	  exit 2; }
 	@test -f deps/cx-platform-xap/spec/03-approved/xap/demos/oriel/serve.cx || { \
 	  echo "test-oriel: deps/cx-platform-xap/ is not there — the ORIEL estate lives in the pinned repository now (RS-12, RS-8; #1591 item K3); run \`make deps-sync\`" >&2; \
 	  exit 2; }
-	@ORIEL_ESTATE="$(CURDIR)/deps/cx-platform-xap" CX_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/cx" bash deps/cx-platform-ux/scripts/oriel_lane.sh
+	@ORIEL_ESTATE="$(CURDIR)/deps/cx-platform-xap" CX_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/cx" bash deps/cx-platform-ux/scripts/oriel_real.sh
 
 ## test-agent-real  The agent modules' four real-socket programs as their
 ##                  own step (RULED: RS-12, #1591 item 12): an MCP client and
@@ -5226,10 +5226,10 @@ test-db-real: build-vcx db-real-cx
 ##                  resolves in the checkout; CX_BIN is what crosses.
 .PHONY: test-sso-interop
 test-sso-interop: build-vcx
-	@test -f deps/cx-platform-sso/scripts/sso_interop_lane.sh || { \
+	@test -f deps/cx-platform-sso/scripts/sso_interop.sh || { \
 	  echo "test-sso-interop: deps/cx-platform-sso/ is not there — the script lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
 	  exit 2; }
-	@CX_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/cx" bash deps/cx-platform-sso/scripts/sso_interop_lane.sh
+	@CX_BIN="$(CURDIR)/deps/cx-core-code/vcx/target/cx" bash deps/cx-platform-sso/scripts/sso_interop.sh
 
 # ── <cx-diagram> web-component offline step (#1015) ────────────────────────────
 # Sibling of the playground's no-CDN gate (#1007), for the OTHER surface that
