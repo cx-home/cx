@@ -687,6 +687,20 @@ p.fn-sig code { font-size: 0.82em; color: var(--ink); background: rgba(26,24,18,
     display: flex;
     align-items: center;
   }
+  /* Tap targets ≥ 44px, round 2 (DOCS-51 / #1740, the integrator's browser
+     read on PLAY-3): the guide home's own grouped table of contents
+     (`.toc-groups a` — every chapter/section link, on guide.html's body,
+     not the sidebar) and the two short CTA/caption links that follow a
+     ring figure (`.hero-cta a`, `.fig-caption a`) measured 15px/13px tall
+     — the real `height<44` finding (165 on guide.html, 1 on index.html;
+     querySelectorAll('a,button') showed none of them are the ring figure's
+     own SVG content, which draws plain, non-interactive <text> — these
+     three link families are the whole count. */
+  .toc-groups a, .hero-cta a, .fig-caption a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
 }
 
 /* ── DOCS-4: the generated figures and the before/after panels ──────────
@@ -855,5 +869,29 @@ p.pair-title {
   p.fn-sig, .note, p.note,
   .home-hero-note, .home-run-verdict {
     font-size: 16px;
+  }
+  /* Round 2 (the integrator's browser read on PLAY-3): the guide home's
+     table-of-contents links (15px), and the two short links that follow a
+     ring figure — the hero's "WHY CX / CHOOSE YOUR RING" CTAs (11.5px,
+     inherited from .hero-cta) and the figure's own caption link (9.5px,
+     inherited from .fig-caption) — read under 16px on a phone. */
+  .toc-groups a, .hero-cta, .fig-caption {
+    font-size: 16px;
+  }
+  /* The guide home's ring figure (`.hero-fig`, names=true) draws every
+     module as a tick with a radial label at 7.2–7.4 SVG user-units; at a
+     ~330px phone render width (viewBox 0 0 720 720) that is unreadable —
+     a few px tall — long before any font-size rule could fix it, since the
+     SVG scales as one image. Dropping the per-module/per-row text keeps the
+     rings, the ring and group titles, and the repository cluster names
+     (the groups above the modules); the figure's own caption link (bumped
+     to >=16px/44px tall above) is the named route to every module, in full
+     size, on rings.html — the figure a link away (DOCS-42's own phrase).
+     rings.html's own dedicated figure (`figure.ring-figure`, not
+     `.hero-fig`) is untouched: reading every module name IS that page's
+     job, and it is not one of #1740's six audited pages. */
+  .hero-fig .rf-r1 text,
+  .hero-fig .rf-module text, .hero-fig .rf-planned text, .hero-fig .rf-row text {
+    display: none;
   }
 }

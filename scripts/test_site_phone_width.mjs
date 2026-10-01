@@ -10,11 +10,25 @@
 //     is the existing, correct pattern and is not refused here);
 //   - the main content column's left/right padding (its "gutter") is at
 //     least 16px;
-//   - every sidebar/nav link and `<summary>` toggle — a phone's primary
-//     navigation once the header's secondary row collapses — is at least
-//     44x44px;
-//   - the smallest font-size inside the main content's running prose
-//     (`main p`, `main li`) is at least 16px.
+//   - every visible navigation/control tap target — the sidebar, the
+//     header nav, the guide home's table-of-contents, a hero CTA, a ring
+//     figure's caption link, the playground's tabs/buttons (#1740 round 2:
+//     the integrator's browser read found 165 on guide.html and 1 on
+//     index.html this gate's selector, and its old "both width AND height
+//     under 44" test, both missed) — is at least 44px tall. An inline link
+//     inside running prose or a reference list is exempt, same as WCAG's
+//     own target-size criterion exempts it;
+//   - the smallest font-size of the running prose (`main p`, `main li`, as
+//     before) PLUS the guide home's table-of-contents entries and the two
+//     links that follow a ring figure (`.toc-groups a`, `.hero-cta`,
+//     `.fig-caption` — #1740 round 2's named findings) is at least 16px.
+//     This is deliberately not a sweep of every text node on the page: a
+//     handful of small badges/sub-links predate this round and sit outside
+//     #1740's named findings (RESULTS.md flags them, this gate does not).
+//     SVG `<text>` is excluded on principle: its computed font-size is the
+//     unscaled SVG user-unit value, not the on-screen pixel size after the
+//     viewBox scales it — the ring figure's own per-module labels are a
+//     stylesheet fix, not a gate assertion (scripts/gen_guide/style.css).
 // A violation on any page, at either width, is named by URL, width and the
 // measurement; exit 1. Needs Chrome/Chromium (CX_CHROME) and a built site
 // (`make site`); boots its own static server over `scripts/serve_static.cx`.
@@ -176,21 +190,63 @@ async function measure(cdp, port, page, width, height) {
     const main = document.querySelector('main') || document.body;
     const cs = getComputedStyle(main);
     const gutterL = parseFloat(cs.paddingLeft) || 0, gutterR = parseFloat(cs.paddingRight) || 0;
-    const small = [...document.querySelectorAll('aside.sidebar a, aside.sidebar summary, .toc-groups summary, header.sheet-bar a, .cxp-reading-tab, #cxp-run, #cxp-reset, #cxp-share')]
+    // Every visible NAVIGATION/CONTROL tap target — the sidebar, the
+    // header nav, the guide home's table-of-contents, the hero CTAs and a
+    // ring figure's own caption link, the playground's tabs/buttons (#1740
+    // round 2, the integrator's browser read on PLAY-3:
+    // querySelectorAll('a,button') found 165 on guide.html and 1 on
+    // index.html at under 44px tall — this gate's selector had the
+    // sidebar and header but had forgotten '.toc-groups a' itself (only
+    // its 'summary' toggles), and both '.hero-cta a' and '.fig-caption a'
+    // outright; its "width AND height both under 44" test would have
+    // missed them regardless, a full-width link only 15px tall tripping
+    // neither half). Deliberately NOT every '<a>' on the page: an inline
+    // citation link inside running prose or a reference list — 'repo-
+    // cx.html''s "README" / "spec/03-approved" / "conformance" links, or a
+    // "the why page" cross-reference mid-sentence — is read, not tapped as
+    // a control, and WCAG's own target-size criterion exempts exactly this
+    // case (a control inside a sentence or block of text); a blanket sweep
+    // over the whole page confirmed as much — it flagged ordinary prose
+    // links on 'repo-cx.html' that the integrator's own read never named.
+    // Height only, matching the integrator's own probe exactly (not width
+    // too, as a first cut here did): a text-list entry's natural width is
+    // its own label ("Home", 42px) and was never the complaint — only ever
+    // "N px tall". A width-and-height-both control (an icon button) would
+    // still be refused by this check if it is short, since its usual tall
+    // dimension IS the height check already covers.
+    const small = [...document.querySelectorAll(
+      'aside.sidebar a, aside.sidebar summary, header.sheet-bar a, ' +
+      '.toc-groups a, .toc-groups summary, .hero-cta a, .fig-caption a, ' +
+      '.cxp-reading-tab, #cxp-run, #cxp-reset, #cxp-share')]
       .filter(e => {
         const r = e.getBoundingClientRect();
-        const vis = r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden';
-        return vis && (r.height < 44 && r.width < 44);
+        const vis = r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden' && e.offsetParent !== null;
+        return vis && r.height < 44;
       })
       .map(e => ({ tag: e.tagName, text: (e.textContent || '').trim().slice(0, 30), w: Math.round(e.getBoundingClientRect().width), h: Math.round(e.getBoundingClientRect().height) }));
-    const tinyText = [...document.querySelectorAll('main p, main li')]
-      .filter(e => e.textContent.trim().length > 0)
-      .map(e => parseFloat(getComputedStyle(e).fontSize))
-      .filter(fs => fs > 0 && fs < 16);
+    // The running prose (as before), PLUS the caption/nav-link classes the
+    // integrator's browser read actually named — the guide home's
+    // table-of-contents entries and the two links that follow a ring
+    // figure (#1740 round 2). This is deliberately not a sweep of every
+    // text node on the page: the sidebar's small "GitHub ->" sub-link, for
+    // one, is a pre-existing, site-wide, much smaller design (7.5-10.5px)
+    // that predates this round and is not one of the findings — raising
+    // every such caption/badge across the whole site is a separate,
+    // larger change outside #1740's four issues (flagged in RESULTS.md,
+    // not fixed here). SVG <text> is excluded on principle even where a
+    // selector below would reach it: its computed font-size is the
+    // unscaled SVG user-unit value, not the on-screen size after the
+    // viewBox scales it — not measurable this way regardless.
+    const tinyText = [...document.querySelectorAll(
+      'main p, main li, .toc-groups a, .hero-cta, .hero-cta a, .fig-caption, .fig-caption a')]
+      .filter(e => e.textContent.trim().length > 0 && e.offsetParent !== null && !e.closest('svg'))
+      .map(e => ({ fs: parseFloat(getComputedStyle(e).fontSize), text: e.textContent.trim().slice(0, 30), tag: e.tagName }))
+      .filter(t => t.fs > 0 && t.fs < 16);
     return {
       scrollWidth: html.scrollWidth, clientWidth: html.clientWidth,
-      gutterL, gutterR, small, tinyTextMin: tinyText.length ? Math.min(...tinyText) : null,
-      tinyTextCount: tinyText.length,
+      gutterL, gutterR, small,
+      tinyTextMin: tinyText.length ? Math.min(...tinyText.map(t => t.fs)) : null,
+      tinyTextCount: tinyText.length, tinyTextSample: tinyText[0] || null,
     };
   })())`);
   return JSON.parse(raw);
@@ -224,7 +280,7 @@ async function measure(cdp, port, page, width, height) {
         failures.push(`${page} @ ${width}x${height}: ${m.small.length} tap target(s) below 44px — e.g. ${JSON.stringify(m.small[0])}`);
       }
       if (m.tinyTextMin !== null) {
-        failures.push(`${page} @ ${width}x${height}: ${m.tinyTextCount} prose text node(s) below 16px (smallest ${m.tinyTextMin}px)`);
+        failures.push(`${page} @ ${width}x${height}: ${m.tinyTextCount} text node(s) below 16px (smallest ${m.tinyTextMin}px) — e.g. ${JSON.stringify(m.tinyTextSample)}`);
       }
       say(`${page} @ ${width}x${height} — scrollWidth=${m.scrollWidth}/${m.clientWidth}, gutters=${m.gutterL}/${m.gutterR}, small targets=${m.small.length}, tiny prose=${m.tinyTextCount}`);
     }
@@ -236,6 +292,6 @@ async function measure(cdp, port, page, width, height) {
     cry(`${failures.length} failure(s)`);
     process.exit(1);
   }
-  say(`OK — ${PAGES.length} pages x ${WIDTHS.length} widths: no page-level horizontal scroll, gutters >= 16px, nav tap targets >= 44px, prose text >= 16px.`);
+  say(`OK — ${PAGES.length} pages x ${WIDTHS.length} widths: no page-level horizontal scroll, gutters >= 16px, every visible tap target >= 44px, every visible text node >= 16px.`);
   process.exit(0);
 })().catch((e) => setupFail(e.stack || e.message));

@@ -222,11 +222,11 @@ reading what the step checks.
 | 86 | `test-playground-nav` |  | `scripts/test_playground_nav.mjs` |
 | 87 | `test-playground-search` |  | `scripts/test_playground_search.mjs` |
 | 88 | `test-playground-readings` |  | `scripts/gen_guide/playground/readings_check.cx` |
-| 89 | `test-oriel` |  | `deps/cx-platform-ux/scripts/oriel_lane.sh` |
+| 89 | `test-oriel` |  | `deps/cx-platform-ux/scripts/oriel_real.sh` |
 | 90 | `test-agent-real` |  | — |
 | 91 | `test-connector-real` |  | — |
 | 92 | `test-db-real` |  | — |
-| 93 | `test-sso-interop` |  | `deps/cx-platform-sso/scripts/sso_interop_lane.sh` |
+| 93 | `test-sso-interop` |  | `deps/cx-platform-sso/scripts/sso_interop.sh` |
 | 94 | `test-xpath-parity-cx` |  | `scripts/check_xpath_parity_fixtures.cx` |
 | 95 | `corpus-audit` |  | `scripts/corpus_audit.sh` |
 | 96 | `repr-guard` |  | `bench/repr/run.sh` |

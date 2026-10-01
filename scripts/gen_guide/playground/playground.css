@@ -879,3 +879,18 @@ body[data-reading="query"] .cxp-doc-block { flex-grow: 0.8; }
   .cxp-readings { order: 1; }
   .cxp-cmd { display: none; }
 }
+
+/* Tap targets >= 44px on a phone (DOCS-51 / #1740, round 2 — the
+   integrator's browser read on PLAY-3): the reading tabs (Data/Code) and
+   the Run/Reset/Share toolbar buttons measured 25-26px tall on a phone,
+   found by test_site_phone_width.mjs once its tap-target check covered
+   these controls too (it always listed them, but its old "width AND
+   height both under 44" test could not catch a button only short, not
+   narrow). The desktop sizing is unchanged. */
+@media (max-width: 640px) {
+  .cxp-reading-tab, .cxp-btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
