@@ -1917,6 +1917,7 @@ visible in the import line.
 | `net` | Transport-level (L4) networking: opening and accepting stream connections (TCP, Unix-stream, TLS), exchanging datagrams (UDP, Unix-datagram, DTLS), name resolution, and TLS upgrade or termination. |
 | `secrets` | The minimal keystore: the one place a credential's value is reached. |
 | `session` | The server-held (principal, tenant) session for a web app. |
+| `sftp` | SSH file transfer: an SSH session to one peer, its host key verified against bound known-hosts rows before any credential is used and never trusted on first use, and the seven-verb file surface of file_surface.md (list, stat, get, put, rename, delete, mkdir) over the SFTP v3 subsystem, with resumable transfers, size and time bounds and a bound root no path and no link escapes. |
 | `smtp` | Both halves of ESMTP on one wire grammar: the submission client a CX program sends mail with (RFC 6409) and the receive server core it accepts mail with (RFC 5321 §4). |
 | `sso` | The enterprise-SSO deployment surface: the half of enterprise single sign-on that RECEIVES a request. |
 | `store` | A content-addressed object store with URL-dispatched backends. |

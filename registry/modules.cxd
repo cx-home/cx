@@ -52,11 +52,10 @@ NOT WRITTEN YET is a different statement from NOT MOVED YET, and it is
 `status=planned`, never a `-to`. A planned row's columns name where the
 artifact WILL be, the check holds it to its ring and its directories but not
 to existence, and it refuses the row once every artifact is on disk — so the
-declaration cannot outlive the writing. One row is planned today: `sftp` (#1430's
-transport) — spec-first by its own decision, not
-#1427's debt. `connector`, `graphql`, `soap`, `ws`, `ftp` and `sync` (#1434, its
-pure half since SYNC-9's first wave) were planned until their code landed and
-their rows read `current`.
+declaration cannot outlive the writing. No row is planned today. `connector`,
+`graphql`, `soap`, `ws`, `sync` (#1434, its pure half since SYNC-9's first
+wave), `ftp` (#1458) and `sftp` (#1457, RULED: SSHL-1) were planned until their
+code landed and their rows read `current`.
 
 COLUMNS
   name    the surface's call-site prefix — `[?lib '<ns>/<name>']` binds it.
@@ -333,8 +332,8 @@ needs becomes its own Ring-1 module.
      source and code columns did not move with the namespace. ]
   [module name=fabric ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-fabric spec=deps/cx-platform-fabric/spec/03-approved/platform/fabric.md corpus=deps/cx-platform-fabric/conformance/platform/fabric.cxd source=deps/cx-platform-fabric/stdlib/fabric.cx code='deps/cx-platform-fabric/vcx/fabric/stdlib_fabric.v deps/cx-platform-fabric/vcx/fabric/stdlib_fabric_remote.v deps/cx-platform-fabric/vcx/fabric/fabric_service.v deps/cx-platform-fabric/vcx/fabric/stdlib_fabric_register.v' half=none status=current]
   [; ftp and sftp — the connector kit's two file-transfer transports (RULED:
-     1430-c, 1430-e), spec first: ftp current since its code landed (#1458),
-     sftp planned, its columns naming where #1457 writes it. ]
+     1430-c, 1430-e), spec first: both current since their code landed — ftp
+     by #1458, sftp (below) by #1457 (RULED: SSHL-1). ]
   [module name=ftp ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-net spec=deps/cx-platform-net/spec/03-approved/platform/ftp.md corpus=deps/cx-platform-net/conformance/platform/ftp.cxd source=deps/cx-platform-net/stdlib/ftp.cx code='deps/cx-platform-net/vcx/cxnet/stdlib_ftp_notd_wasm32_emcc.v deps/cx-platform-net/vcx/cxnet/stdlib_ftp_d_wasm32_emcc.v deps/cx-platform-net/vcx/cxnet/stdlib_ftp_register.v deps/cx-platform-net/vcx/cxnet/ftp_test_server_notd_wasm32_emcc.v' half=none status=current]
   [; http is the 1427-e split: the serve half stays here and keeps the name,
      the client+codec half is the `http-client` row above. ]
@@ -361,7 +360,7 @@ needs becomes its own Ring-1 module.
      the binary's (vcx/cmd/secrets.v), the way `cx flow`'s are. ]
   [module name=secrets ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-secrets spec=deps/cx-platform-secrets/spec/03-approved/platform/secrets.md corpus=deps/cx-platform-secrets/conformance/platform/secrets.cxd source=deps/cx-platform-secrets/stdlib/secrets.cx code=none half=none status=current]
   [module name=session ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-identity spec=deps/cx-platform-identity/spec/03-approved/platform/session.md corpus=deps/cx-platform-identity/conformance/platform/session.cxd source=deps/cx-platform-identity/stdlib/session.cx code='deps/cx-platform-identity/vcx/identity/stdlib_session.v deps/cx-platform-identity/vcx/identity/identity_connector_builtins.v deps/cx-platform-identity/vcx/identity/stdlib_session_register.v' half=none status=current]
-  [module name=sftp ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-net spec=deps/cx-platform-net/spec/03-approved/platform/sftp.md corpus=deps/cx-platform-net/conformance/platform/sftp.cxd source=deps/cx-platform-net/stdlib/sftp.cx code=deps/cx-platform-net/vcx/cxnet/stdlib_sftp.v half=none status=planned]
+  [module name=sftp ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-net spec=deps/cx-platform-net/spec/03-approved/platform/sftp.md corpus=deps/cx-platform-net/conformance/platform/sftp.cxd source=deps/cx-platform-net/stdlib/sftp.cx code='deps/cx-platform-net/vcx/cxnet/stdlib_sftp_notd_wasm32_emcc.v deps/cx-platform-net/vcx/cxnet/stdlib_sftp_d_wasm32_emcc.v deps/cx-platform-net/vcx/cxnet/stdlib_sftp_register.v deps/cx-platform-net/vcx/cxnet/sftp_test_server_notd_wasm32_emcc.v' half=none status=current]
   [module name=smtp ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-mail spec=deps/cx-platform-mail/spec/03-approved/platform/smtp.md corpus=deps/cx-platform-mail/conformance/platform/smtp.cxd source=deps/cx-platform-mail/stdlib/smtp.cx code='deps/cx-platform-mail/vcx/mail/stdlib_smtp_wire.v deps/cx-platform-mail/vcx/mail/stdlib_smtp_wire_register.v deps/cx-platform-mail/vcx/mail/stdlib_smtp.v deps/cx-platform-mail/vcx/mail/stdlib_smtp_server.v deps/cx-platform-mail/vcx/mail/stdlib_smtp_register.v' half=none status=current]
   [; sso — #1394's enterprise-SSO handler surface, pure CX over
      oidc/saml/scim/session; declared `incoming` before its merge (OL-15) and

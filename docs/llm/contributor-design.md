@@ -65,7 +65,7 @@ row is refused by name (RULED: RS-1).
 | `source=` | 99 | 88 distinct values |
 | `code=` | 99 | 74 distinct values |
 | `half=` | 99 | `none` |
-| `status=` | 99 | `current` `planned` |
+| `status=` | 99 | `current` |
 | `group=` | 42 | `platform` |
 | `suite-ring=` | 5 | `1` |
 
@@ -100,7 +100,7 @@ What the columns mean (the file's own `[doc]` block is the full text):
 | `cx-platform-connector` | 2 | 0 | 0 | 2 | 0 | connector, sync |
 | `cx-platform-flow` | 1 | 0 | 0 | 1 | 0 | flow |
 | `cx-platform-fabric` | 1 | 0 | 0 | 1 | 0 | fabric |
-| `cx-platform-net` | 4 | 0 | 0 | 4 | 1 | ftp, http, net, sftp |
+| `cx-platform-net` | 4 | 0 | 0 | 4 | 0 | ftp, http, net, sftp |
 | `cx-platform-secrets` | 1 | 0 | 0 | 1 | 0 | secrets |
 | `cx-platform-sso` | 1 | 0 | 0 | 1 | 0 | sso |
 | `cx-platform-xap` | 5 | 0 | 0 | 5 | 0 | xap, xap_dist, xap-compose, xap-schema, xap-on |
