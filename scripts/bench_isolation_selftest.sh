@@ -18,6 +18,11 @@
 #   E  a loaded reading that WOULD have regressed is refused, not failed — the
 #      direction that costs, because a false regression aborts a good cut and a
 #      false pass re-pins the floor to a number that was never real
+#   F  the fmt and convert rows time the cx RUNNING the script (#1751): its
+#      `--harness-cx` resolution is that binary, and no harness spawn names the
+#      retired `vcx/target/cx` (#1682) — absent in every worktree, where it
+#      turned perf-ratchet's artifact into an err with no `benchmarks`, and a
+#      stale different build in the main checkout
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -131,8 +136,18 @@ else
   bad E2 "a real regression on a quiet box was not reported — exit $rc: $out"
 fi
 
+# ── F — the harness rows time the cx that runs the script (#1751) ───────────
+out=$("$CX" --allow-read --allow-write --allow-subprocess --allow-clock --allow-env \
+        scripts/run_bench_json.cx --harness-cx 2>&1); rc=$?
+retired=$(grep -c "process:run ('vcx/target/cx'" scripts/run_bench_json.cx)
+if [ "$rc" -eq 0 ] && [ "$out" = "$CX" ] && [ -x "$out" ] && [ "$retired" -eq 0 ]; then
+  ok F "the fmt and convert rows time the cx running the script ($CX), never the retired vcx/target/cx"
+else
+  bad F "wanted --harness-cx = $CX (exit 0) and no vcx/target/cx spawn — exit $rc, printed '$out', $retired retired-path spawn(s)"
+fi
+
 if [ "$fails" -ne 0 ]; then
   echo "bench-isolation self-test: $fails case(s) FAILED" >&2
   exit 1
 fi
-echo "bench-isolation self-test: 6/6 (measure-side refusal; judge-side refusal; judged under the bound; a pre-#1450 artifact unchanged; a loaded regression refused and the same number on a quiet box still failing)"
+echo "bench-isolation self-test: 7/7 (measure-side refusal; judge-side refusal; judged under the bound; a pre-#1450 artifact unchanged; a loaded regression refused and the same number on a quiet box still failing; the harness rows time the running cx, #1751)"
