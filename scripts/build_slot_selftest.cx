@@ -1,5 +1,5 @@
 # scripts/build_slot_selftest.cx — the shared slot's refusal, proved on planted
-# loop logs (#1749, RULED: INT-8, CXF-1, AGENTS-1).
+# loop logs (#1749, RULED: INT-8, CXF-1, AGENTS-1, REFUTE-1).
 #
 # WHY IT EXISTS. On 2026-10-01 19:46Z an agent ran `sh scripts/build-slot.sh sh
 # login.sh` on the shared slot, .build-slot-impl, and login.sh's first line
@@ -10,27 +10,39 @@
 # 2026-09-24 rule 5) was that the RUN-EXIT wait happens BEFORE the slot is
 # taken; nothing held it. scripts/build-slot.sh now does: on the shared slot it
 # refuses, exit 2, naming the RUN line and the rule, while the loop's last RUN
-# line is RUN-START, and it refuses a command that is a shell reading the
-# loop's log at any time.
+# line is RUN-START or cannot be read, and it refuses a command that reads the
+# loop's log in any shape — a shell, a CX program, nested, through env.
 #
-# THE CASES. Each runs the REAL scripts/build-slot.sh with a clean environment,
-# a slot directory under a temp root whose basename is the shared slot's, and
-# CX_GATE_LOOP_LOG naming a planted loop log — never the main checkout's, so a
-# run of this step under the live loop grades the script, not the loop:
+# THE CASES. Each runs a REAL scripts/build-slot.sh with a clean environment,
+# a slot directory under a temp root, and a planted loop log — never the main
+# checkout's, so a run of this step under the live loop grades the script:
 #   A  shared slot, last RUN line RUN-START   REFUSED, exit 2, the RUN line and
 #                                             #1749 named, the command NOT run
 #   B  shared slot, last RUN line RUN-EXIT    admitted, the command run, exit 0
 #   C  an own slot, last RUN line RUN-START   admitted: only the shared slot is
 #                                             the loop's to wait for
-#   D  shared slot, RUN-EXIT, the command a   REFUSED, exit 2: a shell reading
-#      shell whose script reads the log       the log inside the slot is the
-#                                             10-01 deadlock's shape
-#   E  shared slot, RUN-EXIT, an inline       REFUSED, exit 2, as D
-#      `sh -c` reading the log
-#   F  shared slot, no loop log on the box    admitted: there is no loop to wait
-#                                             for
-#   G  shared slot, the command's status      the status read through the
-#                                             wrapper is the command's own (7)
+#   D  a shell script reading the log         REFUSED even in a gap
+#   E  an inline `sh -c` reading the log      REFUSED even in a gap
+#   F  the named loop log is not there        REFUSED: a log that cannot be
+#                                             read is never "no loop"
+#   G  the command's status                   the command's own (7)
+# and the refutation's reds (REFUTE-1, 2026-10-02), each red on c48169c72:
+#   H  the shared slot spelled .BUILD-SLOT-IMPL (APFS folds case: the same
+#      directory) under a RUN-START           REFUSED
+#   I  nested shells: `sh outer.sh` (outer runs `sh login.sh`), `sh -c 'sh
+#      login.sh'`, `sh -c '. ./login.sh'`, `sh -c 'sh < login.sh'`
+#                                             each REFUSED
+#   J  through env: `env L=<log> sh -c '… "$L"'`, `env -S 'sh login.sh'`
+#                                             each REFUSED
+#   K  the same wait written as a CX program (`cx --allow-read wait.cx`)
+#                                             REFUSED
+#   L  no CX_GATE_LOOP_LOG: the loop log is the MAIN checkout's, found from
+#      the script's own tree whatever the cwd — a planted repository with a
+#      worktree, the script run from the worktree with the cwd in a third
+#      repository, the main checkout's log a RUN-START
+#                                             REFUSED, the main log named
+#   M  no CX_GATE_LOOP_LOG and the script in no repository
+#                                             REFUSED: the log cannot be found
 #
 # Run via:  cx --allow-read --allow-write --allow-subprocess --allow-env scripts/build_slot_selftest.cx
 # (make check-build-slot). Exit 0 and the count line only when every case holds.
@@ -38,9 +50,9 @@
 [?lib 'cx-stdlib/env'     as=env]
 [?lib 'cx-stdlib/process' as=process]
 [?lib 'cx-stdlib/strings' as=strings]
-[?lib 'cx-stdlib/path'    as=path]
 
 [?def cat scope=private pure [returns string] ($parts) [$strings:join $parts '']]
+[?def cat2 scope=private pure [returns any] ($a $b) [?to-sequence [?for [in $xs ($a, $b)] [in $x $xs] [yield $x]]]]
 
 # the loop log's two line shapes, as the post-merge loop writes them.
 [?def run-start scope=private pure [returns string] ()
@@ -48,16 +60,21 @@
 [?def run-exit scope=private pure [returns string] ()
   "2026-10-01T19:34:35Z dfc9f12f9 RUN-START\n2026-10-01T21:43:52Z dfc9f12f9 RUN-EXIT=0 passed\n"]
 
-# one run of the wrapper: a clean environment (HOME, PATH, the slot, the loop
-# log), so neither the caller's CX_RUNNER nor its CX_BUILD_SLOT can leak in.
-[?def wrap scope=private impure [returns element] ($root $slot $log $argv)
-  [$process:run [$cat2 ('sh', 'scripts/build-slot.sh') $argv]
-                env={HOME: $root, PATH: [$env:var-or-default 'PATH' '/usr/bin:/bin'],
-                     CX_BUILD_SLOT: [$cat ($root, '/', $slot)], CX_GATE_LOOP_LOG: $log,
-                     BUILD_SLOT_TIMEOUT: '30'}
+[?def path-env scope=private impure [returns string] () [$env:var-or-default 'PATH' '/usr/bin:/bin']]
+
+# one run of a wrapper: a clean environment (HOME, PATH, the slot and, when
+# $log is not '', the loop log), so neither the caller's CX_RUNNER nor its
+# CX_BUILD_SLOT nor its CX_GATE_LOOP_LOG can leak in.
+[?def wrap-at scope=private impure [returns element] ($script $cwd $root $slot $log $argv)
+  [$process:run [$cat2 ('sh', $script) $argv] cwd=$cwd
+                env=[?if [= $log '']
+                      [then {HOME: $root, PATH: [$path-env], CX_BUILD_SLOT: [$cat ($root, '/', $slot)], BUILD_SLOT_TIMEOUT: '30'}]
+                      [else {HOME: $root, PATH: [$path-env], CX_BUILD_SLOT: [$cat ($root, '/', $slot)], CX_GATE_LOOP_LOG: $log,
+                             BUILD_SLOT_TIMEOUT: '30'}]]
                 env-clear=true timeout-ms=60000]]
 
-[?def cat2 scope=private pure [returns any] ($a $b) [?to-sequence [?for [in $xs ($a, $b)] [in $x $xs] [yield $x]]]]
+[?def wrap scope=private impure [returns element] ($root $slot $log $argv)
+  [$wrap-at [$cat ([$env:cwd], '/scripts/build-slot.sh')] $root $root $slot $log $argv]]
 
 [?def said scope=private pure [returns string] ($r) [$cat ([$string $r@stdout], [$string $r@stderr])]]
 
@@ -69,11 +86,25 @@
 [?def refused scope=private pure [returns bool] ($r)
   [and [= [$string $r@exit-code] '2'] [$strings:contains [$said $r] '#1749']]]
 
+# every run of a set refused, and the command never ran.
+[?def all-refused scope=private impure [returns bool] ($rs $ran)
+  [and [= [$count [?to-sequence [?for [in $r $rs] [where [not [$refused $r]]] [yield $r]]]] 0]
+       [not [$io:exists $ran]]]]
+
+[?def first-admitted scope=private pure [returns any] ($rs)
+  [?let [= $bad [?to-sequence [?for [in $r $rs] [where [not [$refused $r]]] [yield $r]]]]
+    [?if [= [$count $bad] 0] [then [proc-result exit-code='2' stdout='' stderr='']] [else [$first $bad]]]]]
+
+[?def git scope=private impure ($dir $args)
+  [$process:run [$cat2 ('git', '-C', $dir, '-c', 'user.name=build-slot-selftest', '-c', 'user.email=selftest@invalid',
+                        '-c', 'commit.gpgsign=false', '-c', 'init.defaultBranch=main') $args] timeout-ms=60000]]
+
 [?let [= $root [$io:temp-dir 'build-slot-selftest']]
       [= $log [$cat ($root, '/gate-loop.log')]]
       [= $ran [$cat ($root, '/ran')]]
       [= $touch ('touch', $ran)]
       [= $shared '.build-slot-impl']
+      [= $unran [?fn () [?if [$io:exists $ran] [then [$io:remove $ran]] [else null]]]]
 
       # A — the loop is running: the shared slot is refused, the command never runs
       [= $_a0 [$io:write-file $log [$run-start]]]
@@ -86,20 +117,20 @@
       [= $rb [$wrap $root $shared $log $touch]]
       [= $b [$judge 'B' [and [= [$string $rb@exit-code] '0'] [$io:exists $ran]]
                     'the shared slot is taken in a gap (last RUN line RUN-EXIT) and the command runs' $rb]]
-      [= $_b1 [?if [$io:exists $ran] [then [$io:remove $ran]] [else null]]]
+      [= $_b1 [$unran]]
 
       # C — an own slot while the loop runs: admitted
       [= $_c0 [$io:write-file $log [$run-start]]]
       [= $rc [$wrap $root '.build-slot-cx-F-selftest' $log $touch]]
       [= $c [$judge 'C' [and [= [$string $rc@exit-code] '0'] [$io:exists $ran]]
                     'an own slot is taken while the loop runs: only the shared slot waits for the gap' $rc]]
-      [= $_c1 [?if [$io:exists $ran] [then [$io:remove $ran]] [else null]]]
+      [= $_c1 [$unran]]
 
       # D — a shell whose script waits on the loop's log, inside the slot
       [= $_d0 [$io:write-file $log [$run-exit]]]
-      [= $script [$cat ($root, '/login.sh')]]
-      [= $_d1 [$io:write-file $script [$cat ("until grep RUN- ", $log, " | tail -1 | grep -q RUN-EXIT; do sleep 60; done\ntouch ", $ran, "\n")]]]
-      [= $rd [$wrap $root $shared $log ('sh', $script)]]
+      [= $login [$cat ($root, '/login.sh')]]
+      [= $_d1 [$io:write-file $login [$cat ("until grep RUN- ", $log, " | tail -1 | grep -q RUN-EXIT; do sleep 60; done\ntouch ", $ran, "\n")]]]
+      [= $rd [$wrap $root $shared $log ('sh', $login)]]
       [= $d [$judge 'D' [and [$refused $rd] [not [$io:exists $ran]]]
                     'a shell script reading the loop log is refused inside the shared slot, even in a gap' $rd]]
 
@@ -108,17 +139,74 @@
       [= $e [$judge 'E' [and [$refused $re] [not [$io:exists $ran]]]
                     'an inline sh -c reading the loop log is refused inside the shared slot' $re]]
 
-      # F — no loop on this box: admitted
+      # F — the named log is not there: refused, never "no loop"
       [= $rf [$wrap $root $shared [$cat ($root, '/no-such-gate-loop.log')] $touch]]
-      [= $f [$judge 'F' [and [= [$string $rf@exit-code] '0'] [$io:exists $ran]]
-                    'with no loop log the shared slot is taken: there is no loop to wait for' $rf]]
+      [= $f [$judge 'F' [and [$refused $rf] [$strings:contains [$said $rf] 'no-such-gate-loop.log'] [not [$io:exists $ran]]]
+                    'a loop log that is not there refuses the shared slot by name: it is never read as no loop' $rf]]
 
       # G — the status read through the wrapper is the command's own
       [= $rg [$wrap $root $shared $log ('sh', '-c', 'exit 7')]]
       [= $g [$judge 'G' [= [$string $rg@exit-code] '7'] 'the command status survives the wrapper (7)' $rg]]
 
+      # H — the shared slot in another case (one directory on APFS)
+      [= $_h0 [$io:write-file $log [$run-start]]]
+      [= $rh [$wrap $root '.BUILD-SLOT-IMPL' $log $touch]]
+      [= $h [$judge 'H' [and [$refused $rh] [not [$io:exists $ran]]]
+                    'the shared slot spelled .BUILD-SLOT-IMPL is the shared slot: refused under a RUN-START' $rh]]
+
+      # I — nested shells, in a gap
+      [= $_i0 [$io:write-file $log [$run-exit]]]
+      [= $outer [$cat ($root, '/outer.sh')]]
+      [= $_i1 [$io:write-file $outer "sh login.sh\n"]]
+      [= $ri [?to-sequence [?for [in $argv (('sh', $outer), ('sh', '-c', 'sh login.sh'), ('sh', '-c', '. ./login.sh'),
+                                             ('sh', '-c', 'sh < login.sh'))]
+               [yield [$wrap $root $shared $log $argv]]]]]
+      [= $i [$judge 'I' [$all-refused $ri $ran]
+                    'nested shells reading the log (sh outer.sh, sh -c "sh login.sh", ". ./login.sh", "sh < login.sh") are each refused'
+                    [$first-admitted $ri]]]
+      [= $_i2 [$unran]]
+
+      # J — through env
+      [= $rj [?to-sequence [?for [in $argv (('env', [$cat ('L=', $log)], 'sh', '-c', [$cat ('tail -1 "$L" | grep -q RUN-EXIT && touch ', $ran)]),
+                                             ('env', '-S', 'sh login.sh'))]
+               [yield [$wrap $root $shared $log $argv]]]]]
+      [= $j [$judge 'J' [$all-refused $rj $ran]
+                    'a log read through env (an assignment naming the log, env -S hiding the shell) is refused' [$first-admitted $rj]]]
+      [= $_j2 [$unran]]
+
+      # K — the wait as a CX program
+      [= $wait [$cat ($root, '/wait.cx')]]
+      [= $_k0 [$io:write-file $wait [$cat ("[?lib 'cx-stdlib/io' as=io]\n[$io:read-file '", $log, "']\n")]]]
+      [= $rk [$wrap $root $shared $log ([$env:executable-path], '--allow-read', $wait)]]
+      [= $k [$judge 'K' [$refused $rk] 'a CX program that reads the loop log is refused inside the shared slot' $rk]]
+
+      # L — no CX_GATE_LOOP_LOG: the main checkout's log, from the script's tree
+      [= $pm [$cat ($root, '/planted-main')]]
+      [= $pw [$cat ($root, '/planted-wt')]]
+      [= $other [$cat ($root, '/other-repo')]]
+      [= $_l0 [$io:make-dirs [$cat ($pm, '/scripts')]]]
+      [= $_l1 [$io:write-file [$cat ($pm, '/scripts/build-slot.sh')] [$io:read-file 'scripts/build-slot.sh']]]
+      [= $_l2 [$git $root ('init', '-q', $pm)]]
+      [= $_l3 [$git $pm ('add', 'scripts/build-slot.sh')]]
+      [= $_l4 [$git $pm ('commit', '-q', '-m', 'the planted main checkout')]]
+      [= $_l5 [$git $pm ('worktree', 'add', '-q', '--detach', $pw)]]
+      [= $_l6 [$io:make-dirs [$cat ($pm, '/vcx/target')]]]
+      [= $_l7 [$io:write-file [$cat ($pm, '/vcx/target/gate-loop.log')] [$run-start]]]
+      [= $_l8 [$git $root ('init', '-q', $other)]]
+      [= $rl [$wrap-at [$cat ($pw, '/scripts/build-slot.sh')] $other $root $shared '' $touch]]
+      [= $l [$judge 'L' [and [$refused $rl] [$strings:contains [$said $rl] [$cat ($pm, '/vcx/target/gate-loop.log')]] [not [$io:exists $ran]]]
+                    "with no CX_GATE_LOOP_LOG the main checkout's log is found from the script's own tree, whatever the cwd" $rl]]
+
+      # M — no CX_GATE_LOOP_LOG and no repository: refused
+      [= $lone [$cat ($root, '/lone')]]
+      [= $_m0 [$io:make-dirs $lone]]
+      [= $_m1 [$io:write-file [$cat ($lone, '/build-slot.sh')] [$io:read-file 'scripts/build-slot.sh']]]
+      [= $rm [$wrap-at [$cat ($lone, '/build-slot.sh')] $lone $root $shared '' $touch]]
+      [= $m [$judge 'M' [and [$refused $rm] [not [$io:exists $ran]]]
+                    'with no CX_GATE_LOOP_LOG and the script in no repository the shared slot is refused: the log cannot be found' $rm]]
+
       [= $_rm [$io:remove-tree $root]]
-      [= $all ($a, $b, $c, $d, $e, $f, $g)]
+      [= $all ($a, $b, $c, $d, $e, $f, $g, $h, $i, $j, $k, $l, $m)]
       [= $bad [?to-sequence [?for [in $x $all] [where [= [$name $x] 'bad']] [yield $x]]]]
       [= $_say [?to-sequence [?for [in $x $all]
                  [yield [$io:write-line [$env:stdout]
@@ -127,7 +215,7 @@
   [?if [= [$count $bad] 0]
     [then ([$io:write-line [$env:stdout]
              [$cat ('build-slot selftest (#1749): ', [$string [$count $all]], '/', [$string [$count $all]],
-                    ' — the shared slot refuses a RUN-START and a shell reading the loop log; an own slot, a gap and a box with no loop are admitted; the status is the command')]],
+                    ' — the shared slot (in any case) refuses a RUN-START, an unreadable or unfound loop log, and a command that reads the log in any shape (a shell, nested, through env, a CX program); an own slot and a gap are admitted; the status is the command')]],
            [$env:exit 0], ())]
     [else ([$io:write-line [$env:stderr]
              [$cat ('build-slot selftest (#1749): ', [$string [$count $bad]], ' of ', [$string [$count $all]], ' case(s) FAILED')]],
