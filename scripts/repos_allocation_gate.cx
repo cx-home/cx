@@ -334,10 +334,26 @@
                      [and [= $fd-mode2 "front-door"]
                           [and [= [$count $fd-missing2] 0] [= [$count $fd-extra2] 0]]]]]
 
+      # -- a LONG why= (#1668). KEY-1 measured on 2026-09-25 that a [repo] row
+      # whose why= passed ~768 bytes stopped matching and every OTHER pinned
+      # repository then reported [unpinnable]. Re-measured on 44a0a0641: the
+      # real registry carries why= values past 2,500 bytes and a 1,897-byte
+      # row passes this gate and product-import-gate, so the boundary no
+      # longer reproduces. This holds it: a 1,200-byte why= beside a short
+      # row, both pinned, and no [unpinnable] for either.
+      [= $lw-why [$strings:join [?for [in $i [$range 1 120]] [yield "prose, ten"]] ""]]
+      [= $lw-reg [$cx:parse [$concat "[repo-allocation\n  [repo name=cx]\n  [repo name=wordy status=extracted why='" $lw-why
+                                     "']\n  [repo name=plain status=extracted why='short']\n  [path prefix='a/' repo=cx]\n]"]]]
+      [= $lw-repos [?for [in $r $lw-reg//repo] [yield $r]]]
+      [= $lw-v [$check [?for [in $r $lw-reg//path] [yield $r]] $lw-repos ("a/one.md") () ("wordy", "plain")]]
+      [= $lw-fails [?for [in $x $lw-v/failures/failure] [yield [$concat [$string $x@kind] ":" [$string $x@what]]]]]
+      [= $lw-ok [and [= [$strings:length $lw-why] 1200]
+                     [and [= [$count $lw-repos] 3] [= [$count $lw-fails] 0]]]]
+
       [?if [?if [= [$count $missing] 0]
-             [then [?if [= [$count $extra] 0] [then [and $census-ok [and $mode-ok $fd-ok]]] [else false]]]
+             [then [?if [= [$count $extra] 0] [then [and $census-ok [and $mode-ok [and $fd-ok $lw-ok]]]] [else false]]]
              [else false]]
-        [then [?let [= $_ [$say "repos-allocation self-test OK -- unallocated, dead rule, duplicate, undeclared, empty repo, split module each caught once, and the split twice: a torn code= and a torn half= (#1609); an EXTRACTED repo that owns nothing is exempt and one that still claims a file is caught (RS-12); an unpinnable pin and a self-pin caught on the deps.cxd join (#1589 item 23); a whole module passes; census a=1 b=1 (y/ counted under the undeclared rule's repo, as it must); the v/six.md fixture forces cx-private mode so this whole-tree case is unchanged; the front-door case (repo=cx files only) passes clean with the other row's dead-rule/empty-repo checks skipped, and the same tree plus one lang/_archived/ file is refused by name (RS-8, D59a)."]]
+        [then [?let [= $_ [$say "repos-allocation self-test OK -- unallocated, dead rule, duplicate, undeclared, empty repo, split module each caught once, and the split twice: a torn code= and a torn half= (#1609); an EXTRACTED repo that owns nothing is exempt and one that still claims a file is caught (RS-12); an unpinnable pin and a self-pin caught on the deps.cxd join (#1589 item 23); a whole module passes; census a=1 b=1 (y/ counted under the undeclared rule's repo, as it must); the v/six.md fixture forces cx-private mode so this whole-tree case is unchanged; the front-door case (repo=cx files only) passes clean with the other row's dead-rule/empty-repo checks skipped, and the same tree plus one lang/_archived/ file is refused by name (RS-8, D59a); a 1,200-byte why= row is read and its pinned neighbours are not unpinnable (#1668)."]]
                 [$env:exit 0]]]
         [else [?let [= $_ [$cry [$concat "repos-allocation self-test FAILED -- missing: "
                                           [$strings:join $missing "; "]
@@ -347,7 +363,8 @@
                                           " | front-door case1 mode=" $fd-mode1 " failures=" [$string $fd-fail1]
                                           " | front-door case2 mode=" $fd-mode2
                                           " missing=" [$strings:join $fd-missing2 "; "]
-                                          " unexpected=" [$strings:join $fd-extra2 "; "]]]]
+                                          " unexpected=" [$strings:join $fd-extra2 "; "]
+                                          " | long-why rows=" [$string [$count $lw-repos]] " failures=" [$strings:join $lw-fails "; "]]]]
                 [$env:exit 1]]]]]]
   [else ""]]
 
