@@ -1,0 +1,317 @@
+[test-suite name=property-gate ring=1
+  [doc [#
+# CX Conformance — the property step's register (PROP-1; RULED: QUAL-1 (a))
+#
+# THE SUBJECT. `make property-gate` (scripts/property_gate.cx) generates
+# documents and small programs from a seed and checks seven invariants the
+# specs state on every one of them: (i) map keys unique after every map
+# constructor, (ii) the canonical round trip, (iii) exact decimal arithmetic,
+# (iv) an [err] built into any element propagating out, (v) deny-by-default at
+# every effect point of security.md §2.1, (vi) the two readers agreeing on a
+# data document, (vii) absence apart from emptiness.
+#
+# A failure the step found that its round could not fix is FILED, and this
+# file carries it: each case below is the minimal reproducing program of one
+# filed class, its expectation the answer the spec states, `gate=advisory`
+# with the OPEN issue that tracks it (ADVIS-1: `cx corpus` refuses an
+# advisory case naming no issue; `make advisory-audit` refuses one whose
+# issue is closed or outside the release). Its [tags] are read by the step:
+# `property-gate <invariant> <class>[+<class>…] <subject>*` -- a generated
+# failure of that invariant and one of those classes (and, when subjects are
+# listed, of one of those effect points) is reported ADVISORY with this case's issue; every other
+# failure fails the step. When the issue's fix lands, this case goes green,
+# its advisory mark comes off, and the class enforces.
+#
+# Graded by `make property-gate` (`cx corpus conformance/property_gate.cxd`
+# before the step runs), which is the claim check_conformance_coverage.sh
+# carries for this suite.
+#]]
+
+ [case id=property-gate-001-for-map-duplicate-keys level=core gate=advisory issue='cx-home/cx-core-code#19'
+  [tags property-gate i for-map-duplicate-key]
+  [title [# [?for-map] never answers a map holding one key twice -- cxdm.md §2.6 "Duplicate keys: Not permitted"; refusing the repeat (as [?to-map] does) and keeping one binding both hold the invariant #]]
+  [in-code [#
+[?lib 'cx-stdlib/map' as=map]
+[?match [?for-map [in $x (1, 2, 1)] [yield-map $x [* $x 10]]]
+  [case [err] 'unique']
+  [case $m [?if [= [$count [$map:keys $m]] [$count [$distinct [$map:keys $m]]]] [then 'unique'] [else 'duplicate']]]]
+#]]
+  [out-text [#
+unique
+#]]
+ ]
+
+ [case id=property-gate-002-to-map-keeps-key-kinds level=core gate=advisory issue='cx-home/cx-core-code#20'
+  [tags property-gate i to-map-key-identity-changed]
+  [title [# [?to-map] keeps each key's kind -- a key's identity is the pair (kind, image) (canonical.md §2.11.1, stdlib/map.md §2): an int key stays an int, a bool a bool #]]
+  [in-code [#
+[?lib 'cx-stdlib/map' as=map]
+[$map:keys [?to-map ((1, 'a'), (true, 'b'), (2026-01-01, 'c'))]]
+#]]
+  [out-text [#
+(1, true, 2026-01-01)
+#]]
+ ]
+
+ [case id=property-gate-003-to-map-distinct-identities level=core gate=advisory issue='cx-home/cx-core-code#20'
+  [tags property-gate i to-map-refused-distinct-keys]
+  [title [# [?to-map] admits the string 'true' and the bool true as two keys -- they share an image, not an identity (canonical.md §2.11.1 "Key identity is the pair") #]]
+  [in-code [#
+[?to-map (('true', 'a'), (true, 'b'))]
+#]]
+  [out-text [#
+{'true': a, true: b}
+#]]
+ ]
+
+ [case id=property-gate-004-entry-keeps-key-kind level=core gate=advisory issue='cx-home/cx-core-code#20'
+  [tags property-gate i entry-key-identity-changed]
+  [title [# a computed [?entry] key keeps its kind -- the string 'true' is not re-read as the bool true (canonical.md §2.11.1; stdlib/map.md §2) #]]
+  [in-code [#
+[?lib 'cx-stdlib/map' as=map]
+[?let [= $k 'true'] [$map:get {[?entry $k 1]} 'true']]
+#]]
+  [out-text [#
+1
+#]]
+ ]
+
+ [case id=property-gate-005-entry-distinct-identities level=core gate=advisory issue='cx-home/cx-core-code#20'
+  [tags property-gate i entry-refused-distinct-keys]
+  [title [# two computed [?entry] keys of one image and two kinds are two keys, not a W014 duplicate (canonical.md §2.11.1) #]]
+  [in-code [#
+[?let [= $a 'true'] [= $b true] {[?entry $a 1], [?entry $b 2]}]
+#]]
+  [out-text [#
+{'true': 1, true: 2}
+#]]
+ ]
+
+ [case id=property-gate-006-element-literal-duplicate-attribute level=core gate=advisory issue='cx-home/cx-core-code#21'
+  [tags property-gate i element-literal-duplicate-attribute]
+  [title [# a constructed element carries each attribute name once -- code.md §6.4.1 ("duplicate keys n/a -- cxdm.md forbids duplicate Map keys / attr names"), the data reader's E214; refusing the repeat and keeping one value both hold #]]
+  [in-code [#
+[?match [x a=1 a=2]
+  [case [err] 'once']
+  [case $e [?if [= [$count [$attrs $e]] 1] [then 'once'] [else 'twice']]]]
+#]]
+  [out-text [#
+once
+#]]
+ ]
+
+ [case id=property-gate-007-attr-directive-duplicate-attribute level=core gate=advisory issue='cx-home/cx-core-code#21'
+  [tags property-gate i attr-duplicate-attribute]
+  [title [# two [?attr] holes naming one attribute do not build an element carrying it twice (code.md §6.4.1, the data reader's E214) #]]
+  [in-code [#
+[?let [= $n 'a']
+  [?match [x [?attr $n 1] [?attr $n 2]]
+    [case [err] 'once']
+    [case $e [?if [= [$count [$attrs $e]] 1] [then 'once'] [else 'twice']]]]]
+#]]
+  [out-text [#
+once
+#]]
+ ]
+
+ [case id=property-gate-008-datetime-key-canonical level=core gate=advisory issue='cx-home/cx-core-data#3'
+  [tags property-gate ii canonical-refused:datetime-key]
+  [title [# a map with a datetime key (an admissible key kind, cxdm.md §2.6) has a canonical form the data reader reads back (canonical.md §2.11.1, §2.6a) #]]
+  [in-code [#
+[?lib 'cx-stdlib/cx' as=cx]
+[?lib 'cx-stdlib/map' as=map]
+[?let [= $dt [?match [$cx:parse '[x 2026-01-01T00:00:00Z]'] [x $q] [yield $q]]]
+  [?match [$cx:canonical [$map:entry $dt 1]]
+    [case [err] 'no-canonical-form']
+    [case $c [?match [$cx:parse $c] [case [err] 'unreadable'] [else 'reads-back']]]]]
+#]]
+  [out-text [#
+reads-back
+#]]
+ ]
+
+ [case id=property-gate-009-array-item-string-quotes level=core gate=advisory issue='cx-home/cx-core-data#4'
+  [tags property-gate ii canonical-refused]
+  [title [# a string array item quotes where its bare image would not re-read as that string in both readings -- code.md §11.1a R6, canonical.md §2.3 (the collection-item bare set) #]]
+  [in-code [#
+[?lib 'cx-stdlib/cx' as=cx]
+[$cx:canonical [$cx:parse "[x ['é1.5:', 1]]"]]
+#]]
+  [out-text [#
+"[x ['é1.5:', 1]]\n"
+#]]
+ ]
+
+ [case id=property-gate-010-attr-trailing-backslashes level=core gate=advisory issue='cx-home/cx-core-data#4'
+  [tags property-gate ii canonical-not-a-fixpoint]
+  [title [# the canonical form of a quoted attribute string ending in two backslashes is a fixpoint -- canonical.md §2.4 minimal re-escape (a final backslash is doubled), §11.4 canonicalize(canonicalize(x)) == canonicalize(x) #]]
+  [in-code [#
+[?lib 'cx-stdlib/cx' as=cx]
+[?let [= $once [$cx:canonical [$cx:parse "[x id='0x2a\\\\\\\\']"]]]
+      [= $twice [$cx:canonical [$cx:parse $once]]]
+  [= $once $twice]]
+#]]
+  [out-text [#
+true
+#]]
+ ]
+
+ [case id=property-gate-011-string-value-hash level=core gate=advisory issue='cx-home/cx-core-code#22'
+  [tags property-gate ii kind-lost-on-canonical:string@top+kind-canonical-refused:string@top+kind-reparse-refused:string@top]
+  [title [# [$cx:hash] of the string '7' is not the address of the int 7 -- an address is a pure function of the strict canonical bytes, and the two values have different bytes (canonical.md §1.2, §1.4, §2.6a; stdlib/cx.md §2.1 takes ($value::any)) #]]
+  [in-code [#
+[?lib 'cx-stdlib/cx' as=cx]
+[= [$cx:hash '7'] [$cx:hash 7]]
+#]]
+  [out-text [#
+false
+#]]
+ ]
+
+ [case id=property-gate-012-modify-set-attr-err level=core gate=advisory issue='cx-home/cx-core-code#23'
+  [tags property-gate iv modify-set-attr-err-settled]
+  [title [# a computed [err] handed to [?modify]'s [set-attr] propagates -- it is never stringified into the attribute (code.md §6.4.1 "does not stringify it into an attribute", §9.2) #]]
+  [in-code [#
+[?let [= $e [err code='cx-err:CXER0100' message='planted']]
+  [?match [?modify [d [a]] //a [set-attr k $e]] [case [err @message=$m] $m] [else 'settled']]]
+#]]
+  [out-text [#
+planted
+#]]
+ ]
+
+ [case id=property-gate-013-modify-append-err level=core gate=advisory issue='cx-home/cx-core-code#23'
+  [tags property-gate iv modify-append-err-settled]
+  [title [# a computed [err] handed to [?modify]'s [append] propagates -- a refusal cannot come to rest inside a document at any depth (code.md §6.4.1, §9.2) #]]
+  [in-code [#
+[?let [= $e [err code='cx-err:CXER0100' message='planted']]
+  [?match [?modify [d [a]] //a [append $e]] [case [err @message=$m] $m] [else 'settled']]]
+#]]
+  [out-text [#
+planted
+#]]
+ ]
+
+ [case id=property-gate-014-modify-prepend-err level=core gate=advisory issue='cx-home/cx-core-code#23'
+  [tags property-gate iv modify-prepend-err-settled]
+  [title [# a computed [err] handed to [?modify]'s [prepend] propagates (code.md §6.4.1, §9.2) #]]
+  [in-code [#
+[?let [= $e [err code='cx-err:CXER0100' message='planted']]
+  [?match [?modify [d [a]] //a [prepend $e]] [case [err @message=$m] $m] [else 'settled']]]
+#]]
+  [out-text [#
+planted
+#]]
+ ]
+
+ [case id=property-gate-015-modify-insert-before-err level=core gate=advisory issue='cx-home/cx-core-code#23'
+  [tags property-gate iv modify-insert-before-err-settled]
+  [title [# a computed [err] handed to [?modify]'s [insert-before] propagates (code.md §6.4.1, §9.2) #]]
+  [in-code [#
+[?let [= $e [err code='cx-err:CXER0100' message='planted']]
+  [?match [?modify [d [a]] //a [insert-before $e]] [case [err @message=$m] $m] [else 'settled']]]
+#]]
+  [out-text [#
+planted
+#]]
+ ]
+
+ [case id=property-gate-016-modify-insert-after-err level=core gate=advisory issue='cx-home/cx-core-code#23'
+  [tags property-gate iv modify-insert-after-err-settled]
+  [title [# a computed [err] handed to [?modify]'s [insert-after] propagates (code.md §6.4.1, §9.2) #]]
+  [in-code [#
+[?let [= $e [err code='cx-err:CXER0100' message='planted']]
+  [?match [?modify [d [a]] //a [insert-after $e]] [case [err @message=$m] $m] [else 'settled']]]
+#]]
+  [out-text [#
+planted
+#]]
+ ]
+
+ [case id=property-gate-017-modify-replace-err level=core gate=advisory issue='cx-home/cx-core-code#23'
+  [tags property-gate iv modify-replace-err-settled]
+  [title [# a computed [err] handed to [?modify]'s [replace] propagates (code.md §6.4.1, §9.2) #]]
+  [in-code [#
+[?let [= $e [err code='cx-err:CXER0100' message='planted']]
+  [?match [?modify [d [a]] //a [replace $e]] [case [err @message=$m] $m] [else 'settled']]]
+#]]
+  [out-text [#
+planted
+#]]
+ ]
+
+ [case id=property-gate-018-modify-set-err level=core gate=advisory issue='cx-home/cx-core-code#23'
+  [tags property-gate iv modify-set-err-settled]
+  [title [# a computed [err] handed to [?modify]'s [set] propagates (code.md §6.4.1, §9.2) #]]
+  [in-code [#
+[?let [= $e [err code='cx-err:CXER0100' message='planted']]
+  [?match [?modify [d [a]] //a [set $e]] [case [err @message=$m] $m] [else 'settled']]]
+#]]
+  [out-text [#
+planted
+#]]
+ ]
+
+ [case id=property-gate-019-splice-err level=core gate=advisory issue='cx-home/cx-core-code#24'
+  [tags property-gate iv splice-err-settled]
+  [title [# an [err] member of a sequence [?splice] adopts into an element propagates out of the construction (code.md §6.4.1 "a refusal cannot come to rest inside a document at any depth", §9.2) #]]
+  [in-code [#
+[?let [= $e [err code='cx-err:CXER0100' message='planted']]
+  [?match [w [?splice ($e, 1)]] [case [err @message=$m] $m] [else 'settled']]]
+#]]
+  [out-text [#
+planted
+#]]
+ ]
+
+ [case id=property-gate-020-for-yield-err level=core gate=advisory issue='cx-home/cx-core-code#24'
+  [tags property-gate iv for-yield-err-settled]
+  [title [# an [err] a [?for] yields into an element's content propagates out of the construction (code.md §6.4.1, §9.2) #]]
+  [in-code [#
+[?let [= $e [err code='cx-err:CXER0100' message='planted']]
+  [?match [w [?for [in $i (1, 2)] [yield $e]]] [case [err @message=$m] $m] [else 'settled']]]
+#]]
+  [out-text [#
+planted
+#]]
+ ]
+
+ [case id=property-gate-021-effect-point-missing-argument level=core gate=advisory issue='cx-home/cx-core-code#25' grant='read subprocess'
+  [tags property-gate v effect-point-crash i18n-load-catalog store-open store-open-opts crypto-jwks-fetch http-get http-post http-put http-del http-patch http-head http-options http-request http-send http-sse-connect http-sse-events http-ws-connect http-ws-send http-ws-messages http-ws-ping http-ws-close http-ws-accept http-listen http-respond]
+  [title [# an effect point called with too few arguments answers an [err] value -- the evaluator raises no out-of-band failure (code.md §9.2 "Errors are values, uniformly"); the ungranted child must not die in a V panic #]]
+  [in-code [#
+[?lib 'cx-stdlib/env' as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+[?let [= $argv ([$env:executable-path], '-e', '[$http-get]')]
+      [= $r [$process:run $argv timeout-ms=60000]]
+  [?if [$strings:contains [$string $r@stderr] 'panic'] [then 'crashed'] [else 'answered']]]
+#]]
+  [out-text [#
+answered
+#]]
+ ]
+
+ [case id=property-gate-022-null-before-a-sequence level=core gate=advisory issue='cx-home/cx-core-data#5'
+  [tags property-gate vi program-reader-refused]
+  [title [# the program reader reads `null (1, 2)` in an element body as the data reader does -- a null and a sequence, not a retired paren-call (code.md §1.3, RULED: CXF-5) #]]
+  [in-code [#
+[?lib 'cx-stdlib/cx' as=cx]
+[?match [$cx:eval '[x null (1, 2)]' {}] [case [err] 'refused'] [else 'read']]
+#]]
+  [out-text [#
+read
+#]]
+ ]
+
+ [case id=property-gate-023-first-of-one-match level=core gate=advisory issue='cx-home/cx-core-code#26'
+  [tags property-gate vii first-of-one-match-descends]
+  [title [# [$first] of a path that matched one element hands that element back -- a single value is a one-item sequence (code.md §6.3 Sequence built-ins), as a path that matched two hands back the first #]]
+  [in-code [#
+[?let [= $d [doc [hit n=1 [inner]]]] [$name [$first $d/hit]]]
+#]]
+  [out-text [#
+hit
+#]]
+ ]
+]

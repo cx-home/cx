@@ -1,0 +1,1035 @@
+# scripts/property_gate.cx -- the property step for the two rings (PROP-1;
+# RULED: QUAL-1 (a), ledger/rulings_2026_10_02_owner_decision_l172.md).
+#
+# Eat-our-own-dog-food: written entirely in CX (RULED: CXF-1); runs as `cx <file>`.
+#
+# WHAT IT DOES. From one seed it generates documents -- elements, attributes,
+# text, scalars of every kind (int, bigint, decimal, float, bool, null, date,
+# datetime, atom, string with escapes, quotes and unicode), maps, sequences,
+# arrays, nesting -- and small programs over them, and checks on every one
+# the invariants the specs state, each a named check citing its section:
+#
+#   (i)   map keys unique after every map constructor -- [?to-map], [?for-map],
+#         $map:merge, $map:put, computed [?entry] keys, and attribute names on
+#         a constructed element (cxdm.md §2.4, §2.6; canonical.md §2.11.1;
+#         stdlib/map.md §2-§3; code.md §6.4.1, §7.2);
+#   (ii)  canonical(parse(canonical(x))) == canonical(x), the hash stable,
+#         and every scalar kind kept in every position (canonical.md §1.2,
+#         §1.4, §2.6a, §2.11.1, §11.4);
+#   (iii) decimal arithmetic exact against an integer reference, exact
+#         division terminating or refusing, int overflow refusing, and no
+#         decimal/float mixing without a refusal (code.md §6.3; RULED: CO-14,
+#         CO-17; cxdm.md §2.3);
+#   (iv)  an [err] built into any element -- child, attribute, splice, for,
+#         if, let, match, [?element], [?attr], a closure call, unquote, and
+#         every [?modify] action -- propagates out (code.md §9.2, §6.4.1 #853);
+#   (v)   every effect point of security.md §2.1, read from the pinned spec,
+#         called in a CHILD cx holding no grant, refuses cx-err:CXER0271
+#         naming --allow-<its capability>, never answers a value, never
+#         crashes (security.md §2, §2.1; code.md §9.0, §9.2);
+#   (vi)  the data reader and the program reader agree on a data document
+#         (code.md §1.3; RULED: CXF-5);
+#   (vii) absence is not emptiness -- [$present] false only for (), [$exists]
+#         / [$count] / [$empty] agree, [?else] passes every present value,
+#         an absent item contributes no child, [$first] of one match is that
+#         match (primer §6; code.md §9.1.2, §6.4.1, §6.3).
+#
+# A failure prints the seed and the failing value. A class the step found
+# and could not fix in its round is FILED and marked advisory by a case of
+# conformance/property_gate.cxd naming its OPEN issue (ADVIS-1): it is
+# reported ADVISORY with the issue; every other failure fails the step.
+#
+# Output: the census line per invariant, every failure class with up to SHOW
+# values, `property-gate: OK` or `property-gate: FAILED`.
+# Exit: 0 no failure outside the register; 1 a failure (or a self-test row
+# that did not fail as planted); 2 a usage error or an unreadable register.
+#
+# Run from the checkout root (the paths below are cwd-relative):
+#   cx --allow-read --allow-eval --allow-subprocess scripts/property_gate.cx
+#      [--seed N] [--count N] [--register FILE] [--self-test]
+# (or: make property-gate, which grades the register's corpus, runs the
+# self-test, then the step). ALL THREE GRANTS ARE LOAD-BEARING: it reads the
+# spec and the register, evaluates the programs it generates, and runs the
+# ungranted child cx of (v). The default count is sized to finish well under
+# two minutes on an agent's own runner slot.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/random'  as=random]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/process' as=process]
+
+# say: one line to the invocation's own stdout -- ungated (security.md §2, RULED: 1316-c2).
+[?def say scope=private impure ($s) [$env:write-line $s]]
+
+[?def rn scope=private impure [returns int] ($lo::int $hi::int) [$random:int-range $lo $hi]]
+[?def chance scope=private impure [returns bool] ($pct::int) [< [$random:int-range 0 99] $pct]]
+[?def pick scope=private impure ($xs) [$random:choose $xs]]
+
+[?def digits scope=private impure [returns string] ($n::int)
+  [$strings:join [?for [in $i [$range 1 $n]] [yield [$string [$rn 0 9]]]] ""]]
+
+[?def pad2 scope=private pure [returns string] ($n::int)
+  [?if [< $n 10] [then [$concat "0" [$string $n]]] [else [$string $n]]]]
+
+[?def sign scope=private impure [returns string] ()
+  [?if [$chance 30] [then "-"] [else ""]]]
+
+[?def g-int scope=private impure [returns string] ()
+  [?match [$rn 0 9]
+    [case 0 "0"]
+    [case 1 "9223372036854775807"]
+    [case 2 "-9223372036854775807"]
+    [else [$string [$rn -99999 99999]]]]]
+
+[?def g-bigint scope=private impure [returns string] ()
+  [$concat [$sign] "9" [$digits [$rn 19 30]]]]
+
+[?def g-decimal scope=private impure [returns string] ()
+  [$concat [$sign] [$string [$rn 0 9999]] "." [$digits [$rn 1 5]]]]
+
+[?def g-float scope=private impure [returns string] ()
+  [?if [$chance 10]
+    [then [$pick ("0.0e0", "-0.0e0")]]
+    [else [$concat [$sign] [$string [$rn 1 9]] "." [$digits [$rn 1 4]] "e" [$string [$rn -12 12]]]]]]
+
+[?def g-date scope=private impure [returns string] ()
+  [$concat [$string [$rn 1970 2099]] "-" [$pad2 [$rn 1 12]] "-" [$pad2 [$rn 1 28]]]]
+
+[?def g-datetime scope=private impure [returns string] ()
+  [$concat [$g-date] "T" [$pad2 [$rn 0 23]] ":" [$pad2 [$rn 0 59]] ":" [$pad2 [$rn 0 59]]
+    [?if [$chance 30] [then [$concat "." [$digits [$rn 1 3]]]] [else ""]]
+    [$pick ("Z", "+05:30", "-08:00", "Z")]]]
+
+[?def g-atom scope=private impure [returns string] ()
+  [$pick (":ok", ":err", ":not-found", ":a_b", ":x9")]]
+
+# the source fragments a quoted string is built from: escapes, quotes, the
+# structural characters, scalar look-alikes and unicode (accents, CJK, emoji,
+# right-to-left, a combining mark).
+[?const FRAGS ("a", "Zz", "7", " ", "\\'", "\"", "\\\\", "\\n", "\\t", "é", "中文", "😀", "שלום",
+               "e\\u0301", "[", "]", "=", "$x", ":", ",", "#", "-", ".", "1.5", "true", "null",
+               "2026-01-01", "x y", "0x2a", ":ok", "@", "&amp;", "+")]
+
+[?def g-string scope=private impure [returns string] ()
+  [$concat "'" [$strings:join [?for [in $i [$range 1 [$rn 0 5]]] [yield [$pick $FRAGS]]] ""] "'"]]
+
+[?const KINDS ("int", "bigint", "decimal", "float", "bool", "null", "date", "datetime", "atom", "string")]
+
+# An array literal never opens with a bare keyword (true, false, null): that
+# is the element/array ambiguity the data reader refuses by rule (an
+# ambiguous bare array).
+[?const ARRAY-HEAD-KINDS ("int", "bigint", "decimal", "float", "date", "datetime", "atom", "string")]
+
+[?def g-scalar scope=private impure [returns string] ($k::string)
+  [?match $k
+    [case "int" [$g-int]] [case "bigint" [$g-bigint]] [case "decimal" [$g-decimal]]
+    [case "float" [$g-float]] [case "bool" [$pick ("true", "false")]] [case "null" "null"]
+    [case "date" [$g-date]] [case "datetime" [$g-datetime]] [case "atom" [$g-atom]]
+    [else [$g-string]]]]
+
+# A map key: its source text and its identity (kind, value) -- the bare name
+# `a` and the quoted `'a'` are ONE key (cxdm.md §2.6), `7` and `'7'` are two,
+# `1.0` and `1.00` are two (scale is identity), `1.0` and `1.0e0` are two.
+[?const KEYS ([k t='a' id='s:a'], [k t="'a'" id='s:a'], [k t='name' id='s:name'], [k t="'7'" id='s:7'],
+              [k t="'a b'" id='s:a b'], [k t="'é'" id='s:é'], [k t="'true'" id='s:true'],
+              [k t='7' id='i:7'], [k t='-1' id='i:-1'], [k t='0' id='i:0'],
+              [k t='1.0' id='d:1.0'], [k t='1.00' id='d:1.00'], [k t='1.0e0' id='f:1.0e0'],
+              [k t='true' id='b:true'], [k t='false' id='b:false'], [k t='2026-01-01' id='D:2026-01-01'])]
+
+[?def key-text scope=private impure [returns string] ($id::string)
+  [$string [$pick [?for [in $k $KEYS] [where [= [$string $k@id] $id]] [yield $k@t]]]]]
+
+# n distinct key identities, in a random order.
+[?def g-key-ids scope=private impure ($n::int)
+  [?to-sequence [?take $n [$distinct [?for [in $k [$random:shuffle $KEYS]] [yield [$string $k@id]]]]]]]
+
+[?def g-kind scope=private impure [returns string] () [$pick $KINDS]]
+
+[?def g-items scope=private impure [returns string] ($d::int $lo::int $hi::int)
+  [$strings:join [?for [in $i [$range 1 [$rn $lo $hi]]] [yield [$g-value $d]]] ", "]]
+
+[?def g-map scope=private impure [returns string] ($d::int)
+  [$concat "{"
+    [$strings:join [?for [in $id [$g-key-ids [$rn 0 4]]] [yield [$concat [$key-text $id] ": " [$g-value [- $d 1]]]]] ", "]
+    "}"]]
+
+[?def g-seq scope=private impure [returns string] ($d::int)
+  [$concat "(" [$g-items [- $d 1] 2 4] ")"]]
+
+[?def g-array scope=private impure [returns string] ($d::int)
+  [?if [$chance 15] [then "[]"]
+    [else [$concat "[" [$g-scalar [$pick $ARRAY-HEAD-KINDS]] ", " [$g-items [- $d 1] 1 3] "]"]]]]
+
+[?def g-value scope=private impure [returns string] ($d::int)
+  [?if [< $d 1]
+    [then [$g-scalar [$g-kind]]]
+    [else [?match [$rn 0 9]
+            [case 0 [$g-map $d]] [case 1 [$g-seq $d]] [case 2 [$g-array $d]] [case 3 [$g-elem $d]]
+            [else [$g-scalar [$g-kind]]]]]]]
+
+[?const NAMES ("x", "row", "item", "a-b", "n1", "data", "v")]
+[?const ATTRS ("id", "k", "v", "n", "at", "flag")]
+
+[?def g-attrs scope=private impure [returns string] ()
+  [$strings:join [?for [in $a [?to-sequence [?take [$rn 0 3] [$random:shuffle $ATTRS]]]]
+                   [yield [$concat " " $a "=" [$g-scalar [$g-kind]]]]] ""]]
+
+[?def g-body-item scope=private impure [returns string] ($d::int)
+  [?if [< $d 1]
+    [then [$g-scalar [$g-kind]]]
+    [else [?match [$rn 0 7]
+            [case 0 [$g-map $d]] [case 1 [$g-seq $d]] [case 2 [$g-array $d]]
+            [case 3 [$g-elem [- $d 1]]] [case 4 [$g-elem [- $d 1]]]
+            [else [$g-scalar [$g-kind]]]]]]]
+
+[?def g-elem scope=private impure [returns string] ($d::int)
+  [$concat "[" [$pick $NAMES] [$g-attrs]
+    [$strings:join [?for [in $i [$range 1 [$rn 0 3]]] [yield [$concat " " [$g-body-item $d]]]] ""]
+    "]"]]
+
+
+# -- observations --------------------------------------------------------
+#
+# A computed [err] propagates out of a [?let] binding and out of any call it
+# is passed to (code.md §9.2), so every observation below takes the value
+# apart where it is produced, in a [?match] scrutinee -- the one boundary that
+# receives an err as a value.
+
+[?const NOCTX {}]
+
+# kind: the CXDM kind of a scalar, read by the pattern type tests -- an
+# observation that does not go through the canonical emitter it is checking.
+[?def kind scope=private pure [returns string] ($v)
+  [?match $v
+    [case $x::int 'int'] [case $x::bigint 'bigint'] [case $x::decimal 'decimal'] [case $x::float 'float']
+    [case $x::string 'string'] [case $x::bool 'bool'] [case $x::null 'null'] [case $x::atom 'atom']
+    [case $x::date 'date'] [case $x::datetime 'datetime']
+    [else 'other']]]
+
+[?def fail scope=private pure ($inv::string $shape::string $note::string $input::string)
+  [fail inv=$inv shape=$shape note=$note input=$input]]
+
+[?def when-not scope=private pure ($ok::bool $f) [?if $ok [then ()] [else ($f,)]]]
+
+# -- (ii) canonical round trip and hash stability (canonical.md §1.2, §1.4, §11.4) --
+
+[?def chk-roundtrip-2 scope=private impure ($t::string $v $c1::string)
+  [?match [$cx:parse $c1]
+    [case [err @message=$m] ([$fail 'ii' 'canonical-refused-on-reparse' [$concat $m ' :: ' $c1] $t],)]
+    [case $v2
+      [?match [$cx:canonical $v2] [case [err @message=$m] ([$fail 'ii' 'canonical-refused-second-time' $m $t],)] [case $c2
+      [?let [= $h1 [$cx:hash $v]] [= $h2 [$cx:hash $v2]] [= $h3 [$cx:hash $v]]
+        [?to-sequence [?concat
+          [$when-not [= $c1 $c2] [$fail 'ii' 'canonical-not-a-fixpoint' [$concat $c1 ' => ' $c2] $t]]
+          [$when-not [= $h1 $h2] [$fail 'ii' 'hash-moved-by-round-trip' $c1 $t]]
+          [$when-not [= $h1 $h3] [$fail 'ii' 'hash-unstable' $h1 $t]]]]]]]]]]
+
+[?def chk-roundtrip scope=private impure ($t::string)
+  [?match [$cx:parse $t]
+    [case [err @message=$m] ([$fail 'ii' 'generated-document-refused' $m $t],)]
+    [case $v
+      [?match [$cx:canonical $v]
+        [case [err @message=$m] ([$fail 'ii' 'canonical-refused' $m $t],)]
+        [case $c1 [$chk-roundtrip-2 $t $v $c1]]]]]]
+
+# The bijectivity table, per kind and position (canonical.md §2.6a): a
+# scalar of kind K read in position P is K after the data reader, and K again
+# after canonical emit and a second read.
+[?const POSITIONS ("top", "attr", "body", "seq", "mapval", "mapkey")]
+[?const KEY-KINDS ("int", "decimal", "float", "bool", "date", "string")]
+
+[?def pos-text scope=private pure [returns string] ($pos::string $s::string)
+  [?match $pos
+    [case "top" $s] [case "attr" [$concat "[x a=" $s "]"]] [case "body" [$concat "[x " $s "]"]]
+    [case "seq" [$concat "(" $s ", 0)"]] [case "mapval" [$concat "{k: " $s "}"]]
+    [else [$concat "{" $s ": 0}"]]]]
+
+[?def pos-read scope=private pure ($pos::string $d)
+  [?match $pos
+    [case "top" $d] [case "attr" $d@a] [case "body" [?match $d [x $q] [yield $q]]]
+    [case "seq" [$first $d]] [case "mapval" [$map:get $d 'k']]
+    [else [$first [$map:keys $d]]]]]
+
+[?def chk-kind-3 scope=private impure ($k::string $pos::string $t::string $d $c::string)
+  [?let [= $shape [$concat $k '@' $pos]] [= $k1 [$kind [$pos-read $pos $d]]]
+    [?match [$cx:parse $c]
+      [case [err @message=$m] ([$fail 'ii' [$concat 'kind-reparse-refused:' $shape] [$concat $m ' :: ' $c] $t],)]
+      [case $d2
+        [?let [= $k2 [$kind [$pos-read $pos $d2]]]
+          [?to-sequence [?concat
+            [$when-not [= $k1 $k] [$fail 'ii' [$concat 'kind-lost-on-read:' $shape] [$concat 'read as ' $k1] $t]]
+            [$when-not [= $k2 $k] [$fail 'ii' [$concat 'kind-lost-on-canonical:' $shape] [$concat 'canonical ' $c ' re-reads as ' $k2] $t]]]]]]]]]
+
+[?def chk-kind-2 scope=private impure ($k::string $pos::string $t::string $d)
+  [?match [$cx:canonical $d]
+    [case [err @message=$m] ([$fail 'ii' [$concat 'kind-canonical-refused:' $k '@' $pos] $m $t],)]
+    [case $c [$chk-kind-3 $k $pos $t $d $c]]]]
+
+[?def chk-kind scope=private impure ($k::string $pos::string $s::string)
+  [?let [= $t [$pos-text $pos $s]]
+    [?match [$cx:parse $t]
+      [case [err @message=$m] ([$fail 'ii' [$concat 'kind-refused:' $k '@' $pos] $m $t],)]
+      [case $d [$chk-kind-2 $k $pos $t $d]]]]]
+
+# -- (vi) the two readers agree on a data document (CXF-5; code.md §1.3) --
+
+[?def chk-parity-2 scope=private impure ($t::string $c::string)
+  [?match [$cx:eval $t $NOCTX]
+    [case [err @message=$m] ([$fail 'vi' 'program-reader-refused' $m $t],)]
+    [case $p
+      [?match [$cx:canonical $p]
+        [case [err @message=$m] ([$fail 'vi' 'program-value-not-canonical' $m $t],)]
+        [case $pc [$when-not [= $c $pc] [$fail 'vi' 'readers-disagree' [$concat 'data ' $c ' program ' $pc] $t]]]]]]]
+
+[?def chk-parity scope=private impure ($t::string)
+  [?match [$cx:parse $t]
+    [case [err] ()]
+    [case $v [?match [$cx:canonical $v] [case [err] ()] [case $c [$chk-parity-2 $t $c]]]]]]
+
+# -- (i) map keys are unique after every map constructor (cxdm.md §2.6, §2.4;
+#        canonical.md §2.11.1; stdlib/map.md §2-§3; code.md §7.2) --------------
+#
+# A key's identity is the pair (kind, image): `7` and '7' are two keys, `1.0`
+# and `1.00` are two, `1.0` and `1.0e0` are two, the bare name a and 'a' are
+# one. ident is that pair, observed through the kind patterns, not through
+# the canonical emitter.
+
+[?def ident scope=private pure [returns string] ($k) [$concat [$kind $k] ':' [$string $k]]]
+
+[?def idents scope=private pure ($m) [?to-sequence [?for [in $k [$map:keys $m]] [yield [$ident $k]]]]]
+
+[?def set-text scope=private pure [returns string] ($xs) [$strings:join [$sort [$distinct $xs]] '|']]
+
+# What a constructor answered, judged against the identities it was handed:
+# never a map holding one identity twice, never an identity dropped or
+# re-kinded, and a refusal only when the input really repeated an identity.
+[?def judge-map scope=private impure ($ctor::string $want $dup::bool $may-refuse::bool $src::string $ctx $input::string)
+  [?match [$cx:eval [$concat $LIB-PRELUDE $src] $ctx]
+    [case [err @message=$m]
+      [?if [and $dup $may-refuse] [then ()]
+        [else ([$fail 'i' [$concat $ctor '-refused-distinct-keys'] $m $input],)]]]
+    [case $got
+      [?let [= $ids [$idents $got]]
+        [?to-sequence [?concat
+          [$when-not [= [$count $ids] [$count [$distinct $ids]]]
+                     [$fail 'i' [$concat $ctor '-duplicate-key'] [$cx:serialize $got] $input]]
+          [$when-not [= [$count $ids] [$map:size $got]]
+                     [$fail 'i' [$concat $ctor '-size-disagrees-with-keys'] [$cx:serialize $got] $input]]
+          [$when-not [= [$set-text $ids] [$set-text $want]]
+                     [$fail 'i' [$concat $ctor '-key-identity-changed'] [$concat 'want ' [$set-text $want] ' got ' [$set-text $ids]] $input]]
+          [$when-not [or [not $dup] [not $may-refuse] [= $ctor 'for-map']]
+                     [$fail 'i' [$concat $ctor '-accepted-duplicate'] [$cx:serialize $got] $input]]]]]]]]
+
+# the evaluated fragment names the modules it calls (stdlib/cx.md §3.2).
+[?const LIB-PRELUDE "[?lib 'cx-stdlib/map' as=map] "]
+
+[?const P-TOMAP "[?to-map [?concat [?for [in $k [$map:keys $a]] [yield ($k, [$map:get $a $k])]] [?for [in $k [$map:keys $b]] [yield ($k, [$map:get $b $k])]]]]"]
+[?const P-FORMAP "[?for-map [in $m ($a, $b)] [in $k [$map:keys $m]] [yield-map $k [$map:get $m $k]]]"]
+[?const P-MERGE "[$map:merge ($a, $b)]"]
+[?const P-PUT "[?reduce [$map:keys $b] [using [?fn ($acc $k) [$map:put $acc $k [$map:get $b $k]]]] [init $a]]"]
+[?const P-ENTRY "{[?entry $k1 1], [?entry $k2 2]}"]
+
+[?def chk-maps-2 scope=private impure ($ta::string $tb::string $a $b)
+  [?let [= $ia [$idents $a]] [= $ib [$idents $b]] [= $want [?to-sequence [?concat $ia $ib]]]
+        [= $dup [< [$count [$distinct $want]] [$count $want]]]
+        [= $ctx {a: $a, b: $b}] [= $input [$concat $ta ' + ' $tb]]
+        [= $ka [$first [$map:keys $a]]] [= $kb [$first [$map:keys $b]]]
+    [?to-sequence [?concat
+      [$judge-map 'to-map' $want $dup true $P-TOMAP $ctx $input]
+      [$judge-map 'for-map' $want $dup true $P-FORMAP $ctx $input]
+      [$judge-map 'merge' $want $dup false $P-MERGE $ctx $input]
+      [$judge-map 'put' $want $dup false $P-PUT $ctx $input]
+      [?if [and [$present $ka] [$present $kb]]
+        [then [?let [= $w2 ([$ident $ka], [$ident $kb])] [= $ectx {k1: $ka, k2: $kb}]
+                [$judge-map 'entry' $w2 [= [$ident $ka] [$ident $kb]] true
+                  $P-ENTRY $ectx [$concat $input ' entries']]]]
+        [else ()]]]]]]
+
+[?def chk-maps scope=private impure ($ta::string $tb::string)
+  [?match [$cx:parse $ta]
+    [case [err] ()]
+    [case $a [?match [$cx:parse $tb]
+               [case [err] ()]
+               [case $b [$chk-maps-2 $ta $tb $a $b]]]]]]
+
+# Attributes are a map on the node (primer §0 fact 4; code.md §6.4.1, "duplicate
+# keys n/a -- cxdm.md forbids duplicate Map keys / attr names"; the data reader's
+# E214): a constructed element carries each attribute name at most once.
+[?const P-ATTR-COMPUTED "[x [?attr $n1 1] [?attr $n2 2]]"]
+
+[?def attr-names scope=private pure ($e) [?to-sequence [?for [in $a [$attrs $e]] [yield [$string $a@name]]]]]
+
+[?def judge-attrs scope=private impure ($ctor::string $src::string $ctx $dup::bool $input::string)
+  [?match [$cx:eval $src $ctx]
+    [case [err @message=$m]
+      [?if $dup [then ()] [else ([$fail 'i' [$concat $ctor '-refused-distinct-names'] $m $input],)]]]
+    [case $got
+      [?let [= $names [$attr-names $got]]
+        [?to-sequence [?concat
+          [$when-not [= [$count $names] [$count [$distinct $names]]]
+                     [$fail 'i' [$concat $ctor '-duplicate-attribute'] [$cx:serialize $got] $input]]]]]]]]
+
+[?def chk-attrs scope=private impure ()
+  [?let [= $n1 [$pick $ATTRS]] [= $n2 [$pick $ATTRS]] [= $dup [= $n1 $n2]] [= $ctx {n1: $n1, n2: $n2}]
+        [= $lit [$concat "[x " $n1 "=1 " $n2 "=2]"]]
+    [?to-sequence [?concat
+      [$judge-attrs 'attr' $P-ATTR-COMPUTED $ctx $dup [$concat $n1 ' ' $n2]]
+      [$judge-attrs 'element-literal' $lit $NOCTX $dup $lit]]]]]
+
+# A map a constructor built has a canonical form the data reader reads back to
+# the same keys (canonical.md §2.11.1: "not produced by canonicalizer";
+# §2.6a bijectivity) -- including the key kinds no literal spells bare, a
+# datetime key among them (cxdm.md §2.6 admits it).
+[?def chk-constructed-roundtrip scope=private impure ($what::string $m)
+  [?let [= $want [$set-text [$idents $m]]] [= $s [$cx:serialize $m]]
+    [?match [$cx:canonical $m]
+      [case [err @message=$e] ([$fail 'ii' [$concat 'canonical-refused:' $what] $e $s],)]
+      [case $c
+        [?match [$cx:parse $c]
+          [case [err @message=$e] ([$fail 'ii' [$concat 'canonical-refused-on-reparse:' $what] [$concat $e ' :: ' $c] $s],)]
+          [case $m2 [$when-not [= [$set-text [$idents $m2]] $want]
+                      [$fail 'ii' [$concat 'canonical-changed-keys:' $what] [$concat 'want ' $want ' got ' [$set-text [$idents $m2]]] $s]]]]]]]]
+
+[?def g-datetime-value scope=private impure ()
+  [?match [$cx:parse [$concat "[x " [$g-datetime] "]"]] [x $q] [yield $q]]]
+
+# -- (iii) decimal arithmetic is exact, and never mixes with a float (code.md
+#          §6.3 "Operand kind", "Exact division", RULED: CO-14, CO-17;
+#          cxdm.md §2.3 "decimal and bigint are SEMANTIC KINDS") ---------------
+#
+# A decimal is the pair (n, s): the integer n scaled by 10^-s. The reference
+# is integer arithmetic on the pairs -- no decimal operation is consulted to
+# produce the answer the decimal operation is judged against.
+
+[?def p10 scope=private pure [returns int] ($k::int) [?if [< $k 1] [then 1] [else [* 10 [$p10 [- $k 1]]]]]]
+
+# strings:slice is 1-based and inclusive (stdlib/strings.md §3.1).
+[?def dec-text scope=private pure [returns string] ($n::int $s::int)
+  [?let [= $digits [$strings:pad-start [$string [$abs $n]] [+ $s 1] "0"]]
+        [= $len [$strings:length $digits]]
+    [$concat [?if [< $n 0] [then "-"] [else ""]]
+             [$strings:slice $digits 1 [- $len $s]] "." [$strings:slice $digits [+ [- $len $s] 1] $len]]]]
+
+[?def gcd scope=private pure [returns int] ($a::int $b::int)
+  [?if [= $b 0] [then [$abs $a]] [else [$gcd $b [% $a $b]]]]]
+
+# only-2-5: the reduced denominator carries no prime but 2 and 5 -- the
+# terminating case of exact division.
+[?def only-2-5 scope=private pure [returns bool] ($d::int)
+  [?if [= [% $d 2] 0] [then [$only-2-5 [$idiv $d 2]]]
+    [else [?if [= [% $d 5] 0] [then [$only-2-5 [$idiv $d 5]]] [else [= $d 1]]]]]]
+
+[?def eval-src scope=private impure ($src::string) [$cx:eval $src $NOCTX]]
+
+# judge-exact-kind: the program answered a value of kind K mathematically equal to the reference.
+[?def judge-exact-kind scope=private impure ($shape::string $k::string $src::string $want::string)
+  [?match [$eval-src $src]
+    [case [err @message=$m] ([$fail 'iii' [$concat $shape '-refused'] $m $src],)]
+    [case $got
+      [?match [$eval-src $want]
+        [case [err @message=$m] ([$fail 'iii' 'reference-unreadable' $m $want],)]
+        [case $ref
+          [?to-sequence [?concat
+            [$when-not [= [$kind $got] $k] [$fail 'iii' [$concat $shape '-wrong-kind'] [$concat 'answered ' [$kind $got] ' ' [$string $got]] $src]]
+            [$when-not [?match [= $got $ref] [case [err] false] [case $b $b]]
+                       [$fail 'iii' [$concat $shape '-inexact'] [$concat 'answered ' [$string $got] ' want ' $want] $src]]]]]]]]]
+
+# judge-exact: the program answered a decimal mathematically equal to the reference.
+[?def judge-exact scope=private impure ($shape::string $src::string $want::string)
+  [?match [$eval-src $src]
+    [case [err @message=$m] ([$fail 'iii' [$concat $shape '-refused'] $m [$concat $src ' want ' $want]],)]
+    [case $got
+      [?match [$eval-src $want]
+        [case [err @message=$m] ([$fail 'iii' 'reference-unreadable' $m $want],)]
+        [case $ref
+          [?to-sequence [?concat
+            [$when-not [= [$kind $got] 'decimal'] [$fail 'iii' [$concat $shape '-not-decimal'] [$concat 'answered ' [$kind $got] ' ' [$string $got]] $src]]
+            [$when-not [?match [= $got $ref] [case [err] false] [case $b $b]]
+                       [$fail 'iii' [$concat $shape '-inexact'] [$concat 'answered ' [$string $got] ' want ' $want] $src]]]]]]]]]
+
+# judge-refusal: the program answered an err carrying the named code.
+[?def judge-refusal scope=private impure ($shape::string $src::string $code::string)
+  [?match [$eval-src $src]
+    [case [err @code=$c]
+      [$when-not [= [$string $c] $code] [$fail 'iii' [$concat $shape '-wrong-refusal'] [$concat 'refused ' [$string $c] ' want ' $code] $src]]]
+    [case $got ([$fail 'iii' [$concat $shape '-not-refused'] [$concat 'answered ' [$cx:serialize $got] ' want ' $code] $src],)]]]
+
+[?def chk-decimal scope=private impure ()
+  [?let [= $na [$rn -999999999 999999999]] [= $sa [$rn 1 5]] [= $nb [$rn -999999999 999999999]] [= $sb [$rn 1 5]]
+        [= $a [$dec-text $na $sa]] [= $b [$dec-text $nb $sb]] [= $i [$rn -99999 99999]]
+        [= $s [?if [> $sa $sb] [then $sa] [else $sb]]]
+        [= $xa [* $na [$p10 [- $s $sa]]]] [= $xb [* $nb [$p10 [- $s $sb]]]]
+        [= $f [$g-float]]
+        [= $num [* $na [$p10 $sb]]] [= $den [* $nb [$p10 $sa]]]
+    [?to-sequence [?concat
+      [$judge-exact 'add' [$concat "[+ " $a " " $b "]"] [$dec-text [+ $xa $xb] $s]]
+      [$judge-exact 'sub' [$concat "[- " $a " " $b "]"] [$dec-text [- $xa $xb] $s]]
+      [$judge-exact 'mul' [$concat "[* " $a " " $b "]"] [$dec-text [* $na $nb] [+ $sa $sb]]]
+      [$judge-exact 'add-int' [$concat "[+ " $a " " [$string $i] "]"] [$dec-text [+ $na [* $i [$p10 $sa]]] $sa]]
+      [$judge-exact 'sum' [$concat "[$sum (" $a ", " $b ")]"] [$dec-text [+ $xa $xb] $s]]
+      [$judge-exact 'add-sub-identity' [$concat "[- [+ " $a " " $b "] " $b "]"] $a]
+      [?if [= $nb 0]
+        [then [$judge-refusal 'div-zero' [$concat "[/ " $a " " $b "]"] 'cx-err:CXER0101']]
+        [else [?let [= $g [$gcd $num $den]] [= $rd [$abs [$idiv $den $g]]]
+                [?if [$only-2-5 $rd]
+                  [then [?match [$eval-src [$concat "[/ " $a " " $b "]"]]
+                          [case [err @message=$m] ([$fail 'iii' 'div-terminating-refused' $m [$concat $a ' / ' $b]],)]
+                          [case $q [$judge-exact 'div-times-divisor' [$concat "[* " [$string $q] " " $b "]"] $a]]]]
+                  [else [$judge-refusal 'div-non-terminating' [$concat "[/ " $a " " $b "]"] 'cx-err:CXER3002']]]]]]
+      [$judge-refusal 'int-overflow-add' [$concat "[+ 9223372036854775807 " [$string [$rn 1 99999]] "]"] 'cx-err:CXER3000']
+      [$judge-refusal 'int-overflow-mul' [$concat "[* -9223372036854775807 " [$string [$rn 2 99999]] "]"] 'cx-err:CXER3000']
+      [?let [= $big [$g-bigint]] [= $j [$string [$rn -99999 99999]]]
+        [$judge-exact-kind 'bigint-add-sub-identity' 'bigint' [$concat "[- [+ " $big " " $j "] " $j "]"] $big]]
+      [$judge-refusal 'mix-add' [$concat "[+ " $a " " $f "]"] 'cx-err:CXER0100']
+      [$judge-refusal 'mix-mul' [$concat "[* " $f " " $a "]"] 'cx-err:CXER0100']
+      [$judge-refusal 'mix-sub' [$concat "[- " $a " " $f "]"] 'cx-err:CXER0100']
+      [$judge-refusal 'mix-sum' [$concat "[$sum (" $a ", " $f ")]"] 'cx-err:CXER0100']]]]]
+
+# -- (iv) an [err] built into any element propagates out (code.md §9.2
+#         "Implicit operand propagation", §6.4.1 "Construction is
+#         operand-consuming (normative, #853)": "a refusal cannot come to rest
+#         inside a document at any depth", "does not stringify it into an
+#         attribute") ------------------------------------------------------------
+#
+# The err is computed -- a binding read, never a source-literal [err] element,
+# which is data by position. Each context places it where a construction
+# consumes it; the generated document around it supplies the depth.
+
+[?const PLANT "[err code='cx-err:CXER0100' message='planted by the property step']"]
+
+# CTX: the context forms, each with HOLE where the computed err goes. The
+# sequence-literal and map-literal positions are exempt by the same section
+# (a paren sequence is not element construction) and are not listed.
+[?const CTX ([c name='child' t='HOLE'],
+             [c name='attr' t='[w k=HOLE]'],
+             [c name='splice' t='[w [?splice (HOLE, 1)]]'],
+             [c name='for-yield' t='[w [?for [in $i (1, 2)] [yield HOLE]]]'],
+             [c name='if' t='[w [?if true [then HOLE]]]'],
+             [c name='let' t='[w [?let [= $q 1] HOLE]]'],
+             [c name='match' t='[w [?match 1 [case 1 HOLE]]]'],
+             [c name='element' t='[?element (QUOTE)m(QUOTE) HOLE]'],
+             [c name='attr-directive' t='[w [?attr k HOLE]]'],
+             [c name='closure-call' t='[w [$f]]'],
+             [c name='unquote' t='[?quote [w [?unquote HOLE]]]'])]
+
+# MODIFY: the [?modify] operators that build an element from a value
+# (code.md §8.10's action table); the focus is the [target] element the
+# generated document carries.
+[?const MODIFY ([c name='modify-set-attr' t='[set-attr k HOLE]'],
+                [c name='modify-append' t='[append HOLE]'],
+                [c name='modify-prepend' t='[prepend HOLE]'],
+                [c name='modify-insert-before' t='[insert-before HOLE]'],
+                [c name='modify-insert-after' t='[insert-after HOLE]'],
+                [c name='modify-replace' t='[replace HOLE]'],
+                [c name='modify-set' t='[set HOLE]'])]
+
+# wrap: TEXT placed at a random child position of DEPTH generated elements.
+[?def wrap scope=private impure [returns string] ($text::string $depth::int)
+  [?if [< $depth 1] [then $text]
+    [else [$concat "[" [$pick $NAMES] [$g-attrs]
+            [?if [$chance 50] [then [$concat " " [$g-body-item 1]]] [else ""]]
+            " " [$wrap $text [- $depth 1]]
+            [?if [$chance 50] [then [$concat " " [$g-body-item 1]]] [else ""]]
+            "]"]]]]
+
+[?def fill scope=private pure [returns string] ($t::string)
+  [$strings:replace [$strings:replace $t "HOLE" "$e"] "(QUOTE)" "'"]]
+
+[?def judge-propagates scope=private impure ($shape::string $src::string)
+  [?match [$cx:eval $src $NOCTX]
+    [case [err @message=$m]
+      [$when-not [= [$string $m] 'planted by the property step']
+                 [$fail 'iv' [$concat $shape '-other-refusal'] [$string $m] $src]]]
+    [case $got ([$fail 'iv' [$concat $shape '-err-settled'] [$cx:serialize $got] $src],)]]]
+
+# The two program shapes, each one balanced string with named holes: BODY is
+# the construction, DOC the generated document, ACTION the [?modify] action.
+[?const P-ERR "[?let [= $e PLANT] [= $f [?fn () $e]] BODY]"]
+[?const P-ERR-MODIFY "[?modify DOC //target ACTION]"]
+
+[?def err-program scope=private pure [returns string] ($body::string)
+  [$strings:replace [$strings:replace $P-ERR "PLANT" $PLANT] "BODY" $body]]
+
+[?def chk-err scope=private impure ()
+  [?let [= $c [$pick $CTX]] [= $m [$pick $MODIFY]] [= $d [$rn 0 3]]
+        [= $doc [$wrap "[target]" [+ $d 1]]]
+        [= $modify [$strings:replace [$strings:replace $P-ERR-MODIFY "DOC" $doc] "ACTION" [$fill [$string $m@t]]]]
+    [?to-sequence [?concat
+      [$judge-propagates [$string $c@name] [$err-program [$wrap [$fill [$string $c@t]] $d]]]
+      [$judge-propagates [$string $m@name] [$err-program $modify]]]]]]
+
+# -- (vii) absence is not emptiness (primer §6 "Absence is not emptiness";
+#          code.md §9.1.2 "the four outcome channels", §9.1.2.1, §6.4.1
+#          "Absence contributes nothing") ------------------------------------
+#
+# [$present] is false only for the absence channel, the empty sequence;
+# [$exists] / [$count] / [$empty] answer content arity and agree with each
+# other; [?else] coalesces absence and failure and passes every present value
+# -- null, '', a childless element, an empty array or map -- through; an
+# absent item contributes no child.
+
+[?const P-ARITY "[r p=[$present $v] e=[$exists $v] c=[$count $v] m=[$empty $v] k=[= [?else $v :coalesced] :coalesced]]"]
+[?const P-ABSENT "[?let [= $none [$map:get {} 'k']] [r p=[$present $none] c=[$count [c $none]] c1=[$count [c $none 1]] k=[= [?else $none :coalesced] :coalesced] f=[$present [$first ()]]]]"]
+[?const EMPTIES ("null", "''", "[x]", "[]", "{}", "0", "false", "[x a=1]")]
+
+[?def judge-arity scope=private pure ($r $t::string)
+  [?let [= $c $r@c] [= $e [= [$string $r@e] 'true']] [= $row [$strings:trim-end [$cx:serialize $r]]]
+    [?to-sequence [?concat
+      [$when-not [= [$string $r@p] 'true'] [$fail 'vii' 'present-value-reads-absent' $row $t]]
+      [$when-not [= $e [> $c 0]] [$fail 'vii' 'exists-disagrees-with-count' $row $t]]
+      [$when-not [= [= [$string $r@m] 'true'] [not $e]] [$fail 'vii' 'empty-disagrees-with-exists' $row $t]]
+      [$when-not [= [$string $r@k] 'false'] [$fail 'vii' 'else-coalesced-a-present-value' $row $t]]]]]]
+
+[?def chk-present scope=private impure ($t::string $v)
+  [?let [= $ctx {v: $v}]
+  [?match [$cx:eval [$concat $LIB-PRELUDE $P-ARITY] $ctx]
+    [case [err @message=$m] ([$fail 'vii' 'arity-probe-refused' $m $t],)]
+    [case $r [$judge-arity $r $t]]]]]
+
+[?def chk-absence scope=private impure ($t::string)
+  [?match [$cx:parse $t]
+    [case [err] ()]
+    [case $v [$chk-present $t $v]]]]
+
+[?const ABSENT-WANT "[r p=false c=0 c1=1 k=true f=false]"]
+
+[?def judge-absent scope=private pure ($r)
+  [?let [= $row [$strings:trim-end [$cx:serialize $r]]]
+    [$when-not [= $row $ABSENT-WANT] [$fail 'vii' 'absence-misread' [$concat $row ' want ' $ABSENT-WANT] $P-ABSENT]]]]
+
+[?def chk-absent-channel scope=private impure ()
+  [?match [$cx:eval [$concat $LIB-PRELUDE $P-ABSENT] $NOCTX]
+    [case [err @message=$m] ([$fail 'vii' 'absent-probe-refused' $m $P-ABSENT],)]
+    [case $r [$judge-absent $r]]]]
+
+# [$first] takes the first ITEM of a sequence, and a single value is a
+# one-item sequence (code.md §6.3 "Sequence built-ins": "a single
+# non-sequence value (treated as a 1-element sequence)"; primer §6: "[$first]
+# handing back an element"): a path that matched ONE element hands that
+# element back, as a path that matched two hands back the first of them --
+# never the matched element's own first child.
+[?const P-FIRST "[?let [= $d [doc [hit n=1 [inner]]]] [= $two [doc [hit n=1 [inner]] [hit n=2]]] [r one=[$name [$first $d/hit]] two=[$name [$first $two/hit]]]]"]
+
+[?def judge-first scope=private pure ($r)
+  [?let [= $row [$strings:trim-end [$cx:serialize $r]]]
+    [$when-not [= $row "[r one=hit two=hit]"] [$fail 'vii' 'first-of-one-match-descends' [$concat $row ' want [r one=hit two=hit]'] $P-FIRST]]]]
+
+[?def chk-first scope=private impure ()
+  [?match [$cx:eval $P-FIRST $NOCTX]
+    [case [err @message=$m] ([$fail 'vii' 'first-probe-refused' $m $P-FIRST],)]
+    [case $r [$judge-first $r]]]]
+
+# -- (v) every effect point refuses without its grant, naming the flag
+#        (security.md §2.1, the closed effect-point table; code.md §9.0 "Effect
+#        posture"; primer §7) ------------------------------------------------
+#
+# The table is read from the pinned spec itself, so a row added there is
+# probed here with no edit to this file. Every primitive is called with no
+# grant at all, in a CHILD cx (the probing process holds grants; the child
+# holds none), with generated arguments of every arity 0-3 drawn from a pool
+# that cannot do harm even if a gate failed open: a path under a root
+# directory that does not exist, the discard port on loopback, a pid no
+# process has. Each call must answer an [err]; at least one call per
+# primitive must reach the effect point and answer cx-err:CXER0271 naming
+# --allow-<its capability>; an answer naming another flag, a value, or a
+# crashed child is a failure. (io-open, store-open and store-open-opts derive
+# the capability per call -- §2.1's scoping note -- and may name read, write
+# or net.)
+
+[?const SECURITY-SPEC "deps/cx-core-code/spec/03-approved/core/security.md"]
+[?const DERIVED ("io-open", "store-open", "store-open-opts")]
+[?const SAFE-ARGS ("'/nonexistent-cx-property-step/x'", "'127.0.0.1:9'", "'http://127.0.0.1:9/'", "'ws://127.0.0.1:9/'", "'file:///nonexistent-cx-property-step/x'", "999999", "{}", "[x]", "'x'")]
+
+[?const ARITIES (0, 1, 2, 3, 1, 2)]
+# a template row is graded as arity 9 -- a well-formed call, not a generated one.
+[?const TPL-ARITY 9]
+
+# PROBE-PRELUDE: the child program's values a well-formed call needs -- a
+# provider configuration, a clock reading, a client authentication, a mem://
+# store and a planar comprehension over it -- every one built with no grant.
+[?const PROBE-PRELUDE "[?lib 'cx-stdlib/oidc' as=oidc] [?lib 'cx-stdlib/time' as=time] [?lib 'cx-platform/store' as=store] [?let [= $oc [$oidc:config [oidc-provider issuer='https://idp.example' authorization-endpoint='https://idp.example/authorize' token-endpoint='https://idp.example/token' jwks-uri='https://idp.example/jwks' userinfo-endpoint='https://idp.example/userinfo' device-authorization-endpoint='https://idp.example/device'] {client-id: 'c', redirect-uri: 'https://rp.example/cb'}]] [= $now [$time:datetime 2023 11 14 22 13 20]] [= $ca [client-auth method=:secret-basic secret='s']] [= $st [$store-open 'mem://']] [= $lq [?quote [?for [in $o [$store:source $orders '//order']] [yield $o]]]] CALLS]"]
+
+# TEMPLATES: a well-formed call for each primitive whose argument contract is
+# checked before its capability -- the shapes of the corpus's own cap-denied
+# cases (cx-core-code conformance/stdlib/oidc.cxd, cx-platform-store live.cxd).
+[?const TEMPLATES ([tpl p='oidc-begin' t="[$oidc:begin $oc {}]"],
+                   [tpl p='oidc-complete' t="[$oidc:complete $oc [auth-request url='https://idp.example/authorize' state='s' nonce='n' code-verifier='v'] {code: 'x', state: 's'} $ca $now {}]"],
+                   [tpl p='oidc-refresh' t="[$oidc:refresh $oc 'rt' $ca $now {}]"],
+                   [tpl p='oidc-client-credentials' t="[$oidc:client-credentials $oc $ca $now {}]"],
+                   [tpl p='oidc-device-begin' t="[$oidc:device-begin $oc $ca $now {}]"],
+                   [tpl p='oidc-device-poll' t="[$oidc:device-poll $oc [device-authorization device-code='d' interval=5] $ca $now {}]"],
+                   [tpl p='oidc-discover' t="[$oidc:discover 'https://idp.example' {}]"],
+                   [tpl p='http-serve' t="[$http-serve 'tcp://127.0.0.1:9' [?fn ($r) [response status=200]]]"],
+                   [tpl p='http-listen' t="[$http-listen 'tcp://127.0.0.1:9']"],
+                   [tpl p='http-respond' t="[$http-respond [exchange id=1] [response status=200]]"],
+                   [tpl p='http-request' t="[$http-request 'GET' 'http://127.0.0.1:9/']"],
+                   [tpl p='http-send' t="[$http-send [$http-client {}] [request method='GET' url='http://127.0.0.1:9/']]"],
+                   [tpl p='http-sse-events' t="[$http-sse-events [sse-source id=1]]"],
+                   [tpl p='http-ws-send' t="[$http-ws-send [ws-conn id=1] [message opcode=:text [payload 'x']]]"],
+                   [tpl p='http-ws-messages' t="[$http-ws-messages [ws-conn id=1]]"],
+                   [tpl p='http-ws-ping' t="[$http-ws-ping [ws-conn id=1]]"],
+                   [tpl p='http-ws-close' t="[$http-ws-close [ws-conn id=1]]"],
+                   [tpl p='smtp-submit' t="[$smtp-submit 'smtp://127.0.0.1:9' [envelope from='a@x.example' [to 'b@x.example']] [message 'hi']]"],
+                   [tpl p='imap-serve' t="[$imap-serve 'imap://127.0.0.1:9/' [?fn ($r) [ok]]]"],
+                   [tpl p='live-observe' t="[$live-observe $lq {orders: $st} [head-set]]"],
+                   [tpl p='live-changes-since' t="[$live-changes-since $lq {orders: $st} [head-set]]"],
+                   [tpl p='live-materialize' t="[$live-materialize $st $lq {orders: $st} 'm']"],
+                   [tpl p='live-adapt-watch' t="[$live-adapt-watch 'mem://' 't' 's' '/nonexistent-cx-property-step/x' 'w']"])]
+
+# REACH-THROUGH-GRANT: a primitive whose every well-formed call takes a value
+# only a GRANTED call can produce -- it cannot be reached without a grant at
+# all, so no ungranted call can fail open through it. Named in the census.
+[?const REACH-THROUGH-GRANT ([g p='oidc-userinfo' why='its [tokens] must carry the claim-set a net-granted complete verified'],
+                            [g p='live-advance' why='its materialization ref comes only from an eval-granted live-materialize'],
+                            [g p='http-ws-accept' why='its [exchange] must be one a net-granted listener accepted'])]
+
+[?def member scope=private pure [returns bool] ($x::string $xs) [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+[?def effect-points scope=private impure ($path::string)
+  [?let [= $lines [$strings:split-lines [$io:read-file $path]]]
+        [= $start [$first [?for [in $p [?enumerate $lines]] [where [$strings:starts-with [$nth $p 2] "### §2.1 "]] [yield [$nth $p 1]]]]]
+    [?to-sequence
+      [?for [in $p [?enumerate $lines]]
+        [where [> [$nth $p 1] $start]]
+        [= $l [$string [$nth $p 2]]]
+        [where [$strings:starts-with $l "| `"]]
+        [= $cells [$strings:split $l "`"]]
+        [where [> [$count $cells] 4]]
+        [where [not [= [$nth $cells 2] "Effect-point primitive"]]]
+        [= $n [$string [$nth $cells 2]]] [= $c [$string [$nth $cells 4]]]
+        [yield [ep name=$n cap=$c]]]]]]
+
+# calls-for: the calls primitive P is probed with -- each SAFE-ARGS value alone
+# (so a one-argument primitive is reached whatever the seed), one call per
+# generated arity (arguments drawn from SAFE-ARGS) and its TEMPLATES rows --
+# as call rows carrying p (the primitive), a (the arity) and t (the source).
+[?def calls-for scope=private impure ($p::string)
+  [?to-sequence [?concat
+    [?for [in $arg $SAFE-ARGS] [= $src [$concat "[$" $p " " $arg "]"]] [yield [call p=$p a=1 t=$src]]]
+    [?for [in $n $ARITIES]
+      [= $src [$concat "[$" $p [$strings:join [?for [in $i [$range 1 $n]] [yield [$concat " " [$pick $SAFE-ARGS]]]] ""] "]"]]
+      [yield [call p=$p a=$n t=$src]]]
+    [?for [in $t $TEMPLATES] [where [= [$string $t@p] $p]]
+      [= $src [$string $t@t]]
+      [yield [call p=$p a=$TPL-ARITY t=$src]]]]]]
+
+# wrap-call: one call as an [r] row the parent reads -- the [?match] keeps an
+# err a value in the child.
+[?def wrap-call scope=private pure [returns string] ($c)
+  [?let [= $p [$string $c@p]] [= $a [$string $c@a]]
+    [$concat "[?match " [$string $c@t] " [case [err @code=$c @message=$m] [r n='" $p "' a=" $a " code=$c msg=$m]] [else [r n='" $p "' a=" $a " ok=true]]]"]]]
+
+[?def probe-program scope=private pure [returns string] ($calls)
+  [$strings:replace $PROBE-PRELUDE "CALLS" [$concat "(" [$strings:join [?to-sequence [?for [in $c $calls] [yield [$wrap-call $c]]]] ", "] ")"]]]
+
+# run-child: the calls in a child cx holding NO grant; answers a child row,
+# ok=true with the r rows when every call answered its row, else ok=false
+# with why.
+[?def run-child scope=private impure ($cxbin::string $calls)
+  [?let [= $argv ($cxbin, "-e", [$probe-program $calls])] [= $want [$count $calls]]
+    [?match [$process:run $argv timeout-ms=120000]
+      [case [err @message=$m] [child ok=false why=$m]]
+      [case $r
+        [?let [= $out [$string $r@stdout]] [= $why [$strings:trim [$string $r@stderr]]]
+          [?match [$cx:parse $out]
+            [case [err] [child ok=false why=$why]]
+            [case $rows
+              [?let [= $got [?to-sequence [?for [in $x $rows] [where [?match $x [case [r] true] [else false]]] [yield $x]]]]
+                [?if [= [$count $got] $want]
+                  [then [child ok=true [?splice $got]]]
+                  [else [?let [= $w [$concat [$string [$count $got]] ' of ' [$string $want] ' rows, exit '
+                                             [$string $r@exit-code] ': ' [$string [?else [$first [$strings:split-lines $why]] '']]]]
+                          [child ok=false why=$w]]]]]]]]]]]]
+
+[?def flag-of scope=private pure [returns string] ($cap::string) [$concat "--allow-" $cap]]
+
+[?def reach-through-grant scope=private pure [returns bool] ($p::string)
+  [$member $p [?to-sequence [?for [in $g $REACH-THROUGH-GRANT] [yield [$string $g@p]]]]]]
+
+# judge-rows: the rows one primitive answered, against its table row.
+[?def judge-rows scope=private pure ($p::string $cap::string $rows)
+  [?let
+        [= $derived [$member $p $DERIVED]]
+        [= $mine [?to-sequence [?for [in $r $rows] [where [= [$string $r@n] $p]] [yield $r]]]]
+        [= $denied [?to-sequence [?for [in $r $mine] [where [= [$string [?else $r@code '']] 'cx-err:CXER0271']] [yield $r]]]]
+        [= $named [?to-sequence [?for [in $r $denied]
+                    [= $msg [$string $r@msg]]
+                    [where [?if $derived
+                      [then [or [$strings:contains $msg "--allow-read"] [$strings:contains $msg "--allow-write"] [$strings:contains $msg "--allow-net"]]]
+                      [else [$strings:contains $msg [$flag-of $cap]]]]]
+                    [yield $r]]]]
+    [?to-sequence [?concat
+      [?for [in $r $mine] [where [$present $r@ok]]
+        [= $a [$string $r@a]]
+        [yield [$fail 'v' 'effect-point-answered-without-grant' [$concat $p ' (arity ' $a ') answered a value with no grant'] $p]]]
+      [$when-not [= [$count $named] [$count $denied]]
+                 [$fail 'v' 'effect-point-names-another-flag' [$concat $p ' charges ' $cap ': ' [$string [?else [?for [in $d $denied] [take 1] [yield $d@msg]] '']]] $p]]
+      [$when-not [or [> [$count $named] 0] [$reach-through-grant $p]]
+                 [$fail 'v' 'effect-point-not-reached' [$concat $p ': no call reached the capability check: ' [$string [?else [?for [in $d $mine] [take 1] [yield $d@msg]] '']]] $p]]]]]]
+
+# chk-effects-calls: the calls of one primitive, each in a child of its own --
+# taken when the primitive's shared child died, so a crash is named by its
+# arity and every call that did not crash is still judged.
+[?def chk-effects-calls scope=private impure ($cxbin::string $p::string $cap::string $calls)
+  [?let [= $runs [?to-sequence [?for [in $c $calls] [= $one ($c,)] [= $r [$run-child $cxbin $one]]
+                                 [= $ok [$string $r@ok]] [= $why [$string [?else $r@why '']]] [= $a [$string $c@a]]
+                                 [yield [rc ok=$ok why=$why a=$a [?splice [?for [in $x $r/r] [yield $x]]]]]]]]
+        [= $rows [?to-sequence [?for [in $x $runs] [where [= [$string $x@ok] 'true']] [in $r $x/r] [yield $r]]]]
+    [?to-sequence [?concat
+      [?for [in $x $runs] [where [not [= [$string $x@ok] 'true']]]
+        [= $a [$string $x@a]] [= $why [$string $x@why]]
+        [yield [$fail 'v' 'effect-point-crash' [$concat $p ' (arity ' $a '): ' $why] $p]]]
+      [$judge-rows $p $cap $rows]]]]]
+
+# One child for the whole table; when it dies (a crash takes every row with
+# it), one child per primitive, and per call for a primitive whose child died.
+[?def chk-effects scope=private impure ($cxbin::string)
+  [?let [= $eps [$effect-points $SECURITY-SPEC]]
+        [= $plan [?to-sequence [?for [in $ep $eps] [= $p [$string $ep@name]] [= $cap [$string $ep@cap]]
+                                 [yield [plan p=$p cap=$cap [?splice [$calls-for $p]]]]]]]
+        [= $all [?to-sequence [?for [in $x $plan] [in $c $x/call] [yield $c]]]]
+        [= $c [$run-child $cxbin $all]]
+    [?if [= [$string $c@ok] 'true']
+      [then [?to-sequence [?for [in $x $plan] [in $f [$judge-rows [$string $x@p] [$string $x@cap] [?to-sequence [?for [in $r $c/r] [yield $r]]]]] [yield $f]]]]
+      [else [?to-sequence
+              [?for [in $x $plan]
+                [= $p [$string $x@p]] [= $cap [$string $x@cap]] [= $calls [?to-sequence [?for [in $k $x/call] [yield $k]]]]
+                [= $one [$run-child $cxbin $calls]]
+                [in $f [?if [= [$string $one@ok] 'true']
+                         [then [$judge-rows $p $cap [?to-sequence [?for [in $r $one/r] [yield $r]]]]]
+                         [else [$chk-effects-calls $cxbin $p $cap $calls]]]]
+                [yield $f]]]]]]]
+
+# -- the advisory register (ADVIS-1; RULED: QUAL-1 (b)) -------------------
+#
+# A failure the step found and could not fix in its round is FILED, and its
+# class is marked advisory by a case of conformance/property_gate.cxd: that
+# case is the minimal reproducing program, graded by `cx corpus` with the
+# rest of the corpus, `gate=advisory` with the OPEN issue it is tracked by
+# (`cx corpus` refuses an advisory case without one; `make advisory-audit`
+# refuses one whose issue is closed). Its [tags] read
+# `property-gate <invariant> <class>[+<class>…] <subject>*`: a failure of that
+# invariant and one of those classes -- and, when subjects are named, of one of those subjects (the
+# effect point) -- is reported ADVISORY with the issue, never silently, and
+# every other failure fails the step.
+
+[?def register-rows scope=private impure ($path::string)
+  [?match [$cx:parse [$io:read-file $path]]
+    [case [err @message=$m] [register ok=false why=$m]]
+    [case $doc
+      [register ok=true
+        [?splice [?for [in $c $doc//case]
+                   [where [= [$string [?else $c@gate '']] 'advisory']]
+                   [= $words [$strings:split-whitespace [$text $c/tags]]]
+                   [where [= [$string [?else [?for [in $w $words] [take 1] [yield $w]] '']] 'property-gate']]
+                   [= $id [$string $c@id]] [= $issue [$string [?else $c@issue '']]]
+                   [= $inv [$nth $words 2]] [= $shape [$nth $words 3]]
+                   [= $subjects [$strings:join [?to-sequence [?drop 3 $words]] ' ']]
+                   [yield [adv id=$id issue=$issue inv=$inv shape=$shape subjects=$subjects]]]]]]]]
+
+[?def advisory-for scope=private pure ($f $register)
+  [?for [in $a $register]
+    [where [= [$string $a@inv] [$string $f@inv]]]
+    [where [$member [$string $f@shape] [$strings:split [$string $a@shape] '+']]]
+    [where [?let [= $subj [$string $a@subjects]]
+             [or [= $subj ''] [$member [$string $f@input] [$strings:split-whitespace $subj]]]]]
+    [take 1]
+    [yield $a]]]
+
+# -- reporting --------------------------------------------------------------
+
+[?const INVARIANTS ([inv id='i' name='map keys unique after every map constructor' spec='cxdm.md §2.4, §2.6; canonical.md §2.11.1; stdlib/map.md §2-§3; code.md §6.4.1, §7.2'],
+                    [inv id='ii' name='canonical round trip, hash stable, kinds kept' spec='canonical.md §1.2, §1.4, §2.6a, §2.11.1, §11.4'],
+                    [inv id='iii' name='decimal arithmetic exact, never mixed with a float' spec='code.md §6.3 Operand kind, Exact division (RULED: CO-14, CO-17); cxdm.md §2.3'],
+                    [inv id='iv' name='an [err] built into any element propagates out' spec='code.md §9.2, §6.4.1 Construction is operand-consuming (#853)'],
+                    [inv id='v' name='every effect point refuses without its grant, naming the flag' spec='security.md §2, §2.1; code.md §9.0, §9.2 Errors are values'],
+                    [inv id='vi' name='the data reader and the program reader agree on a data document' spec='code.md §1.3; RULED: CXF-5'],
+                    [inv id='vii' name='absence is not emptiness' spec='primer §6; code.md §9.1.2, §9.1.2.1, §6.4.1 Absence contributes nothing, §6.3 Sequence built-ins'])]
+
+[?const SHOW 3]
+
+[?def clip scope=private pure [returns string] ($s0::string)
+  [?let [= $s [$strings:replace $s0 "\n" "\\n"]]
+    [?if [> [$strings:length $s] 600] [then [$concat [$strings:slice $s 1 600] ' …']] [else $s]]]]
+
+# classify: each failure as one flat [cf] row -- adv=true with the register
+# case's id and issue, or adv=false.
+[?def classify scope=private pure ($f $register)
+  [?let [= $inv [$string $f@inv]] [= $shape [$string $f@shape]] [= $note [$string $f@note]] [= $input [$string $f@input]]
+        [= $hit [?to-sequence [$advisory-for $f $register]]]
+    [?if [> [$count $hit] 0]
+      [then [?let [= $id [$string [?for [in $a $hit] [take 1] [yield $a@id]]]]
+                  [= $issue [$string [?for [in $a $hit] [take 1] [yield $a@issue]]]]
+              [cf adv=true id=$id issue=$issue inv=$inv shape=$shape note=$note input=$input]]]
+      [else [cf adv=false id='' issue='' inv=$inv shape=$shape note=$note input=$input]]]]]
+
+[?def class-key scope=private pure [returns string] ($c)
+  [$concat [$string $c@adv] '|' [$string $c@inv] '|' [$string $c@shape] '|' [$string $c@issue]]]
+
+[?def report-class scope=private impure ($seed::int $rows $k::string)
+  [?let [= $mine [?to-sequence [?for [in $c $rows] [where [= [$class-key $c] $k]] [yield $c]]]]
+        [= $parts [$strings:split $k '|']]
+        [= $tag [?if [= [$nth $parts 1] 'true'] [then 'ADVISORY'] [else 'FAIL']]]
+        [= $issue [$string [?else [$nth $parts 4] '']]]
+        [= $_h [$say [$concat 'property-gate: ' $tag ' (' [$nth $parts 2] ') ' [$nth $parts 3] ' x' [$string [$count $mine]]
+                              [?if [= $issue ''] [then ''] [else [$concat ' -- ' $issue]]]]]]
+    [?for [in $e [?to-sequence [?take $SHOW $mine]]]
+      [yield [$say [$concat '    seed=' [$string $seed] ' value: ' [$clip [$string $e@input]] "\n    observed: " [$clip [$string $e@note]]]]]]]]
+
+# report: the census per invariant, every failure class with up to SHOW
+# values, the verdict; answers the number of non-advisory failures.
+[?def report scope=private impure ($seed::int $count::int $checks $fails $register)
+  [?let [= $rows [?to-sequence [?for [in $f $fails] [yield [$classify $f $register]]]]]
+        [= $_head [$say [$concat 'property-gate: seed=' [$string $seed] ' count=' [$string $count]
+                                 ' (reproduce: --seed ' [$string $seed] ' --count ' [$string $count] ')']]]
+        [= $_inv [?to-sequence [?for [in $i $INVARIANTS]
+                   [= $id [$string $i@id]]
+                   [= $n [$string [?else [?for [in $k $checks] [where [= [$string $k@inv] $id]] [take 1] [yield $k@n]] 0]]]
+                   [= $mine [?to-sequence [?for [in $c $rows] [where [= [$string $c@inv] $id]] [yield $c]]]]
+                   [= $adv [$count [?for [in $c $mine] [where [= [$string $c@adv] 'true']] [yield 1]]]]
+                   [= $bad [- [$count $mine] $adv]]
+                   [yield [$say [$concat 'property-gate: (' $id ') ' [$string $i@name] ' [' [$string $i@spec] ']: '
+                                         $n ' checked, ' [$string $bad] ' failed, ' [$string $adv] ' advisory']]]]]]
+        [= $keys [$distinct [?to-sequence [?for [in $c $rows] [yield [$class-key $c]]]]]]
+        [= $_out [?to-sequence [?for [in $k $keys] [in $x [$report-class $seed $rows $k]] [yield $x]]]]
+        [= $nbad [$count [?for [in $c $rows] [where [= [$string $c@adv] 'false']] [yield 1]]]]
+        [= $nadv [- [$count $rows] $nbad]]
+        [= $_tail [$say [$concat 'property-gate: ' [?if [= $nbad 0] [then 'OK'] [else 'FAILED']] ' -- '
+                                 [$string $nbad] ' failure(s), ' [$string $nadv] ' advisory (filed), '
+                                 [$string [$count $register]] ' advisory class(es) registered']]]
+    $nbad]]
+
+# -- the run ------------------------------------------------------------------
+
+[?def run-unit scope=private impure ()
+  [?let [= $t [$g-elem 3]] [= $k [$g-kind]] [= $pos [$pick $POSITIONS]]
+        [= $kk [?if [and [= $pos "mapkey"] [not [$member $k $KEY-KINDS]]] [then "string"] [else $k]]]
+        [= $ma [$g-map 1]] [= $mb [$g-map 1]]
+    [?to-sequence [?concat
+      [$chk-roundtrip $t]
+      [$chk-parity $t]
+      [$chk-kind $kk $pos [$g-scalar $kk]]
+      [$chk-maps $ma $mb]
+      [?match [$cx:parse $ma] [case [err] ()] [case $m [$chk-constructed-roundtrip 'merge' [$map:merge ($m, $NOCTX)]]]]
+      [$chk-constructed-roundtrip 'datetime-key' [$map:entry [$g-datetime-value] 1]]
+      [$chk-attrs]
+      [$chk-decimal]
+      [$chk-err]
+      [$chk-absence [$g-value 2]]]]]]
+
+[?def run-all scope=private impure ($seed::int $count::int $cxbin::string)
+  [?let [= $_s [$random:seed $seed]]
+        [= $units [?to-sequence [?for [in $i [$range 1 $count]] [in $f [$run-unit]] [yield $f]]]]
+        [= $fixed [?to-sequence [?concat [$chk-absent-channel] [$chk-first]
+                                  [?for [in $t $EMPTIES] [in $f [$chk-absence $t]] [yield $f]]]]]
+        [= $eff [$chk-effects $cxbin]]
+        [= $neff [$count [$effect-points $SECURITY-SPEC]]]
+        [= $n1 [* $count 7]] [= $n2 [* $count 5]] [= $n3 [* $count 14]] [= $n4 [* $count 2]]
+        [= $n7 [+ $count [$count $EMPTIES] 2]]
+    [run
+      [checks
+        [k inv='i' n=$n1] [k inv='ii' n=$n2] [k inv='iii' n=$n3] [k inv='iv' n=$n4]
+        [k inv='v' n=$neff] [k inv='vi' n=$count] [k inv='vii' n=$n7]]
+      [fails [?splice $units] [?splice $fixed] [?splice $eff]]]]]
+
+# -- the self-test: every check can fail -----------------------------------
+#
+# A property check that never fails proves nothing. Each row hands one judge a
+# planted observation whose verdict does not depend on today's cx -- a
+# reference that is wrong on purpose, a refusal where a value is due, a row a
+# child cannot have answered -- and pins the exact set of classes it must
+# report; the clean rows pin that a correct observation reports none.
+
+[?def shapes-of scope=private pure [returns string] ($fs)
+  [$strings:join [$sort [$distinct [?to-sequence [?for [in $f $fs] [yield [$string $f@shape]]]]]] ' ']]
+
+[?def st scope=private impure ($name::string $want::string $fs)
+  [?let [= $got [$shapes-of $fs]]
+    [?if [= $got $want]
+      [then [st ok=true name=$name]]
+      [else [?let [= $why [$concat 'want [' $want '] got [' $got ']']] [st ok=false name=$name why=$why]]]]]]
+
+[?const ST-REG ([adv id='st-1' issue='o/r#1' inv='i' shape='for-map-duplicate-key' subjects=''],
+                [adv id='st-2' issue='o/r#2' inv='v' shape='effect-point-crash' subjects='http-get http-put'])]
+
+[?def self-test scope=private impure ()
+  [?let [= $want-ab ("string:a", "string:b")] [= $want-aa ("string:a", "string:a")]
+        [= $grant-row ([r n='p' a=0 ok=true],)]
+        [= $other-flag ([r n='p' a=1 code='cx-err:CXER0271' msg='E_CAP_DENIED: (grant via --allow-net)'],)]
+        [= $right-flag ([r n='p' a=1 code='cx-err:CXER0271' msg='E_CAP_DENIED: (grant via --allow-read)'],)]
+        [= $f-dup [fail inv='i' shape='for-map-duplicate-key' note='' input='x']]
+        [= $f-get [fail inv='v' shape='effect-point-crash' note='' input='http-get']]
+        [= $f-post [fail inv='v' shape='effect-point-crash' note='' input='http-post']]
+        [= $_a [$random:seed 7]] [= $g1 [$g-elem 3]] [= $_b [$random:seed 7]] [= $g2 [$g-elem 3]]
+        [= $rows (
+          [$st 'map: an identity dropped' 'merge-key-identity-changed' [$judge-map 'merge' $want-ab false false "{a: 1}" $NOCTX 'st']],
+          [$st 'map: a repeated identity accepted' 'to-map-accepted-duplicate' [$judge-map 'to-map' $want-aa true true "{a: 1}" $NOCTX 'st']],
+          [$st 'map: distinct identities refused' 'put-refused-distinct-keys' [$judge-map 'put' $want-ab false false "[+ 1 'x']" $NOCTX 'st']],
+          [$st 'map: a correct answer' '' [$judge-map 'merge' $want-ab false false "{a: 1, b: 2}" $NOCTX 'st']],
+          [$st 'attrs: distinct names refused' 'attr-refused-distinct-names' [$judge-attrs 'attr' "[+ 1 'x']" $NOCTX false 'st']],
+          [$st 'decimal: inexact' 'add-inexact' [$judge-exact 'add' "[+ 1.0 1.0]" "3.0"]],
+          [$st 'decimal: a correct answer' '' [$judge-exact 'add' "[+ 1.0 1.0]" "2.0"]],
+          [$st 'decimal: not a decimal' 'add-inexact add-not-decimal' [$judge-exact 'add' "[+ 1.0e0 1]" "2.0"]],
+          [$st 'decimal: no refusal' 'mix-add-not-refused' [$judge-refusal 'mix-add' "1" 'cx-err:CXER0100']],
+          [$st 'decimal: another refusal' 'div-zero-wrong-refusal' [$judge-refusal 'div-zero' "[/ 1 0]" 'cx-err:CXER3002']],
+          [$st 'err: settled' 'child-err-settled' [$judge-propagates 'child' "[w 1]"]],
+          [$st 'err: another refusal' 'child-other-refusal' [$judge-propagates 'child' "[+ 1 'x']"]],
+          [$st 'round trip: unreadable document' 'generated-document-refused' [$chk-roundtrip "[x"]],
+          [$st 'round trip: a clean document' '' [$chk-roundtrip "[x a=1 [y 'b']]"]],
+          [$st 'kind: re-kinded on read' 'kind-lost-on-canonical:int@body kind-lost-on-read:int@body' [$chk-kind 'int' 'body' "'7'"]],
+          [$st 'parity: the program reader refuses' 'program-reader-refused' [$chk-parity "[x $unbound-name]"]],
+          [$st 'effects: a value without a grant' 'effect-point-answered-without-grant effect-point-not-reached' [$judge-rows 'p' 'read' $grant-row]],
+          [$st 'effects: another flag' 'effect-point-names-another-flag effect-point-not-reached' [$judge-rows 'p' 'read' $other-flag]],
+          [$st 'effects: the right flag' '' [$judge-rows 'p' 'read' $right-flag]],
+          [$st 'absence: every arity rule' 'else-coalesced-a-present-value empty-disagrees-with-exists exists-disagrees-with-count present-value-reads-absent'
+               [$judge-arity [r p=false e=true c=0 m=true k=true] 'st']],
+          [$st 'absence: the absent channel' 'absence-misread' [$judge-absent [r p=true c=0 c1=1 k=true f=false]]],
+          [$st 'absence: first of one match' 'first-of-one-match-descends' [$judge-first [r one=inner two=hit]]],
+          [$st 'register: a class matches' 'for-map-duplicate-key'
+               [?for [in $c ([$classify $f-dup $ST-REG],)] [where [= [$string $c@adv] 'true']] [yield $c]]],
+          [$st 'register: a subject matches' 'effect-point-crash'
+               [?for [in $c ([$classify $f-get $ST-REG],)] [where [= [$string $c@adv] 'true']] [yield $c]]],
+          [$st 'register: another subject does not' 'effect-point-crash'
+               [?for [in $c ([$classify $f-post $ST-REG],)] [where [= [$string $c@adv] 'false']] [yield $c]]],
+          [?if [= $g1 $g2] [then [st ok=true name='generator: one seed, one document']]
+            [else [st ok=false name='generator: one seed, one document' why='two runs of seed 7 differ']]])]
+        [= $_p [?to-sequence [?for [in $r $rows]
+                 [= $tag [?if [= [$string $r@ok] 'true'] [then 'ok  '] [else 'FAIL']]]
+                 [= $why [$string [?else $r@why '']]]
+                 [yield [$say [$concat 'property-gate self-test: ' $tag ' ' [$string $r@name]
+                                       [?if [= $why ''] [then ''] [else [$concat ' -- ' $why]]]]]]]]]
+        [= $bad [$count [?for [in $r $rows] [where [not [= [$string $r@ok] 'true']]] [yield 1]]]]
+        [= $_t [$say [$concat 'property-gate self-test: ' [$string [- [$count $rows] $bad]] '/' [$string [$count $rows]] ' rows']]]
+    $bad]]
+
+# -- entry ----------------------------------------------------------------------
+
+[?const USAGE "usage: cx --allow-read --allow-eval --allow-subprocess scripts/property_gate.cx [--seed N] [--count N] [--register FILE] [--self-test]"]
+
+[?let
+  [= $args [?fallback [$env:parse-args [argspec
+              [flag name="seed" type=int default=1002]
+              [flag name="count" type=int default=2000]
+              [flag name="register" type=string default="conformance/property_gate.cxd"]
+              [flag name="self-test" type=bool]
+              [flag name="help" type=bool]]]
+             [recover-with ([$say $USAGE], [$env:exit 2], null)]]]
+  [= $_h [?if [?else [$env:flag $args 'help'] false] [then ([$say $USAGE], [$env:exit 0])] [else null]]]
+  [= $seed [$env:flag $args 'seed']] [= $count [$env:flag $args 'count']]
+  [?if [?else [$env:flag $args 'self-test'] false]
+    [then [$env:exit [?if [= [$self-test] 0] [then 0] [else 1]]]]
+    [else
+      [?let [= $reg [$register-rows [$string [$env:flag $args 'register']]]]
+        [?if [not [= [$string $reg@ok] 'true']]
+          [then ([$say [$concat 'property-gate: the advisory register is unreadable: ' [$string $reg@why]]], [$env:exit 2])]
+          [else
+            [?let [= $register [?to-sequence [?for [in $a $reg/adv] [yield $a]]]]
+                  [= $cxbin [$env:executable-path]]
+                  [= $run [$run-all $seed $count $cxbin]]
+                  [= $checks [?to-sequence [?for [in $k $run/checks/k] [yield $k]]]]
+                  [= $fails [?to-sequence [?for [in $f $run/fails/fail] [yield $f]]]]
+                  [= $nbad [$report $seed $count $checks $fails $register]]
+              [$env:exit [?if [= $nbad 0] [then 0] [else 1]]]]]]]]]]

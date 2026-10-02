@@ -337,6 +337,11 @@ step_globs() {
     ring-import-gate)              echo 'vcx/* scripts/ring_import_gate* registry/repos.cxd' ;;
     gates-manifest-gate)           echo 'conformance/* packages/* scripts/gates_manifest_gate* scripts/gates_register*' ;;
     advisory-audit)                echo 'conformance/* packages/* reference/* deps.cxd scripts/advisory_audit* VERSION' ;;
+    # PROP-1 (RULED: QUAL-1 (a)): the step, its register, and everything that
+    # builds the binary it grades -- the pins (deps.cxd carries the specs it
+    # reads, security.md §2.1 among them), the front door's vcx/ and stdlib/,
+    # the V pin.
+    property-gate)                 echo 'conformance/property_gate.cxd scripts/property_gate.cx deps.cxd registry/modules.cxd vcx/* stdlib/* third_party/*' ;;
     ring-tag-gate)                 echo 'conformance/* scripts/*' ;;
     cxer-registry-gate)            echo 'vcx/* spec/* scripts/cxer_registry*' ;;
     spec-freeze-gate)              echo '*' ;;
