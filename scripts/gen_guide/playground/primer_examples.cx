@@ -194,6 +194,12 @@
                   [else [?if [not [= $xml ""]]
                     [then "its input is an XML document, which the browser engine does not read"]
                     [else ""]]]]]
+    [; the data pane (`doc:` below): always real for the data reading (the
+       document IS the value); for code, only when the program actually reads a
+       real one (PLAY-3 — a former query example keeps its input shown, never a
+       stub). Written here, not inside the map: the data reader refuses a
+       comment in a map's entry position, so one there makes this file
+       accepted-by-one in reader-parity (CXF-8) ]
     {n: $n,
      id: $id,
      suite: [$suite-label [$string [$map:get $sec "suite"]]],
@@ -201,10 +207,7 @@
      role: [$string [$map:get $r "role"]],
      title: [$string [?else [$map:get $sec "title"] ""]],
      reading: $reading,
-     [; the data pane: always real for the data reading (the document IS the
-        value); for code, only when the program actually reads a real one
-        (PLAY-3 — a former query example keeps its input shown, never a stub) ]
-     doc: [?if [or [= $reading 'data'] $shows-doc]
+     doc:[?if [or [= $reading 'data'] $shows-doc]
             [then [?if [= $xml ""] [then $data] [else $xml]]]
             [else ""]],
      src: $code,
