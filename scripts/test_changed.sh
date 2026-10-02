@@ -998,7 +998,13 @@ suite_files() {
     esac
   done < "$TC_TMP/changed"
   [ -n "${sel# }" ] || return 0
-  printf '%s\n' $sel | sort -u
+  # only files on disk go to `v test`: a test file the branch DELETED is in the
+  # change set and would be named as a path `v test` refuses (#1703, REFUTE-1).
+  # A selection that is then empty drops the step, as no reader would.
+  for f in $(printf '%s\n' $sel | sort -u); do
+    [ -f "$f" ] && printf '%s\n' "$f"
+  done
+  return 0
 }
 
 # Build-infra changes invalidate EVERY step (the Makefiles define the

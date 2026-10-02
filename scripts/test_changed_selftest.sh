@@ -41,6 +41,7 @@
 #      --infra-rows (#1659)                      them, never the union
 #   S  a docs/llm or conformance/ change (#1703) suite files that exist, a
 #                                                denominator over the pinned suite
+#   T  a deleted test file (#1703)              no path that is not on disk
 #
 # Exit 0 and the count line only when every case matches.
 set -u
@@ -646,8 +647,23 @@ if [ -z "$s_bad" ] && [ "$s_n" -gt 0 ]; then
 else
 	bad S "the suite selection reads the wrong directory:${s_bad:- (no pinned suite on disk — run make deps-sync)}"
 fi
+
+# ── T — a deleted test file is not handed to `v test` (#1703, REFUTE-1) ─────
+# A test file the branch deleted is in the change set and not on disk; the
+# selection printed it (`1 of 46 test files: vcx/tests/zz_gone_test.v`) and
+# `v test` would refuse the path. Only files that exist are named.
+run vcx/tests/zz_gone_test.v > "$T/t"
+t_bad=""
+for f in $(suite_files_of "$T/t"); do
+	[ -f "$ROOT/$f" ] || t_bad="$t_bad $f"
+done
+if [ -z "$t_bad" ]; then
+	ok T "a deleted test file is not named to v test: $(suite_line "$T/t" | cut -c1-90)"
+else
+	bad T "the selection names a test file that is not on disk:$t_bad"
+fi
 if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop step; P the vcx/corpus grading core selects the steps that run it; R the stripped scripts/ paths select their own rows; S every selected suite file is where the suite is)"
+echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop step; P the vcx/corpus grading core selects the steps that run it; R the stripped scripts/ paths select their own rows; S every selected suite file is where the suite is; T a deleted test file is not named)"
