@@ -725,6 +725,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ord-2` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md) | Owner decision 2026-09-17 ~23:34Z — the bug tail is worked in BATCHES of same-area bugs, tooling first with the nested `make test` at its head (RULED: ORD-2) |
 | `ord-2` | [rulings_2026_09_18_owner_decisions_0155z.md](rulings_2026_09_18_owner_decisions_0155z.md) | Sequencing (ORD-2 amended) |
 | `ord-2` | [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md) | Sequencing (ORD-2 amended again) |
+| `ordk-1` | [rulings_2026_10_02_owner_decision_l173.md](rulings_2026_10_02_owner_decision_l173.md) | ORDK-1 — the multi-key sort is one clause, keys in order, each with its own direction (L173 = (a)) |
 | `org-1` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | Owner decisions 2026-09-27 — Letters 46–50 and the org profile: KIT-4's shape (KIT4-1…3), the #1498 spec gaps (AA-7…9), HOST-4's seed made real (SEED-1), the host act's basis (HOSTB-1), the call spread's readings (SPREAD-2), the org-profile push (ORG-1) |
 | `org-1` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | ORG-1 — the org-profile README is pushed (`go .github` = (a)) |
 | `over-1` | [rulings_2026_10_01_owner_decision_overage.md](rulings_2026_10_01_owner_decision_overage.md) | OVER-1 — a $100 extra-usage allowance, spent only against a stop that would lose running agents' context |
@@ -1555,7 +1556,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `utf-7` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `utf-8` | [audit_2026_08_30_text_format_surface.md](audit_2026_08_30_text_format_surface.md), [partition_I1_rebless.md](partition_I1_rebless.md), [partition_I5_stream17_runtime.md](partition_I5_stream17_runtime.md), [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md), [rulings_2026_08_28_zip_module_1078.md](rulings_2026_08_28_zip_module_1078.md), [rulings_2026_08_30_text_format_residuals.md](rulings_2026_08_30_text_format_residuals.md), [rulings_2026_09_11_saml_metadata_exchange_1402a.md](rulings_2026_09_11_saml_metadata_exchange_1402a.md), [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md), [rulings_2026_09_15_websocket_stream_placement_int19.md](rulings_2026_09_15_websocket_stream_placement_int19.md) |
 | `vg-2a` | [issue_audit_2026_09_30_ship2.md](issue_audit_2026_09_30_ship2.md) |
-| `vocab-1` | [rulings_2026_09_30_integrator_decisions_l120.md](rulings_2026_09_30_integrator_decisions_l120.md), [rulings_2026_09_30_integrator_decisions_l150.md](rulings_2026_09_30_integrator_decisions_l150.md), [rulings_2026_10_01_owner_decision_play3.md](rulings_2026_10_01_owner_decision_play3.md) |
+| `vocab-1` | [rulings_2026_09_30_integrator_decisions_l120.md](rulings_2026_09_30_integrator_decisions_l120.md), [rulings_2026_09_30_integrator_decisions_l150.md](rulings_2026_09_30_integrator_decisions_l150.md), [rulings_2026_10_01_owner_decision_play3.md](rulings_2026_10_01_owner_decision_play3.md), [rulings_2026_10_02_owner_decision_l173.md](rulings_2026_10_02_owner_decision_l173.md) |
 | `wave-3` | [rulings_2026_08_26_seq_classification.md](rulings_2026_08_26_seq_classification.md) |
 | `wf-26a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
 | `wf-27a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
@@ -1571,4 +1572,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*378 ledger pages; 834 ids declared, 400 cited only.*
+*379 ledger pages; 835 ids declared, 400 cited only.*
