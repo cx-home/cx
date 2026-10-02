@@ -242,7 +242,13 @@ fn flow_cli_local_act(span string) ?FlowCliAct {
 // flow_cli_module_acts answers the resolver rows for one `[?lib]` import's
 // public command defs, named `alias/def`. A lib that does not resolve yields no
 // rows: the driver program carries the SAME `[?lib]` span and refuses there with
-// the loader's own CXER, which is the message the reader needs.
+// the loader's own CXER (CXER0210 for a missing module, CXER0271 for a missing
+// read grant — #1539), which is the message the reader needs. That holds only
+// because the scan resolves through the program loader's OWN seeded table —
+// the bundled stdlib AND the codec modules: with the stdlib alone, an acts
+// module importing cx-stdlib/cx resolved here to nothing while the driver
+// loaded it, so no refusal ever came and every act it defines "resolved to
+// nothing" (#1709).
 fn flow_cli_module_acts(span string, mut table code.ModuleTable) []FlowCliAct {
 	ln := cx.parse_lib(span) or { return [] }
 	m := code.resolve_lib(ln, mut table) or { return [] }
@@ -321,8 +327,7 @@ fn flow_cli_env_scan(path string) ([]string, []FlowCliAct) {
 		eprintln('cx flow: --env "${path}" is not scannable CX: ${err.msg()}')
 		exit(1)
 	}
-	mut table := code.new_module_table()
-	code.register_bundled_stdlib(mut table)
+	mut table := code.new_seeded_module_table()
 	mut directives := []string{}
 	mut acts := []FlowCliAct{}
 	for sp in spans {
@@ -354,8 +359,7 @@ fn flow_cli_env_scan(path string) ([]string, []FlowCliAct) {
 fn flow_cli_env_feature_pkgs(path string) []string {
 	src := flow_cli_read(path, 'the --env program')
 	spans := code.module_loader_scan_spans(src) or { return [] }
-	mut table := code.new_module_table()
-	code.register_bundled_stdlib(mut table)
+	mut table := code.new_seeded_module_table()
 	mut out := []string{}
 	for sp in spans {
 		if sp.kind != .lib {
