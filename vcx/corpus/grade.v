@@ -129,6 +129,7 @@ pub:
 	has_out_effects bool   // section DECLARED (an empty declared trace asserts zero admissions)
 	out_err         string
 	gate            string   // per-case gate toggle: enforced|advisory|pending|skip ('' = unset)
+	issue           string   // the open issue an advisory case's red is tracked by, '<owner>/<repo>#<n>' — the case's own, else its element's (ADVIS-1, RULED: QUAL-1 (b))
 	grant           string   // Effort B least-privilege grant: space-separated capability list ('none' = EMPTY set, PYE-3; '' = host default)
 	argv            string   // program argv to install before eval (#926 PYE-2): space-separated, argv[0] included ('' = none)
 	tol             f64      // relative float tolerance for out_text match (0 = exact)
@@ -149,6 +150,7 @@ pub fn parsed_from(c fixtures.FixtureCase) ParsedFixture {
 		has_out_effects: 'out_effects' in c.sections
 		out_err:         clamp_section(c.sections['out_err'])
 		gate:            c.gate
+		issue:           c.issue
 		grant:           c.grant
 		argv:            c.argv
 		tol:             c.tol
@@ -560,6 +562,7 @@ pub fn grade_files(opts Options, names []string) Outcome {
 	_, suite_default := load_gate_policy_at(opts.gates_path, opts.suite)
 	packs_off := if opts.skip_packs { excluded_packs() } else { []string{} }
 	mut adv_ids := map[string]bool{}
+	mut untracked_ids := map[string]bool{}
 	mut failures := []string{}
 	// #1432: the build-identity read at the first recorded failure, once per step.
 	mut identity_reported := false
@@ -574,7 +577,8 @@ pub fn grade_files(opts Options, names []string) Outcome {
 		full := if opts.corpus_root == '' { fpath } else { os.join_path(opts.corpus_root, fpath) }
 		ps := parse_suite_in(full)
 		// D49a: an element gate= this core cannot grade (pending, skip, a typo,
-		// advisory with no reason=) fails the FILE as an enforced failure —
+		// advisory with no reason= or no issue=, an advisory case naming no open
+		// issue — ADVIS-1) fails the FILE as an enforced failure —
 		// guessing what a pending suite means would grade something nobody
 		// asked for. `cx corpus` refuses the same file with exit 2 before here.
 		if ps.refusal != '' {
@@ -622,7 +626,19 @@ pub fn grade_files(opts Options, names []string) Outcome {
 			// effective gate: per-case > the suite element (both in f.gate, the
 			// loader resolves them — D49a) > the policy's suite default (>
 			// enforced when every tier is '').
-			eff_gate := if f.gate != '' { f.gate } else { suite_default }
+			mut eff_gate := if f.gate != '' { f.gate } else { suite_default }
+			// ADVIS-1 (RULED: QUAL-1 (b)): an advisory status is granted only to
+			// a case that names the open issue tracking its red. The loader
+			// refused an untracked case whose advisory came from the case or its
+			// element (ps.refusal above); the POLICY's suite default is the one
+			// tier it cannot see, so a case made advisory by the policy alone and
+			// naming no issue is graded ENFORCED here, and its failure says why.
+			policy_untracked := f.gate == '' && eff_gate == 'advisory'
+				&& !fixtures.is_issue_ref(f.issue)
+			if policy_untracked {
+				eff_gate = 'enforced'
+				untracked_ids['${fname}/${f.id}'] = true
+			}
 			if eff_gate == 'skip' || eff_gate == 'pending' {
 				if opts.record {
 					o.records << CaseRecord{
@@ -791,8 +807,11 @@ pub fn grade_files(opts Options, names []string) Outcome {
 	// 'advisory' suites are the spec-first frontier (unimplemented) — reported
 	// but NOT blocking; everything else is enforced (deny-by-default).
 	for fl in failures {
-		if adv_ids[fl.all_before(': ')] {
+		key := fl.all_before(': ')
+		if adv_ids[key] {
 			o.advisory << fl
+		} else if untracked_ids[key] {
+			o.enforced << '${fl}\n  graded ENFORCED: advisory by the gate policy\'s suite default, but the case names no issue= -- an advisory red no open issue tracks is not granted (ADVIS-1)'
 		} else {
 			o.enforced << fl
 		}
