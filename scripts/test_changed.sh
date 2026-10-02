@@ -336,6 +336,7 @@ step_globs() {
     docs-check)                    echo 'docs-src/* docs/llm/* docs/index.html scripts/gen_site/* scripts/gen_docs/* scripts/gen_guide/playground/* scripts/docs_fragment.cx scripts/deps_pins.cx deps.cxd registry/* Makefile scripts/gen_guide/guide.mk ledger/* conformance/* spec/* stdlib/* vcx/* VERSION' ;;
     ring-import-gate)              echo 'vcx/* scripts/ring_import_gate* registry/repos.cxd' ;;
     gates-manifest-gate)           echo 'conformance/* packages/* scripts/gates_manifest_gate* scripts/gates_register*' ;;
+    advisory-audit)                echo 'conformance/* packages/* reference/* deps.cxd scripts/advisory_audit* VERSION' ;;
     ring-tag-gate)                 echo 'conformance/* scripts/*' ;;
     cxer-registry-gate)            echo 'vcx/* spec/* scripts/cxer_registry*' ;;
     spec-freeze-gate)              echo '*' ;;
