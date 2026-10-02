@@ -59,10 +59,11 @@ never rises. Not scanned, by name: "landing" ("landing page").
     [word id=job rx='\bjobs?\b' say='"job"']
     [word id=stage rx='\bstages?\b' say='"stage"']
     [word id=task rx='\btasks?\b' say='"task"']
-    [; the playground's readings are data / query / code (PLAY-2): the old
-       names may not come back as a tab or crumb label — a quoted string or
-       element text reading exactly Document or Program ]
-    [word id=reading-label rx="(>|['\"])(Document|Program)(<|['\"])" flags='' scope='playground' spans=keep say='the reading label "Document" / "Program"']]
+    [; the playground's readings are data / code (PLAY-3, amending PLAY-2's
+       three, #1741): the old names may not come back as a tab or crumb
+       label — a quoted string or element text reading exactly Document,
+       Program or Query ]
+    [word id=reading-label rx="(>|['\"])(Document|Program|Query)(<|['\"])" flags='' scope='playground' spans=keep say='the reading label "Document" / "Program" / "Query"']]
 
   [; ── the tree's own prose (RULED: WORDS-1, Letter 120 = (a)): the words named
      in `words=` are held over the tooling and process prose of the tree as well
