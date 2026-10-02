@@ -1,0 +1,25 @@
+[spec-invariant-exemptions
+  [doc [#
+The SPEC-INVARIANT exemption register (RULED: QUAL-1 (d); the SPECINV-1 round).
+
+`make spec-invariant-gate` (scripts/spec_invariants.cx) requires every sentence of
+the two rings' approved specs that carries MUST, MUST NOT, SHALL, REFUSES or NEVER
+to cite, beside it, a conformance case that grades it. A row here is the only other
+way through, and it says WHY no case can: the sentence's spec file, a verbatim
+`match=` substring of the sentence (as `--list` prints it, markdown included), one
+class of the closed four, and a reason.
+
+  step     a make step grades it, not a corpus case: held-by= names the target
+           (it must exist in this repository's or a ring's Makefile)
+  author   an obligation on the program author, a binding's author or an
+           operator: no implementation behaviour exists to grade
+  quoted   the sentence reports or quotes another document's keyword; it is
+           not a requirement of this spec
+  no-lane  the behaviour is the implementation's, but no corpus lane can feed
+           its input: issue= names the open issue that adds the lane
+
+The gate refuses a row that matches no sentence, one whose sentence cites a case
+(stale), an unknown class, a missing reason, a held-by= that is no make target, and
+a no-lane row without an issue.
+#]]
+]

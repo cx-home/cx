@@ -1,0 +1,375 @@
+# scripts/spec_invariants.cx — the SPEC-INVARIANT audit (RULED: QUAL-1 (d); the SPECINV-1 round).
+#
+# QUAL-1 (d): every MUST / MUST NOT of the data and code specs carries the id
+# of a conformance case that grades it, beside the sentence (RS-38's shape:
+# the case id written in the sentence itself, `program-for-021` or
+# (`program-body-prose-007`), or the `lint.cxd` `085` form that names the
+# corpus file and the case number). This program lists every sentence of the
+# two rings' approved specs that carries one of the normative keywords
+#
+#     MUST   MUST NOT   SHALL   REFUSES   NEVER      (upper case, as written)
+#
+# with its file, its section and its line, and says whether a case id stands
+# beside it. A case id counts only when the case EXISTS: the token is looked
+# up in the two rings' corpora (every `[case id=…]` under conformance/ of
+# cx-core-data and cx-core-code), as the full id or as its numbered prefix
+# (`program-for-021` for `program-for-021-a-multi-sibling-slot-…`).
+#
+# The specs read:
+#   the data ring  <data-root>/spec/03-approved/core/*.md
+#   the code ring  <code-root>/spec/03-approved/core/code.md, security.md
+#                  <code-root>/spec/03-approved/stdlib/*.md
+# The roots default to deps/cx-core-data and deps/cx-core-code (the pinned
+# checkouts `make deps-sync` writes); `--data-root DIR` / `--code-root DIR`
+# point at a clone instead.
+#
+# What a sentence is: the text of a paragraph, a list item or a table row,
+# its wrapped lines joined, split at a sentence end (. ! ? and a capital,
+# a backtick, a bracket or emphasis next). Fenced code blocks are not prose
+# and are skipped; a keyword inside a `code span` is a word being quoted,
+# not a requirement, and does not count. A table row is one sentence. The
+# RFC 2119 sentence that defines the keywords is a definition, not an
+# invariant, and is listed as exempt; nothing else is.
+#
+# Modes:
+#   (none)        the gate: counts by file, every sentence without a case
+#                 id named, exit 1 when there is one (`make spec-invariant-gate`)
+#   --list        every keyword sentence, one per line, tab-separated:
+#                 file, line, section, status (cited | UNCITED | exempt),
+#                 the ids cited, the sentence
+#   --self-test   the splitter and the citation reader against fixed text
+#
+# Run from the repo root:
+#   cx --allow-read scripts/spec_invariants.cx [--list] [--data-root D] [--code-root C]
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/map'     as=map]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def matched scope=public ($m) [> [?else $m@start -1] -1]]
+[?def member scope=public ($x $xs)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+[?def flat scope=public ($xss) [$fp:flat-map $xss [?fn ($x) $x]]]
+
+# The value after a flag in argv, or the default.
+[?def flag-value scope=public ($args $name $default)
+  [?let [= $n [$count $args]]
+        [= $hits [?for [in $i [$range 1 $n]]
+                   [where [= $args[$i] $name]]
+                   [where [< $i $n]]
+                   [yield $args[[+ $i 1]]]]]
+    [?if [> [$count $hits] 0] [then [$first $hits]] [else $default]]]]
+
+# ── the regular expressions, compiled once ────────────────────────────────
+[?def rxs scope=public ()
+  {fence:   [$re:compile "^\\s*(```|~~~)"],
+   heading: [$re:compile "^#{1,6}\\s"],
+   tsep:    [$re:compile "^\\s*\\|[\\s:|-]+\\|?\\s*$"],
+   table:   [$re:compile "^\\s*\\|"],
+   item:    [$re:compile "^\\s*([-*+]|[0-9]+[.)])\\s+"],
+   quote:   [$re:compile "^\\s*>\\s?"],
+   keyword: [$re:compile "\\b(MUST|SHALL|REFUSES|NEVER)\\b"],
+   codespan: [$re:compile "`[^`]*`"],
+   cut:     [$re:compile "[.!?][)\"'*]*\\s+"],
+   abbrev:  [$re:compile "(\\be\\.g|\\bi\\.e|\\bcf|\\bvs|\\betc|\\bresp|\\bapprox|\\bincl|\\bNo|§[0-9.]*[0-9])$"],
+   lower:   [$re:compile "^[a-z0-9§(,;:]"],
+   token:   [$re:compile "[A-Za-z0-9]+(-[A-Za-z0-9]+)+"],
+   cxdfile: [$re:compile "([A-Za-z0-9_]+\\.cxd)"],
+   casenum: [$re:compile "`([0-9]{3}[a-z]?)`"],
+   numseg:  [$re:compile "^[0-9]+[a-z]?$"],
+   lead:    [$re:compile "^[0-9]+[a-z]?-"],
+   rfc:     [$re:compile "RFC 2119"],
+   hashes:  [$re:compile "^#+\\s*"],
+   caseid:  [$re:compile "\\[case id=([A-Za-z0-9-]+)"]}]
+
+# ── the corpus: every case id, and the keys a citation may use ────────────
+# For each id: the id itself, its prefix up to and including its first
+# numbered segment (`program-for-021`), and — for an id that starts with its
+# number (`085-…`) — `<file>#<number>` for the `lint.cxd` `085` form.
+[?def id-keys scope=public ($id $file $rx)
+  [?let [= $segs [$strings:split $id '-']]
+        [= $nums [?for [in $k [$range 1 [$count $segs]]]
+                   [where [$re:matches $rx.numseg $segs[$k]]]
+                   [yield $k]]]
+        [= $pre [?if [> [$count $nums] 0]
+                  [then ([$strings:join [?for [in $k [$range 1 [$first $nums]]] [yield $segs[$k]]] '-'])]
+                  [else ()]]]
+        [= $lead [?if [$re:matches $rx.numseg $segs[1]]
+                   [then ([$cat ($file, '#', $segs[1])])]
+                   [else ()]]]
+    [$flat (($id), $pre, $lead)]]]
+
+[?def corpus-keys scope=public impure ($roots $rx)
+  [?let [= $files [$flat [?for [in $r $roots]
+                           [yield [$io:glob [$cat ($r, "/conformance/**/*.cxd")]]]]]]
+        [= $keys [$flat [?for [in $f $files]
+                          [= $text [?fallback [$io:read-file $f] [recover-with ""]]]
+                          [= $base [$path:basename $f]]
+                          [yield [$flat [?for [in $m [$re:find-all $rx.caseid $text]]
+                                          [yield [$id-keys [$re:group $m 1] $base $rx]]]]]]]]
+    [?to-map [?for [in $k [$distinct $keys]] [yield ($k, true)]]]]]
+
+# ── the reader: lines → units → sentences ─────────────────────────────────
+[?def line-kind scope=public ($line $rx)
+  [?if [$matched [$re:find $rx.fence $line]] [then 'fence']
+  [else [?if [$strings:is-blank $line] [then 'blank']
+  [else [?if [$matched [$re:find $rx.heading $line]] [then 'heading']
+  [else [?if [$re:matches $rx.tsep $line] [then 'blank']
+  [else [?if [$matched [$re:find $rx.table $line]] [then 'table']
+  [else [?if [$matched [$re:find $rx.item $line]] [then 'item']
+  [else 'text']]]]]]]]]]]]]
+
+# A unit starts at a table row, a list item, or a text line that does not
+# continue a paragraph or a list item.
+[?def starts-unit scope=public ($k $prev)
+  [?if [= $k 'table'] [then true]
+  [else [?if [= $k 'item'] [then true]
+  [else [?if [= $k 'text'] [then [not [$member $prev ('text', 'item')]]]
+  [else false]]]]]]]
+
+[?def clean-line scope=public ($line $rx)
+  [$strings:trim [$re:replace $rx.quote $line '']]]
+
+# Split a unit's text at sentence ends, re-joining a piece that a split made
+# after an abbreviation or before a lower-case continuation.
+[?def sentences scope=public ($text $rx)
+  [?let [= $pieces [?for [in $p [$re:split $rx.cut $text]]
+                     [where [not [$strings:is-blank $p]]]
+                     [yield $p]]]
+    [?if [= [$count $pieces] 0] [then ()]
+    [else
+      [?reduce [?to-sequence [?drop 1 $pieces]]
+        [using [?fn ($acc $p)
+          [?let [= $n [$count $acc]]
+                [= $last $acc[$n]]
+            [?if [?else [$matched [$re:find $rx.abbrev $last]] false]
+              [then [$flat ([?to-sequence [?take [- $n 1] $acc]], ([$cat ($last, '. ', $p)]))]]
+            [else [?if [$matched [$re:find $rx.lower $p]]
+              [then [$flat ([?to-sequence [?take [- $n 1] $acc]], ([$cat ($last, '. ', $p)]))]]
+            [else [$flat ($acc, ($p))]]]]]]]]
+        [init ($pieces[1])]]]]]]
+
+# The case ids a sentence cites (the keys that exist in the corpus).
+[?def cited-ids scope=public ($s $keys $rx)
+  [?let [= $toks [$distinct [?for [in $m [$re:find-all $rx.token $s]]
+                              [= $t [$re:group $m 0]]
+                              [where [$map:contains $keys $t]]
+                              [yield $t]]]]
+        [= $files [?for [in $m [$re:find-all $rx.cxdfile $s]] [yield [$re:group $m 1]]]]
+        [= $nums  [?for [in $m [$re:find-all $rx.casenum $s]] [yield [$re:group $m 1]]]]
+        [= $filed [?for [in $f $files] [in $n $nums]
+                    [= $k [$cat ($f, '#', $n)]]
+                    [where [$map:contains $keys $k]]
+                    [yield [$cat ($f, ' ', $n)]]]]
+    [$flat ($toks, $filed)]]]
+
+# Every keyword sentence of one spec text, as [row …] elements.
+[?def audit-text scope=public ($file $text $keys $rx)
+  [?let [= $lines [$strings:split-lines $text]]
+        [= $n [$count $lines]]
+        [= $raw [?for [in $l $lines] [yield [$line-kind $l $rx]]]]
+        # fence parity before each line (the scan's first item is the init)
+        [= $par [?to-sequence [?scan $raw [using [?fn ($a $k) [?if [= $k 'fence'] [then [- 1 $a]] [else $a]]]] [init 0]]]]
+        [= $kinds [?for [in $i [$range 1 $n]]
+                    [yield [?if [= $raw[$i] 'fence'] [then 'fence']
+                           [else [?if [= $par[$i] 1] [then 'code'] [else $raw[$i]]]]]]]]
+        # the section a line sits under: the last heading before it
+        [= $secs [?to-sequence [?scan [?for [in $i [$range 1 $n]] [yield $i]]
+                   [using [?fn ($a $i) [?if [= $kinds[$i] 'heading']
+                                         [then [$strings:trim [$re:replace $rx.hashes $lines[$i] '']]]
+                                         [else $a]]]]
+                   [init '']]]]
+        [= $starts [?for [in $i [$range 1 $n]]
+                     [where [$starts-unit $kinds[$i] [?if [= $i 1] [then 'blank'] [else $kinds[[- $i 1]]]]]]
+                     [yield $i]]]
+        [= $m [$count $starts]]
+        [= $units [?for [in $u [$range 1 $m]]
+                    [= $s $starts[$u]]
+                    [= $e [?if [< $u $m] [then [- $starts[[+ $u 1]] 1]] [else $n]]]
+                    # a unit runs from its start over the continuation lines
+                    [= $body [?if [= $kinds[$s] 'table'] [then ($lines[$s])]
+                             [else [?let [= $stop [?for [in $j [$range $s $e]]
+                                                    [= $kj $kinds[$j]]
+                                                    [where [not [$member $kj ('text', 'item')]]]
+                                                    [yield $j]]]
+                                         [= $last [?if [> [$count $stop] 0] [then [- [$first $stop] 1]] [else $e]]]
+                                     [?for [in $j [$range $s $last]] [yield $lines[$j]]]]]]]
+                    [= $text [$strings:join [?for [in $l $body] [yield [$clean-line $l $rx]]] ' ']]
+                    [where [$matched [$re:find $rx.keyword [$re:replace $rx.codespan $text '']]]]
+                    [yield [unit line=$s kind=$kinds[$s] sec=$secs[$s] text=$text]]]]
+    [$flat [?for [in $u $units]
+             [yield [?for [in $sn [?if [= $u@kind 'table'] [then ($u@text)] [else [$sentences $u@text $rx]]]]
+                      [where [$matched [$re:find $rx.keyword [$re:replace $rx.codespan $sn '']]]]
+                      [= $ids [$cited-ids $sn $keys $rx]]
+                      [= $idtext [$strings:join $ids ' ']]
+                      [= $status [?if [$matched [$re:find $rx.rfc $sn]] [then 'exempt']
+                                 [else [?if [> [$count $ids] 0] [then 'cited'] [else 'UNCITED']]]]]
+                      [yield [row file=$file line=$u@line sec=$u@sec status=$status
+                                  ids=$idtext text=$sn]]]]]]]]
+
+[?def spec-files scope=public impure ($data-root $code-root)
+  [$flat ([$io:glob [$cat ($data-root, "/spec/03-approved/core/*.md")]],
+          ([$cat ($code-root, "/spec/03-approved/core/code.md")],
+           [$cat ($code-root, "/spec/03-approved/core/security.md")]),
+          [$io:glob [$cat ($code-root, "/spec/03-approved/stdlib/*.md")]])]]
+
+[?def short scope=public ($s $w)
+  [?if [> [$strings:length $s] $w] [then [$cat ([$strings:slice $s 1 $w], '…')]] [else $s]]]
+
+# ── the exemption register ────────────────────────────────────────────────
+# A sentence no conformance case can grade carries a row in the register
+# (scripts/spec_invariants_exempt.cxd, or --exempt FILE): its spec file, a
+# distinctive `match=` substring of the sentence, a class from the closed
+# set below and a reason. A row is refused when it matches no sentence, when
+# the sentence it matches cites a case (the row is stale), when its class is
+# not one of the four, when it has no reason, or when the class's own field is
+# missing or wrong:
+#   step     the obligation is graded by a make step, not a corpus case:
+#            `held-by=` names the target, and the target must exist in this
+#            repository's Makefile or a ring's own Makefile
+#   author   the sentence obliges the program author, a binding's author or an
+#            operator — no implementation behaviour exists to grade
+#   quoted   the sentence reports or quotes another document's keyword; it is
+#            not a requirement of this spec
+#   no-lane  the behaviour is the implementation's, but no corpus lane can feed
+#            its input: `issue=` names the open issue that adds the lane
+[?def exempt-classes scope=public () ('step', 'author', 'quoted', 'no-lane')]
+
+[?def read-register scope=public impure ($path)
+  [?if [$io:is-file $path]
+    [then [?let [= $d [$cx:parse [$io:read-file $path]]]
+            [?for [in $e $d//exempt] [yield $e]]]]
+    [else ()]]]
+
+[?def target-exists scope=public ($t $makefiles)
+  [?let [= $rx [$re:compile [$cat ("(?m)^", [$strings:escape-regex $t], "[ \\t]*:")]]]
+    [> [$count [?for [in $mk $makefiles] [where [$matched [$re:find $rx $mk]]] [yield 1]]] 0]]]
+
+# The register's own refusals, one line each.
+[?def register-errors scope=public ($reg $rows $makefiles)
+  [$flat [?for [in $e $reg]
+           [= $hits [?for [in $r $rows]
+                      [where [= $r@file $e@file]]
+                      [where [$strings:contains $r@text [$string $e@match]]]
+                      [yield $r]]]
+           [= $where [$cat ($e@file, " match='", [$string $e@match], "'")]]
+           [yield [$flat (
+             [?if [= [$count $hits] 0] [then ([$cat ("exempt row matches no keyword sentence: ", $where)])] [else ()]],
+             [?if [> [$count [?for [in $r $hits] [where [= $r@status 'cited']] [yield 1]]] 0]
+               [then ([$cat ("exempt row matches a sentence that cites a case (stale — drop the row): ", $where)])] [else ()]],
+             [?if [not [$member [$string $e@class] [$exempt-classes]]]
+               [then ([$cat ("exempt row has class '", [$string $e@class], "', not one of step author quoted no-lane: ", $where)])] [else ()]],
+             [?if [$strings:is-blank [$string [?else $e@reason '']]]
+               [then ([$cat ("exempt row has no reason=: ", $where)])] [else ()]],
+             [?if [= [$string $e@class] 'step']
+               [then [?if [$target-exists [$string [?else $e@held-by '']] $makefiles] [then ()]
+                       [else ([$cat ("exempt row's held-by='", [$string [?else $e@held-by '']], "' is no make target: ", $where)])]]]
+               [else ()]],
+             [?if [= [$string $e@class] 'no-lane']
+               [then [?if [$re:matches [$re:compile "[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+#[0-9]+"] [$string [?else $e@issue '']]] [then ()]
+                       [else ([$cat ("exempt row of class no-lane needs issue='<owner>/<repo>#<n>': ", $where)])]]]
+               [else ()]])]]]]]
+
+# Apply the register: an UNCITED sentence a row matches becomes exempt.
+[?def apply-register scope=public ($rows $reg)
+  [?for [in $r $rows]
+    [yield [?if [= $r@status 'UNCITED']
+             [then [?let [= $m [?for [in $e $reg]
+                                 [where [= $r@file $e@file]]
+                                 [where [$strings:contains $r@text [$string $e@match]]]
+                                 [yield [$string $e@class]]]]
+                     [?if [> [$count $m] 0]
+                       [then [?let [= $cls [$first $m]] [row file=$r@file line=$r@line sec=$r@sec status=exempt ids=$cls text=$r@text]]]
+                       [else $r]]]]
+             [else $r]]]]]
+
+# ── the self-test ─────────────────────────────────────────────────────────
+[?def self-test scope=public impure ($rx)
+  [?let
+    [= $keys [?to-map (('demo-001', true), ('demo-001-a-case', true), ('lint.cxd#085', true))]]
+    [= $src (
+      '# Title',
+      '## §1. One',
+      'A reader MUST refuse it (`demo-001`). A reader MUST NOT',
+      'guess, e.g. `x`. Prose with no keyword.',
+      '',
+      '```cx',
+      '[?let MUST NEVER]',
+      '```',
+      '- an item that SHALL hold (lint.cxd `085`)',
+      '- an item that `MUST` not count',
+      '| row | it REFUSES | demo-001-a-case |',
+      '|---|---|---|',
+      '| row | it NEVER does | none |',
+      'Per RFC 2119: **MUST**, **MUST NOT** apply.',
+      'It cites a missing demo-002 and MUST fail.')]
+    [= $text [$strings:join $src "\n"]]
+    [= $rows [$audit-text 't.md' $text $keys $rx]]
+    [= $got [?for [in $r $rows] [yield [$cat ([$string $r@line], ':', $r@status)]]]]
+    [= $want ('3:cited', '3:UNCITED', '9:cited', '11:cited', '13:UNCITED', '14:exempt', '14:UNCITED')]
+    [?if [= $got $want]
+      [then [?let [= $_ [$say [$cat ("spec-invariant self-test OK — ", [$string [$count $want]], " sentences classified as expected")]]]
+              [$env:exit 0]]]
+      [else [?let [= $_ [$say [$cat ("spec-invariant self-test FAILED — want ", [$strings:join $want ' '], " got ", [$strings:join $got ' '])]]]
+              [$env:exit 1]]]]]]
+
+# ── main ──────────────────────────────────────────────────────────────────
+[?let
+  [= $rx [$rxs]]
+  [= $args [$env:argv]]
+  [?if [$member "--self-test" $args]
+    [then [$self-test $rx]]
+    [else
+      [?let
+        [= $data-root [$flag-value $args "--data-root" "deps/cx-core-data"]]
+        [= $code-root [$flag-value $args "--code-root" "deps/cx-core-code"]]
+        [= $keys [$corpus-keys ($data-root, $code-root) $rx]]
+        [= $files [$spec-files $data-root $code-root]]
+        [= $reg [$read-register [$flag-value $args "--exempt" "scripts/spec_invariants_exempt.cxd"]]]
+        [= $makefiles [?for [in $mf ("Makefile", [$cat ($code-root, "/Makefile")], [$cat ($data-root, "/Makefile")])]
+                         [yield [?fallback [$io:read-file $mf] [recover-with ""]]]]]
+        [= $rows0 [$flat [?for [in $f $files]
+                          [= $label [?if [$strings:starts-with $f $data-root]
+                                      [then [$cat ('cx-core-data/', [$strings:slice $f [+ [$strings:length $data-root] 2] [$strings:length $f]])]]
+                                      [else [$cat ('cx-core-code/', [$strings:slice $f [+ [$strings:length $code-root] 2] [$strings:length $f]])]]]]
+                          [yield [$audit-text $label [$io:read-file $f] $keys $rx]]]]]
+        [= $rows [$apply-register $rows0 $reg]]
+        [= $reg-errors [$register-errors $reg $rows0 $makefiles]]
+        [= $uncited [?for [in $r $rows] [where [= $r@status 'UNCITED']] [yield $r]]]
+        [?do
+        [?if [$member "--list" $args]
+          [then [?do [?for [in $r $rows]
+                       [yield [$say [$strings:join ($r@file, [$string $r@line], $r@sec, $r@status, $r@ids, $r@text) "\t"]]]]]]
+          [else
+            [?do
+              [$say "spec-invariant audit — keyword sentences (MUST / MUST NOT / SHALL / REFUSES / NEVER) and their case ids"]
+              [?for [in $f [$distinct [?for [in $r $rows] [yield $r@file]]]]
+                [= $mine [?for [in $r $rows] [where [= $r@file $f]] [yield $r@status]]]
+                [yield [$say [$cat ("  ", $f, ": ", [$string [$count $mine]], " sentences, ",
+                                    [$string [$count [?for [in $s $mine] [where [= $s 'cited']] [yield 1]]]], " with a case, ",
+                                    [$string [$count [?for [in $s $mine] [where [= $s 'UNCITED']] [yield 1]]]], " without, ",
+                                    [$string [$count [?for [in $s $mine] [where [= $s 'exempt']] [yield 1]]]], " exempt")]]]]
+              [$say [$cat ("TOTAL: ", [$string [$count $rows]], " sentences, ",
+                           [$string [$count [?for [in $r $rows] [where [= $r@status 'cited']] [yield 1]]]], " with a case, ",
+                           [$string [$count $uncited]], " without, ",
+                           [$string [$count [?for [in $r $rows] [where [= $r@status 'exempt']] [yield 1]]]], " exempt (",
+                           [$strings:join [?for [in $c ('RFC 2119', 'step', 'author', 'quoted', 'no-lane')]
+                                             [= $k [$count [?for [in $r $rows] [where [= $r@status 'exempt']]
+                                                       [where [= [?if [= $r@ids ''] [then 'RFC 2119'] [else $r@ids]] $c]] [yield 1]]]]
+                                             [yield [$cat ($c, " ", [$string $k])]]] ", "], ")")]]
+              [?for [in $x $reg-errors] [yield [$say [$cat ("REGISTER ", $x)]]]]
+              [?for [in $r $uncited]
+                [yield [$say [$cat ("UNCITED ", $r@file, ":", [$string $r@line], " (", $r@sec, "): ", [$short $r@text 160])]]]]]]]
+        [?if [> [+ [$count $uncited] [$count $reg-errors]] 0]
+          [then [?let [= $_ [$say [$cat ("spec-invariant gate FAILED — ", [$string [$count $uncited]],
+                                         " normative sentence(s) carry no case id and ", [$string [$count $reg-errors]],
+                                         " exemption row(s) are refused; write the case and cite its id beside the sentence (RS-38, QUAL-1 (d))")]]]
+                  [$env:exit 1]]]
+          [else [?let [= $_ [$say "spec-invariant gate OK — every normative sentence cites a case or carries an exemption row"]]
+                  [$env:exit 0]]]]]]]]]
