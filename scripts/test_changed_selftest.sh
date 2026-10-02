@@ -42,6 +42,8 @@
 #   S  a docs/llm or conformance/ change (#1703) suite files that exist, a
 #                                                denominator over the pinned suite
 #   T  a deleted test file (#1703)              no path that is not on disk
+#   U  a ledger/ or _gate_evidence/ page a      the pinned file that spells its
+#      pinned test reads by name               name; the index selects none
 #
 # Exit 0 and the count line only when every case matches.
 set -u
@@ -662,8 +664,28 @@ if [ -z "$t_bad" ]; then
 else
 	bad T "the selection names a test file that is not on disk:$t_bad"
 fi
+
+# ── U — a front-door page a pinned test reads by name (#1703's class) ───────
+# Pinned suite files read pages of THIS tree through testenv.front_door_root()
+# and a name they spell out: planar_umbrella_test.v reads
+# ledger/rulings_2026_09_17_totality_audit_1250.md, the rebless scan and the
+# identity umbrella read files at the top of _gate_evidence/. ledger/ and
+# _gate_evidence/ select nothing, so a change to exactly such a page skipped
+# the file that reads it. A top-level page's name now selects the files that
+# spell it; ledger/README.md and a branch's own _gate_evidence/pipeline_*/
+# still select none.
+run ledger/rulings_2026_09_17_totality_audit_1250.md > "$T/u1"
+run ledger/README.md _gate_evidence/pipeline_x/RESULTS.md > "$T/u2"
+u_bad=""
+suite_files_of "$T/u1" | grep -q 'planar_umbrella_test\.v$' || u_bad="$u_bad the-1250-page-selected:[$(suite_line "$T/u1")]"
+[ -z "$(suite_files_of "$T/u2")" ] || u_bad="$u_bad the-index-or-evidence-selected:[$(suite_line "$T/u2")]"
+if [ -z "$u_bad" ]; then
+	ok U "a ledger page a pinned test reads by name selects that test; the index and a branch's evidence select none"
+else
+	bad U "$u_bad"
+fi
 if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop step; P the vcx/corpus grading core selects the steps that run it; R the stripped scripts/ paths select their own rows; S every selected suite file is where the suite is; T a deleted test file is not named)"
+echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop step; P the vcx/corpus grading core selects the steps that run it; R the stripped scripts/ paths select their own rows; S every selected suite file is where the suite is; T a deleted test file is not named; U a page a pinned test reads by name selects it)"

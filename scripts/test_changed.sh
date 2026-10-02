@@ -226,7 +226,7 @@ step_globs() {
     # in-module tests for vcx/code + vcx/platform.
     test-vcx-code)                 echo "$RING_LIB $RING_SUP conformance/* stdlib/* deps.cxd" ;;
     # vcx/tests/ is `module main` importing code + platform + cx + fixtures.
-    test-vcx-suite)                echo "$RING_LIB vcx/tests/* $RING_SUP conformance/* $RING_EMBED" ;;
+    test-vcx-suite)                echo "$RING_LIB vcx/tests/* $RING_SUP conformance/* $RING_EMBED ledger/* _gate_evidence/*" ;;
     # #1216: the serial wall-clock step — the binary-driving closure plus its own dir.
     check-conformance-coverage)    echo 'conformance/* scripts/check_conformance_coverage.sh vcx/tests/runners/conformance/*' ;;
     # ── THE SERIAL TAIL, narrowed (#1516, RULED: RUN-1) ─────────────────────
@@ -991,7 +991,18 @@ suite_files() {
       # row), compiled into no test file of this step.
       flows/*)
         ;;
-      spec/*|docs-src/*|docs/*|ledger/*|_gate_evidence/*|.github/*|*.md|.gitignore|.editorconfig|LICENSE)
+      # a top-level ledger/ or _gate_evidence/ page a pinned file reads BY
+      # NAME through testenv.front_door_root() (planar_umbrella reads the 1250
+      # audit page, the rebless scan and the identity umbrella their tracked
+      # evidence files): the NAME clause selects the files that spell it. The
+      # index and a branch's own pipeline_*/ evidence are read by none.
+      ledger/*|_gate_evidence/*)
+        case "$f" in
+          ledger/README.md|*/*/*) ;;
+          *) m=${f##*/}
+             sel="$sel $(grep -lF -- "$m" /dev/null $(suite_tests) 2>/dev/null | tr '\n' ' ' || true)" ;;
+        esac ;;
+      spec/*|docs-src/*|docs/*|.github/*|*.md|.gitignore|.editorconfig|LICENSE)
         ;;
       *)
         echo ALL; return 0 ;;
