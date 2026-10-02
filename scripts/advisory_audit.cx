@@ -64,7 +64,7 @@
 # loader reads them (refutation r03, r09): a case's gate is its own gate=, else
 # the element's, else the gate policy's suite default; its issue is its own
 # issue=, else the element's — an empty issue= is unset and inherits, as the
-# loader's is. One [advisory repo= file= id= issue=] row per advisory case.
+# loader's is. One advisory row (repo, file, id, issue) per advisory case.
 [?def suite-cases scope=public pure ($repo::string $file::string $s $policy-default::string)
   [?let
     [= $sgate [$attr-or $s "gate"]]
@@ -76,8 +76,9 @@
                [else [?if [not [= $sgate ""]] [then $sgate] [else $policy-default]]]]]
         [where [= $g "advisory"]]
         [= $ci [$attr-or $c "issue"]]
-        [yield [advisory repo=$repo file=$file id=[$attr-or $c "id"]
-                         issue=[?if [= $ci ""] [then $sissue] [else $ci]]]]]]]]
+        [= $id [$attr-or $c "id"]]
+        [= $issue [?if [= $ci ""] [then $sissue] [else $ci]]]
+        [yield [advisory repo=$repo file=$file id=$id issue=$issue]]]]]]
 
 [?def lookup scope=private pure ($issues $ref::string)
   [$first [?for [in $i $issues/issue] [where [= [$attr-or $i "ref"] $ref]] [yield $i]]]]
@@ -102,24 +103,36 @@
       [?for [in $c $cases/advisory]
         [= $ref [$attr-or $c "issue"]]
         [= $i [$lookup $issues $ref]]
-        [yield [row repo=[$attr-or $c "repo"] file=[$attr-or $c "file"] id=[$attr-or $c "id"]
-                    issue=$ref state=[?if [$present $i] [then [$attr-or $i "state"]] [else ""]]
-                    kind=[$kind-of $c $issues $release]]]]]
+        [= $repo [$attr-or $c "repo"]]
+        [= $file [$attr-or $c "file"]]
+        [= $id [$attr-or $c "id"]]
+        [= $state [?if [$present $i] [then [$attr-or $i "state"]] [else ""]]]
+        [= $kind [$kind-of $c $issues $release]]
+        [yield [row repo=$repo file=$file id=$id issue=$ref state=$state kind=$kind]]]]
     [= $refused
       [?for [in $r $rows]
-        [where [not [= [$attr-or $r "kind"] ""]]]
-        [yield [refusal kind=[$attr-or $r "kind"] repo=[$attr-or $r "repo"] file=[$attr-or $r "file"]
-                        id=[$attr-or $r "id"] issue=[$attr-or $r "issue"] state=[$attr-or $r "state"]
-                        why=[$attr-or [$lookup $issues [$attr-or $r "issue"]] "why"]]]]]
+        [= $kind [$attr-or $r "kind"]]
+        [where [not [= $kind ""]]]
+        [= $repo [$attr-or $r "repo"]]
+        [= $file [$attr-or $r "file"]]
+        [= $id [$attr-or $r "id"]]
+        [= $issue [$attr-or $r "issue"]]
+        [= $state [$attr-or $r "state"]]
+        [= $why [$attr-or [$lookup $issues $issue] "why"]]
+        [yield [refusal kind=$kind repo=$repo file=$file id=$id issue=$issue state=$state why=$why]]]]
     [= $refs [$distinct [?for [in $c $cases/advisory] [where [not [= [$attr-or $c "issue"] ""]]]
                           [yield [$attr-or $c "issue"]]]]]
     # A corpus file naming advisory that the walker could not parse: its cases
     # cannot be listed, so the file is refused rather than skipped (w-check).
     [= $unparsed
       [?for [in $u $cases/unparsed]
-        [yield [refusal kind=unparsed repo=[$attr-or $u "repo"] file=[$attr-or $u "file"]
-                        id='' issue='' state='' why=[$attr-or $u "why"]]]]]
-    [verdict cases=[$count $rows] issues=[$count $refs] release=$release
+        [= $repo [$attr-or $u "repo"]]
+        [= $file [$attr-or $u "file"]]
+        [= $why [$attr-or $u "why"]]
+        [yield [refusal kind=unparsed repo=$repo file=$file id='' issue='' state='' why=$why]]]]
+    [= $n-cases [$count $rows]]
+    [= $n-issues [$count $refs]]
+    [verdict cases=$n-cases issues=$n-issues release=$release
       [?splice $refused]
       [?splice $unparsed]]]]
 
@@ -183,4 +196,6 @@
     [= $lines [?if [$ok $v]
                 [then ("ok")]
                 [else [?for [in $r [$refusals $v]] [yield [$message $r $rel]]]]]]
-    [$strings:join ([$census $v], [?splice $lines]) "\n"]]]
+    [= $head [$census $v]]
+    [= $all [?to-sequence [?concat ($head) $lines]]]
+    [$strings:join $all "\n"]]]

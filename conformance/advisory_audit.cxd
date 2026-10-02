@@ -30,7 +30,7 @@
 
  [case id=advisory-audit-001-open-in-release level=core
   [tags advisory-audit ok]
-  [title every advisory case names an open issue in the release -- by label, by milestone, by title prefix -- and nothing is refused]
+  [title [# every advisory case names an open issue in the release -- by label, by milestone, by title prefix -- and nothing is refused #]]
   [in-code [#
 [?lib './scripts/advisory_audit.cx' as=aa]
 [$aa:check
@@ -52,7 +52,7 @@
 
  [case id=advisory-audit-002-closed-issue-refuses level=core
   [tags advisory-audit closed]
-  [title an advisory case whose issue is CLOSED is refused -- the red outlived the issue that tracked it]
+  [title [# an advisory case whose issue is CLOSED is refused -- the red outlived the issue that tracked it #]]
   [in-code [#
 [?lib './scripts/advisory_audit.cx' as=aa]
 [$aa:check
@@ -67,7 +67,7 @@
 
  [case id=advisory-audit-003-off-release-refuses level=core
   [tags advisory-audit off-release]
-  [title an open issue with neither the release label nor its milestone nor a title beginning with the release is refused]
+  [title [# an open issue with neither the release label nor its milestone nor a title beginning with the release is refused #]]
   [in-code [#
 [?lib './scripts/advisory_audit.cx' as=aa]
 [$aa:check
@@ -86,7 +86,7 @@
 
  [case id=advisory-audit-004-unread-refuses level=core
   [tags advisory-audit unread fail-closed]
-  [title an issue the audit could not read is refused with the reason, never taken for an open one -- and so is a reference no lookup row answers]
+  [title [# an issue the audit could not read is refused with the reason, never taken for an open one -- and so is a reference no lookup row answers #]]
   [in-code [#
 [?lib './scripts/advisory_audit.cx' as=aa]
 [$aa:check
@@ -103,7 +103,7 @@
 
  [case id=advisory-audit-005-missing-and-malformed-refuse level=core
   [tags advisory-audit no-issue bad-issue]
-  [title an advisory case naming no issue, or an issue= that is not owner/repo#n, is refused -- even with a row that would answer it]
+  [title [# an advisory case naming no issue, or an issue= that is not owner/repo#n, is refused -- even with a row that would answer it #]]
   [in-code [#
 [?lib './scripts/advisory_audit.cx' as=aa]
 [$aa:check
@@ -121,7 +121,7 @@
 
  [case id=advisory-audit-006-the-report-lines level=core
   [tags advisory-audit report]
-  [title the report is the census line, then ok or one named line per refusal -- what make advisory-audit prints]
+  [title [# the report is the census line, then ok or one named line per refusal -- what make advisory-audit prints #]]
   [in-code [#
 [?lib './scripts/advisory_audit.cx' as=aa]
 [?let [= $issues [issues [issue ref='cx-home/cx-private#1462' read=true state=CLOSED labels='v0.18' milestone='v0.18' title='t']
@@ -137,7 +137,7 @@
 
  [case id=advisory-audit-007-the-listing level=core
   [tags advisory-audit listing]
-  [title every advisory case is listed with its issue and the issue's state as read, refused or not]
+  [title [# every advisory case is listed with its issue and the issue's state as read, refused or not #]]
   [in-code [#
 [?lib './scripts/advisory_audit.cx' as=aa]
 [$aa:listing
@@ -156,7 +156,7 @@
 
  [case id=advisory-audit-008-the-reference-shape level=core
   [tags advisory-audit issue-ref]
-  [title an issue reference is owner/repo#n -- the same shape the shared loader's is_issue_ref admits]
+  [title [# an issue reference is owner/repo#n -- the same shape the shared loader's is_issue_ref admits #]]
   [in-code [#
 [?lib './scripts/advisory_audit.cx' as=aa]
 [?for [in $s ('cx-home/cx-private#1497', 'example/fixture#1', 'a.b/c_d-e#42', '1497', '#1497', 'cx-private#1497', 'cx-home/cx-private', 'cx-home/cx-private#0', 'cx-home/cx-private#12a', 'a/b/c#1', 'cx home/cx-private#1', 'https://github.com/cx-home/cx-private/issues/1')]
@@ -180,7 +180,7 @@ false
 
  [case id=advisory-audit-009-a-milestone-outranks-a-label-or-title level=core
   [tags advisory-audit off-release milestone]
-  [title an issue carrying the release label or title prefix but ANOTHER milestone is outside the current milestone and refused (refutation a04, a05)]
+  [title [# an issue carrying the release label or title prefix but ANOTHER milestone is outside the current milestone and refused (refutation a04, a05) #]]
   [in-code [#
 [?lib './scripts/advisory_audit.cx' as=aa]
 [$aa:check
@@ -201,7 +201,7 @@ false
 
  [case id=advisory-audit-010-a-suite-element-resolves-as-the-loader-does level=core
   [tags advisory-audit resolution]
-  [title the audit reads a suite the way the shared loader does -- per-case gate= over the element over the policy default, per-case issue= over the element, an empty issue= inheriting (refutation r03, r09)]
+  [title [# the audit reads a suite the way the shared loader does -- per-case gate= over the element over the policy default, per-case issue= over the element, an empty issue= inheriting (refutation r03, r09) #]]
   [in-code [#
 [?lib './scripts/advisory_audit.cx' as=aa]
 ([$aa:suite-cases 'cx-platform-x' 'conformance/a.cxd'
@@ -225,7 +225,7 @@ false
 
  [case id=advisory-audit-011-a-file-the-audit-cannot-read-refuses level=core
   [tags advisory-audit unparsed fail-closed]
-  [title a corpus file naming advisory that the audit cannot parse (a multi-document stream) is refused by name, never skipped (refutation w-check)]
+  [title [# a corpus file naming advisory that the audit cannot parse (a multi-document stream) is refused by name, never skipped (refutation w-check) #]]
   [in-code [#
 [?lib './scripts/advisory_audit.cx' as=aa]
 [?let [= $v [$aa:check

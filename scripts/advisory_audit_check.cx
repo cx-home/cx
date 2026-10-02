@@ -58,7 +58,8 @@
     ([repo name='cx-private' dir='.'])
     [?for [in $d [$io:glob "deps/*"]]
       [where [$io:is-directory [$concat $d "/.git"]]]
-      [yield [repo name=[$path:basename $d] dir=$d]]]]]]
+      [= $name [$path:basename $d]]
+      [yield [repo name=$name dir=$d]]]]]]
 
 # The gate policy's suite default the verb would read for this file: the
 # first gates.cxd beside the corpus file or up to three directories above it
@@ -99,7 +100,8 @@
         [?let [= $t [$cx:parse $text]]
           [?match $t
             [case [err @message=$m]
-              ([unparsed repo=[$string $repo@name] file=$file why=[$string $m]])]
+              [?let [= $rn [$string $repo@name]] [= $why [$string $m]]
+                ([unparsed repo=$rn file=$file why=$why])]]
             [else
               [?let [= $default [$policy-default $path]]
                 [?to-sequence
@@ -108,10 +110,13 @@
                     [yield $row]]]]]]]]]]]
 
 [?def corpus-files scope=private impure ($repo)
-  [?for [in $f [$strings:split-lines [$run-out ("git", "-C", [$string $repo@dir], "ls-files", "--", "*.cxd")]]]
+  [?let [= $dir [$string $repo@dir]]
+        [= $argv ("git", "-C", $dir, "ls-files", "--", "*.cxd")]
+        [= $listing [$run-out $argv]]
+  [?for [in $f [$strings:split-lines $listing]]
     [where [not [= [$strings:trim $f] ""]]]
     [where [not [$strings:contains [$concat "/" $f] "/testdata/"]]]
-    [yield $f]]]
+    [yield $f]]]]
 
 # One [issue …] row per reference, read from GitHub. A lookup that fails is
 # read=false with the reason — never an open issue by default.
@@ -120,20 +125,20 @@
     [= $halves [$strings:split $ref "#"]]
     [= $repo [$nth $halves 1]]
     [= $num [$nth $halves 2]]
-    [= $r [$process:run ("gh", "issue", "view", $num, "-R", $repo, "--json", "state,labels,milestone,title",
-                         "--jq", "[.state, (.milestone.title // \"\"), ([.labels[].name] | join(\",\")), .title] | @tsv")
-                        timeout-ms=120000]]
+    [= $argv ("gh", "issue", "view", $num, "-R", $repo, "--json", "state,labels,milestone,title",
+               "--jq", "[.state, (.milestone.title // \"\"), ([.labels[].name] | join(\",\")), .title] | @tsv")]
+    [= $r [$process:run $argv timeout-ms=120000]]
     [?if [not [= [$string $r@exit-code] "0"]]
-      [then [issue ref=$ref read=false
-                   why=[$concat "gh issue view exit " [$string $r@exit-code] ": "
-                                [$strings:trim [$string $r@stderr]]]]]
+      [then [?let [= $why [$concat "gh issue view exit " [$string $r@exit-code] ": "
+                                     [$strings:trim [$string $r@stderr]]]]
+              [issue ref=$ref read=false why=$why]]]
       [else
         [?let [= $f [$strings:split [$strings:trim-end [$string $r@stdout]] "\t"]]
-          [issue ref=$ref read=true
-                 state=[$string [?else [$first $f] ""]]
-                 milestone=[$string [?else [$first [?drop 1 $f]] ""]]
-                 labels=[$string [?else [$first [?drop 2 $f]] ""]]
-                 title=[$strings:join [?to-sequence [?drop 3 $f]] "\t"]]]]]]]
+          [?let [= $state [$string [?else [$first $f] ""]]]
+                [= $milestone [$string [?else [$first [?drop 1 $f]] ""]]]
+                [= $labels [$string [?else [$first [?drop 2 $f]] ""]]]
+                [= $title [$strings:join [?to-sequence [?drop 3 $f]] "\t"]]
+            [issue ref=$ref read=true state=$state milestone=$milestone labels=$labels title=$title]]]]]]]
 
 [?if [not [$io:is-file "VERSION"]]
   [then [?let [= $_e [$io:write-line [$env:stderr]
