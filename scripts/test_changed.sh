@@ -574,6 +574,15 @@ step_globs() {
     # #1374: the same playground corpus evaluated in the WASM bundle, and the
     # bundle is built from the ring closure (scripts/wasm/ + build-playground).
     test-playground-wasm-traps)    echo "scripts/gen_guide/playground/* scripts/test_playground_wasm_traps.mjs scripts/wasm/* $RING_LIB $RING_SUP $RING_EMBED" ;;
+    # PLAY-3 (#1742): a jsdom step over the SHIPPED playground page, its script,
+    # the projected primer and examples files (all under the playground
+    # directory) — no wasm, no binary; jsdom from the gate's node modules.
+    test-playground-search)        echo 'scripts/gen_guide/playground/* scripts/test_playground_search.mjs scripts/playground-gate/*' ;;
+    # PLAY-3 (#1740): six pages of the ASSEMBLED site (`make site`, so
+    # site-check's inputs and the guide's: the pinned stdlib sources) in a
+    # headless browser, served by scripts/serve_static.cx under the native cx
+    # (so the binary's own sources move it too).
+    test-site-phone-width)         echo "docs-src/* docs/* scripts/gen_site/* scripts/gen_guide/* scripts/gen_docs/* scripts/serve_static.cx scripts/test_site_phone_width.mjs stdlib/* deps.cxd registry/* VERSION $RING_LIB $RING_CLI $RING_CMD" ;;
     # test-binding-api-parity row RETIRED (RULED: RS-12, RS-8; #1591 item K3):
     # the four drivers under lang/<lang>/binding_api_driver/ left with their
     # binding repositories, and the target itself is gone from the Makefile.
