@@ -165,32 +165,32 @@ reading what the step checks.
 | 29 | `check-pipefail-pipes` |  | `scripts/pipefail_pipe_gate.sh` |
 | 30 | `check-exec-redirect` |  | `scripts/exec_redirect_gate.sh` |
 | 31 | `check-exit-status-probe` |  | `scripts/exit_status_probe_gate.sh` |
-| 32 | `check-bench-isolation` |  | `scripts/bench_isolation_selftest.sh` |
-| 33 | `check-no-infix-range` |  | `scripts/check_no_infix_range.cx` |
-| 34 | `check-no-cxl-token` |  | `scripts/check_no_cxl_token.cx` |
-| 35 | `check-no-consumer-terms` |  | `scripts/check_no_consumer_terms.sh` |
-| 36 | `secrets-scan` |  | `scripts/secrets_scan.cx` |
-| 37 | `check-version-consistency` | yes | `scripts/check_version_consistency.cx` |
-| 38 | `check-effect-alignment` |  | `v test deps/cx-core-code/vcx/tests/eval_semantics_umbrella_test.v` |
-| 39 | `check-null-absence-conflation` |  | `scripts/check_null_absence_conflation.cx` |
-| 40 | `check-docs-tier1-guardrail` |  | `scripts/check_docs_tier1_guardrail.cx` |
-| 41 | `check-no-adr-citations` |  | `scripts/check_no_adr_citations.cx` |
-| 42 | `check-no-stub-impl` |  | `scripts/check_no_stub_impl.cx` |
-| 43 | `check-completions-drift` |  | `scripts/check_completions_drift.cx` |
-| 44 | `check-editor-surface-parity` |  | `scripts/check_editor_surface_parity.cx` |
-| 45 | `guide-check` | yes, in the docs flow | `scripts/gen_guide/stdlib_docs_check.cx` |
-| 46 | `guide-render-gate` |  | — |
-| 47 | `site-check` | yes, in the docs flow | `scripts/gen_site/site_assemble.cx` |
-| 48 | `directive-docs-check` |  | `scripts/gen_guide/directive_docs_check.cx` |
-| 49 | `verify-doc-blocks` | yes, in the docs flow | `tools/verify-doc-blocks.sh` |
-| 50 | `verify-doc-links` | yes, in the docs flow | `tools/verify-doc-links.sh` |
-| 51 | `verify-examples` |  | `tools/verify-examples.sh` |
-| 52 | `verify-playground-examples` |  | `scripts/gen_guide/playground/gen_examples.cx` |
-| 53 | `docs-check` | yes, in the docs flow | `scripts/gen_docs/primer_build.cx` |
-| 54 | `primer-platform-check` | yes, in the docs flow | `scripts/gen_docs/primer_platform.cx` |
-| 55 | `ring-import-gate` |  | `scripts/ring_import_gate.sh` |
-| 56 | `gates-manifest-gate` |  | `scripts/gates_manifest_gate.sh` |
-| 57 | `advisory-audit` |  | `scripts/advisory_audit_check.cx` |
+| 32 | `check-build-slot` |  | `scripts/build_slot_selftest.cx` |
+| 33 | `check-bench-isolation` |  | `scripts/bench_isolation_selftest.sh` |
+| 34 | `check-no-infix-range` |  | `scripts/check_no_infix_range.cx` |
+| 35 | `check-no-cxl-token` |  | `scripts/check_no_cxl_token.cx` |
+| 36 | `check-no-consumer-terms` |  | `scripts/check_no_consumer_terms.sh` |
+| 37 | `secrets-scan` |  | `scripts/secrets_scan.cx` |
+| 38 | `check-version-consistency` | yes | `scripts/check_version_consistency.cx` |
+| 39 | `check-effect-alignment` |  | `v test deps/cx-core-code/vcx/tests/eval_semantics_umbrella_test.v` |
+| 40 | `check-null-absence-conflation` |  | `scripts/check_null_absence_conflation.cx` |
+| 41 | `check-docs-tier1-guardrail` |  | `scripts/check_docs_tier1_guardrail.cx` |
+| 42 | `check-no-adr-citations` |  | `scripts/check_no_adr_citations.cx` |
+| 43 | `check-no-stub-impl` |  | `scripts/check_no_stub_impl.cx` |
+| 44 | `check-completions-drift` |  | `scripts/check_completions_drift.cx` |
+| 45 | `check-editor-surface-parity` |  | `scripts/check_editor_surface_parity.cx` |
+| 46 | `guide-check` | yes, in the docs flow | `scripts/gen_guide/stdlib_docs_check.cx` |
+| 47 | `guide-render-gate` |  | — |
+| 48 | `site-check` | yes, in the docs flow | `scripts/gen_site/site_assemble.cx` |
+| 49 | `directive-docs-check` |  | `scripts/gen_guide/directive_docs_check.cx` |
+| 50 | `verify-doc-blocks` | yes, in the docs flow | `tools/verify-doc-blocks.sh` |
+| 51 | `verify-doc-links` | yes, in the docs flow | `tools/verify-doc-links.sh` |
+| 52 | `verify-examples` |  | `tools/verify-examples.sh` |
+| 53 | `verify-playground-examples` |  | `scripts/gen_guide/playground/gen_examples.cx` |
+| 54 | `docs-check` | yes, in the docs flow | `scripts/gen_docs/primer_build.cx` |
+| 55 | `primer-platform-check` | yes, in the docs flow | `scripts/gen_docs/primer_platform.cx` |
+| 56 | `ring-import-gate` |  | `scripts/ring_import_gate.sh` |
+| 57 | `gates-manifest-gate` |  | `scripts/gates_manifest_gate.sh` |
 | 58 | `ring-tag-gate` |  | `scripts/ring_query.cx` |
 | 59 | `cxer-registry-gate` |  | `scripts/cxer_registry_report.sh` |
 | 60 | `spec-freeze-gate` | yes | `scripts/spec_freeze_gate.sh` |
