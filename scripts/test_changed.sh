@@ -31,6 +31,7 @@ BASE="${1:?usage: test_changed.sh <base-ref> [--dry-run] [--changed-files <file>
 shift
 DRY=0
 CHANGED_SRC=''
+INFRA_ROWS_SRC=''
 while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run) DRY=1 ;;
@@ -46,6 +47,22 @@ while [ $# -gt 0 ]; do
       case "$CHANGED_SRC" in
         /*) ;;
         *) CHANGED_SRC="$(CDPATH= cd -- "$(dirname -- "$CHANGED_SRC")" && pwd)/$(basename -- "$CHANGED_SRC")" ;;
+      esac ;;
+    # --infra-rows <file> (#1659) — the build-infra paths RUN-4's computed
+    # selection stripped from --changed-files (flows/private-acts.cx's
+    # ci/select writes them). They never escalate here: the union they would
+    # cause is the post-merge run's. But a scripts/ path among them still
+    # selects the steps whose OWN rows name it — a new scripts/*.cx is
+    # reader-parity's input, scripts/build-slot.sh is check-build-slot's — so
+    # the strip cannot hide a script from the step that reads it (ff8ebdc35's
+    # two new scripts, 7a82287c4's playground program). The Makefile, VERSION
+    # and devbox lines are ignored: every row would name them. --dry-run only.
+    --infra-rows)
+      shift
+      INFRA_ROWS_SRC="${1:?--infra-rows needs a file}"
+      case "$INFRA_ROWS_SRC" in
+        /*) ;;
+        *) INFRA_ROWS_SRC="$(CDPATH= cd -- "$(dirname -- "$INFRA_ROWS_SRC")" && pwd)/$(basename -- "$INFRA_ROWS_SRC")" ;;
       esac ;;
     *) echo "test-changed: unknown argument '$1'" >&2; exit 2 ;;
   esac
@@ -74,6 +91,9 @@ cd "$(dirname "$0")/.."
 TC_TMP=$(mktemp -d) || { echo "test-changed: cannot create a scratch directory" >&2; exit 2; }
 trap 'rm -rf "$TC_TMP"' EXIT
 
+if [ -n "$INFRA_ROWS_SRC" ] && [ $DRY -ne 1 ]; then
+  echo "test-changed: --infra-rows is a --dry-run flag (RUN-4's computed selection never RUNS a step)" >&2; exit 2
+fi
 if [ -n "$CHANGED_SRC" ]; then
   [ $DRY -eq 1 ] || { echo "test-changed: --changed-files is a --dry-run flag (a synthetic diff must never RUN a step)" >&2; exit 2; }
   CHANGED=$(cat "$CHANGED_SRC")
@@ -186,7 +206,10 @@ step_globs() {
     # reader-parity (RULED: CXF-5, #1521): the three readers over the corpus
     # FILES — libcx (lang/), the V data parser and the program reader (RING_LIB),
     # the fixture loader (RING_SUP), every `.cxd` and the playground corpus.
-    reader-parity)                 echo "$RING_LIB $RING_SUP lang/* conformance/* scripts/gen_guide/playground/*" ;;
+    # #1659: every .cx under scripts/ is in its parity scan, so the row names
+    # them (a scripts/ change escalates anyway; the row is what --infra-rows
+    # reads when RUN-4 strips scripts/ from the change set).
+    reader-parity)                 echo "$RING_LIB $RING_SUP lang/* conformance/* scripts/gen_guide/playground/* scripts/*.cx" ;;
     # #1212: -prod REJECTS shapes build-dev accepts (a reference stored into a
     # value slot), and every test-vcx-* step builds -dev — so the ~2 s prod
     # checker runs on EVERY changed set, never gated behind a glob.
@@ -203,7 +226,7 @@ step_globs() {
     # in-module tests for vcx/code + vcx/platform.
     test-vcx-code)                 echo "$RING_LIB $RING_SUP conformance/* stdlib/* deps.cxd" ;;
     # vcx/tests/ is `module main` importing code + platform + cx + fixtures.
-    test-vcx-suite)                echo "$RING_LIB vcx/tests/* $RING_SUP conformance/* $RING_EMBED" ;;
+    test-vcx-suite)                echo "$RING_LIB vcx/tests/* $RING_SUP conformance/* $RING_EMBED ledger/* _gate_evidence/*" ;;
     # #1216: the serial wall-clock step — the binary-driving closure plus its own dir.
     check-conformance-coverage)    echo 'conformance/* scripts/check_conformance_coverage.sh vcx/tests/runners/conformance/*' ;;
     # ── THE SERIAL TAIL, narrowed (#1516, RULED: RUN-1) ─────────────────────
@@ -313,6 +336,7 @@ step_globs() {
     docs-check)                    echo 'docs-src/* docs/llm/* docs/index.html scripts/gen_site/* scripts/gen_docs/* scripts/gen_guide/playground/* scripts/docs_fragment.cx scripts/deps_pins.cx deps.cxd registry/* Makefile scripts/gen_guide/guide.mk ledger/* conformance/* spec/* stdlib/* vcx/* VERSION' ;;
     ring-import-gate)              echo 'vcx/* scripts/ring_import_gate* registry/repos.cxd' ;;
     gates-manifest-gate)           echo 'conformance/* packages/* scripts/gates_manifest_gate* scripts/gates_register*' ;;
+    advisory-audit)                echo 'conformance/* packages/* reference/* deps.cxd scripts/advisory_audit* VERSION' ;;
     ring-tag-gate)                 echo 'conformance/* scripts/*' ;;
     cxer-registry-gate)            echo 'vcx/* spec/* scripts/cxer_registry*' ;;
     spec-freeze-gate)              echo '*' ;;
@@ -447,6 +471,10 @@ step_globs() {
     # is exactly where the probe gets written. Same over-including glob as its
     # two siblings for the same reason.
     check-exit-status-probe)       echo '*' ;;
+    # #1749: the shared slot's refusal — the runner and its planted-log
+    # selftest are the step's whole input (the selftest plants its own loop
+    # log and slot, so no other path in the tree can move its verdict).
+    check-build-slot)              echo 'scripts/build-slot.sh scripts/build_slot_selftest.cx' ;;
     # #1450: the isolation guard reads the two bench scripts and its own source;
     # it plants its artifacts, so nothing else in the tree is an input.
     check-bench-isolation)         echo 'scripts/run_bench_json.cx scripts/compare_bench.cx scripts/bench_isolation_selftest.sh' ;;
@@ -633,7 +661,27 @@ step_globs() {
 # suite, and so does any changed path no rule below classifies. Only an explicit
 # not-an-input list (spec/, docs-src/, ledger/, docs/ outside the generated LLM
 # layer, _gate_evidence/, .github/, root prose) selects nothing.
-SUITE_DIR='vcx/tests'
+# WHERE THE SUITE IS (#1703, RS-8). `make test-vcx-suite` points `v test` at
+# deps/cx-core-code/vcx/tests/ (the Makefile's SUITE_FILES default) since K7a's
+# extraction moved the files there; the front door keeps one test file of its
+# own, vcx/tests/reader_parity_test.v. SUITE_DIR is the pinned directory — the
+# shard manifest, the grader package and the driver's files are read there —
+# and the POPULATION every rule below selects from, counts and greps is both
+# directories (suite_tests). The case arms that classify a CHANGED path read
+# FRONT_SUITE_DIR, because a change set lists this tree's paths, and deps/ is
+# never one of them (a pin moves through deps.cxd, which is ALL). Measured on
+# 37b21840a before the fix: a selection printed `2 of 1 test files`, counted
+# over the front door's one file, and a conformance/ change selected that file
+# instead of the pinned files that read the fixtures loader.
+SUITE_DIR='deps/cx-core-code/vcx/tests'
+FRONT_SUITE_DIR='vcx/tests'
+suite_tests() {
+  local t
+  for t in "$SUITE_DIR"/*_test.v "$FRONT_SUITE_DIR"/*_test.v; do
+    [ -f "$t" ] && printf '%s\n' "$t"
+  done
+  return 0
+}
 # The vcx/ directories that are V modules a test file can import.
 VCX_MODULES='cx code cxnet mail cxdb store identity fabric xap cxstore arrow transport cli cmd cmd_data corpus grading testenv fixtures timing tools bench fuzz'
 # The directories the shipped `cx` and libcx compile from — testenv's edge,
@@ -668,9 +716,19 @@ read_imports() {
 # directory that does not exist (vcx/fuzz today) and a directory with no import
 # line are both the EMPTY answer, never a failure: `set -o pipefail` would
 # otherwise turn a missing optional module into an aborted selection.
+# A module is compiled from this tree's vcx/<m> and from each pin's
+# deps/<repo>/vcx/<m> (the -path the pinned build resolves, #1703): every one
+# of those directories that exists is read.
 module_direct_imports() {
-  [ -d "vcx/$1" ] || return 0
-  read_imports $(find "vcx/$1" -name '*.v' -type f 2>/dev/null)
+  local dirs d files
+  dirs=''
+  for d in "vcx/$1" deps/*/vcx/"$1"; do
+    [ -d "$d" ] && dirs="$dirs $d"
+  done
+  [ -n "$dirs" ] || return 0
+  files=$(find $dirs -name '*.v' -type f 2>/dev/null)
+  [ -n "$files" ] || return 0
+  read_imports $files
 }
 
 # The per-module direct-import sets, computed ONCE into shell variables (bash 3.2
@@ -717,7 +775,7 @@ suite_closure() {
   local t cur roots line f imp
   cur=''
   roots=''
-  { grep -H '^import ' "$SUITE_DIR"/*_test.v 2>/dev/null || true; } \
+  { grep -H '^import ' /dev/null $(suite_tests) 2>/dev/null || true; } \
     | sed 's/[[:space:]]*$//' > "$TC_TMP/suite_imports"
   while IFS= read -r line; do
     f=${line%%:*}
@@ -750,7 +808,7 @@ $cur $(module_closure $roots | tr '\n' ' ')"
 $cur $(module_closure $roots | tr '\n' ' ')"
   # a test file with no import line at all still has to be listed, or the awk
   # below could never name it — it is selected by its own path, nothing else.
-  for t in "$SUITE_DIR"/*_test.v; do
+  for t in $(suite_tests); do
     [ -e "$t" ] || continue
     case "$SUITE_CLOSURE" in
       *"
@@ -771,14 +829,12 @@ tests_by_module() {
 }
 
 # pinned_test <file> — a suite file named by a row, where it is: this tree's
-# $SUITE_DIR when it holds the file, else the front door's pinned language
-# core (deps/cx-core-code/vcx/tests, where the CLI readers went with RS-12).
+# $FRONT_SUITE_DIR when it holds the file, else the pinned suite $SUITE_DIR
+# (deps/cx-core-code/vcx/tests, where the CLI readers went with RS-12).
 # A file in neither is named under $SUITE_DIR unchanged, so the deleted-input
 # case (selftest F) keeps selecting the step rather than skipping it.
-PINNED_SUITE_DIR='deps/cx-core-code/vcx/tests'
 pinned_test() {
-  if [ -f "$SUITE_DIR/$1" ]; then printf '%s/%s' "$SUITE_DIR" "$1"
-  elif [ -f "$PINNED_SUITE_DIR/$1" ]; then printf '%s/%s' "$PINNED_SUITE_DIR" "$1"
+  if [ -f "$FRONT_SUITE_DIR/$1" ]; then printf '%s/%s' "$FRONT_SUITE_DIR" "$1"
   else printf '%s/%s' "$SUITE_DIR" "$1"
   fi
 }
@@ -828,7 +884,7 @@ suite_files() {
   while IFS= read -r f; do
     [ -n "$f" ] || continue
     case "$f" in
-      "$SUITE_DIR"/*_test.v) continue ;;
+      "$FRONT_SUITE_DIR"/*_test.v) continue ;;
       # #1598 — a STEP RUNNER is a program of its own, not a suite input.
       # `v test $(SUITE_FILES)` is pointed at vcx/tests/ and recurses, but not
       # one file under vcx/tests/runners/ is a *_test.v, so this step compiles
@@ -848,7 +904,7 @@ suite_files() {
       # unclassified vcx/tests/ path and still runs the whole suite — the
       # fail-safe stays the resting state, and a new runner joins this list in
       # the commit that gives its step a row.
-      "$SUITE_DIR"/runners/extraction_gate/*|"$SUITE_DIR"/runners/profile_gate/*|"$SUITE_DIR"/runners/conformance/*|"$SUITE_DIR"/runners/streaming_write/*)
+      "$FRONT_SUITE_DIR"/runners/extraction_gate/*|"$FRONT_SUITE_DIR"/runners/profile_gate/*|"$FRONT_SUITE_DIR"/runners/conformance/*|"$FRONT_SUITE_DIR"/runners/streaming_write/*)
         continue ;;
       # deps.cxd: a moved pin moves the Ring 0 module every test compiles
       # against, exactly as third_party/ moves the compiler (RULED: RS-12).
@@ -859,7 +915,7 @@ suite_files() {
       # #1634's own comment names) selected zero suite files and dropped the
       # step right back out — the false-skip #1634 exists to prevent, still
       # open in the file that actually decides which files run.
-      "$SUITE_DIR"/*|vcx/testenv/*|vcx/fixtures/*|vcx/corpus/*|third_party/*|deps.cxd|Makefile|vcx/Makefile|vcx/v.mod|devbox.json|devbox.lock|scripts/*)
+      "$FRONT_SUITE_DIR"/*|vcx/testenv/*|vcx/fixtures/*|vcx/corpus/*|third_party/*|deps.cxd|Makefile|vcx/Makefile|vcx/v.mod|devbox.json|devbox.lock|scripts/*)
         echo ALL; return 0 ;;
     esac
   done < "$TC_TMP/changed"
@@ -885,13 +941,13 @@ suite_files() {
   while IFS= read -r f; do
     [ -n "$f" ] || continue
     case "$f" in
-      "$SUITE_DIR"/*_test.v)
+      "$FRONT_SUITE_DIR"/*_test.v)
         sel="$sel $f" ;;
       # #1598 — the runner directories (a) vouched for: no test file of this
       # step is compiled from them, so they select none. Stated rather than
       # left to the `vcx/*` arm below, which answers nothing here only because
       # `tests` is not in VCX_MODULES.
-      "$SUITE_DIR"/runners/*)
+      "$FRONT_SUITE_DIR"/runners/*)
         ;;
       stdlib/*.cx|vcx/cxnet/stdlib_*.v|vcx/mail/stdlib_*.v|vcx/store/stdlib_*.v|vcx/identity/stdlib_*.v|vcx/fabric/stdlib_*.v|vcx/xap/stdlib_*.v|vcx/code/stdlib_*.v)
         # the corpus side is already in `sel`; this is the NAME clause on top,
@@ -900,7 +956,7 @@ suite_files() {
           stdlib/*.cx) m=${f##*/}; m=${m%.cx} ;;
           *) m=${f##*/stdlib_}; m=${m%.v}; m=${m%.c}; m=$(printf '%s' "$m" | tr '_' '-') ;;
         esac
-        names=$(grep -lF -- "$m" "$SUITE_DIR"/*_test.v 2>/dev/null | tr '\n' ' ' || true)
+        names=$(grep -lF -- "$m" /dev/null $(suite_tests) 2>/dev/null | tr '\n' ' ' || true)
         # NO ring edge here, deliberately. A `stdlib_<m>.v` is a LEAF of its
         # module directory — one module's prims — and the whole of vcx/platform
         # is not its blast radius; its cases are graded by the shard above and
@@ -914,8 +970,16 @@ suite_files() {
         sel="$sel $(tests_importing "${f#vcx/}" | tr '\n' ' ')" ;;
       conformance/*)
         # in-walk corpus files are resolved in (b); anything else under
-        # conformance/ is read through the `fixtures` corpus loader.
-        sel="$sel $(tests_by_module fixtures | tr '\n' ' ')" ;;
+        # conformance/ is read through the `fixtures` corpus loader — by THIS
+        # tree's test files ($FRONT_SUITE_DIR), whose loader roots here. The
+        # pinned suite's loader roots in its own checkout ($SUITE_DIR's repo);
+        # a pinned file reaches this tree's conformance/ only through
+        # testenv.front_door_root() and a path it spells out (gates.cxd,
+        # abi.cxd …, measured on 44a0a0641: no pinned file walks the
+        # directory), so the NAME clause selects those (#1703).
+        m=''; m=${f##*/}
+        sel="$sel $(tests_by_module fixtures | grep "^$FRONT_SUITE_DIR/" | tr '\n' ' ' || true)"
+        sel="$sel $(grep -lF -- "$m" /dev/null $(suite_tests) 2>/dev/null | tr '\n' ' ' || true)" ;;
       docs/llm/*|VERSION)
         # embedded in the binary, read only by its own doc/help surface. The
         # two readers left with cx-core-code's extraction (RULED: RS-12, RS-8):
@@ -928,14 +992,31 @@ suite_files() {
       # row), compiled into no test file of this step.
       flows/*)
         ;;
-      spec/*|docs-src/*|docs/*|ledger/*|_gate_evidence/*|.github/*|*.md|.gitignore|.editorconfig|LICENSE)
+      # a top-level ledger/ or _gate_evidence/ page a pinned file reads BY
+      # NAME through testenv.front_door_root() (planar_umbrella reads the 1250
+      # audit page, the rebless scan and the identity umbrella their tracked
+      # evidence files): the NAME clause selects the files that spell it. The
+      # index and a branch's own pipeline_*/ evidence are read by none.
+      ledger/*|_gate_evidence/*)
+        case "$f" in
+          ledger/README.md|*/*/*) ;;
+          *) m=${f##*/}
+             sel="$sel $(grep -lF -- "$m" /dev/null $(suite_tests) 2>/dev/null | tr '\n' ' ' || true)" ;;
+        esac ;;
+      spec/*|docs-src/*|docs/*|.github/*|*.md|.gitignore|.editorconfig|LICENSE)
         ;;
       *)
         echo ALL; return 0 ;;
     esac
   done < "$TC_TMP/changed"
   [ -n "${sel# }" ] || return 0
-  printf '%s\n' $sel | sort -u
+  # only files on disk go to `v test`: a test file the branch DELETED is in the
+  # change set and would be named as a path `v test` refuses (#1703, REFUTE-1).
+  # A selection that is then empty drops the step, as no reader would.
+  for f in $(printf '%s\n' $sel | sort -u); do
+    [ -f "$f" ] && printf '%s\n' "$f"
+  done
+  return 0
 }
 
 # Build-infra changes invalidate EVERY step (the Makefiles define the
@@ -1149,6 +1230,30 @@ for step in $STEPS; do
   done
   if [ $hit -eq 1 ]; then run_steps+=("$step"); else skip_steps+=("$step"); fi
 done
+# ── the stripped scripts/ paths' own rows (--infra-rows, #1659) ─────────────
+# A step skipped above runs after all when its row names a stripped scripts/
+# path — the same `case` match, over those paths alone. Nothing escalates:
+# the paths never joined $TC_TMP/changed, and only scripts/ lines are read.
+if [ -n "$INFRA_ROWS_SRC" ]; then
+  { grep '^scripts/' "$INFRA_ROWS_SRC" 2>/dev/null || true; } > "$TC_TMP/infra_rows"
+  infra_added=()
+  still_skipped=()
+  for step in ${skip_steps[@]+"${skip_steps[@]}"}; do
+    globs=$(step_globs "$step")
+    hit=0
+    for g in $globs; do
+      while IFS= read -r f; do
+        case "$f" in
+          ${g}*|$g) hit=1; break ;;
+        esac
+      done < "$TC_TMP/infra_rows"
+      [ $hit -eq 1 ] && break
+    done
+    if [ $hit -eq 1 ]; then run_steps+=("$step"); infra_added+=("$step"); else still_skipped+=("$step"); fi
+  done
+  skip_steps=(${still_skipped[@]+"${still_skipped[@]}"})
+  echo "test-changed: the stripped scripts/ paths' own rows (#1659): ${infra_added[*]:-none}"
+fi
 set +f
 
 # ── the per-file narrowing of test-vcx-suite (#1516, RULED: RUN-1) ──────────
@@ -1176,7 +1281,7 @@ if [ $suite_selected -eq 1 ]; then
         echo "test-changed: test-vcx-suite: the WHOLE suite — a shared helper, the V pin, a Makefile, scripts/ or an unclassified path changed" ;;
       *)
         SUITE_SEL="$sf"
-        echo "test-changed: test-vcx-suite: $(printf '%s\n' $sf | grep -c . || true) of $(ls "$SUITE_DIR"/*_test.v 2>/dev/null | grep -c . || true) test files: $sf" ;;
+        echo "test-changed: test-vcx-suite: $(printf '%s\n' $sf | grep -c . || true) of $(suite_tests | grep -c . || true) test files: $sf" ;;
     esac
   fi
 fi
