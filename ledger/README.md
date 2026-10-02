@@ -791,6 +791,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pye-5` | [rulings_2026_08_22_python_eradication.md](rulings_2026_08_22_python_eradication.md) | PYE-5 (item 5a) — the exemption is all of `lang/python/**` |
 | `pye-6` | [rulings_2026_08_22_python_eradication.md](rulings_2026_08_22_python_eradication.md) | PYE-6 (item 6a) — an all-SKIP gate run is a failure |
 | `qdoc-1` | [rulings_2026_09_30_integrator_decisions_l149.md](rulings_2026_09_30_integrator_decisions_l149.md) | QDOC-1 — a head whose diff since the last graded head is confined to `flows/merge-queue.cxd` and `_gate_evidence/` takes the docs pipeline (L149 = (a)) |
+| `qual-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md) | QUAL-1 — the four takings and their order |
 | `refl-1` | [rulings_2026_09_30_integrator_decisions_l150.md](rulings_2026_09_30_integrator_decisions_l150.md) | REFL-1 — the gate-protocol partition of code.md §11.4 is spelled `reference-only`; the governance row follows; the allowance retires (L150 = (a)) |
 | `reprm-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | REPRM-1 — W8's measurement runs in v0.18 and its finding is fixed in v0.18 (L129 = (b), amended by SHIP-1; #1119) |
 | `rflow-1` | [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) | RFLOW-1 — the whole CI/CD as five cx flow documents, the design's nine choices (L96…L104 = (a)) |
@@ -1331,6 +1332,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `789-wf-38` | [rulings_2026_09_08_flow_connector_seam_1334.md](rulings_2026_09_08_flow_connector_seam_1334.md) |
 | `789-wf-38a` | [rulings_2026_09_06_flow_resolver_idempotent_789.md](rulings_2026_09_06_flow_resolver_idempotent_789.md) |
 | `abi-14` | [partition_I1_rebless.md](partition_I1_rebless.md) |
+| `advis-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md) |
 | `aes-256` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md), [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) |
 | `af-1` | [partition_I5_audit.md](partition_I5_audit.md), [partition_I5_exit_review_packet.md](partition_I5_exit_review_packet.md), [partition_I5_stream17_runtime.md](partition_I5_stream17_runtime.md) |
 | `af-10` | [partition_I5_audit.md](partition_I5_audit.md), [partition_corpus_audit.md](partition_corpus_audit.md) |
@@ -1481,7 +1483,9 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pq-4a` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) |
 | `pq-5a` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) |
 | `pq-9a` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) |
+| `prop-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md) |
 | `readr-1` | [rulings_2026_10_01_owner_decision_l160.md](rulings_2026_10_01_owner_decision_l160.md), [rulings_2026_10_01_owner_decision_overage.md](rulings_2026_10_01_owner_decision_overage.md) |
+| `refute-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md) |
 | `rfc-7540` | [rulings_2026_08_20_h2_surface.md](rulings_2026_08_20_h2_surface.md) |
 | `ring-1` | [batch_796_post_gate_defects.md](batch_796_post_gate_defects.md), [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
 | `ring-2` | [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
@@ -1567,4 +1571,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*377 ledger pages; 833 ids declared, 397 cited only.*
+*378 ledger pages; 834 ids declared, 400 cited only.*
