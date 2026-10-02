@@ -250,6 +250,7 @@ main {
   max-width: 860px;
   padding: 2.2rem 2.4rem 3.5rem;
   width: 100%;
+  min-width: 0;
 }
 
 h1, h2, h3, h4 {
@@ -648,7 +649,12 @@ p.fn-sig code { font-size: 0.82em; color: var(--ink); background: rgba(26,24,18,
   .toc-groups ul { columns: 1; }
 }
 @media (max-width: 640px) {
-  body { grid-template-columns: 1fr; margin: 12px; outline-offset: 4px; }
+  /* #1740 — minmax(0, …), not a bare 1fr: a grid track's automatic minimum
+     is its content's min-content size, so a bare 1fr still refuses to
+     shrink narrower than the widest nowrap child (the header's link row),
+     which is exactly what pushed the whole sheet past the viewport and
+     forced horizontal page scroll on a phone. */
+  body { grid-template-columns: minmax(0, 1fr); margin: 12px; outline-offset: 4px; }
   aside.sidebar {
     grid-column: 1;
     grid-row: 2;
@@ -656,11 +662,45 @@ p.fn-sig code { font-size: 0.82em; color: var(--ink); background: rgba(26,24,18,
     height: auto;
     border-right: none;
     border-bottom: 0.5px solid var(--rule);
+    min-width: 0;
   }
-  header.sheet-bar { grid-column: 1; grid-row: 1; }
-  main { grid-column: 1; grid-row: 3; padding: 1.2rem 1.3rem 2.5rem; }
-  footer.title-block { grid-column: 1; grid-row: 4; flex-wrap: wrap; }
-  .hero h1 { font-size: 2.4rem; }
+  header.sheet-bar {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    padding: 0.85rem 1.1rem;
+  }
+  /* The page title and the secondary link row repeat what the sidebar
+     already lists (Home, Playground, Github, Downloads, About) one scroll
+     down — dropped here, not hidden-but-still-measured, so they cannot
+     reintroduce the overflow a future edit widens back out. */
+  header.sheet-bar .sb-title, header.sheet-bar .sb-right { display: none; }
+  main { grid-column: 1; grid-row: 3; padding: 1.2rem 1.3rem 2.5rem; min-width: 0; }
+  footer.title-block { grid-column: 1; grid-row: 4; flex-wrap: wrap; min-width: 0; }
+  .hero h1 { font-size: 2.4rem; white-space: normal; }
+  .ring-ladder .rr { flex-wrap: wrap; row-gap: 0.15rem; }
+  /* Tap targets ≥ 44px (DOCS-51 / #1740): the sidebar's own link rows and
+     the nav-group summary toggles are the primary phone navigation now
+     that the header's link row is gone. */
+  aside.sidebar a, aside.sidebar summary, .toc-groups summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  /* Tap targets ≥ 44px, round 2 (DOCS-51 / #1740, the integrator's browser
+     read on PLAY-3): the guide home's own grouped table of contents
+     (`.toc-groups a` — every chapter/section link, on guide.html's body,
+     not the sidebar) and the two short CTA/caption links that follow a
+     ring figure (`.hero-cta a`, `.fig-caption a`) measured 15px/13px tall
+     — the real `height<44` finding (165 on guide.html, 1 on index.html;
+     querySelectorAll('a,button') showed none of them are the ring figure's
+     own SVG content, which draws plain, non-interactive <text> — these
+     three link families are the whole count. */
+  .toc-groups a, .hero-cta a, .fig-caption a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
 }
 
 /* ── DOCS-4: the generated figures and the before/after panels ──────────
@@ -810,4 +850,48 @@ p.pair-title {
 }
 @media (max-width: 900px) {
   .pair { grid-template-columns: 1fr; }
+}
+
+
+/* ── Text ≥ 16px on a phone (DOCS-51 / #1740) ────────────────────────────
+   The handful of classed captions set smaller than the body copy on
+   purpose at desktop reading distance — a fixture's file/source line, a
+   directive's signature and its one-line note, the home hero's engine note
+   and run verdict — read too small at arm's length on a phone. Raised to
+   the body size here ONLY (this block is deliberately the last rule in the
+   sheet, so it wins a same-specificity tie with every rule above, media
+   query or not); the desktop hierarchy (unchanged) still sets them off from
+   the surrounding prose by colour and a left rule, not by shrinking below
+   16px. */
+@media (max-width: 640px) {
+  .fixture p.fixture-file, .fixture p.fixture-src,
+  figure.home-run p.fixture-file, figure.home-run p.fixture-src,
+  p.fn-sig, .note, p.note,
+  .home-hero-note, .home-run-verdict {
+    font-size: 16px;
+  }
+  /* Round 2 (the integrator's browser read on PLAY-3): the guide home's
+     table-of-contents links (15px), and the two short links that follow a
+     ring figure — the hero's "WHY CX / CHOOSE YOUR RING" CTAs (11.5px,
+     inherited from .hero-cta) and the figure's own caption link (9.5px,
+     inherited from .fig-caption) — read under 16px on a phone. */
+  .toc-groups a, .hero-cta, .fig-caption {
+    font-size: 16px;
+  }
+  /* The guide home's ring figure (`.hero-fig`, names=true) draws every
+     module as a tick with a radial label at 7.2–7.4 SVG user-units; at a
+     ~330px phone render width (viewBox 0 0 720 720) that is unreadable —
+     a few px tall — long before any font-size rule could fix it, since the
+     SVG scales as one image. Dropping the per-module/per-row text keeps the
+     rings, the ring and group titles, and the repository cluster names
+     (the groups above the modules); the figure's own caption link (bumped
+     to >=16px/44px tall above) is the named route to every module, in full
+     size, on rings.html — the figure a link away (DOCS-42's own phrase).
+     rings.html's own dedicated figure (`figure.ring-figure`, not
+     `.hero-fig`) is untouched: reading every module name IS that page's
+     job, and it is not one of #1740's six audited pages. */
+  .hero-fig .rf-r1 text,
+  .hero-fig .rf-module text, .hero-fig .rf-planned text, .hero-fig .rf-row text {
+    display: none;
+  }
 }

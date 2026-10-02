@@ -1,27 +1,32 @@
-# scripts/gen_guide/playground/reading.cx — WHAT an example IS (RULED: PLAY-2,
-# DOCS-51 §4).
+# scripts/gen_guide/playground/reading.cx — WHAT an example IS (RULED:
+# PLAY-3, amending PLAY-2; DOCS-51 §4; #1741).
 #
-# The playground files every example under one of three readings, and the
+# The playground files every example under one of TWO readings, and the
 # reading is decided by a rule over the example's OWN text — never by the
 # primer chapter it sits in, the flags its fixture runs with, or the presence
 # of an `[in-cx]` block beside an `[in-code]` block (PLAY-1's rule, which put
-# a `[?match]` over a literal, graded with a `[doc]` stub, under Query). The
-# three words are the site's words — data, code, and a query is a program
-# over data — and they are the same words on the tabs, the crumb, the picker,
-# the fixture line and the primer's first fact.
+# a `[?match]` over a literal, graded with a `[doc]` stub, under the old
+# Query grouping). The two words are the site's words — data and code, a
+# query is a program over data (DOCS-51 §1), never a third grouping of its
+# own — and they are the same words on the tabs, the crumb, the picker, the
+# fixture line and the primer's first fact.
 #
 #   data    a document alone: no program. Shown and projected
 #           (`cx --from=cx --to=cx input.cx`).
-#   query   a program that READS a bound document — `$doc` or `$input`
-#           named, a bare CXPath (`//user`, `[?if //flag …]`), or a `[?for]`
-#           whose first clause is an element pattern over the document
-#           (`[?for [user [name $n]] …]`) — and the document it reads is
-#           REAL: never a stub such as `[doc]` or `[ignored]`, one empty
-#           element written to satisfy a grader (`cx --data=input.cx prog.cx`).
-#   code    every other program (`cx prog.cx`); its data pane is hidden.
+#   code    every other program (`cx prog.cx`) — including one that READS a
+#           bound document: `$doc` or `$input` named, a bare CXPath (`//user`,
+#           `[?if //flag …]`), or a `[?for]` whose first clause is an element
+#           pattern over the document (`[?for [user [name $n]] …]`). Filed as
+#           code either way (the owner, 2026-10-01: "doesn't make sense for
+#           the playground to have a separate 'query' grouping"), but when it
+#           reads one, the document it reads is REAL and shown beside it:
+#           never a stub such as `[doc]` or `[ignored]`, one empty element
+#           written to satisfy a grader (`cx --data=input.cx prog.cx`). A
+#           program with no document, or one with a document it never reads,
+#           hides the data pane.
 #
 # A program that reads the document by this rule and is graded against a
-# STUB is a corpus defect (the query would run over nothing); `reading-of`
+# STUB is a corpus defect (the program would run over nothing); `reading-of`
 # says so through `stub-read`, and the generator refuses the tree by name.
 #
 # This file is a library: primer_examples.cx applies the rule when it
@@ -65,7 +70,7 @@
         [else [?if $pattern [then "its [?for] opens with an element pattern over the document"]
           [else ""]]]]]]]]
 
-# reading-of: 'data' | 'query' | 'code' | 'stub-read' (the defect above).
+# reading-of: 'data' | 'code' | 'stub-read' (the defect above).
 #   $code  the program text, "" for none
 #   $doc   the input document text — `[in-cx]` or `[in-xml]` — "" or the
 #          corpus's `[empty]` marker for none
@@ -77,15 +82,22 @@
         [then 'code']
         [else [?if [not [$has-doc $doc]]
           [then 'code']
-          [else [?if [$is-stub-doc $doc] [then 'stub-read'] [else 'query']]]]]]]]]]
+          [else [?if [$is-stub-doc $doc] [then 'stub-read'] [else 'code']]]]]]]]]]
+
+# reads-real-doc: true when the program reads a document AND the fixture
+# binds a real one (never a stub) — the signal `code` entries use to decide
+# whether to show the data pane beside the program (PLAY-3's "as appropriate").
+[?def reads-real-doc scope=public [returns bool] ($code $doc)
+  [and [not [= [$reads-doc-why $code] ""]] [$has-doc $doc] [not [$is-stub-doc $doc]]]]
 
 # why-of: one sentence a reader can check, for the reading the rule gives.
 [?def why-of scope=public [returns string] ($code $doc)
   [?let [= $r [$reading-of $code $doc]]
     [?if [= $r 'data'] [then "a document alone, no program"]
-      [else [?if [= $r 'query'] [then [$concat "a program over the document: " [$reads-doc-why $code]]]
-        [else [?if [= $r 'stub-read']
-          [then [$concat "the program reads the document (" [$reads-doc-why $code] ") but the fixture binds a stub, " [$strings:trim $doc]]]
+      [else [?if [= $r 'stub-read']
+        [then [$concat "the program reads the document (" [$reads-doc-why $code] ") but the fixture binds a stub, " [$strings:trim $doc]]]
+        [else [?if [$reads-real-doc $code $doc]
+          [then [$concat "a program over the document: " [$reads-doc-why $code]]]
           [else [?if [$has-doc $doc]
             [then [$concat "a program that reads no document; the fixture's " [?if [$is-stub-doc $doc] [then "stub "] [else ""]] "input is not shown"]]
             [else "a program alone"]]]]]]]]]]

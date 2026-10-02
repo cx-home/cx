@@ -1073,13 +1073,23 @@ test-playground-mermaid: wasm-bundle-fresh
 test-playground-nav:
 	@node scripts/test_playground_nav.mjs
 
-# ── playground READINGS step (RULED: PLAY-2, DOCS-51 §4) ─────────────────────
-# The picker the page serves files every example by WHAT IT IS — data, query,
+# ── playground SEARCH step (RULED: PLAY-3, #1742) ─────────────────────────────
+# The full-text search beside the picker must find, for "flow", "for" and
+# "sequence" (the owner's own words), AT LEAST as many examples as a plain
+# grep of the term over every offered example's own source text — the search
+# also matches id, title, output and reading, so it can only ever find more.
+# Needs jsdom (scripts/playground-gate), nothing else.
+.PHONY: test-playground-search
+test-playground-search:
+	@node scripts/test_playground_search.mjs
+
+# ── playground READINGS step (RULED: PLAY-3, amending PLAY-2; DOCS-51 §4) ────
+# The picker the page serves files every example by WHAT IT IS — data or
 # code — under reading.cx's rule over the example's own text; this step holds
 # the projected file to that rule, refuses an example filed against its shape
-# by name, prints the three counts and names every example the page cannot
+# by name, prints the two counts and names every example the page cannot
 # run with its reason. Red-proofed on PLAY-1's file (a [?match] over a literal
-# beside a [doc] stub, filed under Query).
+# beside a [doc] stub, filed under the old Query grouping).
 .PHONY: test-playground-readings
 test-playground-readings: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 test-playground-readings: build-vcx
@@ -1095,6 +1105,20 @@ test-playground-readings: build-vcx
 .PHONY: test-playground-wasm-traps
 test-playground-wasm-traps: wasm-bundle-fresh
 	@node scripts/test_playground_wasm_traps.mjs
+
+# ── site PHONE-WIDTH step (RULED: PLAY-3, #1740) ──────────────────────────────
+# The landing, the guide home, the playground and three reference/repository
+# pages, rendered in a real headless Chromium at 375x812 and 390x844
+# (portrait): refuses page-level horizontal scroll, a main-column gutter
+# under 16px, a sidebar/nav tap target under 44px, or running prose under
+# 16px — a code block or table's own contained `overflow-x: auto` is not a
+# page-level scroll and is not refused. Red-proofed against the pre-#1740
+# tree: 4 of 5 non-playground pages scrolled horizontally (672-873px against
+# a 375/390px viewport) and the header's own "About" link read 41x18px.
+.PHONY: test-site-phone-width
+test-site-phone-width: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+test-site-phone-width: site
+	@node scripts/test_site_phone_width.mjs
 
 # ── playground wasm EVALUATION sweep (#1033) ──────────────────────────────────
 # Every example in the corpus, evaluated in the engine A READER GETS, either
@@ -1816,7 +1840,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-readings test-oriel test-agent-real test-connector-real test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check ledger-edit-map-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-search test-playground-readings test-oriel test-agent-real test-connector-real test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps test-site-phone-width ledger-index-check ledger-edit-map-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # PRIVMK-1: the private flow targets add themselves to TEST_TARGETS from
 # flows/private.mk. That file is absent from the public tree, and `-include`
@@ -4935,8 +4959,26 @@ fmt-sweep-timed: build-vcx
 # declaration-only entries has no value spans to break between; since #1577
 # the program reading reaches it). Measured on the branch's own binary:
 # SWEEP-FILES=195 FORMATTED=186 DECLINED=6 TREE-REFUSED=3 UNSTABLE=0 ERROR=0
-FMT_SWEEP_MAX_DECLINED ?= 6
-FMT_SWEEP_MAX_TREE_REFUSED ?= 3
+#
+# 6 -> 3 and TREE-REFUSED 3 -> 0 by READR-1 (RULED: FMT-3, SLOT-1, PROSE-1,
+# FIX-1; #1436): FMT-3's two break sites (between the entries of a map inside
+# a directive's value, after a declaration-only map entry's trailing comment)
+# place bench_report.cx's and vcore.cx's line-41 comments (fmt-072, fmt-073);
+# the program emitter's three defects they exposed are fixed (fmt-074,
+# fmt-075), so nav_shape_check.cx and run_bench_json.cx format; the §1 guard
+# walks a map like every other container (fmt-076), so stdlib_docs_check.cx
+# and primer_examples.cx format; contributor_facts.cx formats under SLOT-1
+# and PROSE-1. TREE-REFUSED is empty. The three that still decline are each
+# named by their refusal and none is FMT-3's: corpus/rosetta/06-bfs.cx (the
+# comment-bearing layout re-parses to a different program shape),
+# examples/code-tour.cx (not its own fixed point, formatting.md §7) and
+# examples/vcore.cx — its line-41 comment is placed now; it declines on line
+# 54's upper-case hex `0xCAFE`, the letter-case limit 1347-a declared out of
+# scope (program_emit_head_ascription_test.v pins it fail-closed until a §2.5
+# letter-case decision). Measured on the branch's own binary:
+# SWEEP-FILES=206 FORMATTED=203 DECLINED=3 TREE-REFUSED=0 UNSTABLE=0 ERROR=0
+FMT_SWEEP_MAX_DECLINED ?= 3
+FMT_SWEEP_MAX_TREE_REFUSED ?= 0
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate
 fmt-sweep-gate: build-vcx
