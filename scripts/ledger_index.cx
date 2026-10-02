@@ -68,18 +68,38 @@
 # git: that is what lets the selftest prove the rule on planted subjects
 # without a repository, and it is the only way this reader takes its input
 # other than from `git log`.
+#
+# A READ THAT FAILS IS REFUSED, NEVER COUNTED (#1738, CXF-8). The reader
+# answers ('ok', <lines>) or ('refused', <why>). Measured on 63299f88a: with
+# --allow-env or --allow-subprocess denied, the `?fallback` arms that used to
+# sit here turned the capability denial into data — the env denial reached
+# the id list as ONE element and the check said "1 decision id(s) … resolve
+# to NO page" over an empty id line, and the subprocess denial became an empty
+# history that "all resolve(s)", exit 0. A denied grant, a planted file that
+# cannot be read and a `git log` that fails are each the check refusing to
+# vouch, out loud, with the flag or the cause named (exit 2).
 [?const SUBJECT-REF 'release/0.18']
+
+[?def git-log-argv scope=private pure [returns any] () ('git', 'log', SUBJECT-REF, '--format=%s')]
 
 [?def subject-lines scope=private impure [returns any] ()
   [?let [= $planted [$env:var-or-default 'CX_LEDGER_SUBJECTS_FILE' '']]
-    [?if [not [= $planted '']]
-      [then [$strings:split-lines [?fallback [$io:read-file $planted] [recover-with '']]]]
+    [?match $planted
+      [case [err $e] ('refused', [$concat "cannot read CX_LEDGER_SUBJECTS_FILE -- " [$string $e@message]])]
       [else
-        [?let [= $r [?fallback [$process:run ('git', 'log', SUBJECT-REF, '--format=%s')]
-                      [recover-with [proc-result exit-code=1 stdout='']]]]
-          [?if [= $r@exit-code 0]
-            [then [$strings:split-lines [$string $r@stdout]]]
-            [else ()]]]]]]]
+        [?if [not [= $planted '']]
+          [then [?let [= $t [$io:read-file $planted]]
+                  [?match $t
+                    [case [err $e] ('refused', [$concat "cannot read the planted subjects " $planted " -- " [$string $e@message]])]
+                    [else ('ok', [$strings:split-lines $t])]]]]
+          [else
+            [?let [= $r [$process:run [$git-log-argv]]]
+              [?match $r
+                [case [err $e] ('refused', [$concat "cannot run `git log " SUBJECT-REF "` -- " [$string $e@message]])]
+                [else [?if [= [$string $r@exit-code] '0']
+                        [then ('ok', [$strings:split-lines [$string $r@stdout]])]
+                        [else ('refused', [$concat "`git log " SUBJECT-REF "` exited " [$string $r@exit-code] " -- "
+                                                   [$strings:trim [$string $r@stderr]]])]]]]]]]]]]]
 
 # ledger-files: every ledger page except the generated index itself.
 [?def ledger-files scope=private impure [returns any] ()
@@ -158,10 +178,19 @@
                resolves to a page. An id resolves when it is DECLARED (a
                heading carries it) or CITED (a page names it in prose): both
                tables of this index are an answer to "where do I read it". ]
+            [; #1738 -- the subjects are read once; a read that failed refuses
+               here, exit 2, before anything is counted. ]
+            [= $sl [$subject-lines]]
+            [= $_refused [?if [= [$first $sl] "refused"]
+              [then ([$io:write-line [$env:stderr]
+                       [$concat "ledger-index-check: REFUSED (#1738) -- " [$nth $sl 2]
+                                "; the subject rule cannot vouch for ids it could not read (make ledger-index-check passes --allow-env --allow-subprocess)"]],
+                     [$env:exit 2], ())]
+              [else ()]]]
             [= $known [$uniq-sorted [?to-array [?for [in $xs ($declared-ids, $cited-only)]
                                                  [in $x $xs] [yield $x]]]]]
             [= $subject-ids [$uniq-sorted
-              [?for [in $l [$subject-lines]]
+              [?for [in $l [$nth $sl 2]]
                 [in $clause [$re:find-all [$re:compile "\\(RULED:[^)]*\\)"] $l]]
                 [in $m [$re:find-all $id-rx [$re:group $clause 0]]]
                 [where [$is-id [$re:group $m 1]]]
