@@ -147,8 +147,9 @@
         [$concat "ADVISORY-CLOSED " $at ": " $ref " is " [$attr-or $r "state"]
                  " -- the red outlived the issue that tracked it: fix the case, or file its successor and name it (QUAL-1)"]]
       [case "off-release"
-        [$concat "ADVISORY-OFFRELEASE " $at ": " $ref " is open but carries neither the " $release
-                 " label nor its milestone nor a title beginning '" $release " ' -- an advisory red is tracked in the current release (QUAL-1)"]]
+        [$concat "ADVISORY-OFFRELEASE " $at ": " $ref " is open but outside " $release
+                 " -- its milestone is another release, or it has none and carries neither the " $release
+                 " label nor a title beginning '" $release " '; an advisory red is tracked in the current release (QUAL-1)"]]
       [case "unparsed"
         [$concat "ADVISORY-UNPARSED " [$attr-or $r "repo"] ":" [$attr-or $r "file"]
                  ": the audit cannot read this corpus file (" [$attr-or $r "why"]
