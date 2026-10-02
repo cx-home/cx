@@ -80,6 +80,8 @@
 # vouch, out loud, with the flag or the cause named (exit 2).
 [?const SUBJECT-REF 'release/0.18']
 
+[?def git-log-argv scope=private pure [returns any] () ('git', 'log', SUBJECT-REF, '--format=%s')]
+
 [?def subject-lines scope=private impure [returns any] ()
   [?let [= $planted [$env:var-or-default 'CX_LEDGER_SUBJECTS_FILE' '']]
     [?match $planted
@@ -91,7 +93,7 @@
                     [case [err $e] ('refused', [$concat "cannot read the planted subjects " $planted " -- " [$string $e@message]])]
                     [else ('ok', [$strings:split-lines $t])]]]]
           [else
-            [?let [= $r [$process:run ('git', 'log', SUBJECT-REF, '--format=%s')]]
+            [?let [= $r [$process:run [$git-log-argv]]]
               [?match $r
                 [case [err $e] ('refused', [$concat "cannot run `git log " SUBJECT-REF "` -- " [$string $e@message]])]
                 [else [?if [= [$string $r@exit-code] '0']

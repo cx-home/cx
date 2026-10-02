@@ -81,7 +81,8 @@
 # a case's verdict: an ok or a bad element, carrying the case id and what held.
 [?def judge scope=private pure [returns element] ($id $held $what $r)
   [?if $held [then [ok id=$id what=$what]]
-    [else [bad id=$id what=[$cat ($what, ' — exit ', [$string $r@exit-code], ': ', [$strings:trim [$said $r]])]]]]]
+    [else [?let [= $why [$cat ($what, ' — exit ', [$string $r@exit-code], ': ', [$strings:trim [$said $r]])]]
+            [bad id=$id what=$why]]]]]
 
 [?def refused scope=private pure [returns bool] ($r)
   [and [= [$string $r@exit-code] '2'] [$strings:contains [$said $r] '#1749']]]
