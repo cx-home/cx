@@ -3,11 +3,12 @@
 (function () {
   'use strict';
 
-  // ── Examples (PLAY-1) ─────────────────────────────────────
+  // ── Examples (PLAY-1, readings amended by PLAY-3) ───────────
   // THE PICKER is the primer's own examples: every conformance fixture
   // docs-src/llm/primer.md.tmpl cites, in the primer's order, filed under
-  // the primer section it sits in, each carrying its READING — data,
-  // query (a program over a document, bound as $doc) or code (RULED: PLAY-2) — and the
+  // the primer section it sits in, each carrying its READING — data, or
+  // code (a program, which may read a document, bound as $doc, real and
+  // shown beside it; RULED: PLAY-3, amending PLAY-2's three) — and the
   // answer the fixture records. playground.primer.js is projected from the
   // corpus by primer_examples.cx (`make docs`), so the page and the primer
   // cannot show two programs under one id.
@@ -19,8 +20,11 @@
   const primer = ((window.cxPlaygroundPrimer || {}).examples) || [];
   const examples = (window.cxPlaygroundExamples || { program: {} });
   const programEntries = examples.program || {};
-  const READINGS = ['data', 'query', 'code'];
-  const READING_NAMES = { data: 'Data', query: 'Query', code: 'Code' };
+  // PLAY-3 (amending PLAY-2): two readings — data and code; a program that
+  // reads a document keeps it shown beside it, but is filed as code, never a
+  // separate query grouping (the owner, 2026-10-01, #1741).
+  const READINGS = ['data', 'code'];
+  const READING_NAMES = { data: 'Data', code: 'Code' };
   // ── Legacy corpus sections (#1375) — kept for the #ex=<key> crumb ─────
   const SECTION_ORDER = [
     'data/elements', 'data/collections', 'data/numbers', 'data/text', 'data/formats', 'data/schema',
@@ -63,11 +67,11 @@
     'everyday/testing': ['Everyday scripts', 'Testing your own script'],
     'everyday/world': ['Everyday scripts', 'The world: HTTP, a database, mail'],
   };
-  // ALL_ENTRIES — the picker's rows, in the primer's order. `ex` keeps the
-  // field names the rest of this file (and the sweeps) read: `input` is the
-  // text the View pane draws as Source — the document for the document
-  // reading, the program otherwise.
-  const ALL_ENTRIES = primer.map((p) => ({
+  // PRIMER_ENTRIES — the primer's own fixtures, in the primer's order. `ex`
+  // keeps the field names the rest of this file (and the sweeps) read:
+  // `input` is the text the View pane draws as Source — the document for
+  // the data reading, the program otherwise.
+  const PRIMER_ENTRIES = primer.map((p) => ({
     key: p.id, kind: 'primer', reading: p.reading,
     ex: {
       ...p,
@@ -76,22 +80,51 @@
       input: p.reading === 'data' ? p.doc : p.src,
     },
   }));
-  // A legacy corpus entry, opened by #ex=<key>: always the code reading.
+  // A legacy corpus entry (examples.cxd → playground.examples.js). Filed by
+  // its own section prefix — data/* is the data reading (a document alone,
+  // every such example in the corpus always was), everything else (code/*,
+  // everyday/*) is code (RULED: PLAY-3; #1743 — restored to the picker, not
+  // only reachable by its stable link, #ex=<key>, which still opens it).
+  function legacyReading(section) { return (section || '').startsWith('data/') ? 'data' : 'code'; }
   function legacyEntry(key) {
     const ex = programEntries[key];
     if (!ex) return null;
     const names = SECTION_NAMES[ex.section] || ['', ex.section || ''];
+    const reading = legacyReading(ex.section);
     return {
-      key, kind: 'legacy', reading: 'code',
-      ex: { ...ex, id: key, doc: '', src: ex.input, heading: `${names[0]} › ${names[1]}`,
-            suite: 'scripts/gen_guide/playground/examples.cxd', expected: '', cmd: 'cx program.cx' },
+      key, kind: 'legacy', reading,
+      ex: { ...ex, id: key, heading: `${names[0]} › ${names[1]}`,
+            doc: reading === 'data' ? (ex.input || '') : '',
+            src: reading === 'data' ? '' : (ex.input || ''),
+            suite: 'scripts/gen_guide/playground/examples.cxd', expected: '',
+            cmd: reading === 'data' ? 'cx --from=cx --to=cx input.cx' : 'cx program.cx' },
     };
   }
+  // Every corpus example, offered in the picker beside the primer's (#1743:
+  // "every corpus example the engine can run is offered, every one it
+  // cannot is marked with its reason by name" — a step holds the count,
+  // scripts/playground-gate/browser_harness.mjs's corpus-offered check).
+  // Ordered by SECTION_ORDER, then the corpus's own (numeric) key order.
+  const CORPUS_KEYS = SECTION_ORDER.flatMap((sec) =>
+    Object.keys(programEntries).filter((k) => (programEntries[k].section || '') === sec));
+  // A corpus key under a section SECTION_ORDER does not list (should not
+  // happen; examples.cxd's sections are exactly SECTION_ORDER's) is still
+  // offered, appended after the named sections, rather than silently
+  // dropped.
+  const CORPUS_STRAY_KEYS = Object.keys(programEntries).filter((k) => !CORPUS_KEYS.includes(k));
+  const CORPUS_ENTRIES = [...CORPUS_KEYS, ...CORPUS_STRAY_KEYS].map(legacyEntry).filter(Boolean);
+  const ALL_ENTRIES = [...PRIMER_ENTRIES, ...CORPUS_ENTRIES];
   const displayLabel = (e) => (e.ex.label || e.key);
-  const exampleNumber = (e) => (e.ex.n ? String(e.ex.n) : '');
+  const exampleNumber = (e) => {
+    if (e.ex.n) return String(e.ex.n);
+    const m = /^(\d+)-/.exec(e.key);
+    return m ? m[1] : '';
+  };
   const entriesOf = (reading) => ALL_ENTRIES.filter(e => e.reading === reading);
 
   const pick     = document.getElementById('cxp-pick');
+  const searchEl = document.getElementById('cxp-search');
+  const searchResultsEl = document.getElementById('cxp-search-results');
   const prevBtn  = document.getElementById('cxp-prev');
   const nextBtn  = document.getElementById('cxp-next');
   const runBtn   = document.getElementById('cxp-run');
@@ -363,17 +396,9 @@
       o.textContent = displayLabel(e);
       group.appendChild(o);
     }
-    // A legacy example (opened by link) is shown as the one extra option, so
-    // the picker never claims a primer example the editors do not hold.
-    if (current && current.kind === 'legacy') {
-      const g = document.createElement('optgroup');
-      g.label = 'Opened by link — the playground corpus (examples.cxd)';
-      const o = document.createElement('option');
-      o.value = `legacy:${current.key}`;
-      o.textContent = current.ex.label || current.key;
-      g.appendChild(o);
-      pick.appendChild(g);
-    }
+    // Every corpus example is now in ALL_ENTRIES (#1743), so a legacy entry
+    // opened by link (#ex=<key>) is already listed above by its own section
+    // — no separate "opened by link" optgroup is needed any more.
   }
 
   function lookup(value) {
@@ -384,6 +409,94 @@
     const list = ALL_ENTRIES;
     const idx = list.findIndex(e => e.key === key);
     return idx >= 0 ? { idx, ...list[idx] } : null;
+  }
+
+  // ── Full-text search (#1742) ────────────────────────────────────────
+  // Restored after the PLAY-1 rebuild (primer-sourced picker) dropped it —
+  // the owner, 2026-10-01: "where did the ft search go in playground? I
+  // can't find all examples that match a term such as 'flow' or 'for' or
+  // 'sequence'." Searches every OFFERED example's id, title, source, output
+  // and reading — the primer picker's entries, the same set `entriesOf`
+  // draws the picker from — beside the picker, not instead of it; a click
+  // opens the example (loadExample), switching reading tab if needed. Terms
+  // are space-separated and AND-matched, case-insensitively.
+  function searchHaystack(e) {
+    const ex = e.ex || {};
+    return [
+      e.key, ex.title || '', displayLabel(e), ex.src || '',
+      ex.doc || '', ex.expected || '', READING_NAMES[e.reading] || e.reading || '',
+    ].join('\n').toLowerCase();
+  }
+  function searchMatches(q) {
+    const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (words.length === 0) return [];
+    return ALL_ENTRIES.filter((e) => {
+      const hay = searchHaystack(e);
+      return words.every((w) => hay.includes(w));
+    });
+  }
+  function renderSearchResults(qRaw) {
+    if (!searchResultsEl) return;
+    searchResultsEl.innerHTML = '';
+    const q = qRaw || '';
+    if (!q.trim()) { searchResultsEl.hidden = true; return; }
+    const hits = searchMatches(q);
+    if (hits.length === 0) {
+      const li = document.createElement('li');
+      li.className = 'cxp-search-empty';
+      li.textContent = `No matches for "${q.trim()}"`;
+      searchResultsEl.appendChild(li);
+    } else {
+      // No cap: the whole corpus is a few hundred examples at most (the
+      // list scrolls), and a common term — "for", "flow" — must still list
+      // EVERY match (#1742: "a term... must find every example that
+      // matches"), never silently truncate.
+      for (const e of hits) {
+        const li = document.createElement('li');
+        li.className = 'cxp-search-result';
+        li.setAttribute('role', 'option');
+        li.tabIndex = 0;
+        const label = document.createElement('span');
+        label.className = 'cxp-search-result-label';
+        label.textContent = displayLabel(e);
+        const badge = document.createElement('span');
+        badge.className = 'cxp-search-result-reading';
+        badge.textContent = READING_NAMES[e.reading] || e.reading;
+        li.append(label, badge);
+        const open = () => {
+          loadExample(`${e.kind}:${e.key}`);
+          if (searchEl) searchEl.value = '';
+          searchResultsEl.hidden = true;
+          searchResultsEl.innerHTML = '';
+        };
+        li.addEventListener('click', open);
+        li.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); open(); }
+        });
+        searchResultsEl.appendChild(li);
+      }
+    }
+    searchResultsEl.hidden = false;
+  }
+  if (searchEl) {
+    searchEl.addEventListener('input', () => renderSearchResults(searchEl.value));
+    searchEl.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape') {
+        searchEl.value = '';
+        renderSearchResults('');
+        searchEl.blur();
+      } else if (ev.key === 'ArrowDown' && searchResultsEl && !searchResultsEl.hidden) {
+        const first = searchResultsEl.querySelector('.cxp-search-result');
+        if (first) { ev.preventDefault(); first.focus(); }
+      }
+    });
+    searchEl.addEventListener('focus', () => { if (searchEl.value.trim()) renderSearchResults(searchEl.value); });
+    document.addEventListener('click', (ev) => {
+      if (searchResultsEl && !searchResultsEl.hidden
+          && ev.target !== searchEl && !searchResultsEl.contains(ev.target)) {
+        searchResultsEl.hidden = true;
+      }
+    });
   }
 
   // ANNOTATION_RE matches the trailing `[; ─── … ─── ]` note block a LEGACY
@@ -429,12 +542,13 @@
     }
   }
 
-  // ── The reading: which editors show, what Run does ──────────────────
-  //   document  the document editor alone; Run shows the document itself
-  //             (`cx --from=cx --to=cx input.cx`) as CX, JSON and XML
-  //   query     the document editor, bound as $doc, and the program over it
-  //             (`cx --data=input.cx prog.cx`)
-  //   program   the program editor alone (`cx prog.cx`)
+  // ── The reading: which editors show, what Run does (PLAY-3) ─────────
+  //   data  the document editor alone; Run shows the document itself
+  //         (`cx --from=cx --to=cx input.cx`) as CX, JSON and XML
+  //   code  the program editor, plus — when the loaded example actually
+  //         reads a document — the document editor too, bound as $doc
+  //         (`cx --data=input.cx prog.cx`); otherwise the program alone
+  //         (`cx prog.cx`). Never a separate query grouping (#1741).
   function applyReading(r) {
     reading = READINGS.includes(r) ? r : 'code';
     readingTabs.forEach(t => {
@@ -442,14 +556,21 @@
       t.classList.toggle('is-active', on);
       t.setAttribute('aria-selected', on ? 'true' : 'false');
     });
-    if (docBlock)  docBlock.hidden  = (reading === 'code');
     if (progBlock) progBlock.hidden = (reading === 'data');
+    updateDocVisibility();
+    document.body.dataset.reading = reading;
+  }
+  // The data pane shows whenever the reading IS data (the document alone),
+  // or — under code — whenever the bound document is real (not blank):
+  // a code example that reads a document keeps it shown beside it.
+  function updateDocVisibility() {
+    const showsDoc = reading === 'data' || Boolean(docInput.value && docInput.value.trim() !== '');
+    if (docBlock) docBlock.hidden = !showsDoc;
     if (docLabel) {
-      docLabel.textContent = reading === 'query'
+      docLabel.textContent = (reading === 'code' && showsDoc)
         ? 'input.cx — the document, bound as $doc'
         : 'input.cx — the document';
     }
-    document.body.dataset.reading = reading;
   }
   // The text the reading reads, as the command line would see it.
   function sourceText() {
@@ -468,8 +589,12 @@
     fixtureEl.innerHTML = '';
     if (!found) {
       fixtureEl.innerHTML = '<span class="cxp-fixture-own">your own text — no fixture</span>';
-      if (cmdEl) cmdEl.textContent = reading === 'data' ? '$ cx --from=cx --to=cx input.cx'
-        : (reading === 'query' ? '$ cx --data=input.cx prog.cx' : '$ cx prog.cx');
+      if (cmdEl) {
+        const showsDoc = reading === 'data'
+          || Boolean(docInput.value && docInput.value.trim() !== '');
+        cmdEl.textContent = reading === 'data' ? '$ cx --from=cx --to=cx input.cx'
+          : (showsDoc ? '$ cx --data=input.cx prog.cx' : '$ cx prog.cx');
+      }
       return;
     }
     const ex = found.ex;
@@ -512,7 +637,9 @@
     if (!current || current.kind !== 'primer') return true;
     const ex = current.ex;
     if (reading === 'data') return docInput.value !== ex.doc;
-    if (reading === 'query') return docInput.value !== ex.doc || input.value !== ex.src;
+    // A code example that reads a real document (PLAY-3's former query)
+    // compares both editors; one that does not, only the program.
+    if (ex.doc) return docInput.value !== ex.doc || input.value !== ex.src;
     return input.value !== ex.src;
   }
   // A recorded refusal (`match: contains`) is pinned by its code, which the
@@ -556,7 +683,9 @@
   function shareHash() {
     if (current && !edited()) return `#ex=${encodeURIComponent(current.key)}`;
     const parts = [`r=${reading}`];
-    if (reading !== 'code') parts.push(`d=${b64uEncode(docInput.value)}`);
+    const showsDoc = reading === 'data'
+      || Boolean(docInput.value && docInput.value.trim() !== '');
+    if (showsDoc) parts.push(`d=${b64uEncode(docInput.value)}`);
     if (reading !== 'data') parts.push(`p=${b64uEncode(input.value)}`);
     return '#' + parts.join('&');
   }
@@ -569,8 +698,9 @@
       if (i > 0) q[kv.slice(0, i)] = kv.slice(i + 1);
     }
     if (!q.r) return null;
-    // A link minted before PLAY-2 names a reading by its old key.
-    q.r = ({ document: 'data', program: 'code' })[q.r] || q.r;
+    // A link minted before PLAY-2 names a reading by its old key; one
+    // minted under PLAY-2's three (before PLAY-3 dropped query) names it 'query'.
+    q.r = ({ document: 'data', program: 'code', query: 'code' })[q.r] || q.r;
     try {
       return { r: q.r, d: q.d ? b64uDecode(q.d) : '', p: q.p ? b64uDecode(q.p) : '' };
     } catch (_) { return null; }
@@ -591,10 +721,10 @@
   function showCrumb(found) {
     if (!crumbEl) return;
     if (!found) { crumbEl.textContent = READING_NAMES[reading]; return; }
-    if (found.kind === 'legacy') { crumbEl.textContent = `${found.ex.label || found.key} · by link`; return; }
     const list = entriesOf(found.reading);
     const pos = list.findIndex(e => e.key === found.key) + 1;
-    crumbEl.textContent = `[${exampleNumber(found)}] · ${READING_NAMES[found.reading]} · ${pos} of ${list.length}`;
+    const source = found.kind === 'legacy' ? 'the playground corpus' : READING_NAMES[found.reading];
+    crumbEl.textContent = `[${exampleNumber(found)}] · ${source} · ${pos} of ${list.length}`;
     crumbEl.title = 'Left/right: previous/next example · Up/down: previous/next section (also from the picker)';
   }
   function loadExample(value) {
@@ -609,7 +739,9 @@
     showExpected(found);
     try { history.replaceState(null, '', `#ex=${encodeURIComponent(found.key)}`); } catch (_) {}
     docInput.value = found.ex.doc || '';
-    input.value = found.kind === 'legacy' ? composeSource(found.ex) : (found.ex.src || '');
+    input.value = (found.kind === 'legacy' && found.reading !== 'data')
+      ? composeSource(found.ex) : (found.ex.src || '');
+    updateDocVisibility();
     syncRender();
     clearResults();
     refreshView();
@@ -1923,6 +2055,7 @@
       pick.selectedIndex = -1;
       docInput.value = h.d || '';
       input.value = h.p || '';
+      updateDocVisibility();
       syncRender();
       showCrumb(null);
       showFixture(null);
@@ -2089,7 +2222,9 @@
         // The data reading: the text IS the value (`--from=cx --to=cx`).
         accumulated = cxlib.toCx(doc);
       } else {
-        const bound = rd === 'query' ? doc : '';
+        // PLAY-3: no separate query reading — a code example binds $doc
+        // whenever it is actually given a (real) document to read.
+        const bound = (doc && doc.trim() !== '') ? doc : '';
         if (typeof cxlib.evalCodeStreamingAsync === 'function') {
           await cxlib.evalCodeStreamingAsync(prog, 'cx', (chunk) => {
             accumulated += chunk;

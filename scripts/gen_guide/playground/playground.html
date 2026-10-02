@@ -11,10 +11,12 @@
 <link rel="stylesheet" href="playground/playground.css">
 </head>
 <body class="cxp-body">
-<!-- PLAY-1: one page. The toolbar carries the three READINGS of the one
-     bracketed syntax — data, a query over data, code (RULED: PLAY-2) — and
-     the primer's examples for the chosen reading — every one a conformance
-     fixture, projected by primer_examples.cx, its id shown beside it. -->
+<!-- PLAY-3 (amending PLAY-1/PLAY-2): one page. The toolbar carries the TWO
+     READINGS of the one bracketed syntax — data, code (RULED: PLAY-3; the
+     owner, 2026-10-01: no separate query grouping) — and the primer's
+     examples for the chosen reading — every one a conformance fixture,
+     projected by primer_examples.cx, its id shown beside it. A code example
+     that reads a document keeps it shown beside it, real, bound as $doc. -->
 <header class="cxp-toolbar">
   <a class="cxp-brand" href="index.html" title="CX Guide">
     <svg viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
@@ -23,10 +25,16 @@
   <span class="cxp-tabs cxp-readings" role="tablist" aria-label="Reading">
     <button class="cxp-reading-tab" data-reading="data" type="button" role="tab"
             title="Data: a document alone — the text IS the value, shown as CX, JSON and XML">Data</button>
-    <button class="cxp-reading-tab" data-reading="query" type="button" role="tab"
-            title="Query: a program that reads the document beside it, bound as $doc">Query</button>
     <button class="cxp-reading-tab is-active" data-reading="code" type="button" role="tab"
-            title="Code: a program alone — evaluated, its value shown; an error is a value too">Code</button>
+            title="Code: a program — evaluated, its value shown (an error is a value too); when it reads a document, shown real beside it, bound as $doc">Code</button>
+  </span>
+  <span class="cxp-search-wrap">
+    <input id="cxp-search" class="cxp-search" type="search" autocomplete="off"
+           placeholder="Search examples…"
+           aria-label="Full-text search over every offered example's id, title, source, output and reading"
+           title="Search every offered example's id, title, source, output and reading — try flow, for, sequence">
+    <ul id="cxp-search-results" class="cxp-search-results" hidden role="listbox"
+        aria-label="Search results"></ul>
   </span>
   <select id="cxp-pick" aria-label="The primer's examples for this reading, by primer section"
           title="The primer's examples — each a conformance fixture. ← → previous/next example · ↑ ↓ previous/next section"></select>
