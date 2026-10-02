@@ -11,9 +11,11 @@
 #
 # with its file, its section and its line, and says whether a case id stands
 # beside it. A case id counts only when the case EXISTS: the token is looked
-# up in the two rings' corpora (every `[case id=…]` under conformance/ of
-# cx-core-data and cx-core-code), as the full id or as its numbered prefix
-# (`program-for-021` for `program-for-021-a-multi-sibling-slot-…`).
+# up in the corpora (every `[case id=…]` under conformance/ of cx-core-data and
+# cx-core-code, and of every other repository pinned under deps/ — a ring
+# sentence about a verb a platform module carries is graded where it lives),
+# as the full id or as its numbered prefix (`program-for-021` for
+# `program-for-021-a-multi-sibling-slot-…`).
 #
 # The specs read:
 #   the data ring  <data-root>/spec/03-approved/core/*.md
@@ -106,8 +108,14 @@
     [$flat (($id), $pre, $lead)]]]
 
 [?def corpus-keys scope=public impure ($roots $rx)
-  [?let [= $files [$flat [?for [in $r $roots]
-                           [yield [$io:glob [$cat ($r, "/conformance/**/*.cxd")]]]]]]
+  [?let [= $files [$flat ([$flat [?for [in $r $roots]
+                                   [yield [$io:glob [$cat ($r, "/conformance/**/*.cxd")]]]]],
+                           # every other pinned repository's corpus: a ring spec sentence about a
+                           # verb a platform module carries is graded where that module lives
+                           [?for [in $p [$io:glob "deps/*/conformance/**/*.cxd"]]
+                             [where [not [$strings:starts-with $p "deps/cx-core-data/"]]]
+                             [where [not [$strings:starts-with $p "deps/cx-core-code/"]]]
+                             [yield $p]])]]
         [= $keys [$flat [?for [in $f $files]
                           [= $text [?fallback [$io:read-file $f] [recover-with ""]]]
                           [= $base [$path:basename $f]]
