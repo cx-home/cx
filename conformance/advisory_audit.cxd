@@ -177,4 +177,65 @@ false
 false
 #]]
  ]
+
+ [case id=advisory-audit-009-a-milestone-outranks-a-label-or-title level=core
+  [tags advisory-audit off-release milestone]
+  [title an issue carrying the release label or title prefix but ANOTHER milestone is outside the current milestone and refused (refutation a04, a05)]
+  [in-code [#
+[?lib './scripts/advisory_audit.cx' as=aa]
+[$aa:check
+  [cases
+    [advisory repo=r file=f id=m-001 issue='cx-home/cx-private#40']
+    [advisory repo=r file=f id=m-002 issue='cx-home/cx-platform-db#41']
+    [advisory repo=r file=f id=m-003 issue='cx-home/cx-private#42']]
+  [issues
+    [issue ref='cx-home/cx-private#40' read=true state=OPEN labels='bug,v0.18' milestone='v0.19' title='moved on']
+    [issue ref='cx-home/cx-platform-db#41' read=true state=OPEN labels='bug' milestone='v0.19' title='v0.18 x']
+    [issue ref='cx-home/cx-private#42' read=true state=OPEN labels='bug,v0.18' milestone='v0.18' title='in release']]
+  'v0.18']
+#]]
+  [out-text [#
+[verdict cases=3 issues=3 release='v0.18' [refusal kind=off-release repo=r file=f id=m-001 issue='cx-home/cx-private#40' state=OPEN why=''] [refusal kind=off-release repo=r file=f id=m-002 issue='cx-home/cx-platform-db#41' state=OPEN why='']]
+#]]
+ ]
+
+ [case id=advisory-audit-010-a-suite-element-resolves-as-the-loader-does level=core
+  [tags advisory-audit resolution]
+  [title the audit reads a suite the way the shared loader does -- per-case gate= over the element over the policy default, per-case issue= over the element, an empty issue= inheriting (refutation r03, r09)]
+  [in-code [#
+[?lib './scripts/advisory_audit.cx' as=aa]
+([$aa:suite-cases 'cx-platform-x' 'conformance/a.cxd'
+   [test-suite name=a ring=1 gate=advisory reason='r' issue='cx-home/cx-private#1497'
+     [case id=a-1 level=core]
+     [case id=a-2 level=core issue='']
+     [case id=a-3 level=core issue='cx-home/cx-platform-x#2']
+     [case id=a-4 level=core gate=enforced]]
+   'enforced'],
+ [$aa:suite-cases 'cx-platform-x' 'conformance/b.cxd'
+   [test-suite name=b ring=1
+     [case id=b-1 level=core]
+     [case id=b-2 level=core gate=enforced]
+     [case id=b-3 level=core issue='cx-home/cx-private#9']]
+   'advisory'])
+#]]
+  [out-text [#
+([advisory repo=cx-platform-x file='conformance/a.cxd' id=a-1 issue='cx-home/cx-private#1497'], [advisory repo=cx-platform-x file='conformance/a.cxd' id=a-2 issue='cx-home/cx-private#1497'], [advisory repo=cx-platform-x file='conformance/a.cxd' id=a-3 issue='cx-home/cx-platform-x#2'], [advisory repo=cx-platform-x file='conformance/b.cxd' id=b-1 issue=''], [advisory repo=cx-platform-x file='conformance/b.cxd' id=b-3 issue='cx-home/cx-private#9'])
+#]]
+ ]
+
+ [case id=advisory-audit-011-a-file-the-audit-cannot-read-refuses level=core
+  [tags advisory-audit unparsed fail-closed]
+  [title a corpus file naming advisory that the audit cannot parse (a multi-document stream) is refused by name, never skipped (refutation w-check)]
+  [in-code [#
+[?lib './scripts/advisory_audit.cx' as=aa]
+[?let [= $v [$aa:check
+              [cases [unparsed repo=cx-platform-x file='conformance/two.cxd' why='codec cx: multi-document streams are not yet supported by parse']]
+              [issues]
+              'v0.18']]
+  ($v, [$aa:report $v])]
+#]]
+  [out-text [#
+([verdict cases=0 issues=0 release='v0.18' [refusal kind=unparsed repo=cx-platform-x file='conformance/two.cxd' id='' issue='' state='' why='codec cx: multi-document streams are not yet supported by parse']], 'advisory audit: 0 advisory cases, 0 issues, 1 refused (v0.18)\nADVISORY-UNPARSED cx-platform-x:conformance/two.cxd: the audit cannot read this corpus file (codec cx: multi-document streams are not yet supported by parse) -- a file whose advisory cases the audit cannot list is refused, never skipped (QUAL-1)')
+#]]
+ ]
 ]
