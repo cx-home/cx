@@ -1,0 +1,241 @@
+[test-suite name=advisory-audit ring=1
+  [doc [#
+# CX Conformance — the advisory audit (ADVIS-1; RULED: QUAL-1 (b))
+#
+# THE SUBJECT. An advisory case is a sanctioned red, and a red nobody tracks
+# is a false sense of progress: every advisory case in every corpus names the
+# OPEN issue its red is tracked by, in the current release. The binary holds
+# the offline half — `cx corpus` and the fixture shards refuse an advisory
+# case naming no issue= or a malformed one. scripts/advisory_audit.cx holds
+# the half only GitHub answers, and this file is its executable half.
+#
+# Each case hands `[$aa:check CASES ISSUES RELEASE]` the advisory cases the
+# tree check reads off the corpus files (`[cases [advisory repo= file= id=
+# issue=]]`) and the issue rows it reads from `gh issue view` (`[issues [issue
+# ref= read= state= labels= milestone= title=]]`), and pins the verdict.
+# scripts/advisory_audit_check.cx builds those arguments from the real tree
+# and GitHub and prints `[$aa:report …]` of the same verdict, so a refusal
+# pinned here is the refusal `make advisory-audit` prints.
+#
+# The rules: an issue is in the release when it carries the release's label,
+# its milestone, or a title beginning with the release and a space (the
+# component repositories' convention); a closed issue, an issue outside the
+# release, an issue the audit could not read, a missing issue= and a
+# malformed one are each refused, by name.
+#
+# Graded by `make advisory-audit` (`cx corpus conformance/advisory_audit.cxd`
+# from the checkout root, before the tree check runs), which is the claim
+# check_conformance_coverage.sh carries for this suite.
+#]]
+
+ [case id=advisory-audit-001-open-in-release level=core
+  [tags advisory-audit ok]
+  [title [# every advisory case names an open issue in the release -- by label, by milestone, by title prefix -- and nothing is refused #]]
+  [in-code [#
+[?lib './scripts/advisory_audit.cx' as=aa]
+[$aa:check
+  [cases
+    [advisory repo=cx-private file='conformance/a.cxd' id=a-001 issue='cx-home/cx-private#10']
+    [advisory repo=cx-platform-db file='conformance/platform/db.cxd' id=db-025 issue='cx-home/cx-platform-db#7']
+    [advisory repo=cx-platform-xap file='conformance/xap/x.cxd' id=x-001 issue='cx-home/cx-private#11']
+    [advisory repo=cx-platform-xap file='conformance/xap/x.cxd' id=x-002 issue='cx-home/cx-private#11']]
+  [issues
+    [issue ref='cx-home/cx-private#10' read=true state=OPEN labels='bug,v0.18' milestone='' title='a thing']
+    [issue ref='cx-home/cx-platform-db#7' read=true state=OPEN labels='bug' milestone='' title='v0.18 db-025 dials a server']
+    [issue ref='cx-home/cx-private#11' read=true state=OPEN labels='enhancement' milestone='v0.18' title='a feature']]
+  'v0.18']
+#]]
+  [out-text [#
+[verdict cases=4 issues=3 release='v0.18']
+#]]
+ ]
+
+ [case id=advisory-audit-002-closed-issue-refuses level=core
+  [tags advisory-audit closed]
+  [title [# an advisory case whose issue is CLOSED is refused -- the red outlived the issue that tracked it #]]
+  [in-code [#
+[?lib './scripts/advisory_audit.cx' as=aa]
+[$aa:check
+  [cases [advisory repo=cx-platform-connector file='conformance/platform/connector.cxd' id=c-1148 issue='cx-home/cx-private#1462']]
+  [issues [issue ref='cx-home/cx-private#1462' read=true state=CLOSED labels='v0.18' milestone='v0.18' title='connector kind=mail']]
+  'v0.18']
+#]]
+  [out-text [#
+[verdict cases=1 issues=1 release='v0.18' [refusal kind=closed repo=cx-platform-connector file='conformance/platform/connector.cxd' id=c-1148 issue='cx-home/cx-private#1462' state=CLOSED why='']]
+#]]
+ ]
+
+ [case id=advisory-audit-003-off-release-refuses level=core
+  [tags advisory-audit off-release]
+  [title [# an open issue with neither the release label nor its milestone nor a title beginning with the release is refused #]]
+  [in-code [#
+[?lib './scripts/advisory_audit.cx' as=aa]
+[$aa:check
+  [cases
+    [advisory repo=r file=f id=o-001 issue='cx-home/cx-private#20']
+    [advisory repo=r file=f id=o-002 issue='cx-home/cx-platform-db#21']]
+  [issues
+    [issue ref='cx-home/cx-private#20' read=true state=OPEN labels='bug,v0.19' milestone='v0.19' title='later']
+    [issue ref='cx-home/cx-platform-db#21' read=true state=OPEN labels='bug' milestone='' title='v0.180 is not v0.18']]
+  'v0.18']
+#]]
+  [out-text [#
+[verdict cases=2 issues=2 release='v0.18' [refusal kind=off-release repo=r file=f id=o-001 issue='cx-home/cx-private#20' state=OPEN why=''] [refusal kind=off-release repo=r file=f id=o-002 issue='cx-home/cx-platform-db#21' state=OPEN why='']]
+#]]
+ ]
+
+ [case id=advisory-audit-004-unread-refuses level=core
+  [tags advisory-audit unread fail-closed]
+  [title [# an issue the audit could not read is refused with the reason, never taken for an open one -- and so is a reference no lookup row answers #]]
+  [in-code [#
+[?lib './scripts/advisory_audit.cx' as=aa]
+[$aa:check
+  [cases
+    [advisory repo=r file=f id=u-001 issue='cx-home/cx-private#30']
+    [advisory repo=r file=f id=u-002 issue='cx-home/cx-private#31']]
+  [issues [issue ref='cx-home/cx-private#30' read=false why='gh issue view exit 1: HTTP 401']]
+  'v0.18']
+#]]
+  [out-text [#
+[verdict cases=2 issues=2 release='v0.18' [refusal kind=unread repo=r file=f id=u-001 issue='cx-home/cx-private#30' state='' why='gh issue view exit 1: HTTP 401'] [refusal kind=unread repo=r file=f id=u-002 issue='cx-home/cx-private#31' state='' why='']]
+#]]
+ ]
+
+ [case id=advisory-audit-005-missing-and-malformed-refuse level=core
+  [tags advisory-audit no-issue bad-issue]
+  [title [# an advisory case naming no issue, or an issue= that is not owner/repo#n, is refused -- even with a row that would answer it #]]
+  [in-code [#
+[?lib './scripts/advisory_audit.cx' as=aa]
+[$aa:check
+  [cases
+    [advisory repo=r file=f id=n-001 issue='']
+    [advisory repo=r file=f id=b-001 issue='1497']
+    [advisory repo=r file=f id=b-002 issue='cx-home/cx-private#0']]
+  [issues [issue ref='1497' read=true state=OPEN labels='v0.18' milestone='v0.18' title='v0.18 x']]
+  'v0.18']
+#]]
+  [out-text [#
+[verdict cases=3 issues=2 release='v0.18' [refusal kind=no-issue repo=r file=f id=n-001 issue='' state='' why=''] [refusal kind=bad-issue repo=r file=f id=b-001 issue='1497' state=OPEN why=''] [refusal kind=bad-issue repo=r file=f id=b-002 issue='cx-home/cx-private#0' state='' why='']]
+#]]
+ ]
+
+ [case id=advisory-audit-006-the-report-lines level=core
+  [tags advisory-audit report]
+  [title [# the report is the census line, then ok or one named line per refusal -- what make advisory-audit prints #]]
+  [in-code [#
+[?lib './scripts/advisory_audit.cx' as=aa]
+[?let [= $issues [issues [issue ref='cx-home/cx-private#1462' read=true state=CLOSED labels='v0.18' milestone='v0.18' title='t']
+                         [issue ref='cx-home/cx-platform-db#7' read=true state=OPEN labels='bug' milestone='' title='v0.18 db-025']]]
+      [= $ok [$aa:check [cases [advisory repo=cx-platform-db file='conformance/platform/db.cxd' id=db-025 issue='cx-home/cx-platform-db#7']] $issues 'v0.18']]
+      [= $bad [$aa:check [cases [advisory repo=r file=f id=c-1 issue='cx-home/cx-private#1462'] [advisory repo=r file=f id=n-1 issue='']] $issues 'v0.18']]
+  ([$aa:report $ok], [$aa:report $bad])]
+#]]
+  [out-text [#
+('advisory audit: 1 advisory cases, 1 issues, 0 refused (v0.18)\nok', "advisory audit: 2 advisory cases, 1 issues, 2 refused (v0.18)\nADVISORY-CLOSED r:f c-1: cx-home/cx-private#1462 is CLOSED -- the red outlived the issue that tracked it: fix the case, or file its successor and name it (QUAL-1)\nADVISORY-UNTRACKED r:f n-1: an advisory case names no issue= -- name the open issue its red is tracked by, issue='<owner>/<repo>#<n>' (QUAL-1)")
+#]]
+ ]
+
+ [case id=advisory-audit-007-the-listing level=core
+  [tags advisory-audit listing]
+  [title [# every advisory case is listed with its issue and the issue's state as read, refused or not #]]
+  [in-code [#
+[?lib './scripts/advisory_audit.cx' as=aa]
+[$aa:listing
+  [cases
+    [advisory repo=cx-platform-db file='conformance/platform/db.cxd' id=db-025 issue='cx-home/cx-platform-db#7']
+    [advisory repo=r file=f id=u-1 issue='cx-home/cx-private#30']
+    [advisory repo=r file=f id=n-1 issue='']
+    [advisory repo=r file=f id=m-1 issue='cx-home/cx-private#31']]
+  [issues [issue ref='cx-home/cx-platform-db#7' read=true state=OPEN labels='bug' milestone='' title='v0.18 db-025']
+          [issue ref='cx-home/cx-private#30' read=false why='gh: exit 1']]]
+#]]
+  [out-text [#
+'ADVISORY cx-platform-db:conformance/platform/db.cxd db-025 cx-home/cx-platform-db#7 OPEN\nADVISORY r:f u-1 cx-home/cx-private#30 UNREAD\nADVISORY r:f n-1 - -\nADVISORY r:f m-1 cx-home/cx-private#31 -'
+#]]
+ ]
+
+ [case id=advisory-audit-008-the-reference-shape level=core
+  [tags advisory-audit issue-ref]
+  [title [# an issue reference is owner/repo#n -- the same shape the shared loader's is_issue_ref admits #]]
+  [in-code [#
+[?lib './scripts/advisory_audit.cx' as=aa]
+[?for [in $s ('cx-home/cx-private#1497', 'example/fixture#1', 'a.b/c_d-e#42', '1497', '#1497', 'cx-private#1497', 'cx-home/cx-private', 'cx-home/cx-private#0', 'cx-home/cx-private#12a', 'a/b/c#1', 'cx home/cx-private#1', 'https://github.com/cx-home/cx-private/issues/1')]
+  [yield [$aa:issue-ref $s]]]
+#]]
+  [out-text [#
+true
+true
+true
+false
+false
+false
+false
+false
+false
+false
+false
+false
+#]]
+ ]
+
+ [case id=advisory-audit-009-a-milestone-outranks-a-label-or-title level=core
+  [tags advisory-audit off-release milestone]
+  [title [# an issue carrying the release label or title prefix but ANOTHER milestone is outside the current milestone and refused (refutation a04, a05) #]]
+  [in-code [#
+[?lib './scripts/advisory_audit.cx' as=aa]
+[$aa:check
+  [cases
+    [advisory repo=r file=f id=m-001 issue='cx-home/cx-private#40']
+    [advisory repo=r file=f id=m-002 issue='cx-home/cx-platform-db#41']
+    [advisory repo=r file=f id=m-003 issue='cx-home/cx-private#42']]
+  [issues
+    [issue ref='cx-home/cx-private#40' read=true state=OPEN labels='bug,v0.18' milestone='v0.19' title='moved on']
+    [issue ref='cx-home/cx-platform-db#41' read=true state=OPEN labels='bug' milestone='v0.19' title='v0.18 x']
+    [issue ref='cx-home/cx-private#42' read=true state=OPEN labels='bug,v0.18' milestone='v0.18' title='in release']]
+  'v0.18']
+#]]
+  [out-text [#
+[verdict cases=3 issues=3 release='v0.18' [refusal kind=off-release repo=r file=f id=m-001 issue='cx-home/cx-private#40' state=OPEN why=''] [refusal kind=off-release repo=r file=f id=m-002 issue='cx-home/cx-platform-db#41' state=OPEN why='']]
+#]]
+ ]
+
+ [case id=advisory-audit-010-a-suite-element-resolves-as-the-loader-does level=core
+  [tags advisory-audit resolution]
+  [title [# the audit reads a suite the way the shared loader does -- per-case gate= over the element over the policy default, per-case issue= over the element, an empty issue= inheriting (refutation r03, r09) #]]
+  [in-code [#
+[?lib './scripts/advisory_audit.cx' as=aa]
+([$aa:suite-cases 'cx-platform-x' 'conformance/a.cxd'
+   [test-suite name=a ring=1 gate=advisory reason='r' issue='cx-home/cx-private#1497'
+     [case id=a-1 level=core]
+     [case id=a-2 level=core issue='']
+     [case id=a-3 level=core issue='cx-home/cx-platform-x#2']
+     [case id=a-4 level=core gate=enforced]]
+   'enforced'],
+ [$aa:suite-cases 'cx-platform-x' 'conformance/b.cxd'
+   [test-suite name=b ring=1
+     [case id=b-1 level=core]
+     [case id=b-2 level=core gate=enforced]
+     [case id=b-3 level=core issue='cx-home/cx-private#9']]
+   'advisory'])
+#]]
+  [out-text [#
+(([advisory repo=cx-platform-x file='conformance/a.cxd' id=a-1 issue='cx-home/cx-private#1497'], [advisory repo=cx-platform-x file='conformance/a.cxd' id=a-2 issue='cx-home/cx-private#1497'], [advisory repo=cx-platform-x file='conformance/a.cxd' id=a-3 issue='cx-home/cx-platform-x#2']), ([advisory repo=cx-platform-x file='conformance/b.cxd' id=b-1 issue=''], [advisory repo=cx-platform-x file='conformance/b.cxd' id=b-3 issue='cx-home/cx-private#9']))
+#]]
+ ]
+
+ [case id=advisory-audit-011-a-file-the-audit-cannot-read-refuses level=core
+  [tags advisory-audit unparsed fail-closed]
+  [title [# a corpus file naming advisory that the audit cannot parse (a multi-document stream) is refused by name, never skipped (refutation w-check) #]]
+  [in-code [#
+[?lib './scripts/advisory_audit.cx' as=aa]
+[?let [= $v [$aa:check
+              [cases [unparsed repo=cx-platform-x file='conformance/two.cxd' why='codec cx: multi-document streams are not yet supported by parse']]
+              [issues]
+              'v0.18']]
+  ($v, [$aa:report $v])]
+#]]
+  [out-text [#
+([verdict cases=0 issues=0 release='v0.18' [refusal kind=unparsed repo=cx-platform-x file='conformance/two.cxd' id='' issue='' state='' why='codec cx: multi-document streams are not yet supported by parse']], 'advisory audit: 0 advisory cases, 0 issues, 1 refused (v0.18)\nADVISORY-UNPARSED cx-platform-x:conformance/two.cxd: the audit cannot read this corpus file (codec cx: multi-document streams are not yet supported by parse) -- a file whose advisory cases the audit cannot list is refused, never skipped (QUAL-1)')
+#]]
+ ]
+]
