@@ -37,6 +37,10 @@
 #   P  the shared grading core (vcx/corpus/,     the suite, the document step
 #      #1634)                                    and the cmd step — every step
 #                                                that runs it
+#   R  stripped scripts/ paths, through          the steps whose own rows name
+#      --infra-rows (#1659)                      them, never the union
+#   S  a docs/llm or conformance/ change (#1703) suite files that exist, a
+#                                                denominator over the pinned suite
 #
 # Exit 0 and the count line only when every case matches.
 set -u
@@ -582,8 +586,68 @@ else
 	bad P "vcx/corpus/grade.v did not select:$p_miss"
 fi
 
+
+# ── R — the stripped scripts/ paths still select their own rows (#1659) ─────
+# RUN-4's computed selection strips every build-infra path (Makefile, scripts/,
+# VERSION, devbox) before this script classifies the rest, so the escalation
+# they would cause stays the post-merge run's. That strip also hid a NEW
+# scripts/*.cx from reader-parity, the step that reads every .cx under
+# scripts/: ff8ebdc35's two new scripts were never selected pre-merge and the
+# union went red on them (CXF-8, #1659), and the playground's
+# primer_examples.cx did it again on 7a82287c4. `--infra-rows <file>` takes the
+# stripped paths; each scripts/ path among them selects the steps whose OWN
+# rows name it — never the union — and the Makefile, VERSION and devbox stay
+# stripped. flows/private-acts.cx's ci/select passes it.
+run_infra() { # run_infra <changed-path> <stripped-path…>
+	: > "$T/changed"; echo "$1" >> "$T/changed"; shift
+	: > "$T/infra"
+	for p in "$@"; do echo "$p" >> "$T/infra"; done
+	( cd "$ROOT" && sh scripts/test_changed.sh HEAD --dry-run --changed-files "$T/changed" --infra-rows "$T/infra" 2>&1 )
+}
+run_infra ledger/README.md scripts/new_tool.cx scripts/build-slot.sh > "$T/r"
+r_t=" $(targets "$T/r") "
+r_miss=""
+for st in reader-parity check-build-slot; do
+	case "$r_t" in *" $st "*) ;; *) r_miss="$r_miss $st" ;; esac
+done
+run_infra ledger/README.md Makefile VERSION devbox.json > "$T/r2"
+r_extra=""
+grep -q "own rows (#1659): none$" "$T/r2" || r_extra="$(grep -m1 -E "own rows|unknown argument" "$T/r2")"
+if [ -z "$r_miss" ] && [ -z "$r_extra" ] && ! grep -q 'running the FULL step union' "$T/r"; then
+	ok R "a stripped scripts/*.cx selects reader-parity and scripts/build-slot.sh check-build-slot, nothing escalates, and a stripped Makefile, VERSION or devbox selects nothing"
+else
+	bad R "--infra-rows: missing:${r_miss:- none}; extra: ${r_extra:-none} — $(grep -m1 -E 'RUN:|unknown argument|FULL' "$T/r")"
+fi
+
+# ── S — every suite file the selection names is where the suite IS (#1703) ──
+# test-vcx-suite runs `v test deps/cx-core-code/vcx/tests/` since K7a's
+# extraction, plus the front door's own vcx/tests/ file. SUITE_DIR still said
+# vcx/tests, so the closure, the name grep and the denominator counted the
+# front door's one file ("2 of 1 test files"), and a conformance/ file the
+# pinned suite reads from this tree by name (gates.cxd: code_eval_fixtures
+# and cli_umbrella, through testenv.front_door_root()) selected none of them.
+# Every named path must exist, the denominator must count the pinned suite,
+# and conformance/gates.cxd must name the pinned files that read it.
+s_bad=""
+s_n=$(ls "$ROOT"/deps/cx-core-code/vcx/tests/*_test.v 2>/dev/null | grep -c . || true)
+for p in docs/llm/primer.md conformance/GATE_REGISTER.md conformance/gates.cxd; do
+	run "$p" > "$T/s"
+	for f in $(suite_files_of "$T/s"); do
+		[ -f "$ROOT/$f" ] || s_bad="$s_bad $p:$f(absent)"
+	done
+	den=$(suite_line "$T/s" | sed -n 's/.* of \([0-9][0-9]*\) test files:.*/\1/p')
+	[ -n "$den" ] && [ "$den" -ge "$s_n" ] || s_bad="$s_bad $p:denominator=${den:-none}<$s_n"
+	case "$p" in conformance/gates.cxd)
+		suite_files_of "$T/s" | grep -q '^deps/cx-core-code/vcx/tests/' || s_bad="$s_bad $p:no-pinned-file" ;;
+	esac
+done
+if [ -z "$s_bad" ] && [ "$s_n" -gt 0 ]; then
+	ok S "every selected suite file exists, the denominator counts the $s_n pinned files, and conformance/gates.cxd names the pinned files that read it"
+else
+	bad S "the suite selection reads the wrong directory:${s_bad:- (no pinned suite on disk — run make deps-sync)}"
+fi
 if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop step; P the vcx/corpus grading core selects the steps that run it)"
+echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop step; P the vcx/corpus grading core selects the steps that run it; R the stripped scripts/ paths select their own rows; S every selected suite file is where the suite is)"
