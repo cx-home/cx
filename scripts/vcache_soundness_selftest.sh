@@ -69,8 +69,29 @@ check_log() { # $1 label  $2 rc  $3 log
 check_log "gate A" "$RC_A" "$LOG_A"
 check_log "gate B" "$RC_B" "$LOG_B"
 
+# C — a failed probe build names its cause (#1660). The daily union on
+# a300db043 red one probe, `po build1 FAILED` then `PROBE POISON: RED …
+# observed='BUILD-REFUSED'`, and the log could not say why: every probe build
+# ran `"$V" … >/dev/null 2>&1`, so the compiler's own refusal was discarded. A
+# planted compiler that refuses every build with a known diagnostic must have
+# that diagnostic in the gate's log, under the probe that failed.
+echo "  C    a failed probe build keeps the compiler's own output (#1660)"
+FAKE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/vcache-selftest-fakev.XXXXXX")
+LOG_C=$(mktemp "${TMPDIR:-/tmp}/vcache-selftest-c.XXXXXX")
+trap 'rm -f "$LOG_A" "$LOG_B" "$LOG_C"; rm -rf "$FAKE_DIR"' EXIT
+printf '#!/bin/sh\necho "planted-v: refused this build (args: $*) - selftest C diagnostic" >&2\nexit 1\n' > "$FAKE_DIR/v"
+chmod +x "$FAKE_DIR/v"
+CX_V="$FAKE_DIR/v" bash scripts/vcache_soundness_gate.sh >"$LOG_C" 2>&1
+if grep -q 'base build1 FAILED' "$LOG_C" && grep -q 'planted-v: refused this build' "$LOG_C"; then
+  echo "  ok   C: the planted compiler's refusal is in the log beside 'base build1 FAILED'"
+else
+  echo "  FAIL C: the failed build's compiler output is not in the gate's log"
+  grep -n 'FAILED' "$LOG_C" | head -5 | sed 's/^/        /'
+  fails=$((fails + 1))
+fi
+
 if [ "$fails" -gt 0 ]; then
   echo "vcache-soundness self-test: $fails failure(s)"
   exit 1
 fi
-echo "vcache-soundness self-test OK — two concurrent runs, both SOUND, neither collided"
+echo "vcache-soundness self-test OK — two concurrent runs, both SOUND, neither collided; a failed probe build keeps its compiler output (#1660)"
