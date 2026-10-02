@@ -194,4 +194,7 @@
   [patch sha=77a460e265f86d882878d749c2bca48390d940e7 family=ssh issue='cx-private#1457']
   [patch sha=f0ef508ccd7f2d94ebfa8538536a0acf611edb52 family=vgc issue='cx-home/v#6']
   [patch sha=fefd75a561df78ba919e7b8a6b78eda643e9b88f family=vgc issue='cx-home/v#6']
+  [patch sha=af387274e74ad7c93e9278708967a004097745b3 family=vgc issue='cx-home/v#6']
+  [patch sha=5728c049bfe83adf385eab2b6f2adf964b8bbb87 family=vgc issue='cx-home/v#6']
+  [patch sha=80051ebad0d4c56e44abc4fc5ec44ea01f41838f family=vgc issue='cx-home/v#6']
 ]
