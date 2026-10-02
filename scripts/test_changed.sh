@@ -447,6 +447,10 @@ step_globs() {
     # is exactly where the probe gets written. Same over-including glob as its
     # two siblings for the same reason.
     check-exit-status-probe)       echo '*' ;;
+    # #1749: the shared slot's refusal — the runner and its planted-log
+    # selftest are the step's whole input (the selftest plants its own loop
+    # log and slot, so no other path in the tree can move its verdict).
+    check-build-slot)              echo 'scripts/build-slot.sh scripts/build_slot_selftest.cx' ;;
     # #1450: the isolation guard reads the two bench scripts and its own source;
     # it plants its artifacts, so nothing else in the tree is an input.
     check-bench-isolation)         echo 'scripts/run_bench_json.cx scripts/compare_bench.cx scripts/bench_isolation_selftest.sh' ;;

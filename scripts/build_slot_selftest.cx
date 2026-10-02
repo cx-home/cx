@@ -1,0 +1,134 @@
+# scripts/build_slot_selftest.cx — the shared slot's refusal, proved on planted
+# loop logs (#1749, RULED: INT-8, CXF-1, AGENTS-1).
+#
+# WHY IT EXISTS. On 2026-10-01 19:46Z an agent ran `sh scripts/build-slot.sh sh
+# login.sh` on the shared slot, .build-slot-impl, and login.sh's first line
+# waited `until … RUN-EXIT` on the post-merge loop's log — INSIDE the command
+# the slot was held for. The loop's run (RUN-START 19:34:35Z) reached a step
+# that needed the box quiet and the agent's waiter slept until the loop
+# finished: neither could, for 95 minutes. The rule (AGENT-STANDING-RULES
+# 2026-09-24 rule 5) was that the RUN-EXIT wait happens BEFORE the slot is
+# taken; nothing held it. scripts/build-slot.sh now does: on the shared slot it
+# refuses, exit 2, naming the RUN line and the rule, while the loop's last RUN
+# line is RUN-START, and it refuses a command that is a shell reading the
+# loop's log at any time.
+#
+# THE CASES. Each runs the REAL scripts/build-slot.sh with a clean environment,
+# a slot directory under a temp root whose basename is the shared slot's, and
+# CX_GATE_LOOP_LOG naming a planted loop log — never the main checkout's, so a
+# run of this step under the live loop grades the script, not the loop:
+#   A  shared slot, last RUN line RUN-START   REFUSED, exit 2, the RUN line and
+#                                             #1749 named, the command NOT run
+#   B  shared slot, last RUN line RUN-EXIT    admitted, the command run, exit 0
+#   C  an own slot, last RUN line RUN-START   admitted: only the shared slot is
+#                                             the loop's to wait for
+#   D  shared slot, RUN-EXIT, the command a   REFUSED, exit 2: a shell reading
+#      shell whose script reads the log       the log inside the slot is the
+#                                             10-01 deadlock's shape
+#   E  shared slot, RUN-EXIT, an inline       REFUSED, exit 2, as D
+#      `sh -c` reading the log
+#   F  shared slot, no loop log on the box    admitted: there is no loop to wait
+#                                             for
+#   G  shared slot, the command's status      the status read through the
+#                                             wrapper is the command's own (7)
+#
+# Run via:  cx --allow-read --allow-write --allow-subprocess --allow-env scripts/build_slot_selftest.cx
+# (make check-build-slot). Exit 0 and the count line only when every case holds.
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/path'    as=path]
+
+[?def cat scope=private pure [returns string] ($parts) [$strings:join $parts '']]
+
+# the loop log's two line shapes, as the post-merge loop writes them.
+[?def run-start scope=private pure [returns string] ()
+  "2026-10-01T19:34:35Z dfc9f12f9 RUN-START\n"]
+[?def run-exit scope=private pure [returns string] ()
+  "2026-10-01T19:34:35Z dfc9f12f9 RUN-START\n2026-10-01T21:43:52Z dfc9f12f9 RUN-EXIT=0 passed\n"]
+
+# one run of the wrapper: a clean environment (HOME, PATH, the slot, the loop
+# log), so neither the caller's CX_RUNNER nor its CX_BUILD_SLOT can leak in.
+[?def wrap scope=private impure [returns element] ($root $slot $log $argv)
+  [$process:run [$cat2 ('sh', 'scripts/build-slot.sh') $argv]
+                env={HOME: $root, PATH: [$env:var-or-default 'PATH' '/usr/bin:/bin'],
+                     CX_BUILD_SLOT: [$cat ($root, '/', $slot)], CX_GATE_LOOP_LOG: $log,
+                     BUILD_SLOT_TIMEOUT: '30'}
+                env-clear=true timeout-ms=60000]]
+
+[?def cat2 scope=private pure [returns any] ($a $b) [?to-sequence [?for [in $xs ($a, $b)] [in $x $xs] [yield $x]]]]
+
+[?def said scope=private pure [returns string] ($r) [$cat ([$string $r@stdout], [$string $r@stderr])]]
+
+# a case's verdict: an ok or a bad element, carrying the case id and what held.
+[?def judge scope=private pure [returns element] ($id $held $what $r)
+  [?if $held [then [ok id=$id what=$what]]
+    [else [bad id=$id what=[$cat ($what, ' — exit ', [$string $r@exit-code], ': ', [$strings:trim [$said $r]])]]]]]
+
+[?def refused scope=private pure [returns bool] ($r)
+  [and [= [$string $r@exit-code] '2'] [$strings:contains [$said $r] '#1749']]]
+
+[?let [= $root [$io:temp-dir 'build-slot-selftest']]
+      [= $log [$cat ($root, '/gate-loop.log')]]
+      [= $ran [$cat ($root, '/ran')]]
+      [= $touch ('touch', $ran)]
+      [= $shared '.build-slot-impl']
+
+      # A — the loop is running: the shared slot is refused, the command never runs
+      [= $_a0 [$io:write-file $log [$run-start]]]
+      [= $ra [$wrap $root $shared $log $touch]]
+      [= $a [$judge 'A' [and [$refused $ra] [$strings:contains [$said $ra] 'dfc9f12f9 RUN-START'] [not [$io:exists $ran]]]
+                    'the shared slot is refused while the last RUN line is RUN-START, the line named, the command not run' $ra]]
+
+      # B — a gap: admitted
+      [= $_b0 [$io:write-file $log [$run-exit]]]
+      [= $rb [$wrap $root $shared $log $touch]]
+      [= $b [$judge 'B' [and [= [$string $rb@exit-code] '0'] [$io:exists $ran]]
+                    'the shared slot is taken in a gap (last RUN line RUN-EXIT) and the command runs' $rb]]
+      [= $_b1 [?if [$io:exists $ran] [then [$io:remove $ran]] [else null]]]
+
+      # C — an own slot while the loop runs: admitted
+      [= $_c0 [$io:write-file $log [$run-start]]]
+      [= $rc [$wrap $root '.build-slot-cx-F-selftest' $log $touch]]
+      [= $c [$judge 'C' [and [= [$string $rc@exit-code] '0'] [$io:exists $ran]]
+                    'an own slot is taken while the loop runs: only the shared slot waits for the gap' $rc]]
+      [= $_c1 [?if [$io:exists $ran] [then [$io:remove $ran]] [else null]]]
+
+      # D — a shell whose script waits on the loop's log, inside the slot
+      [= $_d0 [$io:write-file $log [$run-exit]]]
+      [= $script [$cat ($root, '/login.sh')]]
+      [= $_d1 [$io:write-file $script [$cat ("until grep RUN- ", $log, " | tail -1 | grep -q RUN-EXIT; do sleep 60; done\ntouch ", $ran, "\n")]]]
+      [= $rd [$wrap $root $shared $log ('sh', $script)]]
+      [= $d [$judge 'D' [and [$refused $rd] [not [$io:exists $ran]]]
+                    'a shell script reading the loop log is refused inside the shared slot, even in a gap' $rd]]
+
+      # E — the same wait, inline
+      [= $re [$wrap $root $shared $log ('sh', '-c', [$cat ('tail -1 ', $log, ' | grep -q RUN-EXIT && touch ', $ran)])]]
+      [= $e [$judge 'E' [and [$refused $re] [not [$io:exists $ran]]]
+                    'an inline sh -c reading the loop log is refused inside the shared slot' $re]]
+
+      # F — no loop on this box: admitted
+      [= $rf [$wrap $root $shared [$cat ($root, '/no-such-gate-loop.log')] $touch]]
+      [= $f [$judge 'F' [and [= [$string $rf@exit-code] '0'] [$io:exists $ran]]
+                    'with no loop log the shared slot is taken: there is no loop to wait for' $rf]]
+
+      # G — the status read through the wrapper is the command's own
+      [= $rg [$wrap $root $shared $log ('sh', '-c', 'exit 7')]]
+      [= $g [$judge 'G' [= [$string $rg@exit-code] '7'] 'the command status survives the wrapper (7)' $rg]]
+
+      [= $_rm [$io:remove-tree $root]]
+      [= $all ($a, $b, $c, $d, $e, $f, $g)]
+      [= $bad [?to-sequence [?for [in $x $all] [where [= [$name $x] 'bad']] [yield $x]]]]
+      [= $_say [?to-sequence [?for [in $x $all]
+                 [yield [$io:write-line [$env:stdout]
+                          [$cat ('  ', [$string $x@id], [?if [= [$name $x] 'ok'] [then '   ok   '] [else '   FAILED ']],
+                                 [$string $x@what])]]]]]]
+  [?if [= [$count $bad] 0]
+    [then ([$io:write-line [$env:stdout]
+             [$cat ('build-slot selftest (#1749): ', [$string [$count $all]], '/', [$string [$count $all]],
+                    ' — the shared slot refuses a RUN-START and a shell reading the loop log; an own slot, a gap and a box with no loop are admitted; the status is the command')]],
+           [$env:exit 0], ())]
+    [else ([$io:write-line [$env:stderr]
+             [$cat ('build-slot selftest (#1749): ', [$string [$count $bad]], ' of ', [$string [$count $all]], ' case(s) FAILED')]],
+           [$env:exit 1], ())]]]

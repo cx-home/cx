@@ -49,6 +49,71 @@ export CX_BUILD_SLOT="$SLOT"
 TIMEOUT=${BUILD_SLOT_TIMEOUT:-14400}
 [ $# -gt 0 ] || { echo "runner: usage: $0 <command…>" >&2; exit 64; }
 
+# ── THE SHARED SLOT WAITS FOR THE LOOP'S GAP OUTSIDE ITSELF (#1749) ──────────
+# `.build-slot-impl` is the ONE shared slot for load-sensitive steps (RULED:
+# INT-8, D17a), and those run only in a gap of the post-merge loop: the last
+# RUN line of the MAIN checkout's vcx/target/gate-loop.log a RUN-EXIT line,
+# re-read immediately before each step (AGENT-STANDING-RULES 2026-09-24 rule
+# 5). The wait belongs to the caller, BEFORE the slot is taken. Measured
+# 2026-10-01 19:46Z–21:2xZ on dfc9f12f9: `sh scripts/build-slot.sh sh login.sh`
+# held this slot while login.sh's first line waited `until … RUN-EXIT` on the
+# loop's log; the loop's run needed the box quiet and the waiter slept until
+# the run ended — neither could, for 95 minutes. So on the shared slot this
+# wrapper REFUSES, exit 2, naming the RUN line and the rule — never a silent
+# wait — (a) while that last RUN line is RUN-START, read on arrival and again
+# the moment the slot is taken, and (b) for a command that is a shell reading
+# the loop's log at all (`sh <file>` whose file names gate-loop.log, or
+# `sh -c '<text naming it>'`, at any position of the argv: `devbox run -- sh
+# pipeline.sh` is the same shape). Every other slot is untouched: the loop's
+# own steps hold `.build-slot`, and an agent's own `.build-slot-<dir>` waits
+# for nobody. CX_GATE_LOOP_LOG names the log (scripts/build_slot_selftest.cx
+# plants one); by default it is the first row of `git worktree list`'s
+# vcx/target/gate-loop.log. With no such file there is no loop to wait for.
+shared_slot=0
+[ "$(basename "$SLOT")" = ".build-slot-impl" ] && shared_slot=1
+loop_log() {
+	if [ -n "${CX_GATE_LOOP_LOG:-}" ]; then printf '%s' "$CX_GATE_LOOP_LOG"; return 0; fi
+	_main=$(git worktree list --porcelain 2>/dev/null | sed -n '1s/^worktree //p')
+	[ -n "$_main" ] && printf '%s/vcx/target/gate-loop.log' "$_main"
+}
+refuse_1749() { # refuse_1749 <why>
+	echo "runner: REFUSED (#1749) — $1" >&2
+	echo "runner: the shared slot $SLOT is taken only in a gap of the post-merge loop: wait for RUN-EXIT in YOUR foreground \`until\` loop BEFORE taking it, never inside the slot-held command (AGENT-STANDING-RULES 2026-09-24 rule 5; RULED: INT-8, CXF-1, AGENTS-1)" >&2
+	exit 2
+}
+# loop_running — 0 when the loop's last RUN line is RUN-START; it prints the line.
+loop_running() {
+	_log=$(loop_log)
+	[ -n "$_log" ] && [ -f "$_log" ] || return 1
+	_line=$(grep ' RUN-' "$_log" 2>/dev/null | tail -n 1)
+	case "$_line" in
+		*' RUN-START'*) printf '%s' "$_line"; return 0 ;;
+	esac
+	return 1
+}
+# reads_loop_log <argv…> — 0 when a shell in the argv reads the loop's log.
+reads_loop_log() {
+	_sh=0
+	for _a in "$@"; do
+		if [ "$_sh" -eq 1 ]; then
+			case "$_a" in *gate-loop.log*) return 0 ;; esac
+			if [ -f "$_a" ] && grep -q 'gate-loop\.log' "$_a" 2>/dev/null; then return 0; fi
+		fi
+		case "$(basename -- "$_a")" in
+			sh|bash|zsh|dash|ksh) _sh=1 ;;
+		esac
+	done
+	return 1
+}
+if [ "$shared_slot" -eq 1 ]; then
+	if reads_loop_log "$@"; then
+		refuse_1749 "the command is a shell that reads the post-merge loop's log ($(loop_log)); a wait for the loop inside the shared slot is the 2026-10-01 deadlock"
+	fi
+	if run_line=$(loop_running); then
+		refuse_1749 "the post-merge loop is running: the last RUN line of $(loop_log) is \`$run_line\`"
+	fi
+fi
+
 # FIFO: every waiter files a ticket; only the OLDEST live ticket may take the
 # runner. Without this, waiters raced on mkdir every 15 s and one starved for an
 # hour behind newer arrivals (measured 2026-09-08 02:29).
@@ -81,6 +146,12 @@ while :; do
 	waited=$((waited + 15))
 done
 rm -f "$ticket"
+# the loop may have started while this waiter queued: read the line again now
+# that the slot is held, and give it back rather than run inside a RUN-START.
+if [ "$shared_slot" -eq 1 ] && run_line=$(loop_running); then
+	rm -rf "$SLOT"
+	refuse_1749 "the post-merge loop started while this command queued: the last RUN line of $(loop_log) is \`$run_line\`"
+fi
 echo "$$" > "$SLOT/pid"
 printf '%s\n' "$*" > "$SLOT/cmd"
 pwd > "$SLOT/cwd"
