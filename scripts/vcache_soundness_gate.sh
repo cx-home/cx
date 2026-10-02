@@ -495,7 +495,10 @@ pub fn probe() string {
 EOF
 vbuild "dup A(S2) FAILED" -usecache -o pa2 prog.v
 find "$VCACHE" -name '*.mb.o' -delete   # force on-demand fresh mb next to whatever ma state survives
-"$V" -usecache -d cfgb -o pb2 prog.v > "$D/b2.log" 2>&1
+"$V" -usecache -d cfgb -o pb2 prog.v > "$D/b2.log" 2>&1 || {
+  # its log is read for `duplicate symbol` below; a refusal of any other kind
+  # prints its words too (REFUTE-1: a LINK-FAILED with nothing beside it).
+  echo "dup B(S2) FAILED (exit $?) — the compiler said:"; tail -n 40 "$D/b2.log" | sed 's/^/    | /'; }
 # S2 sources: ma.probe()='a', mb.probe()=gate_shared().str()='2'
 verdict "DUP-572-class" "a2" "$([ -x ./pb2 ] && ./pb2 2>/dev/null || echo LINK-FAILED)"
 grep -iE 'duplicate symbol' "$D/b2.log" | head -2 || true

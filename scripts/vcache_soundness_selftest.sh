@@ -82,8 +82,11 @@ trap 'rm -f "$LOG_A" "$LOG_B" "$LOG_C"; rm -rf "$FAKE_DIR"' EXIT
 printf '#!/bin/sh\necho "planted-v: refused this build (args: $*) - selftest C diagnostic" >&2\nexit 1\n' > "$FAKE_DIR/v"
 chmod +x "$FAKE_DIR/v"
 CX_V="$FAKE_DIR/v" bash scripts/vcache_soundness_gate.sh >"$LOG_C" 2>&1
-if grep -q 'base build1 FAILED' "$LOG_C" && grep -q 'planted-v: refused this build' "$LOG_C"; then
-  echo "  ok   C: the planted compiler's refusal is in the log beside 'base build1 FAILED'"
+# and the DUP probe's second build, which wrote its own log file and printed
+# only `duplicate symbol` lines from it (REFUTE-1, 2026-10-02): its words too.
+if grep -q 'base build1 FAILED' "$LOG_C" && grep -q 'planted-v: refused this build' "$LOG_C" \
+   && grep -A1 'dup B(S2) FAILED' "$LOG_C" | grep -q 'planted-v: refused this build'; then
+  echo "  ok   C: the planted compiler's refusal is in the log beside 'base build1 FAILED', the DUP probe's pb2 build included"
 else
   echo "  FAIL C: the failed build's compiler output is not in the gate's log"
   grep -n 'FAILED' "$LOG_C" | head -5 | sed 's/^/        /'
