@@ -9,6 +9,7 @@
 #      scripts/run_bench_json.cx                  # emit JSON to stdout
 #   cx … scripts/run_bench_json.cx -o bench.json  # write to file
 #   cx … scripts/run_bench_json.cx --include-eval # add the T1 evaluator bench
+#   cx … scripts/run_bench_json.cx --harness-cx   # print the cx the rows time (#1751)
 #   (or: make bench-json)
 #
 # Output schema:
@@ -48,7 +49,18 @@
 
 [?const ARG_SPEC [argspec
   [flag name="output"       short="o" type=string]
-  [flag name="include-eval"           type=bool]]]
+  [flag name="include-eval"           type=bool]
+  [flag name="harness-cx"             type=bool]]]
+
+# #1751 — the cx the fmt and convert rows time is the cx RUNNING this script
+# (`make perf-ratchet` runs it with the release front door,
+# deps/cx-core-code/vcx/target/cx). Both rows named the literal `vcx/target/cx`
+# until #1751: #1682 retired that path, no worktree has it (E_PROC_NOT_FOUND
+# then flowed as an err item into [$map:merge] and the artifact carried no
+# `benchmarks`), and the main checkout's stale copy would have timed a
+# different build. `--harness-cx` prints this one resolution and exits, so
+# scripts/bench_isolation_selftest.sh grades it without running the bench.
+[?def bench-cx scope=public impure () [$env:executable-path]]
 
 # The T1 rows this gate REQUIRES, as a closed set (#759). Parsing whatever
 # happens to appear is what let the whole bench die unnoticed: every program
@@ -273,7 +285,7 @@
     [= $_w [$io:write-file $path [$fmt-bench-doc]]]
     [= $samples [?for [in $i [$range 1 5]]
       [= $t0 [$time:monotonic-now]]
-      [= $r [$process:run ('vcx/target/cx', 'fmt', $path)]]
+      [= $r [$process:run ([$bench-cx], 'fmt', $path)]]
       [= $t1 [$time:monotonic-now]]
       [where [= $r@exit-code 0]]
       [yield [/ [- $t1 $t0] 1000000.0e0]]]]
@@ -312,7 +324,7 @@
     [= $_w [$io:write-file $path [$convert-bench-doc]]]
     [= $runs [?for [in $i [$range 1 3]]
       [= $t0 [$time:monotonic-now]]
-      [= $r [$process:run ('vcx/target/cx', '--from=json', '--to=json', $path) env=[map VGC_GCTRACE="1"] capture=:stderr]]
+      [= $r [$process:run ([$bench-cx], '--from=json', '--to=json', $path) env=[map VGC_GCTRACE="1"] capture=:stderr]]
       [= $t1 [$time:monotonic-now]]
       [where [= $r@exit-code 0]]
       [yield {ms: [/ [- $t1 $t0] 1000000.0e0], arenas: [$trace-peak-arenas [$string $r@stderr]]}]]]
@@ -324,8 +336,11 @@
 
 [?let
   [= $args [?fallback [$env:parse-args ARG_SPEC]
-             [recover-with ([$cry 'usage: run_bench_json.cx [-o FILE] [--include-eval]'],
+             [recover-with ([$cry 'usage: run_bench_json.cx [-o FILE] [--include-eval] [--harness-cx]'],
                             [$env:exit 2], null)]]]
+  [= $_probe [?if [?else [$env:flag $args 'harness-cx'] false]
+               [then [?let [= $_p [$say [$bench-cx]]] [$env:exit 0]]]
+               [else null]]]
   [; an unpassed string flag surfaces as null — normalize to ''. ]
   [= $output-raw [?else [$env:flag $args 'output'] '']]
   [= $output [?if [= $output-raw null] [then ''] [else $output-raw]]]
