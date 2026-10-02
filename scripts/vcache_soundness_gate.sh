@@ -107,6 +107,22 @@ verdict() { # $1 probe  $2 expected  $3 observed
   fi
 }
 
+# vbuild <label> <v-args…> — one probe build, its status the compiler's. A
+# failure prints <label> and then the compiler's own last 40 lines (#1660):
+# the daily union on a300db043 red POISON on `po build1 FAILED` and nothing
+# else, because every build here ran `"$V" … >/dev/null 2>&1`, so a red
+# probe could not be classified from the log. The output goes to a file under
+# $WORK (removed with it), never a pipe, so a hung compiler cannot hold one.
+vbuild() {
+  _vb_label=$1; shift
+  "$V" "$@" > "$WORK/.vbuild.log" 2>&1
+  _vb_rc=$?
+  [ "$_vb_rc" -eq 0 ] && return 0
+  echo "$_vb_label (exit $_vb_rc) — the compiler said:"
+  tail -n 40 "$WORK/.vbuild.log" | sed 's/^/    | /'
+  return "$_vb_rc"
+}
+
 # mkfix <dir>  — writes prog.v importing mymod; caller writes mymod/mymod.v.
 mkfix() {
   rm -rf "$WORK/$1"; mkdir -p "$WORK/$1/mymod"
@@ -225,14 +241,14 @@ pub fn probe() string {
 }
 EOF
 cd "$WORK/base"; export VCACHE="$WORK/base/.vcache"
-"$V" -usecache -o p1 prog.v >/dev/null 2>&1 || echo "base build1 FAILED"
+vbuild "base build1 FAILED" -usecache -o p1 prog.v
 s1=$(osnap)
-"$V" -usecache -o p2 prog.v >/dev/null 2>&1 || echo "base build2 FAILED"
+vbuild "base build2 FAILED" -usecache -o p2 prog.v
 s2=$(osnap)
 hit=$([ "$s1" = "$s2" ] && echo HIT || echo MISS)
 verdict "hit-identity" "HIT" "$hit"
 mutate mymod/mymod.v "s/'S1'/'S2'/"
-"$V" -usecache -o p3 prog.v >/dev/null 2>&1 || echo "base build3 FAILED"
+vbuild "base build3 FAILED" -usecache -o p3 prog.v
 verdict "src-invalidate" "S2" "$(./p3 2>/dev/null || echo BUILD-FAILED)"
 
 # ── H1 cc-identity ───────────────────────────────────────────────────────────
@@ -250,11 +266,11 @@ REALCC=$(command -v clang || command -v gcc)
 printf '#!/bin/sh\nexec %s "$@"\n' "$REALCC" > "$WORK/h1/bin/mycc"
 chmod +x "$WORK/h1/bin/mycc"
 cd "$WORK/h1"; export VCACHE="$WORK/h1/.vcache"
-"$V" -usecache -cc "$WORK/h1/bin/mycc" -o p1 prog.v >/dev/null 2>&1 || echo "h1 build1 FAILED"
+vbuild "h1 build1 FAILED" -usecache -cc "$WORK/h1/bin/mycc" -o p1 prog.v
 s1=$(osnap)
 sleep 1
 printf '#!/bin/sh\n# generation 2 of the same-named compiler\nexec %s "$@"\n' "$REALCC" > "$WORK/h1/bin/mycc"
-"$V" -usecache -cc "$WORK/h1/bin/mycc" -o p2 prog.v >/dev/null 2>&1 || echo "h1 build2 FAILED"
+vbuild "h1 build2 FAILED" -usecache -cc "$WORK/h1/bin/mycc" -o p2 prog.v
 s2=$(osnap)
 miss=$([ "$s1" = "$s2" ] && echo HIT || echo MISS)
 verdict "H1-cc-identity" "MISS" "$miss"
@@ -270,8 +286,8 @@ pub fn probe() string {
 }
 EOF
 cd "$WORK/h2"; export VCACHE="$WORK/h2/.vcache"
-"$V" -usecache -d lvl=one -o p1 prog.v >/dev/null 2>&1 || echo "h2 build1 FAILED"
-"$V" -usecache -d lvl=two -o p2 prog.v >/dev/null 2>&1 || echo "h2 build2 FAILED"
+vbuild "h2 build1 FAILED" -usecache -d lvl=one -o p1 prog.v
+vbuild "h2 build2 FAILED" -usecache -d lvl=two -o p2 prog.v
 verdict "H2-define-value" "two" "$(./p2 2>/dev/null || echo BUILD-FAILED)"
 
 # ── H3 cross-config staleness ────────────────────────────────────────────────
@@ -285,11 +301,11 @@ pub fn probe() string {
 }
 EOF
 cd "$WORK/h3"; export VCACHE="$WORK/h3/.vcache"
-"$V" -usecache -o pa prog.v >/dev/null 2>&1 || echo "h3 A1 FAILED"
-"$V" -usecache -d cfgb -o pb prog.v >/dev/null 2>&1 || echo "h3 B1 FAILED"
+vbuild "h3 A1 FAILED" -usecache -o pa prog.v
+vbuild "h3 B1 FAILED" -usecache -d cfgb -o pb prog.v
 mutate mymod/mymod.v "s/'S1'/'S2'/"
-"$V" -usecache -o pa2 prog.v >/dev/null 2>&1 || echo "h3 A2 FAILED"
-"$V" -usecache -d cfgb -o pb2 prog.v >/dev/null 2>&1 || echo "h3 B2 FAILED"
+vbuild "h3 A2 FAILED" -usecache -o pa2 prog.v
+vbuild "h3 B2 FAILED" -usecache -d cfgb -o pb2 prog.v
 verdict "H3-configA" "S2" "$(./pa2 2>/dev/null || echo BUILD-FAILED)"
 verdict "H3-configB" "S2" "$(./pb2 2>/dev/null || echo BUILD-FAILED)"
 
@@ -307,9 +323,9 @@ pub fn probe() string {
 EOF
 echo 'T1 @name' > "$WORK/h5/mymod/probe.txt"
 cd "$WORK/h5"; export VCACHE="$WORK/h5/.vcache"
-"$V" -usecache -o p1 prog.v >/dev/null 2>&1 || echo "h5 build1 FAILED"
+vbuild "h5 build1 FAILED" -usecache -o p1 prog.v
 echo 'T2 @name' > "$WORK/h5/mymod/probe.txt"
-"$V" -usecache -o p2 prog.v >/dev/null 2>&1 || echo "h5 build2 FAILED"
+vbuild "h5 build2 FAILED" -usecache -o p2 prog.v
 verdict "H5-tmpl" "T2" "$(./p2 2>/dev/null | head -1 | cut -d' ' -f1 || echo BUILD-FAILED)"
 
 # ── H6 $env ──────────────────────────────────────────────────────────────────
@@ -323,8 +339,8 @@ pub fn probe() string {
 }
 EOF
 cd "$WORK/h6"; export VCACHE="$WORK/h6/.vcache"
-VCACHE_GATE_PROBE_ENV=alpha "$V" -usecache -o p1 prog.v >/dev/null 2>&1 || echo "h6 build1 FAILED"
-VCACHE_GATE_PROBE_ENV=beta "$V" -usecache -o p2 prog.v >/dev/null 2>&1 || echo "h6 build2 FAILED"
+VCACHE_GATE_PROBE_ENV=alpha vbuild "h6 build1 FAILED" -usecache -o p1 prog.v
+VCACHE_GATE_PROBE_ENV=beta vbuild "h6 build2 FAILED" -usecache -o p2 prog.v
 verdict "H6-env" "beta" "$(./p2 2>/dev/null || echo BUILD-FAILED)"
 
 # ── H7 C header ──────────────────────────────────────────────────────────────
@@ -345,9 +361,9 @@ pub fn probe() string {
 }
 EOF
 cd "$WORK/h7"; export VCACHE="$WORK/h7/.vcache"
-"$V" -usecache -o p1 prog.v >/dev/null 2>&1 || echo "h7 build1 FAILED"
+vbuild "h7 build1 FAILED" -usecache -o p1 prog.v
 mutate "$WORK/h7/mymod/extra.h" 's/return 1;/return 2;/'
-"$V" -usecache -o p2 prog.v >/dev/null 2>&1 || echo "h7 build2 FAILED"
+vbuild "h7 build2 FAILED" -usecache -o p2 prog.v
 verdict "H7-c-header" "2" "$(./p2 2>/dev/null || echo BUILD-FAILED)"
 
 # ── H4 fail-closed on failed rebuild ─────────────────────────────────────────
@@ -368,11 +384,13 @@ pub fn probe() string {
 }
 EOF
 cd "$WORK/h4"; export VCACHE="$WORK/h4/.vcache"
-"$V" -usecache -o p1 prog.v >/dev/null 2>&1 || echo "h4 build1 FAILED"
+vbuild "h4 build1 FAILED" -usecache -o p1 prog.v
 mv "$WORK/h4/mymod/extra.h" "$WORK/h4/extra.h.saved"
 mutate mymod/mymod.v "s/'A'/'B'/"
-"$V" -usecache -o p2 prog.v >/dev/null 2>&1
+"$V" -usecache -o p2 prog.v > "$WORK/.vbuild.log" 2>&1
 rc2=$?
+# a refusal here is the LOUD answer the probe accepts; its words are kept (#1660).
+[ $rc2 -ne 0 ] && { echo "h4 build2 refused (exit $rc2) — the compiler said:"; tail -n 40 "$WORK/.vbuild.log" | sed 's/^/    | /'; }
 o2=$([ -x ./p2 ] && ./p2 2>/dev/null || echo BUILD-FAILED)
 # While the cause persists, silently-stale output is the one forbidden result:
 if [ $rc2 -ne 0 ] || [ "$o2" = "B1" ]; then
@@ -381,7 +399,7 @@ else
   verdict "H4-during-failure" "loud-or-current" "silently-stale:$o2"
 fi
 mv "$WORK/h4/extra.h.saved" "$WORK/h4/mymod/extra.h"
-"$V" -usecache -o p3 prog.v >/dev/null 2>&1 || echo "h4 build3 FAILED"
+vbuild "h4 build3 FAILED" -usecache -o p3 prog.v
 verdict "H4-recovery" "B1" "$(./p3 2>/dev/null || echo BUILD-FAILED)"
 
 # ── POISON planted .o (and the --prove-red forgery) ─────────────────────────
@@ -403,10 +421,10 @@ pub fn probe() string {
 }
 EOF
 cd "$WORK/po-evil"; export VCACHE="$WORK/po-evil/.vcache"
-"$V" -usecache -o pe prog.v >/dev/null 2>&1 || echo "po-evil build FAILED"
+vbuild "po-evil build FAILED" -usecache -o pe prog.v
 evil_o=$(find "$VCACHE" -name '*mymod.o' | head -1)
 cd "$WORK/po"; export VCACHE="$WORK/po/.vcache"
-"$V" -usecache -o p1 prog.v >/dev/null 2>&1 || echo "po build1 FAILED"
+vbuild "po build1 FAILED" -usecache -o p1 prog.v
 good_o=$(find "$VCACHE" -name '*mymod.o' | head -1)
 cp "$evil_o" "$good_o"
 if [ "$MODE" = "--prove-red" ]; then
@@ -426,7 +444,7 @@ if [ "$MODE" = "--prove-red" ]; then
   fi
 fi
 rm -f ./p2
-"$V" -usecache -o p2 prog.v >/dev/null 2>&1 || echo "po build2 FAILED (loud rejection is acceptable)"
+vbuild "po build2 FAILED (loud rejection is acceptable)" -usecache -o p2 prog.v
 po_obs=$([ -x ./p2 ] && ./p2 2>/dev/null || echo BUILD-REFUSED)
 verdict "POISON" "GOOD" "$po_obs"
 
@@ -454,8 +472,8 @@ pub fn probe() string {
 }
 EOF
 cd "$D"; export VCACHE="$D/.vcache"
-"$V" -usecache -o pa prog.v >/dev/null 2>&1 || echo "dup A(S1) FAILED"
-"$V" -usecache -d cfgb -o pb prog.v >/dev/null 2>&1 || echo "dup B(S1) FAILED"
+vbuild "dup A(S1) FAILED" -usecache -o pa prog.v
+vbuild "dup B(S1) FAILED" -usecache -d cfgb -o pb prog.v
 cat > "$D/ma/ma.v" <<'EOF'
 module ma
 
@@ -475,9 +493,12 @@ pub fn probe() string {
 	return gate_shared().str()
 }
 EOF
-"$V" -usecache -o pa2 prog.v >/dev/null 2>&1 || echo "dup A(S2) FAILED"
+vbuild "dup A(S2) FAILED" -usecache -o pa2 prog.v
 find "$VCACHE" -name '*.mb.o' -delete   # force on-demand fresh mb next to whatever ma state survives
-"$V" -usecache -d cfgb -o pb2 prog.v > "$D/b2.log" 2>&1
+"$V" -usecache -d cfgb -o pb2 prog.v > "$D/b2.log" 2>&1 || {
+  # its log is read for `duplicate symbol` below; a refusal of any other kind
+  # prints its words too (REFUTE-1: a LINK-FAILED with nothing beside it).
+  echo "dup B(S2) FAILED (exit $?) — the compiler said:"; tail -n 40 "$D/b2.log" | sed 's/^/    | /'; }
 # S2 sources: ma.probe()='a', mb.probe()=gate_shared().str()='2'
 verdict "DUP-572-class" "a2" "$([ -x ./pb2 ] && ./pb2 2>/dev/null || echo LINK-FAILED)"
 grep -iE 'duplicate symbol' "$D/b2.log" | head -2 || true
@@ -493,7 +514,7 @@ pub fn probe() string {
 }
 EOF
 cd "$WORK/kc"; export VCACHE="$WORK/kc/.vcache"
-"$V" -usecache -o p1 prog.v >/dev/null 2>&1 || echo "kc build FAILED"
+vbuild "kc build FAILED" -usecache -o p1 prog.v
 nb=$(find "$VCACHE" -name '*.module.*builtin.o' | grep -cv 'closure' || true)
 verdict "KEY-CANON-builtin" "1" "$nb"
 
@@ -532,7 +553,7 @@ fn main() {
 }
 EOF
 cd "$WORK/h11"; export VCACHE="$WORK/h11/.vcache"
-"$V" -usecache -o p1 prog.v > "$WORK/h11/build.log" 2>&1 || echo "h11 build FAILED"
+vbuild "h11 build FAILED" -usecache -o p1 prog.v
 verdict "H11-closure-link-set" "42" "$([ -x ./p1 ] && ./p1 2>/dev/null || echo LINK-FAILED)"
 # and the opposite failure mode: bundling inline must not ALSO link the object.
 ndef=$(nm ./p1 2>/dev/null | grep -cE ' T _?builtin__closure__closure_init$' || true)
