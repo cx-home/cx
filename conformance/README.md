@@ -129,6 +129,19 @@ travels with the file and from which `gates.cxd` is derived; unset everywhere
 = enforced. Advisory cases run and report but never block; pending/skip are
 excluded and counted.
 
+An advisory case is a sanctioned red, so it names the OPEN issue its red is
+tracked by: `issue='<owner>/<repo>#<n>'` on the case, or on its
+`[test-suite]` element (required there with `gate=advisory`), resolved
+per-case > element exactly as `gate=` is (RULED: QUAL-1 (b)). `cx corpus` and
+the fixture shards refuse a file with an advisory case naming no issue, or an
+`issue=` that is not such a reference, naming every such case; a case made
+advisory by the policy's suite default alone and naming no issue is graded
+enforced. `make advisory-audit` (`scripts/advisory_audit_check.cx`, its
+corpus `advisory_audit.cxd`) lists every advisory case in this tree and in
+every pinned repository with its issue's state, and refuses one whose issue is
+closed, unreadable, or outside the current release (its label, its milestone,
+or a title beginning with the release).
+
 ## Runners and steps (reference implementation)
 
 | Suite | Runner | Make target |

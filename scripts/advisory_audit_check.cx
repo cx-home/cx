@@ -1,0 +1,132 @@
+# scripts/advisory_audit_check.cx — the advisory audit over the real tree
+# (ADVIS-1; RULED: QUAL-1 (b)). Written in CX (AGENTS.md rule 6); the body of
+# `make advisory-audit`.
+#
+# It reads every corpus file this checkout grades — the tracked `*.cxd` of
+# this tree and of every pinned repository under deps/ — and, for each
+# `[case …]` whose resolved gate is advisory (its own gate=, else its
+# [test-suite] element's), the issue it names (its own issue=, else the
+# element's). Each distinct reference is read from GitHub with `gh issue view`
+# (its state, labels, milestone and title), and the verdict is
+# `[$aa:check …]` from scripts/advisory_audit.cx: every advisory case listed
+# with its issue's state, then `ok` or one line per refusal — an advisory case
+# naming no issue or a malformed one, an issue that could not be read, one
+# that is closed, one outside the current release. conformance/advisory_audit.cxd
+# pins those verdicts over described inputs; this is the same function over
+# the real ones.
+#
+# What it does not walk, and why: `*/testdata/*` — a runner's own fixtures
+# (cx-core-code's vcx/tests/testdata/corpus_verb/ carries advisory cases
+# naming 'example/fixture#1' and cases that name nothing ON PURPOSE, to prove
+# the runner refuses them). They are not corpora, and an audit that reported
+# them would cry wolf on the fixtures of the rule it enforces.
+#
+# The release is 'v' + VERSION's major.minor, derived (AGENTS.md rule 5).
+#
+# Run from the checkout root (the paths below are cwd-relative):
+#   cx --allow-read --allow-write --allow-subprocess scripts/advisory_audit_check.cx
+# ALL THREE GRANTS ARE LOAD-BEARING: it reads the tree, writes to stdout, and
+# runs git and gh. It needs gh authenticated for every repository a case names;
+# a lookup that fails is an ADVISORY-UNREAD refusal, never a pass.
+#
+# Exit: 0 every advisory case names an open issue in the current release;
+#       1 a refusal; 2 not at a checkout root (no VERSION).
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+[?lib './scripts/advisory_audit.cx' as=aa]
+
+[?def run-out scope=private impure [returns string] ($argv)
+  [?let [= $r [$process:run $argv timeout-ms=120000]]
+    [?if [= [$string $r@exit-code] "0"] [then [$string $r@stdout]] [else ""]]]]
+
+# 'v' + major.minor of the VERSION file's first line.
+[?def release-of scope=private impure [returns string] ()
+  [?let [= $parts [$strings:split [$strings:trim [$io:read-file "VERSION"]] "."]]
+    [$concat "v" [$first $parts] "." [$first [?for [in $p [?drop 1 $parts]] [yield $p]]]]]]
+
+# The repositories this checkout grades: this tree, and every pinned checkout.
+[?def repos scope=private impure ()
+  [?to-sequence [?concat
+    ([repo name='cx-private' dir='.'])
+    [?for [in $d [$io:glob "deps/*"]]
+      [where [$io:is-directory [$concat $d "/.git"]]]
+      [yield [repo name=[$path:basename $d] dir=$d]]]]]]
+
+# The [test-suite] element of a parsed corpus file: the file IS the element
+# when it holds one top-level form, else the first [test-suite] in it.
+[?def suite-of scope=private pure ($t)
+  [?if [= [$name $t] "test-suite"]
+    [then $t]
+    [else [$first [?for [in $s $t//test-suite] [yield $s]]]]]]
+
+[?def advisory-cases-of scope=private impure ($repo $file::string)
+  [?let
+    [= $text [$io:read-file [$concat [$string $repo@dir] "/" $file]]]
+    [?if [not [$strings:contains $text "advisory"]]
+      [then ()]
+      [else
+        [?let
+          [= $s [$suite-of [$cx:parse $text]]]
+          [?if [not [$present $s]]
+            [then ()]
+            [else
+              [?let
+                [= $sgate [$string [?else $s@gate ""]]]
+                [= $sissue [$string [?else $s@issue ""]]]
+                [?to-sequence
+                  [?for [in $c $s/case]
+                    [= $g [$string [?else $c@gate $sgate]]]
+                    [where [= $g "advisory"]]
+                    [yield [advisory repo=[$string $repo@name] file=$file id=[$string $c@id]
+                                     issue=[$string [?else $c@issue $sissue]]]]]]]]]]]]]]
+
+[?def corpus-files scope=private impure ($repo)
+  [?for [in $f [$strings:split-lines [$run-out ("git", "-C", [$string $repo@dir], "ls-files", "--", "*.cxd")]]]
+    [where [not [= [$strings:trim $f] ""]]]
+    [where [not [$strings:contains [$concat "/" $f] "/testdata/"]]]
+    [yield $f]]]
+
+# One [issue …] row per reference, read from GitHub. A lookup that fails is
+# read=false with the reason — never an open issue by default.
+[?def issue-row scope=private impure ($ref::string)
+  [?let
+    [= $halves [$strings:split $ref "#"]]
+    [= $repo [$nth $halves 1]]
+    [= $num [$nth $halves 2]]
+    [= $r [$process:run ("gh", "issue", "view", $num, "-R", $repo, "--json", "state,labels,milestone,title",
+                         "--jq", "[.state, (.milestone.title // \"\"), ([.labels[].name] | join(\",\")), .title] | @tsv")
+                        timeout-ms=120000]]
+    [?if [not [= [$string $r@exit-code] "0"]]
+      [then [issue ref=$ref read=false
+                   why=[$concat "gh issue view exit " [$string $r@exit-code] ": "
+                                [$strings:trim [$string $r@stderr]]]]]
+      [else
+        [?let [= $f [$strings:split [$strings:trim-end [$string $r@stdout]] "\t"]]
+          [issue ref=$ref read=true
+                 state=[$string [?else [$first $f] ""]]
+                 milestone=[$string [?else [$first [?drop 1 $f]] ""]]
+                 labels=[$string [?else [$first [?drop 2 $f]] ""]]
+                 title=[$strings:join [?to-sequence [?drop 3 $f]] "\t"]]]]]]]
+
+[?if [not [$io:is-file "VERSION"]]
+  [then [?let [= $_e [$io:write-line [$env:stderr]
+                       "advisory_audit_check: no VERSION under the working directory -- run from the checkout root"]]
+          [$env:exit 2]]]
+  [else
+    [?let
+      [= $release [$release-of]]
+      [= $cases-seq [?to-sequence [?for [in $r [$repos]] [in $f [$corpus-files $r]]
+                                    [in $c [$advisory-cases-of $r $f]] [yield $c]]]]
+      [= $cases [cases [?splice $cases-seq]]]
+      [= $refs [$distinct [?for [in $c $cases-seq] [= $ref [$string $c@issue]]
+                            [where [$aa:issue-ref $ref]] [yield $ref]]]]
+      [= $issues [issues [?splice [?to-sequence [?for [in $ref $refs] [yield [$issue-row $ref]]]]]]]
+      [= $v [$aa:check $cases $issues $release]]
+      [= $_l [?if [> [$count $cases-seq] 0] [then [$io:write-line [$env:stdout] [$aa:listing $cases $issues]]] [else null]]]
+      [= $_w [$io:write-line [$env:stdout] [$aa:report $v]]]
+      [$env:exit [?if [$aa:ok $v] [then 0] [else 1]]]]]]

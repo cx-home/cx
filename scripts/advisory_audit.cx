@@ -1,0 +1,150 @@
+# scripts/advisory_audit.cx — the advisory audit (ADVIS-1; RULED: QUAL-1 (b)).
+# Written in CX (AGENTS.md rule 6). A library: pure functions, no effects;
+# scripts/advisory_audit_check.cx reads the tree and GitHub and calls it, and
+# conformance/advisory_audit.cxd is its executable half.
+#
+# THE RULE. An advisory case is a sanctioned red — run, reported, never
+# blocking — and a red nobody tracks is a false sense of progress. So every
+# advisory case in every corpus names the OPEN issue its red is tracked by,
+# `issue='<owner>/<repo>#<n>'` on the case or on its [test-suite] element, and
+# that issue is in the CURRENT release: it carries the release's label, or its
+# milestone, or (the component repositories' convention) a title beginning
+# with the release and a space. The binary holds the offline half — `cx
+# corpus` and the fixture shards refuse an advisory case with no issue= or a
+# malformed one (the shared loader's gate_refusal). This check holds the half
+# only GitHub can answer, and refuses
+#
+#   no-issue     an advisory case that names no issue (the loader refuses it
+#                too; the audit says so rather than assuming the runner ran);
+#   bad-issue    an issue= that is not '<owner>/<repo>#<n>';
+#   unread       an issue the audit could not read — a lookup that failed is
+#                never taken for an open issue;
+#   closed       an issue whose state is not OPEN — the red outlived the issue
+#                that tracked it: fix the case or file its successor;
+#   off-release  an open issue that carries neither the release's label nor
+#                its milestone nor a title beginning with the release.
+#
+# The arguments:
+#   $cases    [cases [advisory repo=R file=F id=I issue=X] …] — one row per
+#             case whose resolved gate is advisory, issue= ABSENT when it
+#             names none;
+#   $issues   [issues [issue ref=X read=true state=S labels='a,b'
+#             milestone=M title=T] …] — one row per distinct reference the
+#             cases name, read=false (with why=) when the lookup failed;
+#   $release  the release's label, 'v' + VERSION's major.minor.
+
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/re'      as=re]
+
+[?def attr-or scope=private pure [returns string] ($e $name::string)
+  [$string [?else [$attr $e $name] ""]]]
+
+# '<owner>/<repo>#<n>': owner and repository of letters, digits, '-', '_' and
+# '.', an issue number with no leading zero — the loader's is_issue_ref.
+[?def issue-ref scope=public pure [returns bool] ($s::string)
+  [$re:matches [$re:compile '^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+#[1-9][0-9]*$'] $s]]
+
+[?def member scope=private pure [returns bool] ($x::string $csv::string)
+  [> [$count [?for [in $y [$strings:split $csv ","]]
+               [where [= [$strings:trim $y] $x]] [yield 1]]] 0]]
+
+# An open issue is in the release when it carries the release's label, its
+# milestone, or a title beginning with the release and a space.
+[?def in-release scope=public pure [returns bool] ($i $release::string)
+  [or [$member $release [$attr-or $i "labels"]]
+      [= [$attr-or $i "milestone"] $release]
+      [$strings:starts-with [$attr-or $i "title"] [$concat $release " "]]]]
+
+[?def lookup scope=private pure ($issues $ref::string)
+  [$first [?for [in $i $issues/issue] [where [= [$attr-or $i "ref"] $ref]] [yield $i]]]]
+
+# The one verdict a case gets: '' when its issue is open and in the release,
+# else the refusal kind.
+[?def kind-of scope=private pure [returns string] ($c $issues $release::string)
+  [?let
+    [= $ref [$attr-or $c "issue"]]
+    [= $i [$lookup $issues $ref]]
+    [?if [= $ref ""] [then "no-issue"]
+    [else [?if [not [$issue-ref $ref]] [then "bad-issue"]
+    [else [?if [not [$present $i]] [then "unread"]
+    [else [?if [not [= [$attr-or $i "read"] "true"]] [then "unread"]
+    [else [?if [not [= [$attr-or $i "state"] "OPEN"]] [then "closed"]
+    [else [?if [not [$in-release $i $release]] [then "off-release"]
+    [else ""]]]]]]]]]]]]]]
+
+[?def check scope=public pure ($cases $issues $release::string)
+  [?let
+    [= $rows
+      [?for [in $c $cases/advisory]
+        [= $ref [$attr-or $c "issue"]]
+        [= $i [$lookup $issues $ref]]
+        [yield [row repo=[$attr-or $c "repo"] file=[$attr-or $c "file"] id=[$attr-or $c "id"]
+                    issue=$ref state=[?if [$present $i] [then [$attr-or $i "state"]] [else ""]]
+                    kind=[$kind-of $c $issues $release]]]]]
+    [= $refused
+      [?for [in $r $rows]
+        [where [not [= [$attr-or $r "kind"] ""]]]
+        [yield [refusal kind=[$attr-or $r "kind"] repo=[$attr-or $r "repo"] file=[$attr-or $r "file"]
+                        id=[$attr-or $r "id"] issue=[$attr-or $r "issue"] state=[$attr-or $r "state"]
+                        why=[$attr-or [$lookup $issues [$attr-or $r "issue"]] "why"]]]]]
+    [= $refs [$distinct [?for [in $c $cases/advisory] [where [not [= [$attr-or $c "issue"] ""]]]
+                          [yield [$attr-or $c "issue"]]]]]
+    [verdict cases=[$count $rows] issues=[$count $refs] release=$release
+      [?splice $refused]]]]
+
+[?def refusals scope=public pure ($v) [?for [in $r $v/refusal] [yield $r]]]
+
+[?def ok scope=public pure [returns bool] ($v) [= [$count [$refusals $v]] 0]]
+
+# One line per refusal, naming the case, its file and its issue.
+[?def message scope=public pure [returns string] ($r $release::string)
+  [?let
+    [= $k [$attr-or $r "kind"]]
+    [= $at [$concat [$attr-or $r "repo"] ":" [$attr-or $r "file"] " " [$attr-or $r "id"]]]
+    [= $ref [$attr-or $r "issue"]]
+    [?match $k
+      [case "no-issue"
+        [$concat "ADVISORY-UNTRACKED " $at
+                 ": an advisory case names no issue= -- name the open issue its red is tracked by, issue='<owner>/<repo>#<n>' (QUAL-1)"]]
+      [case "bad-issue"
+        [$concat "ADVISORY-BADREF " $at ": issue='" $ref "' is not an issue reference '<owner>/<repo>#<n>' (QUAL-1)"]]
+      [case "unread"
+        [$concat "ADVISORY-UNREAD " $at ": " $ref " could not be read -- "
+                 [?if [= [$attr-or $r "why"] ""] [then "no lookup answered it"] [else [$attr-or $r "why"]]]
+                 "; an issue the audit cannot read is not taken for an open one (QUAL-1)"]]
+      [case "closed"
+        [$concat "ADVISORY-CLOSED " $at ": " $ref " is " [$attr-or $r "state"]
+                 " -- the red outlived the issue that tracked it: fix the case, or file its successor and name it (QUAL-1)"]]
+      [case "off-release"
+        [$concat "ADVISORY-OFFRELEASE " $at ": " $ref " is open but carries neither the " $release
+                 " label nor its milestone nor a title beginning '" $release " ' -- an advisory red is tracked in the current release (QUAL-1)"]]
+      [else [$concat "ADVISORY-UNKNOWN " $at ": " $k]]]]]
+
+# Every advisory case, one line each, with its issue and the issue's state as
+# read — the worklist the audit is, refused or not.
+[?def listing scope=public pure [returns string] ($cases $issues)
+  [$strings:join
+    [?for [in $c $cases/advisory]
+      [= $ref [$attr-or $c "issue"]]
+      [= $i [$lookup $issues $ref]]
+      [= $state [?if [not [$present $i]] [then "-"]
+                 [else [?if [= [$attr-or $i "read"] "true"] [then [$attr-or $i "state"]] [else "UNREAD"]]]]]
+      [yield [$concat "ADVISORY " [$attr-or $c "repo"] ":" [$attr-or $c "file"] " " [$attr-or $c "id"] " "
+                      [?if [= $ref ""] [then "-"] [else $ref]] " " $state]]]
+    "\n"]]
+
+[?def census scope=public pure [returns string] ($v)
+  [$concat "advisory audit: " [$string $v@cases] " advisory cases, "
+           [$string $v@issues] " issues, " [$string [$count [$refusals $v]]] " refused ("
+           [$string $v@release] ")"]]
+
+# The text the tree check prints: the census line, then `ok` or one line per
+# refusal. A function of the verdict alone, so the corpus pins what the step
+# prints.
+[?def report scope=public pure [returns string] ($v)
+  [?let
+    [= $rel [$string $v@release]]
+    [= $lines [?if [$ok $v]
+                [then ("ok")]
+                [else [?for [in $r [$refusals $v]] [yield [$message $r $rel]]]]]]
+    [$strings:join ([$census $v], [?splice $lines]) "\n"]]]
