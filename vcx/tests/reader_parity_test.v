@@ -473,11 +473,14 @@ fn accepted_by_one_scan() ([]AcceptedByOne, map[string]string) {
 // syntax", and a program form the data grammar has no production for is not a
 // defect of either.
 
-const reason_1576 = "#1576, its COMMA half — a top-level comma beside a bareword. The data reader answers ONE ARRAY ([L25c], normative) whose multi-token slots are prose strings, every [L70a] BareChar included (`full cx.lock — https + file resolvers`); the program reader treats a comma slot as an EXPRESSION position (1559-a names a collection slot among them), so a `+` or a `.` in a multi-token slot is program text and the slot refuses. Whether a multi-token [L25c] slot is prose or an expression is the one question [L25c] does not answer (its QUOTE OPENING example even reads a comma body as prose) — a letter on #1576. The PARENTHETICAL half (yaml.cxd line 19) is fixed: a `(…)` that is no sequence literal is prose and a glued `#` in it is no comment (RULED: CXF-5). yaml.cxd stays under the same question at line 155, a bareword beside a whitespace-separated sequence LITERAL whose slots are multi-token prose (`keys unquote (the CX→YAML emitter quotes keys, so roundtrip …)`): the data reader answers the prose run then the sequence, the program reader reads the literal's slots as expressions and refuses `unquote (` as a paren-call — the same letter. Split from #1559."
-
-const reason_1578 = "#1578 — a bare URL in an ATTRIBUTE VALUE. 1559-a narrowed 1384-a's `/` sentence so a bare URL in a BODY is prose in both rings, but an attribute value is an EXPRESSION position (1559-d) and #923/BC-1's attr-value run sends a `/`-bearing value whose prefix reads as a path head to the CXPath lane. Whether that lane should prefer the data reading's string is the one question 1559-a's row does not settle; the refusal is at least loud and carries its own fix. Split from #1559."
-
-const reason_1579 = "#1579 — 1559-a's re-scan triggers on a parse REFUSAL, because a bareword head may be a CALL and that dispatch is decided at EVAL (a pre-emptive collapse destroyed cmd-030's arguments). These two prose bodies DO begin to parse — a leading `-`, a trailing `.` — and so reach a different tree instead of refusing, which means \"does it parse?\" is not by itself the discriminator the rule needs. Split from #1559."
+// reason_1576, reason_1578 and reason_1579 are RETIRED with the fixes that
+// closed them (RULED: SLOT-1, ATTRU-1, PROSE-1; Letters 153-155, all (a)):
+// lockfile.cxd and yaml.cxd left with SLOT-1 (a sigil-free multi-word slot of
+// a comma body or a sequence literal is prose in both readers), post.cx and
+// chapter.cx with ATTRU-1 and #1745 (a sigil-free attribute value is the data
+// ring's string; a namespaced attribute name is one name), and article.cx with
+// PROSE-1 (the data reading is the program reader's oracle for a prose body).
+// Each shape stands in `one_tree_shapes` below, graded as ONE tree.
 
 const reason_l25c_residue = '#1541 residue, REASONED not pending — a nested `[`/`(`/`{` in one comma slot. There the data reading leaves the array lane entirely and the comma becomes literal PROSE (`[xs a, [b 1], \'c\']` → `[xs \'a, \' [b 1] \',\' \'c\']`, measured), which is the data ring\'s prose classifier and not a tree a tokenizing reader can answer. The program reader refuses it BY NAME instead of inventing a third reading.'
 
@@ -503,16 +506,12 @@ const reason_prog = 'RECORDED EXCEPTION (1548-c) — a program document whose BR
 // 2026-09-18 morning, seventy-five after, and every departure forced by this
 // judgement rather than asserted by a commit message.
 const accepted_by_one_table = [
-	// ── #1559 — an ASCII BareChar in prose the run does not admit (4) ──
-	// 6 -> 4: conformance/code.cxd and conformance/stdlib/array.cxd left with
-	// cx-core-code's extraction (RULED: RS-12, D68a); the scan walks conformance/
-	// of THIS tree and does not follow deps/.
-	AcceptedByOne{'deps/cx-core-data/conformance/lockfile.cxd', .data, reason_1576},
-	AcceptedByOne{'deps/cx-core-data/conformance/yaml.cxd', .data, reason_1576},
-	AcceptedByOne{'examples/article.cx', .data, reason_1579},
-	// ── #1559 — a bare URL's `://` (RULED: 1384-a keeps `/` out of the run) (3) ──
-	AcceptedByOne{'examples/chapter.cx', .data, reason_1578},
-	AcceptedByOne{'examples/post.cx', .data, reason_1578},
+	// ── #1559's split-out tail (#1576, #1578, #1579) — 5 -> 0 ──
+	// 6 -> 4 -> 5 -> 0: conformance/code.cxd and conformance/stdlib/array.cxd left
+	// with cx-core-code's extraction (RULED: RS-12, D68a); lockfile.cxd and
+	// yaml.cxd (#1576) with SLOT-1, chapter.cx and post.cx (#1578, #1745) with
+	// ATTRU-1, article.cx (#1579) with PROSE-1 — the judgement below forced each
+	// removal (RULED: SLOT-1, ATTRU-1, PROSE-1).
 	// ── #1541 residue — a nested node in a comma slot (2; conformance/platform/
 	//    store.cxd's own entry left with cx-platform-store's extraction (RULED:
 	//    RS-12, RS-8; #1591 item K3) — this test's population walks conformance/
@@ -525,7 +524,7 @@ const accepted_by_one_table = [
 	AcceptedByOne{'examples/env.cx', .data, reason_entity},
 	// ── recorded exception — a token-initial operator head (1) ──
 	AcceptedByOne{'examples/logs.cx', .data, reason_ophead},
-	// ── recorded exception — a DATA-only lane the program grammar has no form for (6) ──
+	// ── recorded exception — a DATA-only lane the program grammar has no form for (5) ──
 	// 4 -> 6: the front door's two corpora (#1589 item 23, RULED: RS-7, RS-9) -- a
 	// [title] of bare prose carrying a word the program reader takes as a keyword
 	// (`module`, `shape`). The three data-language suites are read at cx-core-data's
@@ -536,7 +535,10 @@ const accepted_by_one_table = [
 	// 7 -> 6: conformance/xml_codec.cxd left with cx-core-code's extraction
 	// (RULED: RS-12, D68a); the scan walks conformance/ of THIS tree and does
 	// not follow deps/.
-	AcceptedByOne{'conformance/bundle_sources.cxd', .data, reason_datalane},
+	// 6 -> 5: conformance/bundle_sources.cxd left with PROSE-1 (RULED: PROSE-1,
+	// #1579): its bare-prose [title]s are the data reading's text in the program
+	// reader too, so both readers answer one tree; the judgement below forced
+	// the removal.
 	AcceptedByOne{'deps/cx-core-data/conformance/conversions.cxd', .data, reason_datalane},
 	AcceptedByOne{'conformance/docs_fragment.cxd', .data, reason_datalane},
 	AcceptedByOne{'conformance/gates_register.cxd', .data, reason_datalane},
@@ -760,11 +762,13 @@ fn test_accepted_by_one_red_proof() {
 
 	// and a divergence that changed sides is not silently re-labelled.
 	// Anchor RETARGETED (K7a, RULED: RS-12) from conformance/code.cxd, which
-	// left with cx-core-code's extraction and is no longer in the table at
-	// all under any kind, to examples/article.cx, a `.data` entry the table
-	// still carries (reason_1579) and that this tree keeps for good.
+	// left with cx-core-code's extraction, to examples/article.cx; and again
+	// (RULED: PROSE-1) from examples/article.cx, which left the table with the
+	// fix for #1579, to examples/logs.cx, a `.data` entry the table carries as
+	// a RECORDED EXCEPTION (reason_ophead) — a divergence that stays by
+	// decision, so the anchor no longer moves with a fix.
 	side, _ := judge_accepted_by_one([
-		AcceptedByOne{'examples/article.cx', .program, ''},
+		AcceptedByOne{'examples/logs.cx', .program, ''},
 	], accepted_by_one_table)
 	assert side.len == 1, 'the column must refuse an entry whose accepting reader changed'
 	assert side[0].contains('changed sides'), side[0]
@@ -829,6 +833,11 @@ const one_tree_shapes = [
 	OneTreeShape{'[title examples/books.yaml verbatim — block seq of 3 four-key mappings (#412 repro)]', '#1576 — conformance/yaml.cxd line 19: a parenthetical that is no sequence literal, glued to a `#`, inside a body a bareword makes prose'},
 	OneTreeShape{'[p see the ratio a#b and (x#y) here]', '#1576 — a `#` glued inside a prose run or after a non-literal paren is prose in both readers, never a comment'},
 	OneTreeShape{"[title under --strict `filter`'s `::array` + `::function` signature admits the ordinary call]", '#1579 — stdlib/array.cxd line 309: an apostrophe glued after a backtick run is inside the bareword (1521-a), never a string opener'},
+	OneTreeShape{'[title full cx.lock — https + file resolvers, an SRI pin, and a transitive-graph block]', '#1576 (RULED: SLOT-1) — conformance/lockfile.cxd line 42: a sigil-free multi-word comma slot is prose in both readers'},
+	OneTreeShape{'[title quoted mapping keys unquote (the CX→YAML emitter quotes keys, so roundtrip depends on this)]', '#1576 (RULED: SLOT-1) — conformance/yaml.cxd line 155: a prose run beside a sequence literal whose slots are sigil-free multi-word prose'},
+	OneTreeShape{'[a href=https://github.com/ardec Erik Paulson]', '#1578 (RULED: ATTRU-1) — examples/post.cx line 7\'s link: a sigil-free attribute value is the data ring\'s string, a bare URL included'},
+	OneTreeShape{'[chapter id=getting-started lang=en xmlns=tag:cxhome.org,2026:ns/doc xmlns:dc=http://purl.org/dc/elements/1.1/ Getting Started]', '#1578 (RULED: ATTRU-1) and #1745 — examples/chapter.cx line 5: a tag URI value is one string, and a namespaced attribute name is one name'},
+	OneTreeShape{"[p\n  Note that [code 8080] auto-types as an [em integer]; [code :u16]\n  pins it to the 0..65535 range &mdash; out-of-range values fail at\n  parse time. [code '+tls'] is shorthand for [code tls=true].\n]", '#1579 (RULED: PROSE-1) — examples/article.cx lines 25-29: the data reading is the program reader\'s oracle for a prose body, inline elements and the trailing `.` included'},
 ]
 
 fn test_split_divergences_answer_one_tree() {
