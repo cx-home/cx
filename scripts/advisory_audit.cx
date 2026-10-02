@@ -48,12 +48,36 @@
   [> [$count [?for [in $y [$strings:split $csv ","]]
                [where [= [$strings:trim $y] $x]] [yield 1]]] 0]]
 
-# An open issue is in the release when it carries the release's label, its
-# milestone, or a title beginning with the release and a space.
+# An open issue is in the release when its milestone IS the release; an issue
+# with no milestone is in it when it carries the release's label or a title
+# beginning with the release and a space. A milestone that names another
+# release outranks a label or a title (refutation a04, a05): the ruling's
+# words are "outside the current milestone".
 [?def in-release scope=public pure [returns bool] ($i $release::string)
-  [or [$member $release [$attr-or $i "labels"]]
-      [= [$attr-or $i "milestone"] $release]
-      [$strings:starts-with [$attr-or $i "title"] [$concat $release " "]]]]
+  [?let [= $m [$attr-or $i "milestone"]]
+    [?if [not [= $m ""]]
+      [then [= $m $release]]
+      [else [or [$member $release [$attr-or $i "labels"]]
+                [$strings:starts-with [$attr-or $i "title"] [$concat $release " "]]]]]]]
+
+# The advisory cases of one [test-suite] element, read the way the shared
+# loader reads them (refutation r03, r09): a case's gate is its own gate=, else
+# the element's, else the gate policy's suite default; its issue is its own
+# issue=, else the element's — an empty issue= is unset and inherits, as the
+# loader's is. One [advisory repo= file= id= issue=] row per advisory case.
+[?def suite-cases scope=public pure ($repo::string $file::string $s $policy-default::string)
+  [?let
+    [= $sgate [$attr-or $s "gate"]]
+    [= $sissue [$attr-or $s "issue"]]
+    [?to-sequence
+      [?for [in $c $s/case]
+        [= $cg [$attr-or $c "gate"]]
+        [= $g [?if [not [= $cg ""]] [then $cg]
+               [else [?if [not [= $sgate ""]] [then $sgate] [else $policy-default]]]]]
+        [where [= $g "advisory"]]
+        [= $ci [$attr-or $c "issue"]]
+        [yield [advisory repo=$repo file=$file id=[$attr-or $c "id"]
+                         issue=[?if [= $ci ""] [then $sissue] [else $ci]]]]]]]]
 
 [?def lookup scope=private pure ($issues $ref::string)
   [$first [?for [in $i $issues/issue] [where [= [$attr-or $i "ref"] $ref]] [yield $i]]]]
@@ -89,8 +113,15 @@
                         why=[$attr-or [$lookup $issues [$attr-or $r "issue"]] "why"]]]]]
     [= $refs [$distinct [?for [in $c $cases/advisory] [where [not [= [$attr-or $c "issue"] ""]]]
                           [yield [$attr-or $c "issue"]]]]]
+    # A corpus file naming advisory that the walker could not parse: its cases
+    # cannot be listed, so the file is refused rather than skipped (w-check).
+    [= $unparsed
+      [?for [in $u $cases/unparsed]
+        [yield [refusal kind=unparsed repo=[$attr-or $u "repo"] file=[$attr-or $u "file"]
+                        id='' issue='' state='' why=[$attr-or $u "why"]]]]]
     [verdict cases=[$count $rows] issues=[$count $refs] release=$release
-      [?splice $refused]]]]
+      [?splice $refused]
+      [?splice $unparsed]]]]
 
 [?def refusals scope=public pure ($v) [?for [in $r $v/refusal] [yield $r]]]
 
@@ -118,6 +149,10 @@
       [case "off-release"
         [$concat "ADVISORY-OFFRELEASE " $at ": " $ref " is open but carries neither the " $release
                  " label nor its milestone nor a title beginning '" $release " ' -- an advisory red is tracked in the current release (QUAL-1)"]]
+      [case "unparsed"
+        [$concat "ADVISORY-UNPARSED " [$attr-or $r "repo"] ":" [$attr-or $r "file"]
+                 ": the audit cannot read this corpus file (" [$attr-or $r "why"]
+                 ") -- a file whose advisory cases the audit cannot list is refused, never skipped (QUAL-1)"]]
       [else [$concat "ADVISORY-UNKNOWN " $at ": " $k]]]]]
 
 # Every advisory case, one line each, with its issue and the issue's state as

@@ -219,7 +219,7 @@ false
    'advisory'])
 #]]
   [out-text [#
-([advisory repo=cx-platform-x file='conformance/a.cxd' id=a-1 issue='cx-home/cx-private#1497'], [advisory repo=cx-platform-x file='conformance/a.cxd' id=a-2 issue='cx-home/cx-private#1497'], [advisory repo=cx-platform-x file='conformance/a.cxd' id=a-3 issue='cx-home/cx-platform-x#2'], [advisory repo=cx-platform-x file='conformance/b.cxd' id=b-1 issue=''], [advisory repo=cx-platform-x file='conformance/b.cxd' id=b-3 issue='cx-home/cx-private#9'])
+(([advisory repo=cx-platform-x file='conformance/a.cxd' id=a-1 issue='cx-home/cx-private#1497'], [advisory repo=cx-platform-x file='conformance/a.cxd' id=a-2 issue='cx-home/cx-private#1497'], [advisory repo=cx-platform-x file='conformance/a.cxd' id=a-3 issue='cx-home/cx-platform-x#2']), ([advisory repo=cx-platform-x file='conformance/b.cxd' id=b-1 issue=''], [advisory repo=cx-platform-x file='conformance/b.cxd' id=b-3 issue='cx-home/cx-private#9']))
 #]]
  ]
 
