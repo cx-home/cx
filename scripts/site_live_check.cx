@@ -6,7 +6,7 @@
 # what the site serves with what the public main holds. This step does.
 #
 #   cx --allow-read --allow-subprocess --allow-env --allow-clock scripts/site_live_check.cx
-#   cx --allow-read --allow-clock scripts/site_live_check.cx --self-test
+#   cx --allow-read --allow-write --allow-env --allow-clock scripts/site_live_check.cx --self-test
 #
 # THE STAMP. scripts/gen_site/site_assemble.cx writes site/stamp.txt, the
 # commit the site was assembled from (`git rev-parse HEAD`); the Site run
@@ -32,10 +32,17 @@
 #     creation. Within it: deploying. Past it: stale, refused. A Site run that
 #     ended other than success, no Site run on the public main, or a run gh
 #     could not read: refused — that is the 09-29 shape;
-#   - NO STAMP (a site assembled before the stamp existed; a 404 or anything
-#     not a 40-hex sha): the site is the public main's build when the Site run
-#     on the public main succeeded and the site's Last-Modified (the deploy's
-#     time) is not before that run started. Otherwise refused, as above.
+#   - NO STAMP (a site assembled before the stamp existed: stamp.txt answers
+#     404): the site is the public main's build when the Site run on the
+#     public main succeeded and the site's Last-Modified (the deploy's time)
+#     is not before that run started. Otherwise refused, as above;
+#   - A STAMP IT CANNOT READ (a 200 that is not a 40-hex sha — the
+#     assembler's `unknown`, an error page — or any other answer than 200 or
+#     404): refused.
+#   The window counts only what gh can name: a run `completed`, or in flight
+#   (queued, waiting, requested, pending, in_progress); any other status, a
+#   run dated after the reading, refuses. The cache allowance is the stamp's
+#   max-age, never more than the Site run's own duration.
 #
 # Exit: 0 live or deploying; 1 refused; 2 a self-test case answered wrongly.
 [?lib 'cx-stdlib/io'      as=io]
@@ -79,6 +86,7 @@
   [?let [= $p [$strings:trim [$string $public]]]
         [= $st [$strings:trim [$string $stamp]]]
         [= $has [$is-sha $st]]
+        [= $flight ('queued', 'waiting', 'requested', 'pending', 'in_progress')]
         [= $rw [$words $run]]
         [= $rs [?if [>= [$count $rw] 4] [then [$string [$nth $rw 1]]] [else '']]]
         [= $rc [?if [>= [$count $rw] 4] [then [$string [$nth $rw 2]]] [else '']]]
@@ -88,13 +96,21 @@
         [= $age [?else [$strings:to-int [$strings:trim [$string $maxage]]] 0]]
         [= $pv [?else [$strings:to-int [$strings:trim [$string $prev]]] -1]]
         [= $dur [?if [= $rs 'completed'] [then [- $updated $created]] [else $pv]]]
+        [= $known [or [= $rs 'completed'] [> [$count [?to-sequence [?for [in $f $flight] [where [= $f $rs]] [yield $f]]]] 0]]]
         [= $site [?if $has [then [$concat 'the site is ' $st]] [else 'the live site carries no stamp']]]
     [?if [not [$is-sha $p]] [then [verdict ok=false why='the public main is unreadable (git ls-remote): refused, never a pass']]
       [else [?if [and $has [= $st $p]] [then [verdict ok=true why=[$concat 'live: the stamp is the public main ' $p]]]
+      [else [?if [and [not $has] [not [= $st '']]]
+        [then [verdict ok=false why=[$concat 'the live stamp is unreadable (`' [$strings:slice $st 1 [?if [> [$strings:length $st] 60] [then 60] [else [$strings:length $st]]]]
+                                            '`, not a 40-hex sha): refused, never a pass']]]
         [else [?if [= [$strings:trim [$string $run]] 'unread']
           [then [verdict ok=false why=[$concat $site '; gh cannot read the Site run on the public main ' $p ': refused, never a pass']]]
           [else [?if [or [= [$strings:trim [$string $run]] 'none'] [< [$count $rw] 4] [< $created 0]]
             [then [verdict ok=false why=[$concat $site '; no Site run on the public main ' $p]]]
+            [else [?if [not $known]
+              [then [verdict ok=false why=[$concat $site '; the Site run on the public main ' $p ' is `' $rs '`, a status this step cannot read: refused']]]
+            [else [?if [< $t $created]
+              [then [verdict ok=false why=[$concat $site '; the Site run on the public main ' $p ' is dated in the future of the reading: refused']]]
             [else [?if [and [= $rs 'completed'] [not [= $rc 'success']]]
               [then [verdict ok=false why=[$concat $site '; the Site run on the public main ' $p ' ended ' $rc]]]
               [else [?if [and [not $has] [= $rs 'completed'] [>= [$http-secs $lm] $created]]
@@ -105,12 +121,12 @@
                                                        '` is before the Site run on the public main ' $p ' started: stale']]]
                   [else [?if [or [< $dur 0] [< $t 0]]
                     [then [verdict ok=false why=[$concat $site '; the Site run on ' $p ' is ' $rs ' and gh cannot read a successful run to time it: refused']]]
-                    [else [?let [= $window [+ $dur $age]] [= $lag [- $t $created]]
+                    [else [?let [= $window [+ $dur [?if [> $age $dur] [then $dur] [else $age]]]] [= $lag [- $t $created]]
                       [?if [<= $lag $window]
                         [then [verdict ok=true why=[$concat 'deploying: ' $site ', the public main ' $p ' for ' [$string $lag]
                                                            ' s, within the Site run duration plus the cache max-age (' [$string $window] ' s)']]]
                         [else [verdict ok=false why=[$concat 'stale: ' $site ', the public main ' $p ' for ' [$string $lag]
-                                                            ' s, past the Site run duration plus the cache max-age (' [$string $window] ' s)']]]]]]]]]]]]]]]]]]]]]]]
+                                                            ' s, past the Site run duration plus the cache max-age (' [$string $window] ' s)']]]]]]]]]]]]]]]]]]]]]]]]]]]]]
 
 # ── the self-test: the case table ───────────────────────────────────────────
 [?def self-test scope=private impure ()
@@ -159,7 +175,11 @@
         [= $parts [$strings:split [$strings:replace [$string $sr@stdout] "\r\n" "\n"] "\n\n"]]
         [= $code [$re:find-all [$re:compile '(?m)^HTTP/[0-9.]+ ([0-9]{3})'] [$string $sr@stdout]]]
         [= $status [?if [= [$count $code] 0] [then ''] [else [$re:group [$last-of $code] 1]]]]
-        [= $body [?if [and [= $status '200'] [> [$count $parts] 1]] [then [$strings:trim [$string [$last-of $parts]]]] [else '']]]
+        # 404: no stamp yet (''); 200: its body; anything else, a curl that
+        # failed included, an answer that cannot be a stamp.
+        [= $body [?if [= $status '404'] [then '']
+                   [else [?if [and [= $status '200'] [> [$count $parts] 1]] [then [$strings:trim [$string [$last-of $parts]]]]
+                     [else [$concat 'HTTP ' [?if [= $status ''] [then '(no answer)'] [else $status]]]]]]]]
         [= $cc [$header [$string $sr@stdout] 'cache-control']]
         [= $am [$re:find-all [$re:compile 'max-age=([0-9]+)'] $cc]]
         [= $maxage [?if [= [$count $am] 0] [then '0'] [else [$re:group [$first $am] 1]]]]
