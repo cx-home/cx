@@ -65,7 +65,7 @@ its `effect` class, the `[intent]` that reaches it, and what it `[reads]` or
 
 ```console
 $ cx prog.cx
-[effect 'arrange']
+[effect arrange]
 ```
 
 Read the output: after composition the verb is `chart/highlight`, not
@@ -685,7 +685,7 @@ names the chain it travelled:
 
 ```console
 $ cx prog.cx
-[permit rooted-principal=dana [delegation 'd-1'] [via 'd-1'] [tier :t1] [capability 'refund-duplicate']]
+[permit rooted-principal=dana [delegation d-1] [via d-1] [tier :t1] [capability refund-duplicate]]
 ```
 
 **A denial is a value carrying its reason.** There is no implicit grant, and
@@ -702,7 +702,7 @@ expired:
 
 ```console
 $ cx prog.cx
-[deny actor=ghost [code 'cx-err:CXER4700'] [reason :no-grant] [capability 'refund-duplicate'] [slice '/orders/9'] [tenant id=acme]]
+[deny actor=ghost [code cx-err:CXER4700] [reason :no-grant] [capability refund-duplicate] [slice /orders/9] [tenant id=acme]]
 ```
 
 `prog.cx`
@@ -716,7 +716,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[deny actor=ops-1 [code 'cx-err:CXER4700'] [reason :out-of-slice] [capability 'refund-duplicate'] [slice '/payments/9'] [tenant id=acme]]
+[deny actor=ops-1 [code cx-err:CXER4700] [reason :out-of-slice] [capability refund-duplicate] [slice /payments/9] [tenant id=acme]]
 ```
 
 `prog.cx`
@@ -730,7 +730,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[deny actor=ops-1 [code 'cx-err:CXER4700'] [reason :expired] [capability 'refund'] [slice '/orders/9'] [tenant id=acme]]
+[deny actor=ops-1 [code cx-err:CXER4700] [reason :expired] [capability refund] [slice /orders/9] [tenant id=acme]]
 ```
 
 The distinction matters operationally: "you were never granted this" and "your
@@ -771,7 +771,7 @@ derived verb requires the grants of every **leaf constituent**, transitively:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4850 message='E_XAP_UNAUTHORIZED: actor "agent:porter-1" is not granted "door/unlock" over ""']
+[err code=cx-err:CXER4850 message='E_XAP_UNAUTHORIZED: actor "agent:porter-1" is not granted "door/unlock" over ""' at='24:2']
 ```
 
 A grant on the wrapper's own name conveys **nothing** — the wrapper name is
@@ -807,7 +807,7 @@ never consulted:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4850 message='E_XAP_UNAUTHORIZED: actor "agent:porter-1" is not granted "door/chime" over ""']
+[err code=cx-err:CXER4850 message='E_XAP_UNAUTHORIZED: actor "agent:porter-1" is not granted "door/chime" over ""' at='24:2']
 ```
 
 Dial every leaf and the same emit is admitted:
@@ -843,7 +843,7 @@ Dial every leaf and the same emit is admitted:
 
 ```console
 $ cx prog.cx
-[event actor=agent:porter-1 [do 'porch/welcome']]
+[event actor=agent:porter-1 [do porch/welcome]]
 ```
 
 Nesting does not dilute it — an *intermediate* grant is still insufficient:
@@ -888,7 +888,7 @@ Nesting does not dilute it — an *intermediate* grant is still insufficient:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4850 message='E_XAP_UNAUTHORIZED: actor "agent:porter-1" is not granted "door/chime" over ""']
+[err code=cx-err:CXER4850 message='E_XAP_UNAUTHORIZED: actor "agent:porter-1" is not granted "door/chime" over ""' at='34:2']
 ```
 
 `prog.cx`
@@ -932,7 +932,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[event actor=agent:porter-1 [do 'estate/open-house']]
+[event actor=agent:porter-1 [do estate/open-house]]
 ```
 
 ### The decision explains itself
@@ -1024,7 +1024,7 @@ failing link** rather than reporting a bare denial:
 
 ```console
 $ cx prog.cx
-[explanation outcome=permit [accountable 'dana'] [authority-chain [step 'd-1']]]
+[explanation outcome=permit [accountable dana] [authority-chain [step d-1]]]
 ```
 
 `prog.cx`
@@ -1037,7 +1037,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[explanation outcome=deny [first-failing-link :no-grant] [code 'cx-err:CXER4700']]
+[explanation outcome=deny [first-failing-link :no-grant] [code cx-err:CXER4700]]
 ```
 
 An enterprise deployment needs this more than it needs the enforcement: an
@@ -1238,7 +1238,7 @@ web-public
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4812 message='E_SESSION_ANONYMOUS_REFUSED: the deployment attach policy does not admit an anonymous floor — no `anonymous-floor` principal in cfg (xap_identity_model §4.7; refusing is the production default)']
+[err code=cx-err:CXER4812 message='E_SESSION_ANONYMOUS_REFUSED: the deployment attach policy does not admit an anonymous floor — no `anonymous-floor` principal in cfg (xap_identity_model §4.7; refusing is the production default)' at='2:1']
 ```
 
 The mutual-authentication path is the same story with a handshake in front of
@@ -1512,7 +1512,7 @@ clause — *projects* onto one:
 
 ```console
 $ cx prog.cx
-[ux:form verb=place-order affects='/live/new' [ux:heading level=2 'Place a customer order.'] [ux:input name=customer kind=string required='true' help='Who the order is for.'] [ux:input name=qty kind=int required='true'] [ux:input name=note kind=string required='false'] [ux:submit label='Place order']]
+[ux:form verb=place-order affects='/live/new' [ux:heading level=2 Place a customer order.] [ux:input name=customer kind=string required='true' help='Who the order is for.'] [ux:input name=qty kind=int required='true'] [ux:input name=note kind=string required='false'] [ux:submit label='Place order']]
 ```
 
 An act verb of a feature grammar projects the same way, which is the seam
@@ -1536,7 +1536,7 @@ between the XAP layer and the UX layer:
 
 ```console
 $ cx prog.cx
-[ux:form verb=place-order affects='/live/new' [ux:heading level=2 'Place an order'] [ux:input name=id label=Id kind=text value=''] [ux:input name=package label=Package kind=text value=''] [ux:input name=buyer label=Buyer kind=did value='' help='who is buying'] [ux:submit label='Place order']]
+[ux:form verb=place-order affects='/live/new' [ux:heading level=2 Place an order] [ux:input name=id label=Id kind=text value=''] [ux:input name=package label=Package kind=text value=''] [ux:input name=buyer label=Buyer kind=did value='' help='who is buying'] [ux:submit label='Place order']]
 ```
 
 `prog.cx`
@@ -1698,7 +1698,7 @@ identity is never minted:
 
 ```console
 $ cx prog.cx
-[ux:table id=open [ux:columns [ux:column 'Customer'] [ux:column 'Id']] [ux:rows id=rows [ux:row [ux:cell 'Ada'] [ux:cell 'o-1']] [ux:row [ux:cell 'Lin'] [ux:cell 'o-2']]]]
+[ux:table id=open [ux:columns [ux:column Customer] [ux:column Id]] [ux:rows id=rows [ux:row [ux:cell Ada] [ux:cell o-1]] [ux:row [ux:cell Lin] [ux:cell o-2]]]]
 ```
 
 ### The web renderer, and what it is forbidden to author

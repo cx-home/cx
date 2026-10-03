@@ -55,7 +55,7 @@ error value naming the flag that would allow it:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)']
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)' at='2:1']
 ```
 
 **Errors are values** — a captured `[err]` propagates out of any element built
