@@ -349,6 +349,7 @@ step_globs() {
     # reads, security.md §2.1 among them), the front door's vcx/ and stdlib/,
     # the V pin.
     property-gate)                 echo 'conformance/property_gate.cxd scripts/property_gate.cx deps.cxd registry/modules.cxd vcx/* stdlib/* third_party/*' ;;
+    spec-invariant-gate)           echo 'deps.cxd registry/repos.cxd scripts/spec_invariants* VERSION' ;;
     ring-tag-gate)                 echo 'conformance/* scripts/*' ;;
     cxer-registry-gate)            echo 'vcx/* spec/* scripts/cxer_registry*' ;;
     spec-freeze-gate)              echo '*' ;;

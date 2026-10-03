@@ -9110,7 +9110,7 @@ reading what the step checks.
 | 56 | `ring-import-gate` |  | `scripts/ring_import_gate.sh` |
 | 57 | `gates-manifest-gate` |  | `scripts/gates_manifest_gate.sh` |
 | 58 | `advisory-audit` |  | `scripts/advisory_audit_check.cx` |
-| 59 | `property-gate` |  | `scripts/property_gate.cx` |
+| 59 | `spec-invariant-gate` |  | `scripts/spec_invariants.cx` |
 | 60 | `ring-tag-gate` |  | `scripts/ring_query.cx` |
 | 61 | `cxer-registry-gate` |  | `scripts/cxer_registry_report.sh` |
 | 62 | `spec-freeze-gate` | yes | `scripts/spec_freeze_gate.sh` |
