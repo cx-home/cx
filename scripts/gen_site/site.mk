@@ -46,10 +46,10 @@ endif
 .PHONY: site site-check site-index site-index-check
 
 site: guide
-	@$(SITE_CX_BIN) --allow-read --allow-write $(SITE_GEN)/site_assemble.cx
+	@$(SITE_CX_BIN) --allow-read --allow-write --allow-subprocess $(SITE_GEN)/site_assemble.cx
 
 site-check: guide-render-gate
-	@$(SITE_CX_BIN) --allow-read --allow-write $(SITE_GEN)/site_assemble.cx
+	@$(SITE_CX_BIN) --allow-read --allow-write --allow-subprocess $(SITE_GEN)/site_assemble.cx
 	@$(SITE_CX_BIN) --allow-read --allow-write --allow-env $(SITE_GEN)/site_assemble.cx --check
 
 # HOME-1: the landing page wears the guide's sidebar, read from
