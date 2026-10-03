@@ -127,8 +127,15 @@ fi
 CHANGED=$(printf '%s\n' "$CHANGED" | sort -u | grep -v '^$' || true)
 printf '%s\n' "$CHANGED" > "$TC_TMP/changed"
 if [ -z "$CHANGED" ]; then
-  echo "test-changed: no changes vs $BASE — nothing to run (the full gate still applies at wave exits)"
-  exit 0
+  # #1758: under RUN-4 a branch whose only changes are scripts/ paths arrives
+  # with an EMPTY changed list and those paths in --infra-rows; their own rows
+  # still decide (below), so this exit is only for a change set with neither.
+  if [ -n "$INFRA_ROWS_SRC" ] && grep -q '^scripts/' "$INFRA_ROWS_SRC" 2>/dev/null; then
+    echo "test-changed: no changes vs $BASE beyond the stripped scripts/ paths — their own rows decide (#1758)"
+  else
+    echo "test-changed: no changes vs $BASE — nothing to run (the full gate still applies at wave exits)"
+    exit 0
+  fi
 fi
 echo "test-changed: ${BASE}..HEAD(+worktree) changes:"
 printf '%s\n' "$CHANGED" | sed 's/^/  /'
