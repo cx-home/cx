@@ -350,7 +350,7 @@ B"""] [expect """50"""]]
 [directive-doc name='?http-client' category="Clients" spec="§10.3"
   [sig """[?http-client target=URL] -> client"""]
   [summary """Clients: construct an HTTP client bound to a target; pipe request verbs through it."""]
-  [example [code """[?let [= $c [?http-client target="http://localhost:1"]] [?pipe $c [$get _ "/"]]]"""] [expect """[err code=cx-err:CXER0180 message='connection refused']"""]]
+  [example [code """[?let [= $c [?http-client target="http://localhost:1"]] [?pipe $c [$get _ "/"]]]"""] [expect """[err code=cx-err:CXER0180 message='connection refused' at='1:67']"""]]
 ]
 
 [directive-doc name='?worker' category="Concurrency" spec="§10.4"
@@ -394,19 +394,19 @@ B"""] [expect """50"""]]
 [directive-doc name='?try-send' category="Concurrency" spec="§10.4"
   [sig """[?try-send VALUE to=CHANNEL timeout=…] -> () | err"""]
   [summary """Concurrency: send with a timeout; yields a send-timeout error instead of blocking indefinitely."""]
-  [example [code """[?let [= $ch [?channel name="c5" buffer=1]] [= $_ [?send "first" to=$ch]] [?try-send "second" to=$ch timeout=50ms]]"""] [expect """[err code=cx-err:CXER0201 message='send timed out']"""]]
+  [example [code """[?let [= $ch [?channel name="c5" buffer=1]] [= $_ [?send "first" to=$ch]] [?try-send "second" to=$ch timeout=50ms]]"""] [expect """[err code=cx-err:CXER0201 message='send timed out' at='1:75']"""]]
 ]
 
 [directive-doc name='?try-receive' category="Concurrency" spec="§10.4"
   [sig """[?try-receive from=CHANNEL timeout=…] -> value | err"""]
   [summary """Concurrency: receive with a timeout; yields a receive-timeout error instead of blocking indefinitely."""]
-  [example [code """[?let [= $ch [?channel name="c6" buffer=1]] [?try-receive from=$ch timeout=50ms]]"""] [expect """[err code=cx-err:CXER0202 message='receive timed out']"""]]
+  [example [code """[?let [= $ch [?channel name="c6" buffer=1]] [?try-receive from=$ch timeout=50ms]]"""] [expect """[err code=cx-err:CXER0202 message='receive timed out' at='1:45']"""]]
 ]
 
 [directive-doc name='?close' category="Concurrency" spec="§10.4"
   [sig """[?close CHANNEL] -> ()"""]
   [summary """Concurrency: close a channel; drained receives on a closed channel yield a channel-closed error."""]
-  [example [code """[?let [= $ch [?channel name="c4" buffer=2]] [= $_ [?send "a" to=$ch]] [= $_ [?close $ch]] [= $first [?receive from=$ch]] [= $second [?receive from=$ch]] ($first, $second)]"""] [expect """(a, [err code=cx-err:CXER0200 message='channel closed'])"""]]
+  [example [code """[?let [= $ch [?channel name="c4" buffer=2]] [= $_ [?send "a" to=$ch]] [= $_ [?close $ch]] [= $first [?receive from=$ch]] [= $second [?receive from=$ch]] ($first, $second)]"""] [expect """(a, [err code=cx-err:CXER0200 message='channel closed' at='1:133'])"""]]
 ]
 
 [directive-doc name='?select' category="Concurrency" spec="§10.4"
@@ -458,13 +458,13 @@ B"""] [expect """50"""]]
 [directive-doc name='?await-race' category="Async" spec="§10.5"
   [sig """[?await-race (F…)] -> value"""]
   [summary """Async: yield the first future to settle and cancel the losers."""]
-  [example [code """[?let [= $fast [?async fast]] [= $slow [?async [?let [= $_ [?sleep 10s mock]] slow]]] [= $winner [?await-race ($fast, $slow)]] [= $slow-state [?await $slow]] ($winner, $slow-state)]"""] [expect """(fast, [err code=cx-err:CXER0260 message='operation cancelled'])"""]]
+  [example [code """[?let [= $fast [?async fast]] [= $slow [?async [?let [= $_ [?sleep 10s mock]] slow]]] [= $winner [?await-race ($fast, $slow)]] [= $slow-state [?await $slow]] ($winner, $slow-state)]"""] [expect """(fast, [err code=cx-err:CXER0260 message='operation cancelled' at='1:143'])"""]]
 ]
 
 [directive-doc name='?cancel' category="Async" spec="§10.5"
   [sig """[?cancel FUTURE] -> ()"""]
   [summary """Async: request cancellation of a future; a cancelled await yields a cancellation error."""]
-  [example [code """[?let [= $f [?async [?sleep 10s mock]]] [= $_ [?cancel $f]] [?await $f]]"""] [expect """[err code=cx-err:CXER0260 message='operation cancelled']"""]]
+  [example [code """[?let [= $f [?async [?sleep 10s mock]]] [= $_ [?cancel $f]] [?await $f]]"""] [expect """[err code=cx-err:CXER0260 message='operation cancelled' at='1:61']"""]]
 ]
 
 [directive-doc name='?check-cancel' category="Async" spec="§10.5"
