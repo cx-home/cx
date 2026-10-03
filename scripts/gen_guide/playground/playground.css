@@ -840,7 +840,6 @@ body.cxp-resizing.is-row { cursor: row-resize; }
   border-bottom: 1px solid var(--border);
   user-select: none;
 }
-body[data-reading="query"] .cxp-doc-block { flex-grow: 0.8; }
 .cxp-output-pane { display: flex; flex-direction: column; }
 .cxp-expect {
   flex: 0 0 auto;
