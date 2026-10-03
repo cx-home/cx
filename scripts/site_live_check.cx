@@ -81,6 +81,10 @@
                             [$re:group $g 1] 'T' [$re:group $g 4] 'Z']]]]]]]]]]
 
 # ── the decision ────────────────────────────────────────────────────────────
+# v: the verdict element (built here so no attribute is a computed node: the
+# data reader holds attributes scalar, D2).
+[?def v scope=private pure [returns element] ($ok $why) [verdict ok=$ok why=$why]]
+
 # $run is 'unread' | 'none' | '<status> <conclusion> <createdAt> <updatedAt>'.
 [?def decide scope=public pure [returns element] ($stamp $lm $maxage $public $run $prev $now)
   [?let [= $p [$strings:trim [$string $public]]]
@@ -98,34 +102,34 @@
         [= $dur [?if [= $rs 'completed'] [then [- $updated $created]] [else $pv]]]
         [= $known [or [= $rs 'completed'] [> [$count [?to-sequence [?for [in $f $flight] [where [= $f $rs]] [yield $f]]]] 0]]]
         [= $site [?if $has [then [$concat 'the site is ' $st]] [else 'the live site carries no stamp']]]
-    [?if [not [$is-sha $p]] [then [verdict ok=false why='the public main is unreadable (git ls-remote): refused, never a pass']]
-      [else [?if [and $has [= $st $p]] [then [verdict ok=true why=[$concat 'live: the stamp is the public main ' $p]]]
+    [?if [not [$is-sha $p]] [then [$v false 'the public main is unreadable (git ls-remote): refused, never a pass']]
+      [else [?if [and $has [= $st $p]] [then [$v true [$concat 'live: the stamp is the public main ' $p]]]
       [else [?if [and [not $has] [not [= $st '']]]
-        [then [verdict ok=false why=[$concat 'the live stamp is unreadable (`' [$strings:slice $st 1 [?if [> [$strings:length $st] 60] [then 60] [else [$strings:length $st]]]]
+        [then [$v false [$concat 'the live stamp is unreadable (`' [$strings:slice $st 1 [?if [> [$strings:length $st] 60] [then 60] [else [$strings:length $st]]]]
                                             '`, not a 40-hex sha): refused, never a pass']]]
         [else [?if [= [$strings:trim [$string $run]] 'unread']
-          [then [verdict ok=false why=[$concat $site '; gh cannot read the Site run on the public main ' $p ': refused, never a pass']]]
+          [then [$v false [$concat $site '; gh cannot read the Site run on the public main ' $p ': refused, never a pass']]]
           [else [?if [or [= [$strings:trim [$string $run]] 'none'] [< [$count $rw] 4] [< $created 0]]
-            [then [verdict ok=false why=[$concat $site '; no Site run on the public main ' $p]]]
+            [then [$v false [$concat $site '; no Site run on the public main ' $p]]]
             [else [?if [not $known]
-              [then [verdict ok=false why=[$concat $site '; the Site run on the public main ' $p ' is `' $rs '`, a status this step cannot read: refused']]]
+              [then [$v false [$concat $site '; the Site run on the public main ' $p ' is `' $rs '`, a status this step cannot read: refused']]]
             [else [?if [< $t $created]
-              [then [verdict ok=false why=[$concat $site '; the Site run on the public main ' $p ' is dated in the future of the reading: refused']]]
+              [then [$v false [$concat $site '; the Site run on the public main ' $p ' is dated in the future of the reading: refused']]]
             [else [?if [and [= $rs 'completed'] [not [= $rc 'success']]]
-              [then [verdict ok=false why=[$concat $site '; the Site run on the public main ' $p ' ended ' $rc]]]
+              [then [$v false [$concat $site '; the Site run on the public main ' $p ' ended ' $rc]]]
               [else [?if [and [not $has] [= $rs 'completed'] [>= [$http-secs $lm] $created]]
-                [then [verdict ok=true why=[$concat 'live (no stamp yet): deployed ' [$strings:trim [$string $lm]]
+                [then [$v true [$concat 'live (no stamp yet): deployed ' [$strings:trim [$string $lm]]
                                                    ', after the Site run on the public main ' $p ' started']]]
                 [else [?if [and [not $has] [= $rs 'completed']]
-                  [then [verdict ok=false why=[$concat 'the live site carries no stamp, and its Last-Modified `' [$strings:trim [$string $lm]]
+                  [then [$v false [$concat 'the live site carries no stamp, and its Last-Modified `' [$strings:trim [$string $lm]]
                                                        '` is before the Site run on the public main ' $p ' started: stale']]]
                   [else [?if [or [< $dur 0] [< $t 0]]
-                    [then [verdict ok=false why=[$concat $site '; the Site run on ' $p ' is ' $rs ' and gh cannot read a successful run to time it: refused']]]
+                    [then [$v false [$concat $site '; the Site run on ' $p ' is ' $rs ' and gh cannot read a successful run to time it: refused']]]
                     [else [?let [= $window [+ $dur [?if [> $age $dur] [then $dur] [else $age]]]] [= $lag [- $t $created]]
                       [?if [<= $lag $window]
-                        [then [verdict ok=true why=[$concat 'deploying: ' $site ', the public main ' $p ' for ' [$string $lag]
+                        [then [$v true [$concat 'deploying: ' $site ', the public main ' $p ' for ' [$string $lag]
                                                            ' s, within the Site run duration plus the cache max-age (' [$string $window] ' s)']]]
-                        [else [verdict ok=false why=[$concat 'stale: ' $site ', the public main ' $p ' for ' [$string $lag]
+                        [else [$v false [$concat 'stale: ' $site ', the public main ' $p ' for ' [$string $lag]
                                                             ' s, past the Site run duration plus the cache max-age (' [$string $window] ' s)']]]]]]]]]]]]]]]]]]]]]]]]]]]]]
 
 # ── the self-test: the case table ───────────────────────────────────────────
