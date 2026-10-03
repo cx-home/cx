@@ -907,3 +907,87 @@ body.cxp-resizing.is-row { cursor: row-resize; }
   }
   .cxp-brand span { font-size: 16px; }
 }
+
+/* ── SITE-3 (#1760 — the owner, 2026-10-02: "Very cluttered and difficult
+   to use in any orientation … Looking cluttered in desktop as well"): the
+   page opens on ONE example, its source and its output; every secondary
+   surface waits behind the ONE disclosure (#cxp-more-toggle, which sets
+   body.cxp-more-open). Closed:
+   - the toolbar is one row — the brand, the picker, Run, More — and the
+     crumb (the example's number, its reading as one word, its place);
+   - the source pane is the editor alone: the SOURCE head (the command
+     line) and the fixture strip wait, and an editor's label shows only
+     when two editors share the pane (a code example with its document);
+   - the output pane is the answer alone: its CX/JSON/XML/Pretty head and
+     the fixture's recorded answer wait — except where this engine cannot
+     run the example, when the recorded answer IS the answer
+     (body.cxp-needs-expect);
+   - the View pane waits; the status line shows only a note about THIS
+     example (an error, a reason it runs in a terminal), never the engine
+     note;
+   - the grid is source | output side by side on a desktop, stacked on a
+     phone.
+   Open: the disclosure's two rows under the toolbar, then everything as
+   before, no row of more than four controls. No colour is added here. */
+.cxp-more {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border);
+}
+.cxp-more-row { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; min-width: 0; }
+.cxp-more-row .cxp-search-wrap { min-width: 0; flex: 1 1 auto; }
+.cxp-more-row .cxp-search { min-width: 0; width: 100%; }
+.cxp-more-toggle[aria-expanded="true"] { background: var(--bg-hover); border-color: var(--accent); color: var(--text-strong); }
+.cxp-break { flex-basis: 100%; height: 0; }
+.cxp-graph-bar .cxp-tabs { display: grid; grid-template-columns: repeat(3, auto); }
+.cxp-graph-bar .cxp-gview-tab + .cxp-gview-tab { border-left: 1px solid var(--border-soft); }
+.cxp-graph-bar { flex-wrap: wrap; row-gap: 5px; }
+.cxp-main { --col1-default: 66.67%; }
+.cxp-main { grid-template-columns: var(--col1-pct, var(--col1-default)) 1fr; }
+.cxp-divider-col { left: calc(var(--col1-pct, var(--col1-default)) - 2px); }
+.cxp-divider-row { width: calc(var(--col1-pct, var(--col1-default)) - 2px); }
+
+body:not(.cxp-more-open) .cxp-main {
+  --col1-default: 50%;
+  grid-template-rows: 1fr;
+  grid-template-areas: "src out";
+}
+body:not(.cxp-more-open) .cxp-viz-pane,
+body:not(.cxp-more-open) #cxp-divider-row,
+body:not(.cxp-more-open) .cxp-source-pane > .cxp-pane-head,
+body:not(.cxp-more-open) .cxp-fixture,
+body:not(.cxp-more-open) .cxp-output-pane > .cxp-pane-head,
+body:not(.cxp-more-open):not(.cxp-needs-expect) .cxp-expect,
+body:not(.cxp-more-open) .cxp-status:not([data-note="1"]),
+body:not(.cxp-more-open) .cxp-source-pane:has(.cxp-edit-block[hidden]) .cxp-edit-label {
+  display: none;
+}
+body:not(.cxp-more-open) .cxp-output-pane { border-left: 1px solid var(--border); }
+
+@media (max-width: 900px) {
+  .cxp-toolbar { flex-wrap: wrap; row-gap: 2px; }
+  #cxp-pick { min-width: 0; flex: 1 1 0; max-width: none; }
+  .cxp-toolbar .cxp-spacer { display: none; }
+  .cxp-crumb { flex-basis: 100%; padding: 0 2px; }
+  body:not(.cxp-more-open) .cxp-main {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+    grid-template-areas: "src" "out";
+  }
+  body:not(.cxp-more-open) .cxp-output-pane { border-left: none; border-top: 1px solid var(--border); }
+  body.cxp-more-open { height: auto; min-height: 100vh; overflow: auto; }
+  body.cxp-more-open .cxp-main { grid-template-columns: 1fr; grid-template-rows: 45vh 45vh 70vh; flex: 0 0 auto; }
+}
+@media (max-width: 640px) {
+  #cxp-pick { min-height: 44px; font-size: 16px; }
+  .cxp-search { min-height: 44px; font-size: 16px; }
+  .cxp-btn-icon { min-width: 44px; justify-content: center; }
+  .cxp-more-row { align-self: stretch; }
+  .cxp-detail-select { min-height: 44px; font-size: 16px; }
+  .cxp-brand { padding-right: 10px; margin-right: 0; }
+}
