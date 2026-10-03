@@ -192,54 +192,54 @@ reading what the step checks.
 | 56 | `ring-import-gate` |  | `scripts/ring_import_gate.sh` |
 | 57 | `gates-manifest-gate` |  | `scripts/gates_manifest_gate.sh` |
 | 58 | `advisory-audit` |  | `scripts/advisory_audit_check.cx` |
-| 59 | `property-gate` |  | `scripts/property_gate.cx` |
-| 60 | `ring-tag-gate` |  | `scripts/ring_query.cx` |
-| 61 | `cxer-registry-gate` |  | `scripts/cxer_registry_report.sh` |
-| 62 | `spec-freeze-gate` | yes | `scripts/spec_freeze_gate.sh` |
-| 63 | `test-extraction-gate` |  | — |
-| 64 | `abi-gc-gate` |  | — |
-| 65 | `libcx-abi-gate` |  | `tools/libcx-abi-gate.sh` |
-| 66 | `test-profile-gate` |  | `make -C deps/cx-core-code/vcx test-profile-gate` |
-| 67 | `check-code-spec-consistency` |  | `scripts/check_code_spec_consistency.cx` |
-| 68 | `check-code-fixtures` |  | `scripts/check_code_fixtures.cx` |
-| 69 | `reader-parity` |  | `v test vcx/tests/reader_parity_test.v` |
-| 70 | `stdlib-catalog-gate` |  | `scripts/stdlib_catalog_gate.cx` |
-| 71 | `placement-gate` |  | `scripts/placement_gate.cx` |
-| 72 | `repos-allocation-gate` |  | `scripts/repos_allocation_gate.cx` |
-| 73 | `product-import-gate` |  | `scripts/product_import_gate.cx` |
-| 74 | `test-deps-pins` |  | `scripts/check_deps_pins_fixtures.cx` |
-| 75 | `check-deps-bootstrap-token` |  | `scripts/deps_bootstrap.sh` |
-| 76 | `test-bundle-sources` |  | `scripts/check_bundle_sources_fixtures.cx` |
-| 77 | `test-docs-fragment` |  | `scripts/check_docs_fragment_fixtures.cx` |
-| 78 | `test-migrate-namespace` |  | `scripts/check_migrate_namespace_fixtures.cx` |
-| 79 | `store-session-dep-gate` |  | `scripts/store_session_dep_gate.cx` |
-| 80 | `flow-vocabulary-gate` |  | `deps/cx-platform-flow/scripts/flow_vocabulary_gate.cx` |
-| 81 | `flow-dogfood-gate` |  | `deps/cx-platform-flow/scripts/flow_dogfood_gate.cx` |
-| 82 | `docs-flow-gate` | yes | `scripts/ci_flow_gate.cx` |
-| 83 | `release-flow-gate` |  | `scripts/ci_flow_gate.cx` |
-| 84 | `test-flow-umbrella` |  | — |
-| 85 | `address-baseline-gate` |  | `v run deps/cx-core-code/vcx/tests/runners/address_baseline/address_baseline.v` |
-| 86 | `tools-export-gate` |  | — |
-| 87 | `test-code-diagram` |  | `scripts/check_code_diagram_fixtures.cx` |
-| 88 | `test-playground-mermaid` |  | `scripts/test_playground_mermaid.mjs` |
-| 89 | `test-playground-nav` |  | `scripts/test_playground_nav.mjs` |
-| 90 | `test-playground-search` |  | `scripts/test_playground_search.mjs` |
-| 91 | `test-playground-readings` |  | `scripts/gen_guide/playground/readings_check.cx` |
-| 92 | `test-oriel` |  | `deps/cx-platform-ux/scripts/oriel_real.sh` |
-| 93 | `test-agent-real` |  | — |
-| 94 | `test-connector-real` |  | — |
-| 95 | `test-db-real` |  | — |
-| 96 | `test-sso-interop` |  | `deps/cx-platform-sso/scripts/sso_interop.sh` |
-| 97 | `test-xpath-parity-cx` |  | `scripts/check_xpath_parity_fixtures.cx` |
-| 98 | `corpus-audit` |  | `scripts/corpus_audit.sh` |
-| 99 | `repr-guard` |  | `bench/repr/run.sh` |
-| 100 | `check-inmodule-test-roster` |  | — |
-| 101 | `check-build-input-roster` |  | `make -C deps/cx-core-code/vcx check-build-input-roster` |
-| 102 | `check-selection-manifest` |  | `scripts/check_selection_manifest.sh` |
-| 103 | `fmt-sweep-gate` |  | `scripts/fmt_corpus_sweep.cx` |
-| 104 | `test-playground-wasm-traps` |  | `scripts/test_playground_wasm_traps.mjs` |
-| 105 | `test-site-phone-width` |  | `scripts/test_site_phone_width.mjs` |
-| 106 | `test-playground-primer` |  | `scripts/test_playground_primer.mjs` |
+| 59 | `ring-tag-gate` |  | `scripts/ring_query.cx` |
+| 60 | `cxer-registry-gate` |  | `scripts/cxer_registry_report.sh` |
+| 61 | `spec-freeze-gate` | yes | `scripts/spec_freeze_gate.sh` |
+| 62 | `test-extraction-gate` |  | — |
+| 63 | `abi-gc-gate` |  | — |
+| 64 | `libcx-abi-gate` |  | `tools/libcx-abi-gate.sh` |
+| 65 | `test-profile-gate` |  | `make -C deps/cx-core-code/vcx test-profile-gate` |
+| 66 | `check-code-spec-consistency` |  | `scripts/check_code_spec_consistency.cx` |
+| 67 | `check-code-fixtures` |  | `scripts/check_code_fixtures.cx` |
+| 68 | `reader-parity` |  | `v test vcx/tests/reader_parity_test.v` |
+| 69 | `stdlib-catalog-gate` |  | `scripts/stdlib_catalog_gate.cx` |
+| 70 | `placement-gate` |  | `scripts/placement_gate.cx` |
+| 71 | `repos-allocation-gate` |  | `scripts/repos_allocation_gate.cx` |
+| 72 | `product-import-gate` |  | `scripts/product_import_gate.cx` |
+| 73 | `test-deps-pins` |  | `scripts/check_deps_pins_fixtures.cx` |
+| 74 | `check-deps-bootstrap-token` |  | `scripts/deps_bootstrap.sh` |
+| 75 | `test-bundle-sources` |  | `scripts/check_bundle_sources_fixtures.cx` |
+| 76 | `test-docs-fragment` |  | `scripts/check_docs_fragment_fixtures.cx` |
+| 77 | `test-migrate-namespace` |  | `scripts/check_migrate_namespace_fixtures.cx` |
+| 78 | `store-session-dep-gate` |  | `scripts/store_session_dep_gate.cx` |
+| 79 | `flow-vocabulary-gate` |  | `deps/cx-platform-flow/scripts/flow_vocabulary_gate.cx` |
+| 80 | `flow-dogfood-gate` |  | `deps/cx-platform-flow/scripts/flow_dogfood_gate.cx` |
+| 81 | `docs-flow-gate` | yes | `scripts/ci_flow_gate.cx` |
+| 82 | `release-flow-gate` |  | `scripts/ci_flow_gate.cx` |
+| 83 | `test-flow-umbrella` |  | — |
+| 84 | `address-baseline-gate` |  | `v run deps/cx-core-code/vcx/tests/runners/address_baseline/address_baseline.v` |
+| 85 | `tools-export-gate` |  | — |
+| 86 | `test-code-diagram` |  | `scripts/check_code_diagram_fixtures.cx` |
+| 87 | `test-playground-mermaid` |  | `scripts/test_playground_mermaid.mjs` |
+| 88 | `test-playground-nav` |  | `scripts/test_playground_nav.mjs` |
+| 89 | `test-playground-search` |  | `scripts/test_playground_search.mjs` |
+| 90 | `test-playground-readings` |  | `scripts/gen_guide/playground/readings_check.cx` |
+| 91 | `test-oriel` |  | `deps/cx-platform-ux/scripts/oriel_real.sh` |
+| 92 | `test-agent-real` |  | — |
+| 93 | `test-connector-real` |  | — |
+| 94 | `test-db-real` |  | — |
+| 95 | `test-sso-interop` |  | `deps/cx-platform-sso/scripts/sso_interop.sh` |
+| 96 | `test-xpath-parity-cx` |  | `scripts/check_xpath_parity_fixtures.cx` |
+| 97 | `corpus-audit` |  | `scripts/corpus_audit.sh` |
+| 98 | `repr-guard` |  | `bench/repr/run.sh` |
+| 99 | `check-inmodule-test-roster` |  | — |
+| 100 | `check-build-input-roster` |  | `make -C deps/cx-core-code/vcx check-build-input-roster` |
+| 101 | `check-selection-manifest` |  | `scripts/check_selection_manifest.sh` |
+| 102 | `fmt-sweep-gate` |  | `scripts/fmt_corpus_sweep.cx` |
+| 103 | `test-playground-wasm-traps` |  | `scripts/test_playground_wasm_traps.mjs` |
+| 104 | `test-site-phone-width` |  | `scripts/test_site_phone_width.mjs` |
+| 105 | `test-playground-primer` |  | `scripts/test_playground_primer.mjs` |
+| 106 | `site-live-check` |  | `scripts/site_live_check.cx` |
 | 107 | `ledger-index-check` | yes | `scripts/ledger_index.cx` |
 | 108 | `ledger-edit-map-check` | yes | `scripts/ledger_edit_map_check.cx` |
 | 109 | `check-profile-gate-selection` |  | `scripts/profile_gate_selection_selftest.sh` |
