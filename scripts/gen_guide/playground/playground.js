@@ -848,6 +848,10 @@
   function onEdit() {
     wasmUnsupportedNote = '';
     grantsNote = '';
+    // SITE-3: the recorded answer stood in for an answer this engine could
+    // not give; for an edited text it answers nothing on screen, so it goes
+    // back behind the disclosure (where the verdict says "edited").
+    if (edited()) document.body.classList.remove('cxp-needs-expect');
     syncRender();
     refreshView();
     if (verdictEl && current && current.kind === 'primer' && edited()) {

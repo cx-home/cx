@@ -871,7 +871,10 @@ p.pair-title {
      the sidebar. No colour is introduced here. */
 body { grid-template-columns: 258px minmax(0, 1fr); }
 header.sheet-bar { min-width: 0; flex-wrap: wrap; row-gap: 0.35rem; }
-header.sheet-bar .sb-left { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+header.sheet-bar .sb-left { min-width: 0; }
+/* the page title wraps rather than ellipsize: nothing in the top bar cuts
+   its own text (the adversarial reader: a title cut inside .sb-left) */
+header.sheet-bar .sb-title { white-space: normal; overflow: visible; text-overflow: clip; }
 main, footer.title-block { min-width: 0; }
 footer.title-block { flex-wrap: wrap; }
 details.side-nav > summary.side-nav-toggle { display: none; }
