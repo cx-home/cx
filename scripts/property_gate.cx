@@ -10,8 +10,9 @@
 # the invariants the specs state, each a named check citing its section:
 #
 #   (i)   map keys unique after every map constructor -- [?to-map], [?for-map],
-#         $map:merge, $map:put, computed [?entry] keys, and attribute names on
-#         a constructed element (cxdm.md §2.4, §2.6; canonical.md §2.11.1;
+#         $map:merge, $map:put, computed [?entry] keys, a literal with a
+#         repeated key refused by both readers, and attribute names on a
+#         constructed element (cxdm.md §2.4, §2.6; canonical.md §2.11.1;
 #         stdlib/map.md §2-§3; code.md §6.4.1, §7.2);
 #   (ii)  canonical(parse(canonical(x))) == canonical(x), the hash stable,
 #         and every scalar kind kept in every position (canonical.md §1.2,
@@ -347,6 +348,24 @@
                 [$judge-map 'entry' $w2 [= [$ident $ka] [$ident $kb]] true
                   $P-ENTRY $ectx [$concat $input ' entries']]]]
         [else ()]]]]]]
+
+# A map LITERAL with a repeated key identity is refused by both readers (cxdm.md
+# §2.6 "Duplicate keys: Not permitted (parse error)"; canonical.md §2.11.1 W014),
+# and one with two identities sharing an image (7 and '7') is two keys in both.
+[?def judge-literal scope=private impure ($reader::string $dup::bool $t::string)
+  [?match [?if [= $reader 'data'] [then [$cx:parse $t]] [else [$cx:eval $t $NOCTX]]]
+    [case [err @message=$m]
+      [?if $dup [then ()] [else ([$fail 'i' [$concat 'literal-refused-distinct-keys:' $reader] $m $t],)]]]
+    [case $got
+      [?if $dup [then ([$fail 'i' [$concat 'literal-accepted-duplicate:' $reader] [$cx:serialize $got] $t],)]
+        [else [$when-not [= [$map:size $got] 2] [$fail 'i' [$concat 'literal-lost-a-key:' $reader] [$cx:serialize $got] $t]]]]]]]
+
+[?def chk-literal scope=private impure ()
+  [?let [= $k1 [$pick $KEYS]] [= $k2 [$pick $KEYS]] [= $dup [= [$string $k1@id] [$string $k2@id]]]
+        [= $t [$concat "{" [$string $k1@t] ": 1, " [$string $k2@t] ": 2}"]]
+    [?to-sequence [?concat
+      [$judge-literal 'data' $dup $t]
+      [$judge-literal 'program' $dup $t]]]]]
 
 [?def chk-maps scope=private impure ($ta::string $tb::string)
   [?match [$cx:parse $ta]
@@ -916,6 +935,7 @@
       [?match [$cx:parse $ma] [case [err] ()] [case $m [$chk-constructed-roundtrip 'merge' [$map:merge ($m, $NOCTX)]]]]
       [$chk-constructed-roundtrip 'datetime-key' [$map:entry [$g-datetime-value] 1]]
       [$chk-attrs]
+      [$chk-literal]
       [$chk-decimal]
       [$chk-err]
       [$chk-absence [$g-value 2]]]]]]
@@ -927,7 +947,7 @@
                                   [?for [in $t $EMPTIES] [in $f [$chk-absence $t]] [yield $f]]]]]
         [= $eff [$chk-effects $cxbin]]
         [= $neff [$count [$effect-points $SECURITY-SPEC]]]
-        [= $n1 [* $count 7]] [= $n2 [* $count 5]] [= $n3 [* $count 14]] [= $n4 [* $count 2]]
+        [= $n1 [* $count 9]] [= $n2 [* $count 5]] [= $n3 [* $count 14]] [= $n4 [* $count 2]]
         [= $n7 [+ $count [$count $EMPTIES] 2]]
     [run
       [checks
@@ -969,6 +989,8 @@
           [$st 'map: a repeated identity accepted' 'to-map-accepted-duplicate' [$judge-map 'to-map' $want-aa true true "{a: 1}" $NOCTX 'st']],
           [$st 'map: distinct identities refused' 'put-refused-distinct-keys' [$judge-map 'put' $want-ab false false "[+ 1 'x']" $NOCTX 'st']],
           [$st 'map: a correct answer' '' [$judge-map 'merge' $want-ab false false "{a: 1, b: 2}" $NOCTX 'st']],
+          [$st 'literal: a repeated identity accepted' 'literal-accepted-duplicate:data' [$judge-literal 'data' true "{a: 1, b: 2}"]],
+          [$st 'literal: distinct identities refused' 'literal-refused-distinct-keys:program' [$judge-literal 'program' false "{a: 1, a: 2}"]],
           [$st 'attrs: distinct names refused' 'attr-refused-distinct-names' [$judge-attrs 'attr' "[+ 1 'x']" $NOCTX false 'st']],
           [$st 'decimal: inexact' 'add-inexact' [$judge-exact 'add' "[+ 1.0 1.0]" "3.0"]],
           [$st 'decimal: a correct answer' '' [$judge-exact 'add' "[+ 1.0 1.0]" "2.0"]],
