@@ -64,6 +64,15 @@
 //     zoom, the engine note) is hidden until the disclosure opens and
 //     visible after, and no row of controls in the opened page holds more
 //     than four.
+//   Round 2 (the adversarial reader's six REDs): a served page that opens
+//   a dialog, or renders an element inside a <code> (unescaped source — a
+//   live <script>alert(1)</script> on three guide pages, #1764), fails; a
+//   [role=button]/[role=link]/… control is counted; Reset, Share and ◀ ▶
+//   must show once the disclosure opens; the fixture's recorded answer
+//   shows with the disclosure closed only where this engine cannot run the
+//   example, and goes once the reader edits it; the sidebar's disclosure is
+//   checked on every served page; anything in the top bar that clips or
+//   ellipsizes its own content is a clipped top bar.
 // A violation on any page, at any width, is named by URL, width and the
 // measurement; exit 1. Needs Chrome/Chromium (CX_CHROME) and a built site
 // (`make site`); boots its own static server over `scripts/serve_static.cx`.
@@ -192,10 +201,14 @@ async function bootBrowser() {
   let msgId = 0;
   const pending = new Map();
   const waiters = new Set();
+  const handlers = [];
   ws.addEventListener('message', (ev) => {
     const m = JSON.parse(ev.data);
     if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); }
-    else if (m.method) { for (const w of [...waiters]) if (w.method === m.method) { waiters.delete(w); w.res(m.params); } }
+    else if (m.method) {
+      for (const w of [...waiters]) if (w.method === m.method) { waiters.delete(w); w.res(m.params); }
+      for (const h of handlers) if (h.method === m.method) h.fn(m.params);
+    }
   });
   const opened = await new Promise((res) => {
     const t = setTimeout(() => res(false), 20000);
@@ -228,13 +241,22 @@ async function bootBrowser() {
     });
   }
   await send("Page.enable", {});
+  // A page that opens a dialog (alert/confirm/prompt) blocks its own load:
+  // the dialog is dismissed and RECORDED against the page (SITE-3, the
+  // adversarial reader: three guide pages ran a live <script>alert(1)</script> from
+  // an unescaped code example, #1764) — a served page never opens one.
+  const dialogs = [];
+  handlers.push({ method: "Page.javascriptDialogOpening", fn: (p) => {
+    dialogs.push(`${p.type} "${String(p.message).slice(0, 60)}" at ${p.url}`);
+    send("Page.handleJavaScriptDialog", { accept: false }).catch(() => {});
+  } });
   // Hermetic: the step reads the served files, never the network. The
   // pages' webfonts (Google Fonts) are refused, so the layout is measured
-  // in the fallback faces a phone shows until they arrive (they measure
-  // wider: two stdlib pages overflowed in them and not in the webfonts).
+  // in the fallback faces a phone shows until they arrive (the fallback
+  // faces measure wider: two stdlib pages overflowed in them alone).
   await send("Network.enable", {});
   await send("Network.setBlockedURLs", { urls: ["*fonts.googleapis.com*", "*fonts.gstatic.com*"] });
-  return { send, evalJs, once, close: () => { try { ws.close(); } catch (_) {} } };
+  return { send, evalJs, once, dialogs, close: () => { try { ws.close(); } catch (_) {} } };
 }
 
 // ── measure one page at one width ────────────────────────────────────────
@@ -247,6 +269,7 @@ async function load(cdp, port, page, width, height, settleMs = 150) {
   // One retry, then the page is named with what Page.navigate answered
   // (#1764: lib-html, tooling and tour-programs fire none under headless
   // Chrome 154 and load at once in a desktop browser).
+  cdp.dialogs.length = 0;
   let ok = false, navNote = '';
   for (let attempt = 0; attempt < 2 && !ok; attempt++) {
     const loaded = cdp.once('Page.loadEventFired', 15000);
@@ -279,20 +302,37 @@ const LAYOUT_JS = (W) => `JSON.stringify((function () {
   }
   const outside = Object.entries(boxes).filter(([, b]) => b.l < -1 || b.r > W + 1).map(([k, b]) => k + ' ' + JSON.stringify(b));
   const hdr = document.querySelector('header.sheet-bar, header.cxp-toolbar, body > header');
-  const hdrClipped = hdr && shown(hdr) && hdr.scrollWidth > hdr.clientWidth + 1 ? (hdr.scrollWidth + ' > ' + hdr.clientWidth) : null;
+  // The top bar, or anything in it that clips or ellipsizes its own
+  // content (the reader: a title cut inside .sb-left's overflow:hidden
+  // passed when only the bar itself was read).
+  const hdrClipped = !(hdr && shown(hdr)) ? null : ([hdr, ...hdr.querySelectorAll('*')]
+    .filter((e) => shown(e) && (e === hdr || /hidden|clip/.test(getComputedStyle(e).overflowX)) && e.scrollWidth > e.clientWidth + 1)
+    .map((e) => (e === hdr ? 'the bar' : e.tagName.toLowerCase() + (typeof e.className === 'string' && e.className ? '.' + e.className.split(' ')[0] : '')) + ' ' + e.scrollWidth + ' > ' + e.clientWidth)[0] || null);
   const wide = [...document.body.querySelectorAll('*')]
     .filter((e) => !(e.closest('svg') && e.tagName.toLowerCase() !== 'svg'))
     .filter((e) => { const b = e.getBoundingClientRect(); return (b.right > W + 1 || b.left < -1) && shown(e) && !clipsX(e); })
     .map((e) => e.tagName.toLowerCase() + (e.className && typeof e.className === 'string' ? '.' + e.className.split(' ')[0] : '') + ' ' + JSON.stringify(R(e)));
-  return { scrollWidth: Math.max(html.scrollWidth, document.body.scrollWidth), boxes, outside, hdrClipped, wideCount: wide.length, wide: wide.slice(0, 3) };
+  // SITE-3 (#1764): a code example is TEXT — an element inside a <code>
+  // other than the highlighter's own span.hl-* is source markup the
+  // generator failed to escape (a live <script> on three guide pages).
+  const codeMarkup = [...document.querySelectorAll('code *')]
+    .filter((e) => !(e.tagName === 'SPAN' && /(^| )hl-/.test(e.className)))
+    .map((e) => '<' + e.tagName.toLowerCase() + '> inside ' + (e.closest('pre') ? 'a code block' : 'inline code') + ': ' + e.outerHTML.slice(0, 50));
+  return { scrollWidth: Math.max(html.scrollWidth, document.body.scrollWidth), boxes, outside, hdrClipped, wideCount: wide.length, wide: wide.slice(0, 3), codeMarkup };
 })())`;
-async function layout(cdp, W) { return JSON.parse(await cdp.evalJs(LAYOUT_JS(W))); }
+async function layout(cdp, W) {
+  const m = JSON.parse(await cdp.evalJs(LAYOUT_JS(W)));
+  m.dialogs = cdp.dialogs.splice(0);
+  return m;
+}
 function layoutFailures(m, where, W) {
   const f = [];
   if (m.scrollWidth > W + 1) f.push(`${where}: the page is ${m.scrollWidth}px wide on a ${W}px device (horizontal page scroll)`);
   if (m.outside.length) f.push(`${where}: outside [0, ${W}]: ${m.outside.join('; ')}`);
   if (m.boxes.main && m.boxes.main.l < 0) f.push(`${where}: the main column's left edge is ${m.boxes.main.l}px`);
   if (m.hdrClipped) f.push(`${where}: the top bar clips its own content (scrollWidth ${m.hdrClipped})`);
+  if (m.dialogs && m.dialogs.length) f.push(`${where}: the page opened ${m.dialogs.length} dialog(s) — ${m.dialogs[0]}`);
+  if (m.codeMarkup && m.codeMarkup.length) f.push(`${where}: ${m.codeMarkup.length} element(s) rendered inside code (unescaped source) — e.g. ${m.codeMarkup.slice(0, 2).join('; ')}`);
   if (m.wideCount) f.push(`${where}: ${m.wideCount} element(s) reach past the viewport — e.g. ${m.wide.join('; ')}`);
   return f;
 }
@@ -340,7 +380,7 @@ const CONTROLS_JS = `(function () {
   const H = innerHeight;
   const shown = (e) => { const b = e.getBoundingClientRect(); if (b.width <= 0 || b.height <= 0) return false;
     for (let p = e; p && p.nodeType === 1; p = p.parentElement) { const cs = getComputedStyle(p); if (cs.display === 'none' || cs.visibility === 'hidden') return false; } return true; };
-  const sel = 'a[href], button, select, input:not([type=hidden]), textarea, summary, [role=tab], [tabindex]:not([tabindex="-1"])';
+  const sel = 'a[href], button, select, input:not([type=hidden]), textarea, summary, [role=tab], [role=button], [role=link], [role=menuitem], [role=checkbox], [role=switch], [role=combobox], [contenteditable=""], [contenteditable=true], [tabindex]:not([tabindex="-1"])';
   const all = [...document.querySelectorAll(sel)].filter(shown);
   const label = (e) => (e.id ? '#' + e.id : e.tagName.toLowerCase() + (typeof e.className === 'string' && e.className ? '.' + e.className.split(' ')[0] : '')) + ':' + (e.textContent || e.value || e.placeholder || '').trim().slice(0, 12);
   const rowsOf = (list) => { const rows = []; for (const e of list) { const b = e.getBoundingClientRect(); const cy = b.top + b.height / 2;
@@ -356,10 +396,13 @@ const CONTROLS_JS = `(function () {
   const secondaryShown = SECONDARY.filter((q) => [...document.querySelectorAll(q)].some(shown));
   const status = document.getElementById('cxp-status');
   const engineNote = !!(status && shown(status) && /libcx\\.wasm|JSPI/.test(status.textContent));
+  const ex = document.getElementById('cxp-expect');
+  const expectShown = !!(ex && shown(ex));
+  const needsExpect = document.body.classList.contains('cxp-needs-expect');
   return JSON.stringify({ H, controls: counted.length, rows: rowsOf(counted), allRows: rowsOf(all.filter((e) => e.tagName !== 'TEXTAREA')),
     editor: editor ? { t: Math.round(editor.top), b: Math.round(editor.bottom), l: Math.round(editor.left) } : null,
     output: ob ? { t: Math.round(ob.top), b: Math.round(ob.bottom), l: Math.round(ob.left) } : null,
-    secondaryShown, engineNote,
+    secondaryShown, engineNote, expectShown, needsExpect,
     toggle: (() => { const t = document.querySelector('header [aria-expanded], header details > summary'); return t ? (t.id ? '#' + t.id : t.tagName.toLowerCase()) : null; })() });
 })()`;
 async function playgroundControls(cdp) { return JSON.parse(await cdp.evalJs(CONTROLS_JS)); }
@@ -387,7 +430,41 @@ async function waitPlayground(cdp) {
   }
   await new Promise((r) => setTimeout(r, 300));
 }
-const PRIMARY_SURFACES = ['#cxp-search', '.cxp-reading-tab', '.cxp-tab', '#cxp-format', '#cxp-fixture', '.cxp-subject-tab', '#cxp-detail-select', '.cxp-viz-tab'];
+const PRIMARY_SURFACES = ['#cxp-search', '.cxp-reading-tab', '#cxp-prev', '#cxp-next', '#cxp-reset', '#cxp-share', '.cxp-tab', '#cxp-format', '#cxp-fixture', '.cxp-subject-tab', '#cxp-detail-select', '.cxp-viz-tab'];
+// With the disclosure closed, the fixture's recorded answer shows only where
+// this engine cannot run the example (the answer the page has) — and goes
+// once the reader edits it: the recording answers the fixture's text, not
+// theirs (the adversarial reader: it stayed up beside the edited run).
+// ap-flags-after-file-wrong is a primer fixture that runs only in a
+// terminal; the case opens it through the picker, edits, runs.
+const RECORDED_ONLY = 'ap-flags-after-file-wrong';
+async function recordedAnswerFailures(cdp, where) {
+  const r = JSON.parse(await cdp.evalJs(`(async function () {
+    const shown = (e) => { if (!e) return false; const b = e.getBoundingClientRect(); if (b.width <= 0 || b.height <= 0) return false;
+      for (let p = e; p && p.nodeType === 1; p = p.parentElement) { const cs = getComputedStyle(p); if (cs.display === 'none' || cs.visibility === 'hidden') return false; } return true; };
+    const ran = () => Number(document.body.dataset.ran || 0);
+    const settle = async (n0) => { for (let i = 0; i < 100 && (ran() <= n0 || document.getElementById('cxp-run').classList.contains('is-running')); i++) await new Promise((r) => setTimeout(r, 100)); await new Promise((r) => setTimeout(r, 150)); };
+    const pick = document.getElementById('cxp-pick');
+    const want = 'primer:${RECORDED_ONLY}';
+    const tab = document.querySelector('.cxp-reading-tab[data-reading="code"]'); if (tab) tab.click();
+    if (![...pick.options].some((o) => o.value === want)) return JSON.stringify({ missing: true });
+    let n0 = ran(); pick.value = want; pick.dispatchEvent(new Event('change', { bubbles: true })); await settle(n0);
+    const atLoad = shown(document.getElementById('cxp-expect'));
+    const input = document.getElementById('cxp-input');
+    input.value = input.value + '\\n'; input.dispatchEvent(new Event('input', { bubbles: true }));
+    n0 = ran(); document.getElementById('cxp-run').click(); await settle(n0);
+    const afterEdit = shown(document.getElementById('cxp-expect'));
+    return JSON.stringify({ atLoad, afterEdit });
+  })()`, 30000));
+  const f = [];
+  if (r.missing) f.push(`${where}: the code picker has no ${RECORDED_ONLY} (the recorded-answer case cannot run)`);
+  else {
+    if (!r.atLoad) f.push(`${where}: ${RECORDED_ONLY} (runs only in a terminal) does not show its recorded answer with the disclosure closed`);
+    if (r.afterEdit) f.push(`${where}: ${RECORDED_ONLY} edited and run still shows the fixture's recorded answer with the disclosure closed`);
+  }
+  return f;
+}
+
 async function playgroundFailures(cdp, where, W) {
   const f = [];
   const c = await playgroundControls(cdp);
@@ -399,6 +476,7 @@ async function playgroundFailures(cdp, where, W) {
   if (W < 640 && c.editor && c.output && c.output.t < c.editor.b - 1) f.push(`${where}: on a phone the output is not stacked under the editor (editor ${JSON.stringify(c.editor)}, output ${JSON.stringify(c.output)})`);
   if (c.secondaryShown.length) f.push(`${where}: secondary surfaces visible before the disclosure opens: ${c.secondaryShown.join(', ')}`);
   if (c.engineNote) f.push(`${where}: the engine note (libcx.wasm / JSPI) is visible before the disclosure opens`);
+  if (c.expectShown && !c.needsExpect) f.push(`${where}: the fixture's recorded answer (#cxp-expect) is visible before the disclosure opens, on an example this engine runs`);
   if (!c.toggle) { f.push(`${where}: the toolbar has no disclosure (an aria-expanded control or a <details> summary in the header)`); return { f, c }; }
   await playgroundToggle(cdp);
   const o = await playgroundControls(cdp);
@@ -418,6 +496,7 @@ async function playgroundFailures(cdp, where, W) {
   await playgroundToggle(cdp);
   const back = await playgroundControls(cdp);
   if (back.secondaryShown.length) f.push(`${where}: closing the disclosure leaves visible: ${back.secondaryShown.join(', ')}`);
+  f.push(...(await recordedAnswerFailures(cdp, where)));
   return { f, c, o };
 }
 
@@ -567,21 +646,20 @@ async function measure(cdp, port, page, width, height) {
   }
   // SITE-3: every served page, at 375x812.
   const served = servedPages(SITE);
-  // ADVISORY (ADVIS-1), each row an OPEN v0.18 issue: a page the headless
-  // browser cannot load is named, not failed, until its issue closes.
-  const ADVISORY_UNLOADED = { 'lib-html.html': 1764, 'tooling.html': 1764, 'tour-programs.html': 1764 };
   let servedBad = 0;
   for (const page of served) {
     checkDeadline(`${page}@375 (every served page)`);
     try {
       await load(cdp, port, page, 375, 812, 60);
       const f = layoutFailures(await layout(cdp, 375), `${page} @ 375x812`, 375);
+      // the sidebar's disclosure on EVERY served page, not the audited six
+      // (the adversarial reader: about.html open at load passed).
+      if (page !== 'playground.html') f.push(...sidebarFailures(await sidebarCollapse(cdp, 375, 812), `${page} @ 375x812`, 375, 812));
       if (f.length) servedBad++;
       if (served.indexOf(page) % 40 === 39) say(`every served page @ 375x812 — ${served.indexOf(page) + 1} of ${served.length} read (${Math.round((Date.now() - STARTED) / 1000)} s)`);
       failures.push(...f);
     } catch (e) {
-      if (ADVISORY_UNLOADED[page] && /fired no load event/.test(e.message)) say(`ADVISORY #${ADVISORY_UNLOADED[page]} — ${page} @ 375x812 unread: ${e.message.split(' (')[0]}`);
-      else failures.push(`${page} @ 375x812: layout measurement threw — ${e.message}`);
+      failures.push(`${page} @ 375x812: layout measurement threw — ${e.message}`);
     }
   }
   say(`every served page @ 375x812 — ${served.length} pages, ${servedBad} with a layout failure`);
@@ -597,6 +675,8 @@ async function measure(cdp, port, page, width, height) {
       failures.push(...f);
       say(`${where} — ${c.controls} control(s) above the fold in ${c.rows.length} row(s)${o ? `; opened: widest row ${Math.max(0, ...o.allRows.map((r) => r.length))}` : ''}`);
       if (o && SHOTS) {
+        await load(cdp, port, 'playground.html', width, height);
+        await waitPlayground(cdp);
         await playgroundToggle(cdp);
         await shot(cdp, `playground-${width}-opened`);
         await playgroundToggle(cdp);
