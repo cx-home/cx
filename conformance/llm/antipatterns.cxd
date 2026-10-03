@@ -88,7 +88,7 @@ below and the exit status are exactly what they were.
 --allow-env
 #]]
   [out-text [#
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var-or-default; none granted (grant via --allow-env)']
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var-or-default; none granted (grant via --allow-env)' at='2:39']
 #]]
   [exit-code [#1#]]
  ]
@@ -133,7 +133,7 @@ a call": with it, the same typo fails loud and names itself.
 [greeet "world"]
 #]]
   [out-text [#
-[greeet 'world']
+[greeet world]
 #]]
   [exit-code [#0#]]
  ]
@@ -156,7 +156,7 @@ because a wrong suggestion sends the reader to check a name they never wrote.
 [$greeet "world"]
 #]]
   [out-text [#
-[err code=cx-err:CXER0136 message='E_NO_CALLABLE: no callable "greeet" — did you mean `greet`?']
+[err code=cx-err:CXER0136 message='E_NO_CALLABLE: no callable "greeet" — did you mean `greet`?' at='2:1']
 #]]
   [exit-code [#1#]]
  ]
@@ -345,7 +345,7 @@ into a money column — which is precisely the class this rule exists to close.
 [+ 1.5 1.0e0]
 #]]
   [out-text [#
-[err code=cx-err:CXER0100 message='+: decimal/bigint arithmetic admits only int/bigint/decimal operands — [cast] is the only decimal↔float bridge (L44)']
+[err code=cx-err:CXER0100 message='+: decimal/bigint arithmetic admits only int/bigint/decimal operands — [cast] is the only decimal↔float bridge (L44)' at='1:1']
 #]]
   [exit-code [#1#]]
  ]
@@ -584,7 +584,7 @@ the two halves below; the grant does.
 [probe exists=[$io:exists '/']]
 #]]
   [out-text [#
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-exists; none granted (grant via --allow-read)']
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-exists; none granted (grant via --allow-read)' at='2:15']
 #]]
   [exit-code [#1#]]
  ]
@@ -631,7 +631,7 @@ input answers in linear time.
 [$re:compile '(a+)+\\1']
 #]]
   [out-text [#
-[err code=cx-err:CXER3200 message='E_RE_FEATURE_UNSUPPORTED: CXER3200:E_RE_FEATURE_UNSUPPORTED: (a+)+\1']
+[err code=cx-err:CXER3200 message='E_RE_FEATURE_UNSUPPORTED: CXER3200:E_RE_FEATURE_UNSUPPORTED: (a+)+\1' at='2:1']
 #]]
   [exit-code [#1#]]
  ]

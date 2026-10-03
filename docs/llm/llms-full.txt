@@ -221,7 +221,7 @@ into a money column — which is precisely the class this rule exists to close.
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0100 message='+: decimal/bigint arithmetic admits only int/bigint/decimal operands — [cast] is the only decimal↔float bridge (L44)']
+[err code=cx-err:CXER0100 message='+: decimal/bigint arithmetic admits only int/bigint/decimal operands — [cast] is the only decimal↔float bridge (L44)' at='1:1']
 ```
 
 **Write this:** Keep exact quantities in decimals
@@ -398,7 +398,7 @@ the capability-free substrate, which is why this runs with no grants at all:
 
 ```console
 $ cx prog.cx
-[doc [item 'hello']]
+[doc [item hello]]
 ```
 
 Swap `mem://` for a real URL and the same two calls talk to a served store.
@@ -691,8 +691,8 @@ predicates. A path works as a `[?for]` source, as an `[?if]` condition
 
 ```console
 $ cx --data=input.cx prog.cx
-[user [name 'Alice'] [email 'a@x.com']]
-[user [name 'Bob'] [email 'b@x.com']]
+[user [name Alice] [email a@x.com]]
+[user [name Bob] [email b@x.com]]
 ```
 
 `input.cx`
@@ -710,8 +710,8 @@ $ cx --data=input.cx prog.cx
 
 ```console
 $ cx --data=input.cx prog.cx
-[user active=true [name 'Alice']]
-[user active=true [name 'Carol']]
+[user active=true [name Alice]]
+[user active=true [name Carol]]
 ```
 
 `input.cx`
@@ -746,8 +746,8 @@ Descendant search with a binding:
 
 ```console
 $ cx --data=input.cx prog.cx
-[span 'hello']
-[span 'world']
+[span hello]
+[span world]
 ```
 
 ### Branch with `[?if]`
@@ -806,7 +806,7 @@ wildcard, and `[else]` is the fallback.
 
 ```console
 $ cx --data=input.cx prog.cx
-[p 'hello']
+[p hello]
 ```
 
 `input.cx`
@@ -1208,7 +1208,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER2502 message='E_ENV_FLAG_TYPE_MISMATCH: notanint is not a valid int']
+[err code=cx-err:CXER2502 message='E_ENV_FLAG_TYPE_MISMATCH: notanint is not a valid int' at='3:3']
 ```
 
 In production the argv sequence those two pass explicitly is `[$env:argv]`.
@@ -1616,7 +1616,7 @@ is to rebuild from parts — path navigation does not propagate, so `@code` and
 
 ```console
 $ cx prog.cx
-[report [code 'c'] [message 'm']]
+[report [code c] [message m]]
 ```
 
 A paren **sequence** is not element construction, so it does not propagate —
@@ -1629,7 +1629,7 @@ which is how you collect outcomes including the failures:
 
 ```console
 $ cx prog.cx
-([err code=c message=m], kept, [box 'c'])
+([err code=c message=m], kept, [box c])
 ```
 
 ### `[?else]` is the recovery idiom
@@ -1756,7 +1756,7 @@ err in a collection is still just a value:
 
 ```console
 $ cx prog.cx
-[summary [n 3] [first-err-code 'cx-err:CXER0100']]
+[summary [n 3] [first-err-code cx-err:CXER0100]]
 ```
 
 This is what closes the `written=0 errors=25`, exit 0 class — the generator
@@ -1803,7 +1803,7 @@ names the flag which would have granted it, so you never guess:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)']
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)' at='2:1']
 ```
 
 `--allow-common` is everything except `secret-reveal`; `--allow-all` includes
@@ -2050,7 +2050,7 @@ below and the exit status are exactly what they were.
 
 ```console
 $ cx prog.cx --allow-env
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var-or-default; none granted (grant via --allow-env)']
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var-or-default; none granted (grant via --allow-env)' at='2:39']
 ```
 
 **Write this:** cx flags placed before the file
@@ -2086,7 +2086,7 @@ a call": with it, the same typo fails loud and names itself.
 
 ```console
 $ cx prog.cx
-[greeet 'world']
+[greeet world]
 ```
 
 **Write this:** The $ call sigil fails loud on the same typo — and names the candidate
@@ -2099,7 +2099,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0136 message='E_NO_CALLABLE: no callable "greeet" — did you mean `greet`?']
+[err code=cx-err:CXER0136 message='E_NO_CALLABLE: no callable "greeet" — did you mean `greet`?' at='2:1']
 ```
 
 <sub>Fixtures: `ap-bare-head-typo-wrong` / `ap-bare-head-typo-right` in `conformance/llm/antipatterns.cxd`</sub>
@@ -3852,8 +3852,8 @@ set is non-empty), and anywhere a value is expected.
 
 ```console
 $ cx --data=input.cx prog.cx
-[user [name 'Alice'] [email 'a@x.com']]
-[user [name 'Bob'] [email 'b@x.com']]
+[user [name Alice] [email a@x.com]]
+[user [name Bob] [email b@x.com]]
 ```
 
 `input.cx`
@@ -3871,8 +3871,8 @@ $ cx --data=input.cx prog.cx
 
 ```console
 $ cx --data=input.cx prog.cx
-[user active=true [name 'Alice']]
-[user active=true [name 'Carol']]
+[user active=true [name Alice]]
+[user active=true [name Carol]]
 ```
 
 `input.cx`
@@ -4278,7 +4278,7 @@ made it and through anything constructed from it.
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0100 message='concat: an argument does not satisfy the builtin signature (scalar kind/type — code.md §6.5)']
+[err code=cx-err:CXER0100 message='concat: an argument does not satisfy the builtin signature (scalar kind/type — code.md §6.5)' at='2:17']
 ```
 
 A literal `[err …]` written in *data* stays data — the propagation rule is
@@ -4311,7 +4311,7 @@ value carrying the flag that would have granted it:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)']
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)' at='2:1']
 ```
 
 The nine capabilities are `read write net env clock random subprocess eval
@@ -4444,7 +4444,7 @@ is not an effect.
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var; none granted (grant via --allow-env)']
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var; none granted (grant via --allow-env)' at='2:1']
 ```
 
 ## The modules worth knowing first
@@ -4492,7 +4492,7 @@ silently mis-executed — which matters when you are porting a PCRE pattern.
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER3200 message='E_RE_FEATURE_UNSUPPORTED: CXER3200:E_RE_FEATURE_UNSUPPORTED: (.)\1']
+[err code=cx-err:CXER3200 message='E_RE_FEATURE_UNSUPPORTED: CXER3200:E_RE_FEATURE_UNSUPPORTED: (.)\1' at='2:1']
 ```
 
 `prog.cx`
@@ -4530,7 +4530,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0100 message='[$array:get] position 5 is out of range for an array of 2 item(s) — positions are 1-based (E_ARRAY_INDEX_OUT_OF_RANGE)']
+[err code=cx-err:CXER0100 message='[$array:get] position 5 is out of range for an array of 2 item(s) — positions are 1-based (E_ARRAY_INDEX_OUT_OF_RANGE)' at='2:1']
 ```
 
 ### `fp` — the functional layer
@@ -4706,7 +4706,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER3300 message='E_TIME_INVALID_COMPONENT: 2026-2-31']
+[err code=cx-err:CXER3300 message='E_TIME_INVALID_COMPONENT: 2026-2-31' at='2:1']
 ```
 
 ## Finding the rest
@@ -4763,7 +4763,7 @@ below and the exit status are exactly what they were.
 
 ```console
 $ cx prog.cx --allow-env
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var-or-default; none granted (grant via --allow-env)']
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var-or-default; none granted (grant via --allow-env)' at='2:39']
 ```
 
 **Write this:** cx flags placed before the file
@@ -5040,7 +5040,7 @@ Deny-by-default, and a denial names the flag that would have allowed it:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: write capability required for io-write-file; none granted (grant via --allow-write)']
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: write capability required for io-write-file; none granted (grant via --allow-write)' at='2:1']
 ```
 
 Grant the narrowest thing that works. **Three grants take a scope** —
@@ -5188,7 +5188,7 @@ its `effect` class, the `[intent]` that reaches it, and what it `[reads]` or
 
 ```console
 $ cx prog.cx
-[effect 'arrange']
+[effect arrange]
 ```
 
 Read the output: after composition the verb is `chart/highlight`, not
@@ -5808,7 +5808,7 @@ names the chain it travelled:
 
 ```console
 $ cx prog.cx
-[permit rooted-principal=dana [delegation 'd-1'] [via 'd-1'] [tier :t1] [capability 'refund-duplicate']]
+[permit rooted-principal=dana [delegation d-1] [via d-1] [tier :t1] [capability refund-duplicate]]
 ```
 
 **A denial is a value carrying its reason.** There is no implicit grant, and
@@ -5825,7 +5825,7 @@ expired:
 
 ```console
 $ cx prog.cx
-[deny actor=ghost [code 'cx-err:CXER4700'] [reason :no-grant] [capability 'refund-duplicate'] [slice '/orders/9'] [tenant id=acme]]
+[deny actor=ghost [code cx-err:CXER4700] [reason :no-grant] [capability refund-duplicate] [slice /orders/9] [tenant id=acme]]
 ```
 
 `prog.cx`
@@ -5839,7 +5839,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[deny actor=ops-1 [code 'cx-err:CXER4700'] [reason :out-of-slice] [capability 'refund-duplicate'] [slice '/payments/9'] [tenant id=acme]]
+[deny actor=ops-1 [code cx-err:CXER4700] [reason :out-of-slice] [capability refund-duplicate] [slice /payments/9] [tenant id=acme]]
 ```
 
 `prog.cx`
@@ -5853,7 +5853,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[deny actor=ops-1 [code 'cx-err:CXER4700'] [reason :expired] [capability 'refund'] [slice '/orders/9'] [tenant id=acme]]
+[deny actor=ops-1 [code cx-err:CXER4700] [reason :expired] [capability refund] [slice /orders/9] [tenant id=acme]]
 ```
 
 The distinction matters operationally: "you were never granted this" and "your
@@ -5894,7 +5894,7 @@ derived verb requires the grants of every **leaf constituent**, transitively:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4850 message='E_XAP_UNAUTHORIZED: actor "agent:porter-1" is not granted "door/unlock" over ""']
+[err code=cx-err:CXER4850 message='E_XAP_UNAUTHORIZED: actor "agent:porter-1" is not granted "door/unlock" over ""' at='24:2']
 ```
 
 A grant on the wrapper's own name conveys **nothing** — the wrapper name is
@@ -5930,7 +5930,7 @@ never consulted:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4850 message='E_XAP_UNAUTHORIZED: actor "agent:porter-1" is not granted "door/chime" over ""']
+[err code=cx-err:CXER4850 message='E_XAP_UNAUTHORIZED: actor "agent:porter-1" is not granted "door/chime" over ""' at='24:2']
 ```
 
 Dial every leaf and the same emit is admitted:
@@ -5966,7 +5966,7 @@ Dial every leaf and the same emit is admitted:
 
 ```console
 $ cx prog.cx
-[event actor=agent:porter-1 [do 'porch/welcome']]
+[event actor=agent:porter-1 [do porch/welcome]]
 ```
 
 Nesting does not dilute it — an *intermediate* grant is still insufficient:
@@ -6011,7 +6011,7 @@ Nesting does not dilute it — an *intermediate* grant is still insufficient:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4850 message='E_XAP_UNAUTHORIZED: actor "agent:porter-1" is not granted "door/chime" over ""']
+[err code=cx-err:CXER4850 message='E_XAP_UNAUTHORIZED: actor "agent:porter-1" is not granted "door/chime" over ""' at='34:2']
 ```
 
 `prog.cx`
@@ -6055,7 +6055,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[event actor=agent:porter-1 [do 'estate/open-house']]
+[event actor=agent:porter-1 [do estate/open-house]]
 ```
 
 ### The decision explains itself
@@ -6147,7 +6147,7 @@ failing link** rather than reporting a bare denial:
 
 ```console
 $ cx prog.cx
-[explanation outcome=permit [accountable 'dana'] [authority-chain [step 'd-1']]]
+[explanation outcome=permit [accountable dana] [authority-chain [step d-1]]]
 ```
 
 `prog.cx`
@@ -6160,7 +6160,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[explanation outcome=deny [first-failing-link :no-grant] [code 'cx-err:CXER4700']]
+[explanation outcome=deny [first-failing-link :no-grant] [code cx-err:CXER4700]]
 ```
 
 An enterprise deployment needs this more than it needs the enforcement: an
@@ -6361,7 +6361,7 @@ web-public
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4812 message='E_SESSION_ANONYMOUS_REFUSED: the deployment attach policy does not admit an anonymous floor — no `anonymous-floor` principal in cfg (xap_identity_model §4.7; refusing is the production default)']
+[err code=cx-err:CXER4812 message='E_SESSION_ANONYMOUS_REFUSED: the deployment attach policy does not admit an anonymous floor — no `anonymous-floor` principal in cfg (xap_identity_model §4.7; refusing is the production default)' at='2:1']
 ```
 
 The mutual-authentication path is the same story with a handshake in front of
@@ -6635,7 +6635,7 @@ clause — *projects* onto one:
 
 ```console
 $ cx prog.cx
-[ux:form verb=place-order affects='/live/new' [ux:heading level=2 'Place a customer order.'] [ux:input name=customer kind=string required='true' help='Who the order is for.'] [ux:input name=qty kind=int required='true'] [ux:input name=note kind=string required='false'] [ux:submit label='Place order']]
+[ux:form verb=place-order affects='/live/new' [ux:heading level=2 Place a customer order.] [ux:input name=customer kind=string required='true' help='Who the order is for.'] [ux:input name=qty kind=int required='true'] [ux:input name=note kind=string required='false'] [ux:submit label='Place order']]
 ```
 
 An act verb of a feature grammar projects the same way, which is the seam
@@ -6659,7 +6659,7 @@ between the XAP layer and the UX layer:
 
 ```console
 $ cx prog.cx
-[ux:form verb=place-order affects='/live/new' [ux:heading level=2 'Place an order'] [ux:input name=id label=Id kind=text value=''] [ux:input name=package label=Package kind=text value=''] [ux:input name=buyer label=Buyer kind=did value='' help='who is buying'] [ux:submit label='Place order']]
+[ux:form verb=place-order affects='/live/new' [ux:heading level=2 Place an order] [ux:input name=id label=Id kind=text value=''] [ux:input name=package label=Package kind=text value=''] [ux:input name=buyer label=Buyer kind=did value='' help='who is buying'] [ux:submit label='Place order']]
 ```
 
 `prog.cx`
@@ -6821,7 +6821,7 @@ identity is never minted:
 
 ```console
 $ cx prog.cx
-[ux:table id=open [ux:columns [ux:column 'Customer'] [ux:column 'Id']] [ux:rows id=rows [ux:row [ux:cell 'Ada'] [ux:cell 'o-1']] [ux:row [ux:cell 'Lin'] [ux:cell 'o-2']]]]
+[ux:table id=open [ux:columns [ux:column Customer] [ux:column Id]] [ux:rows id=rows [ux:row [ux:cell Ada] [ux:cell o-1]] [ux:row [ux:cell Lin] [ux:cell o-2]]]]
 ```
 
 ### The web renderer, and what it is forbidden to author
@@ -7496,7 +7496,7 @@ demonstration that `of=` is derivable rather than magic:
 
 ```console
 $ cx prog.cx
-[probe [name 'wax-seal'] [cq 'irreversible'] [rule 'wax-seal/see'] [fields 3] [sel 1] [prov 1] [composes 'true']]
+[probe [name wax-seal] [cq irreversible] [rule wax-seal/see] [fields 3] [sel 1] [prov 1] [composes 'true']]
 ```
 
 An instance may also add views onto a noun it inherited:
@@ -7553,7 +7553,7 @@ Repurposing an inherited name:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4877 message='E_XAP_ARCHETYPE_REPURPOSE: verb "press" is inherited — an [add] may not repurpose it (§4.3)']
+[err code=cx-err:CXER4877 message='E_XAP_ARCHETYPE_REPURPOSE: verb "press" is inherited — an [add] may not repurpose it (§4.3)' at='10:2']
 ```
 
 Widening what was inherited. `xap_grammar_composition.md:358` is blunt about
@@ -7578,7 +7578,7 @@ valve is authoring your own feature."*
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4878 message='E_XAP_ARCHETYPE_LOOSEN: verb "press" consequence irreversible → reversible widens (§4.3)']
+[err code=cx-err:CXER4878 message='E_XAP_ARCHETYPE_LOOSEN: verb "press" consequence irreversible → reversible widens (§4.3)' at='10:2']
 ```
 
 A refinement naming a field the archetype does not declare — the typo class,
@@ -7602,7 +7602,7 @@ caught at instantiation rather than at first render:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4877 message='E_XAP_ARCHETYPE_REPURPOSE: [add [views [sort field=colour]]] on "mark" names a field the archetype does not declare (§4.3/§4.5)']
+[err code=cx-err:CXER4877 message='E_XAP_ARCHETYPE_REPURPOSE: [add [views [sort field=colour]]] on "mark" names a field the archetype does not declare (§4.3/§4.5)' at='10:2']
 ```
 
 A withdrawn verb refuses at resolution, **before** the policy check, and with
@@ -7634,7 +7634,7 @@ its own code:
 
 ```console
 $ cx prog.cx
-[probe [qualified [code 'cx-err:CXER4864'] [verb 'stamp/purge'] [why 'This deployment does not permit purging.']] [bare [code 'cx-err:CXER4864'] [verb 'stamp/purge']] [offered-verb 'stamp/press']]
+[probe [qualified [code cx-err:CXER4864] [verb stamp/purge] [why This deployment does not permit purging.]] [bare [code cx-err:CXER4864] [verb stamp/purge]] [offered-verb stamp/press]]
 ```
 
 A withdrawal removes a *verb*, not a *word* — a bare term still resolves
@@ -7667,7 +7667,7 @@ through another feature that offers one:
 
 ```console
 $ cx prog.cx
-[probe [purge 'vault/purge'] [bare 'press' 'purge']]
+[probe [purge vault/purge] [bare 'press' 'purge']]
 ```
 
 ## 2. Why behaviour is not tenant-customizable
@@ -7741,7 +7741,7 @@ it the new archetype **refuses**, naming both addresses:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4879 message='E_XAP_INSTANCE_INVALID: of= pins sha2-256:999a55929a571983e0909d5fa312c401857b3319c35f83918b6fd5ad817473bf but the archetype presented is sha2-256:0416a467110492c86d98f8597bfc2d51e0376ce75394fc0af33ad9aef93caf21 — an instance derives from an EXACT base (§4.3); re-bless by moving the pin deliberately']
+[err code=cx-err:CXER4879 message='E_XAP_INSTANCE_INVALID: of= pins sha2-256:999a55929a571983e0909d5fa312c401857b3319c35f83918b6fd5ad817473bf but the archetype presented is sha2-256:0416a467110492c86d98f8597bfc2d51e0376ce75394fc0af33ad9aef93caf21 — an instance derives from an EXACT base (§4.3); re-bless by moving the pin deliberately' at='20:2']
 ```
 
 The upgrade is one deliberate act — *"Re-bless, never silent propagation"*
@@ -7777,7 +7777,7 @@ vendor's additions:
 
 ```console
 $ cx prog.cx
-[probe [name 'asset'] [fields 4] [cq 'irreversible'] [rebased true]]
+[probe [name asset] [fields 4] [cq irreversible] [rebased true]]
 ```
 
 And *"the gate holds at every generation"* is not decoration. A refinement
@@ -7802,7 +7802,7 @@ refuses rather than lowering the vendor's new floor for one tenant:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4878 message='E_XAP_ARCHETYPE_LOOSEN: verb "create" consequence irreversible → reversible widens (§4.3)']
+[err code=cx-err:CXER4878 message='E_XAP_ARCHETYPE_LOOSEN: verb "create" consequence irreversible → reversible widens (§4.3)' at='12:2']
 ```
 
 The control proves the refusal is about the *base*, not the binding — the same
@@ -7828,7 +7828,7 @@ refinement against v1 is fine:
 
 ```console
 $ cx prog.cx
-[probe [legal-on-v1 'asset'] [cq 'reversible']]
+[probe [legal-on-v1 asset] [cq reversible]]
 ```
 
 Two rejected alternatives are on the record (`xap_grammar_composition.md:381`):
@@ -8108,7 +8108,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[probe [n '2'] [split [part [x 'piano'] [x 'tune']] [part [x 'sale'] [x 'ring-up']]]]
+[probe [n '2'] [split [part [x piano] [x tune]] [part [x sale] [x ring-up]]]]
 ```
 
 ## 6. The worked arc, and what is missing
@@ -8172,7 +8172,7 @@ field and tightens `create` to irreversible; `borough` renames and withdraws
 
 ```console
 $ cx prog.cx
-[probe [acme-name 'asset'] [acme-cq 'irreversible'] [acme-fields 5] [borough-name 'permit'] [borough-cq 'reversible'] [borough-fields 4] [acme-base-is-pin true] [borough-base-is-pin true]]
+[probe [acme-name asset] [acme-cq irreversible] [acme-fields 5] [borough-name permit] [borough-cq reversible] [borough-fields 4] [acme-base-is-pin true] [borough-base-is-pin true]]
 ```
 
 Read the output: two contracts, one implementation. That is §0's sentence,
@@ -8257,7 +8257,7 @@ vendor made the floor) and `135` (clean, both faces agreeing):
 
 ```console
 $ cx prog.cx
-[probe [ok 'true'] [st 'redundant']]
+[probe [ok 'true'] [st redundant]]
 ```
 
 The fleet-level command that walks a tenant list and calls this per tenant
@@ -8368,7 +8368,7 @@ error value naming the flag that would allow it:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)']
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)' at='2:1']
 ```
 
 **Errors are values** — a captured `[err]` propagates out of any element built
@@ -9190,7 +9190,7 @@ plain `cx` invocation:
 
 ```console
 $ cx prog.cx
-[doc [item 'hello']]
+[doc [item hello]]
 ```
 
 A handle is derived from the document's canonical bytes, so putting the same
@@ -9233,7 +9233,7 @@ distinct answers:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER1121 message='E_STORE_NOT_FOUND: sha2-256:0000000000000000000000000000000000000000000000000000000000000000']
+[err code=cx-err:CXER1121 message='E_STORE_NOT_FOUND: sha2-256:0000000000000000000000000000000000000000000000000000000000000000' at='2:37']
 ```
 
 `prog.cx`
@@ -9244,7 +9244,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0130 message='E_STORE_ADDRESS_INVALID: bare hex is not an address — tagged form `<algo>:<hex>` required since I1 (e.g. `sha2-256:…`) (cx-err:CXER0130)']
+[err code=cx-err:CXER0130 message='E_STORE_ADDRESS_INVALID: bare hex is not an address — tagged form `<algo>:<hex>` required since I1 (e.g. `sha2-256:…`) (cx-err:CXER0130)' at='2:37']
 ```
 
 Aliases give a mutable name over immutable content:
@@ -9270,7 +9270,7 @@ A read-only store refuses writes rather than accepting and dropping them:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER1110 message='E_STORE_READ_ONLY: mem://']
+[err code=cx-err:CXER1110 message='E_STORE_READ_ONLY: mem://' at='2:65']
 ```
 
 ### Writes are an effect boundary — errors do not leave silently
@@ -9437,7 +9437,7 @@ clean typed refusal naming the policy — deny-by-default all the way down:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4812 message='E_SESSION_ANONYMOUS_REFUSED: the deployment attach policy does not admit an anonymous floor — no `anonymous-floor` principal in cfg (xap_identity_model §4.7; refusing is the production default)']
+[err code=cx-err:CXER4812 message='E_SESSION_ANONYMOUS_REFUSED: the deployment attach policy does not admit an anonymous floor — no `anonymous-floor` principal in cfg (xap_identity_model §4.7; refusing is the production default)' at='2:1']
 ```
 
 Authority is **delegated, attenuating, and rooted in a principal**. A permit
@@ -9456,7 +9456,7 @@ names the chain it came through:
 
 ```console
 $ cx prog.cx
-[permit rooted-principal=dana [delegation 'd-1'] [via 'd-1'] [tier :t1] [capability 'refund-duplicate']]
+[permit rooted-principal=dana [delegation d-1] [via d-1] [tier :t1] [capability refund-duplicate]]
 ```
 
 A denial is a *value* carrying its reason, not an exception. There is no
@@ -9471,7 +9471,7 @@ implicit grant anywhere:
 
 ```console
 $ cx prog.cx
-[deny actor=ghost [code 'cx-err:CXER4700'] [reason :no-grant] [capability 'refund-duplicate'] [slice '/orders/9'] [tenant id=acme]]
+[deny actor=ghost [code cx-err:CXER4700] [reason :no-grant] [capability refund-duplicate] [slice /orders/9] [tenant id=acme]]
 ```
 
 `prog.cx`
@@ -9485,7 +9485,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[deny actor=ops-1 [code 'cx-err:CXER4700'] [reason :out-of-slice] [capability 'refund-duplicate'] [slice '/payments/9'] [tenant id=acme]]
+[deny actor=ops-1 [code cx-err:CXER4700] [reason :out-of-slice] [capability refund-duplicate] [slice /payments/9] [tenant id=acme]]
 ```
 
 And the decision explains itself — the first failing link, by name, which is
@@ -9503,7 +9503,7 @@ what makes an authority chain auditable rather than merely enforced:
 
 ```console
 $ cx prog.cx
-[explanation outcome=permit [accountable 'dana'] [authority-chain [step 'd-1']]]
+[explanation outcome=permit [accountable dana] [authority-chain [step d-1]]]
 ```
 
 `prog.cx`
@@ -9516,7 +9516,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[explanation outcome=deny [first-failing-link :no-grant] [code 'cx-err:CXER4700']]
+[explanation outcome=deny [first-failing-link :no-grant] [code cx-err:CXER4700]]
 ```
 
 ### Operating a platform
@@ -9706,7 +9706,7 @@ without collision:
 
 ```console
 $ cx prog.cx
-[effect 'arrange']
+[effect arrange]
 ```
 
 Composing *nothing* is a refusal, not a vacuous pass — a gate over the empty
