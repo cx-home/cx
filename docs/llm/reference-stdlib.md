@@ -121,7 +121,7 @@ is not an effect.
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var; none granted (grant via --allow-env)']
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var; none granted (grant via --allow-env)' at='2:1']
 ```
 
 ## The modules worth knowing first
@@ -169,7 +169,7 @@ silently mis-executed — which matters when you are porting a PCRE pattern.
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER3200 message='E_RE_FEATURE_UNSUPPORTED: CXER3200:E_RE_FEATURE_UNSUPPORTED: (.)\1']
+[err code=cx-err:CXER3200 message='E_RE_FEATURE_UNSUPPORTED: CXER3200:E_RE_FEATURE_UNSUPPORTED: (.)\1' at='2:1']
 ```
 
 `prog.cx`
@@ -207,7 +207,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0100 message='[$array:get] position 5 is out of range for an array of 2 item(s) — positions are 1-based (E_ARRAY_INDEX_OUT_OF_RANGE)']
+[err code=cx-err:CXER0100 message='[$array:get] position 5 is out of range for an array of 2 item(s) — positions are 1-based (E_ARRAY_INDEX_OUT_OF_RANGE)' at='2:1']
 ```
 
 ### `fp` — the functional layer
@@ -383,7 +383,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER3300 message='E_TIME_INVALID_COMPONENT: 2026-2-31']
+[err code=cx-err:CXER3300 message='E_TIME_INVALID_COMPONENT: 2026-2-31' at='2:1']
 ```
 
 ## Finding the rest

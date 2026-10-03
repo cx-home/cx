@@ -279,7 +279,7 @@
 <pre><code lang="cx">[?lib 'cx-stdlib/io']
 [$io:read-file "/var/log/app.log"]</code></pre>
 <pre class="sample-output"><code>$ cx prog.cx
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)']</code></pre>
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)' at='2:1']</code></pre>
 <p class="fixture-src">Fixture <code>io-001-read-file-cap-denied</code> in <code>deps/cx-core-code/conformance/stdlib/io.cxd</code> — replayed against this cx when the page was built.</p>
 </div>
 <h2>Proof</h2>
