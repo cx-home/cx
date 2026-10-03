@@ -131,7 +131,7 @@ reads-back
  ]
 
  [case id=property-gate-009-array-item-string-quotes level=core gate=advisory issue='cx-home/cx-core-data#4'
-  [tags property-gate ii canonical-refused]
+  [tags property-gate ii canonical-refused+kind-canonical-refused:string@array+kind-canonical-refused:string@attr+kind-canonical-refused:string@body ambiguous-bare-array type-ascription colon-typed-attribute hash-comment apostrophe-unescaped]
   [title [# a string array item quotes where its bare image would not re-read as that string in both readings -- code.md §11.1a R6, canonical.md §2.3 (the collection-item bare set) #]]
   [in-code [#
 [?lib 'cx-stdlib/cx' as=cx]
@@ -143,7 +143,7 @@ reads-back
  ]
 
  [case id=property-gate-010-attr-trailing-backslashes level=core gate=advisory issue='cx-home/cx-core-data#4'
-  [tags property-gate ii canonical-not-a-fixpoint]
+  [tags property-gate ii canonical-refused+canonical-refused-on-reparse+kind-canonical-refused:string@attr+kind-canonical-refused:string@body+kind-canonical-refused:string@array unterminated-quote unterminated-string]
   [title [# the canonical form of a quoted attribute string ending in two backslashes is a fixpoint -- canonical.md §2.4 minimal re-escape (a final backslash is doubled), §11.4 canonicalize(canonicalize(x)) == canonicalize(x) #]]
   [in-code [#
 [?lib 'cx-stdlib/cx' as=cx]
@@ -312,6 +312,119 @@ read
 #]]
   [out-text [#
 hit
+#]]
+ ]
+
+ [case id=property-gate-024-inadmissible-key-refused level=core gate=advisory issue='cx-home/cx-core-code#35'
+  [tags property-gate i to-map-accepted-inadmissible-key+for-map-accepted-inadmissible-key+entry-accepted-inadmissible-key]
+  [title [# a map constructor refuses a key cxdm.md §2.3/§2.6 rules out -- an atom, null, an element -- as $map:put and the literal reader do (stdlib/map.md §4 CXERMAP-BADKEY) #]]
+  [in-code [#
+[?let [= $a :k] [= $n null] [= $e [e]]
+  ([?match [?to-map (($a, 1),)] [case [err] 'refused'] [else 'accepted']],
+   [?match [?to-map (($n, 1),)] [case [err] 'refused'] [else 'accepted']],
+   [?match [?to-map (($e, 1),)] [case [err] 'refused'] [else 'accepted']],
+   [?match [?for-map [in $x (1,)] [yield-map $a $x]] [case [err] 'refused'] [else 'accepted']],
+   [?match [?for-map [in $x (1,)] [yield-map $n $x]] [case [err] 'refused'] [else 'accepted']],
+   [?match {[?entry $a 1]} [case [err] 'refused'] [else 'accepted']],
+   [?match {[?entry $n 1]} [case [err] 'refused'] [else 'accepted']])]
+#]]
+  [out-text [#
+(refused, refused, refused, refused, refused, refused, refused)
+#]]
+ ]
+
+ [case id=property-gate-025-null-key-literal level=core gate=advisory issue='cx-home/cx-core-data#19' grant='eval'
+  [tags property-gate i literal-accepted-inadmissible-key:program]
+  [title [# the program reader refuses the map literal {null: 1} as the data reader does -- cxdm.md §2.6 "null key: Not permitted (parse error)"; code.md §1.3 (RULED: CXF-5) #]]
+  [in-code [#
+[?lib 'cx-stdlib/cx' as=cx]
+[?match [$cx:eval '{null: 1}' {}] [case [err] 'refused'] [else 'accepted']]
+#]]
+  [out-text [#
+refused
+#]]
+ ]
+
+ [case id=property-gate-026-bytes-at-the-top level=core gate=advisory issue='cx-home/cx-core-data#20'
+  [tags property-gate ii kind-lost-on-canonical:bytes@top]
+  [title [# a bytes value at the document top keeps its ascription in canonical form -- canonical.md §2.6a "the ascription is always load-bearing" in an unnamed slot; §1.4 #]]
+  [in-code [#
+[?lib 'cx-stdlib/cx' as=cx]
+[?match [$cx:parse [$cx:canonical [$cx:parse '0x2a::bytes']]] [case $b::bytes 'bytes'] [else 'other']]
+#]]
+  [out-text [#
+bytes
+#]]
+ ]
+
+ [case id=property-gate-027-err-in-collection-in-element level=core gate=advisory issue='cx-home/cx-core-code#36'
+  [tags property-gate iv map-value-in-element-err-settled+array-item-in-element-err-settled+seq-item-in-element-err-settled]
+  [title [# a computed [err] inside a collection literal an element adopts does not come to rest in the document -- code.md §6.4.1 (#853) "a refusal cannot come to rest inside a document at any depth"; primer §6 holds a sequence of errs is a value (the issue asks which reading binds) #]]
+  [in-code [#
+[?let [= $e [err code='cx-err:CXER0100' message='planted']]
+  [?match [w {k: $e}] [case [err @message=$m] $m] [else 'settled']]]
+#]]
+  [out-text [#
+planted
+#]]
+ ]
+
+ [case id=property-gate-028-sleep-without-clock level=core gate=advisory issue='cx-home/cx-core-code#37' grant='read subprocess'
+  [tags property-gate v effect-point-wall-sleep-without-grant]
+  [title [# a non-mock [?sleep] with no clock grant does not wait on the wall clock -- security.md §2 "clock: wall-clock reads / non-mock [?sleep] -- (else mock-only)"; code.md §10.5.3 makes it the ungated default (a spec conflict, the owner's) #]]
+  [in-code [#
+[?lib 'cx-stdlib/env' as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?let [= $argv ([$env:executable-path], '-e', '[?sleep 3s]')]
+      [= $r [$process:run $argv timeout-ms=1500]]
+  [?if [= [$string $r@timed-out] 'true'] [then 'waited'] [else 'not-waited']]]
+#]]
+  [out-text [#
+not-waited
+#]]
+ ]
+
+ [case id=property-gate-029-include-without-read level=core gate=advisory issue='cx-home/cx-core-code#37' grant='read write subprocess'
+  [tags property-gate v effect-point-include-without-grant]
+  [title [# [?cx include] does not read a file with no read grant -- security.md §2 "read: filesystem reads, [?cx include]"; code.md §13.2 makes --include-root the only switch (a spec conflict, the owner's) #]]
+  [in-code [#
+[?lib 'cx-stdlib/env' as=env]
+[?lib 'cx-stdlib/io' as=io]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+[?let [= $root [$io:temp-dir 'property-gate-029']]
+      [= $_w [$io:write-file [$concat $root '/inc.cx'] '[included-content]']]
+      [= $argv ([$env:executable-path], [$concat '--include-root=' $root], '-e', '[doc [?cx include=inc.cx]]')]
+      [= $r [$process:run $argv timeout-ms=30000]]
+      [= $_rm [$io:remove-tree $root]]
+  [?if [$strings:contains [$string $r@stdout] 'included-content'] [then 'read'] [else 'not-read']]]
+#]]
+  [out-text [#
+not-read
+#]]
+ ]
+
+ [case id=property-gate-030-array-item-string-kind level=core gate=advisory issue='cx-home/cx-core-data#4'
+  [tags property-gate ii kind-lost-on-canonical:string@array]
+  [title [# a string array item whose bare image is a hole, an operator or a name with a colon re-reads as a string after canonical emit -- code.md §11.1a R6 (the collection-item bare set), canonical.md §2.3 ("$name" spells '$name'; a leading = quotes), §2.6a #]]
+  [in-code [#
+[?lib 'cx-stdlib/cx' as=cx]
+[?match [$nth [$cx:parse [$cx:canonical [$cx:parse "[0, '$x']"]]] 2] [case $s::string 'string'] [else 'other']]
+#]]
+  [out-text [#
+string
+#]]
+ ]
+
+ [case id=property-gate-031-body-string-hash level=core gate=advisory issue='cx-home/cx-core-data#4'
+  [tags property-gate ii canonical-refused hash-comment]
+  [title [# a body string holding ' #' quotes in canonical form, so the canonical text reads back -- canonical.md §2.3 (bare only when the bare image re-reads as that same string), §11.4 #]]
+  [in-code [#
+[?lib 'cx-stdlib/cx' as=cx]
+[?match [$cx:canonical [$cx:parse "[n1 'a #']"]] [case [err] 'no-canonical-form'] [case $c [?match [$cx:parse $c] [case [err] 'unreadable'] [else 'reads-back']]]]
+#]]
+  [out-text [#
+reads-back
 #]]
  ]
 ]

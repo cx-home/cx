@@ -159,8 +159,16 @@
     [$strings:join [?for [in $id [$g-key-ids [$rn 0 4]]] [yield [$concat [$key-text $id] ": " [$g-value [- $d 1]]]]] ", "]
     "}"]]
 
+# A paren sequence holds no paren sequence directly: the data reading flattens
+# one (cxdm.md §1, "Sequences do not nest") and the program reading keeps its
+# rank -- the ruled MODE FORK (SEQ-NEST), not a divergence (vi) judges. Nested
+# rank is still generated where it is an item: inside an array or a map value.
 [?def g-seq scope=private impure [returns string] ($d::int)
-  [$concat "(" [$g-items [- $d 1] 2 4] ")"]]
+  [$concat "(" [$strings:join [?for [in $i [$range 1 [$rn 2 4]]] [yield [$g-seq-item [- $d 1]]]] ", "] ")"]]
+
+[?def g-seq-item scope=private impure [returns string] ($d::int)
+  [?let [= $v [$g-value $d]]
+    [?if [$strings:starts-with $v "("] [then [$g-scalar [$g-kind]]] [else $v]]]]
 
 [?def g-array scope=private impure [returns string] ($d::int)
   [?if [$chance 15] [then "[]"]
@@ -522,6 +530,18 @@
             [$when-not [?match [= $got $ref] [case [err] false] [case $b $b]]
                        [$fail 'iii' [$concat $shape '-inexact'] [$concat 'answered ' [$string $got] ' want ' $want] $src]]]]]]]]]
 
+# judge-image: the decimal also keeps the scale the spec's examples fix -- a
+# sum or difference at the larger operand scale, a product at the sum of the
+# scales (primer §2: [* 2 1.5] is 3.0, [* 1.10 2.0] is 2.200; code.md §6.3
+# CO-14: [$sum (1, 2, 3.0)] is the decimal 6.0, [+ 19.99 19.99] is 39.98) --
+# because a decimal's scale is its identity (cxdm.md §2.3 "1.10 is not 1.1 as
+# canonical bytes"), and = compares mathematically, blind to it.
+[?def judge-image scope=private impure ($shape::string $src::string $want::string)
+  [?match [$eval-src $src]
+    [case [err] ()]
+    [case $got [$when-not [= [$string $got] $want]
+                 [$fail 'iii' [$concat $shape '-scale-changed'] [$concat 'answered ' [$string $got] ' want ' $want] $src]]]]]
+
 # judge-refusal: the program answered an err carrying the named code.
 [?def judge-refusal scope=private impure ($shape::string $src::string $code::string)
   [?match [$eval-src $src]
@@ -542,6 +562,10 @@
       [$judge-exact 'mul' [$concat "[* " $a " " $b "]"] [$dec-text [* $na $nb] [+ $sa $sb]]]
       [$judge-exact 'add-int' [$concat "[+ " $a " " [$string $i] "]"] [$dec-text [+ $na [* $i [$p10 $sa]]] $sa]]
       [$judge-exact 'sum' [$concat "[$sum (" $a ", " $b ")]"] [$dec-text [+ $xa $xb] $s]]
+      [$judge-image 'add' [$concat "[+ " $a " " $b "]"] [$dec-text [+ $xa $xb] $s]]
+      [$judge-image 'sub' [$concat "[- " $a " " $b "]"] [$dec-text [- $xa $xb] $s]]
+      [$judge-image 'mul' [$concat "[* " $a " " $b "]"] [$dec-text [* $na $nb] [+ $sa $sb]]]
+      [$judge-image 'sum' [$concat "[$sum (" $a ", " $b ")]"] [$dec-text [+ $xa $xb] $s]]
       [$judge-exact 'add-sub-identity' [$concat "[- [+ " $a " " $b "] " $b "]"] $a]
       [?if [= $nb 0]
         [then [$judge-refusal 'div-zero' [$concat "[/ " $a " " $b "]"] 'cx-err:CXER0101']]
@@ -558,7 +582,11 @@
       [$judge-refusal 'mix-add' [$concat "[+ " $a " " $f "]"] 'cx-err:CXER0100']
       [$judge-refusal 'mix-mul' [$concat "[* " $f " " $a "]"] 'cx-err:CXER0100']
       [$judge-refusal 'mix-sub' [$concat "[- " $a " " $f "]"] 'cx-err:CXER0100']
-      [$judge-refusal 'mix-sum' [$concat "[$sum (" $a ", " $f ")]"] 'cx-err:CXER0100']]]]]
+      [$judge-refusal 'mix-sum' [$concat "[$sum (" $a ", " $f ")]"] 'cx-err:CXER0100']
+      [$judge-refusal 'mix-avg' [$concat "[$avg (" $a ", " $f ")]"] 'cx-err:CXER0100']
+      [$judge-refusal 'mix-max' [$concat "[$max (" $f ", " $a ")]"] 'cx-err:CXER0100']
+      [$judge-refusal 'mix-div' [$concat "[$div " $a " " $f "]"] 'cx-err:CXER0100']
+      [$judge-refusal 'mix-bigint' [$concat "[+ " [$g-bigint] " " $f "]"] 'cx-err:CXER0100']]]]]
 
 # -- (iv) an [err] built into any element propagates out (code.md §9.2
 #         "Implicit operand propagation", §6.4.1 "Construction is
@@ -976,12 +1004,31 @@
                    [= $subjects [$strings:join [?to-sequence [?drop 3 $words]] ' ']]
                    [yield [adv id=$id issue=$issue inv=$inv shape=$shape subjects=$subjects]]]]]]]]
 
+# subject-of: what a register case's subjects name -- for (v) the effect
+# point; for a refusal of the data reader (ii) the CAUSE its message names, so
+# a case filed for one quoting defect never masks a refusal of another cause
+# (an unknown cause is 'other', which no case names).
+[?const CAUSES ([cause id='ambiguous-bare-array' sign='ambiguous bare array'],
+                [cause id='type-ascription' sign='type ascription'],
+                [cause id='colon-typed-attribute' sign='colon-typed attribute'],
+                [cause id='unterminated-quote' sign='unterminated quoted text'],
+                [cause id='unterminated-string' sign='unterminated string'],
+                [cause id='bare-map-value-colon' sign='bare map value cannot carry'],
+                [cause id='hash-comment' sign='got EOF' in=' #'],
+                [cause id='apostrophe-unescaped' sign='got EOF' in="\\'"],
+                [cause id='apostrophe-unescaped' sign='expected node' in="\\'"])]
+
+[?def subject-of scope=private pure [returns string] ($f)
+  [?if [= [$string $f@inv] 'v'] [then [$string $f@input]]
+    [else [$string [?else [?for [in $c $CAUSES] [where [$strings:contains [$string $f@note] [$string $c@sign]]]
+                          [where [$strings:contains [$string $f@input] [$string [?else $c@in '']]]] [take 1] [yield $c@id]] 'other']]]]]
+
 [?def advisory-for scope=private pure ($f $register)
   [?for [in $a $register]
     [where [= [$string $a@inv] [$string $f@inv]]]
     [where [$member [$string $f@shape] [$strings:split [$string $a@shape] '+']]]
     [where [?let [= $subj [$string $a@subjects]]
-             [or [= $subj ''] [$member [$string $f@input] [$strings:split-whitespace $subj]]]]]
+             [or [= $subj ''] [$member [$subject-of $f] [$strings:split-whitespace $subj]]]]]
     [take 1]
     [yield $a]]]
 
@@ -1078,7 +1125,7 @@
         [= $eff [$chk-effects $cxbin]]
         [= $dir [$chk-directives $cxbin]]
         [= $neff [+ [$count [$effect-points $SECURITY-SPEC]] [$count $DIRECTIVE-PROBES]]]
-        [= $n1 [* $count 12]] [= $n2 [* $count 5]] [= $n3 [* $count 14]] [= $n4 [* $count 2]]
+        [= $n1 [* $count 12]] [= $n2 [* $count 5]] [= $n3 [* $count 22]] [= $n4 [* $count 2]]
         [= $n7 [+ $count [$count $EMPTIES] 2]]
     [run
       [checks
@@ -1105,6 +1152,7 @@
 
 [?const ST-REG ([adv id='st-1' issue='o/r#1' inv='i' shape='for-map-duplicate-key' subjects=''],
                 [adv id='st-2' issue='o/r#2' inv='v' shape='effect-point-crash' subjects='http-get http-put'])]
+[?const ST-REG2 ([adv id='st-3' issue='o/r#3' inv='ii' shape='canonical-refused' subjects='ambiguous-bare-array'],)]
 
 [?def self-test scope=private impure ()
   [?let [= $want-ab ("string:a", "string:b")] [= $want-aa ("string:a", "string:a")]
@@ -1114,6 +1162,10 @@
         [= $f-dup [fail inv='i' shape='for-map-duplicate-key' note='' input='x']]
         [= $f-get [fail inv='v' shape='effect-point-crash' note='' input='http-get']]
         [= $f-post [fail inv='v' shape='effect-point-crash' note='' input='http-post']]
+        [= $f-cause [fail inv='ii' shape='canonical-refused' note='1:9: bareword followed by a comma is an ambiguous bare array' input='x']]
+        [= $f-other [fail inv='ii' shape='canonical-refused' note='1:9: expected node' input='x']]
+        [= $attempt-row ([r n='p' a=1 code='cx-err:CXER4001' msg='open: No such file or directory'],)]
+        [= $me [$env:executable-path]]
         [= $_a [$random:seed 7]] [= $g1 [$g-elem 3]] [= $_b [$random:seed 7]] [= $g2 [$g-elem 3]]
         [= $rows (
           [$st 'map: an identity dropped' 'merge-key-identity-changed' [$judge-map 'merge' $want-ab false false "{a: 1}" $NOCTX 'st']],
@@ -1122,6 +1174,20 @@
           [$st 'map: a correct answer' '' [$judge-map 'merge' $want-ab false false "{a: 1, b: 2}" $NOCTX 'st']],
           [$st 'literal: a repeated identity accepted' 'literal-accepted-duplicate:data' [$judge-literal 'data' true "{a: 1, b: 2}"]],
           [$st 'literal: distinct identities refused' 'literal-refused-distinct-keys:program' [$judge-literal 'program' false "{a: 1, a: 2}"]],
+          [$st 'parity: the readers disagree' 'readers-disagree' [$chk-parity-2 "[x 1]" "[x 2]\n"]],
+          [$st 'round trip: not a fixpoint, the hash moved' 'canonical-not-a-fixpoint hash-moved-by-round-trip' [$chk-roundtrip-2 "[x 1]" [x 1] "[x 2]"]],
+          [$st 'exact: the wrong kind' 'b-wrong-kind' [$judge-exact-kind 'b' 'bigint' "[+ 1 1]" "2"]],
+          [$st 'exact: the scale changed' 'add-scale-changed' [$judge-image 'add' "2.10" "2.1"]],
+          [$st 'keys: an inadmissible key accepted' 'to-map-accepted-inadmissible-key' [$judge-badkey 'to-map' 'atom' "{a: 1}"]],
+          [$st 'keys: a literal accepted' 'literal-accepted-inadmissible-key:data' [$judge-badkey-literal 'data' "{a: 1}"]],
+          [$st 'effects: an attempt without a grant' 'effect-point-attempted-without-grant effect-point-not-reached' [$judge-rows 'p' 'read' $attempt-row]],
+          [$st 'directives: a value not refused' 'directive-not-refused-with-flag' [$judge-directive $me [d name='st' cap='eval' kind='value' t='1']]],
+          [$st 'directives: a load not refused' 'directive-not-refused-with-flag' [$judge-directive $me [d name='st' cap='read' kind='load' t='1']]],
+          [$st 'directives: an answer without a grant' 'directive-answered-without-grant' [$judge-directive $me [d name='st' cap='net' kind='refused' t='1']]],
+          [$st 'register: a named cause matches' 'canonical-refused'
+               [?for [in $c ([$classify $f-cause $ST-REG2],)] [where [= [$string $c@adv] 'true']] [yield $c]]],
+          [$st 'register: another cause does not' 'canonical-refused'
+               [?for [in $c ([$classify $f-other $ST-REG2],)] [where [= [$string $c@adv] 'false']] [yield $c]]],
           [$st 'attrs: distinct names refused' 'attr-refused-distinct-names' [$judge-attrs 'attr' "[+ 1 'x']" $NOCTX false 'st']],
           [$st 'decimal: inexact' 'add-inexact' [$judge-exact 'add' "[+ 1.0 1.0]" "3.0"]],
           [$st 'decimal: a correct answer' '' [$judge-exact 'add' "[+ 1.0 1.0]" "2.0"]],
