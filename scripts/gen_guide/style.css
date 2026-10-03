@@ -853,6 +853,70 @@ p.pair-title {
 }
 
 
+/* ── SITE-3 (#1759 — the owner's phone screenshot, 2026-10-02; RULED:
+   DOCS-51 §2, §3, §9): the sheet fits the device in either orientation,
+   and on a phone the sidebar is ONE disclosure (guide_build.cx's
+   <details class="side-nav">, closed on a phone by its one line of
+   script), not a column stacked above the page.
+   - minmax(0, 1fr), not a bare 1fr, at EVERY width: a phone held
+     landscape (812–844 px) is wider than the 640 px break, and the bare
+     track there refused to shrink below the top bar's nowrap link row —
+     the landing measured 1046 px wide on an 844 px device;
+   - the top bar wraps its link row under its title instead of clipping
+     it ("X · CXHOME.ORG … ABOU");
+   - a long word, path or signature wraps inside the column (a stdlib
+     page's signature line measured 396 px on a 375 px device), and the
+     module index's 330 px column never exceeds the column it sits in;
+   - on a desktop the disclosure's summary is not drawn: the sidebar is
+     the sidebar. No colour is introduced here. */
+body { grid-template-columns: 258px minmax(0, 1fr); }
+header.sheet-bar { min-width: 0; flex-wrap: wrap; row-gap: 0.35rem; }
+header.sheet-bar .sb-left { min-width: 0; }
+/* the page title wraps rather than ellipsize: nothing in the top bar cuts
+   its own text (the adversarial reader: a title cut inside .sb-left) */
+header.sheet-bar .sb-title { white-space: normal; overflow: visible; text-overflow: clip; }
+main, footer.title-block { min-width: 0; }
+footer.title-block { flex-wrap: wrap; }
+details.side-nav > summary.side-nav-toggle { display: none; }
+/* An inline code span (a path, a long name) breaks where it must rather
+   than push the column; on a phone or a tablet a table scrolls inside
+   itself (the existing `pre` pattern), never the page. */
+main :not(pre) > code { overflow-wrap: anywhere; }
+main { overflow-wrap: break-word; }
+.module-index { grid-template-columns: repeat(auto-fill, minmax(min(330px, 100%), 1fr)); }
+@media (max-width: 900px) {
+  main table { display: block; max-width: 100%; overflow-x: auto; }
+}
+@media (max-width: 640px) {
+  body { grid-template-columns: minmax(0, 1fr); }
+  aside.sidebar { padding: 0.35rem 1rem; }
+  aside.sidebar a.brand {
+    float: left;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    margin: 0 0.9rem 0 0;
+  }
+  aside.sidebar a.brand .brand-mark { width: 36px; height: 36px; }
+  aside.sidebar details.side-nav > summary.side-nav-toggle {
+    display: list-item;
+    overflow: hidden;
+    min-height: 44px;
+    line-height: 44px;
+    font-size: 16px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  aside.sidebar details.side-nav[open] > summary.side-nav-toggle { color: var(--accent); }
+  aside.sidebar details.side-nav > summary.side-nav-toggle + .brand-sub { clear: both; }
+  aside.sidebar details.side-nav::after { content: ""; display: block; clear: both; }
+  /* a nav row is a flex row here (#1740): keep the space between a
+     section number and its title ("0 Quickstart", not "0Quickstart") */
+  aside.sidebar details.side-nav a { gap: 0.45em; }
+}
+
 /* ── Text ≥ 16px on a phone (DOCS-51 / #1740) ────────────────────────────
    The handful of classed captions set smaller than the body copy on
    purpose at desktop reading distance — a fixture's file/source line, a
