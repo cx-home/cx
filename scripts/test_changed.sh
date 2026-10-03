@@ -344,6 +344,7 @@ step_globs() {
     ring-import-gate)              echo 'vcx/* scripts/ring_import_gate* registry/repos.cxd' ;;
     gates-manifest-gate)           echo 'conformance/* packages/* scripts/gates_manifest_gate* scripts/gates_register*' ;;
     advisory-audit)                echo 'conformance/* packages/* reference/* deps.cxd scripts/advisory_audit* VERSION' ;;
+    spec-invariant-gate)           echo 'deps.cxd registry/repos.cxd scripts/spec_invariants* VERSION' ;;
     ring-tag-gate)                 echo 'conformance/* scripts/*' ;;
     cxer-registry-gate)            echo 'vcx/* spec/* scripts/cxer_registry*' ;;
     spec-freeze-gate)              echo '*' ;;
