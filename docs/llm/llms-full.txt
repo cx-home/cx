@@ -8551,12 +8551,12 @@ the product compiles from (RULED: RS-24).
 | `cx-platform-fabric` | platform | none | binary | `fabric` | `cx-platform-store` `cx-platform-identity` `cx-platform-net` `cx-platform-xsp` | extracted | messaging and fabric-serve |
 | `cx-platform-xsp` | platform | none | binary | `xsp` | `cx-core-code` | extracted | the XAP Stream Protocol: the frame codec, the XSP-AUTH handshake, the protocol pages |
 | `cx-platform-xap` | platform | none | binary | `xap` | `cx-platform-net` `cx-platform-mail` `cx-platform-identity` `cx-platform-store` `cx-platform-db` `cx-platform-fabric` `cx-platform-xsp` | extracted | the application host, compose, dist, schema, market, the reference deployments |
-| `cx-platform-flow` | platform | none | package | — | — | extracted | workflow; its CLI verbs stay in the binary |
-| `cx-platform-connector` | platform | none | package | — | — | extracted | the connector kit and sync |
-| `cx-platform-secrets` | platform | none | package | — | — | extracted | the minimal keystore: one handle grammar, one internal resolve seam, the PEP and the audit record, custody that rises by a provider row |
-| `cx-platform-sso` | platform | none | package | — | — | extracted | enterprise sign-on and its interop step |
-| `cx-platform-ux` | platform | none | package | — | — | extracted | the web and terminal surfaces |
-| `cx-platform-agent` | platform | none | package | — | — | extracted | tools, mcp, mcp-server, a2a, a2a-xap, llm, run, adjudicate |
+| `cx-platform-flow` | platform | none | package | — | `cx-private` | extracted | workflow; its CLI verbs stay in the binary |
+| `cx-platform-connector` | platform | none | package | — | `cx-private` | extracted | the connector kit and sync |
+| `cx-platform-secrets` | platform | none | package | — | `cx-private` | extracted | the minimal keystore: one handle grammar, one internal resolve seam, the PEP and the audit record, custody that rises by a provider row |
+| `cx-platform-sso` | platform | none | package | — | `cx-private` | extracted | enterprise sign-on and its interop step |
+| `cx-platform-ux` | platform | none | package | — | `cx-private` `cx-platform-flow` | extracted | the web and terminal surfaces |
+| `cx-platform-agent` | platform | none | package | — | `cx-private` | extracted | tools, mcp, mcp-server, a2a, a2a-xap, llm, run, adjudicate |
 | `cx-binding-python` | binding | none | pypi | — | — | extracted | cxlib for Python |
 | `cx-binding-go` | binding | none | go-module | — | — | extracted | cxlib for Go |
 | `cx-binding-rust` | binding | none | crate | — | — | extracted | cxlib for Rust |
