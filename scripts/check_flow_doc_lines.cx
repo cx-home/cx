@@ -10,23 +10,27 @@
 # imports ./flows/repo-acts.cx, and a path-form [?lib] charges read, #1539) —
 # the dogfood gate ran its OWN argv beside the header, never the header's.
 #
-# WHAT IT DOES. For every flow document, env program and simulated-results file
-# under flows/ and docs-src/flow/ — in this tree and in the pinned
-# cx-platform-flow (deps/cx-platform-flow/) — it reads the comment lines,
-# joins a line ending in `\` with the next, and RUNS each one that starts
-# `cx flow validate` or `cx flow simulate` as written: the leading `cx` is the
-# binary under grade (CX_BIN), every other token is passed verbatim, and the
+# WHAT IT DOES. For every .cx / .cxd file at ANY depth under flows/ and
+# docs-src/flow/ — in this tree and in the pinned cx-platform-flow
+# (deps/cx-platform-flow/) — it reads the comment lines, joins a line ending in
+# `\` with the next, splits each as a shell would (any run of spaces or tabs, a
+# leading `$ ` prompt dropped), and RUNS every one that is `cx [flags] flow
+# validate|simulate …` as written — flags before `flow` included, so a line
+# documenting that refused order is run and seen refused: the leading `cx` is
+# the binary under grade (CX_BIN), every other token is passed verbatim, and the
 # working directory is the repository root that owns the document (a relative
 # [?lib] resolves against it). A line passes when it exits 0 and its answer is
 # its own answer: `validate` must answer `[valid …]` and `simulate`
 # `[simulation …]` (a refusal can print a CXER0271 on
 # stdout at exit 0, so the status alone would pass the very line #1688 found).
+# scripts/check_flow_doc_lines_selftest.cx plants each shape the adversarial
+# reader found missed (REFUTE-1 f01-f05) and runs first.
 #
 # WHAT IT DOES NOT RUN, said out loud: `cx flow run` lines. A run performs its
 # acts — the repository gate's are `make build-vcx` and `make <target>` — and
 # nesting make inside the matrix is what the dogfood gate already refuses to
 # do; the run surface is graded by cx-platform-flow's real/flow_cli.cx (its
-# GRANT case runs repo-gate to :done). A tree with NO documented line is a
+# GRANT case runs repo-gate to :done). A root with NO documented line is a
 # failure, never a pass over nothing.
 #
 # Run via:  CX_BIN=<cx> cx --allow-read --allow-write --allow-env --allow-subprocess scripts/check_flow_doc_lines.cx
@@ -42,11 +46,24 @@
 [?def cat scope=private pure [returns string] ($parts) [$strings:join $parts '']]
 [?def cat-seqs scope=private ($ss) [$fp:flat-map $ss [?fn ($x) $x]]]
 
-# the repository roots this tree grades, each with the directories its flow
-# documents live in. A pinned repository absent from deps/ is a refusal, not
-# a skip: a check over half the documents is not this check.
+# the repository roots this tree grades, and the directories under each that
+# hold flow documents, env programs and simulated-results files — walked
+# WHOLE (every .cx / .cxd at any depth: docs-src/flow/sim/docs/ and
+# flows/sim/<flow>/<case>/ included; REFUTE-1 f01, f05). A pinned repository
+# absent from deps/, or a root that yields NO documented line, is a refusal,
+# not a skip: a check over half the documents is not this check (f04).
 [?const ROOTS ('.', 'deps/cx-platform-flow')]
-[?const PATTERNS ('flows/*.cx', 'flows/sim/*.cx', 'flows/sim/*/*.cx', 'docs-src/flow/*.cx')]
+[?const DIRS ('flows', 'docs-src/flow')]
+
+# walk: every .cx / .cxd file under a directory, at any depth.
+[?def walk scope=private impure [returns any] ($dir)
+  [$cat-seqs [?to-array [?for [in $n [$io:list-dir $dir]]
+    [= $p [$cat ($dir, '/', [$string $n])]]
+    [yield [?if [$io:is-directory $p]
+             [then [$walk $p]]
+             [else [?to-array [?for [in $one (1)]
+                     [where [or [$strings:ends-with $p '.cx'] [$strings:ends-with $p '.cxd']]]
+                     [yield $p]]]]]]]]]]
 
 # comment-texts: a file's comment lines with the leading `#` run and the
 # surrounding spacing removed, in order.
@@ -63,26 +80,48 @@
       [then [$cat ([$strings:trim [$strings:trim-end-chars $t "\\"]], " ", [$assemble $ts [+ $i 1]])]]
       [else $t]]]]
 
-[?def documented scope=private pure [returns bool] ($t)
-  [or [$strings:starts-with $t "cx flow validate "] [$strings:starts-with $t "cx flow simulate "]]]
+# tokens-of: a documented line's argv as a shell would split it — on any run
+# of spaces or tabs, a leading `$ ` prompt dropped (REFUTE-1 f03).
+[?def tokens-of scope=private pure [returns any] ($line)
+  [?let [= $all [$str-split-whitespace $line]]
+    [?if [and [> [$count $all] 0] [= [$first $all] '$']]
+      [then [?to-array [?for [in $i [$range 2 [$count $all]]] [yield [$nth $all $i]]]]]
+      [else [?to-array $all]]]]]
+
+# verb-of: 'validate' or 'simulate' when the line is a `cx … flow validate|
+# simulate …` command — flags BEFORE the subcommand word included (f02:
+# `cx --allow-read=. flow validate …` is documented somewhere and must RUN, so
+# the CLI's own refusal of that order is seen), else ''.
+[?def verb-of scope=private pure [returns string] ($line)
+  [?let [= $tk [$tokens-of $line]]
+        [= $n [$count $tk]]
+        [= $words [?to-array [?for [in $i [$range 2 [?if [< $n 2] [then 1] [else $n]]]]
+                    [where [and [> $n 1] [not [$strings:starts-with [$nth $tk $i] '-']]]]
+                    [yield $i]]]]
+    [?if [or [< $n 3] [not [= [$first $tk] 'cx']] [= [$count $words] 0]] [then '']
+      [else [?let [= $j [$first $words]]
+        [?if [and [= [$nth $tk $j] 'flow'] [< $j $n]
+                  [or [= [$nth $tk [+ $j 1]] 'validate'] [= [$nth $tk [+ $j 1]] 'simulate']]]
+          [then [$nth $tk [+ $j 1]]]
+          [else '']]]]]]]
 
 # lines-of: every documented validate/simulate line of one file, as
-# (root, file, line) records.
+# (root, file, line, verb) records.
 [?def lines-of scope=private impure [returns any] ($root $file)
   [?let [= $ts [$comment-texts $file]]
     [?to-array [?for [in $i [$range 1 [$count $ts]]]
-      [where [$documented [$nth $ts $i]]]
-      [yield [rec root=$root file=$file line=[$assemble $ts $i]]]]]]]
+      [= $line [$assemble $ts $i]]
+      [= $verb [$verb-of $line]]
+      [where [not [= $verb '']]]
+      [yield [rec root=$root file=$file line=$line verb=$verb]]]]]]
 
 # argv-of: the line's tokens with `cx` replaced by the binary; a shell-quoted
 # empty value (`--x=""`) is the empty string the shell would pass.
 [?def argv-of scope=private pure [returns any] ($bin $line)
-  [?let [= $toks [$str-split-whitespace $line]]
+  [?let [= $toks [$tokens-of $line]]
     [?to-array [?for [in $i [$range 1 [$count $toks]]]
       [yield [?if [= $i 1] [then $bin]
                [else [$strings:replace [$nth $toks $i] '=""' '=']]]]]]]]
-
-[?def has scope=private pure [returns bool] ($s $needle) [$strings:contains $s $needle]]
 
 # run-line: '' when the documented line runs as written, else why not. The
 # answer is the verb's own value on stdout: `validate` answers `[valid …]` and
@@ -94,7 +133,7 @@
   [?let [= $p [$process:run [$argv-of $bin $r@line] cwd=$r@root]]
         [= $stdout [$strings:trim [$string $p@stdout]]]
         [= $out [$cat ($stdout, " ", [$strings:trim [$string $p@stderr]])]]
-        [= $want [?if [$strings:starts-with $r@line "cx flow validate "] [then "[valid"] [else "[simulation"]]]
+        [= $want [?if [= $r@verb 'validate'] [then "[valid"] [else "[simulation"]]]
         [= $where $r@file]
     [?if [not [= [$string $p@exit-code] '0']]
       [then [$cat ($where, ": `", $r@line, "` exits ", [$string $p@exit-code], " as written -- ", [$strings:slice $out 1 400])]]
@@ -114,13 +153,20 @@
                              "; the pins are not synced (make deps-sync), and a check over half the documents is not this check")]],
                [$env:exit 2])]
         [else ()]]]
-      [= $records [$cat-seqs [?to-array [?for [in $root ROOTS]
-        [in $pat PATTERNS]
+      [= $per-root [?to-array [?for [in $root ROOTS]
         [= $prefix [?if [= $root '.'] [then ''] [else [$cat ($root, '/')]]]]
-        [in $hit [$io:glob [$cat ($prefix, $pat)]]]
-        [yield [$lines-of $root $hit]]]]]]
-      [= $_e [?if [= [$count $records] 0]
-        [then ([$cry "check-flow-doc-lines: REFUSED -- no documented `cx flow validate|simulate` line found; a check over nothing is not a pass"],
+        [yield [$cat-seqs [?to-array [?for [in $d DIRS]
+          [= $dir [$cat ($prefix, $d)]]
+          [where [$io:is-directory $dir]]
+          [in $f [$walk $dir]]
+          [yield [$lines-of $root $f]]]]]]]]]
+      [= $records [$cat-seqs $per-root]]
+      [= $empty-roots [?to-array [?for [in $root ROOTS]
+        [where [= 0 [$count [?to-array [?for [in $r $records] [where [= $r@root $root]] [yield 1]]]]]]
+        [yield [$string $root]]]]]
+      [= $_e [?if [> [$count $empty-roots] 0]
+        [then ([$cry [$cat ("check-flow-doc-lines: REFUSED -- no documented `cx flow validate|simulate` line under ",
+                            [$strings:join $empty-roots ', '], "; a check over nothing is not a pass")]],
                [$env:exit 2])]
         [else ()]]]
       [= $fails [?to-array [?for [in $r $records]
