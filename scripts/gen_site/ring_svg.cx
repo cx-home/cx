@@ -157,7 +157,10 @@
 
 # unevaluated-attrs: every attribute of $svg whose value is not a value — the
 # NAME of a [?const] that $src (the generator's own source) declares, or a form
-# that reached the output unevaluated (a value opening with `[` or `$`).
+# that reached the output unevaluated (a value opening with `[`, or `$` and a
+# name -- `$5 off` is text). A declaration may space or break its name from
+# `[?const` (REFUTE-1); the caller passes every source whose constants the
+# figure can reach (its own and the libraries it imports).
 # A constant written bare in attribute position is the data ring's string
 # (RULED: ATTRU-1 — a value there needs `$`), and [$xml:emit] writes its NAME:
 # plugs_svg.cx's `width=BOX-W` gave every box of the 24 plug-in figures
@@ -166,12 +169,12 @@
 # from the source rather than guessed from the value's shape, so `C` (this
 # file's centre) is caught and an upper-case value no constant names is not.
 [?def unevaluated-attrs scope=public ($svg $src)
-  [?let [= $consts [?for [in $m [$re:find-all [$re:compile "\\[\\?const ([A-Za-z][A-Za-z0-9-]*)"] $src]]
+  [?let [= $consts [?for [in $m [$re:find-all [$re:compile "\\[\\?const\\s+([A-Za-z][A-Za-z0-9-]*)"] $src]]
                      [yield [$re:group $m 1]]]]
         [= $named [?for [in $c $consts]
                      [in $m [$re:find-all [$re:compile [$concat "[A-Za-z][A-Za-z0-9:-]*=\"" [$re:escape $c] "\""]] $svg]]
                      [yield [$re:group $m 0]]]]
-        [= $forms [?for [in $m [$re:find-all [$re:compile "[A-Za-z][A-Za-z0-9:-]*=\"[\\[$][^\"]*\""] $svg]]
+        [= $forms [?for [in $m [$re:find-all [$re:compile "[A-Za-z][A-Za-z0-9:-]*=\"(\\[|\\$[A-Za-z])[^\"]*\""] $svg]]
                      [yield [$re:group $m 0]]]]
     [?for [in $part ($named, $forms)] [in $x $part] [yield $x]]]]
 
@@ -366,10 +369,10 @@
                 [; the attribute guard (#1708), first on a forged figure — the plug-in
                    figure's own defect and an un-evaluated call — then on this one ]
                 [= $forged [$unevaluated-attrs
-                              "<rect x=\"1\" width=\"BOX-W\" height=\"[- ROW-H 4]\" fill=\"#fff\" font-family=\"MONO\" class=\"ABC\"/>"
-                              "[?const BOX-W 168] [?const ROW-H 22] [?const MONO \"m\"]"]]
-                [= $_g [?if [= [$count $forged] 3] [then 0]
-                         [else [$die [$concat "the attribute guard missed on a forged figure (want width=\"BOX-W\", font-family=\"MONO\", height=\"[- ROW-H 4]\"; got: "
+                              "<rect x=\"1\" width=\"BOX-W\" height=\"[- ROW-H 4]\" fill=\"#fff\" font-family=\"MONO\" class=\"ABC\" aria-label=\"$5 off\"/>"
+                              "[?const  BOX-W 168] [?const\n  ROW-H 22] [?const MONO \"m\"]"]]
+                [= $_g [?if [= [$strings:join $forged ", "] "width=\"BOX-W\", font-family=\"MONO\", height=\"[- ROW-H 4]\""] [then 0]
+                         [else [$die [$concat "the attribute guard missed on a forged figure (want exactly width=\"BOX-W\", font-family=\"MONO\", height=\"[- ROW-H 4]\" -- a spaced or broken [?const declaration read, $5 off left as text; got: "
                                               [$strings:join $forged ", "] ")"]]]]]
                 [= $bad [$unevaluated-attrs $svg [$io:read-file "scripts/gen_site/ring_svg.cx"]]]
                 [= $_b [?if [$empty $bad] [then 0]

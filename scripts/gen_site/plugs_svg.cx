@@ -183,7 +183,9 @@
            ring_svg.cx's attribute guard refuses every attribute value that is a
            constant THIS file declares, or a form that reached the output
            un-evaluated — read from the source, not guessed from the shape ]
-        [= $src [$io:read-file "scripts/gen_site/plugs_svg.cx"]]
+        [; the sources whose constants a figure can reach: this file and the
+           library it draws with (REFUTE-1: ring_svg.cx's MONO is in scope here) ]
+        [= $src [$concat [$io:read-file "scripts/gen_site/plugs_svg.cx"] "\n" [$io:read-file "scripts/gen_site/ring_svg.cx"]]]
         [= $bare [?for [in $n $names]
                    [where [or [= $n [$rs:site-self]] [= [$rs:attr [$repo-row $n] "status" ""] "extracted"]]]
                    [= $hits [$rs:unevaluated-attrs [$plugs-svg $n] $src]]
