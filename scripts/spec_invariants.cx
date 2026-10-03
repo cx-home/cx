@@ -271,10 +271,12 @@
 # A sentence no conformance case can grade carries a row in the register
 # (scripts/spec_invariants_exempt.cxd, or --exempt FILE): its spec file, a
 # `match=` substring of the sentence that matches EXACTLY ONE keyword sentence
-# of that file, a class from the closed set below and a reason. A row is
-# refused when it matches no sentence or more than one, when the sentence it
-# matches cites a case (the row is stale), when its class is not one of the
-# four, when it has no reason, or when the class's own field is missing or wrong:
+# of that file, with an optional `sec=` substring of its section heading when
+# two sentences of the file read alike, a class from the closed set below and
+# a reason. A row is refused when it matches no sentence or more than one, when
+# the sentence it matches cites a case (the row is stale), when its class is
+# not one of the four, when it has no reason, or when the class's own field
+# is missing or wrong:
 #   step     the obligation is graded by a make step, not a corpus case:
 #            `held-by=` names the target, and the target must be ON A RUN — in
 #            this repository's TEST_TARGETS or a ring Makefile's `check:` list
@@ -292,20 +294,28 @@
             [?for [in $e $d//exempt] [yield $e]]]]
     [else ()]]]
 
-# The make targets that are on a run: every word of every TEST_TARGETS line,
-# and every prerequisite of a ring Makefile's `check:`.
+# The make targets that are on a run: `test` itself (the post-merge run), every
+# word of every TEST_TARGETS line, and every prerequisite of a ring Makefile's
+# `check:`.
 [?def run-targets scope=public ($makefiles $rx)
-  [$distinct [$flat [?for [in $mk $makefiles]
+  [$distinct [$flat (('test'), [$flat [?for [in $mk $makefiles]
                       [yield [$flat ([?for [in $m [$re:find-all $rx.targets $mk]]
                                        [yield [$strings:split-whitespace [$re:group $m 1]]]],
                                      [?for [in $m [$re:find-all $rx.checkrow $mk]]
-                                       [yield [$strings:split-whitespace [$re:group $m 1]]]])]]]]]]
+                                       [yield [$strings:split-whitespace [$re:group $m 1]]]])]]]])]]]
+
+# Whether a register entry matches a row: its file, its match= in the text,
+# and — when two sentences read the same — its sec= in the section heading.
+[?def row-matches scope=public ($e $r)
+  [?if [not [= $r@file $e@file]] [then false]
+  [else [?if [not [$strings:contains $r@text [$string $e@match]]] [then false]
+  [else [?if [$present $e@sec] [then [$strings:contains $r@sec [$string $e@sec]]]
+  [else true]]]]]]]
 
 # The rows of one register entry's file whose text the entry matches.
 [?def row-hits scope=public ($e $rows)
   [?for [in $r $rows]
-    [where [= $r@file $e@file]]
-    [where [$strings:contains $r@text [$string $e@match]]]
+    [where [$row-matches $e $r]]
     [yield $r]]]
 
 # The register's own refusals, one line each.
@@ -340,8 +350,7 @@
   [?for [in $r $rows]
     [yield [?if [= $r@status 'UNCITED']
              [then [?let [= $m [?for [in $e $reg]
-                                 [where [= $r@file $e@file]]
-                                 [where [$strings:contains $r@text [$string $e@match]]]
+                                 [where [$row-matches $e $r]]
                                  [yield [$string $e@class]]]]
                      [?if [> [$count $m] 0]
                        [then [?let [= $cls [$first $m]] [row file=$r@file line=$r@line sec=$r@sec status=exempt ids=$cls text=$r@text]]]
