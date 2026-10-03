@@ -10,9 +10,11 @@
 # can, so ONE failed run names EVERY red step and the fix branch carries them
 # all before the next tip.
 #
-# The three serial tail lines (test-profile-gate, test-vcx-timing,
-# test-code-diagram) still run only after a GREEN storm: `-k` is on the storm's
-# own sub-make, and the recipe line's non-zero status still stops `test:`.
+# The four serial tail lines (test-profile-gate, test-vcx-timing,
+# test-code-diagram — wall-clock steps — and test-playground-primer, which
+# assembles and reads the site/ tree the storm's site-check rewrites, #1758)
+# still run only after a GREEN storm: `-k` is on the storm's own sub-make, and
+# the recipe line's non-zero status still stops `test:`.
 #
 # Two properties:
 #
@@ -21,7 +23,7 @@
 #      still exits non-zero. The control — the same makefile WITHOUT `-k` —
 #      leaves the second green unbuilt, so the fixture discriminates rather
 #      than passing on any make at all.
-#   B  the REAL recipe: `test:`'s storm line carries `-k`, and the three serial
+#   B  the REAL recipe: `test:`'s storm line carries `-k`, and the four serial
 #      tail lines are still separate recipe lines after it (so a red storm
 #      still stops the gate before the tail).
 #
@@ -109,18 +111,47 @@ else
 	bad B1 "the -j storm line does not carry -k: $(cat "$T/storm.txt")"
 fi
 
-# the serial tail is still three separate recipe lines AFTER the storm, so a red
-# storm still stops `test:` before them.
+# the serial tail is still four separate recipe lines AFTER the storm, each one
+# filtered out of the storm line itself, so a red storm still stops `test:`
+# before them and none of them runs twice.
 tail_ok=1
-for s in test-profile-gate test-vcx-timing test-code-diagram; do
-	printf '%s\n' "$recipe" | grep -qF "\$(MAKE) $s" || tail_ok=0
-done
 storm_n=$(printf '%s\n' "$recipe" | grep -nF '$(MAKE) -k -j$(TEST_JOBS)' | head -1 | cut -d: -f1)
-tail_n=$(printf '%s\n' "$recipe" | grep -nF '$(MAKE) test-profile-gate' | head -1 | cut -d: -f1)
-if [ "$tail_ok" = 1 ] && [ -n "$storm_n" ] && [ -n "$tail_n" ] && [ "$tail_n" -gt "$storm_n" ]; then
-	ok B2 "the three serial tail lines still follow the storm on their own lines"
+for s in test-profile-gate test-vcx-timing test-code-diagram test-playground-primer; do
+	tail_n=$(printf '%s\n' "$recipe" | grep -nF "\$(MAKE) $s" | head -1 | cut -d: -f1)
+	{ [ -n "$storm_n" ] && [ -n "$tail_n" ] && [ "$tail_n" -gt "$storm_n" ]; } || tail_ok=0
+	printf '%s\n' "$storm" | grep -qE "filter-out ([^,]* )?$s[ ,]" || tail_ok=0
+done
+if [ "$tail_ok" = 1 ]; then
+	ok B2 "the four serial tail lines still follow the storm on their own lines, each filtered out of the storm"
 else
-	bad B2 "the serial tail (test-profile-gate, test-vcx-timing, test-code-diagram) is not three lines after the storm"
+	bad B2 "the serial tail (test-profile-gate, test-vcx-timing, test-code-diagram, test-playground-primer) is not four lines after the storm, each filtered out of it"
+fi
+
+# B3 (#1758) — the tail can be neither swallowed nor dropped without a red:
+# each tail line re-raises its step's status (no leading `-`, no `|| true`/
+# `|| :`, its `exit $$cx_step_rc` kept); every tail step is a TEST_TARGETS
+# member (a step dropped from the union is not "in the tail"); and the
+# selection's SERIAL_TAIL (scripts/test_changed.sh) is exactly the storm's
+# filter-out set, so a selected post-merge run cannot put a tail step back
+# into the -j batch beside the steps it was moved away from.
+b3=""
+targets_line=$(grep -m1 '^TEST_TARGETS :=' "$MAKEFILE" | sed 's/^TEST_TARGETS := //')
+filtered=$(printf '%s\n' "$storm" | sed -n 's/.*filter-out \([^,]*\),.*/\1/p' | tr ' ' '\n' | grep . | LC_ALL=C sort | tr '\n' ' ')
+serial=$(sed -n "s/^SERIAL_TAIL='\(.*\)'$/\1/p" "$ROOT/scripts/test_changed.sh" | tr ' ' '\n' | grep . | LC_ALL=C sort | tr '\n' ' ')
+[ -n "$filtered" ] && [ "$filtered" = "$serial" ] || b3="$b3 [SERIAL_TAIL '$serial' != the storm's filter-out '$filtered']"
+for s in $filtered; do
+	case " $targets_line " in *" $s "*) ;; *) b3="$b3 [$s is not in TEST_TARGETS]" ;; esac
+	line=$(printf '%s\n' "$recipe" | grep -F "\$(MAKE) $s;" | head -1)
+	if [ -z "$line" ]; then b3="$b3 [$s has no tail line of the form \$(MAKE) $s; …]"; continue; fi
+	case "$line" in
+		"	-"*|"	@-"*|*"|| true"*|*"|| :"*) b3="$b3 [$s's tail line swallows its status]" ;;
+	esac
+	case "$line" in *'exit $$cx_step_rc'*) ;; *) b3="$b3 [$s's tail line does not re-raise its status]" ;; esac
+done
+if [ -z "$b3" ]; then
+	ok B3 "the tail is SERIAL_TAIL exactly, every member a TEST_TARGETS step, every line re-raising its status"
+else
+	bad B3 "$b3"
 fi
 
 # ── C — the selftest under the storm's own environment ──────────────────────
@@ -141,4 +172,4 @@ if [ "$fails" -ne 0 ]; then
 	echo "storm keep-going selftest: $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "storm keep-going selftest: 5/5 (planted -k runs past a red target and exits non-zero; the control without -k does not; the storm line carries -k; the serial tail is unchanged; and it holds under the storm's own MAKEFLAGS)"
+echo "storm keep-going selftest: 6/6 (planted -k runs past a red target and exits non-zero; the control without -k does not; the storm line carries -k; the serial tail is unchanged; the tail is SERIAL_TAIL, in TEST_TARGETS, never swallowed; and it holds under the storm's own MAKEFLAGS)"

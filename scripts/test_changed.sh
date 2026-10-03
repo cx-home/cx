@@ -127,8 +127,15 @@ fi
 CHANGED=$(printf '%s\n' "$CHANGED" | sort -u | grep -v '^$' || true)
 printf '%s\n' "$CHANGED" > "$TC_TMP/changed"
 if [ -z "$CHANGED" ]; then
-  echo "test-changed: no changes vs $BASE — nothing to run (the full gate still applies at wave exits)"
-  exit 0
+  # #1758: under RUN-4 a branch whose only changes are scripts/ paths arrives
+  # with an EMPTY changed list and those paths in --infra-rows; their own rows
+  # still decide (below), so this exit is only for a change set with neither.
+  if [ -n "$INFRA_ROWS_SRC" ] && grep -q '^scripts/' "$INFRA_ROWS_SRC" 2>/dev/null; then
+    echo "test-changed: no changes vs $BASE beyond the stripped scripts/ paths — their own rows decide (#1758)"
+  else
+    echo "test-changed: no changes vs $BASE — nothing to run (the full gate still applies at wave exits)"
+    exit 0
+  fi
 fi
 echo "test-changed: ${BASE}..HEAD(+worktree) changes:"
 printf '%s\n' "$CHANGED" | sed 's/^/  /'
@@ -396,9 +403,9 @@ step_globs() {
     # source. Neither reads the tree, so neither runs when the tree moves.
     check-verification-budget)     echo "scripts/check_verification_budget.cx scripts/verification_budget.cxd" ;;
     check-verification-budget-selftest) echo "scripts/check_verification_budget.cx scripts/verification_budget_selftest.sh" ;;
-    # RULED: RUN-2: the keep-going selftest reads the `test:` recipe and its own
-    # source, and nothing else in the tree.
-    check-storm-keep-going)        echo "Makefile scripts/storm_keep_going_selftest.sh" ;;
+    # RULED: RUN-2: the keep-going selftest reads the `test:` recipe, its own
+    # source and (#1758, B3) scripts/test_changed.sh's SERIAL_TAIL.
+    check-storm-keep-going)        echo "Makefile scripts/storm_keep_going_selftest.sh scripts/test_changed.sh" ;;
     # issue 1583 (RULED: RUN-5): the timings WRITER selftest reads the library
     # and its own source, and plants everything under mktemp.
     check-verification-timings)    echo "scripts/verification_timings_lib.sh scripts/verification_timings_selftest.sh" ;;
@@ -616,6 +623,13 @@ step_globs() {
     # headless browser, served by scripts/serve_static.cx under the native cx
     # (so the binary's own sources move it too).
     test-site-phone-width)         echo "docs-src/* docs/* scripts/gen_site/* scripts/gen_guide/* scripts/gen_docs/* scripts/serve_static.cx scripts/test_site_phone_width.mjs stdlib/* deps.cxd registry/* VERSION $RING_LIB $RING_CLI $RING_CMD" ;;
+    # PLAY-1/PLAY-3 (#1758): the ASSEMBLED site (`make site`, so the phone-
+    # width row's site inputs) in headless Chrome with the wasm engine built
+    # from the ring closure (the mermaid row's bundle inputs), every primer
+    # fixture opened through the page's own controls; the gate, its harness
+    # and the static server are its own inputs. The Site workflow ran it alone
+    # until #1758 — PLAY-3's reading change reached cxhome.org's build red.
+    test-playground-primer)        echo "docs-src/* docs/* scripts/gen_site/* scripts/gen_guide/* scripts/gen_docs/* scripts/serve_static.cx scripts/wasm/* scripts/test_playground_primer.mjs scripts/playground-gate/* stdlib/* deps.cxd registry/* VERSION $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED" ;;
     # test-binding-api-parity row RETIRED (RULED: RS-12, RS-8; #1591 item K3):
     # the four drivers under lang/<lang>/binding_api_driver/ left with their
     # binding repositories, and the target itself is gone from the Makefile.
@@ -1101,7 +1115,14 @@ prebuild() {
 #
 # The order is the Makefile's order, and it is one `make` per tail step so a
 # red names its own step.
-SERIAL_TAIL='test-profile-gate test-vcx-timing test-code-diagram'
+#
+# test-playground-primer (#1758) joins the tail for a second reason, its
+# OUTPUT rather than its clock: it assembles site/ (`make site` re-renders
+# docs/guide/, and site_assemble.cx removes site/ before it copies) and then
+# reads that tree in a browser for minutes, while site-check and
+# guide-render-gate, in the storm, remove and rewrite the same two trees. After
+# the storm drains nothing else writes them.
+SERIAL_TAIL='test-profile-gate test-vcx-timing test-code-diagram test-playground-primer'
 
 # The per-file narrowing of test-vcx-suite, filled in below when that step is
 # selected. Empty = the union, which is what the full-union path wants.
