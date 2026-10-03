@@ -403,12 +403,13 @@ for (const key of keys) {
   // diagram to check. That is a SKIP, and it is counted and named.
   let output = '';
   if (ex.runnable !== false) {
-    // The page's own reading (PLAY-1): a document is its own value, a query
-    // runs over its document bound as $doc, a program over nothing.
+    // The page's own reading (PLAY-3's two): a document is its own value; a
+    // code example runs over its document bound as $doc whenever it reads a
+    // real one (playground.js's runOnce), a program over nothing otherwise.
     try {
       output = String((ex.reading === 'data'
         ? cxlib.toCx(ex.doc || source)
-        : cxlib.evalCode(source, 'cx', ex.reading === 'query' ? (ex.doc || '') : '')) || '');
+        : cxlib.evalCode(source, 'cx', ex.doc && ex.doc.trim() !== '' ? ex.doc : '')) || '');
     }
     catch (_) { output = ''; }
   }

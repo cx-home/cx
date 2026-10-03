@@ -118,11 +118,13 @@ const cases = keys.map(key => {
   const entry = program[key];
   return [key, entry.input ?? entry.source ?? entry.src ?? '', ''];
 }).filter(([, source]) => source);
-// A primer example runs the way the page runs it: a document through the
-// data reading, a query over its document bound as $doc.
+// A primer example runs the way the page runs it (PLAY-3's two readings): a
+// document through the data reading; a code example over its document bound
+// as $doc whenever it reads a real one (playground.js's runOnce), else over
+// nothing.
 for (const p of primer) {
   cases.push([`primer:${p.id}`, p.reading === 'data' ? p.doc : p.src,
-              p.reading === 'query' ? p.doc : '', p.reading]);
+              p.reading !== 'data' && p.doc && p.doc.trim() !== '' ? p.doc : '', p.reading]);
 }
 for (const [key, source] of Object.entries(PROBES)) cases.push([key, source, '']);
 
