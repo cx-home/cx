@@ -447,7 +447,7 @@ step_globs() {
     # #1688 (RULED: CXF-8): the documented flow lines live in this tree's flows/
     # and docs-src/flow/ and in the pinned cx-platform-flow (deps.cxd); the
     # binary that runs them is the flow verbs' and the evaluator's.
-    check-flow-doc-lines)          echo 'flows/* docs-src/flow/* scripts/check_flow_doc_lines.cx deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
+    check-flow-doc-lines)          echo 'flows/* docs-src/flow/* scripts/check_flow_doc_lines.cx scripts/check_flow_doc_lines_selftest.cx deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
     # RULED: CICD-1 — the documentation flow's own fixture: the flow document,
     # its env, acts and simulate tables, the gate that reads them, and what can
     # move the vocabulary or the three subcommands it drives them through (the

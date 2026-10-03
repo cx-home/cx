@@ -2160,6 +2160,7 @@ flow-dogfood-gate: build-vcx
 .PHONY: check-flow-doc-lines
 check-flow-doc-lines: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 check-flow-doc-lines: build-vcx
+	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/check_flow_doc_lines_selftest.cx
 	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/check_flow_doc_lines.cx
 
 # ── test-flow-umbrella — cx-platform-flow's real-process programs, out of the pin

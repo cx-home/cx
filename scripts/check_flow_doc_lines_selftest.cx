@@ -1,0 +1,63 @@
+# scripts/check_flow_doc_lines_selftest.cx -- check-flow-doc-lines proven on
+# planted trees before it grades the real one (#1688; RULED: CXF-8, REFUTE-1).
+#
+# The adversarial reader found five ways the first version passed a tree it
+# should not have: a documented line under docs-src/flow/sim/ (never globbed),
+# `cx --allow-read=. flow validate …` and a `$ ` prompt, a double space or a
+# tab between `cx` and `flow` (never matched), an EMPTY pinned flows/ (a pass
+# over nothing), and a line in a .cxd or three directories deep (never read).
+# Each is planted here in a scratch tree, as a line that cannot run (it names a
+# document that does not exist), so the checker must FIND it and FAIL it:
+#
+#   1. the pinned root's flows/ is empty  -> exit 2, the root named;
+#   2. every shape planted, both roots    -> exit 1, all 8 lines found, 8 failed.
+#
+# Run via:  CX_BIN=<cx> cx --allow-read --allow-write --allow-env --allow-subprocess scripts/check_flow_doc_lines_selftest.cx
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/path'    as=path]
+
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def cat scope=private pure [returns string] ($parts) [$strings:join $parts '']]
+
+[?def plant scope=private impure ($root $rel $text)
+  [?let [= $p [$cat ($root, '/', $rel)]]
+        [= $_d [$io:make-dirs [$path:dirname $p]]]
+    [$io:write-file $p $text]]]
+
+[?def run-check scope=private impure ($bin $checker $dir)
+  [$process:run ($bin, '--allow-read', '--allow-write', '--allow-env', '--allow-subprocess', $checker)
+                env={CX_BIN: $bin} cwd=$dir]]
+
+[?let [= $bin [$strings:trim [$env:var-or-default 'CX_BIN' '']]]
+      [= $_bin [?if [= $bin ''] [then ([$cry "check-flow-doc-lines selftest: REFUSED -- CX_BIN is not set"], [$env:exit 2])] [else ()]]]
+      [= $checker [$cat ([$env:cwd], '/scripts/check_flow_doc_lines.cx')]]
+      [= $mk [$process:run ('mktemp', '-d')]]
+      [= $dir [$strings:trim [$string $mk@stdout]]]
+      [= $bad "nope/absent.flow.cx --env nope/absent.env.cx --allow-read=."]
+      [= $_1 [$plant $dir 'flows/plain.cx' [$cat ("# a header\n#   cx flow validate ", $bad, "\n[x]\n")]]]
+      [= $_2 [$plant $dir 'flows/prompt.cx' [$cat ("#   $ cx flow validate ", $bad, "\n#   cx  flow validate ", $bad, "\n#\tcx\tflow\tvalidate ", $bad, "\n")]]]
+      [= $_3 [$plant $dir 'flows/order.cx' [$cat ("#   cx --allow-read=. flow validate ", $bad, "\n")]]]
+      [= $_4 [$plant $dir 'flows/sim/a/b/deep.cxd' [$cat ("#   cx flow simulate nope/absent.flow.cx \\\n#     nope/r.cx --env nope/absent.env.cx --allow-read=.\n")]]]
+      [= $_5 [$plant $dir 'docs-src/flow/sim/docs/d.cx' [$cat ("#   cx flow validate ", $bad, "\n")]]]
+      [= $_6 [$io:make-dirs [$cat ($dir, '/deps/cx-platform-flow/flows')]]]
+      [= $r1 [$run-check $bin $checker $dir]]
+      [= $_7 [$plant $dir 'deps/cx-platform-flow/flows/pinned.cx' [$cat ("#   cx flow validate ", $bad, "\n")]]]
+      [= $r2 [$run-check $bin $checker $dir]]
+      [= $e2 [$string $r2@stderr]]
+      [= $misses [?to-array [?for [in $m (
+          [?if [and [= [$string $r1@exit-code] '2'] [$strings:contains [$string $r1@stderr] 'under deps/cx-platform-flow']]
+            [then ''] [else [$cat ("an EMPTY pinned flows/ must refuse (exit 2) naming the root; got exit ", [$string $r1@exit-code], ": ", [$string $r1@stderr])]]],
+          [?if [= [$string $r2@exit-code] '1'] [then '']
+            [else [$cat ("eight unrunnable planted lines must fail the check (exit 1); got exit ", [$string $r2@exit-code], ": ", $e2)]]],
+          [?if [$strings:contains $e2 'FAILED -- 8 of 8 documented'] [then '']
+            [else [$cat ("all eight planted lines must be FOUND and failed (8 of 8); got: ", $e2)]]])]
+        [where [not [= $m '']]] [yield $m]]]]
+      [= $_rm [$process:run ('rm', '-rf', $dir)]]
+  [?if [> [$count $misses] 0]
+    [then ([?for [in $m $misses] [yield [$cry [$cat ("check-flow-doc-lines selftest: FAILED -- ", $m)]]]], [$env:exit 1])]
+    [else ([$io:write-line [$env:stdout] "check-flow-doc-lines selftest OK -- an empty pinned flows/ refuses; a prompt, a double space, a tab, flags before `flow`, a .cxd, a line three directories deep and one under docs-src/flow/sim/ are each found and failed"],
+           [$env:exit 0])]]]
