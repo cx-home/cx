@@ -179,12 +179,16 @@
                     [yield [fig repo=$n want=$want got=$got]]]]
         [= $miss [?for [in $f $drawn] [where [not [= $f@want $f@got]]] [yield [$string $f@repo]]]]
         [; a constant written bare in attribute position (`width=BOX-W`) is emitted
-           as its NAME, not its value — an SVG whose boxes have no width; every
-           attribute value that reads as a bare constant name is refused ]
+           as its NAME, not its value — an SVG whose boxes have no width (#1708);
+           ring_svg.cx's attribute guard refuses every attribute value that is a
+           constant THIS file declares, or a form that reached the output
+           un-evaluated — read from the source, not guessed from the shape ]
+        [= $src [$io:read-file "scripts/gen_site/plugs_svg.cx"]]
         [= $bare [?for [in $n $names]
                    [where [or [= $n [$rs:site-self]] [= [$rs:attr [$repo-row $n] "status" ""] "extracted"]]]
-                   [where [not [$empty [$re:find-all [$re:compile "=\"[A-Z][A-Z0-9-]*\""] [$plugs-svg $n]]]]]
-                   [yield $n]]]
+                   [= $hits [$rs:unevaluated-attrs [$plugs-svg $n] $src]]
+                   [where [not [$empty $hits]]]
+                   [yield [$concat $n " (" [$strings:join $hits ", "] ")"]]]]
         [= $_bare [?if [$empty $bare] [then 0]
                     [else [$die [$concat "a bare constant name in attribute position of the figure for: "
                                          [$strings:join $bare " "]]]]]]
