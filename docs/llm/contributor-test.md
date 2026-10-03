@@ -247,4 +247,4 @@ reading what the step checks.
 | 111 | `check-storm-keep-going` |  | `scripts/storm_keep_going_selftest.sh` |
 | 112 | `check-verification-timings` |  | `scripts/verification_timings_selftest.sh` |
 | 113 | `check-bench-runners-compile` |  | `bench/probe` |
-| 114 | `check-flow-doc-lines` |  | `scripts/check_flow_doc_lines.cx` |
+| 114 | `check-flow-doc-lines` |  | `scripts/check_flow_doc_lines_selftest.cx` |

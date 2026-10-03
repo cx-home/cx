@@ -28,14 +28,17 @@
         [= $_d [$io:make-dirs [$path:dirname $p]]]
     [$io:write-file $p $text]]]
 
+# run-check: the checker in the planted tree; CX_BIN reaches it through the
+# inherited environment (this program was handed the same CX_BIN).
 [?def run-check scope=private impure ($bin $checker $dir)
-  [$process:run ($bin, '--allow-read', '--allow-write', '--allow-env', '--allow-subprocess', $checker)
-                env={CX_BIN: $bin} cwd=$dir]]
+  [?let [= $argv ($bin, '--allow-read', '--allow-write', '--allow-env', '--allow-subprocess', $checker)]
+    [$process:run $argv cwd=$dir]]]
 
 [?let [= $bin [$strings:trim [$env:var-or-default 'CX_BIN' '']]]
       [= $_bin [?if [= $bin ''] [then ([$cry "check-flow-doc-lines selftest: REFUSED -- CX_BIN is not set"], [$env:exit 2])] [else ()]]]
       [= $checker [$cat ([$env:cwd], '/scripts/check_flow_doc_lines.cx')]]
-      [= $mk [$process:run ('mktemp', '-d')]]
+      [= $mk-argv ('mktemp', '-d')]
+      [= $mk [$process:run $mk-argv]]
       [= $dir [$strings:trim [$string $mk@stdout]]]
       [= $bad "nope/absent.flow.cx --env nope/absent.env.cx --allow-read=."]
       [= $_1 [$plant $dir 'flows/plain.cx' [$cat ("# a header\n#   cx flow validate ", $bad, "\n[x]\n")]]]
@@ -56,7 +59,8 @@
           [?if [$strings:contains $e2 'FAILED -- 8 of 8 documented'] [then '']
             [else [$cat ("all eight planted lines must be FOUND and failed (8 of 8); got: ", $e2)]]])]
         [where [not [= $m '']]] [yield $m]]]]
-      [= $_rm [$process:run ('rm', '-rf', $dir)]]
+      [= $rm-argv ('rm', '-rf', $dir)]
+      [= $_rm [$process:run $rm-argv]]
   [?if [> [$count $misses] 0]
     [then ([?for [in $m $misses] [yield [$cry [$cat ("check-flow-doc-lines selftest: FAILED -- ", $m)]]]], [$env:exit 1])]
     [else ([$io:write-line [$env:stdout] "check-flow-doc-lines selftest OK -- an empty pinned flows/ refuses; a prompt, a double space, a tab, flags before `flow`, a .cxd, a line three directories deep and one under docs-src/flow/sim/ are each found and failed"],
