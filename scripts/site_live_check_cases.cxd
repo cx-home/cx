@@ -1,0 +1,93 @@
+# scripts/site_live_check_cases.cxd — the case table of the live-stamp step's
+# decision (RULED: DOCS-51 criterion 6; #1758), read by
+# `scripts/site_live_check.cx --self-test` (`make site-live-check`'s first
+# half). Each case gives the readings the live half takes from the network,
+# and the verdict the decision must answer:
+#   stamp    the live site's stamp.txt ('' when it serves none, a 404);
+#   lm       the landing page's Last-Modified, as served ('' when none);
+#   maxage   the stamp response's Cache-Control max-age, in seconds;
+#   public   the public main (`git ls-remote`; '' when unreadable);
+#   run      the Site run on the public main, 'none' when there is none,
+#            'unread' when gh could not answer, else
+#            '<status> <conclusion> <createdAt> <updatedAt>';
+#   prev     the last successful Site run's duration in seconds ('' when
+#            unread), the window for a run still in progress;
+#   now      the moment of the reading (RFC 3339);
+#   ok       the verdict; `why` a substring its reason must carry.
+# P below is the public main, S an older build.
+[cases expectations=19
+  [case id=stamp-equal ok=true why='live: the stamp is the public main'
+        stamp='4d499e603f55f7bf0e6534bee0aba3a339ea6a73' lm='' maxage='600'
+        public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73' run='unread' prev='' now='2026-10-03T07:00:00Z']
+  [case id=deploying ok=true why='deploying'
+        stamp='eb8f1600230784e01931098816d9f357df42d182' lm='' maxage='600'
+        public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73'
+        run='in_progress - 2026-10-03T06:00:00Z 2026-10-03T06:10:00Z' prev='2100' now='2026-10-03T06:20:00Z']
+  [case id=deployed-cache ok=true why='deploying'
+        stamp='eb8f1600230784e01931098816d9f357df42d182' lm='' maxage='600'
+        public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73'
+        run='completed success 2026-10-03T06:00:00Z 2026-10-03T06:35:00Z' prev='2100' now='2026-10-03T06:40:00Z']
+  [case id=stale-after-success ok=false why='stale'
+        stamp='eb8f1600230784e01931098816d9f357df42d182' lm='' maxage='600'
+        public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73'
+        run='completed success 2026-10-03T06:00:00Z 2026-10-03T06:35:00Z' prev='2100' now='2026-10-03T07:00:00Z']
+  [case id=site-run-red ok=false why='ended failure'
+        stamp='eb8f1600230784e01931098816d9f357df42d182' lm='' maxage='600'
+        public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73'
+        run='completed failure 2026-10-03T06:00:00Z 2026-10-03T06:20:00Z' prev='2100' now='2026-10-03T06:21:00Z']
+  [case id=no-run ok=false why='no Site run'
+        stamp='eb8f1600230784e01931098816d9f357df42d182' lm='' maxage='600'
+        public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73' run='none' prev='2100' now='2026-10-03T06:21:00Z']
+  [case id=gh-unread ok=false why='cannot read'
+        stamp='eb8f1600230784e01931098816d9f357df42d182' lm='' maxage='600'
+        public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73' run='unread' prev='2100' now='2026-10-03T06:21:00Z']
+  [case id=public-unread ok=false why='public main is unreadable'
+        stamp='4d499e603f55f7bf0e6534bee0aba3a339ea6a73' lm='' maxage='600'
+        public='' run='unread' prev='' now='2026-10-03T06:21:00Z']
+  [case id=in-progress-past-window ok=false why='stale'
+        stamp='eb8f1600230784e01931098816d9f357df42d182' lm='' maxage='600'
+        public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73'
+        run='in_progress - 2026-10-03T06:00:00Z 2026-10-03T06:10:00Z' prev='2100' now='2026-10-03T08:00:00Z']
+  [case id=in-progress-no-prev ok=false why='cannot read'
+        stamp='eb8f1600230784e01931098816d9f357df42d182' lm='' maxage='600'
+        public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73'
+        run='in_progress - 2026-10-03T06:00:00Z 2026-10-03T06:10:00Z' prev='' now='2026-10-03T06:20:00Z']
+  [case id=nostamp-deployed ok=true why='no stamp'
+        stamp='' lm='Sat, 03 Oct 2026 06:30:02 GMT' maxage='600'
+        public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73'
+        run='completed success 2026-10-03T05:53:50Z 2026-10-03T06:30:20Z' prev='2100' now='2026-10-03T07:30:00Z']
+  [case id=nostamp-older-deploy ok=false why='no stamp'
+        stamp='' lm='Tue, 29 Sep 2026 21:11:00 GMT' maxage='600'
+        public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73'
+        run='completed success 2026-10-03T05:53:50Z 2026-10-03T06:30:20Z' prev='2100' now='2026-10-03T07:30:00Z']
+  [case id=stamp-garbage ok=false why='stamp is unreadable'
+        stamp='<html>not found</html>' lm='Tue, 29 Sep 2026 21:11:00 GMT' maxage='600'
+        public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73'
+        run='completed failure 2026-10-01T05:53:50Z 2026-10-01T06:30:20Z' prev='2100' now='2026-10-03T07:30:00Z']
+  [; the adversarial reader's REDs (REFUTE-1): a status gh may grow, a 200
+     that is not a stamp (or the assembler's `unknown`) after the deploy, an
+     unbounded max-age, a run dated in the future ]
+  [case id=run-status-unknown ok=false why='cannot read'
+        stamp='eb8f1600230784e01931098816d9f357df42d182' lm='' maxage='600'
+        public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73'
+        run='bogus - 2026-10-03T06:00:00Z 2026-10-03T06:10:00Z' prev='2100' now='2026-10-03T06:20:00Z']
+  [case id=stamp-garbage-late ok=false why='stamp is unreadable'
+        stamp='<html>503</html>' lm='Sat, 03 Oct 2026 06:30:02 GMT' maxage='600'
+        public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73'
+        run='completed success 2026-10-03T05:53:50Z 2026-10-03T06:30:20Z' prev='2100' now='2026-10-03T07:30:00Z']
+  [case id=stamp-unknown ok=false why='stamp is unreadable'
+        stamp='unknown' lm='Sat, 03 Oct 2026 06:30:02 GMT' maxage='600'
+        public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73'
+        run='completed success 2026-10-03T05:53:50Z 2026-10-03T06:30:20Z' prev='2100' now='2026-10-03T07:30:00Z']
+  [case id=maxage-unbounded ok=false why='stale'
+        stamp='eb8f1600230784e01931098816d9f357df42d182' lm='' maxage='99999999'
+        public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73'
+        run='completed success 2026-09-29T06:00:00Z 2026-09-29T06:35:00Z' prev='2100' now='2026-10-03T07:00:00Z']
+  [case id=run-in-future ok=false why='future'
+        stamp='eb8f1600230784e01931098816d9f357df42d182' lm='' maxage='600'
+        public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73'
+        run='in_progress - 2099-01-01T00:00:00Z 2099-01-01T00:10:00Z' prev='2100' now='2026-10-03T07:00:00Z']
+  [case id=queued-in-window ok=true why='deploying'
+        stamp='eb8f1600230784e01931098816d9f357df42d182' lm='' maxage='600'
+        public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73'
+        run='queued - 2026-10-03T06:00:00Z 2026-10-03T06:00:05Z' prev='2100' now='2026-10-03T06:05:00Z']]
