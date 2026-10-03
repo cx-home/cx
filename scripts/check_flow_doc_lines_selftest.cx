@@ -44,7 +44,7 @@
       [= $_1 [$plant $dir 'flows/plain.cx' [$cat ("# a header\n#   cx flow validate ", $bad, "\n[x]\n")]]]
       [= $_2 [$plant $dir 'flows/prompt.cx' [$cat ("#   $ cx flow validate ", $bad, "\n#   cx  flow validate ", $bad, "\n#\tcx\tflow\tvalidate ", $bad, "\n")]]]
       [= $_3 [$plant $dir 'flows/order.cx' [$cat ("#   cx --allow-read=. flow validate ", $bad, "\n")]]]
-      [= $_4 [$plant $dir 'flows/sim/a/b/deep.cxd' [$cat ("#   cx flow simulate nope/absent.flow.cx \\\n#     nope/r.cx --env nope/absent.env.cx --allow-read=.\n")]]]
+      [= $_4 [$plant $dir 'flows/sim/a/b/deep.cxd' [$cat ("#   cx flow simulate nope/absent.flow.cx ", "\\", "\n#     nope/r.cx --env nope/absent.env.cx --allow-read=.\n")]]]
       [= $_5 [$plant $dir 'docs-src/flow/sim/docs/d.cx' [$cat ("#   cx flow validate ", $bad, "\n")]]]
       [= $_6 [$io:make-dirs [$cat ($dir, '/deps/cx-platform-flow/flows')]]]
       [= $r1 [$run-check $bin $checker $dir]]
