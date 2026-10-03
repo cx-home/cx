@@ -1195,19 +1195,29 @@ test-playground-tree:
 # the primer's fixtures (playground.primer.js, byte for byte what the docroot
 # serves), every primer example opened through the page's own controls
 # answers what its fixture records — or is listed in primer_wasm.cxd with the
-# reason, a listing the gate also grades — the three readings show their
-# editors, an error prints as an [err …] value, and share-by-URL round-trips.
+# reason, a listing the gate also grades — the readings are the page's own
+# tabs (PLAY-3: data and code) and each shows its editors, an error prints as
+# an [err …] value, and share-by-URL round-trips.
 #
-# PLAYGROUND_ROOT is the docroot it serves: docs/guide (rendered here first,
-# the default) or `site` — the assembled cxhome.org the Site workflow
-# uploads, which is where the workflow runs it. Like the other browser gates
-# it is not in TEST_TARGETS (a Chromium-family browser is its precondition,
-# exit 2 when absent — never a skip). Every wait is bounded
+# PLAYGROUND_ROOT is the docroot it serves: `site` (the default) — cxhome.org
+# as `make site` assembles it, the tree the Site workflow uploads and runs
+# this step over — or docs/guide (rendered here first). Either docroot is
+# rebuilt after the engine (wasm-bundle-fresh) so it serves the bundle just
+# proved fresh; `make site` writes the same bytes again after the Site
+# workflow's own docs flow assembled it. A TEST_TARGETS step since #1758 —
+# PLAY-3 changed the readings, this reader of the page was missed, and only
+# the Site workflow ran it, so cxhome.org's build went red with every local and
+# post-merge run green; selected by scripts/test_changed.sh's row, and in the
+# serial tail after the storm (`test:`; SERIAL_TAIL there) because it rewrites
+# site/ and docs/guide/, which site-check and guide-render-gate rewrite in the
+# storm. A Chromium-family browser is its precondition (exit 2 when absent —
+# never a skip), as for test-site-phone-width. Every wait is bounded
 # (PRIMER_GATE_DEADLINE, default 600 s).
-PLAYGROUND_ROOT ?= docs/guide
+PLAYGROUND_ROOT ?= site
 .PHONY: test-playground-primer
 test-playground-primer: build-vcx wasm-bundle-fresh
 	@if [ "$(PLAYGROUND_ROOT)" = docs/guide ]; then $(MAKE) --no-print-directory guide GUIDE_SKIP_CX_BUILD=1; fi
+	@if [ "$(PLAYGROUND_ROOT)" = site ]; then $(MAKE) --no-print-directory site GUIDE_SKIP_CX_BUILD=1; fi
 	@CX_PLAYGROUND_ROOT="$(PLAYGROUND_ROOT)" node scripts/test_playground_primer.mjs
 
 # ── landing RUN gate (HOME-1, RULED: DOCS-51 §4, PLAY-1's on-load rule) ────────
@@ -1840,7 +1850,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-build-slot check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate advisory-audit ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-search test-playground-readings test-oriel test-agent-real test-connector-real test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps test-site-phone-width ledger-index-check ledger-edit-map-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-build-slot check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate advisory-audit ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-search test-playground-readings test-oriel test-agent-real test-connector-real test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps test-site-phone-width test-playground-primer ledger-index-check ledger-edit-map-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # PRIVMK-1: the private flow targets add themselves to TEST_TARGETS from
 # flows/private.mk. That file is absent from the public tree, and `-include`
@@ -2782,8 +2792,8 @@ test:
 	# broken down by FILE MODIFICATION TIMES — the log carried no timestamps at
 	# all — and "the serial tail was 02:37→04:01Z, the unselected profile gate
 	# about seventy minutes of it" was an inference from mtimes rather than a
-	# measurement. Five names, one per line below: prebuild, storm,
-	# profile-gate, timing, diagram. The status is captured and re-raised with
+	# measurement. Six names, one per line below: prebuild, storm,
+	# profile-gate, timing, diagram, site-primer. The status is captured and re-raised with
 	# `exit`, so a red line still fails the recipe exactly as it did.
 	# Serial pre-build BEFORE the parallel fan-out: every step's recursive
 	# `$(MAKE) build-vcx` then hits the vcx Makefile's up-to-date guard and
@@ -2826,7 +2836,7 @@ test:
 	# all before the next tip. Nothing else moves: the sub-make's status is
 	# still non-zero on a red storm, so this recipe line still fails and the
 	# three serial tail lines below still run only after a GREEN storm.
-	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) storm"; $(MAKE) -k -j$(TEST_JOBS) $(OUTPUT_SYNC) build-profiles-dev $(filter-out test-profile-gate test-vcx-timing test-code-diagram,$(TEST_TARGETS)); cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) storm exit=$$cx_step_rc"; exit $$cx_step_rc
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) storm"; $(MAKE) -k -j$(TEST_JOBS) $(OUTPUT_SYNC) build-profiles-dev $(filter-out test-profile-gate test-vcx-timing test-code-diagram test-playground-primer,$(TEST_TARGETS)); cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) storm exit=$$cx_step_rc"; exit $$cx_step_rc
 	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) profile-gate"; $(MAKE) test-profile-gate; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) profile-gate exit=$$cx_step_rc"; exit $$cx_step_rc
 	# #1216: the WALL-CLOCK assertions (the #1055 boot budget, the #816 try-send /
 	# try-receive upper bounds) run serially AFTER the storm too — they are
@@ -2846,6 +2856,12 @@ test:
 	# binary, which is exactly what #1216 concluded for the two steps above; this
 	# one was simply missed when they moved.
 	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) diagram"; $(MAKE) test-code-diagram; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) diagram exit=$$cx_step_rc"; exit $$cx_step_rc
+	# #1758 — test-playground-primer is in the tail for its OUTPUT, not a clock:
+	# it assembles site/ (`make site` re-renders docs/guide/; site_assemble.cx
+	# removes site/ before it copies) and reads that tree in a browser for
+	# minutes, while site-check and guide-render-gate remove and rewrite the
+	# same two trees inside the storm. After the storm nothing else writes them.
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) site-primer"; $(MAKE) test-playground-primer; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) site-primer exit=$$cx_step_rc"; exit $$cx_step_rc
 	@rm -f "$(CX_GATE_LOCK)"
 
 # Sequential fallback — useful for debugging output-order issues, sanitizer

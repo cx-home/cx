@@ -611,6 +611,13 @@ step_globs() {
     # headless browser, served by scripts/serve_static.cx under the native cx
     # (so the binary's own sources move it too).
     test-site-phone-width)         echo "docs-src/* docs/* scripts/gen_site/* scripts/gen_guide/* scripts/gen_docs/* scripts/serve_static.cx scripts/test_site_phone_width.mjs stdlib/* deps.cxd registry/* VERSION $RING_LIB $RING_CLI $RING_CMD" ;;
+    # PLAY-1/PLAY-3 (#1758): the ASSEMBLED site (`make site`, so the phone-
+    # width row's site inputs) in headless Chrome with the wasm engine built
+    # from the ring closure (the mermaid row's bundle inputs), every primer
+    # fixture opened through the page's own controls; the gate, its harness
+    # and the static server are its own inputs. The Site workflow ran it alone
+    # until #1758 — PLAY-3's reading change reached cxhome.org's build red.
+    test-playground-primer)        echo "docs-src/* docs/* scripts/gen_site/* scripts/gen_guide/* scripts/gen_docs/* scripts/serve_static.cx scripts/wasm/* scripts/test_playground_primer.mjs scripts/playground-gate/* stdlib/* deps.cxd registry/* VERSION $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED" ;;
     # test-binding-api-parity row RETIRED (RULED: RS-12, RS-8; #1591 item K3):
     # the four drivers under lang/<lang>/binding_api_driver/ left with their
     # binding repositories, and the target itself is gone from the Makefile.
@@ -1096,7 +1103,14 @@ prebuild() {
 #
 # The order is the Makefile's order, and it is one `make` per tail step so a
 # red names its own step.
-SERIAL_TAIL='test-profile-gate test-vcx-timing test-code-diagram'
+#
+# test-playground-primer (#1758) joins the tail for a second reason, its
+# OUTPUT rather than its clock: it assembles site/ (`make site` re-renders
+# docs/guide/, and site_assemble.cx removes site/ before it copies) and then
+# reads that tree in a browser for minutes, while site-check and
+# guide-render-gate, in the storm, remove and rewrite the same two trees. After
+# the storm drains nothing else writes them.
+SERIAL_TAIL='test-profile-gate test-vcx-timing test-code-diagram test-playground-primer'
 
 # The per-file narrowing of test-vcx-suite, filled in below when that step is
 # selected. Empty = the union, which is what the full-union path wants.

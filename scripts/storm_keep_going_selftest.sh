@@ -10,9 +10,11 @@
 # can, so ONE failed run names EVERY red step and the fix branch carries them
 # all before the next tip.
 #
-# The three serial tail lines (test-profile-gate, test-vcx-timing,
-# test-code-diagram) still run only after a GREEN storm: `-k` is on the storm's
-# own sub-make, and the recipe line's non-zero status still stops `test:`.
+# The four serial tail lines (test-profile-gate, test-vcx-timing,
+# test-code-diagram — wall-clock steps — and test-playground-primer, which
+# assembles and reads the site/ tree the storm's site-check rewrites, #1758)
+# still run only after a GREEN storm: `-k` is on the storm's own sub-make, and
+# the recipe line's non-zero status still stops `test:`.
 #
 # Two properties:
 #
@@ -21,7 +23,7 @@
 #      still exits non-zero. The control — the same makefile WITHOUT `-k` —
 #      leaves the second green unbuilt, so the fixture discriminates rather
 #      than passing on any make at all.
-#   B  the REAL recipe: `test:`'s storm line carries `-k`, and the three serial
+#   B  the REAL recipe: `test:`'s storm line carries `-k`, and the four serial
 #      tail lines are still separate recipe lines after it (so a red storm
 #      still stops the gate before the tail).
 #
@@ -109,18 +111,20 @@ else
 	bad B1 "the -j storm line does not carry -k: $(cat "$T/storm.txt")"
 fi
 
-# the serial tail is still three separate recipe lines AFTER the storm, so a red
-# storm still stops `test:` before them.
+# the serial tail is still four separate recipe lines AFTER the storm, each one
+# filtered out of the storm line itself, so a red storm still stops `test:`
+# before them and none of them runs twice.
 tail_ok=1
-for s in test-profile-gate test-vcx-timing test-code-diagram; do
-	printf '%s\n' "$recipe" | grep -qF "\$(MAKE) $s" || tail_ok=0
-done
 storm_n=$(printf '%s\n' "$recipe" | grep -nF '$(MAKE) -k -j$(TEST_JOBS)' | head -1 | cut -d: -f1)
-tail_n=$(printf '%s\n' "$recipe" | grep -nF '$(MAKE) test-profile-gate' | head -1 | cut -d: -f1)
-if [ "$tail_ok" = 1 ] && [ -n "$storm_n" ] && [ -n "$tail_n" ] && [ "$tail_n" -gt "$storm_n" ]; then
-	ok B2 "the three serial tail lines still follow the storm on their own lines"
+for s in test-profile-gate test-vcx-timing test-code-diagram test-playground-primer; do
+	tail_n=$(printf '%s\n' "$recipe" | grep -nF "\$(MAKE) $s" | head -1 | cut -d: -f1)
+	{ [ -n "$storm_n" ] && [ -n "$tail_n" ] && [ "$tail_n" -gt "$storm_n" ]; } || tail_ok=0
+	printf '%s\n' "$storm" | grep -qE "filter-out ([^,]* )?$s[ ,]" || tail_ok=0
+done
+if [ "$tail_ok" = 1 ]; then
+	ok B2 "the four serial tail lines still follow the storm on their own lines, each filtered out of the storm"
 else
-	bad B2 "the serial tail (test-profile-gate, test-vcx-timing, test-code-diagram) is not three lines after the storm"
+	bad B2 "the serial tail (test-profile-gate, test-vcx-timing, test-code-diagram, test-playground-primer) is not four lines after the storm, each filtered out of it"
 fi
 
 # ── C — the selftest under the storm's own environment ──────────────────────
