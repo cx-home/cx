@@ -219,7 +219,7 @@ into a money column — which is precisely the class this rule exists to close.
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0100 message='+: decimal/bigint arithmetic admits only int/bigint/decimal operands — [cast] is the only decimal↔float bridge (L44)']
+[err code=cx-err:CXER0100 message='+: decimal/bigint arithmetic admits only int/bigint/decimal operands — [cast] is the only decimal↔float bridge (L44)' at='1:1']
 ```
 
 **Write this:** Keep exact quantities in decimals
@@ -396,7 +396,7 @@ the capability-free substrate, which is why this runs with no grants at all:
 
 ```console
 $ cx prog.cx
-[doc [item 'hello']]
+[doc [item hello]]
 ```
 
 Swap `mem://` for a real URL and the same two calls talk to a served store.
@@ -699,8 +699,8 @@ predicates. A path works as a `[?for]` source, as an `[?if]` condition
 
 ```console
 $ cx --data=input.cx prog.cx
-[user [name 'Alice'] [email 'a@x.com']]
-[user [name 'Bob'] [email 'b@x.com']]
+[user [name Alice] [email a@x.com]]
+[user [name Bob] [email b@x.com]]
 ```
 
 `input.cx`
@@ -718,8 +718,8 @@ $ cx --data=input.cx prog.cx
 
 ```console
 $ cx --data=input.cx prog.cx
-[user active=true [name 'Alice']]
-[user active=true [name 'Carol']]
+[user active=true [name Alice]]
+[user active=true [name Carol]]
 ```
 
 `input.cx`
@@ -754,8 +754,8 @@ Descendant search with a binding:
 
 ```console
 $ cx --data=input.cx prog.cx
-[span 'hello']
-[span 'world']
+[span hello]
+[span world]
 ```
 
 ### Branch with `[?if]`
@@ -814,7 +814,7 @@ wildcard, and `[else]` is the fallback.
 
 ```console
 $ cx --data=input.cx prog.cx
-[p 'hello']
+[p hello]
 ```
 
 `input.cx`
@@ -1216,7 +1216,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER2502 message='E_ENV_FLAG_TYPE_MISMATCH: notanint is not a valid int']
+[err code=cx-err:CXER2502 message='E_ENV_FLAG_TYPE_MISMATCH: notanint is not a valid int' at='3:3']
 ```
 
 In production the argv sequence those two pass explicitly is `[$env:argv]`.
@@ -1624,7 +1624,7 @@ is to rebuild from parts — path navigation does not propagate, so `@code` and
 
 ```console
 $ cx prog.cx
-[report [code 'c'] [message 'm']]
+[report [code c] [message m]]
 ```
 
 A paren **sequence** is not element construction, so it does not propagate —
@@ -1637,7 +1637,7 @@ which is how you collect outcomes including the failures:
 
 ```console
 $ cx prog.cx
-([err code=c message=m], kept, [box 'c'])
+([err code=c message=m], kept, [box c])
 ```
 
 ### `[?else]` is the recovery idiom
@@ -1764,7 +1764,7 @@ err in a collection is still just a value:
 
 ```console
 $ cx prog.cx
-[summary [n 3] [first-err-code 'cx-err:CXER0100']]
+[summary [n 3] [first-err-code cx-err:CXER0100]]
 ```
 
 This is what closes the `written=0 errors=25`, exit 0 class — the generator
@@ -1811,7 +1811,7 @@ names the flag which would have granted it, so you never guess:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)']
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)' at='2:1']
 ```
 
 `--allow-common` is everything except `secret-reveal`; `--allow-all` includes
@@ -2058,7 +2058,7 @@ below and the exit status are exactly what they were.
 
 ```console
 $ cx prog.cx --allow-env
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var-or-default; none granted (grant via --allow-env)']
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var-or-default; none granted (grant via --allow-env)' at='2:39']
 ```
 
 **Write this:** cx flags placed before the file
@@ -2094,7 +2094,7 @@ a call": with it, the same typo fails loud and names itself.
 
 ```console
 $ cx prog.cx
-[greeet 'world']
+[greeet world]
 ```
 
 **Write this:** The $ call sigil fails loud on the same typo — and names the candidate
@@ -2107,7 +2107,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0136 message='E_NO_CALLABLE: no callable "greeet" — did you mean `greet`?']
+[err code=cx-err:CXER0136 message='E_NO_CALLABLE: no callable "greeet" — did you mean `greet`?' at='2:1']
 ```
 
 <sub>Fixtures: `ap-bare-head-typo-wrong` / `ap-bare-head-typo-right` in `conformance/llm/antipatterns.cxd`</sub>
