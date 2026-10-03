@@ -684,8 +684,28 @@ if [ -z "$u_bad" ]; then
 else
 	bad U "$u_bad"
 fi
+
+# ── V — a branch whose ONLY change is a stripped scripts/ path selects its rows (#1758) ──
+# RUN-4's computed selection strips scripts/ into --infra-rows; when nothing
+# else changed, the changed list is EMPTY and the "no changes — nothing to
+# run" exit fired before the infra rows were read, so a branch that touched
+# only scripts/gen_guide/playground/playground.js (PLAY-3's shape) selected no
+# playground step pre-merge. The browser steps that read the page must run.
+: > "$T/v_changed"
+echo scripts/gen_guide/playground/playground.js > "$T/v_infra"
+( cd "$ROOT" && sh scripts/test_changed.sh HEAD --dry-run --changed-files "$T/v_changed" --infra-rows "$T/v_infra" 2>&1 ) > "$T/v"
+v_t=" $(targets "$T/v") "
+v_miss=""
+for st in test-playground-nav test-playground-search test-playground-readings test-playground-primer; do
+	case "$v_t" in *" $st "*) ;; *) v_miss="$v_miss $st" ;; esac
+done
+if [ -z "$v_miss" ] && ! grep -q 'running the FULL step union' "$T/v"; then
+	ok V "a change set of one stripped scripts/ path (playground.js) still selects the playground steps its rows name, without escalating"
+else
+	bad V "an infra-only change set: missing:${v_miss} — $(grep -m1 -E 'RUN:|nothing to run|FULL' "$T/v")"
+fi
 if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop step; P the vcx/corpus grading core selects the steps that run it; R the stripped scripts/ paths select their own rows; S every selected suite file is where the suite is; T a deleted test file is not named; U a page a pinned test reads by name selects it)"
+echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop step; P the vcx/corpus grading core selects the steps that run it; R the stripped scripts/ paths select their own rows; S every selected suite file is where the suite is; T a deleted test file is not named; U a page a pinned test reads by name selects it; V a change of one stripped scripts/ path selects its rows)"
