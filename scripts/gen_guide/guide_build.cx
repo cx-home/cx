@@ -139,8 +139,12 @@
    (#826 verification find, 2026-08-20 — the Ring 0/1 arcs shipped at 34%/31%).
    An unpaired trailing tick has no match and stays literal, matching the old
    behavior. ]
+[; SITE-3 (#1764): the span's text is escaped by code-text, as every
+   code block's is — a prose span reading `<run id>:<step>` rendered as
+   two empty elements on lib-flow.html. ]
 [?def md-tick-pairs impure ($s)
-  [$re:replace [$re:compile '`([^`]*)`'] $s '<code>$1</code>']]
+  [$re:replace-fn [$re:compile '`([^`]*)`'] $s
+    [?fn ($m) [$cat ('<code>', [$code-text [$re:group $m 1]], '</code>')]]]]
 
 [; walk-emph: apply md-emph to the prose BETWEEN <code>…</code> regions —
    iteratively: a [?for] over the '<code' split makes one FLAT call per
@@ -184,6 +188,24 @@
                              [$strings:slice $p 1 [- [+ $end 7] 1]],
                              [$md-ticks [$strings:slice $p [+ $end 7] [$strings:length $p]]])]]]]]]
         ''])]]]
+
+[# code-text: a code block's or a code span's TEXT, made safe for the page
+   (SITE-3, #1764). [$xml:emit] writes a quoted string's '<' and '&' raw
+   (measured; cx-home/cx-core-code#40), so a code example reading
+   <script>alert(1)</script> reached three served pages as a live script.
+   The text is escaped here exactly when emit does not escape it itself —
+   probed once per call on a one-character tree — so the page reads the
+   same before and after #40 lands, never double-escaped. #]
+[?def emit-escapes-text scope=public ()
+  [$strings:contains [$xml:emit [c '<']] '&lt;']]
+[; An entity the source already spells (`&lt;body-tag&gt;` in a prose
+   span, written for the raw emit) is kept: only a bare '&', '<' and '>'
+   are escaped, so the page reads what it read where it was right. ]
+[?def code-text scope=public ($s)
+  [?if [$emit-escapes-text] [then $s]
+    [else [?let [= $amp [$strings:replace [$string $s] '&' '&amp;']]
+                [= $ent [$re:replace [$re:compile '&amp;([a-zA-Z][a-zA-Z0-9]*;|#[0-9]+;|#[xX][0-9a-fA-F]+;)'] $amp '&$1']]
+            [$strings:replace [$strings:replace $ent '<' '&lt;'] '>' '&gt;']]]]]
 
 [# post-body: clean an [$xml:emit] fragment.
    - strip the empty-name <>/</> wrappers [$xml:emit] emits around a
@@ -292,10 +314,10 @@
         [= $code [?if $inline [then ''] [else [?else [$map:get $sec 'in-code'] '']]]]
         [= $parts [$pb:cat-seqs (
           [?if [= $data '[empty]'] [then ()]
-            [else ([p class='fixture-file' [code 'input.cx']], [pre [code lang=cx $data]])]],
+            [else ([p class='fixture-file' [code 'input.cx']], [pre [code lang=cx [$code-text $data]]])]],
           [?if [= $code ''] [then ()]
-            [else ([p class='fixture-file' [code 'prog.cx']], [pre [code lang=cx $code]])]],
-          ([pre class='sample-output' [code [$cat ('$ ', [$string $rep@cmd], '\n', [$string $rep@out])]]],
+            [else ([p class='fixture-file' [code 'prog.cx']], [pre [code lang=cx [$code-text $code]]])]],
+          ([pre class='sample-output' [code [$code-text [$cat ('$ ', [$string $rep@cmd], '\n', [$string $rep@out])]]]],
            [p class='fixture-src' 'Fixture ' [code $id] ' in ' [code [$string [$map:get $sec 'suite']]]
               ' — replayed against this cx when the page was built.']))]]
     [div class='fixture' [?splice $parts]]]]
@@ -371,8 +393,8 @@
     [case [intro] [?modify $c //intro [rename p]]]
     [case [body]  [?modify $c //body  [rename p]]]
     [case [note]  [?modify $c //note  [set-attr class 'note'] [rename p]]]
-    [case [output $t] [pre class="sample-output" [code $t]]]
-    [case [example $code] [pre [code lang=$c@lang $code]]]
+    [case [output $t] [pre class="sample-output" [code [$code-text $t]]]]
+    [case [example $code] [pre [code lang=$c@lang [$code-text $code]]]]
     [case [fixture] [$fixture-block $fx [$string $c@id]]]
     [; DOCS-49 / the design's voice rule 2: a section opens on the one lead of
        docs-src/site/tldr.cxd — the lead, the standard stated as ours, then
@@ -594,13 +616,21 @@
 [# nav-html: the sidebar <aside> — the five groups of nav-groups under the
    brand and the search box. #826's six ring-shaped groups, each appending
    every module page, retired here (RULED: DOCS-51 §3): the navigation is the
-   reader journeys, and a module page is found under Reference. #]
+   reader journeys, and a module page is found under Reference.
+   SITE-3 (#1759, the owner's phone screenshot of 2026-10-02): everything
+   under the brand is ONE disclosure, <details class="side-nav">, its
+   summary the page's own word for what it opens — the guide. It is open in
+   the markup (a desktop, or a browser without scripts, sees the sidebar as
+   before) and the one line of script after it closes it on a phone, so a
+   phone opens on the page's first words, not 1741 px of navigation. #]
 [?def nav-html scope=public impure ($metas $libfiles $active)
   [$cat (
     '<aside class="sidebar">\n',
     '  <a class="brand" href="index.html" aria-label="CX — home">\n',
     '    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>\n',
     '  </a>\n',
+    '  <details class="side-nav" open>\n',
+    '  <summary class="side-nav-toggle" aria-label="The guide: its pages and its search">Guide</summary>\n',
     '  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>\n',
     '  <a class="brand-sub" href="playground.html">Playground →</a>\n',
     '  <a class="brand-sub" href="downloads.html">Downloads →</a>\n',
@@ -612,6 +642,8 @@
     '    <ul id="side-search-results" class="side-search-results" hidden></ul>\n',
     '  </div>\n',
     [$nav-groups $metas $libfiles $active],
+    '  </details>\n',
+    '  <script>(function(){var d=document.currentScript.parentNode.querySelector("details.side-nav");if(!d||!window.matchMedia)return;var q=matchMedia("(max-width: 640px)");function f(){d.open=!q.matches;}f();if(q.addEventListener)q.addEventListener("change",f);})();</script>\n',
     '</aside>\n')]]
 
 [# ── the repository pages (RULED: DOCS-41, DOCS-49 waves 2–4) ─────────────
@@ -1103,8 +1135,8 @@
        [?let [= $s [$summary-of $fd]] [?if [= $s ''] [then ''] [else [$cat ('  —  ', $s)]]]]]
     [?for [in $ex $fd/example] [yield
       [div class="example"
-        [pre [code lang=cx [$ex-part $ex 'code']]]
-        [pre class="sample-output" [code [$ex-part $ex 'expect']]]]]]]]
+        [pre [code lang=cx [$code-text [$ex-part $ex 'code']]]]
+        [pre class="sample-output" [code [$code-text [$ex-part $ex 'expect']]]]]]]]]
 
 [# module-docs: the co-located [module-doc] / [fn-doc] blocks of a
    bundled module, WITHOUT data-parsing the whole file.
@@ -1186,26 +1218,26 @@
 [?def directive-html scope=public ($dd)
   [section id=[$cat ('dir-', [$strings:replace $dd@name '?' ''])] class="fn"
     [h3 [code $dd@name]]
-    [p class="fn-sig" [code [$sig-of $dd]]
+    [p class="fn-sig" [code [$code-text [$sig-of $dd]]]
        [?let [= $s [$summary-of $dd]] [?if [= $s ''] [then ''] [else [$cat ('  —  ', $s)]]]]]
     [p class="note" [$cat ($dd@category, '  ·  ', $dd@spec)]]
     [?for [in $ex $dd/example] [yield
       [div class="example"
-        [pre [code lang=cx [$ex-part $ex 'code']]]
-        [pre class="sample-output" [code [$ex-part $ex 'expect']]]]]]]]
+        [pre [code lang=cx [$code-text [$ex-part $ex 'code']]]]
+        [pre class="sample-output" [code [$code-text [$ex-part $ex 'expect']]]]]]]]]
 
 [# syntax-html: one [syntax-doc] → its HTML block (same shape as
    directive-html, `kind` in place of category/spec). #]
 [?def syntax-html scope=public ($sd)
   [section id=[$cat ('syn-', $sd@name)] class="fn"
     [h3 [code $sd@name]]
-    [p class="fn-sig" [code [$sig-of $sd]]
+    [p class="fn-sig" [code [$code-text [$sig-of $sd]]]
        [?let [= $s [$summary-of $sd]] [?if [= $s ''] [then ''] [else [$cat ('  —  ', $s)]]]]]
     [p class="note" [$cat ('Kind · ', $sd@kind)]]
     [?for [in $ex $sd/example] [yield
       [div class="example"
-        [pre [code lang=cx [$ex-part $ex 'code']]]
-        [pre class="sample-output" [code [$ex-part $ex 'expect']]]]]]]]
+        [pre [code lang=cx [$code-text [$ex-part $ex 'code']]]]
+        [pre class="sample-output" [code [$code-text [$ex-part $ex 'expect']]]]]]]]]
 
 [# render-directive: reference/directives.cx → the directive-reference page
    body (HTML fragment). Mirrors render-module. #]
@@ -1285,11 +1317,11 @@
         [h1 $d@title]
         [p class="lede" $d@blurb]
         [h3 'Run it']
-        [pre [code lang=sh $d@run]]
+        [pre [code lang=sh [$code-text $d@run]]]
         [h3 [$cat ('Source — ', $d@file)]]
-        [pre [code lang=cx $src]]
+        [pre [code lang=cx [$code-text $src]]]
         [h3 'Expected output']
-        [pre class="sample-output" [code $out]]]]]]]
+        [pre class="sample-output" [code [$code-text $out]]]]]]]]
 
 [# xap-ladder-item: one <li> on the landing linking to a demo. #]
 [?def xap-ladder-item scope=public ($d)
