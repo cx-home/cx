@@ -517,6 +517,27 @@
           [case $m2 [$when-not [= [$set-text [$idents $m2]] $want]
                       [$fail 'ii' [$concat 'canonical-changed-keys:' $what] [$concat 'want ' $want ' got ' [$set-text [$idents $m2]]] $s]]]]]]]]
 
+# A CONSTRUCTED array headed by a keyword (true, false, null): no document
+# text can spell one (the reader refuses the ambiguous bare array, so the kind
+# check gives those text positions another kind), but a program builds it,
+# and its canonical form must read back (canonical.md §1.2, §2.6a).
+[?const P-KW-ARRAY "[?to-array (KW, 0)]"]
+[?const KW-WRAP ("ARR", "{k: ARR}", "[?to-array (0, ARR)]")]
+
+[?def chk-keyword-array scope=private impure ()
+  [?let [= $kw [$pick $KEYWORD-TEXTS]] [= $arr [$strings:replace $P-KW-ARRAY "KW" $kw]]
+        [= $src [$strings:replace [$pick $KW-WRAP] "ARR" $arr]]
+    [?match [$cx:eval $src $NOCTX]
+      [case [err @message=$m] ([$fail 'ii' 'keyword-array-unbuilt' $m $src],)]
+      [case $v
+        [?match [$cx:canonical $v]
+          [case [err @message=$m] ([$fail 'ii' 'canonical-refused:keyword-array' $m $src],)]
+          [case $c [?match [$cx:parse $c]
+                     [case [err @message=$m] ([$fail 'ii' 'canonical-refused-on-reparse:keyword-array' [$concat $m ' :: ' $c] $src],)]
+                     [case $v2 [$when-not [= [$cx:canonical $v2] $c] [$fail 'ii' 'canonical-not-a-fixpoint:keyword-array' $c $src]]]]]]]]]]
+
+[?const KEYWORD-TEXTS ("true", "false", "null")]
+
 [?def g-datetime-value scope=private impure ()
   [?match [$cx:parse [$concat "[x " [$g-datetime] "]"]] [x $q] [yield $q]]]
 
@@ -840,7 +861,7 @@
 [?def member scope=private pure [returns bool] ($x::string $xs) [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
 
 [?def effect-points scope=private impure ($path::string)
-  [?let [= $lines [$strings:split-lines [$io:read-file $path]]]
+  [?let [= $lines [?match [$io:read-file $path] [case [err] ()] [case $text [$strings:split-lines $text]]]]
         [= $start [$first [?for [in $p [?enumerate $lines]] [where [$strings:starts-with [$nth $p 2] "### §2.1 "]] [yield [$nth $p 1]]]]]
     [?to-sequence
       [?for [in $p [?enumerate $lines]]
@@ -862,25 +883,38 @@
 # write -- every argument is a path), a store by its URL (file:// reads or
 # writes, any other scheme reaches the network; a call naming both may name
 # either).
-[?def want-for scope=private pure [returns string] ($p::string $cap::string $src::string)
-  [?if [not [$member $p $DERIVED]] [then $cap]
-    [else [?if [= $p "io-open"] [then "read write"]
-            [else [?let [= $file [$strings:contains $src "'file://"]]
-                        [= $remote [or [$strings:contains $src "'http"] [$strings:contains $src "'ws:"] [$strings:contains $src "'cx-store"]]]
-                    [?if $remote [then [?if $file [then "read write net"] [else "net"]]] [else "read write"]]]]]]]]
+# io-open charges read with no mode or mode r, write for w, a and x (measured:
+# a mode that is not a string opens r); a mode no spec names may charge either.
+[?const READ-MODES ("", "'r'")]
+[?const WRITE-MODES ("'w'", "'a'", "'x'")]
 
-[?def mk-call scope=private pure ($p::string $cap::string $a::int $src::string)
-  [?let [= $w [$want-for $p $cap $src]] [call p=$p a=$a t=$src w=$w]]]
+[?def want-for scope=private pure [returns string] ($p::string $cap::string $args)
+  [?if [not [$member $p $DERIVED]] [then $cap]
+    [else [?if [= $p "io-open"]
+            [then [?let [= $mode [$string [?else [?for [in $m [?drop 1 $args]] [take 1] [yield $m]] ""]]]
+                    [?if [$member $mode $READ-MODES] [then "read"]
+                      [else [?if [$member $mode $WRITE-MODES] [then "write"]
+                        [else [?if [$strings:starts-with $mode "'"] [then "read write"] [else "read"]]]]]]]]
+            [else [?let [= $url [$string [?else [?for [in $u $args] [take 1] [yield $u]] ""]]]
+                    [?if [$strings:starts-with $url "'file://"] [then "read write"]
+                      [else [?if [or [$strings:starts-with $url "'http"] [$strings:starts-with $url "'ws:"] [$strings:starts-with $url "'cx-store"]]
+                              [then "net"] [else "read write"]]]]]]]]]]
+
+# mk-call: one call of P on the argument texts ARGS.
+[?def mk-call scope=private pure ($p::string $cap::string $args)
+  [?let [= $a [$count $args]] [= $w [$want-for $p $cap $args]]
+        [= $src [$concat "[$" $p [$strings:join [?for [in $x $args] [yield [$concat " " $x]]] ""] "]"]]
+    [call p=$p a=$a t=$src w=$w]]]
 
 [?def calls-for scope=private impure ($p::string $cap::string)
   [?to-sequence [?concat
-    [?for [in $arg $SAFE-ARGS] [= $src [$concat "[$" $p " " $arg "]"]] [yield [$mk-call $p $cap 1 $src]]]
+    [?for [in $arg $SAFE-ARGS] [= $one ($arg,)] [yield [$mk-call $p $cap $one]]]
     [?for [in $n $ARITIES]
-      [= $src [$concat "[$" $p [$strings:join [?for [in $i [$range 1 $n]] [yield [$concat " " [$pick $SAFE-ARGS]]]] ""] "]"]]
-      [yield [$mk-call $p $cap $n $src]]]
+      [= $args [?to-sequence [?for [in $i [$range 1 $n]] [yield [$pick $SAFE-ARGS]]]]]
+      [yield [$mk-call $p $cap $args]]]
     [?for [in $t $TEMPLATES] [where [= [$string $t@p] $p]]
       [= $src [$string $t@t]]
-      [yield [$mk-call $p $cap $TPL-ARITY $src]]]]]]
+      [yield [call p=$p a=$TPL-ARITY t=$src w=$cap]]]]]]
 
 # wrap-call: one call as an [r] row the parent reads -- the [?match] keeps an
 # err a value in the child.
@@ -975,9 +1009,9 @@
 [?def sweep-calls scope=private pure ($p::string $cap::string)
   [?to-sequence [?concat
     [?for [in $a1 $SAFE-ARGS] [in $a2 $SAFE-ARGS]
-      [= $src [$concat "[$" $p " " $a1 " " $a2 "]"]] [yield [$mk-call $p $cap 2 $src]]]
+      [= $two ($a1, $a2)] [yield [$mk-call $p $cap $two]]]
     [?for [in $a1 $SAFE-ARGS] [in $a2 $SAFE-ARGS] [in $a3 $SAFE-ARGS]
-      [= $src [$concat "[$" $p " " $a1 " " $a2 " " $a3 "]"]] [yield [$mk-call $p $cap 3 $src]]]]]]
+      [= $three ($a1, $a2, $a3)] [yield [$mk-call $p $cap $three]]]]]]
 
 [?def judge-or-sweep scope=private impure ($cxbin::string $p::string $cap::string $rows)
   [?let [= $fs [$judge-rows $p $cap $rows]]
@@ -1009,7 +1043,7 @@
         [= $flag [$flag-of $cap]] [= $root [$path:absolute "conformance"]] [= $inc [$concat "--include-root=" $root]]
         [= $bin [$string $cxbin@bin]] [= $limit [?if [= $kind 'wall'] [then 2500] [else 60000]]]
         [= $argv [?if [= $kind 'include'] [then ($bin, $inc, "-e", $src)] [else ($bin, "-e", $src)]]]
-    [?match [$process:run $argv timeout-ms=$limit]
+    [?match [$process:run $argv timeout-ms=$limit cwd=[$string $cxbin@cwd]]
       [case [err @message=$m] ([$fail 'v' 'directive-probe-unrun' [$concat $name ': ' $m] $name],)]
       [case $r
         [?let [= $out [$string $r@stdout]] [= $errtxt [$string $r@stderr]] [= $timed [= [$string $r@timed-out] 'true']]
@@ -1030,10 +1064,12 @@
 # it), one child per primitive, and per call for a primitive whose child died.
 [?def chk-effects scope=private impure ($cxbin::string)
   [?let [= $eps [$effect-points $SECURITY-SPEC]]
+        [= $unread [?if [= [$count $eps] 0] [then ([$fail 'v' 'effect-table-unread' [$concat $SECURITY-SPEC ': no row of the §2.1 table was read'] $SECURITY-SPEC],)] [else ()]]]
         [= $plan [?to-sequence [?for [in $ep $eps] [= $p [$string $ep@name]] [= $cap [$string $ep@cap]]
                                  [yield [plan p=$p cap=$cap [?splice [$calls-for $p $cap]]]]]]]
         [= $all [?to-sequence [?for [in $x $plan] [in $c $x/call] [yield $c]]]]
         [= $c [$run-child $cxbin $all]]
+    [?to-sequence [?concat $unread
     [?if [= [$string $c@ok] 'true']
       [then [?to-sequence [?for [in $x $plan] [in $f [$judge-or-sweep $cxbin [$string $x@p] [$string $x@cap] [?to-sequence [?for [in $r $c/r] [yield $r]]]]] [yield $f]]]]
       [else [?to-sequence
@@ -1043,7 +1079,7 @@
                 [in $f [?if [= [$string $one@ok] 'true']
                          [then [$judge-or-sweep $cxbin $p $cap [?to-sequence [?for [in $r $one/r] [yield $r]]]]]
                          [else [$chk-effects-calls $cxbin $p $cap $calls]]]]
-                [yield $f]]]]]]]
+                [yield $f]]]]]]]]]
 
 # -- the advisory register (ADVIS-1; RULED: QUAL-1 (b)) -------------------
 #
@@ -1178,6 +1214,7 @@
       [$chk-maps $ma $mb]
       [?match [$cx:parse $ma] [case [err] ()] [case $m [$chk-constructed-roundtrip 'merge' [$map:merge ($m, $NOCTX)]]]]
       [$chk-constructed-roundtrip 'datetime-key' [$map:entry [$g-datetime-value] 1]]
+      [$chk-keyword-array]
       [$chk-attrs]
       [$chk-literal]
       [$chk-badkeys]
@@ -1196,7 +1233,7 @@
         [= $dir [$chk-directives $px]]
         [= $_rm [$io:remove-tree $sandbox]]
         [= $neff [+ [$count [$effect-points $SECURITY-SPEC]] [$count $DIRECTIVE-PROBES]]]
-        [= $n1 [* $count 12]] [= $n2 [* $count 5]] [= $n3 [* $count 22]] [= $n4 [* $count 2]]
+        [= $n1 [* $count 12]] [= $n2 [* $count 6]] [= $n3 [* $count 22]] [= $n4 [* $count 2]]
         [= $n7 [+ $count [$count $EMPTIES] 2]]
     [run
       [checks
@@ -1237,6 +1274,10 @@
         [= $f-other [fail inv='ii' shape='canonical-refused' note='1:9: a refusal' input='x' subject='other']]
         [= $attempt-row ([r n='p' a=1 code='cx-err:CXER4001' msg='open: No such file or directory'],)]
         [= $attempt-code-row ([r n='p' a=1 code='cx-err:CXER3400' msg='E_IO_NOT_FOUND: read-file /nonexistent'], [r n='p' a=2 code='cx-err:CXER0271' msg='E_CAP_DENIED: (grant via --allow-read)'])]
+        [= $xargs ("'/p'", "'x'")] [= $wx [$want-for 'io-open' 'read' $xargs]]
+        [= $sargs ("'file:///p'", "'http://h/'")] [= $ws [$want-for 'store-open' 'read' $sargs]]
+        [= $io-row ([r n='io-open' a=2 w=$wx code='cx-err:CXER0271' msg='E_CAP_DENIED: (grant via --allow-read)'],)]
+        [= $store-row ([r n='store-open' a=2 w=$ws code='cx-err:CXER0271' msg='E_CAP_DENIED: (grant via --allow-net)'],)]
         [= $derived-row ([r n='store-open' a=1 w='read write' code='cx-err:CXER0271' msg='E_CAP_DENIED: (grant via --allow-net)'],)]
         [= $mebin [$env:executable-path]] [= $me [px bin=$mebin cwd='.']]
         [= $_a [$random:seed 7]] [= $g1 [$g-elem 3]] [= $_b [$random:seed 7]] [= $g2 [$g-elem 3]]
@@ -1255,6 +1296,8 @@
           [$st 'keys: a literal accepted' 'literal-accepted-inadmissible-key:data' [$judge-badkey-literal 'data' "{a: 1}"]],
           [$st 'effects: an attempt without a grant' 'effect-point-attempted-without-grant effect-point-not-reached' [$judge-rows 'p' 'read' $attempt-row]],
           [$st 'effects: an attempt by its code' 'effect-point-attempted-without-grant' [$judge-rows 'p' 'read' $attempt-code-row]],
+          [$st 'effects: io-open write mode named read' 'effect-point-names-another-flag effect-point-not-reached' [$judge-rows 'io-open' 'read' $io-row]],
+          [$st 'effects: a file store named net' 'effect-point-names-another-flag effect-point-not-reached' [$judge-rows 'store-open' 'read' $store-row]],
           [$st 'effects: a derived capability misnamed' 'effect-point-names-another-flag effect-point-not-reached' [$judge-rows 'store-open' 'read' $derived-row]],
           [$st 'directives: a value not refused' 'directive-not-refused-with-flag' [$judge-directive $me [d name='st' cap='eval' kind='value' t='1']]],
           [$st 'directives: a load not refused' 'directive-not-refused-with-flag' [$judge-directive $me [d name='st' cap='read' kind='load' t='1']]],

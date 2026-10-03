@@ -441,4 +441,16 @@ reads-back
 string
 #]]
  ]
+
+ [case id=property-gate-033-keyword-headed-array level=core gate=advisory issue='cx-home/cx-core-data#25'
+  [tags property-gate ii canonical-refused:keyword-array+canonical-refused-on-reparse:keyword-array]
+  [title [# an array value headed by true, false or null has a canonical form the data reader reads back -- canonical.md §1.2, §2.6a (bool and null bare as a collection item) #]]
+  [in-code [#
+[?lib 'cx-stdlib/cx' as=cx]
+[?match [$cx:canonical [?to-array (true, 0)]] [case [err] 'no-canonical-form'] [case $c [?match [$cx:parse $c] [case [err] 'unreadable'] [else 'reads-back']]]]
+#]]
+  [out-text [#
+reads-back
+#]]
+ ]
 ]
