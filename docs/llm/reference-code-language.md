@@ -253,8 +253,8 @@ set is non-empty), and anywhere a value is expected.
 
 ```console
 $ cx --data=input.cx prog.cx
-[user [name 'Alice'] [email 'a@x.com']]
-[user [name 'Bob'] [email 'b@x.com']]
+[user [name Alice] [email a@x.com]]
+[user [name Bob] [email b@x.com]]
 ```
 
 `input.cx`
@@ -272,8 +272,8 @@ $ cx --data=input.cx prog.cx
 
 ```console
 $ cx --data=input.cx prog.cx
-[user active=true [name 'Alice']]
-[user active=true [name 'Carol']]
+[user active=true [name Alice]]
+[user active=true [name Carol]]
 ```
 
 `input.cx`
@@ -679,7 +679,7 @@ made it and through anything constructed from it.
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0100 message='concat: an argument does not satisfy the builtin signature (scalar kind/type — code.md §6.5)']
+[err code=cx-err:CXER0100 message='concat: an argument does not satisfy the builtin signature (scalar kind/type — code.md §6.5)' at='2:17']
 ```
 
 A literal `[err …]` written in *data* stays data — the propagation rule is
@@ -712,7 +712,7 @@ value carrying the flag that would have granted it:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)']
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)' at='2:1']
 ```
 
 The nine capabilities are `read write net env clock random subprocess eval

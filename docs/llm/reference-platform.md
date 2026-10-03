@@ -30,7 +30,7 @@ plain `cx` invocation:
 
 ```console
 $ cx prog.cx
-[doc [item 'hello']]
+[doc [item hello]]
 ```
 
 A handle is derived from the document's canonical bytes, so putting the same
@@ -73,7 +73,7 @@ distinct answers:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER1121 message='E_STORE_NOT_FOUND: sha2-256:0000000000000000000000000000000000000000000000000000000000000000']
+[err code=cx-err:CXER1121 message='E_STORE_NOT_FOUND: sha2-256:0000000000000000000000000000000000000000000000000000000000000000' at='2:37']
 ```
 
 `prog.cx`
@@ -84,7 +84,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0130 message='E_STORE_ADDRESS_INVALID: bare hex is not an address — tagged form `<algo>:<hex>` required since I1 (e.g. `sha2-256:…`) (cx-err:CXER0130)']
+[err code=cx-err:CXER0130 message='E_STORE_ADDRESS_INVALID: bare hex is not an address — tagged form `<algo>:<hex>` required since I1 (e.g. `sha2-256:…`) (cx-err:CXER0130)' at='2:37']
 ```
 
 Aliases give a mutable name over immutable content:
@@ -110,7 +110,7 @@ A read-only store refuses writes rather than accepting and dropping them:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER1110 message='E_STORE_READ_ONLY: mem://']
+[err code=cx-err:CXER1110 message='E_STORE_READ_ONLY: mem://' at='2:65']
 ```
 
 ### Writes are an effect boundary — errors do not leave silently
@@ -277,7 +277,7 @@ clean typed refusal naming the policy — deny-by-default all the way down:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER4812 message='E_SESSION_ANONYMOUS_REFUSED: the deployment attach policy does not admit an anonymous floor — no `anonymous-floor` principal in cfg (xap_identity_model §4.7; refusing is the production default)']
+[err code=cx-err:CXER4812 message='E_SESSION_ANONYMOUS_REFUSED: the deployment attach policy does not admit an anonymous floor — no `anonymous-floor` principal in cfg (xap_identity_model §4.7; refusing is the production default)' at='2:1']
 ```
 
 Authority is **delegated, attenuating, and rooted in a principal**. A permit
@@ -296,7 +296,7 @@ names the chain it came through:
 
 ```console
 $ cx prog.cx
-[permit rooted-principal=dana [delegation 'd-1'] [via 'd-1'] [tier :t1] [capability 'refund-duplicate']]
+[permit rooted-principal=dana [delegation d-1] [via d-1] [tier :t1] [capability refund-duplicate]]
 ```
 
 A denial is a *value* carrying its reason, not an exception. There is no
@@ -311,7 +311,7 @@ implicit grant anywhere:
 
 ```console
 $ cx prog.cx
-[deny actor=ghost [code 'cx-err:CXER4700'] [reason :no-grant] [capability 'refund-duplicate'] [slice '/orders/9'] [tenant id=acme]]
+[deny actor=ghost [code cx-err:CXER4700] [reason :no-grant] [capability refund-duplicate] [slice /orders/9] [tenant id=acme]]
 ```
 
 `prog.cx`
@@ -325,7 +325,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[deny actor=ops-1 [code 'cx-err:CXER4700'] [reason :out-of-slice] [capability 'refund-duplicate'] [slice '/payments/9'] [tenant id=acme]]
+[deny actor=ops-1 [code cx-err:CXER4700] [reason :out-of-slice] [capability refund-duplicate] [slice /payments/9] [tenant id=acme]]
 ```
 
 And the decision explains itself — the first failing link, by name, which is
@@ -343,7 +343,7 @@ what makes an authority chain auditable rather than merely enforced:
 
 ```console
 $ cx prog.cx
-[explanation outcome=permit [accountable 'dana'] [authority-chain [step 'd-1']]]
+[explanation outcome=permit [accountable dana] [authority-chain [step d-1]]]
 ```
 
 `prog.cx`
@@ -356,7 +356,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[explanation outcome=deny [first-failing-link :no-grant] [code 'cx-err:CXER4700']]
+[explanation outcome=deny [first-failing-link :no-grant] [code cx-err:CXER4700]]
 ```
 
 ### Operating a platform
@@ -546,7 +546,7 @@ without collision:
 
 ```console
 $ cx prog.cx
-[effect 'arrange']
+[effect arrange]
 ```
 
 Composing *nothing* is a refusal, not a vacuous pass — a gate over the empty

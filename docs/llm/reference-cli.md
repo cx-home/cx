@@ -40,7 +40,7 @@ below and the exit status are exactly what they were.
 
 ```console
 $ cx prog.cx --allow-env
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var-or-default; none granted (grant via --allow-env)']
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var-or-default; none granted (grant via --allow-env)' at='2:39']
 ```
 
 **Write this:** cx flags placed before the file
@@ -317,7 +317,7 @@ Deny-by-default, and a denial names the flag that would have allowed it:
 
 ```console
 $ cx prog.cx
-[err code=cx-err:CXER0271 message='E_CAP_DENIED: write capability required for io-write-file; none granted (grant via --allow-write)']
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: write capability required for io-write-file; none granted (grant via --allow-write)' at='2:1']
 ```
 
 Grant the narrowest thing that works. **Three grants take a scope** —
