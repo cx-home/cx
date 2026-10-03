@@ -867,6 +867,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rs-36` | [rulings_2026_09_25_component_waves_rs36.md](rulings_2026_09_25_component_waves_rs36.md) | RS-36 — how a wave in a component repository lands after the split (owner, 2026-09-25, Letter 4 (a)) |
 | `rs-38` | [rulings_2026_09_26_fixture_backed_sentences_rs38.md](rulings_2026_09_26_fixture_backed_sentences_rs38.md) | RS-38 — a flow-ladder wave may state, inside its ruled section, the exact semantics its fixtures grade (owner: Letter 18 = (a), 2026-09-26) |
 | `rs-38` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | 1690, #1498, #1434, PIVOT-2, SYNC-3, SYNC-6, KIT4-1, KIT4-2, RS-38, D83a, K10.** |
+| `rsize-1` | [rulings_2026_10_03_owner_decision_l175.md](rulings_2026_10_03_owner_decision_l175.md) | RSIZE-1 — the round is sized to the window, and the pause is the box's time (L175 = (b)) |
 | `rt-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | Owner decisions 2026-09-27 (afternoon) — Letters 52, 53 and 54: XCO's two readings (ACK-1, RT-1), a list verb through the host walks every page (WALK-1), the vendor budget is per process (BUDGET-1) |
 | `rt-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | RT-1 — the `[runtime …]` rows' sentence and the delegated-intent frame are written in the host rounds, fixture-backed (L52.2 = (a)) |
 | `rtmem-1` | [rulings_2026_09_30_integrator_decisions_l151.md](rulings_2026_09_30_integrator_decisions_l151.md) | RTMEM-1 — #1119 closes when RSS ÷ live ≤ 2.5× at parse peak holds on both reads, met in the V fork's collector; RP-6 stays trigger-bound (L151 = (a)) |
@@ -1484,9 +1485,9 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pq-4a` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) |
 | `pq-5a` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) |
 | `pq-9a` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) |
-| `prop-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md) |
+| `prop-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md), [rulings_2026_10_03_owner_decision_l175.md](rulings_2026_10_03_owner_decision_l175.md) |
 | `readr-1` | [rulings_2026_10_01_owner_decision_l160.md](rulings_2026_10_01_owner_decision_l160.md), [rulings_2026_10_01_owner_decision_overage.md](rulings_2026_10_01_owner_decision_overage.md) |
-| `refute-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md) |
+| `refute-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md), [rulings_2026_10_03_owner_decision_l175.md](rulings_2026_10_03_owner_decision_l175.md) |
 | `rfc-7540` | [rulings_2026_08_20_h2_surface.md](rulings_2026_08_20_h2_surface.md) |
 | `ring-1` | [batch_796_post_gate_defects.md](batch_796_post_gate_defects.md), [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
 | `ring-2` | [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
@@ -1533,6 +1534,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `st-7a` | [rulings_2026_08_20_studio.md](rulings_2026_08_20_studio.md) |
 | `st-8` | [rulings_2026_08_20_spec_tree_reshape.md](rulings_2026_08_20_spec_tree_reshape.md), [rulings_2026_08_20_studio.md](rulings_2026_08_20_studio.md) |
 | `st-8a` | [rulings_2026_08_20_studio.md](rulings_2026_08_20_studio.md) |
+| `state-5` | [rulings_2026_10_03_owner_decision_l175.md](rulings_2026_10_03_owner_decision_l175.md) |
 | `stream-4` | [partition_I5_stream4_xsp.md](partition_I5_stream4_xsp.md) |
 | `sup-1a` | [rulings_2026_08_20_supervise.md](rulings_2026_08_20_supervise.md) |
 | `sup-1b` | [rulings_2026_08_20_supervise.md](rulings_2026_08_20_supervise.md) |
@@ -1572,4 +1574,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*379 ledger pages; 835 ids declared, 400 cited only.*
+*380 ledger pages; 836 ids declared, 401 cited only.*
