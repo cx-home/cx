@@ -110,10 +110,19 @@ CX_VFORK="$(git -C third_party/v rev-parse --short HEAD 2>/dev/null || echo unkn
 CX_RELEASE="$(make -s --no-print-directory -C deps/cx-core-code/vcx CX_STAMP_ROOT="$ROOT" print-CX_RELEASE 2>/dev/null | tail -1 | tr -d '[:space:]')"
 case "$CX_RELEASE" in release|dev) ;; *) CX_RELEASE="" ;; esac
 if [ -z "$CX_RELEASE" ]; then
-  CX_RELEASE=dev
-  echo "release_linux.sh: WARNING — could not read CX_RELEASE from deps/cx-core-code/vcx/Makefile;" >&2
-  echo "the linux artifacts will stamp themselves as a pre-release (-dev+)." >&2
-  echo "At a real cut the R2.2 gate below rejects that, which is the intent." >&2
+  # Fail closed (#1674's adversarial reader): the old fallback stamped the
+  # artifacts `dev` and trusted R2.2 to reject them, but R2.2 checks the
+  # headline only when R22_EXPECT_HEADLINE is set -- the release flow sets it,
+  # a hand run does not -- so a probe that read nothing could stage `-dev+`
+  # assets under a release tag and print PASSED. A --dev build stamps dev.
+  if [ "$DEV" = 1 ]; then
+    CX_RELEASE=dev
+  else
+    echo "release_linux.sh: could not read CX_RELEASE from deps/cx-core-code/vcx/Makefile" >&2
+    echo "(make -C deps/cx-core-code/vcx print-CX_RELEASE answered neither release nor dev);" >&2
+    echo "refusing to stamp release artifacts with a guessed provenance." >&2
+    exit 2
+  fi
 fi
 
 build_one() {
@@ -127,6 +136,9 @@ build_one() {
     -e SOURCE_DATE_EPOCH="$SDE" \
     -e R22_EXPECT_HEADLINE="${R22_EXPECT_HEADLINE:-}" \
     ubuntu:22.04 bash -euc '
+      # pipefail: the lean copy is a `tar | tar` pipeline, and without it a
+      # member the first tar cannot read exits 2 while the pipeline answers 0.
+      set -o pipefail
       export DEBIAN_FRONTEND=noninteractive
       apt-get update -qq
       apt-get install -y -qq build-essential libsqlite3-dev git make >/dev/null
@@ -167,7 +179,11 @@ build_one() {
       make '"$BUILD_TARGET"' CX_COMMIT='"$CX_COMMIT"' CX_VFORK='"$CX_VFORK"' CX_RELEASE='"$CX_RELEASE"'
       # I4 (#651/#516): the §4 profile builds, through the front door`s own
       # target (vcx/ has no Makefile since RS-12; the sub-make is the pin`s).
-      make '"$PROFILES_TARGET"' CX_COMMIT='"$CX_COMMIT"' CX_VFORK='"$CX_VFORK"' CX_RELEASE='"$CX_RELEASE"'
+      # PROFILE_BUILD_JOBS=1: the profile matrix builds serially here, as the
+      # pre-split lane did. Measured in an 8 GB Docker VM: the root Makefile`s
+      # default five concurrent -prod V compiles were OOM-killed (cli-cli,
+      # cli-embed: "Killed"), _gate_evidence/pipeline_batchh2/1674-linux-build.log.
+      make '"$PROFILES_TARGET"' PROFILE_BUILD_JOBS=1 CX_COMMIT='"$CX_COMMIT"' CX_VFORK='"$CX_VFORK"' CX_RELEASE='"$CX_RELEASE"'
       if [ '"$DEV"' = 1 ]; then
         echo "-- dev build: the -dev artifacts built; nothing staged, R2.2 not run (build validation only)"
         exit 0
