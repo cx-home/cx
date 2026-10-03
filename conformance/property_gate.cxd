@@ -18,7 +18,9 @@
 # issue is closed or outside the release). Its [tags] are read by the step:
 # `property-gate <invariant> <class>[+<class>…] <subject>*` -- a generated
 # failure of that invariant and one of those classes (and, when subjects are
-# listed, of one of those effect points) is reported ADVISORY with this case's issue; every other
+# listed, of one of those subjects: an effect point for (v); for (ii)
+# string-emit, a failure that the document with its strings neutralized does
+# not have) is reported ADVISORY with this case's issue; every other
 # failure fails the step. When the issue's fix lands, this case goes green,
 # its advisory mark comes off, and the class enforces.
 #
@@ -131,7 +133,7 @@ reads-back
  ]
 
  [case id=property-gate-009-array-item-string-quotes level=core gate=advisory issue='cx-home/cx-core-data#4'
-  [tags property-gate ii canonical-refused+kind-canonical-refused:string@array+kind-canonical-refused:string@attr+kind-canonical-refused:string@body ambiguous-bare-array type-ascription colon-typed-attribute hash-comment apostrophe-unescaped]
+  [tags property-gate ii canonical-refused+canonical-refused-on-reparse+canonical-not-a-fixpoint+hash-moved-by-round-trip+canonical-refused-second-time+kind-lost-on-canonical:string@attr+kind-lost-on-canonical:string@body+kind-lost-on-canonical:string@seq+kind-lost-on-canonical:string@array+kind-lost-on-canonical:string@mapval+kind-lost-on-canonical:string@mapkey+kind-canonical-refused:string@attr+kind-canonical-refused:string@body+kind-canonical-refused:string@seq+kind-canonical-refused:string@array+kind-canonical-refused:string@mapval+kind-canonical-refused:string@mapkey+kind-reparse-refused:string@attr+kind-reparse-refused:string@body+kind-reparse-refused:string@seq+kind-reparse-refused:string@array+kind-reparse-refused:string@mapval+kind-reparse-refused:string@mapkey string-emit]
   [title [# a string array item quotes where its bare image would not re-read as that string in both readings -- code.md §11.1a R6, canonical.md §2.3 (the collection-item bare set) #]]
   [in-code [#
 [?lib 'cx-stdlib/cx' as=cx]
@@ -143,7 +145,7 @@ reads-back
  ]
 
  [case id=property-gate-010-attr-trailing-backslashes level=core gate=advisory issue='cx-home/cx-core-data#4'
-  [tags property-gate ii canonical-refused+canonical-refused-on-reparse+kind-canonical-refused:string@attr+kind-canonical-refused:string@body+kind-canonical-refused:string@array unterminated-quote unterminated-string]
+  [tags property-gate ii canonical-refused+canonical-refused-on-reparse+kind-canonical-refused:string@attr string-emit]
   [title [# the canonical form of a quoted attribute string ending in two backslashes is a fixpoint -- canonical.md §2.4 minimal re-escape (a final backslash is doubled), §11.4 canonicalize(canonicalize(x)) == canonicalize(x) #]]
   [in-code [#
 [?lib 'cx-stdlib/cx' as=cx]
@@ -405,7 +407,7 @@ not-read
  ]
 
  [case id=property-gate-030-array-item-string-kind level=core gate=advisory issue='cx-home/cx-core-data#4'
-  [tags property-gate ii kind-lost-on-canonical:string@array]
+  [tags property-gate ii kind-lost-on-canonical:string@array string-emit]
   [title [# a string array item whose bare image is a hole, an operator or a name with a colon re-reads as a string after canonical emit -- code.md §11.1a R6 (the collection-item bare set), canonical.md §2.3 ("$name" spells '$name'; a leading = quotes), §2.6a #]]
   [in-code [#
 [?lib 'cx-stdlib/cx' as=cx]
@@ -417,7 +419,7 @@ string
  ]
 
  [case id=property-gate-031-body-string-hash level=core gate=advisory issue='cx-home/cx-core-data#4'
-  [tags property-gate ii canonical-refused hash-comment]
+  [tags property-gate ii canonical-refused string-emit]
   [title [# a body string holding ' #' quotes in canonical form, so the canonical text reads back -- canonical.md §2.3 (bare only when the bare image re-reads as that same string), §11.4 #]]
   [in-code [#
 [?lib 'cx-stdlib/cx' as=cx]
