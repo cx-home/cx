@@ -118,13 +118,24 @@ const cases = keys.map(key => {
   const entry = program[key];
   return [key, entry.input ?? entry.source ?? entry.src ?? '', ''];
 }).filter(([, source]) => source);
-// A primer example runs the way the page runs it: a document through the
-// data reading, a query over its document bound as $doc.
+// A primer example runs the way the page runs it (PLAY-3's two readings): a
+// document through the data reading; a code example over its document bound
+// as $doc whenever it reads a real one (playground.js's runOnce), else over
+// nothing.
 for (const p of primer) {
   cases.push([`primer:${p.id}`, p.reading === 'data' ? p.doc : p.src,
-              p.reading === 'query' ? p.doc : '', p.reading]);
+              p.reading !== 'data' && p.doc && p.doc.trim() !== '' ? p.doc : '', p.reading]);
 }
 for (const [key, source] of Object.entries(PROBES)) cases.push([key, source, '']);
+// The binding above is HELD, not assumed (#1758): a code fixture that reads a
+// document and records an answer (not a refusal) and that the browser runs
+// must evaluate here without a refusal — run without its $doc it refuses,
+// which is how the sweep ran the 9 former-query fixtures from PLAY-3 to #1758.
+const mustAnswer = new Set(primer
+  .filter(p => p.reading !== 'data' && p.doc && p.doc.trim() !== '' && p.match !== 'contains'
+            && p.runnable !== false && !p.wasmUnsupported)
+  .map(p => `primer:${p.id}`));
+const unbound = [];
 
 const counts = { ok: 0, refused: 0, abort: 0, trap: 0 };
 const traps = [];
@@ -141,6 +152,7 @@ for (const [key, source, input, reading] of cases) {
   else if (verdict === 'REFUSED') counts.refused++;
   else if (verdict === 'ABORT') { counts.abort++; aborts.push(key); }
   else { counts.trap++; traps.push(`${key}: ${detail.split('\n')[0].slice(0, 120)}`); }
+  if (mustAnswer.has(key) && verdict !== 'OK') unbound.push(`${key}: ${verdict} ${detail.split('\n')[0].slice(0, 120)}`);
   if (VERBOSE || verdict === 'TRAP') console.log(`  ${verdict.padEnd(8)} ${key}${detail ? ' — ' + detail.split('\n')[0].slice(0, 100) : ''}`);
   // A trap can leave the engine inconsistent; start the next example clean.
   if (verdict === 'TRAP' || verdict === 'ABORT') { try { cxlib.reset(); } catch (_) { /* older bundle */ } }
@@ -148,11 +160,15 @@ for (const [key, source, input, reading] of cases) {
 
 console.log(`test-playground-wasm-traps: ${cases.length} examples+probes — ok ${counts.ok}, refused ${counts.refused}, aborted ${counts.abort} (single-threaded bundle), TRAPS ${counts.trap}`);
 if (aborts.length && VERBOSE) console.log(`  aborted: ${aborts.join(', ')}`);
-if (traps.length) {
-  console.log('FAIL — the shipped engine TRAPS on:');
+console.log(`test-playground-wasm-traps: ${mustAnswer.size} code fixtures that read a document evaluated over it — ${mustAnswer.size - unbound.length} answered, ${unbound.length} did not`);
+if (traps.length || unbound.length) {
+  if (traps.length) console.log('FAIL — the shipped engine TRAPS on:');
   for (const t of traps) console.log(`  ${t}`);
+  if (unbound.length) console.log('FAIL — a code fixture that reads a document did not answer over it (is its $doc bound?):');
+  for (const u of unbound) console.log(`  ${u}`);
   process.exit(1);
 }
+if (mustAnswer.size === 0) console.log('  note: no code fixture reads a document — the $doc binding is unchecked this run');
 console.log('OK — no example traps the wasm engine.');
 // An example that calls exit() inside the engine leaves emscripten's
 // process.exitCode set (the "program exited (with status: 1)" notice above);

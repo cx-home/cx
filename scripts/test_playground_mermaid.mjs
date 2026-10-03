@@ -129,6 +129,7 @@ function pageExamples(win) {
     rows.push([`primer:${p.id}`, {
       input: p.reading === 'data' ? p.doc : p.src,
       reading: p.reading, doc: p.doc, runnable: p.runnable,
+      match: p.match, wasmUnsupported: p.wasmUnsupported, primer: true,
     }]);
   }
   for (const [key, ex] of Object.entries((win.cxPlaygroundExamples || {}).program || {})) {
@@ -403,14 +404,26 @@ for (const key of keys) {
   // diagram to check. That is a SKIP, and it is counted and named.
   let output = '';
   if (ex.runnable !== false) {
-    // The page's own reading (PLAY-1): a document is its own value, a query
-    // runs over its document bound as $doc, a program over nothing.
+    // The page's own reading (PLAY-3's two): a document is its own value; a
+    // code example runs over its document bound as $doc whenever it reads a
+    // real one (playground.js's runOnce), a program over nothing otherwise.
     try {
       output = String((ex.reading === 'data'
         ? cxlib.toCx(ex.doc || source)
-        : cxlib.evalCode(source, 'cx', ex.reading === 'query' ? (ex.doc || '') : '')) || '');
+        : cxlib.evalCode(source, 'cx', ex.doc && ex.doc.trim() !== '' ? ex.doc : '')) || '');
     }
     catch (_) { output = ''; }
+  }
+  // The binding is HELD, not assumed (#1758): a primer code fixture that
+  // reads a document and records an answer (not a refusal) must answer over
+  // it here — without its $doc it refuses, its output subject goes empty and
+  // every diagram of it silently became "no subject" from PLAY-3 to #1758.
+  if (ex.primer && ex.reading !== 'data' && ex.doc && ex.doc.trim() !== '' && ex.match !== 'contains'
+      && ex.runnable !== false && !ex.wasmUnsupported && (!output || /^\s*\[err\b/.test(output))) {
+    fail++;
+    failures.push({ label: `${key} · output`,
+      msg: 'a code fixture that reads a document produced no answer over it — is its $doc bound?',
+      body: output.slice(0, 200) });
   }
 
   const texts = { source, output };
