@@ -2346,11 +2346,11 @@ advisory-audit:
 # the sentence, the id of a conformance case (read with cx:parse from the pinned
 # corpora) that grades it (RS-38's shape) — or carries a row of
 # scripts/spec_invariants_exempt.cxd naming why no case can (a make step that
-# holds it, an obligation on the author, a quoted keyword, or a missing corpus
-# lane with its open issue). scripts/spec_invariants.cx refuses a sentence with
-# neither and a register row that is stale, ambiguous, unclassed or held by a
-# step on no run; its self-test runs first. `--list` prints the whole table. Reads
-# deps/cx-core-code/vcx/target/cx (or CX_BIN).
+# holds it, an obligation on the author, a quoted keyword, or no step that can
+# grade it yet, with its open issue). scripts/spec_invariants.cx refuses a
+# sentence with neither and a register row that is stale, ambiguous, unclassed
+# or held by a step on no run; its self-test runs first. `--list` prints the
+# whole table. Reads deps/cx-core-code/vcx/target/cx (or CX_BIN).
 .PHONY: spec-invariant-gate
 spec-invariant-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 spec-invariant-gate:
