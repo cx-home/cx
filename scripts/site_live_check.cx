@@ -1,0 +1,217 @@
+# scripts/site_live_check.cx — the live site is the public main (RULED: DOCS-51
+# criterion 6, CXF-1; #1758). `make site-live-check`.
+#
+# cxhome.org served its 09-29 build for days while the public main moved: the
+# Site run on the new main was red (a stale test reader), and nothing compared
+# what the site serves with what the public main holds. This step does.
+#
+#   cx --allow-read --allow-subprocess --allow-env --allow-clock scripts/site_live_check.cx
+#   cx --allow-read --allow-write --allow-env --allow-clock scripts/site_live_check.cx --self-test
+#
+# THE STAMP. scripts/gen_site/site_assemble.cx writes site/stamp.txt, the
+# commit the site was assembled from (`git rev-parse HEAD`); the Site run
+# assembles from the public main's checkout, so the live stamp is the public
+# main the site was built from. docs-src/site/manifest.cxd declares it.
+#
+# THE READINGS, every one from the network, every one failing CLOSED:
+#   - the host: this tree's docs/CNAME;
+#   - the stamp: https://<host>/stamp.txt (curl), with its Cache-Control
+#     max-age, and the landing page's Last-Modified;
+#   - the public main: `git ls-remote <public> refs/heads/main`, where
+#     <public> is origin's URL less its last segment, plus the [site repo=] of
+#     docs-src/site/manifest.cxd and `.git` (the post-merge refresh's rule);
+#   - the Site run on the public main, and the last successful run's
+#     duration: `gh run list --workflow site.yml` on the public repository.
+#
+# THE DECISION (`decide`, held by scripts/site_live_check_cases.cxd):
+#   - the public main unreadable: refused;
+#   - the stamp IS the public main: live;
+#   - otherwise the site may lag the public main only for the Site run's
+#     duration (the run's own, once completed; the last successful run's while
+#     it is in progress) plus the stamp's cache max-age, counted from the run's
+#     creation. Within it: deploying. Past it: stale, refused. A Site run that
+#     ended other than success, no Site run on the public main, or a run gh
+#     could not read: refused — that is the 09-29 shape;
+#   - NO STAMP (a site assembled before the stamp existed: stamp.txt answers
+#     404): the site is the public main's build when the Site run on the
+#     public main succeeded and the site's Last-Modified (the deploy's time)
+#     is not before that run started. Otherwise refused, as above;
+#   - A STAMP IT CANNOT READ (a 200 that is not a 40-hex sha — the
+#     assembler's `unknown`, an error page — or any other answer than 200 or
+#     404): refused.
+#   The window counts only what gh can name: a run `completed`, or in flight
+#   (queued, waiting, requested, pending, in_progress); any other status, a
+#   run dated after the reading, refuses. The cache allowance is the stamp's
+#   max-age, never more than the Site run's own duration.
+#
+# Exit: 0 live or deploying; 1 refused; 2 a self-test case answered wrongly.
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/time'    as=time]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def is-sha scope=private pure [returns bool] ($s)
+  [$re:matches [$re:compile '^[0-9a-f]{40}$'] [$strings:trim [$string $s]]]]
+
+[?def words scope=private pure ($s)
+  [?to-sequence [?for [in $w [$strings:split [$strings:trim [$string $s]] ' ']] [where [not [= $w '']]] [yield $w]]]]
+
+# seconds since the epoch of an RFC 3339 stamp, -1 when it is not one.
+[?def secs scope=private pure [returns int] ($s)
+  [?else [$time:to-unix [$time:parse-rfc3339 [$strings:trim [$string $s]]]] -1]]
+
+# an HTTP date (RFC 9110 IMF-fixdate: `Sat, 03 Oct 2026 06:30:02 GMT`) as
+# seconds, -1 when it is not one.
+[?const MONTHS ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')]
+[?def http-secs scope=private pure [returns int] ($s)
+  [?let [= $m [$re:find-all [$re:compile '^[A-Za-z]{3}, ([0-9]{2}) ([A-Za-z]{3}) ([0-9]{4}) ([0-9]{2}:[0-9]{2}:[0-9]{2}) GMT$'] [$strings:trim [$string $s]]]]
+    [?if [= [$count $m] 0] [then -1]
+      [else [?let [= $g [$first $m]]
+                  [= $mi [?to-sequence [?for [in $i (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)]
+                           [where [= [$string [$nth $MONTHS $i]] [$re:group $g 2]]] [yield $i]]]]
+        [?if [= [$count $mi] 0] [then -1]
+          [else [?let [= $mm [$first $mi]]
+            [$secs [$concat [$re:group $g 3] '-' [?if [< $mm 10] [then '0'] [else '']] [$string $mm] '-'
+                            [$re:group $g 1] 'T' [$re:group $g 4] 'Z']]]]]]]]]]
+
+# ── the decision ────────────────────────────────────────────────────────────
+# v: the verdict element (built here so no attribute is a computed node: the
+# data reader holds attributes scalar, D2).
+[?def v scope=private pure [returns element] ($ok $why) [verdict ok=$ok why=$why]]
+
+# $run is 'unread' | 'none' | '<status> <conclusion> <createdAt> <updatedAt>'.
+[?def decide scope=public pure [returns element] ($stamp $lm $maxage $public $run $prev $now)
+  [?let [= $p [$strings:trim [$string $public]]]
+        [= $st [$strings:trim [$string $stamp]]]
+        [= $has [$is-sha $st]]
+        [= $flight ('queued', 'waiting', 'requested', 'pending', 'in_progress')]
+        [= $rw [$words $run]]
+        [= $rs [?if [>= [$count $rw] 4] [then [$string [$nth $rw 1]]] [else '']]]
+        [= $rc [?if [>= [$count $rw] 4] [then [$string [$nth $rw 2]]] [else '']]]
+        [= $created [?if [>= [$count $rw] 4] [then [$secs [$nth $rw 3]]] [else -1]]]
+        [= $updated [?if [>= [$count $rw] 4] [then [$secs [$nth $rw 4]]] [else -1]]]
+        [= $t [$secs $now]]
+        [= $age [?else [$strings:to-int [$strings:trim [$string $maxage]]] 0]]
+        [= $pv [?else [$strings:to-int [$strings:trim [$string $prev]]] -1]]
+        [= $dur [?if [= $rs 'completed'] [then [- $updated $created]] [else $pv]]]
+        [= $known [or [= $rs 'completed'] [> [$count [?to-sequence [?for [in $f $flight] [where [= $f $rs]] [yield $f]]]] 0]]]
+        [= $site [?if $has [then [$concat 'the site is ' $st]] [else 'the live site carries no stamp']]]
+    [?if [not [$is-sha $p]] [then [$v false 'the public main is unreadable (git ls-remote): refused, never a pass']]
+      [else [?if [and $has [= $st $p]] [then [$v true [$concat 'live: the stamp is the public main ' $p]]]
+      [else [?if [and [not $has] [not [= $st '']]]
+        [then [$v false [$concat 'the live stamp is unreadable (`' [$strings:slice $st 1 [?if [> [$strings:length $st] 60] [then 60] [else [$strings:length $st]]]]
+                                            '`, not a 40-hex sha): refused, never a pass']]]
+        [else [?if [= [$strings:trim [$string $run]] 'unread']
+          [then [$v false [$concat $site '; gh cannot read the Site run on the public main ' $p ': refused, never a pass']]]
+          [else [?if [or [= [$strings:trim [$string $run]] 'none'] [< [$count $rw] 4] [< $created 0]]
+            [then [$v false [$concat $site '; no Site run on the public main ' $p]]]
+            [else [?if [not $known]
+              [then [$v false [$concat $site '; the Site run on the public main ' $p ' is `' $rs '`, a status this step cannot read: refused']]]
+            [else [?if [< $t $created]
+              [then [$v false [$concat $site '; the Site run on the public main ' $p ' is dated in the future of the reading: refused']]]
+            [else [?if [and [= $rs 'completed'] [not [= $rc 'success']]]
+              [then [$v false [$concat $site '; the Site run on the public main ' $p ' ended ' $rc]]]
+              [else [?if [and [not $has] [= $rs 'completed'] [>= [$http-secs $lm] $created]]
+                [then [$v true [$concat 'live (no stamp yet): deployed ' [$strings:trim [$string $lm]]
+                                                   ', after the Site run on the public main ' $p ' started']]]
+                [else [?if [and [not $has] [= $rs 'completed']]
+                  [then [$v false [$concat 'the live site carries no stamp, and its Last-Modified `' [$strings:trim [$string $lm]]
+                                                       '` is before the Site run on the public main ' $p ' started: stale']]]
+                  [else [?if [or [< $dur 0] [< $t 0]]
+                    [then [$v false [$concat $site '; the Site run on ' $p ' is ' $rs ' and gh cannot read a successful run to time it: refused']]]
+                    [else [?let [= $window [+ $dur [?if [> $age $dur] [then $dur] [else $age]]]] [= $lag [- $t $created]]
+                      [?if [<= $lag $window]
+                        [then [$v true [$concat 'deploying: ' $site ', the public main ' $p ' for ' [$string $lag]
+                                                           ' s, within the Site run duration plus the cache max-age (' [$string $window] ' s)']]]
+                        [else [$v false [$concat 'stale: ' $site ', the public main ' $p ' for ' [$string $lag]
+                                                            ' s, past the Site run duration plus the cache max-age (' [$string $window] ' s)']]]]]]]]]]]]]]]]]]]]]]]]]]]]]
+
+# ── the self-test: the case table ───────────────────────────────────────────
+[?def self-test scope=private impure ()
+  [?let [= $doc [$cx:parse [$io:read-file 'scripts/site_live_check_cases.cxd']]]
+        [= $t [$first [?to-sequence [?for [in $x $doc] [where [= [$name $x] 'cases']] [yield $x]]]]]
+        [= $cs [?to-sequence [?for [in $c $t/case] [yield $c]]]]
+        [= $bad [?to-sequence [?for [in $c $cs]
+                  [= $v [$decide $c@stamp $c@lm $c@maxage $c@public $c@run $c@prev $c@now]]
+                  [where [or [not [= [$string $v@ok] [$string $c@ok]]]
+                             [not [$strings:contains [$string $v@why] [$string $c@why]]]]]
+                  [yield [$concat [$string $c@id] ': answered ok=' [$string $v@ok] ' `' [$string $v@why]
+                                  '`, the table names ok=' [$string $c@ok] ' with `' [$string $c@why] '`']]]]]
+        [= $_c [?if [not [= [$string [$count $cs]] [$string $t@expectations]]]
+                 [then [$cry [$concat 'site-live-check: the table holds ' [$string [$count $cs]] ' cases, it pins expectations='
+                                      [$string $t@expectations]]]] [else null]]]
+        [= $_b [?for [in $b $bad] [yield [$cry [$concat 'site-live-check RED: ' $b]]]]]
+    [?if [or [> [$count $bad] 0] [not [= [$string [$count $cs]] [$string $t@expectations]]]]
+      [then [$env:exit 2]]
+      [else [?let [= $_ [$say [$concat 'site-live-check self-test OK — ' [$string [$count $cs]] ' cases']]] [$env:exit 0]]]]]]
+
+# ── the live readings ───────────────────────────────────────────────────────
+[?def run-out scope=private impure ($argv $ms)
+  [?else [$process:run $argv timeout-ms=$ms] [proc-result exit-code=127 stdout='' stderr='not found']]]
+[?def ok scope=private pure [returns bool] ($r) [= [$string $r@exit-code] '0']]
+[?def out scope=private pure [returns string] ($r) [$strings:trim [$string $r@stdout]]]
+
+[?def header scope=private pure [returns string] ($headers $key)
+  [?let [= $m [$re:find-all [$re:compile [$concat '(?im)^' $key ':[ \t]*([^\r\n]*)']] [$string $headers]]]
+    [?if [= [$count $m] 0] [then ''] [else [$strings:trim [$re:group [$last-of $m] 1]]]]]]
+[?def last-of scope=private pure ($xs) [$nth $xs [$count $xs]]]
+
+[?def live scope=private impure ()
+  [?let [= $host [$strings:trim [?else [$io:read-file 'docs/CNAME'] '']]]
+        [= $man [?else [$io:read-file 'docs-src/site/manifest.cxd'] '']]
+        [= $rm [$re:find-all [$re:compile '\[site repo=([A-Za-z0-9._-]+)'] $man]]
+        [= $repo [?if [= [$count $rm] 0] [then ''] [else [$re:group [$first $rm] 1]]]]
+        [= $o [$run-out ('git', 'remote', 'get-url', 'origin') 30000]]
+        [= $bm [$re:find-all [$re:compile '^(.*[/:])[^/:]+$'] [$out $o]]]
+        [= $base [?if [= [$count $bm] 0] [then ''] [else [$re:group [$first $bm] 1]]]]
+        [= $pub [$concat $base $repo '.git']]
+        [= $gm [$re:find-all [$re:compile 'github\.com[:/]([^/]+/[^/.]+)(\.git)?$'] $pub]]
+        [= $slug [?if [= [$count $gm] 0] [then ''] [else [$re:group [$first $gm] 1]]]]
+        [= $ls [$run-out ('git', 'ls-remote', $pub, 'refs/heads/main') 120000]]
+        [= $p [?if [$ok $ls] [then [$strings:trim [$string [$first [$strings:split [$out $ls] "\t"]]]]] [else '']]]
+        [= $sr [$run-out ('curl', '-s', '-L', '-D', '-', '--max-time', '60', [$concat 'https://' $host '/stamp.txt']) 90000]]
+        [= $parts [$strings:split [$strings:replace [$string $sr@stdout] "\r\n" "\n"] "\n\n"]]
+        [= $code [$re:find-all [$re:compile '(?m)^HTTP/[0-9.]+ ([0-9]{3})'] [$string $sr@stdout]]]
+        [= $status [?if [= [$count $code] 0] [then ''] [else [$re:group [$last-of $code] 1]]]]
+        # 404: no stamp yet (''); 200: its body; anything else, a curl that
+        # failed included, an answer that cannot be a stamp.
+        [= $body [?if [= $status '404'] [then '']
+                   [else [?if [and [= $status '200'] [> [$count $parts] 1]] [then [$strings:trim [$string [$last-of $parts]]]]
+                     [else [$concat 'HTTP ' [?if [= $status ''] [then '(no answer)'] [else $status]]]]]]]]
+        [= $cc [$header [$string $sr@stdout] 'cache-control']]
+        [= $am [$re:find-all [$re:compile 'max-age=([0-9]+)'] $cc]]
+        [= $maxage [?if [= [$count $am] 0] [then '0'] [else [$re:group [$first $am] 1]]]]
+        [= $lr [$run-out ('curl', '-s', '-I', '-L', '--max-time', '60', [$concat 'https://' $host '/']) 90000]]
+        [= $lm [$header [$string $lr@stdout] 'last-modified']]
+        [= $gr [?if [or [= $slug ''] [= $p '']] [then [proc-result exit-code=1 stdout='' stderr='no repository']]
+                 [else [$run-out ('gh', 'run', 'list', '--repo', $slug, '--workflow', 'site.yml', '--commit', $p, '--limit', '1',
+                                  '--json', 'status,conclusion,createdAt,updatedAt',
+                                  '--jq', '.[0] | if . == null then "none" else "\(.status) \(.conclusion // "-") \(.createdAt) \(.updatedAt)" end') 120000]]]]
+        [= $run [?if [$ok $gr] [then [?if [= [$out $gr] ''] [then 'none'] [else [$out $gr]]]] [else 'unread']]]
+        [= $pr [?if [= $slug ''] [then [proc-result exit-code=1 stdout='' stderr='no repository']]
+                 [else [$run-out ('gh', 'run', 'list', '--repo', $slug, '--workflow', 'site.yml', '--status', 'success', '--limit', '1',
+                                  '--json', 'createdAt,updatedAt', '--jq', '.[0] | "\(.createdAt) \(.updatedAt)"') 120000]]]]
+        [= $pw [$words [$out $pr]]]
+        [= $prev [?if [and [$ok $pr] [= [$count $pw] 2] [>= [$secs [$nth $pw 1]] 0]]
+                   [then [$string [- [$secs [$nth $pw 2]] [$secs [$nth $pw 1]]]]] [else '']]]
+        [= $now [$concat [$strings:slice [$string [$time:utc-now]] 1 19] 'Z']]
+        [= $v [$decide $body $lm $maxage $p $run $prev $now]]
+        [= $_r [$say [$concat 'site-live-check: host=' [?if [= $host ''] [then '(none: docs/CNAME)'] [else $host]]
+                              ' stamp=' [?if [= $body ''] [then [$concat '(none, HTTP ' $status ')']] [else $body]]
+                              ' last-modified=`' $lm '` max-age=' $maxage ' public=' $pub ' main=' [?if [= $p ''] [then '(unread)'] [else $p]]
+                              ' site-run=`' $run '` prev-duration=' [?if [= $prev ''] [then '(unread)'] [else $prev]]]]]
+    [?if [= [$string $v@ok] 'true']
+      [then [?let [= $_ [$say [$concat 'site-live-check OK — ' [$string $v@why]]]] [$env:exit 0]]]
+      [else [?let [= $_ [$cry [$concat 'site-live-check RED: ' [$string $v@why]]]]
+                  [= $_o [$say [$concat 'site-live-check RED: ' [$string $v@why]]]]
+              [$env:exit 1]]]]]]
+
+[?if [> [$count [?to-sequence [?for [in $a [$env:argv]] [where [= [$string $a] '--self-test']] [yield $a]]]] 0]
+  [then [$self-test]]
+  [else [$live]]]
