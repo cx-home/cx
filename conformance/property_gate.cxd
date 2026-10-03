@@ -133,7 +133,7 @@ reads-back
  ]
 
  [case id=property-gate-009-array-item-string-quotes level=core gate=advisory issue='cx-home/cx-core-data#4'
-  [tags property-gate ii canonical-refused+canonical-refused-on-reparse+canonical-not-a-fixpoint+hash-moved-by-round-trip+canonical-refused-second-time+kind-lost-on-canonical:string@attr+kind-lost-on-canonical:string@body+kind-lost-on-canonical:string@seq+kind-lost-on-canonical:string@array+kind-lost-on-canonical:string@mapval+kind-lost-on-canonical:string@mapkey+kind-canonical-refused:string@attr+kind-canonical-refused:string@body+kind-canonical-refused:string@seq+kind-canonical-refused:string@array+kind-canonical-refused:string@mapval+kind-canonical-refused:string@mapkey+kind-reparse-refused:string@attr+kind-reparse-refused:string@body+kind-reparse-refused:string@seq+kind-reparse-refused:string@array+kind-reparse-refused:string@mapval+kind-reparse-refused:string@mapkey string-emit]
+  [tags property-gate ii canonical-refused+canonical-refused-on-reparse+canonical-not-a-fixpoint+canonical-refused-second-time+kind-lost-on-canonical:string@attr+kind-lost-on-canonical:string@body+kind-lost-on-canonical:string@seq+kind-lost-on-canonical:string@array+kind-lost-on-canonical:string@array-head+kind-lost-on-canonical:string@nested-array+kind-lost-on-canonical:string@array-in-map+kind-lost-on-canonical:string@mapval+kind-lost-on-canonical:string@mapkey+kind-canonical-refused:string@attr+kind-canonical-refused:string@body+kind-canonical-refused:string@seq+kind-canonical-refused:string@array+kind-canonical-refused:string@array-head+kind-canonical-refused:string@nested-array+kind-canonical-refused:string@array-in-map+kind-canonical-refused:string@mapval+kind-canonical-refused:string@mapkey+kind-reparse-refused:string@attr+kind-reparse-refused:string@body+kind-reparse-refused:string@seq+kind-reparse-refused:string@array+kind-reparse-refused:string@array-head+kind-reparse-refused:string@nested-array+kind-reparse-refused:string@array-in-map+kind-reparse-refused:string@mapval+kind-reparse-refused:string@mapkey string-emit]
   [title [# a string array item quotes where its bare image would not re-read as that string in both readings -- code.md §11.1a R6, canonical.md §2.3 (the collection-item bare set) #]]
   [in-code [#
 [?lib 'cx-stdlib/cx' as=cx]
@@ -159,7 +159,7 @@ true
  ]
 
  [case id=property-gate-011-string-value-hash level=core gate=advisory issue='cx-home/cx-core-code#22'
-  [tags property-gate ii kind-lost-on-canonical:string@top+kind-canonical-refused:string@top+kind-reparse-refused:string@top]
+  [tags property-gate ii string-hash-collision]
   [title [# [$cx:hash] of the string '7' is not the address of the int 7 -- an address is a pure function of the strict canonical bytes, and the two values have different bytes (canonical.md §1.2, §1.4, §2.6a; stdlib/cx.md §2.1 takes ($value::any)) #]]
   [in-code [#
 [?lib 'cx-stdlib/cx' as=cx]
@@ -427,6 +427,18 @@ string
 #]]
   [out-text [#
 reads-back
+#]]
+ ]
+
+ [case id=property-gate-032-string-value-canonical level=core gate=advisory issue='cx-home/cx-core-code#22'
+  [tags property-gate ii kind-lost-on-canonical:string@top+kind-canonical-refused:string@top+kind-reparse-refused:string@top]
+  [title [# [$cx:canonical] of a string value is the string's canonical image, not the string read as CX source -- canonical.md §2.6a (a string whose bare image re-parses as another kind quotes, the document top included), §1.2; stdlib/cx.md §2.1 ($value::any) #]]
+  [in-code [#
+[?lib 'cx-stdlib/cx' as=cx]
+[?match [$cx:parse [$cx:canonical [$cx:parse "'7'"]]] [case $s::string 'string'] [else 'other']]
+#]]
+  [out-text [#
+string
 #]]
  ]
 ]

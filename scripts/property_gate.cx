@@ -49,12 +49,13 @@
 # that did not fail as planted); 2 a usage error or an unreadable register.
 #
 # Run from the checkout root (the paths below are cwd-relative):
-#   cx --allow-read --allow-eval --allow-subprocess scripts/property_gate.cx
+#   cx --allow-read --allow-write --allow-eval --allow-subprocess scripts/property_gate.cx
 #      [--seed N] [--count N] [--register FILE] [--self-test]
 # (or: make property-gate, which grades the register's corpus, runs the
-# self-test, then the step). ALL THREE GRANTS ARE LOAD-BEARING: it reads the
-# spec and the register, evaluates the programs it generates, and runs the
-# ungranted child cx of (v). The default count is sized to finish well under
+# self-test, then the step). ALL FOUR GRANTS ARE LOAD-BEARING: it reads the
+# spec and the register, makes and removes the scratch directory the
+# ungranted children of (v) run in, evaluates the programs it generates, and
+# runs those children. The default count is sized to finish well under
 # two minutes on an agent's own runner slot.
 
 [?lib 'cx-stdlib/io'      as=io]
@@ -287,7 +288,9 @@
 # The bijectivity table, per kind and position (canonical.md §2.6a): a
 # scalar of kind K read in position P is K after the data reader, and K again
 # after canonical emit and a second read.
-[?const POSITIONS ("top", "attr", "body", "seq", "array", "mapval", "mapkey")]
+[?const POSITIONS ("top", "attr", "body", "seq", "array", "array-head", "nested-array", "array-in-map", "mapval", "mapkey")]
+[?const HEAD-POSITIONS ("array-head", "array-in-map")]
+[?const KEYWORD-KINDS ("bool", "null")]
 # the key kinds cxdm.md §2.6 admits that a bare literal can spell (a datetime
 # key is exercised through the constructors, chk-constructed-roundtrip)
 [?const KEY-KINDS ("int", "decimal", "float", "bool", "date", "string", "bytes")]
@@ -300,8 +303,9 @@
 
 [?const HEX ("0", "1", "2", "7", "9", "a", "c", "f")]
 
-# pos-text: scalar S of kind K in position P. An array opens with a number so
-# a bare keyword never leads it (the ambiguous bare array).
+# pos-text: scalar S of kind K in position P. A bare keyword (true, false,
+# null) never heads an array -- the ambiguous bare array the data reader
+# refuses by rule -- so run-unit gives those positions another kind.
 [?def pos-text scope=private pure [returns string] ($k::string $pos::string $s::string)
   [?if [= $k "bytes"]
     [then [?match $pos
@@ -310,13 +314,17 @@
     [else [?match $pos
             [case "top" $s] [case "attr" [$concat "[x a=" $s "]"]] [case "body" [$concat "[x " $s "]"]]
             [case "seq" [$concat "(" $s ", 0)"]] [case "array" [$concat "[0, " $s "]"]]
+            [case "array-head" [$concat "[" $s ", 0]"]] [case "nested-array" [$concat "[0, [0, " $s "]]"]]
+            [case "array-in-map" [$concat "{k: [" $s ", 0]}"]]
             [case "mapval" [$concat "{k: " $s "}"]]
             [else [$concat "{" $s ": 0}"]]]]]]
 
 [?def pos-read scope=private pure ($pos::string $d)
   [?match $pos
     [case "top" $d] [case "attr" $d@a] [case "body" [?match $d [x $q] [yield $q]]]
-    [case "seq" [$first $d]] [case "array" [$nth $d 2]] [case "mapval" [$map:get $d 'k']]
+    [case "seq" [$first $d]] [case "array" [$nth $d 2]] [case "array-head" [$nth $d 1]]
+    [case "nested-array" [$nth [$nth $d 2] 2]] [case "array-in-map" [$nth [$map:get $d 'k'] 1]]
+    [case "mapval" [$map:get $d 'k']]
     [else [$first [$map:keys $d]]]]]
 
 [?def chk-kind-3 scope=private impure ($k::string $pos::string $t::string $d $c::string)
@@ -770,9 +778,10 @@
 # probed here with no edit to this file. Every primitive is called with no
 # grant at all, in a CHILD cx (the probing process holds grants; the child
 # holds none), with generated arguments of every arity 0-3 drawn from a pool
-# that cannot do harm even if a gate failed open: a path under a root
-# directory that does not exist, the discard port on loopback, a pid no
-# process has. Each call must answer an [err]; at least one call per
+# of paths under a root directory that does not exist, loopback discard-port
+# addresses and URLs, and plain values; the child runs in a fresh scratch
+# directory the step removes, so a gate that failed open on a relative path
+# ('x', 'http://…' read as a path) writes there and nowhere else. Each call must answer an [err]; at least one call per
 # primitive must reach the effect point and answer cx-err:CXER0271 naming
 # --allow-<its capability>; an answer naming another flag, a value, or a
 # crashed child is a failure. (io-open, store-open and store-open-opts derive
@@ -848,21 +857,36 @@
 # (so a one-argument primitive is reached whatever the seed), one call per
 # generated arity (arguments drawn from SAFE-ARGS) and its TEMPLATES rows --
 # as call rows carrying p (the primitive), a (the arity) and t (the source).
-[?def calls-for scope=private impure ($p::string)
+# want-for: the capability a call must name. A primitive of DERIVED charges by
+# its argument (security.md §2.1 scoping note): io-open by its mode (read or
+# write -- every argument is a path), a store by its URL (file:// reads or
+# writes, any other scheme reaches the network; a call naming both may name
+# either).
+[?def want-for scope=private pure [returns string] ($p::string $cap::string $src::string)
+  [?if [not [$member $p $DERIVED]] [then $cap]
+    [else [?if [= $p "io-open"] [then "read write"]
+            [else [?let [= $file [$strings:contains $src "'file://"]]
+                        [= $remote [or [$strings:contains $src "'http"] [$strings:contains $src "'ws:"] [$strings:contains $src "'cx-store"]]]
+                    [?if $remote [then [?if $file [then "read write net"] [else "net"]]] [else "read write"]]]]]]]]
+
+[?def mk-call scope=private pure ($p::string $cap::string $a::int $src::string)
+  [?let [= $w [$want-for $p $cap $src]] [call p=$p a=$a t=$src w=$w]]]
+
+[?def calls-for scope=private impure ($p::string $cap::string)
   [?to-sequence [?concat
-    [?for [in $arg $SAFE-ARGS] [= $src [$concat "[$" $p " " $arg "]"]] [yield [call p=$p a=1 t=$src]]]
+    [?for [in $arg $SAFE-ARGS] [= $src [$concat "[$" $p " " $arg "]"]] [yield [$mk-call $p $cap 1 $src]]]
     [?for [in $n $ARITIES]
       [= $src [$concat "[$" $p [$strings:join [?for [in $i [$range 1 $n]] [yield [$concat " " [$pick $SAFE-ARGS]]]] ""] "]"]]
-      [yield [call p=$p a=$n t=$src]]]
+      [yield [$mk-call $p $cap $n $src]]]
     [?for [in $t $TEMPLATES] [where [= [$string $t@p] $p]]
       [= $src [$string $t@t]]
-      [yield [call p=$p a=$TPL-ARITY t=$src]]]]]]
+      [yield [$mk-call $p $cap $TPL-ARITY $src]]]]]]
 
 # wrap-call: one call as an [r] row the parent reads -- the [?match] keeps an
 # err a value in the child.
 [?def wrap-call scope=private pure [returns string] ($c)
-  [?let [= $p [$string $c@p]] [= $a [$string $c@a]]
-    [$concat "[?match " [$string $c@t] " [case [err @code=$c @message=$m] [r n='" $p "' a=" $a " code=$c msg=$m]] [else [r n='" $p "' a=" $a " ok=true]]]"]]]
+  [?let [= $p [$string $c@p]] [= $a [$string $c@a]] [= $w [$string [?else $c@w '']]]
+    [$concat "[?match " [$string $c@t] " [case [err @code=$c @message=$m] [r n='" $p "' a=" $a " w='" $w "' code=$c msg=$m]] [else [r n='" $p "' a=" $a " ok=true]]]"]]]
 
 [?def probe-program scope=private pure [returns string] ($calls)
   [$strings:replace $PROBE-PRELUDE "CALLS" [$concat "(" [$strings:join [?to-sequence [?for [in $c $calls] [yield [$wrap-call $c]]]] ", "] ")"]]]
@@ -871,8 +895,9 @@
 # ok=true with the r rows when every call answered its row, else ok=false
 # with why.
 [?def run-child scope=private impure ($cxbin::string $calls)
-  [?let [= $argv ($cxbin, "-e", [$probe-program $calls])] [= $want [$count $calls]]
-    [?match [$process:run $argv timeout-ms=120000]
+  [?let [= $bin [$string $cxbin@bin]] [= $cwd [$string $cxbin@cwd]]
+        [= $argv ($bin, "-e", [$probe-program $calls])] [= $want [$count $calls]]
+    [?match [$process:run $argv timeout-ms=120000 cwd=$cwd]
       [case [err @message=$m] [child ok=false why=$m]]
       [case $r
         [?let [= $out [$string $r@stdout]] [= $why [$strings:trim [$string $r@stderr]]]
@@ -892,7 +917,12 @@
 # answering for the path that does not exist or the port nobody serves. Such a
 # refusal without a grant is a fail-open that happened to fail (security.md §2:
 # "denied by default and checked at every effect point").
-[?const ATTEMPT-SIGNS ("no such file", "enoent", "connection refused", "econnrefused", "permission denied", "network is unreachable", "could not resolve", "operation not permitted")]
+# the OS words, and the codes the binary answers once an effect ran (measured
+# with grants on SAFE-ARGS: an io read that found no file, a dial the address
+# policy refused, a fetch that failed, an env read that found nothing).
+[?const ATTEMPT-SIGNS ("no such file", "enoent", "connection refused", "econnrefused", "permission denied", "network is unreachable", "could not resolve", "operation not permitted",
+                       "e_io_not_found", "e_io_not_a_directory", "e_io_permission", "e_net:", "e_net_forbidden_address", "e_net_resolve", "e_net_addr_in_use", "e_net_connect",
+                       "e_jwks_fetch_failed", "e_oidc_discovery_failed", "e_test_fixture_load", "e_env_required_missing")]
 
 [?def attempted scope=private pure [returns bool] ($msg::string)
   [?let [= $m [$strings:lower $msg]]
@@ -904,14 +934,13 @@
 # judge-rows: the rows one primitive answered, against its table row.
 [?def judge-rows scope=private pure ($p::string $cap::string $rows)
   [?let
-        [= $derived [$member $p $DERIVED]]
         [= $mine [?to-sequence [?for [in $r $rows] [where [= [$string $r@n] $p]] [yield $r]]]]
         [= $denied [?to-sequence [?for [in $r $mine] [where [= [$string [?else $r@code '']] 'cx-err:CXER0271']] [yield $r]]]]
         [= $named [?to-sequence [?for [in $r $denied]
                     [= $msg [$string $r@msg]]
-                    [where [?if $derived
-                      [then [or [$strings:contains $msg "--allow-read"] [$strings:contains $msg "--allow-write"] [$strings:contains $msg "--allow-net"]]]
-                      [else [$strings:contains $msg [$flag-of $cap]]]]]
+                    [= $w [$string [?else $r@w $cap]]]
+                    [= $wants [$strings:split-whitespace [?if [= $w ''] [then $cap] [else $w]]]]
+                    [where [> [$count [?for [in $k $wants] [where [$strings:contains $msg [$flag-of $k]]] [yield 1]]] 0]]
                     [yield $r]]]]
     [?to-sequence [?concat
       [?for [in $r $mine] [where [not [= [$string [?else $r@code '']] 'cx-err:CXER0271']]]
@@ -943,18 +972,18 @@
 # sweep-calls: every pair and every triple of SAFE-ARGS for one primitive -- run
 # only for a primitive no generated call reached, so whether the capability
 # check is reached never depends on the seed.
-[?def sweep-calls scope=private pure ($p::string)
+[?def sweep-calls scope=private pure ($p::string $cap::string)
   [?to-sequence [?concat
     [?for [in $a1 $SAFE-ARGS] [in $a2 $SAFE-ARGS]
-      [= $src [$concat "[$" $p " " $a1 " " $a2 "]"]] [yield [call p=$p a=2 t=$src]]]
+      [= $src [$concat "[$" $p " " $a1 " " $a2 "]"]] [yield [$mk-call $p $cap 2 $src]]]
     [?for [in $a1 $SAFE-ARGS] [in $a2 $SAFE-ARGS] [in $a3 $SAFE-ARGS]
-      [= $src [$concat "[$" $p " " $a1 " " $a2 " " $a3 "]"]] [yield [call p=$p a=3 t=$src]]]]]]
+      [= $src [$concat "[$" $p " " $a1 " " $a2 " " $a3 "]"]] [yield [$mk-call $p $cap 3 $src]]]]]]
 
 [?def judge-or-sweep scope=private impure ($cxbin::string $p::string $cap::string $rows)
   [?let [= $fs [$judge-rows $p $cap $rows]]
         [= $unreached [> [$count [?for [in $f $fs] [where [= [$string $f@shape] 'effect-point-not-reached']] [yield 1]]] 0]]
     [?if [not $unreached] [then $fs]
-      [else [?let [= $s [$run-child $cxbin [$sweep-calls $p]]]
+      [else [?let [= $s [$run-child $cxbin [$sweep-calls $p $cap]]]
               [?if [= [$string $s@ok] 'true']
                 [then [$judge-rows $p $cap [?to-sequence [?concat $rows [?for [in $r $s/r] [yield $r]]]]]]
                 [else $fs]]]]]]]
@@ -968,7 +997,6 @@
 # clock ("clock: non-mock [?sleep] ... else mock-only"); kind=include does not
 # read the included file ("read: [?cx include]").
 [?const DIRECTIVE-PROBES ([d name='path-lib' cap='read' kind='load' t="[?lib '/nonexistent-cx-property-step/x.cx' as=x] [$x:f]"],
-                          [d name='https-lib' cap='net' kind='refused' t="[?lib 'https://127.0.0.1:9/x.cx' as=x] [$x:f]"],
                           [d name='cx-eval' cap='eval' kind='value' t="[?lib 'cx-stdlib/cx' as=cx] [?match [$cx:eval '[+ 1 2]' {}] [case [err @code=$c @message=$m] [r code=$c msg=$m]] [else [r ok=true]]]"],
                           [d name='tree-eval' cap='eval' kind='value' t="[?match [?eval [+ 1 2]] [case [err @code=$c @message=$m] [r code=$c msg=$m]] [else [r ok=true]]]"],
                           [d name='eval-tree' cap='eval' kind='value' t="[?lib 'cx-stdlib/cx' as=cx] [?match [$cx:eval-tree [+ 1 2] {}] [case [err @code=$c @message=$m] [r code=$c msg=$m]] [else [r ok=true]]]"],
@@ -979,17 +1007,21 @@
 [?def judge-directive scope=private impure ($cxbin::string $d)
   [?let [= $name [$string $d@name]] [= $cap [$string $d@cap]] [= $kind [$string $d@kind]] [= $src [$string $d@t]]
         [= $flag [$flag-of $cap]] [= $root [$path:absolute "conformance"]] [= $inc [$concat "--include-root=" $root]]
-        [= $argv [?if [= $kind 'include'] [then ($cxbin, $inc, "-e", $src)] [else ($cxbin, "-e", $src)]]]
-    [?match [$process:run $argv timeout-ms=2500]
+        [= $bin [$string $cxbin@bin]] [= $limit [?if [= $kind 'wall'] [then 2500] [else 60000]]]
+        [= $argv [?if [= $kind 'include'] [then ($bin, $inc, "-e", $src)] [else ($bin, "-e", $src)]]]
+    [?match [$process:run $argv timeout-ms=$limit]
       [case [err @message=$m] ([$fail 'v' 'directive-probe-unrun' [$concat $name ': ' $m] $name],)]
       [case $r
         [?let [= $out [$string $r@stdout]] [= $errtxt [$string $r@stderr]] [= $timed [= [$string $r@timed-out] 'true']]
+          [?if [and $timed [not [= $kind 'wall']]]
+            [then ([$fail 'v' 'directive-probe-timed-out' [$concat $name ': no answer in 60 s'] $name],)]
+            [else
           [?match $kind
             [case 'wall' [$when-not [not $timed] [$fail 'v' 'effect-point-wall-sleep-without-grant' [$concat $name ': still sleeping after 2.5 s with no clock grant'] $name]]]
             [case 'include' [$when-not [not [$strings:contains $out 'gate-policy']] [$fail 'v' 'effect-point-include-without-grant' [$concat $name ': --include-root resolved [?cx include] with no read grant'] $name]]]
             [case 'load' [$when-not [and [$strings:contains $errtxt 'CXER0271'] [$strings:contains $errtxt $flag]] [$fail 'v' 'directive-not-refused-with-flag' [$concat $name ': ' [$strings:trim $errtxt] ' ' $out] $name]]]
             [case 'refused' [$when-not [not [= [$string $r@exit-code] '0']] [$fail 'v' 'directive-answered-without-grant' [$concat $name ': ' $out] $name]]]
-            [else [$when-not [and [$strings:contains $out 'CXER0271'] [$strings:contains $out $flag]] [$fail 'v' 'directive-not-refused-with-flag' [$concat $name ': ' $out] $name]]]]]]]]]
+            [else [$when-not [and [$strings:contains $out 'CXER0271'] [$strings:contains $out $flag]] [$fail 'v' 'directive-not-refused-with-flag' [$concat $name ': ' $out] $name]]]]]]]]]]]
 
 [?def chk-directives scope=private impure ($cxbin::string)
   [?to-sequence [?for [in $d $DIRECTIVE-PROBES] [in $f [$judge-directive $cxbin $d]] [yield $f]]]]
@@ -999,7 +1031,7 @@
 [?def chk-effects scope=private impure ($cxbin::string)
   [?let [= $eps [$effect-points $SECURITY-SPEC]]
         [= $plan [?to-sequence [?for [in $ep $eps] [= $p [$string $ep@name]] [= $cap [$string $ep@cap]]
-                                 [yield [plan p=$p cap=$cap [?splice [$calls-for $p]]]]]]]
+                                 [yield [plan p=$p cap=$cap [?splice [$calls-for $p $cap]]]]]]]
         [= $all [?to-sequence [?for [in $x $plan] [in $c $x/call] [yield $c]]]]
         [= $c [$run-child $cxbin $all]]
     [?if [= [$string $c@ok] 'true']
@@ -1120,6 +1152,7 @@
                    [= $bad [- [$count $mine] $adv]]
                    [yield [$say [$concat 'property-gate: (' $id ') ' [$string $i@name] ' [' [$string $i@spec] ']: '
                                          $n ' checked, ' [$string $bad] ' failed, ' [$string $adv] ' advisory']]]]]]
+        [= $_https [$say 'property-gate: (v) not probed: an https [?lib] -- without a cx.lock entry it refuses CXER0211 MODULE_UNPINNED before the net gate (code.md §12.1.3), so no ungranted fetch is reachable; probing the gate itself needs a pinned lock']]
         [= $_reach [$say [$concat 'property-gate: (v) reached only through a granted call, so no ungranted call can reach it: '
                                   [$strings:join [?to-sequence [?for [in $g $REACH-THROUGH-GRANT] [yield [$concat [$string $g@p] ' (' [$string $g@why] ')']]]] '; ']]]]
         [= $keys [$distinct [?to-sequence [?for [in $c $rows] [yield [$class-key $c]]]]]]
@@ -1135,7 +1168,8 @@
 
 [?def run-unit scope=private impure ()
   [?let [= $t [$g-elem 3]] [= $k [$pick $KIND-CHECK-KINDS]] [= $pos [$pick $POSITIONS]]
-        [= $kk [?if [and [= $pos "mapkey"] [not [$member $k $KEY-KINDS]]] [then "string"] [else $k]]]
+        [= $kk [?if [and [= $pos "mapkey"] [not [$member $k $KEY-KINDS]]] [then "string"]
+                [else [?if [and [$member $pos $HEAD-POSITIONS] [$member $k $KEYWORD-KINDS]] [then "int"] [else $k]]]]]
         [= $ma [$g-map 1]] [= $mb [$g-map 1]]
     [?to-sequence [?concat
       [$chk-roundtrip-s $t]
@@ -1156,8 +1190,11 @@
         [= $units [?to-sequence [?for [in $i [$range 1 $count]] [in $f [$run-unit]] [yield $f]]]]
         [= $fixed [?to-sequence [?concat [$chk-absent-channel] [$chk-first]
                                   [?for [in $t $EMPTIES] [in $f [$chk-absence $t]] [yield $f]]]]]
-        [= $eff [$chk-effects $cxbin]]
-        [= $dir [$chk-directives $cxbin]]
+        [= $sandbox [$io:temp-dir 'cx-property-gate']]
+        [= $px [px bin=$cxbin cwd=$sandbox]]
+        [= $eff [$chk-effects $px]]
+        [= $dir [$chk-directives $px]]
+        [= $_rm [$io:remove-tree $sandbox]]
         [= $neff [+ [$count [$effect-points $SECURITY-SPEC]] [$count $DIRECTIVE-PROBES]]]
         [= $n1 [* $count 12]] [= $n2 [* $count 5]] [= $n3 [* $count 22]] [= $n4 [* $count 2]]
         [= $n7 [+ $count [$count $EMPTIES] 2]]
@@ -1199,7 +1236,9 @@
         [= $f-cause [fail inv='ii' shape='canonical-refused' note='1:9: a refusal' input='x' subject='string-emit']]
         [= $f-other [fail inv='ii' shape='canonical-refused' note='1:9: a refusal' input='x' subject='other']]
         [= $attempt-row ([r n='p' a=1 code='cx-err:CXER4001' msg='open: No such file or directory'],)]
-        [= $me [$env:executable-path]]
+        [= $attempt-code-row ([r n='p' a=1 code='cx-err:CXER3400' msg='E_IO_NOT_FOUND: read-file /nonexistent'], [r n='p' a=2 code='cx-err:CXER0271' msg='E_CAP_DENIED: (grant via --allow-read)'])]
+        [= $derived-row ([r n='store-open' a=1 w='read write' code='cx-err:CXER0271' msg='E_CAP_DENIED: (grant via --allow-net)'],)]
+        [= $mebin [$env:executable-path]] [= $me [px bin=$mebin cwd='.']]
         [= $_a [$random:seed 7]] [= $g1 [$g-elem 3]] [= $_b [$random:seed 7]] [= $g2 [$g-elem 3]]
         [= $rows (
           [$st 'map: an identity dropped' 'merge-key-identity-changed' [$judge-map 'merge' $want-ab false false "{a: 1}" $NOCTX 'st']],
@@ -1215,6 +1254,8 @@
           [$st 'keys: an inadmissible key accepted' 'to-map-accepted-inadmissible-key' [$judge-badkey 'to-map' 'atom' "{a: 1}"]],
           [$st 'keys: a literal accepted' 'literal-accepted-inadmissible-key:data' [$judge-badkey-literal 'data' "{a: 1}"]],
           [$st 'effects: an attempt without a grant' 'effect-point-attempted-without-grant effect-point-not-reached' [$judge-rows 'p' 'read' $attempt-row]],
+          [$st 'effects: an attempt by its code' 'effect-point-attempted-without-grant' [$judge-rows 'p' 'read' $attempt-code-row]],
+          [$st 'effects: a derived capability misnamed' 'effect-point-names-another-flag effect-point-not-reached' [$judge-rows 'store-open' 'read' $derived-row]],
           [$st 'directives: a value not refused' 'directive-not-refused-with-flag' [$judge-directive $me [d name='st' cap='eval' kind='value' t='1']]],
           [$st 'directives: a load not refused' 'directive-not-refused-with-flag' [$judge-directive $me [d name='st' cap='read' kind='load' t='1']]],
           [$st 'directives: an answer without a grant' 'directive-answered-without-grant' [$judge-directive $me [d name='st' cap='net' kind='refused' t='1']]],
@@ -1263,7 +1304,7 @@
 
 # -- entry ----------------------------------------------------------------------
 
-[?const USAGE "usage: cx --allow-read --allow-eval --allow-subprocess scripts/property_gate.cx [--seed N] [--count N] [--register FILE] [--self-test]"]
+[?const USAGE "usage: cx --allow-read --allow-write --allow-eval --allow-subprocess scripts/property_gate.cx [--seed N] [--count N] [--register FILE] [--self-test]"]
 
 [?let
   [= $args [?fallback [$env:parse-args [argspec

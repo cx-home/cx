@@ -2338,8 +2338,8 @@ advisory-audit:
 property-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 property-gate: build-vcx
 	@"$(CX_BIN)" corpus --quiet conformance/property_gate.cxd
-	@"$(CX_BIN)" --allow-read --allow-eval --allow-subprocess scripts/property_gate.cx --self-test
-	@"$(CX_BIN)" --allow-read --allow-eval --allow-subprocess scripts/property_gate.cx $(PROPERTY_GATE_ARGS)
+	@"$(CX_BIN)" --allow-read --allow-write --allow-eval --allow-subprocess scripts/property_gate.cx --self-test
+	@"$(CX_BIN)" --allow-read --allow-write --allow-eval --allow-subprocess scripts/property_gate.cx $(PROPERTY_GATE_ARGS)
 
 # ── DIAGNOSTICS CENSUS (RULED: CXF-3, #1522) — the diagnostics corpus
 # audit, written in CX (RULED: CXF-1). For every refusal code: its §9.6
