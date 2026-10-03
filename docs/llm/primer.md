@@ -642,34 +642,20 @@ $ cx --data=input.cx prog.cx
 [row region=west revenue=12 n=1]
 ```
 
-`[order-by]` sorts, and takes a direction and multiple keys:
+`[order-by]` sorts. Its keys go in one clause, in order — the items sort by
+the first key, ties by the second, and so on, and items equal on every key
+keep their input order — and each key takes its own direction, `asc` (the
+default) or `desc`, written after it:
 
 `input.cx`
 ```cx
-[ignored]
+[u-set [u name="C" age=30] [u name="A" age=25] [u name="B" age=30]]
 ```
 
 `prog.cx`
 ```cx
-[?let [= $users [u-set [u name="C" age=30] [u name="A" age=25] [u name="B" age=30]]] [?for [in $u $users//u] [order-by $u/@age desc] [yield $u/@name]]]
-```
-
-```console
-$ cx --data=input.cx prog.cx
-C
-B
-A
-```
-
-`input.cx`
-```cx
-[ignored]
-```
-
-`prog.cx`
-```cx
-[?let [= $users [u-set [u name="C" age=30] [u name="A" age=25] [u name="B" age=30]]] [?for [in $u $users//u] [order-by $u/@name] [order-by $u/@age desc]
-        [yield [r n=$u/@name a=$u/@age]]]]
+[?for [in $u //u] [order-by $u/@age desc $u/@name asc]
+      [yield [r n=$u/@name a=$u/@age]]]
 ```
 
 ```console
@@ -678,6 +664,10 @@ $ cx --data=input.cx prog.cx
 [r n=C a=30]
 [r n=A a=25]
 ```
+
+A second `[order-by]` clause in the same `[?for]` is refused at parse time,
+naming it, rather than read as a re-sort — so a sort always reads left to
+right, first key first (`program-order-by-multikey-009-second-clause-diagnostic-names-it`).
 
 ### Query with CXPath
 
