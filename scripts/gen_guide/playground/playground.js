@@ -769,7 +769,12 @@
                 + '(network / subprocess / filesystem). Run it with <code>cx</code> in your terminal; '
                 + 'here it returns a capability-denied result.'
               : ''))));
-    if (capNote) setStatus(capNote, 'pending');
+    // Where this engine cannot run the fixture, its recorded answer IS the
+    // answer the page shows — under the output with the disclosure closed
+    // too (SITE-3; playground.css's body.cxp-needs-expect).
+    document.body.classList.toggle('cxp-needs-expect', found.kind === 'primer'
+      && (Boolean(wasmUnsupportedNote) || found.ex.runnable === false));
+    if (capNote) setStatus(capNote, 'pending', true);
     runProgram({ auto: true, capNote });
   }
   // A reading tab opens that reading's first example, unless the example
@@ -843,6 +848,10 @@
   function onEdit() {
     wasmUnsupportedNote = '';
     grantsNote = '';
+    // SITE-3: the recorded answer stood in for an answer this engine could
+    // not give; for an edited text it answers nothing on screen, so it goes
+    // back behind the disclosure (where the verdict says "edited").
+    if (edited()) document.body.classList.remove('cxp-needs-expect');
     syncRender();
     refreshView();
     if (verdictEl && current && current.kind === 'primer' && edited()) {
@@ -981,8 +990,12 @@
 
   // ── Status ─────────────────────────────────────────────
   let statusTimer = null;
-  function setStatus(html, kind) {
+  // `note`: the line is about THIS example (why it runs in a terminal, a
+  // grant it needs) and shows with the disclosure closed too (SITE-3); an
+  // error always does. The engine note and the run's chatter do not.
+  function setStatus(html, kind, note) {
     if (statusTimer) { clearTimeout(statusTimer); statusTimer = null; }
+    status.dataset.note = (note || kind === 'error') ? '1' : '';
     status.classList.remove('is-ok', 'is-error', 'is-pending');
     if (kind) status.classList.add(`is-${kind}`);
     status.innerHTML = html;
@@ -1835,6 +1848,28 @@
   if (graphZoomBtns.zoomOut) graphZoomBtns.zoomOut.addEventListener('click', () => { graphScale = Math.max(0.25, graphScale / 1.25); applyGraphTransform(); });
   if (graphZoomBtns.fit)     graphZoomBtns.fit    .addEventListener('click', () => { graphScale = 1; applyGraphTransform(); vizGraphEl.querySelector('.cxp-graph-canvas').scrollTo(0, 0); });
 
+
+  // ── The ONE disclosure (SITE-3, #1760) ──────────────────────────────
+  // More opens every secondary surface at once — the search, the readings,
+  // Reset and Share (its own rows), the output's formats, the fixture
+  // strip and verdict, the View pane and the engine note (in place, by
+  // body.cxp-more-open; playground.css) — and closes them again. The View
+  // pane draws while it is hidden, so it is redrawn when it opens: a
+  // diagram measured in a hidden pane has no size.
+  const moreToggle = document.getElementById('cxp-more-toggle');
+  const moreEl = document.getElementById('cxp-more');
+  function setMore(open) {
+    document.body.classList.toggle('cxp-more-open', open);
+    if (moreEl) moreEl.hidden = !open;
+    if (moreToggle) moreToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    // The engine note is one of the surfaces it opens: shown at once,
+    // unless the line carries a note about this example.
+    if (open && status.dataset.note !== '1') setReadyStatus();
+    if (open) refreshView();
+  }
+  if (moreToggle) moreToggle.addEventListener('click', () => {
+    setMore(moreToggle.getAttribute('aria-expanded') !== 'true');
+  });
   // ── Draggable pane dividers ──────────────────────────────
   // Two strips inside .cxp-main: a vertical column divider (between
   // the left column and the view pane) and a horizontal row divider
@@ -2256,7 +2291,7 @@
         lastEvalRawCx = '';
         refreshView();
         showVerdict(raw);
-        setStatus(`${wasmUnsupportedNote} ${WASM_UNSUPPORTED_REMEDY}`, 'pending');
+        setStatus(`${wasmUnsupportedNote} ${WASM_UNSUPPORTED_REMEDY}`, 'pending', true);
         finishRun();
         return;
       }
@@ -2281,12 +2316,12 @@
       if (accumulated) {
         setStatus(note || (isErr ? `Evaluated to an error value — ${accumulated.length} bytes.`
                                  : `Evaluated — ${accumulated.length} bytes.`),
-                  note ? 'pending' : 'ok');
+                  note ? 'pending' : 'ok', !!note);
       } else {
         // An empty result is a real answer (e.g. an empty comprehension),
         // but a blank pane looks like a failure — say so in the pane.
         showRefusal('// evaluated to nothing — this program produced no output');
-        setStatus(note || 'Evaluated — empty result.', note ? 'pending' : 'ok');
+        setStatus(note || 'Evaluated — empty result.', note ? 'pending' : 'ok', !!note);
       }
     } finally {
       finishRun();
