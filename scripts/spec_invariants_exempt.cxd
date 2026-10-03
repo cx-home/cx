@@ -1,0 +1,148 @@
+[spec-invariant-exemptions
+  [doc [#
+The SPEC-INVARIANT exemption register (RULED: QUAL-1 (d); the SPECINV-1 round).
+
+`make spec-invariant-gate` (scripts/spec_invariants.cx) requires every sentence of
+the two rings' approved specs that carries MUST, MUST NOT, SHALL, REFUSES or NEVER
+to cite, beside it, a conformance case that grades it. A row here is the only other
+way through, and it says WHY no case can: the sentence's spec file, a verbatim
+`match=` substring of the sentence (as `--list` prints it, markdown included), one
+class of the closed four, and a reason.
+
+  step     a make step grades it, not a corpus case: held-by= names the target
+           (it must exist in this repository's or a ring's Makefile)
+  author   an obligation on the program author, a binding's author or an
+           operator: no implementation behaviour exists to grade
+  quoted   the sentence reports or quotes another document's keyword; it is
+           not a requirement of this spec
+  no-lane  the behaviour is the implementation's, but no corpus lane can feed
+           its input: issue= names the open issue that adds the lane
+
+The gate refuses a row that matches no sentence, one whose sentence cites a case
+(stale), an unknown class, a missing reason, a held-by= that is no make target, and
+a no-lane row without an issue.
+#]]
+
+  [; ── the data ring: cx-core-data/spec/03-approved/core/*.md ── ]
+
+  [; ── abi.md ── ]
+  [exempt file='cx-core-data/spec/03-approved/core/abi.md' class=author match='Bindings MUST read the prefix byte and render diagnostic codes' reason='an obligation on a binding author decoding the cx_validate diagnostic wire; no binding lives in the two rings to grade']
+  [exempt file='cx-core-data/spec/03-approved/core/abi.md' class=author match='`program` MUST be non-NULL and non-empty' reason='a precondition on the C caller (a binding author); the sentence states no consequence the library enforces']
+  [exempt file='cx-core-data/spec/03-approved/core/abi.md' class=no-lane issue='cx-home/cx-core-data#16' sec='cx_code_diagram' match='MUST be non-NULL and non-empty (length 0 yields `CXER0100`)' reason='cx_code_diagram called with source_len 0: a C ABI boundary no corpus lane calls and abi-c-test does not exercise']
+  [exempt file='cx-core-data/spec/03-approved/core/abi.md' class=no-lane issue='cx-home/cx-core-data#16' sec='cx_code_tree' match='MUST be non-NULL and non-empty (length 0 yields `CXER0100`)' reason='cx_code_tree called with source_len 0: a C ABI boundary no corpus lane calls and abi-c-test does not exercise; it answers an empty-root JSON there, not CXER0100']
+  [exempt file='cx-core-data/spec/03-approved/core/abi.md' class=author match='MUST be non-NULL and non-empty.' reason='cx_lint input: a precondition on the C caller (a binding author); the sentence states no consequence the library enforces']
+  [exempt file='cx-core-data/spec/03-approved/core/abi.md' class=author match='A binding MUST read `cx_features` from the library it actually loaded' reason='an obligation on a binding author loading the library']
+  [exempt file='cx-core-data/spec/03-approved/core/abi.md' class=author match='Decoders without bit 29 MUST reject ast_bin payloads with version byte' reason='obliges a decoder built without capability bit 29 (a binding author); the shipped reader is v10, and the general version refusal is graded by astb-007']
+  [exempt file='cx-core-data/spec/03-approved/core/abi.md' class=author match='v7 readers MUST reject v8 files' reason='obliges a reader built at v7 (a binding author); the shipped reader is v10, and the general version refusal is graded by astb-007']
+  [exempt file='cx-core-data/spec/03-approved/core/abi.md' class=author match='Decoders without bit 37 MUST raise CXER0100 on tag' reason='obliges a decoder built without capability bit 37 (a binding author); the shipped decoder advertises it and decodes 0x16 (astb-033, astb-034)']
+  [exempt file='cx-core-data/spec/03-approved/core/abi.md' class=author match='decoders without bit 41 MUST reject' reason='obliges a data-bin decoder built without capability bit 41 (a binding author); the shipped decoder advertises it']
+
+  [; ── ast-bin.md ── ]
+  [exempt file='cx-core-data/spec/03-approved/core/ast-bin.md' class=author match='decoders without bit 37 MUST raise `CXER0100` rather than silently degrading' reason='obliges a decoder built without capability bit 37 (a binding author); the shipped decoder advertises bit 37 and decodes 0x16 (astb-033, astb-034)']
+  [exempt file='cx-core-data/spec/03-approved/core/ast-bin.md' class=author match='MUST request them via the JSON projection (`cx_to_json` with source-tracking enabled)' reason='an obligation on tooling authors consuming ast_bin; the wire carrying no loc is graded by the byte-identical round trips astb-019, astb-022']
+  [exempt file='cx-core-data/spec/03-approved/core/ast-bin.md' class=author sec='MatchNode' match='MUST request them via the JSON projection, not via ast_bin.' reason='an obligation on tooling authors consuming ast_bin; the MatchNode wire carrying no loc is graded by the byte-identical round trips of the MatchNode cases']
+  [exempt file='cx-core-data/spec/03-approved/core/ast-bin.md' class=author match='Tooling that needs source- locations MUST request them via the JSON projection' reason='an obligation on tooling authors consuming ast_bin; the wire carrying no loc is graded by astb-029']
+
+  [; ── ast.md ── ]
+  [exempt file='cx-core-data/spec/03-approved/core/ast.md' class=author match='Parsers MUST document which they return, and provide a resolver if they return Parse AST' reason='a documentation obligation on a parser implementer; no runtime behaviour to grade']
+  [exempt file='cx-core-data/spec/03-approved/core/ast.md' class=no-lane issue='cx-home/cx-core-data#16' match='Importers MUST reconstruct the TableData payload from this shape' reason='the AST-JSON importer (cx.ast_to_cx) is reachable only through the C ABI cx_ast_to_cx; no CLI format, codec or program verb reads AST-JSON, so no corpus lane can feed it']
+  [exempt file='cx-core-data/spec/03-approved/core/ast.md' class=author match='tooling that needs them MUST request them explicitly' reason='an obligation on tooling that consumes the JSON projection']
+  [exempt file='cx-core-data/spec/03-approved/core/ast.md' class=author match='AST-bin emitters MUST reject PathNode values with `CXER0290` until the wire-format tag is honoured' reason='obliges a binding that has not implemented the v8 codec (a binding author); the shipped emitter honours tag 0x13 (astb-019)']
+  [exempt file='cx-core-data/spec/03-approved/core/ast.md' class=no-lane issue='cx-home/cx-core-code#27' match='When the data reader REFUSES and the program reader accepts' reason='the cx --ast dispatch is a CLI projection no corpus lane drives (the document lane parses with the data codec, the program lane evaluates); note the shipped reader reads [$f 1] as an Array with a Hole, so the dispatch never reaches the program tree']
+
+  [; ── canonical.md ── ]
+  [exempt file='cx-core-data/spec/03-approved/core/canonical.md' class=no-lane issue='cx-home/cx-core-data#18' match='implementations MUST check the AST shape, not the surface' reason='an AttrTest-template predicate cannot be fed: PathNode values exist only as decoded ast_bin, ast-bin.md section 4.1 defines no ProgramExpr tag, and the shipped decoder reads predicates as a String source']
+
+  [; ── lockfile.md ── ]
+  [exempt file='cx-core-data/spec/03-approved/core/lockfile.md' class=no-lane issue='cx-home/cx-core-data#17' match='Loaders MUST reject any `version` value they do not recognise' reason='the loader rejects it (CXLOCK_UNSUPPORTED_VERSION in lockfile_reader.v) but program cases resolve modules against the runner-fixed cx.lock in stdlib_bundle.v, so no corpus lane can hand the loader a lockfile']
+  [exempt file='cx-core-data/spec/03-approved/core/lockfile.md' class=no-lane issue='cx-home/cx-core-data#17' match='Loaders MUST reject any HTTPS `[module]` entry that lacks an `sri` field' reason='no corpus lane can hand the loader a lockfile; the module world is the runner-fixed cx.lock in stdlib_bundle.v, where every https entry carries an sri']
+  [exempt file='cx-core-data/spec/03-approved/core/lockfile.md' class=no-lane issue='cx-home/cx-core-data#17' match='Loaders MUST accept both and MAY accept additional algorithms' reason='no corpus lane can hand the loader a lockfile pinned with sha256 and with sha384; the runner-fixed cx.lock pins one algorithm']
+  [exempt file='cx-core-data/spec/03-approved/core/lockfile.md' class=author match='MUST be committed to source control' reason='an obligation on the project that owns cx.lock']
+  [exempt file='cx-core-data/spec/03-approved/core/lockfile.md' class=author match='CI MUST NOT auto-regenerate it on every build' reason='an obligation on the operator of a CI pipeline']
+
+  [; ── schema.md ── ]
+  [exempt file='cx-core-data/spec/03-approved/core/schema.md' class=step held-by=test-vcx-suite match='**none** — export REFUSES' reason='cx schema export is a CLI verb with no program surface; cli_umbrella_test.v test_schema_export_refuses_unprojectable_keys_clause grades the refusal, naming the clause']
+
+  [; ── schema_event_evolution.md ── ]
+  [exempt file='cx-core-data/spec/03-approved/core/schema_event_evolution.md' class=quoted match='Two approved specs contradict on unknown vocabulary' reason='a finding that quotes the market spec and the identity model, not a requirement of this spec']
+  [exempt file='cx-core-data/spec/03-approved/core/schema_event_evolution.md' class=quoted match='The market spec' reason='a ruling about the market spec downgrade-skip MUST, quoted by name; the requirement lives in the market spec']
+
+  [; ── semantic_value_model.md ── ]
+  [exempt file='cx-core-data/spec/03-approved/core/semantic_value_model.md' class=author match='The other three senses MUST be named by their row' reason='an obligation on specification authors writing about identity']
+
+  [; ── streaming.md ── ]
+  [exempt file='cx-core-data/spec/03-approved/core/streaming.md' class=no-lane issue='cx-home/cx-core-data#16' match='MUST be the first event after StartDoc' reason='the read-side event stream is an ABI surface; no corpus lane exposes the events a reader produces']
+  [exempt file='cx-core-data/spec/03-approved/core/streaming.md' class=no-lane issue='cx-home/cx-core-data#16' match='Decoders that encounter an unknown discriminator MUST raise' reason='the event wire decoder is an ABI surface; no corpus lane feeds event bytes']
+  [exempt file='cx-core-data/spec/03-approved/core/streaming.md' class=author match='the synchronous list return MUST be the primary conformance target' reason='an obligation on a binding author choosing its streaming idiom']
+  [exempt file='cx-core-data/spec/03-approved/core/streaming.md' class=no-lane issue='cx-home/cx-core-data#16' match='have no emit entry point and MUST reject with `W009` at emit time' reason='the streaming-write lane (grading/streaming.v) has ops only for the 14 emittable events, so a case cannot hand the writer an XMLDecl or StartArray; an unknown op is a runner error, not W009']
+
+  [; ── the code ring: cx-core-code core/code.md, core/security.md ── ]
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=step held-by=test-vcx-suite match='fall back to the data reading: a resource that is valid DATA but not a valid PROGRAM evaluates to itself' reason='a host fallback when NO separate data input is supplied; every corpus case runs with one, so no case reaches it — eval_semantics_umbrella_test.v test_streaming_honours_the_data_fallback_like_one_shot (and the CLI runs in diagram_umbrella_test.v) grade it']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=step held-by=test-vcx-suite match='it MUST NOT mask a broken program' reason='the host fallback is unreachable from the corpus (data input always supplied); eval_semantics_umbrella_test.v test_where_infix_eq_fails_loud_not_data_fallback / test_non_name_atom_fails_loud_not_data_fallback / test_program_shaped_lex_failure_fails_loud_not_data_echo run cx FILE and grade it']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=step held-by=test-vcx-suite match='the host MUST surface the original program diagnostic and fail (non-zero exit) instead of falling back' reason='same three eval_semantics_umbrella_test.v CLI tests: a program-intent parse failure exits non-zero with the program diagnostic, never a data echo']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=author match='have at least one fixture in `conformance/code.txt` exercising its happy path' reason='an obligation on the corpus author; no step counts built-in fixtures (check-code-fixtures counts directives and CXER codes only)']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=author match='Any future one MUST iterate in canonical key order' reason='pre-registers a rule for a map-traversal surface that the pure list does not yet carry; no implementation behaviour to grade — and stdlib/map.md declares keys pure in insertion order, the contradiction filed as cx-home/cx-core-code#33']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=author match='`fn` **MUST** be associative' reason='an obligation on the program author; the spec says violations produce undefined results, not a runtime error']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=author match='`z` **MUST** be the identity for `fn`' reason='an obligation on the program author; the spec says violations produce undefined results, not a runtime error']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=step held-by=test-vcx-suite match='the observable output **MUST** match the' reason='the DR-8 bit-for-bit gate: diagram_umbrella_test.v test_code_diagram_output_matches_captured_goldens_bit_for_bit over vcx/tests/testdata/code_diagram_golden']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=step held-by=test-vcx-suite match='Renderers **SHALL** produce structurally equal diagrams across implementations' reason='one reference renderer (cx-stdlib/diagram); a native or second renderer is held to its output by the DR-8 golden gate, diagram_umbrella_test.v test_code_diagram_output_matches_captured_goldens_bit_for_bit']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=author match='Edits that map to valid AST transformations **MUST** round-trip cleanly' reason='conditional on the SHOULD of bidirectional editing: binds a renderer author who ships diagram editing; the reference renderer ships no editing UI']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=author match='reordering positional children of a directive) **MUST**' reason='conditional on the SHOULD of bidirectional editing: binds a renderer author who ships a diagram-editing UI; the reference renderer ships none']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=no-lane issue='cx-home/cx-core-code#28' match='Flags **MUST** support' reason='a CLI flag surface no corpus lane can feed; and cx diagram today ignores --direction and --detail and accepts unknown flags (see the report)']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=no-lane issue='cx-home/cx-private#1763' match='`<cx-diagram src="...">` **MUST** render' reason='scripts/test_web_component_offline.sh: the component and demo carry no off-origin reference and stage the one vendored renderer, so it renders client-side with no server round-trip']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=no-lane issue='cx-home/cx-core-code#29' match='the CX language server **MUST**' reason='vcx/cmd/lsp_features.v serves a View diagram CodeLens per top-level directive, but no corpus lane speaks LSP and lint_lsp_umbrella_test.v only checks the method answers']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=step held-by=test-vcx-code match='computed in signed 64-bit' reason='a saturating wait cannot be fed to the corpus (the retry wait is real, no mock opt-in); code_module_umbrella_test.v test_retry_backoff_strategies_compute_the_spec_table asserts the clamp']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=step held-by=test-vcx-suite match='with no await MUST still ship the order' reason='only observable after the program value is produced; eval_semantics_umbrella_test.v test_fire_and_forget_completes_before_top_level_return grades it (ev-async-006 notes why no case can)']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=step held-by=check-code-fixtures match='Every directive, every parameter, and every error code in this' reason='gate 4: every §4.1 directive used and every CXER code cited by code.cxd (parameters are not counted — see the report)']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=author match='Every example in this spec MUST be a fixture' reason='an obligation on the spec and corpus authors; no step extracts spec examples']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=step held-by=test-vcx-suite match='bindings (V/Python/Go) MUST pass the full conformance suite' reason='code_eval_fixtures_test.v grades code.cxd through the V binding; the Python and Go halves are not in this tree (see the report)']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=author match='Implementations **MUST NOT** mark a gate green by inspection' reason='an obligation on the release operator']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=step held-by=check-code-spec-consistency match='The set of bare referenced anchors **MUST** be' reason='gate 2 step 1: unresolved_refs']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=step held-by=check-code-spec-consistency match='Each numeric code **MUST** map to' reason='gate 2 step 2: error_code_conflicts']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=step held-by=check-code-spec-consistency match='The two sets **MUST** be equal' reason='gate 2 step 3: directive_set_diff']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=step held-by=check-code-spec-consistency match='This set **MUST** equal the §4.1 registry in this file' reason='gate 3: grammar_diff over [127e] ProgramDirName']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=step held-by=check-code-spec-consistency match='The program-AST section **MUST** define exactly' reason='gate 3: ast_diff against the six EXPECTED-AST-NODES']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=step held-by=check-code-spec-consistency match='Each **MUST** also appear in the Node type summary table' reason='gate 3: ast_diff missing_summary_rows']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=author match='Each remaining cell **MUST** have at least one fixture tagged' reason='an obligation on the corpus author; the 36 cells are program-matrix-001..036 (tagged composition-matrix, not resilience-matrix) and no step counts cells']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=step held-by=test match='The full `make test-program` target **MUST** pass' reason='make test-program does not exist; gates 4-9 run inside the make test composite (GATE_REGISTER rows 4-9)']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=step held-by=check-code-fixtures match='Every directive in §4 grammar **MUST** appear in the V dispatcher table' reason='no dispatcher-table tool exists; check-code-fixtures requires every §4.1 directive in a code.cxd fixture the V evaluator runs']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=step held-by=test-vcx-suite match='Each binding **MUST** observe the spec-mandated' reason='code_eval_fixtures_test.v grades every code.cxd fixture through the V binding; Python and Go are not in this tree']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=author match='backed by a parity-matrix row before the gate accepts the divergence' reason='an obligation on the gate operator and binding authors']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=no-lane issue='cx-home/cx-core-code#28' match='`cx diagram` invoked on a fixed manifest of sentinel fixtures' reason='a CLI byte-golden over svg/png/mermaid: no corpus lane runs cx diagram and web/cx-diagram/golden/ does not exist']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=no-lane issue='cx-home/cx-private#1763' match='Gate 9 (diagram round-trip) **MUST** also pass' reason='gate 9 is test-code-diagram plus the round-trip V tests, run by this target']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=author match='`CHANGELOG.md` **MUST** carry the release entry' reason='an obligation on the release author; release-verify checks only that CHANGELOG.md exists']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=no-lane issue='cx-home/cx-private#1763' match='The 99th-percentile compile time **MUST** be' reason='gate 14, a manual bench lane (GATE_REGISTER row 14)']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=no-lane issue='cx-home/cx-private#1763' match='The throughput **MUST** be ≥ 200 MB/s' reason='gate 15, a manual bench lane; RED today, tracked by #804 (GATE_REGISTER row 15)']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=no-lane issue='cx-home/cx-private#1763' match='Every measured shape **MUST** actually stream' reason='gate 15 checks each shape reports a streaming mode and delivers more than one chunk']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=step held-by=release-flow-gate match='refuse to bump, tag, or publish on a red gate' reason='the release flow document refuses before its pivot on a red gate (simulated and one real refused run); scripts/release.sh named here no longer exists']
+
+  [; ── the code ring: cx-core-code stdlib/*.md ── ]
+  [exempt file='cx-core-code/spec/03-approved/stdlib/hash.md' class=author
+    match='MUST be used when comparing hashes derived from secrets'
+    reason='an obligation on the program author choosing a comparison; equals itself is graded by hash-025..028']
+  [exempt file='cx-core-code/spec/03-approved/stdlib/re.md' class=author
+    match='callers MUST NOT rely on cache-hit timing'
+    reason='an obligation on callers; the cache is an internal optimization with no observable contract to grade']
+  [exempt file='cx-core-code/spec/03-approved/stdlib/oidc.md' class=no-lane issue='cx-home/cx-platform-sso#1'
+    match='if present it **MUST** equal the original'
+    reason='the §12.2 nonce continuity check runs only inside refresh, which needs a live token endpoint; test-sso-interop exercises the equal-nonce half only, and no corpus lane can feed a refreshed ID token offline']
+  [exempt file='cx-core-code/spec/03-approved/stdlib/oidc.md' class=no-lane issue='cx-home/cx-platform-sso#1'
+    match="the response's `sub` MUST equal the ID token's"
+    reason='the UserInfo sub check runs only inside userinfo, which needs a live userinfo endpoint; test-sso-interop exercises the matching-sub half only, and no corpus lane can feed a mismatched response offline']
+  [exempt file='cx-core-code/spec/03-approved/stdlib/supervise.md' class=step held-by=test-profile-gate
+    match='`start` MUST refuse rather than return one that silently never backs off'
+    reason='a no-sched build is a profile build; the profile gate probes supervise:start in the cx_no_pack_sched build and requires CXER5095 (profile_gate.v dependent_module_probe)']
+  [exempt file='cx-core-code/spec/03-approved/stdlib/tar.md' class=author match='MUST treat stored names as untrusted' reason='an obligation on an io-layer consumer writing entries to disk; the codec half of the sentence (names reported as-is, no traversal in the pure codec) is graded by tar-022']
+  [exempt file='cx-core-code/spec/03-approved/stdlib/zip.md' class=author match='MUST treat stored names as untrusted' reason='an obligation on an io-layer consumer writing entries to disk (zip-slip); the codec half of the sentence (names reported as-is) is graded by zip-035']
+  [exempt file='cx-core-code/spec/03-approved/core/code.md' class=quoted match='Per RFC 2119: **MUST**, **MUST NOT**' reason='the RFC 2119 definition of the keywords themselves, not a requirement']
+  [; ── SPECINV-1 second pass: the pages the first pass did not read ── ]
+  [exempt file='cx-core-data/spec/03-approved/core/schema.md' class=no-lane issue='cx-home/cx-core-data#24' match='| `:narrow` | a constraint tightened:' reason='cx schema compat is a CLI verb no corpus lane feeds and no make step calls; measured green (opt->req and a range shrink refuse class=narrow, exit 1)']
+  [exempt file='cx-core-data/spec/03-approved/core/schema.md' class=no-lane issue='cx-home/cx-core-data#24' match='| `:remove` | attribute / child element / type declaration removed |' reason='cx schema compat is a CLI verb no corpus lane feeds and no make step calls; measured green (a removed attribute refuses class=remove, exit 1; --allow-remove derives)']
+  [exempt file='cx-core-data/spec/03-approved/core/schema.md' class=no-lane issue='cx-home/cx-core-data#24' match='| `:reinterpret` | a declared type changed outside the join lattice;' reason='cx schema compat is a CLI verb no corpus lane feeds and no make step calls; measured green (int -> bool refuses class=reinterpret, exit 1, and --allow-remove does not rescue it)']
+  [exempt file='cx-core-code/spec/03-approved/core/codec.md' class=step held-by=libcx-abi-gate match='they are NEVER extended, and a newly registered codec earns ABI reach' reason='the frozen cx_X_to_Y families are C ABI symbols; libcx-abi-gate pins the cx_* export surface, so a new family member moves the pinned surface and reds']
+  [exempt file='cx-core-code/spec/03-approved/core/computation_identity.md' class=author match='any future one MUST iterate in canonical key order' reason='pre-registers a rule for a map-traversal surface the pure list does not yet carry; no implementation behaviour to grade (the code.md twin carries the same row; the map.md contradiction is cx-home/cx-core-code#33)']
+  [exempt file='cx-core-code/spec/03-approved/core/planar_algebra.md' class=step held-by=test-vcx-columnar match='the columnar and row execution paths MUST emit the identical shape' reason='the #711 shape-parity probe needs a columnar store (cxstore_columnar + Arrow): store_columnar_test.v test_columnar_query_pushdown asserts the columnar and row relations byte-identical; the flat provenance shape alone is store-020']
+  [exempt file='cx-core-code/spec/03-approved/core/security.md' class=step held-by=test-vcx-suite match='`=RESOURCE` suffix is REFUSED at every grant site rather than accepted and ignored' reason='the grant sites are the CLI flags and the ABI grant spec, which no corpus case can feed a refused spelling through (the runner refuses the case); cli_umbrella_test.v test_issue_1059_* pin the refusal']
+  [exempt file='cx-core-code/spec/03-approved/core/security.md' class=step held-by=test-vcx-suite match='a resource suffix on any OTHER capability (`--allow-env=NAME`, `--allow-subprocess=EXE`, …) is REFUSED at startup' reason='a startup refusal of the command line (exit 2 before any program runs); cli_umbrella_test.v test_issue_1059_* pin it; measured green for --allow-env=HOME and --allow-subprocess=ls']
+  [exempt file='cx-core-code/spec/03-approved/core/security.md' class=step held-by=test-vcx-suite match='where a scope the engine cannot ENFORCE is REFUSED at startup' reason='the same startup refusal of the grant surface (#1059), restated as the contrast to the deny side; cli_umbrella_test.v test_issue_1059_* pin it']
+]
