@@ -92,7 +92,7 @@
   [?for [in $i [$range 1 [$count $names]]]
     [= $y [+ $y0 [* [- $i 1] ROW-H]]]
     [yield [g class="pl-node"
-      [rect x=$x y=$y width=[$string BOX-W] height=[- ROW-H 4] fill=$fill stroke=$ink stroke-width="0.8"]
+      [rect x=$x y=$y width=$BOX-W height=[- ROW-H 4] fill=$fill stroke=$ink stroke-width="0.8"]
       [text x=[+ $x 8] y=[+ $y 13] font-family=[$rs:font] font-size="9" fill=$ink [$nth $names $i]]]]]]
 
 [?def leader scope=public ($x1 $y1 $x2 $y2 $stroke)
@@ -138,7 +138,7 @@
         [else [g [?splice [$column $pins $lx $y0 $ink $paper $faint]]]]]
       [; the repository itself, with its face below it ]
       [g class="pl-self"
-        [rect x=$cx y=$y0 width=[$string BOX-W] height=[- ROW-H 4] fill=$panel stroke=$accent stroke-width="1.6"]
+        [rect x=$cx y=$y0 width=$BOX-W height=[- ROW-H 4] fill=$panel stroke=$accent stroke-width="1.6"]
         [text x=[+ $cx 8] y=[+ $y0 13] font-family=[$rs:font] font-size="9.5" font-weight="600" fill=$ink $name]
         [?if [$empty $face]
           [then [text x=[+ $cx 8] y=[+ $y0 [+ ROW-H 13]] font-family=[$rs:font] font-size="8.5" font-style="italic" fill=$faint "no bundled module — see its row"]]
