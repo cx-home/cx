@@ -626,6 +626,11 @@ step_globs() {
     # and the static server are its own inputs. The Site workflow ran it alone
     # until #1758 — PLAY-3's reading change reached cxhome.org's build red.
     test-playground-primer)        echo "docs-src/* docs/* scripts/gen_site/* scripts/gen_guide/* scripts/gen_docs/* scripts/serve_static.cx scripts/wasm/* scripts/test_playground_primer.mjs scripts/playground-gate/* stdlib/* deps.cxd registry/* VERSION $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED" ;;
+    # the live-stamp step (RULED: DOCS-51 criterion 6; #1758) reads the live
+    # site and the public repository, not this tree's build: its inputs are
+    # its program and case table, the host (docs/CNAME) and the front door's
+    # name (the manifest's [site repo=]).
+    site-live-check)               echo 'scripts/site_live_check* docs/CNAME docs-src/site/manifest.cxd' ;;
     # test-binding-api-parity row RETIRED (RULED: RS-12, RS-8; #1591 item K3):
     # the four drivers under lang/<lang>/binding_api_driver/ left with their
     # binding repositories, and the target itself is gone from the Makefile.

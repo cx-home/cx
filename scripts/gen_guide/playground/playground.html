@@ -11,41 +11,62 @@
 <link rel="stylesheet" href="playground/playground.css">
 </head>
 <body class="cxp-body">
-<!-- PLAY-3 (amending PLAY-1/PLAY-2): one page. The toolbar carries the TWO
+<!-- PLAY-3 (amending PLAY-1/PLAY-2): one page. The page carries the TWO
      READINGS of the one bracketed syntax — data, code (RULED: PLAY-3; the
-     owner, 2026-10-01: no separate query grouping) — and the primer's
+     owner, 2026-10-01: no separate query grouping; the crumb names the one in
+     use, the disclosure below switches it) — and the primer's
      examples for the chosen reading — every one a conformance fixture,
      projected by primer_examples.cx, its id shown beside it. A code example
      that reads a document keeps it shown beside it, real, bound as $doc. -->
+<!-- SITE-3 (#1760 — the owner, 2026-10-02: "Very cluttered and difficult to
+     use in any orientation … Needs to be easy and simple to use"): the page
+     opens on ONE example — its source and its output — and one row of four
+     controls: the brand (back to the site), the picker, Run and the ONE
+     disclosure, `More`. Everything else — the search, the two readings,
+     Reset and Share, the output's CX/JSON/XML and Pretty, the fixture strip
+     and its verdict, the View pane (Tree/Graph, the diagram modes, zoom) and
+     the engine note — is behind it, and no row it opens holds more than
+     four. The reading stays one word in the crumb (PLAY-3: data or code). -->
 <header class="cxp-toolbar">
   <a class="cxp-brand" href="index.html" title="CX Guide">
     <svg viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
     <span>Playground</span>
   </a>
-  <span class="cxp-tabs cxp-readings" role="tablist" aria-label="Reading">
-    <button class="cxp-reading-tab" data-reading="data" type="button" role="tab"
-            title="Data: a document alone — the text IS the value, shown as CX, JSON and XML">Data</button>
-    <button class="cxp-reading-tab is-active" data-reading="code" type="button" role="tab"
-            title="Code: a program — evaluated, its value shown (an error is a value too); when it reads a document, shown real beside it, bound as $doc">Code</button>
-  </span>
-  <span class="cxp-search-wrap">
-    <input id="cxp-search" class="cxp-search" type="search" autocomplete="off"
-           placeholder="Search examples…"
-           aria-label="Full-text search over every offered example's id, title, source, output and reading"
-           title="Search every offered example's id, title, source, output and reading — try flow, for, sequence">
-    <ul id="cxp-search-results" class="cxp-search-results" hidden role="listbox"
-        aria-label="Search results"></ul>
-  </span>
   <select id="cxp-pick" aria-label="The primer's examples for this reading, by primer section"
           title="The primer's examples — each a conformance fixture. ← → previous/next example · ↑ ↓ previous/next section"></select>
-  <button id="cxp-prev" class="cxp-btn cxp-btn-icon" type="button" title="Previous example">◀</button>
-  <button id="cxp-next" class="cxp-btn cxp-btn-icon" type="button" title="Next example">▶</button>
   <button id="cxp-run"   class="cxp-btn cxp-btn-primary" type="button" disabled title="Run (Ctrl/⌘ + Enter)">Run</button>
-  <button id="cxp-reset" class="cxp-btn" type="button" title="Restore the example's own text">Reset</button>
-  <button id="cxp-share" class="cxp-btn" type="button" title="Copy a link that reopens exactly this text">Share</button>
+  <button id="cxp-more-toggle" class="cxp-btn cxp-more-toggle" type="button"
+          aria-expanded="false" aria-controls="cxp-more"
+          title="The search, the readings, Reset and Share, the output's formats, the fixture, the View pane and the engine">More</button>
   <span class="cxp-spacer"></span>
   <span id="cxp-crumb" class="cxp-crumb" aria-live="polite"></span>
 </header>
+<!-- The disclosure's own rows (the View pane, the output's formats and the
+     fixture strip open in place, in their panes). -->
+<div id="cxp-more" class="cxp-more" hidden>
+  <div class="cxp-more-row">
+    <span class="cxp-search-wrap">
+      <input id="cxp-search" class="cxp-search" type="search" autocomplete="off"
+             placeholder="Search examples…"
+             aria-label="Full-text search over every offered example's id, title, source, output and reading"
+             title="Search every offered example's id, title, source, output and reading — try flow, for, sequence">
+      <ul id="cxp-search-results" class="cxp-search-results" hidden role="listbox"
+          aria-label="Search results"></ul>
+    </span>
+    <button id="cxp-prev" class="cxp-btn cxp-btn-icon" type="button" title="Previous example">◀</button>
+    <button id="cxp-next" class="cxp-btn cxp-btn-icon" type="button" title="Next example">▶</button>
+  </div>
+  <div class="cxp-more-row">
+    <span class="cxp-tabs cxp-readings" role="tablist" aria-label="Reading">
+      <button class="cxp-reading-tab" data-reading="data" type="button" role="tab"
+              title="Data: a document alone — the text IS the value, shown as CX, JSON and XML">Data</button>
+      <button class="cxp-reading-tab is-active" data-reading="code" type="button" role="tab"
+              title="Code: a program — evaluated, its value shown (an error is a value too); when it reads a document, shown real beside it, bound as $doc">Code</button>
+    </span>
+    <button id="cxp-reset" class="cxp-btn" type="button" title="Restore the example's own text">Reset</button>
+    <button id="cxp-share" class="cxp-btn" type="button" title="Copy a link that reopens exactly this text">Share</button>
+  </div>
+</div>
 <main class="cxp-main">
   <div id="cxp-divider-col" class="cxp-divider cxp-divider-col" aria-hidden="true"></div>
   <div id="cxp-divider-row" class="cxp-divider cxp-divider-row" aria-hidden="true"></div>
@@ -114,7 +135,7 @@
         <button class="cxp-subject-tab"           data-subject="output" type="button">Output</button>
         <button class="cxp-subject-tab"           data-subject="all"    type="button">Both</button>
       </span>
-      <span class="cxp-spacer"></span>
+      <span class="cxp-break" aria-hidden="true"></span>
       <select id="cxp-detail-select" class="cxp-detail-select"
               aria-label="Detail level"
               title="Detail — how much each Tree row and Graph box shows: attributes, scalar bodies, values">
@@ -142,7 +163,7 @@
           <button class="cxp-gview-tab"           data-gview="instance" type="button" title="One box per element OCCURRENCE, from the parsed tree">Instance</button>
         </span>
         <span id="cxp-gkind" class="cxp-gkind" title="Which shape the Auto view inferred, and why"></span>
-        <span class="cxp-spacer"></span>
+        <span class="cxp-break" aria-hidden="true"></span>
         <button id="cxp-graph-zoom-out" class="cxp-mini-btn" type="button" title="Zoom out">−</button>
         <button id="cxp-graph-fit"      class="cxp-mini-btn" type="button" title="Reset zoom">⊙</button>
         <button id="cxp-graph-zoom-in"  class="cxp-mini-btn" type="button" title="Zoom in">+</button>

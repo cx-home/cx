@@ -20,6 +20,13 @@
 #   docs/install, docs/CNAME → the site root  (the README's installer; the
 #                                              custom-domain binding)
 #   (empty)                 → .nojekyll       (Pages serves the tree as is)
+#   (git rev-parse HEAD)    → stamp.txt       (the commit the site is built
+#                                              from: the Site run builds the
+#                                              public main, so the live stamp
+#                                              is the public main it serves —
+#                                              `make site-live-check` reads it,
+#                                              RULED: DOCS-51 criterion 6;
+#                                              #1758; `unknown` outside git)
 #
 # The playground's engine (docs/guide/wasm/, which `make guide` copies from
 # dist/wasm/ when it exists; emcc builds it: `make guide-wasm`) is declared in a
@@ -28,7 +35,7 @@
 # without it fails `--check` MISSING — and optional on a box with no emcc.
 # This program also says so whenever it assembles without it.
 #
-#   cx --allow-read --allow-write scripts/gen_site/site_assemble.cx          assemble
+#   cx --allow-read --allow-write --allow-subprocess scripts/gen_site/site_assemble.cx   assemble
 #   cx --allow-read --allow-write scripts/gen_site/site_assemble.cx --check  list it
 #   (or: make site; make site-check)
 #
@@ -56,6 +63,7 @@
 [?lib 'cx-stdlib/fp'      as=fp]
 [?lib 'cx-stdlib/path'    as=path]
 [?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
 
 # The raw-text reader the LLM layer uses for its own manifest (a [#…#] block is
 # opaque to [$text]; primer_build.cx serializes it and strips the delimiters).
@@ -127,6 +135,13 @@
   [?if [$io:exists $p] [then 0]
     [else [$die [$concat $p " is not there — " $how]]]]]
 
+# the commit this tree is (`git rev-parse HEAD`), `unknown` when git cannot
+# say: the site's stamp.txt.
+[?def stamp scope=public impure [returns string] ()
+  [?let [= $r [?else [$process:run ("git", "rev-parse", "HEAD") timeout-ms=30000] [none]]]
+        [= $s [$strings:trim [$string [?else $r@stdout ""]]]]
+    [?if [and [= [$string [?else $r@exit-code ""]] "0"] [= [$strings:length $s] 40]] [then $s] [else "unknown"]]]]
+
 [?def assemble scope=public impure ($out)
   [?let
     [= $_n1 [$need "docs/guide/index.html" "run `make guide` first (make site does)"]]
@@ -152,6 +167,7 @@
     [= $_r1 [$place $out "docs/install" "install"]]
     [= $_r2 [$place $out "docs/CNAME" "CNAME"]]
     [= $_nj [$io:write-file [$path:join $out ".nojekyll"] ""]]
+    [= $_st [$io:write-file [$path:join $out "stamp.txt"] [$concat [$stamp] "\n"]]]
     [= $wasm [?for [in $rel $guide] [where [$strings:starts-with $rel "wasm/"]] [yield 1]]]
     [= $_w [?if [$empty $wasm]
              [then [$cry [$concat "site_assemble: NOTE — no playground engine: docs/guide/wasm/ is absent "
@@ -160,7 +176,7 @@
              [else 0]]]
     [$say [$concat "site_assemble: " $out "/ — " [$string [$count $guide]] " guide files (index.html as guide.html), "
                    "the landing page, " [$string [$count $llm]] " llm/ files, the LLM door llm/index.html and the llms.txt pair at the root, "
-                   "the developer door dev/index.html, install, CNAME, .nojekyll"]]]]
+                   "the developer door dev/index.html, install, CNAME, .nojekyll, stamp.txt"]]]]
 
 # report: the shared verdict over a LISTING $have (a sequence of paths,
 # however it was obtained) against the manifest. $label names what $have is,

@@ -36,7 +36,9 @@ docs/guide/'s contents at the root, except the guide's own index.html, which
 becomes guide.html (the root's index.html is the landing page); docs/llm/ under
 llm/, with llms.txt and llms-full.txt copied to the root as well (D51d: the
 assembly step copies them, untracked); the dev/ door (dev/index.html); docs/install and
-docs/CNAME at the root; an empty .nojekyll.
+docs/CNAME at the root; an empty .nojekyll; stamp.txt, the commit the site was
+assembled from (`make site-live-check` compares the live one with the public
+main, RULED: DOCS-51 criterion 6; #1758).
 
 Adding a guide section, a stdlib module (its reference page is lib-<name>.html)
 or a docs/llm/ output adds its line here in the same change. A module renders
@@ -386,10 +388,12 @@ dev/index.html
 #]]
 
   [; the installer the README's one-liner fetches, the custom-domain binding,
-     and the marker that stops Pages running the tree through Jekyll ]
+     the marker that stops Pages running the tree through Jekyll, and the
+     stamp: the commit the site was assembled from ]
   [files from=root [#
 .nojekyll
 CNAME
 install
+stamp.txt
 #]]
 ]
