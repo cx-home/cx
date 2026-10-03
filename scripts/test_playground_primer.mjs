@@ -163,9 +163,20 @@ const READINGS = JSON.parse(await evalJs(`JSON.stringify(
   for (const r of READINGS) {
     if (!exampleReadings.includes(r)) fail(`the page's ${JSON.stringify(r)} reading tab holds no primer example`);
   }
+  // The page's "reads a document" rule (readsDoc, the document shown beside
+  // the program and bound as $doc) must agree with the fixture's OWN
+  // invocation: a code fixture graded as `cx --data=input.cx prog.cx` reads
+  // its document, one graded as `cx prog.cx` does not (#1758's reader).
+  for (const e of EXAMPLES.filter(x => x.reading !== 'data')) {
+    const invoked = /(^|\s)--data=/.test(e.cmd || '');
+    if (readsDoc(e) !== invoked) {
+      fail(`${e.id}: the page ${readsDoc(e) ? 'binds' : 'does not bind'} a document, but the fixture's invocation is ${JSON.stringify(e.cmd || '(none)')}`);
+    }
+  }
   if (failures.length === before) {
     const n = (r) => EXAMPLES.filter(e => e.reading === r).length;
-    console.log(`  ok   readings from the page: ${READINGS.map(r => `${r} (${n(r)})`).join(', ')}`);
+    const nd = EXAMPLES.filter(e => e.reading !== 'data' && readsDoc(e)).length;
+    console.log(`  ok   readings from the page: ${READINGS.map(r => `${r} (${n(r)})`).join(', ')}; ${nd} code fixture(s) read a document, each invoked with --data=`);
   }
 }
 
@@ -253,19 +264,34 @@ console.log(`  ok   readings: every example opened in its own reading with the e
 
 // (7) share-by-URL, from the link alone — from each reading the page has,
 // and from a code example that reads a document (both editors shown, both
-// texts in the link). `what` names the case; `pickBy` chooses the example.
-async function shareRoundTrip(what, r, pickBy, edit) {
+// texts in the link). Every shared text is MULTI-LINE and replaces what the
+// example held; the edited text is run BEFORE it is shared, and the link must
+// reopen the same reading, the same text in every editor that reading shows,
+// and the same ANSWER — a link that loses a line, an editor's edit or the
+// $doc binding answers differently (#1758's adversarial reader). `what`
+// names the case; `pickBy` chooses the example; `texts` holds the new
+// program and/or document.
+async function shareRoundTrip(what, r, pickBy, texts) {
   const first = EXAMPLES.find(e => e.reading === r && e.runnable !== false && !e.wasmUnsupported && pickBy(e));
   if (!first) { fail(`share (${what}): no runnable primer example to share from`); return; }
   if (!(await open(first))) return;
+  const before = failures.length;
+  // Edit, then run the edited text through the page's Run button: the
+  // answer the reader saw before sharing.
   const edited = await evalJs(`(() => {
     const p = document.getElementById('cxp-input'), d = document.getElementById('cxp-doc');
-    ${edit}
+    const t = ${JSON.stringify(texts)};
+    if (typeof t.prog === 'string') p.value = t.prog;
+    if (typeof t.doc === 'string') d.value = t.doc;
     p.dispatchEvent(new Event('input', { bubbles: true }));
     d.dispatchEvent(new Event('input', { bubbles: true }));
-    document.getElementById('cxp-share').click();
+    for (const k of ['cx', 'json', 'xml']) document.getElementById('cxp-out-' + k).querySelector('code').dataset.raw = '';
+    document.getElementById('cxp-run').click();
     return JSON.stringify({ prog: p.value, doc: d.value });
   })()`, 20000).then(JSON.parse);
+  const ran = await waitFor(s => s.cx !== '', `the edited text's answer (${what})`);
+  if (ran.cx === String(first.expected || '')) fail(`share (${what}): the edited text answers what the fixture records — the edits are not graded`);
+  await evalJs(`document.getElementById('cxp-share').click()`, 20000);
   const link = (await waitFor(s => /^#r=/.test(s.hash), `the share link (${what})`)).hash;
   // Reopen from the link alone: clear the panes, then hand the page the link.
   await evalJs(`(() => {
@@ -274,22 +300,30 @@ async function shareRoundTrip(what, r, pickBy, edit) {
     location.hash = ${JSON.stringify(link)};
   })()`, 20000);
   const s = await waitFor(s => s.hash === link && s.cx !== '', `the reopened link (${what})`);
-  const before = failures.length;
   const showsDoc = r === 'data' || readsDoc(first);
   const showsProg = r !== 'data';
   if (s.reading !== r) fail(`share (${what}): the link reopened the ${s.reading} reading`);
   if (s.docHidden !== !showsDoc || s.progHidden !== !showsProg) fail(`share (${what}): the reopened link shows document=${!s.docHidden} program=${!s.progHidden}`);
   if (showsProg && s.prog !== edited.prog) fail(`share (${what}): the program came back ${JSON.stringify(s.prog.slice(0, 80))}`);
   if (showsDoc && s.doc !== edited.doc) fail(`share (${what}): the document came back ${JSON.stringify(s.doc.slice(0, 80))}`);
-  if (failures.length === before) console.log(`  ok   share (${what}): a ${link.length}-char link reopens the same reading and text → ${s.cx.split('\n')[0].slice(0, 60)}`);
+  if (s.cx !== ran.cx) fail(`share (${what}): the reopened link answers ${JSON.stringify(s.cx.slice(0, 120))}, the shared text answered ${JSON.stringify(ran.cx.slice(0, 120))}`);
+  if (failures.length === before) console.log(`  ok   share (${what}): a ${link.length}-char link reopens the same reading, text and answer → ${s.cx.split('\n')[0].slice(0, 60)}`);
 }
+// Two users across three lines: a link that keeps only the first line, or
+// drops the document, answers differently.
+const SHARED_DOC = '[users\n  [user [name Ada] [email ada@x.org]]\n  [user [name Grace] [email grace@x.org]]]';
 for (const r of READINGS) {
   if (r === 'data') {
-    await shareRoundTrip('data', r, () => true, `d.value = '[users [user [name Ada] [email ada@x.org]]]';`);
+    await shareRoundTrip('data', r, () => true, { doc: SHARED_DOC });
   } else {
-    await shareRoundTrip(r, r, e => !readsDoc(e), `p.value = '[?let [= $x "é — ünïcode"] [shared text=$x n=[+ 40 2]]]';`);
+    await shareRoundTrip(r, r, e => !readsDoc(e),
+      { prog: '[?let [= $x "é — ünïcode"]\n  [shared text=$x\n          n=[+ 40 2]]]' });
     if (EXAMPLES.some(e => e.reading === r && readsDoc(e))) {
-      await shareRoundTrip(`${r} with its document`, r, readsDoc, `d.value = '[users [user [name Ada] [email ada@x.org]]]';`);
+      // BOTH editors edited: the program is not the fixture's, so a link
+      // that kept the fixture's program over the shared document answers
+      // differently too.
+      await shareRoundTrip(`${r} with its document`, r, readsDoc,
+        { prog: '[?for [user [name $n] [email $e]]\n  [yield [mail to=$e name=$n]]]', doc: SHARED_DOC });
     }
   }
 }

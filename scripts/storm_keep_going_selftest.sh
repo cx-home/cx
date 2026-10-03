@@ -127,6 +127,33 @@ else
 	bad B2 "the serial tail (test-profile-gate, test-vcx-timing, test-code-diagram, test-playground-primer) is not four lines after the storm, each filtered out of it"
 fi
 
+# B3 (#1758) — the tail can be neither swallowed nor dropped without a red:
+# each tail line re-raises its step's status (no leading `-`, no `|| true`/
+# `|| :`, its `exit $$cx_step_rc` kept); every tail step is a TEST_TARGETS
+# member (a step dropped from the union is not "in the tail"); and the
+# selection's SERIAL_TAIL (scripts/test_changed.sh) is exactly the storm's
+# filter-out set, so a selected post-merge run cannot put a tail step back
+# into the -j batch beside the steps it was moved away from.
+b3=""
+targets_line=$(grep -m1 '^TEST_TARGETS :=' "$MAKEFILE" | sed 's/^TEST_TARGETS := //')
+filtered=$(printf '%s\n' "$storm" | sed -n 's/.*filter-out \([^,]*\),.*/\1/p' | tr ' ' '\n' | grep . | LC_ALL=C sort | tr '\n' ' ')
+serial=$(sed -n "s/^SERIAL_TAIL='\(.*\)'$/\1/p" "$ROOT/scripts/test_changed.sh" | tr ' ' '\n' | grep . | LC_ALL=C sort | tr '\n' ' ')
+[ -n "$filtered" ] && [ "$filtered" = "$serial" ] || b3="$b3 [SERIAL_TAIL '$serial' != the storm's filter-out '$filtered']"
+for s in $filtered; do
+	case " $targets_line " in *" $s "*) ;; *) b3="$b3 [$s is not in TEST_TARGETS]" ;; esac
+	line=$(printf '%s\n' "$recipe" | grep -F "\$(MAKE) $s;" | head -1)
+	if [ -z "$line" ]; then b3="$b3 [$s has no tail line of the form \$(MAKE) $s; …]"; continue; fi
+	case "$line" in
+		"	-"*|"	@-"*|*"|| true"*|*"|| :"*) b3="$b3 [$s's tail line swallows its status]" ;;
+	esac
+	case "$line" in *'exit $$cx_step_rc'*) ;; *) b3="$b3 [$s's tail line does not re-raise its status]" ;; esac
+done
+if [ -z "$b3" ]; then
+	ok B3 "the tail is SERIAL_TAIL exactly, every member a TEST_TARGETS step, every line re-raising its status"
+else
+	bad B3 "$b3"
+fi
+
 # ── C — the selftest under the storm's own environment ──────────────────────
 # This is the row that would have caught it. The guard has to hold where it is
 # USED, and where it is used MAKEFLAGS carries `-k -j12 --output-sync`.
@@ -145,4 +172,4 @@ if [ "$fails" -ne 0 ]; then
 	echo "storm keep-going selftest: $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "storm keep-going selftest: 5/5 (planted -k runs past a red target and exits non-zero; the control without -k does not; the storm line carries -k; the serial tail is unchanged; and it holds under the storm's own MAKEFLAGS)"
+echo "storm keep-going selftest: 6/6 (planted -k runs past a red target and exits non-zero; the control without -k does not; the storm line carries -k; the serial tail is unchanged; the tail is SERIAL_TAIL, in TEST_TARGETS, never swallowed; and it holds under the storm's own MAKEFLAGS)"

@@ -1213,11 +1213,18 @@ test-playground-tree:
 # storm. A Chromium-family browser is its precondition (exit 2 when absent —
 # never a skip), as for test-site-phone-width. Every wait is bounded
 # (PRIMER_GATE_DEADLINE, default 600 s).
+#
+# SITE_WASM_LISTING (#1758): a step that re-assembles site/ after the engine
+# is built lists the tree it leaves with the engine REQUIRED — site-check's
+# listing under CX_SITE_REQUIRE_WASM=1, the one the Site workflow's docs flow
+# ran before this step re-assembled the tree it then uploads — so the
+# uploaded site/ is never one the required-wasm listing did not see.
+SITE_WASM_LISTING = CX_SITE_REQUIRE_WASM=1 "$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-read --allow-write --allow-env scripts/gen_site/site_assemble.cx --check
 PLAYGROUND_ROOT ?= site
 .PHONY: test-playground-primer
 test-playground-primer: build-vcx wasm-bundle-fresh
 	@if [ "$(PLAYGROUND_ROOT)" = docs/guide ]; then $(MAKE) --no-print-directory guide GUIDE_SKIP_CX_BUILD=1; fi
-	@if [ "$(PLAYGROUND_ROOT)" = site ]; then $(MAKE) --no-print-directory site GUIDE_SKIP_CX_BUILD=1; fi
+	@if [ "$(PLAYGROUND_ROOT)" = site ]; then $(MAKE) --no-print-directory site GUIDE_SKIP_CX_BUILD=1 && $(SITE_WASM_LISTING); fi
 	@CX_PLAYGROUND_ROOT="$(PLAYGROUND_ROOT)" node scripts/test_playground_primer.mjs
 
 # ── landing RUN gate (HOME-1, RULED: DOCS-51 §4, PLAY-1's on-load rule) ────────
@@ -1235,6 +1242,7 @@ test-playground-primer: build-vcx wasm-bundle-fresh
 .PHONY: test-landing-run
 test-landing-run: build-vcx wasm-bundle-fresh
 	@$(MAKE) --no-print-directory site GUIDE_SKIP_CX_BUILD=1
+	@$(SITE_WASM_LISTING)
 	@node scripts/test_landing_run.mjs
 
 # stdlib catalog drift gate — verifies the single invariant
