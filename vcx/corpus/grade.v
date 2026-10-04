@@ -474,6 +474,16 @@ pub fn excluded_packs() []string {
 	$if cx_no_pack_sched ? {
 		off << 'sched'
 	}
+	// `platform` (RULED: PNAT-1, fixtures.cxs `packs=`): the natives only the
+	// platform build composes — the store, audit, session and backend
+	// registrations a platform module's pure-CX surface calls into. A binary
+	// built without `-d cx_platform` (the embed and cli profiles) has none of
+	// them, so a case that declares `packs=platform` is skipped there BY NAME;
+	// grading it would answer E_NO_CALLABLE, which is the profile working,
+	// not the case failing. Read off the artifact like every pack above.
+	$if !cx_platform ? {
+		off << 'platform'
+	}
 	return off
 }
 
