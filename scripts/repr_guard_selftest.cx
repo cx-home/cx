@@ -24,13 +24,19 @@
 #                                                      green, exit 0, in bound
 #   C  every lane reads under its bound                green, exit 0, the PASS
 #      rows and the census lines printed, the corpora removed after
-#   D  the json lane reads over its pinned bound       red, exit 1, "exceeds the
-#      pinned bound 7.95x" (the GAUGE retry's text), the bound unchanged
+#   D  the json lane reads over its pinned bound       red, exit 3 (every
+#      failure a bound exceedance: the GAUGE retry class), "exceeds the pinned
+#      bound 7.95x" (the GAUGE retry's text), the bound unchanged
 #   E  a lane driver exits non-zero                    red, "driver exited
 #      non-zero", no bound-exceedance text (no retry class applies)
 #   F  a lane driver prints no measurement             red, "produced no
 #      parsable measurement"
 #   G  CX_REPR_KEEP=1                                  green, the corpora kept
+#   H  json reads over its bound AND xml stalls        red, exit 1, never 3: the
+#      stall is outside the retry class, so the re-measurement that could pass
+#      may not absorb it (REFUTE-1 r5)
+#   I  CX_REPR_LANE_DEADLINE_S=0 (or the build's)      red by name, exit 2, in
+#      bound: a reading with no deadline is the hang itself (REFUTE-1 r6)
 #
 # Run via:  cx --allow-read --allow-write --allow-subprocess --allow-env --allow-clock scripts/repr_guard_selftest.cx
 # (make repr-guard-selftest). Exit 0 and the count line only when every case holds.
@@ -68,9 +74,11 @@
 
 # one run of the driver: the planted lane driver, a corpus dir of its own.
 [?def drive scope=private impure [returns element] ($stub $corpus $keep)
+  [$drive-at $stub $corpus $keep '2' '1800']]
+[?def drive-at scope=private impure [returns element] ($stub $corpus $keep $lane-s $build-s)
   [$process:run [$driver-argv]
-                env={CX_REPR_BIN: $stub, CX_REPR_CORPUS_DIR: $corpus, CX_REPR_LANE_DEADLINE_S: '2',
-                     CX_REPR_RECORDS: '100', CX_REPR_KEEP: $keep}
+                env={CX_REPR_BIN: $stub, CX_REPR_CORPUS_DIR: $corpus, CX_REPR_LANE_DEADLINE_S: $lane-s,
+                     CX_REPR_BUILD_DEADLINE_S: $build-s, CX_REPR_RECORDS: '100', CX_REPR_KEEP: $keep}
                 timeout-ms=CASE-MS new-process-group=true]]
 
 [?def said scope=private pure [returns string] ($r) [$cat ([$string [?else $r@stdout '']], [$string [?else $r@stderr '']])]]
@@ -117,9 +125,9 @@
       # D — over the pinned bound
       [= $sd [$plant $root 'over' [$cat ('if [ "$1" = json ]; then\n', [$good-line '9.500'], '\nelse\n', [$good-line '7.000'], '\nfi')]]]
       [= $rd [$drive $sd [$cat ($root, '/corpus-d')] '0']]
-      [= $d [$judge 'D' [and [not [$hung $rd]] [= [$exit-of $rd] '1']
+      [= $d [$judge 'D' [and [not [$hung $rd]] [= [$exit-of $rd] '3']
                              [$has $rd 'bench/repr: FAIL — lane json live multiplier 9.500x exceeds the pinned bound 7.95x.']]
-                    'a reading over its pinned bound reds with the text the GAUGE retry greps, the bound unchanged' $rd]]
+                    'a reading over its pinned bound reds with exit 3 (the retry class) and the text the GAUGE retry greps, the bound unchanged' $rd]]
 
       # E — a lane driver exits non-zero
       [= $se [$plant $root 'nonzero' 'echo "repr: FATAL — planted" >&2\nexit 3']]
@@ -140,8 +148,24 @@
       [= $g [$judge 'G' [and [not [$hung $rg]] [= [$exit-of $rg] '0'] [$io:exists [$cat ($cg, '/json-100.corpus')]]]
                     'CX_REPR_KEEP=1 leaves the generated corpora on disk' $rg]]
 
+      # H — one lane over its bound, another stalled: never the retry class
+      [= $sh [$plant $root 'mixed' [$cat ('if [ "$1" = json ]; then\n', [$good-line '9.500'], '\nelif [ "$1" = xml ]; then\nsleep 90\nelse\n',
+                                          [$good-line '7.000'], '\nfi')]]]
+      [= $rh [$drive $sh [$cat ($root, '/corpus-h')] '0']]
+      [= $h [$judge 'H' [and [not [$hung $rh]] [= [$exit-of $rh] '1']
+                             [$has $rh 'bench/repr: FAIL — lane xml exceeded its 2 s deadline']
+                             [$has $rh 'exceeds the pinned bound 7.95x']]
+                    'a stall beside a bound exceedance reds with exit 1, outside the retry class, so no re-measurement absorbs the stall' $rh]]
+
+      # I — a zero deadline is no deadline: refused by name, never run
+      [= $ri [$drive-at $sh [$cat ($root, '/corpus-i')] '0' '0' '1800']]
+      [= $rj [$drive-at $sh [$cat ($root, '/corpus-j')] '0' '2' '0']]
+      [= $i [$judge 'I' [and [not [$hung $ri]] [= [$exit-of $ri] '2'] [$has $ri 'CX_REPR_LANE_DEADLINE_S']
+                             [not [$hung $rj]] [= [$exit-of $rj] '2'] [$has $rj 'CX_REPR_BUILD_DEADLINE_S']]
+                    'a deadline of 0 s (a reading or the build) is refused by name, never run without one' [?if [$hung $ri] [then $ri] [else $rj]]]]
+
       [= $_rm [$io:remove-tree $root]]
-      [= $all ($a, $b, $c, $d, $e, $f, $g)]
+      [= $all ($a, $b, $c, $d, $e, $f, $g, $h, $i)]
       [= $bad [?to-sequence [?for [in $x $all] [where [= [$name $x] 'bad']] [yield $x]]]]
       [= $_say [?to-sequence [?for [in $x $all]
                  [yield [$io:write-line [$env:stdout]
