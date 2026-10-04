@@ -704,8 +704,27 @@ if [ -z "$v_miss" ] && ! grep -q 'running the FULL step union' "$T/v"; then
 else
 	bad V "an infra-only change set: missing:${v_miss} — $(grep -m1 -E 'RUN:|nothing to run|FULL' "$T/v")"
 fi
+# ── W — a page docs-vocabulary-check's [tree] rows read selects it (the red head 87699b217) ──
+# docs-src/site/vocabulary.cxd's [tree] rows count the refused word in the
+# Makefile, flows/, scripts/**/*.cx and *.sh, spec/03-approved/ and the three
+# agent pages, but the step's row named only docs-src/ and its generators. Batch
+# H2 edited a comment of scripts/release_linux.sh, its pre-merge run (75 steps)
+# never selected the step, and the post-merge run went red on that comment. A
+# stripped scripts/*.sh and a changed spec page or agent page each select it.
+w_miss=""
+run_infra ledger/README.md scripts/release_linux.sh > "$T/w1"
+case " $(targets "$T/w1") " in *" docs-vocabulary-check "*) ;; *) w_miss="$w_miss scripts/release_linux.sh" ;; esac
+for p in spec/03-approved/process/delivery-grammar.md AGENTS.md flows/premerge.flow.cx; do
+	run "$p" > "$T/w2"
+	case " $(targets "$T/w2") " in *" docs-vocabulary-check "*) ;; *) w_miss="$w_miss $p" ;; esac
+done
+if [ -z "$w_miss" ] && ! grep -q 'running the FULL step union' "$T/w1"; then
+	ok W "a stripped scripts/*.sh, a spec page, an agent page and a flow document each select docs-vocabulary-check, whose [tree] rows read them"
+else
+	bad W "docs-vocabulary-check not selected by:${w_miss}"
+fi
 if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop step; P the vcx/corpus grading core selects the steps that run it; R the stripped scripts/ paths select their own rows; S every selected suite file is where the suite is; T a deleted test file is not named; U a page a pinned test reads by name selects it; V a change of one stripped scripts/ path selects its rows)"
+echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop step; P the vcx/corpus grading core selects the steps that run it; R the stripped scripts/ paths select their own rows; S every selected suite file is where the suite is; T a deleted test file is not named; U a page a pinned test reads by name selects it; V a change of one stripped scripts/ path selects its rows; W a page the vocabulary [tree] rows read selects docs-vocabulary-check)"
