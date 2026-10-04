@@ -97,6 +97,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1259-i` | [rulings_2026_09_09_section6_agreement_1259.md](rulings_2026_09_09_section6_agreement_1259.md) | 1259-i — the readers agree on MEMBERSHIP, not only on names |
 | `1261-a` | [rulings_2026_09_10_str_hole_quotes_1261.md](rulings_2026_09_10_str_hole_quotes_1261.md) | RULED: 1261-a — a `[?str]` hole is scanned to its matching brace, quotes inside it skipped |
 | `1262-a` | [rulings_2026_09_10_exists_over_a_node_1262.md](rulings_2026_09_10_exists_over_a_node_1262.md) | RULED: 1262-a — `[$exists]` keeps its content-arity meaning; the presence question is `present`, and the lint names the trap |
+| `1262-a` | [rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md](rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md) | FRST-1 — `first`, `last`, `head`, `tail` and `nth` read a single data element by content arity, the reading 1262-a gave `count`, `exists` and `empty`; code.md §6.3 names them beside it (Letter 181 = (b), the owner, 2026-10-04 ~04:3xZ: "1b") |
 | `1265-pb-1` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | Edit map (this wave, ruling-gated; `RULED: 1265-PB-1` on the commit) |
 | `1265-pb-1` | [rulings_2026_09_08_flow_serve_wf28.md](rulings_2026_09_08_flow_serve_wf28.md) | Ratified as a defect fix against `1265-PB-1`, no ruling needed |
 | `1265-pc-1` | [rulings_2026_09_04_flow_w1_map_scale_1265.md](rulings_2026_09_04_flow_w1_map_scale_1265.md) | Edit map (packet D, `RULED: 1265-PC-1`) |
@@ -612,6 +613,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `fmt-2` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | Integrator decisions, 2026-09-17 — the Ring 0 rulings owed (1363-b, 1387-a, FMT-2, GRADER-1, 1150-a, 1250-b) |
 | `fmt-2` | [rulings_2026_10_01_owner_decisions_l153_l156.md](rulings_2026_10_01_owner_decisions_l153_l156.md) | FMT-3 — FMT-2 gains the two break sites it lacks; a formatter places every comment it reads (L156 = (a); #1436) |
 | `fmt-3` | [rulings_2026_10_01_owner_decisions_l153_l156.md](rulings_2026_10_01_owner_decisions_l153_l156.md) | FMT-3 — FMT-2 gains the two break sites it lacks; a formatter places every comment it reads (L156 = (a); #1436) |
+| `frst-1` | [rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md](rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md) | FRST-1 — `first`, `last`, `head`, `tail` and `nth` read a single data element by content arity, the reading 1262-a gave `count`, `exists` and `empty`; code.md §6.3 names them beside it (Letter 181 = (b), the owner, 2026-10-04 ~04:3xZ: "1b") |
 | `fw-1` | [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) | RULED: FW-1, FW-2 — every named landing of `flow.md` lands in v0.18, end-user automation authoring (#1498) with it, and the v0.18.0 tag waits for them while the repo split lands (owner, 2026-09-24, in session on dev2) |
 | `fw-2` | [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) | RULED: FW-1, FW-2 — every named landing of `flow.md` lands in v0.18, end-user automation authoring (#1498) with it, and the v0.18.0 tag waits for them while the repo split lands (owner, 2026-09-24, in session on dev2) |
 | `ga-1` | [rulings_2026_08_20_guest_attach.md](rulings_2026_08_20_guest_attach.md) | Ruling GA-1 (2026-08-20) — attach-guest: the anonymous-floor transport (#857, owner "857a") |
@@ -675,6 +677,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `kit-5` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | KIT-5 — the binding's values are live |
 | `kit-6` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | Owner decisions 2026-09-26 — the four designs of Letters 26–29: the connector kit (KIT-1…KIT-6), cross-company (XCO-1…XCO-5), the minimal keystore (SEC-1), the host's four choices (HOST-1…HOST-4) |
 | `kit-6` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | KIT-6 — the design pages tell the truth |
+| `lbl-1` | [rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md](rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md) | LBL-1 — the `v0.18` label is the one truth of release membership; the milestone retires from open issues; every new issue is labelled at creation (the owner, 2026-10-04 ~05:1xZ) |
 | `lim-1` | [rulings_2026_08_20_limits_second_half.md](rulings_2026_08_20_limits_second_half.md) | 876 closes: LIM-1 (spec home) + LIM-2 (this ruling) cover both halves. |
 | `lim-1` | [rulings_2026_08_20_limits_spec.md](rulings_2026_08_20_limits_spec.md) | Ruling LIM-1 (2026-08-20) — limits spec home (#876, first half) |
 | `lim-2` | [rulings_2026_08_20_limits_second_half.md](rulings_2026_08_20_limits_second_half.md) | Ruling LIM-2 (2026-08-20) — no blanket caps; amplification is a gated property (#876 second half, owner "2a") |
@@ -703,6 +706,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `mss-7` | [rulings_2026_08_22_map_syntax_settlement.md](rulings_2026_08_22_map_syntax_settlement.md) | MSS-7 — the prefix family completes: `::T VALUE` types the value (RULED "1a", 2026-08-22, same day) |
 | `names-1` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | NAMES-1 — the names #1498 wave 2 chose get fixture-backed sentences (L66 = (a)) |
 | `ncnam-1` | [rulings_2026_09_30_owner_decisions_l115_l116.md](rulings_2026_09_30_owner_decisions_l115_l116.md) | NCNAM-1 — a computed attribute named `null`, `true` or `false` stays refused, CXER0236 (L115 = (a); #1699) |
+| `newb-1` | [rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md](rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md) | NEWB-1 — the newest bugs are scheduled first |
 | `nt-1` | [rulings_2026_08_26_diagram_nested_tables_1031.md](rulings_2026_08_26_diagram_nested_tables_1031.md) | NT-1 — the defect, and why `cd-label` was not the place to fix it |
 | `nt-10` | [rulings_2026_08_26_diagram_nested_tables_1031.md](rulings_2026_08_26_diagram_nested_tables_1031.md) | NT-10 — the visual pass is part of the deliverable |
 | `nt-2` | [rulings_2026_08_26_diagram_nested_tables_1031.md](rulings_2026_08_26_diagram_nested_tables_1031.md) | NT-2 — the form is a flowchart HTML label; #992's measurement is not re-litigated |
@@ -730,6 +734,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `org-1` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | Owner decisions 2026-09-27 — Letters 46–50 and the org profile: KIT-4's shape (KIT4-1…3), the #1498 spec gaps (AA-7…9), HOST-4's seed made real (SEED-1), the host act's basis (HOSTB-1), the call spread's readings (SPREAD-2), the org-profile push (ORG-1) |
 | `org-1` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | ORG-1 — the org-profile README is pushed (`go .github` = (a)) |
 | `over-1` | [rulings_2026_10_01_owner_decision_overage.md](rulings_2026_10_01_owner_decision_overage.md) | OVER-1 — a $100 extra-usage allowance, spent only against a stop that would lose running agents' context |
+| `over-2` | [rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md](rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md) | OVER-2 — tens of dollars past a window's fill are spent when the spend is smaller than what a stop would cost |
 | `pace-1` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | Owner decisions 2026-09-26 (evening) — Letters 35, 37, 38 and 39: the site token (SITE-1), the pace past the weekly meter (PACE-1), shared-slot steps beside a selected run (RUN-5), #1498 stays in v0.18 (SD-2) |
 | `pace-1` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | PACE-1 — the post-split epic crosses the weekly meter on extra usage (Letter 37 = (a), 23:1xZ) |
 | `pace-2` | [rulings_2026_09_27_owner_decisions_l41_l44.md](rulings_2026_09_27_owner_decisions_l41_l44.md) | Owner decisions 2026-09-27 — Letters 41–45: the call spread (SPREAD-1), the orders-db partial (ODB-1), R-1492 as graded (BEX-1), the bus audit subject (BUS-1), no new agents (PACE-2) |
@@ -955,6 +960,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `sync-9` | [rulings_2026_09_27_owner_decisions_l55.md](rulings_2026_09_27_owner_decisions_l55.md) | SYNC-9 — two waves (L55.9 = (a)) |
 | `synct-1` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | SYNCT-1 — SYNC wave 2a's four choices get sentences in their sections (L67 = (a)) |
 | `ta-1` | [rulings_2026_08_21_surface_closeout.md](rulings_2026_08_21_surface_closeout.md) | TA-1 — the type annotation is GLUED, and the reader enforces it (#911) |
+| `tail-1` | [rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md](rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md) | TAIL-1 — #804, #1321 and #1008 join v0.18 as a sub-epic near the tail of the close-out; #1125 joins the release at prio:medium (the owner, 2026-10-04 ~04:4xZ) |
 | `td-1` | [rulings_2026_08_26_playground_tree_detail_1001.md](rulings_2026_08_26_playground_tree_detail_1001.md) | TD-1 — the defect, restated as measured |
 | `td-2` | [rulings_2026_08_26_playground_tree_detail_1001.md](rulings_2026_08_26_playground_tree_detail_1001.md) | TD-2 — the fix reads the contract THROUGH the function the tables already use |
 | `td-3` | [rulings_2026_08_26_playground_tree_detail_1001.md](rulings_2026_08_26_playground_tree_detail_1001.md) | TD-3 — the trade-off the issue raised is DECLINED, and paid for instead |
@@ -1493,7 +1499,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pq-4a` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) |
 | `pq-5a` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) |
 | `pq-9a` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) |
-| `prop-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md), [rulings_2026_10_03_owner_decision_l175.md](rulings_2026_10_03_owner_decision_l175.md) |
+| `prop-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md), [rulings_2026_10_03_owner_decision_l175.md](rulings_2026_10_03_owner_decision_l175.md), [rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md](rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md) |
 | `readr-1` | [rulings_2026_10_01_owner_decision_l160.md](rulings_2026_10_01_owner_decision_l160.md), [rulings_2026_10_01_owner_decision_overage.md](rulings_2026_10_01_owner_decision_overage.md) |
 | `refr-1` | [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md) |
 | `refute-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md), [rulings_2026_10_03_owner_decision_l175.md](rulings_2026_10_03_owner_decision_l175.md), [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md) |
@@ -1583,4 +1589,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*381 ledger pages; 844 ids declared, 402 cited only.*
+*382 ledger pages; 849 ids declared, 402 cited only.*
