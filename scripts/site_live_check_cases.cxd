@@ -15,7 +15,7 @@
 #   now      the moment of the reading (RFC 3339);
 #   ok       the verdict; `why` a substring its reason must carry.
 # P below is the public main, S an older build.
-[cases expectations=24
+[cases expectations=28
   [case id=stamp-equal ok=true why='live: the stamp is the public main'
         stamp='4d499e603f55f7bf0e6534bee0aba3a339ea6a73' lm='' maxage='600'
         public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73' run='unread' prev='' now='2026-10-03T07:00:00Z']
@@ -116,4 +116,24 @@
   [case id=gh-completed-no-conclusion ok=false why='cannot read'
         stamp='cd90b622e7fe3777982e09a09e39223f2b3c1e75' lm='' maxage='600'
         public='0d55a442a06a4799a4d6630363dd272aba3051cc'
-        run='completed  2026-10-04T01:50:26Z 2026-10-04T02:20:00Z' prev='1873' now='2026-10-04T02:21:00Z']]
+        run='completed  2026-10-04T01:50:26Z 2026-10-04T02:20:00Z' prev='1873' now='2026-10-04T02:21:00Z']
+  [; the adversarial reader's REDs on #1770 (REFUTE-1 r12, r13, r17, r18): a
+     reading of any other shape than '<status> <conclusion> <createdAt>
+     <updatedAt>' (or the in-flight three words) is unreadable, never "no Site
+     run" and never deploying; an in-flight run carrying a conclusion is too ]
+  [case id=gh-five-words ok=false why='cannot read'
+        stamp='cd90b622e7fe3777982e09a09e39223f2b3c1e75' lm='' maxage='600'
+        public='0d55a442a06a4799a4d6630363dd272aba3051cc'
+        run='in_progress - 2026-10-04T01:50:26Z 2026-10-04T01:50:32Z extra' prev='1873' now='2026-10-04T02:00:00Z']
+  [case id=gh-in-flight-concluded ok=false why='cannot read'
+        stamp='cd90b622e7fe3777982e09a09e39223f2b3c1e75' lm='' maxage='600'
+        public='0d55a442a06a4799a4d6630363dd272aba3051cc'
+        run='in_progress failure 2026-10-04T01:50:26Z 2026-10-04T01:50:32Z' prev='1873' now='2026-10-04T02:00:00Z']
+  [case id=gh-two-words ok=false why='cannot read'
+        stamp='cd90b622e7fe3777982e09a09e39223f2b3c1e75' lm='' maxage='600'
+        public='0d55a442a06a4799a4d6630363dd272aba3051cc'
+        run='in_progress 2026-10-04T01:50:26Z' prev='1873' now='2026-10-04T02:00:00Z']
+  [case id=gh-completed-three-words ok=false why='cannot read'
+        stamp='cd90b622e7fe3777982e09a09e39223f2b3c1e75' lm='' maxage='600'
+        public='0d55a442a06a4799a4d6630363dd272aba3051cc'
+        run='completed success 2026-10-04T01:50:26Z' prev='1873' now='2026-10-04T02:30:00Z']]
