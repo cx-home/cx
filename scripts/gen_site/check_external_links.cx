@@ -1,5 +1,5 @@
 # scripts/gen_site/check_external_links.cx — every external link of cxhome.org,
-# fetched once (RULED: DOCS-45, CXF-1).
+# fetched (RULED: DOCS-45, CXF-1; #1778 FIX-1).
 #
 # `make site-check` (site_assemble.cx --check) resolves every INTERNAL link
 # against the assembled tree; this step is the other half of "make sure all
@@ -8,7 +8,11 @@
 # cx-stdlib/http-client, and refuses the run on any that does not answer. A
 # response is an answer when its status is below 400 (a redirect is followed
 # by the client); a 403 or 405 to a HEAD is retried as a GET, since some hosts
-# refuse HEAD on principle.
+# refuse HEAD on principle. A request that fails in TRANSPORT (no route, a
+# refused or timed-out connection: an error code, not a status) is tried
+# again, three tries with a 2 s then 5 s pause, and a URL that never answers
+# is UNREACHABLE, named apart from a DEAD one (#1778). `--self-test` grades
+# the decision offline on check_external_links_cases.cxd.
 #
 # docs-src/site/links.cxd is the allowlist: `[skip host=]` rows are hosts the
 # step does not fetch, `[expect url= status=]` rows are URLs whose answer is
@@ -123,16 +127,30 @@
 # fetch-tries: the answer after up to TRIES tries — $fetch is called with the
 # URL and the try's number; $wait says whether to back off between tries (the
 # self-test plants the answers and does not wait).
-[?const TRIES 1]
+[?const TRIES 3]
+
+# backoff: the pause after a failed try — 2 s after the first, 5 s after the
+# second ([?sleep] takes a duration literal). Short: a GitHub hiccup on the
+# runner (#1778) clears in seconds, and a host that is down stays down.
+[?def backoff scope=public impure ($n)
+  [?if [= $n 1] [then [?sleep 2s]] [else [?sleep 5s]]]]
+
 [?def fetch-tries scope=public impure ($u $fetch $wait $n)
   [?let [= $s [$fetch $u $n]]
-    [ans status=$s tries=$n]]]
+    [?if [and [$transport $s] [< $n TRIES]]
+      [then [?let [= $_w [?if $wait [then [$backoff $n]] [else ()]]]
+              [$fetch-tries $u $fetch $wait [+ $n 1]]]]
+      [else [ans status=$s tries=$n]]]]]
 
-# verdict: ok, or DEAD.
+# verdict: ok (answered, or answered what a row expects); UNREACHABLE (the
+# last try still failed in transport — no status to judge, so no row can
+# accept it); DEAD (a status that is no answer, 404, 410, 503 …).
 [?def verdict scope=public ($status $expected)
-  [?if [or [$answered $status] [and [not [= $expected ""]] [= $expected $status]]]
-    [then "ok"]
-    [else "DEAD"]]]
+  [?if [$transport $status]
+    [then "UNREACHABLE"]
+    [else [?if [or [$answered $status] [and [not [= $expected ""]] [= $expected $status]]]
+            [then "ok"]
+            [else "DEAD"]]]]]
 
 # ── the self-test (#1778): the case table, offline ───────────────────────
 
