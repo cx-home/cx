@@ -64,4 +64,20 @@ want='' is a case the gate passes.
     [component repo=cx-platform-flow '[{"number": 9, "created_at": "2026-09-01T00:00:00Z", "title": "later", "labels": [], "milestone": null}]']]
   [case id=c-pull-request-skipped want=''
     [component repo=cx-platform-xap '[{"number": 13, "created_at": "2026-09-01T00:00:00Z", "title": "a PR", "labels": [], "milestone": null, "pull_request": {"url": "u"}}]']]
+
+  [; REFUTE-1 of batch H4: a time the gate cannot read is judged, never
+     skipped; an empty milestone object is a milestone; null labels are none;
+     an exclusion row that names no number excludes nothing and is refused. ]
+  [case id=a-created-at-null want='a:cx-private#1796'
+    [private '[{"number": 1796, "created_at": null, "title": "x", "labels": [], "milestone": null}]']]
+  [case id=a-created-at-missing want='a:cx-private#1797'
+    [private '[{"number": 1797, "title": "x", "labels": [], "milestone": null}]']]
+  [case id=a-created-at-offset want='a:cx-private#1798'
+    [private '[{"number": 1798, "created_at": "2026-10-03T01:00:00+02:00", "title": "x", "labels": [], "milestone": null}]']]
+  [case id=a-labels-null want='a:cx-private#1799'
+    [private '[{"number": 1799, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": null, "milestone": null}]']]
+  [case id=b-milestone-empty-object want='b:cx-private#1800'
+    [private '[{"number": 1800, "created_at": "2026-09-01T00:00:00Z", "title": "x", "labels": [{"name": "v7.7"}], "milestone": {}}]']]
+  [case id=register-row-without-number want='register:cx-private#?'
+    [register [exclude repo=cx-private why='a reason, but for no issue']]]
 ]
