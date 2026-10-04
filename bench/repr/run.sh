@@ -23,8 +23,10 @@ set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 HERE="$REPO/bench/repr"
 BUILD="$HERE/.build"
-CORPUS="$HERE/_corpus"
-BIN="$BUILD/repr"
+CORPUS="${CX_REPR_CORPUS_DIR:-$HERE/_corpus}"
+# CX_REPR_BIN — a planted lane driver for scripts/repr_guard_selftest.cx (#1766);
+# the build is skipped for it.
+BIN="${CX_REPR_BIN:-$BUILD/repr}"
 RECORDS="${CX_REPR_RECORDS:-32000}"
 
 # ── the ratchet ─────────────────────────────────────────────────────────────
@@ -130,6 +132,9 @@ if [[ ! -x "$BIN" ]]; then
   stale=1
 elif [[ ! -f "$STAMP" || "$(cat "$STAMP")" != "$inputs_hash" ]]; then
   stale=1
+fi
+if [[ -n "${CX_REPR_BIN:-}" ]]; then
+  stale=0
 fi
 if [[ "$stale" == "1" ]]; then
   echo "bench/repr: building the driver (v -gc e -prod over the cx module)…"

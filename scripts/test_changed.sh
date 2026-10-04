@@ -549,6 +549,8 @@ step_globs() {
     # bench/repr (#1119 W1) compiles the `cx` module as SOURCE and measures the
     # live tree it builds, so it depends on Ring 0 and on nothing above it.
     repr-guard)                    echo 'vcx/cx/* vcx/v.mod third_party/* bench/repr/*' ;;
+    # #1766: the driver's verdicts on planted lane drivers — the driver and the cases.
+    repr-guard-selftest)           echo 'bench/repr/* scripts/repr_guard_selftest.cx' ;;
     # the in-module Ring-0 test roster guard (#1209) reads the Makefile roster
     # and the vcx/cx test files it must account for.
     check-inmodule-test-roster)    echo 'Makefile vcx/cx/* registry/repos.cxd' ;;
