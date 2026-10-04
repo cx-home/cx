@@ -29,8 +29,11 @@
 #
 # Run (from the repository root):
 #   cx --allow-read --allow-write --allow-env --allow-subprocess scripts/issue_label_gate.cx [--self-test]
-# Exit: 0 nothing refused; 1 a refusal (each named, with its title); 2 a read
-# that failed.
+# Exit: 0 nothing refused; 1 a refusal (each named on stdout, the step's log,
+# with why and the issue's title; a count on stderr); 2 a read that failed --
+# the ENVIRONMENT (no gh, no auth, no network, an answer that is not one),
+# printed as its own sentence on both streams, never a label refusal. Under
+# make either red shows as make's exit 2: the printed sentence says which.
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
@@ -130,14 +133,38 @@
     [?to-array [?for [in $xs ($bad-rows, $a, $b, $c)] [in $x $xs] [where [not [= [$string $x] ""]]] [yield $x]]]]]
 
 # ── what is printed ──────────────────────────────────────────────────────
-# refusal-line: the line one refusal key prints (the case table's [line]
-# rows grade it).
+# Refusals go to stdout, the step's log, which the flow's red message tails
+# (run4 of batch H4 printed them on stderr alone and its tail named none),
+# and a count goes to stderr. A read that failed is printed on both.
+#
+# find-issue: the issue <repo>#<n> of the answers read, or null.
+[?def find-issue scope=public ($repo $n $private $components)
+  [?let [= $pool [?if [= $repo HOME] [then $private]
+                   [else [?for [in $p $components] [where [= [$string [$map:get $p "repo"]] $repo]]
+                           [in $i [$map:get $p "issues"]] [yield $i]]]]]
+        [= $hits [?for [in $i $pool] [where [= [$num $i] $n]] [yield $i]]]
+    [?if [$empty $hits] [then null] [else [$first $hits]]]]]
+# refusal-line: the line one refusal key prints -- the key, why, and the
+# issue's title (the case table's [line] rows grade it).
 [?def refusal-line scope=public ($release $key $private $components)
-  [$concat "issue-label-gate: REFUSED " $key]]
-# read-line: the line a read that failed prints, exit 2 (the case table's
-# [read-case] rows grade it).
+  [?let [= $m [$re:find [$re:compile "^(a|b|c|register):([^#]*)#(.*)$"] $key]]
+    [?match $m
+      [case [no-match] [$concat "issue-label-gate: REFUSED " $key]]
+      [else [?let [= $kind [$re:group $m 1]] [= $repo [$re:group $m 2]] [= $n [$re:group $m 3]]
+                  [= $i [$find-issue $repo $n $private $components]]
+                  [= $t [?if [or [= $kind "register"] [= [$string $i] "null"]] [then ""] [else [$concat ": '" [$title $i] "'"]]]]
+                  [= $why [?match $kind
+                            [case "a" [$concat "created " [$string [?else [$map:get $i "created_at"] "(no date)"]]
+                                               " without the label " $release]]
+                            [case "b" [$concat "on the milestone '" [$milestone $i] "', which no [parking] row names"]]
+                            [case "c" [$concat "the title does not start with '" $release " '"]]
+                            [else [$concat "a row of " REGISTER " without a why= or a number=; it excludes nothing"]]]]
+              [$concat "issue-label-gate: REFUSED " $key " -- " $why $t]]]]]]
+# read-line: the line a read that failed prints, exit 2 -- the environment,
+# never a label refusal (the case table's [read-case] rows grade it).
 [?def read-line scope=public ($repo $why)
-  [$concat "issue-label-gate: REFUSED -- the open issues of " $repo " could not be read: " $why]]
+  [$concat "issue-label-gate: ENVIRONMENT -- the open issues of " $repo " could not be read (" $why
+           "); nothing was judged, this is not a label refusal (exit 2)"]]
 
 
 # ── the self-test (offline) ──────────────────────────────────────────────
@@ -192,7 +219,7 @@
   ('gh', 'api', '--paginate', '--slurp', [$concat "repos/" ORG "/" $repo "/issues?state=open&per_page=100"])]
 # refuse-read: exit 2 naming the repository and why its answer is not one.
 [?def refuse-read scope=public impure ($repo $why)
-  [?let [= $_c [$cry [$read-line $repo $why]]] [$env:exit 2]]]
+  [?let [= $line [$read-line $repo $why]] [= $_o [$say $line]] [= $_c [$cry $line]] [$env:exit 2]]]
 [?def fetch scope=public impure ($repo)
   [?let [= $r [$process:run [$gh-argv $repo]]]
     [?match $r
@@ -221,7 +248,9 @@
   [= $private [$fetch HOME]]
   [= $components [?for [in $n $names] [yield {repo: $n, issues: [$fetch $n]}]]]
   [= $keys [?to-array [$judge $release CUTOFF $reg $private $components]]]
-  [= $_r [?for [in $k $keys] [yield [$cry [$refusal-line $release $k $private $components]]]]]
+  [= $_r [?for [in $k $keys] [yield [$say [$refusal-line $release $k $private $components]]]]]
+  [= $_n [?if [$empty $keys] [then ()]
+           [else [$cry [$concat "issue-label-gate: " [$string [$count $keys]] " refusal(s), each named on stdout -- a label refusal (exit 1)"]]]]]
   [= $stale [?for [in $x $reg/exclude]
               [where [= [$attr $x "repo" ""] HOME]]
               [where [not [$member [?for [in $i $private] [yield [$num $i]]] [$attr $x "number" ""]]]]
