@@ -307,7 +307,7 @@
     "35-cast-float-int": {
       label: "[35] [cast] \u2014 float to int REFUSES (L44)",
       input: "[cast 3.7 :int]",
-      note:  "**Introduces:** the L44 exact lane. `[cast]` does **not** truncate \u2014 silent truncation was removed deliberately, so a non-integral decimal is a refusal: `cx-err:CXER0290` \"decimal `3.7` is not integral\". Ask for the rounding you mean instead: `[$round 3.7]` \u2192 `4`, `[$floor 3.7]` \u2192 `3`, `[$ceiling 3.2]` \u2192 `4` (example 77).",
+      note:  "**Introduces:** L44's exact arithmetic. `[cast]` does **not** truncate \u2014 silent truncation was removed deliberately, so a non-integral decimal is a refusal: `cx-err:CXER0290` \"decimal `3.7` is not integral\". Ask for the rounding you mean instead: `[$round 3.7]` \u2192 `4`, `[$floor 3.7]` \u2192 `3`, `[$ceiling 3.2]` \u2192 `4` (example 77).",
       tags:  ["builtin", "cast", "in"],
       section: "data/numbers",
       runnable: true,
@@ -1322,7 +1322,7 @@
     "161-sequence-worker-top": {
       label: "[161] Sequence diagram \u2014 top-level `[?worker]`",
       input: "[?worker name=\"task\"\n  [?let [= $_ [?sleep 100ms mock]]\n    [ok value=\"done\"]]]",
-      note:  "**Pattern:** background task as program entry-point. **Diagram:** because the program is sequence-shaped the emitter switches to Mermaid `sequenceDiagram` instead of `flowchart TD` (per spec/code.md \u00a710.1.2). The worker becomes an actor lane with its body events as messages along that lane. A trigger reached through a `[?let]` binding counts too \u2014 `[?let [= $w [?worker \u2026]] \u2026]` is still a sequence, since the binding only aliases the lane (examples 171-172 are that shape).",
+      note:  "**Pattern:** background task as program entry-point. **Diagram:** because the program is sequence-shaped the emitter switches to Mermaid `sequenceDiagram` instead of `flowchart TD` (per spec/code.md \u00a710.1.2). The worker becomes an actor lifeline with its body events as messages along that lifeline. A trigger reached through a `[?let]` binding counts too \u2014 `[?let [= $w [?worker \u2026]] \u2026]` is still a sequence, since the binding only aliases the lifeline (examples 171-172 are that shape).",
       tags:  ["eq", "let", "mock", "sleep", "worker"],
       section: "code/diagrams",
       runnable: true,
@@ -1629,7 +1629,7 @@
     "199-exact-int-division": {
       label: "[199] Exact int division past 2\u2075\u00b3",
       input: "[$idiv 9007199254740993 3]",
-      note:  "**Introduces:** the exact integer lane. `9007199254740993` is 2\u2075\u00b3+1 \u2014 the first integer a float64 cannot represent \u2014 and `[$idiv]` answers `3002399751580331` exactly, because it computes in i64 and never routes through f64. A language that quietly promoted this to a float would be off by one and say nothing.",
+      note:  "**Introduces:** exact integer arithmetic. `9007199254740993` is 2\u2075\u00b3+1 \u2014 the first integer a float64 cannot represent \u2014 and `[$idiv]` answers `3002399751580331` exactly, because it computes in i64 and never routes through f64. A language that quietly promoted this to a float would be off by one and say nothing.",
       tags:  [],
       section: "data/numbers",
       runnable: true,
@@ -1778,10 +1778,10 @@
       section: "code/functions",
       runnable: true,
     },
-    "218-exact-numeric-lane": {
-      label: "[218] the exact lane \u2014 `$idiv`, `%`, `$avg` over decimals, an all-int `/` chain",
+    "218-exact-numeric": {
+      label: "[218] exact arithmetic \u2014 `$idiv`, `%`, `$avg` over decimals, an all-int `/` chain",
       input: "[readings [exact [$idiv 7 2]] [rem [% 7 2]] [mean [$avg (1.5, 2.5)]] [chain [/ 12 3 2]]]",
-      note:  "**Introduces:** the exact numeric lane (code.md \u00a76.5). Integers are i64 and CHECKED; `$idiv` and `%` are the integer pair; `$avg` over decimals stays decimal (`2.00`, scale preserved); an all-int `/` chain `[/ 12 3 2]` folds exactly in i64 \u2192 `2`. Nothing here passes through a float.",
+      note:  "**Introduces:** exact numeric arithmetic (code.md \u00a76.5). Integers are i64 and CHECKED; `$idiv` and `%` are the integer pair; `$avg` over decimals stays decimal (`2.00`, scale preserved); an all-int `/` chain `[/ 12 3 2]` folds exactly in i64 \u2192 `2`. Nothing here passes through a float.",
       tags:  ["builtin", "div", "rem"],
       section: "data/numbers",
       runnable: true,
@@ -1789,7 +1789,7 @@
     "219-non-terminating-division-refuses-by-name": {
       label: "[219] `[$div 1.0 3.0]` refuses \u2014 an exact result does not exist",
       input: "[?lib 'cx-stdlib/math' :as math]\n[divisions\n  [exact [?fallback recover-with=[refused code=$err@code] body=[$div 1.0 3.0]]]\n  [rounded [$math:div-decimal 1.0 3.0 {precision: 2 mode: :half-up}]]\n  [float [/ 1 3]]]",
-      note:  "**Introduces:** the refusal side of the exact lane, and the two ways to ask properly. `1.0 / 3.0` has no terminating decimal, so `$div` REFUSES BY NAME (`CXER3002`) rather than inventing a precision \u2014 here the refusal is caught as a value and only its code is shown. `[$math:div-decimal a b {precision: N mode: :half-up}]` from `cx-stdlib/math` supplies the rounding context and answers `0.33`; `[/ 1 3]` on integers takes the float lane and answers the nearest double. Three spellings, three different contracts, each visible in the output.",
+      note:  "**Introduces:** the refusal side of exact arithmetic, and the two ways to ask properly. `1.0 / 3.0` has no terminating decimal, so `$div` REFUSES BY NAME (`CXER3002`) rather than inventing a precision \u2014 here the refusal is caught as a value and only its code is shown. `[$math:div-decimal a b {precision: N mode: :half-up}]` from `cx-stdlib/math` supplies the rounding context and answers `0.33`; `[/ 1 3]` on integers takes the float path and answers the nearest double. Three spellings, three different contracts, each visible in the output.",
       tags:  ["attr", "div", "fallback", "lib"],
       section: "data/numbers",
       runnable: true,
@@ -2032,7 +2032,7 @@
     "249-walk-a-tree-and-filter-by-extension": {
       label: "[249] walk a directory tree, keep one extension",
       input: "[?lib 'cx-stdlib/io']\n[?lib 'cx-stdlib/path']\n[?let [= $dir [$io:temp-dir 'cx-play-']]\n      [= $sub [$path:join $dir 'src']]\n      [= $mk [$io:make-dirs $sub]]\n      [= $w1 [$io:write-file [$path:join $dir 'readme.md'] 'x']]\n      [= $w2 [$io:write-file [$path:join $sub 'main.cx'] 'x']]\n      [= $w3 [$io:write-file [$path:join $sub 'util.cx'] 'x']]\n      [= $found [?for [in $e [$io:walk $dir]]\n                  [where $e@is-file]\n                  [where [= [$path:extension [$string $e@path]] '.cx']]\n                  [yield [$path:relative $dir [$string $e@path]]]]]\n      [= $rm [$io:remove-tree $dir]]\n  [cx-files [?splice [$sort $found]]]]",
-      note:  "**Introduces:** `[$io:walk ROOT]` (io.md \u00a73.6) \u2014 a LAZY iterator yielding one `[dir-entry path=\u2026 is-file=\u2026 is-directory=\u2026 depth=\u2026]` element per entry, so the filter is an ordinary `[?for]` with `[where]` clauses and no callback, no `os.walk` triple to unpack. Because the walk is lazy, a `[where]` that short-circuits or a `[take N]` stops the traversal instead of materializing the tree first. The result is made deterministic on purpose: the paths are reported relative to the root with `[$path:relative]` and `[$sort]`ed, so the answer cannot depend on the directory's on-disk order or on where the temp directory landed.",
+      note:  "**Introduces:** `[$io:walk ROOT]` (io.md \u00a73.6) \u2014 a LAZY iterator yielding one `[dir-entry path=\u2026 is-file=\u2026 is-directory=\u2026 depth=\u2026]` element per entry, so the filter is an ordinary `[?for]` with `[where]` clauses and no callback, no `os.walk` triple to unpack. Because the walk is lazy, a `[where]` that short-circuits or a `[take N]` stops the traversal instead of materializing the tree first. The result is made deterministic on purpose: the paths are reported relative to the root with `[$path:relative]` and `[$sort]`ed, so the answer cannot depend on the directory's on-disk order or on where the temp directory was made.",
       tags:  ["attr", "eq", "for", "let", "lib", "splice"],
       section: "everyday/files",
       grants: "--allow-read --allow-write",
@@ -2421,7 +2421,7 @@
     },
     "295-send-mail-to-a-server-you-started": {
       label: "[295] send mail \u2014 to an SMTP server this program starts",
-      input: "[?lib 'cx-platform/smtp']\n[?lib 'cx-stdlib/email']\n[?lib 'cx-stdlib/bytes']\n[?lib 'cx-stdlib/env']\n[?def deliver impure ($d::element)\n  [?let [= $m [$email:parse [$first $d/body]]]\n        [= $log [$env:write-line [$concat 'the server received: ' [$email:subject $m]]]]\n    [smtp-verdict disposition=:accept id='q-1']]]\n[?let [= $mx-opts {policy: [smtp-policy hostname=\"mx.test\" tls=:none]}]\n      [= $mx [$smtp:serve 'tcp://127.0.0.1:27425' $deliver $mx-opts]]\n      [= $to [envelope [mail-from 'ops@a.test'] [rcpt-to 'sam@b.test']]]\n      [= $msg [$bytes:from-string-utf8 \"Subject: nightly report\\r\\n\\r\\nall green\\r\\n\"]]\n      [= $anon {}]\n      [= $send-opts {hostname: 'a.test', policy: [smtp-policy hostname=\"a.test\" tls=:none]}]\n      [= $sent [$smtp:submit 'smtp://127.0.0.1:27425' $to $msg $anon $send-opts]]\n      [= $stop [$smtp:stop $mx]]\n  [delivery accepted=$sent@accepted [?splice $sent/rcpt]]]",
+      input: "[?lib 'cx-platform/smtp']\n[?lib 'cx-stdlib/email']\n[?lib 'cx-stdlib/bytes']\n[?lib 'cx-stdlib/env']\n[?def deliver impure ($d::element)\n  [?let [= $m [$email:parse [$first $d/body]]]\n        [= $log [$env:write-line [$concat 'the server received: ' [$email:subject $m]]]]\n    [smtp-verdict disposition=:accept id='q-1']]]\n[?let [= $mx-opts {policy: [smtp-policy hostname=\"mx.test\" tls=:none]}]\n      [= $mx [$smtp:serve 'tcp://127.0.0.1:27425' $deliver $mx-opts]]\n      [= $to [envelope [mail-from 'ops@a.test'] [rcpt-to 'sam@b.test']]]\n      [= $msg [$bytes:from-string-utf8 \"Subject: nightly report\\r\\n\\r\\nall clear\\r\\n\"]]\n      [= $anon {}]\n      [= $send-opts {hostname: 'a.test', policy: [smtp-policy hostname=\"a.test\" tls=:none]}]\n      [= $sent [$smtp:submit 'smtp://127.0.0.1:27425' $to $msg $anon $send-opts]]\n      [= $stop [$smtp:stop $mx]]\n  [delivery accepted=$sent@accepted [?splice $sent/rcpt]]]",
       note:  "**Introduces:** `[$smtp:submit URL ENVELOPE MESSAGE AUTH OPTS]` (smtp.md \u00a73.1) \u2014 ONE call that does the whole dialogue, because the usual way an SMTP client is broken is a forgotten step: the second `EHLO` after `STARTTLS`, `AUTH` before the upgrade, a `QUIT` never sent. `$auth` is optional (empty here \u2014 unauthenticated delivery is ordinary, not degenerate), and the result is a VALUE rather than an exception: `accepted` says whether the DATA was taken and a `[rcpt address= code= \u2026]` per recipient says who was refused, so \"send to 200 people, one of whom has left\" is reportable instead of undeliverable. The other end is `[$smtp:serve BIND HANDLER OPTS]` (\u00a73.6), shaped exactly like `[$http:serve]` on purpose, whose handler answers an `[smtp-verdict]` \u2014 anything else is fail-closed to a `451` DEFER, never an accept, because a permanent refusal destroys a message while a temporary one asks the sender to retry. `tls=:none` on both policies is what makes a cleartext loopback bind legal (\u00a76.2); a real MX keeps the `:required` default.",
       tags:  ["attr", "cxpath", "def", "descendant", "eq", "let", "lib", "par", "splice"],
       section: "everyday/world",

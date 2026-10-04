@@ -1319,7 +1319,7 @@ default
 12
 #]]
  ]
- [ex key=218-exact-numeric-lane chars=50
+ [ex key=218-exact-numeric chars=50
   [out-text [#
 [readings [exact 3] [rem 1] [mean 2.00] [chain 2]]
 #]]

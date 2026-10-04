@@ -4082,7 +4082,7 @@ docs-voice-check: build-vcx
 # ring", the "monorepo", "lane", campaign, gate run, steward, ruling, landed,
 # green/red, job, stage, task, and Document/Program as a playground tab or
 # crumb label — outside code spans, in every served source, the
-# playground's page and script and the guide generator, and holds
+# playground's page, script and examples bundle and the guide generator, and holds
 # each file to docs-src/site/vocabulary.cxd in the voice ratchet's shape: a
 # file with no row reads zero, a row's count only ever moves down.
 .PHONY: docs-vocabulary-check

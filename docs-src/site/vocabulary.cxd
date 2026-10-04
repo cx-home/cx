@@ -76,7 +76,7 @@ never rises. Not scanned, by name: "landing" ("landing page").
   [tree words='lane'
     [glob path='Makefile']
     [glob path='flows/**/*.cx'] [glob path='flows/**/*.cxd'] [glob path='flows/**/*.mk']
-    [glob path='scripts/**/*.cx'] [glob path='scripts/**/*.sh']
+    [glob path='scripts/**/*.cx'] [glob path='scripts/**/*.sh'] [glob path='scripts/**/*.mjs'] [glob path='scripts/**/*.txt']
     [glob path='spec/03-approved/**/*.md']
     [glob path='AGENTS.md'] [glob path='AGENT-STANDING-RULES.md'] [glob path='CONTRIBUTING.md']]
 
@@ -112,6 +112,14 @@ never rises. Not scanned, by name: "landing" ("landing page").
     [page path="docs-src/llm/reference-code-language.md.tmpl" word=stage allow=1 why="the `[?pipe]` stage — the code language's own word for one transform of a pipe (code.md §6.4, §8.9), not a pipeline unit"]
     [page path="docs-src/llm/primer-platform.chapter.md" word=job allow=2 why="regenerated from composition.md — an outside system's export job, the bulk-export pattern's own domain word"]
     [page path="scripts/gen_guide/guide_build.cx" word=ruling allow=4 why="file comments citing #826's numbered rulings by their historical name"]
+    [; the playground examples (cx-private issue 1785): examples.cxd is the source, playground.examples.js (served) and examples.out.cxd are generated from it, so each count stands three times or twice ]
+    [page path="scripts/gen_guide/playground/examples.cxd" word=stage allow=14 why="the `[?pipe]` stage — the code language's own word for one transform of a pipe (code.md §6.4, §8.9), and a two-stage channel pipeline, not a pipeline unit"]
+    [page path="scripts/gen_guide/playground/playground.examples.js" word=stage allow=14 why="generated from examples.cxd: the `[?pipe]` stage, the code language's word for one transform of a pipe (code.md §6.4, §8.9)"]
+    [page path="scripts/gen_guide/playground/examples.cxd" word=job allow=11 why="the examples' data: the `jobs` channel a dispatcher fans work items into, and the `[schema of=job]` record — not a pipeline unit"]
+    [page path="scripts/gen_guide/playground/playground.examples.js" word=job allow=11 why="generated from examples.cxd: the `jobs` channel and the `[schema of=job]` record, the examples' data"]
+    [page path="scripts/gen_guide/playground/examples.cxd" word=task allow=6 why="the examples' data: a `[?worker name=\"task\"]` background task and the `[task …]` nodes of the build-graph example — not a pipeline unit"]
+    [page path="scripts/gen_guide/playground/playground.examples.js" word=task allow=6 why="generated from examples.cxd: the background worker task and the build graph's `[task …]` nodes, the examples' data"]
+    [page path="scripts/gen_guide/playground/examples.out.cxd" word=task allow=5 why="generated: the audited answers of the worker and build-graph examples, which name their `[task …]` data"]
     [; the tree's own prose (RULED: WORDS-1): a sentence that NAMES the refused word, or quotes it as history, and nothing else ]
     [page path="Makefile" word=lane allow=1 why="docs-vocabulary-check's own comment names the words the step counts"]
     [page path="scripts/gen_site/docs_vocabulary_check.cx" word=lane allow=2 why="the program's header names the words it counts and the one the [tree] rows hold"]

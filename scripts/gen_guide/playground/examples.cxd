@@ -503,7 +503,7 @@ line 3''']
 [cast 3.7 :int]
 #]]
   [note [#
-**Introduces:** the L44 exact lane. `[cast]` does **not** truncate — silent truncation was removed deliberately, so a non-integral decimal is a refusal: `cx-err:CXER0290` "decimal `3.7` is not integral". Ask for the rounding you mean instead: `[$round 3.7]` → `4`, `[$floor 3.7]` → `3`, `[$ceiling 3.2]` → `4` (example 77).
+**Introduces:** L44's exact arithmetic. `[cast]` does **not** truncate — silent truncation was removed deliberately, so a non-integral decimal is a refusal: `cx-err:CXER0290` "decimal `3.7` is not integral". Ask for the rounding you mean instead: `[$round 3.7]` → `4`, `[$floor 3.7]` → `3`, `[$ceiling 3.2]` → `4` (example 77).
 #]]
  ]
 
@@ -2309,7 +2309,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
     [ok value="done"]]]
 #]]
   [note [#
-**Pattern:** background task as program entry-point. **Diagram:** because the program is sequence-shaped the emitter switches to Mermaid `sequenceDiagram` instead of `flowchart TD` (per spec/code.md §10.1.2). The worker becomes an actor lane with its body events as messages along that lane. A trigger reached through a `[?let]` binding counts too — `[?let [= $w [?worker …]] …]` is still a sequence, since the binding only aliases the lane (examples 171-172 are that shape).
+**Pattern:** background task as program entry-point. **Diagram:** because the program is sequence-shaped the emitter switches to Mermaid `sequenceDiagram` instead of `flowchart TD` (per spec/code.md §10.1.2). The worker becomes an actor lifeline with its body events as messages along that lifeline. A trigger reached through a `[?let]` binding counts too — `[?let [= $w [?worker …]] …]` is still a sequence, since the binding only aliases the lifeline (examples 171-172 are that shape).
 #]]
   [wasm-unsupported [#`[?worker]` spawns an OS thread; the playground's default single-threaded wasm build refuses it (`go code__run_worker_thread(): Not supported`).#]]
  ]
@@ -2873,7 +2873,7 @@ Compare the previous example's `age: ::int`, which declares a kind with NO value
 [$idiv 9007199254740993 3]
 #]]
   [note [#
-**Introduces:** the exact integer lane. `9007199254740993` is 2⁵³+1 — the first integer a float64 cannot represent — and `[$idiv]` answers `3002399751580331` exactly, because it computes in i64 and never routes through f64. A language that quietly promoted this to a float would be off by one and say nothing.
+**Introduces:** exact integer arithmetic. `9007199254740993` is 2⁵³+1 — the first integer a float64 cannot represent — and `[$idiv]` answers `3002399751580331` exactly, because it computes in i64 and never routes through f64. A language that quietly promoted this to a float would be off by one and say nothing.
 #]]
  ]
 
@@ -3119,14 +3119,14 @@ The message names the offending call. The next example shows the honest declarat
   [expect [# 12 #]]
  ]
 
- [ex key=218-exact-numeric-lane
-  [label [#[218] the exact lane — `$idiv`, `%`, `$avg` over decimals, an all-int `/` chain#]]
+ [ex key=218-exact-numeric
+  [label [#[218] exact arithmetic — `$idiv`, `%`, `$avg` over decimals, an all-int `/` chain#]]
   [section [# data/numbers #]]
   [src [#
 [readings [exact [$idiv 7 2]] [rem [% 7 2]] [mean [$avg (1.5, 2.5)]] [chain [/ 12 3 2]]]
 #]]
   [note [#
-**Introduces:** the exact numeric lane (code.md §6.5). Integers are i64 and CHECKED; `$idiv` and `%` are the integer pair; `$avg` over decimals stays decimal (`2.00`, scale preserved); an all-int `/` chain `[/ 12 3 2]` folds exactly in i64 → `2`. Nothing here passes through a float.
+**Introduces:** exact numeric arithmetic (code.md §6.5). Integers are i64 and CHECKED; `$idiv` and `%` are the integer pair; `$avg` over decimals stays decimal (`2.00`, scale preserved); an all-int `/` chain `[/ 12 3 2]` folds exactly in i64 → `2`. Nothing here passes through a float.
 #]]
   [expect [# [exact 3] [rem 1] [mean 2.00] [chain 2] #]]
  ]
@@ -3142,7 +3142,7 @@ The message names the offending call. The next example shows the honest declarat
   [float [/ 1 3]]]
 #]]
   [note [#
-**Introduces:** the refusal side of the exact lane, and the two ways to ask properly. `1.0 / 3.0` has no terminating decimal, so `$div` REFUSES BY NAME (`CXER3002`) rather than inventing a precision — here the refusal is caught as a value and only its code is shown. `[$math:div-decimal a b {precision: N mode: :half-up}]` from `cx-stdlib/math` supplies the rounding context and answers `0.33`; `[/ 1 3]` on integers takes the float lane and answers the nearest double. Three spellings, three different contracts, each visible in the output.
+**Introduces:** the refusal side of exact arithmetic, and the two ways to ask properly. `1.0 / 3.0` has no terminating decimal, so `$div` REFUSES BY NAME (`CXER3002`) rather than inventing a precision — here the refusal is caught as a value and only its code is shown. `[$math:div-decimal a b {precision: N mode: :half-up}]` from `cx-stdlib/math` supplies the rounding context and answers `0.33`; `[/ 1 3]` on integers takes the float path and answers the nearest double. Three spellings, three different contracts, each visible in the output.
 #]]
   [expect [# [rounded 0.33] #]]
  ]
@@ -3583,7 +3583,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [cx-files [?splice [$sort $found]]]]
 #]]
   [note [#
-**Introduces:** `[$io:walk ROOT]` (io.md §3.6) — a LAZY iterator yielding one `[dir-entry path=… is-file=… is-directory=… depth=…]` element per entry, so the filter is an ordinary `[?for]` with `[where]` clauses and no callback, no `os.walk` triple to unpack. Because the walk is lazy, a `[where]` that short-circuits or a `[take N]` stops the traversal instead of materializing the tree first. The result is made deterministic on purpose: the paths are reported relative to the root with `[$path:relative]` and `[$sort]`ed, so the answer cannot depend on the directory's on-disk order or on where the temp directory landed.
+**Introduces:** `[$io:walk ROOT]` (io.md §3.6) — a LAZY iterator yielding one `[dir-entry path=… is-file=… is-directory=… depth=…]` element per entry, so the filter is an ordinary `[?for]` with `[where]` clauses and no callback, no `os.walk` triple to unpack. Because the walk is lazy, a `[where]` that short-circuits or a `[take N]` stops the traversal instead of materializing the tree first. The result is made deterministic on purpose: the paths are reported relative to the root with `[$path:relative]` and `[$sort]`ed, so the answer cannot depend on the directory's on-disk order or on where the temp directory was made.
 #]]
   [expect [# [cx-files 'src/main.cx' 'src/util.cx'] #]]
  ]
@@ -4524,7 +4524,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
 [?let [= $mx-opts {policy: [smtp-policy hostname="mx.test" tls=:none]}]
       [= $mx [$smtp:serve 'tcp://127.0.0.1:27425' $deliver $mx-opts]]
       [= $to [envelope [mail-from 'ops@a.test'] [rcpt-to 'sam@b.test']]]
-      [= $msg [$bytes:from-string-utf8 "Subject: nightly report\r\n\r\nall green\r\n"]]
+      [= $msg [$bytes:from-string-utf8 "Subject: nightly report\r\n\r\nall clear\r\n"]]
       [= $anon {}]
       [= $send-opts {hostname: 'a.test', policy: [smtp-policy hostname="a.test" tls=:none]}]
       [= $sent [$smtp:submit 'smtp://127.0.0.1:27425' $to $msg $anon $send-opts]]
