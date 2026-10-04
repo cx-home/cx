@@ -139,7 +139,7 @@
 [?def published-arg scope=private pure [returns string] ($argv)
   [$string [?else [$first [?for [in $a $argv]
                              [where [$strings:starts-with [$string $a] "--published="]]
-                             [yield [$strings:slice [$string $a] 12 [$strings:length [$string $a]]]]]] ""]]]
+                             [yield [$strings:replace [$string $a] "--published=" ""]]]] ""]]]
 
 # history-paths: every path a commit of <git-dir>'s main added, deleted or
 # changed. `-m` reads a merge against each parent and `--no-renames` names both
@@ -237,7 +237,7 @@
                                                    [$strings:trim [$string $ph@stderr]]]]]
                           [$env:exit 2]]]]]]]
   [= $gone [?if [= $pubdir ""] [then ()]
-             [else [?for [in $q [$distinct [$nonblank [$string $ph@stdout]]]]
+             [else [?for [in $q [?to-sequence [?for [in $l [$nonblank [$string $ph@stdout]]] [group-by $l] [yield $key]]]]
                      [where [not [or [$member $q $files] [$member $q $former]]]]
                      [yield [?let [= $h [$first-rule $rules $q]]
                               [g path=$q repo=[?match $h [case [miss] ""] [else [$string $h@repo]]]]]]]]]]
