@@ -1,0 +1,15 @@
+# Integrator decisions 2026-10-04 — Letters 186 and 190 (batch I-1's collector gate), and the guide case g6-09's flip under the [case null] fix, each taken at the recommended option under the owner's standing delegation
+
+**Status: RULED BY DELEGATION (DELEG-3; the owner confirmed the shape the same day: "sounds reasonable, if each is what's best for cx long term", "continue as recommended"). Letters 186 and 190 were numbered on the board (#1591, 10-04 04:4xZ and 12:1xZ) before the takings. VGCG-1, RTMEM-1, VC-1, FIX-1, REFUTE-1, SHIP-1, NEWB-1.**
+
+## The owner's words, verbatim
+
+"make best long term decisions for cx. no deferring. no partial work." (DELEG-3); "continue as recommended" (2026-10-04 ~06:5xZ).
+
+## VGATE-1 — the fork's grow gate is fixed at its root, never landed red and never tuned around an unfound cause (Letters 186 = (a) and 190 = (a))
+
+Batch I-1's grow gate (a collection before a new 64 MB arena near the goal) first made the ratchet's `streaming.streaming_ms` row red (+15 %: a stale conservative root — the collector scanned its own arena table and span slab as roots, #1783) and, once that was fixed, made `cx fmt`'s heap-growing run 15 % slower (every deferral a full collection that freed little). Taken both times at (a): the cause is found and fixed in the fork fixture-first (#1783's two fixes; then the rule that the gate stands down while the heap is still growing, red at 11 collections against 9, green at 9), and the pin lands only when every bar reads at once on the shared slot in a quiet gap — the ratchet's rows against their floors, the convert gauges under 2.5× on three consecutive reads, the streaming row under its baseline. Measured when the pin was declared READY: fmt_8k 1230 ms (the head 1313–1355), JSON 2.32× / XML 2.26× ×3, streaming 77 ms (baseline 92). Rejected both times: (b) raising the gate's default to 70 % (tunes around a root nobody has found; narrows the JSON margin); (c) landing with a red row under an id (the cost lands on `cx fmt`, which users run). The gate's known tradeoff — a set built and then held is not gated in its first flat cycle — is #1793, with the reader's case as its fixture.
+
+## FLIP-1 — an enforced case that recorded a defect against its own title flips with the fix that removes the defect (the guide case g6-09)
+
+CORE3's fix for cx-private#1786 (a `[case null …]` arm matches the value null; the same rule for dates, datetimes and null/date attribute clauses) turned the guide case g6-09 from `:unknown` to `:missing`; the case was enforced and had recorded the bug against its own title. A gate-enforced case flips only under a ruling (AGENTS.md rule 2; the standing rules): this is it, for that case and for any case the round names in RESULTS.md as recording the issue's own defect — the title and the note must say so, the flip rides in the fix's commit pair, and the integrator checks the pair before the merge. Rejected: keeping the wrong expectation enforced (a case asserting a defect is a liability, not a fixture).
