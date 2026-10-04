@@ -9,7 +9,7 @@
 # with it. The driver now owes every reading a deadline, and a reading past it
 # turns the STEP red BY NAME inside that bound.
 #
-# THE CASES. Each runs the REAL driver against a planted lane driver (a shell
+# THE CASES. Each runs the REAL driver (bench/repr/run.cx) against a planted lane driver (a shell
 # stub named by CX_REPR_BIN — the build is skipped for a planted driver), its
 # corpora in a temp directory (CX_REPR_CORPUS_DIR, so a `make test -j` running
 # `repr-guard` beside this step keeps its own), a tiny record count, and a
@@ -46,9 +46,10 @@
 # the stub's 90 s sleep, so a driver with no deadline reads FAILED here.
 [?const CASE-MS 60000]
 
-# The driver under test: the program `make repr-guard` runs.
+# The driver under test: the program `make repr-guard` runs, under the cx
+# running this self-test and the grants the Makefile gives it.
 [?def driver-argv scope=private impure [returns any] ()
-  ('bash', 'bench/repr/run.sh')]
+  ([$env:executable-path], '--allow-read', '--allow-write', '--allow-subprocess', '--allow-env', 'bench/repr/run.cx')]
 
 # A planted lane driver: `gen` writes an empty corpus; a reading runs $body.
 [?def plant scope=private impure [returns string] ($dir $mode $body)
@@ -56,7 +57,8 @@
         [= $_w [$io:write-file $p [$cat ('#!/bin/sh\n',
                                          'if [ "$1" = gen ]; then : > "$3"; exit 0; fi\n',
                                          $body, '\n')]]]
-        [= $_x [$process:run ('chmod', '755', $p) timeout-ms=10000]]
+        [= $chmod ('chmod', '755', $p)]
+        [= $_x [$process:run $chmod timeout-ms=10000]]
     $p]]
 
 [?def good-line scope=private pure [returns string] ($ratio)

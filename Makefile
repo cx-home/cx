@@ -3504,7 +3504,7 @@ SUITE_SERIAL_RETRY := deps/cx-core-code/vcx/tests/env_retention_test.v \
 # ── The MEMORY GAUGE UNDER LOAD class (#1431, RULED: 1431-a) ────────────────
 # The two rosters above hold `v test` steps, matched against the paths the
 # suite reports. `repr-guard` is neither — it is its own target running one
-# script — so it needs its own roster row, and it needs one for the same
+# program (bench/repr/run.cx) — so it needs its own roster row, and it needs one for the same
 # reason the others do: it is an INSTRUMENT whose reading moves with machine
 # load, and a reading is not a regression.
 #
@@ -3531,7 +3531,7 @@ SUITE_SERIAL_RETRY := deps/cx-core-code/vcx/tests/env_retention_test.v \
 # it into a process of its own. It carries no roster row because it is not a
 # step: it is one fixture inside the conformance runner, and its isolation fix
 # is where its load sensitivity was addressed.
-GAUGE_SERIAL_RETRY := bench/repr/run.sh
+GAUGE_SERIAL_RETRY := bench/repr/run.cx
 
 # The retry ROSTERS above say WHICH steps get a serial retry. This says WHY,
 # PER STEP. The emitted line used to read "serial retry (known real-socket
@@ -3561,7 +3561,7 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="\#1432 early exit under load: the grader runs 20+ minutes over 4583 fixtures, and the failing run exited after 13.8 s with NO assertion while a parallel step relinked libcx.dylib/cx; the step's first line and its first failure now name the cx build identity, so a mid-run relink says so itself" ;; \
 	  deps/cx-core-code/vcx/tests/env_retention_test.v) \
 	    reason="\#1597 memory gauge under load: the bytes twelve connector loads retain over what two retain, read after forced collections, moves with the -gc e collection point under a -j storm (3.6 in the -j28 storm on 7ac722830, 98.4x in the storm on 684a12502, 0.05 idle); the 3.0 bound is NOT loosened" ;; \
-	  bench/repr/run.sh) \
+	  bench/repr/run.cx) \
 	    reason="\#1431 memory gauge under load: live-bytes/input-bytes moves with the -gc e collection point under a -j storm (read 8.941x against 8.35x at load ~300 on a LEDGER-ONLY head byte-identical to one that passed the same step four hours earlier; the retry passed)" ;; \
 	  *) \
 	    reason="NO REASON DECLARED for this step -- retried anyway; declare it in RETRY_REASON_CASE in the Makefile" ;; \
@@ -3687,7 +3687,7 @@ CACHE_ESCAPE_PROBE = \
 # before the suite runs.
 #
 # GAUGE_SERIAL_RETRY (#1431) is checked here on the same terms: its row is not
-# a `v test` step path but the script `repr-guard` runs, and a row naming a
+# a `v test` step path but the program `repr-guard` runs, and a row naming a
 # script that moved would silently disable that class exactly as a stale test
 # path does. Every roster the tree has is bound by this one target.
 #
@@ -5127,25 +5127,41 @@ fmt-sweep-gate: build-vcx
 # the script can fail with — an absent V, a driver exiting non-zero, a
 # measurement that does not parse — is a real failure with no retry, so the
 # class cannot absorb a broken instrument. The bound itself never moves here:
-# re-pinning is a wave-exit obligation in run.sh (RP-5), never a reaction to a
+# re-pinning is a wave-exit obligation in run.cx (RP-5), never a reaction to a
 # red. Every reading now carries the machine's load average, so the next such
 # row is classifiable from the log alone.
+#
+# NO PIPE, AND A DEADLINE ON EVERY READING (#1766, RULED: RUN-5, CXF-1). Twice
+# the post-merge run sat here until a pid was killed by hand (dfc9f12f9: 95 min;
+# 8b63de0c7: 5 h 14 m): the shell driver's `out=$$(…)` capture left a subshell
+# asleep holding its own pipe, and the recipe's `{ …; } | tee` waited on it.
+# The driver is CX now (bench/repr/run.cx): every child it runs writes to a
+# file under a `timeout-ms`, in a process group the deadline kills whole, its
+# exit read directly, and a reading past CX_REPR_LANE_DEADLINE_S (default
+# 300 s) reds the step BY NAME — "lane <x> exceeded its N s deadline", which is
+# not the bound-exceedance text below, so no retry absorbs a stall. The recipe
+# writes the driver's output to the log FILE and prints it back after the exit
+# is read, so no pipe exists here either. `make repr-guard-selftest` proves the
+# deadline, the held-pipe shape and every verdict on planted lane drivers.
+REPR_GUARD_GRANTS := --allow-read --allow-write --allow-subprocess --allow-env
 .PHONY: repr-guard
+repr-guard: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 repr-guard: build-vcx
-	@log=deps/cx-core-code/vcx/target/repr-guard-run.log; stf=deps/cx-core-code/vcx/target/repr-guard-status; \
+	@log=deps/cx-core-code/vcx/target/repr-guard-run.log; \
 	mkdir -p deps/cx-core-code/vcx/target; \
-	{ bench/repr/run.sh 2>&1; echo $$? > $$stf; } | tee $$log; \
-	st=$$(cat $$stf); \
+	"$(CX_BIN)" $(REPR_GUARD_GRANTS) bench/repr/run.cx > $$log 2>&1; st=$$?; \
+	cat $$log; \
 	if [ $$st -ne 0 ]; then \
 	  if grep -aq 'exceeds the pinned bound' $$log; then \
-	    rel=bench/repr/run.sh; \
+	    rel=bench/repr/run.cx; \
 	    $(RETRY_REASON_CASE); \
 	    echo "──── serial retry ($$reason): $$rel ────"; \
-	    bench/repr/run.sh || exit 1; \
+	    "$(CX_BIN)" $(REPR_GUARD_GRANTS) bench/repr/run.cx > $$log.retry 2>&1; st=$$?; \
+	    cat $$log.retry; \
+	    [ $$st -eq 0 ] || exit 1; \
 	    echo "──── the re-measurement is within every pinned bound; the first reading was load-induced (#1431) ────"; \
-	    st=0; \
 	  else \
-	    echo "──── real failure (no retry class applies): bench/repr/run.sh did not report a bound exceedance ────"; \
+	    echo "──── real failure (no retry class applies): bench/repr/run.cx did not report a bound exceedance ────"; \
 	  fi; \
 	fi; exit $$st
 
