@@ -67,6 +67,12 @@
   [?let [= $m [$map:get $i "milestone"]]
     [?if [= [$string $m] "null"] [then ""] [else [$string [$map:get $m "title"]]]]]]
 [?def is-pr scope=public ($i) [$map:contains $i "pull_request"]]
+# stamp: an ISO-8601 UTC time as the integer its digits spell (2026-10-03T01:00:00Z
+# -> 20261003010000), so two can be ordered; a time that does not read as one
+# sorts after every cutoff, so an issue gh dates oddly is judged, never skipped.
+[?def stamp scope=public ($t)
+  [?let [= $n [$strings:to-int [$strings:replace [$strings:replace [$strings:replace [$strings:replace $t "-" ""] "T" ""] ":" ""] "Z" ""]]]
+    [?match $n [case [err] 99999999999999] [else $n]]]]
 [?def member scope=public ($seq $x) [> [$count [?for [in $y $seq] [where [= $y $x]] [yield 1]]] 0]]
 
 # issues-of: the issues of one `gh api --paginate --slurp` answer (an array
@@ -80,7 +86,34 @@
 # $private the cx-private issues, $components a sequence of maps
 # {repo: <name>, issues: <issues>}.
 [?def judge scope=public ($release $cutoff $reg $private $components)
-  ()]
+  [?let [= $why-ok [?fn ($r) [not [= [$strings:trim [$attr $r "why" ""]] ""]]]]
+        [= $bad-rows (
+            [?for [in $x $reg//exclude] [where [not [$why-ok $x]]]
+              [yield [$concat "register:" [$attr $x "repo" "?"] "#" [$attr $x "number" "?"]]]],
+            [?for [in $x $reg//parking] [where [not [$why-ok $x]]]
+              [yield [$concat "register:milestone#" [$attr $x "milestone" "?"]]]])]
+        [= $excluded [?for [in $x $reg//exclude] [where [$why-ok $x]]
+                       [yield [$concat [$attr $x "repo" ""] "#" [$attr $x "number" ""]]]]]
+        [= $parked [?for [in $x $reg//parking] [where [$why-ok $x]] [yield [$attr $x "milestone" ""]]]]
+        [= $prefix [$concat $release " "]]
+        [= $a [?for [in $i $private]
+                [where [> [$stamp [$string [$map:get $i "created_at"]]] [$stamp $cutoff]]]
+                [where [not [$member [$labels $i] $release]]]
+                [where [not [$member $excluded [$concat HOME "#" [$num $i]]]]]
+                [yield [$concat "a:" HOME "#" [$num $i]]]]]
+        [= $b [?for [in $i $private]
+                [= $m [$milestone $i]]
+                [where [not [= $m ""]]]
+                [where [not [$member $parked $m]]]
+                [yield [$concat "b:" HOME "#" [$num $i]]]]]
+        [= $c [?for [in $p $components]
+                [= $repo [$string [$map:get $p "repo"]]]
+                [in $i [$map:get $p "issues"]]
+                [where [not [$strings:starts-with [$title $i] $prefix]]]
+                [where [not [$member $excluded [$concat $repo "#" [$num $i]]]]]
+                [yield [$concat "c:" $repo "#" [$num $i]]]]]
+    [?to-array [?for [in $xs ($bad-rows, $a, $b, $c)] [in $x $xs] [where [not [= [$string $x] ""]]] [yield $x]]]]]
+
 
 # ── the self-test (offline) ──────────────────────────────────────────────
 [?def self-test scope=public impure ()
