@@ -1861,7 +1861,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-build-slot check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate advisory-audit property-gate spec-invariant-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-search test-playground-readings test-oriel test-agent-real test-connector-real test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard repr-guard-selftest check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps test-site-phone-width test-playground-primer site-live-check ledger-index-check ledger-edit-map-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings check-bench-runners-compile check-flow-doc-lines
+TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-build-slot check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate advisory-audit property-gate spec-invariant-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-search test-playground-readings test-oriel test-agent-real test-connector-real test-xap-umbrella test-fabric-umbrella test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard repr-guard-selftest check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps test-site-phone-width test-playground-primer site-live-check ledger-index-check ledger-edit-map-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings check-bench-runners-compile check-flow-doc-lines
 
 # PRIVMK-1: the private flow targets add themselves to TEST_TARGETS from
 # flows/private.mk. That file is absent from the public tree, and `-include`
@@ -5385,6 +5385,52 @@ test-connector-real: build-vcx
 	    exit 2; }; \
 	done
 	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) test $(CONNECTOR_REAL_TESTS)
+
+## test-xap-umbrella  cx-platform-xap's V umbrella, run out of the pin (#1689;
+##                  RULED: RS-12, the test-connector-real shape).
+##                  deps/cx-platform-xap/vcx/tests/xap_umbrella_test.v — the
+##                  #1487 scaffold cases, comp-001…003, host / compose / init,
+##                  the real-socket serve and host cases, and the closeable-
+##                  runtime cases the corpus cannot carry (#1772) — left
+##                  cx-private with the extraction and NO step ran it:
+##                  test-vcx-suite reads deps/cx-core-code/vcx/tests/ only and
+##                  the component's own `make check` runs no V test (a
+##                  `ships=package` repository carries no V toolchain, RS-25).
+##                  THE TEST MOVED AND THE STEP DID NOT: `v test` runs it
+##                  straight out of the pinned checkout against the cx this
+##                  tree built (testenv's cx-dev, hence build-vcx-dev). It
+##                  binds loopback ports and boots fabric daemons, so it is a
+##                  load-SENSITIVE step (flows/load.cxd). Refuses with exit 2
+##                  and names `make deps-sync` when the checkout is absent —
+##                  never a skip.
+XAP_UMBRELLA_TESTS := deps/cx-platform-xap/vcx/tests/xap_umbrella_test.v
+.PHONY: test-xap-umbrella
+test-xap-umbrella: build-vcx-dev
+	@for t in $(XAP_UMBRELLA_TESTS); do \
+	  test -f $$t || { \
+	    echo "test-xap-umbrella: $$t is not there — the test lives in the pinned repository (RULED: RS-12); run \`make deps-sync\`" >&2; \
+	    exit 2; }; \
+	done
+	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(XAP_UMBRELLA_TESTS)
+
+## test-fabric-umbrella  cx-platform-fabric's V umbrella, run out of the pin
+##                  (#1689's class, #1771; RULED: RS-12). deps/cx-platform-
+##                  fabric/vcx/tests/fabric_umbrella_test.v — the remote
+##                  client surface against a real `cx fabric-serve`, the
+##                  remote handle's pumps and verbs (#1650, #1771), the
+##                  webhook adapter, the NATS bridge and the served tier's
+##                  engine cases — ran on no step since fabric's extraction
+##                  either (its rounds ran it by hand as an own step). Same
+##                  shape and load class as test-xap-umbrella above.
+FABRIC_UMBRELLA_TESTS := deps/cx-platform-fabric/vcx/tests/fabric_umbrella_test.v
+.PHONY: test-fabric-umbrella
+test-fabric-umbrella: build-vcx-dev
+	@for t in $(FABRIC_UMBRELLA_TESTS); do \
+	  test -f $$t || { \
+	    echo "test-fabric-umbrella: $$t is not there — the test lives in the pinned repository (RULED: RS-12); run \`make deps-sync\`" >&2; \
+	    exit 2; }; \
+	done
+	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(FABRIC_UMBRELLA_TESTS)
 
 ## test-db-real  The whole db corpus on sqlite, postgres AND mysql, the
 ##                  two servers real, as its own step (RULED: DBLANE-1,
