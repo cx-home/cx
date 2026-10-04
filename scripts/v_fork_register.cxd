@@ -203,4 +203,6 @@
   [patch sha=9a2337616097a3484b36b08d53f2e97babac2891 family=vgc issue='cx-private#1628']
   [patch sha=52832eb290f35a5d8ae949802b08fcc3e44cb730 family=vgc issue='cx-private#1629']
   [patch sha=1cf3fd57807a826e56f332de23224cd7b15c3a00 family=vgc issue='cx-private#1629']
+  [patch sha=92169092a751a0cd1d24e1998f0066a6cb5dafbd family=vgc issue='cx-private#1629']
+  [patch sha=62bcd55cfd995ececd19f9edd28c0bc9276af3f0 family=gc-e-cgen issue='cx-private#1629']
 ]
