@@ -83,15 +83,32 @@
 # IDSH-1 (#1767) -- the rule that refuses an id-SHAPED token the id grammar
 # does not parse binds from the decision on: IDSH-CUTOFF is the commit time of
 # the ledger page that carries it (deb01933c, 2026-10-04T05:28:50Z). The
-# history before it carries 81 distinct such tokens in its `RULED:` clauses
+# history before it carries 83 distinct such tokens in its `RULED:` clauses
 # (measured on deb01933c: T-1..T-9, sect-6, arc-2, CAPADDR-1, PKGFILE-1 ...);
 # refusing them would red every head on subjects nobody can rewrite. So the
-# history is read with each subject's commit time (`%ct`, a tab, `%s`), and a
-# subject the reader cannot date -- a planted line with no `<epoch>\t` prefix
-# -- is judged as new. The unresolved rule (#1447) still reads every subject.
+# history is split by ANCESTRY, not by a date a commit can be given (REFUTE-1
+# l15): a subject of a commit the IDSH-1 page's commit (IDSH-COMMIT) does not
+# reach is new, whatever its committer date; the commits it reaches are the
+# history. A planted subjects file (CX_LEDGER_SUBJECTS_FILE -- the selftest,
+# and cx-decisions, whose history has no IDSH-COMMIT) dates each line instead,
+# `<epoch>\t<subject>`, judged new from IDSH-CUTOFF (that commit's time); a
+# line it cannot date is new. The unresolved rule (#1447) reads every subject.
+[?const IDSH-COMMIT 'deb01933c28d6d576499a962fa17613ec2d75678']
 [?const IDSH-CUTOFF 1791091730]
 
-[?def git-log-argv scope=private pure [returns any] () ('git', 'log', SUBJECT-REF, '--format=%ct%x09%s')]
+[?def git-new-argv scope=private pure [returns any] () ('git', 'log', SUBJECT-REF, [$concat '^' IDSH-COMMIT], '--format=%s')]
+[?def git-old-argv scope=private pure [returns any] () ('git', 'log', IDSH-COMMIT, '--format=%s')]
+
+# git-lines: the subjects one `git log` answers, each after `<mark>\t`, as
+# ('ok', <lines>) or ('refused', <why>).
+[?def git-lines scope=private impure [returns any] ($argv $mark)
+  [?let [= $r [$process:run $argv]]
+    [?match $r
+      [case [err $e] ('refused', [$concat "cannot run `" [$strings:join $argv " "] "` -- " [$string $e@message]])]
+      [else [?if [= [$string $r@exit-code] '0']
+              [then ('ok', [?to-array [?for [in $l [$strings:split-lines [$string $r@stdout]]] [yield [$concat $mark "\t" $l]]]])]
+              [else ('refused', [$concat "`" [$strings:join $argv " "] "` exited " [$string $r@exit-code] " -- "
+                                         [$strings:trim [$string $r@stderr]]])]]]]]]
 
 [?def subject-lines scope=private impure [returns any] ()
   [?let [= $planted [$env:var-or-default 'CX_LEDGER_SUBJECTS_FILE' '']]
@@ -104,13 +121,12 @@
                     [case [err $e] ('refused', [$concat "cannot read the planted subjects " $planted " -- " [$string $e@message]])]
                     [else ('ok', [$strings:split-lines $t], [$concat "the subjects of " $planted])]]]]
           [else
-            [?let [= $r [$process:run [$git-log-argv]]]
-              [?match $r
-                [case [err $e] ('refused', [$concat "cannot run `git log " SUBJECT-REF "` -- " [$string $e@message]])]
-                [else [?if [= [$string $r@exit-code] '0']
-                        [then ('ok', [$strings:split-lines [$string $r@stdout]], [$concat "a commit subject on " SUBJECT-REF])]
-                        [else ('refused', [$concat "`git log " SUBJECT-REF "` exited " [$string $r@exit-code] " -- "
-                                                   [$strings:trim [$string $r@stderr]]])]]]]]]]]]]]
+            [?let [= $new [$git-lines [$git-new-argv] '9999999999']]
+                  [= $old [$git-lines [$git-old-argv] '0000000000']]
+              [?if [= [$first $new] 'refused'] [then $new]
+                [else [?if [= [$first $old] 'refused'] [then $old]
+                        [else ('ok', [?to-array [?for [in $xs ([$nth $new 2], [$nth $old 2])] [in $x $xs] [yield $x]]],
+                               [$concat "a commit subject on " SUBJECT-REF])]]]]]]]]]]]
 
 # ledger-files: every ledger page except the generated index itself.
 [?def ledger-files scope=private impure [returns any] ()
@@ -125,7 +141,20 @@
          or the owner-letter shape in any case or length (d70a, D7A). What
          is left of a `RULED:` clause once every parsed id is cut out of it
          must carry none (IDSH-1). ]
-      [= $shape-rx [$re:compile "\\b([A-Za-z]+-[0-9]+[A-Za-z0-9]*|[Dd][0-9]+[A-Za-z][A-Za-z0-9]*)\\b"]]
+      [; the clause's text is cut into tokens at every character that is not a
+         letter, a digit or a dash -- ASCII or a typographic one (U+2010 to
+         U+2015), since CFG with an en dash and 1 is CFG-1 to a reader and to no
+         regex (REFUTE-1 l02/l03) -- and a token whole is id-shaped when it is
+         letters-or-digits after a leading letter, a dash, a digit (CAPADDR-1,
+         zzqx-9, CX2-1), three or four digits, a dash, a letter (1085-a), or the
+         owner-letter shape in any case. ]
+      [= $gap-rx [$re:compile "[^A-Za-z0-9\\x{2010}-\\x{2015}-]+"]]
+      [= $shape-rx [$re:compile "^(?:[A-Za-z][A-Za-z0-9]*[\\x{2010}-\\x{2015}-][0-9][A-Za-z0-9]*|[1-9][0-9]{2,3}[\\x{2010}-\\x{2015}-][A-Za-z][A-Za-z0-9]*|[Dd][0-9]+[A-Za-z][A-Za-z0-9]*)$"]]
+      [; the `(RULED: ...)` clause: a new subject's runs to its LAST `)` so a
+         parenthesis inside it cannot end it early (REFUTE-1 l05); the history
+         keeps the first-`)` reading it was resolved under. ]
+      [= $clause-new-rx [$re:compile "\\(RULED:.*\\)"]]
+      [= $clause-old-rx [$re:compile "\\(RULED:[^)]*\\)"]]
       [= $dated-rx [$re:compile "^([0-9]{9,11})\t(.*)$"]]
       [= $date-rx [$re:compile "^(19|20)[0-9]{2}-[0-9]{2}"]]
       [= $files   [$ledger-files]]
@@ -218,7 +247,7 @@
                                    new=[>= [$strings:to-int [$re:group $dm 1]] IDSH-CUTOFF]]]]]]]]
             [= $src [$nth $sl 3]]
             [= $clauses [?to-array [?for [in $r $rows]
-              [in $clause [$re:find-all [$re:compile "\\(RULED:[^)]*\\)"] [$string $r@text]]]
+              [in $clause [$re:find-all [?if $r@new [then $clause-new-rx] [else $clause-old-rx]] [$string $r@text]]]
               [yield [cl text=[$re:group $clause 0] subject=[$string $r@text] new=$r@new]]]]]
             [= $subject-ids [$uniq-sorted
               [?for [in $c $clauses]
@@ -228,13 +257,28 @@
             [; IDSH-1 -- what is left of a clause once every parsed id is cut
                out of it carries no id-shaped token. ]
             [= $unparsed [?to-array [?for [in $c $clauses]
-              [in $m [$re:find-all $shape-rx [$re:replace $id-rx [$string $c@text] " "]]]
-              [yield [up token=[$re:group $m 1] subject=[$string $c@subject] new=$c@new]]]]]
+              [in $t [$strings:split [$re:replace $gap-rx [$re:replace $id-rx [$string $c@text] " "] " "] " "]]
+              [where [$re:matches $shape-rx $t]]
+              [yield [up token=$t subject=[$string $c@subject] new=$c@new]]]]]
             [= $unparsed-new [?to-array [?for [in $u $unparsed] [where [= [$string $u@new] "true"]] [yield $u]]]]
             [= $unparsed-old [$uniq-sorted [?for [in $u $unparsed] [where [= [$string $u@new] "false"]] [yield [$string $u@token]]]]]
-            [= $unresolved [?to-array [?for [in $id $subject-ids]
-              [where [= 0 [$count [?for [in $k $known] [where [= $k $id]] [yield $k]]]]]
-              [yield $id]]]]
+            [; IDSH-1 -- an owner-letter id in a new subject resolves against a page
+               that DECLARES it (a heading), not one that only quotes it: D99z9
+               is quoted by the IDSH-1 page itself as #1767's example (REFUTE-1
+               l01). The history keeps declared-or-cited. ]
+            [= $undeclared-d [$uniq-sorted
+              [?for [in $c $clauses]
+                [where [= [$string $c@new] "true"]]
+                [in $m [$re:find-all $id-rx [$string $c@text]]]
+                [= $idv [$strings:lower [$re:group $m 1]]]
+                [where [$re:matches [$re:compile "^d[0-9]+[a-z][0-9]?$"] $idv]]
+                [where [= 0 [$count [?for [in $k $declared-ids] [where [= $k $idv]] [yield $k]]]]]
+                [yield $idv]]]]
+            [= $unres-known [?to-array
+              [?for [in $id $subject-ids]
+                [where [= 0 [$count [?for [in $k $known] [where [= $k $id]] [yield $k]]]]]
+                [yield $id]]]]
+            [= $unresolved [$uniq-sorted [?to-array [?for [in $xs ($unres-known, $undeclared-d)] [in $x $xs] [yield $x]]]]]
             [= $_unp [?if [> [$count $unparsed-new] 0]
               [then ([$io:write-line [$env:stderr]
                        [$concat "ledger-index-check: " [$string [$count $unparsed-new]]
