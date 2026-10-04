@@ -1327,7 +1327,7 @@
           [$st 'absence: every arity rule' 'else-coalesced-a-present-value empty-disagrees-with-exists exists-disagrees-with-count present-value-reads-absent'
                [$judge-arity [r p=false e=true c=0 m=true k=true] 'st']],
           [$st 'absence: the absent channel' 'absence-misread' [$judge-absent [r p=true c=0 c1=1 k=true f=false]]],
-          [$st 'absence: first of one match' 'first-of-one-match-descends' [$judge-first [r one=inner two=hit]]],
+          [$st 'absence: first of one match' 'first-of-one-match-descends' [$judge-first [r one=hit two=hit]]],
           [$st 'register: a class matches' 'for-map-duplicate-key'
                [?for [in $c ([$classify $f-dup $ST-REG],)] [where [= [$string $c@adv] 'true']] [yield $c]]],
           [$st 'register: a subject matches' 'effect-point-crash'
