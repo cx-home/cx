@@ -21,7 +21,7 @@
 #   I  an id-SHAPED token the id grammar does not parse (CAPADDR-1, seven
 #      letters) → REFUSED, exit 1, the token and the subject quoted (IDSH-1, #1767)
 #   J  the same for a lower-case token (zzqx-9)            (IDSH-1, #1767)
-#   K  the owner-letter shape D<digits><letter>[<digit>] is PARSED: D98y7,
+#   K  the owner-letter shape D<digits><letter>[<digit>] is PARSED: D99z9,
 #      which no page carries, is refused as unresolved by name (IDSH-1, #1767)
 #   L  ... and D59a, which pages declare, resolves (IDSH-1, #1767)
 #   M  a subject dated before IDSH-1 (a `<epoch>\t` prefix, the shape `git log`
@@ -30,6 +30,11 @@
 #      it carries 89 such tokens, T-1 and sect-6 and CAPADDR-1 among them)
 #   N  under CX_LEDGER_SUBJECTS_FILE the refusal names that file, not
 #      release/0.18 (#1767)
+#   O  an id-shaped token behind a typographic dash or glued to a character
+#      the grammar has no place for (CFG\u2013 1, CAPADDR\u2010 1, CAPADDR-1_, CX2-1)
+#      is refused, never "0 subject ids" (REFUTE-1 l02 l03 l04 l11)
+#   P  a parenthesis inside a new clause does not end it: (RULED: CFG-1 (see
+#      note), CAPADDR-1) refuses CAPADDR-1 (REFUTE-1 l05)
 #
 # Planted through CX_LEDGER_SUBJECTS_FILE, which is the only input this reader
 # takes other than `git log`, so the rule is proven without a repository.
@@ -145,12 +150,12 @@ for tok in CAPADDR-1 zzqx-9; do
 done
 
 # K/L — the owner-letter shape is parsed and resolved (IDSH-1)
-printf '%s\n' 'chore: x (RULED: D98y7)' > "$T/dbad.txt"
+printf '%s\n' 'chore: x (RULED: D99z9)' > "$T/dbad.txt"
 out=$(check_with "$T/dbad.txt"); rc=$?
-if [ "$rc" -eq 1 ] && printf '%s\n' "$out" | grep -qx '    d98y7'; then
-  ok K "D98y7 parses as an owner-letter id and, carried by no page, is refused by name (D99z9, #1767's own case, is now quoted by the IDSH-1 page and so cited)"
+if [ "$rc" -eq 1 ] && printf '%s\n' "$out" | grep -qx '    d99z9'; then
+  ok K "D99z9 parses as an owner-letter id and, declared by no page (the IDSH-1 page only quotes it), is refused by name"
 else
-  bad K "wanted exit 1 naming d98y7 as unresolved — exit $rc: $out"
+  bad K "wanted exit 1 naming d99z9 as undeclared — exit $rc: $out"
 fi
 printf '%s\n' 'chore: x (RULED: D59a)' > "$T/dgood.txt"
 out=$(check_with "$T/dgood.txt"); rc=$?
@@ -180,8 +185,28 @@ else
   bad N "wanted the planted file named and no release/0.18 — exit $rc: $out"
 fi
 
+# O — typographic dashes and glued characters (REFUTE-1 l02 l03 l04 l11)
+for tok in "CFG$(printf '\342\200\223')1" "CAPADDR$(printf '\342\200\220')1" "CAPADDR-1_" "CX2-1"; do
+  printf '%s\n' "chore: x (RULED: $tok)" > "$T/glued.txt"
+  out=$(check_with "$T/glued.txt"); rc=$?
+  if [ "$rc" -eq 1 ] && case "$out" in *"id-shaped token"*) true ;; *) false ;; esac; then
+    ok O "$tok is refused as an id-shaped token the grammar does not parse"
+  else
+    bad O "wanted exit 1 refusing $tok — exit $rc: $out"
+  fi
+done
+
+# P — a parenthesis inside a new clause (REFUTE-1 l05)
+printf '%s\n' 'chore: x (RULED: CFG-1 (see note), CAPADDR-1)' > "$T/paren.txt"
+out=$(check_with "$T/paren.txt"); rc=$?
+if [ "$rc" -eq 1 ] && case "$out" in *"CAPADDR-1 -- in:"*) true ;; *) false ;; esac; then
+  ok P "a parenthesis inside a new RULED clause does not end it; CAPADDR-1 after it is refused"
+else
+  bad P "wanted exit 1 refusing CAPADDR-1 — exit $rc: $out"
+fi
+
 if [ "$fails" -ne 0 ]; then
   echo "ledger-subject-ids self-test: $fails case(s) FAILED" >&2
   exit 1
 fi
-echo "ledger-subject-ids self-test: 14/14 (a known id passes; an id with no page is refused by name; a prose clause passes; the live history resolves; a denied env or subprocess grant and an unreadable planted file are refused, never counted; unresolved ids print one per line; an id-shaped token the grammar does not parse is refused with its subject (IDSH-1); the owner-letter D-shape parses and resolves; the rule binds from IDSH-1 on; the refusal names its source)"
+echo "ledger-subject-ids self-test: 19/19 (a known id passes; an id with no page is refused by name; a prose clause passes; the live history resolves; a denied env or subprocess grant and an unreadable planted file are refused, never counted; unresolved ids print one per line; an id-shaped token the grammar does not parse is refused with its subject (IDSH-1); the owner-letter D-shape parses and resolves; the rule binds from IDSH-1 on; the refusal names its source; typographic dashes and glued characters are refused; a parenthesis inside a new clause does not end it)"
