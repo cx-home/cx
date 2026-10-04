@@ -284,9 +284,10 @@
 #            operator — no implementation behaviour exists to grade
 #   quoted   the sentence reports, defines or quotes a keyword (another
 #            document's, or RFC 2119's own); it is not a requirement of this spec
-#   no-lane  the behaviour is the implementation's, but no corpus lane can feed
-#            its input: `issue=` names the open issue that adds the lane
-[?def exempt-classes scope=public () ('step', 'author', 'quoted', 'no-lane')]
+#   no-step  the behaviour is the implementation's, but no step grades it — no
+#            corpus case can feed its input and no make step on a run reaches it:
+#            `issue=` names the open issue that adds the step
+[?def exempt-classes scope=public () ('step', 'author', 'quoted', 'no-step')]
 
 [?def read-register scope=public impure ($path)
   [?if [$io:is-file $path]
@@ -333,16 +334,16 @@
              [?if [> [$count [?for [in $r $hits] [where [= $r@status 'cited']] [yield 1]]] 0]
                [then ([$cat ("exempt row matches a sentence that cites a case (stale — drop the row): ", $where)])] [else ()]],
              [?if [not [$member $cls [$exempt-classes]]]
-               [then ([$cat ("exempt row has class '", $cls, "', not one of step author quoted no-lane: ", $where)])] [else ()]],
+               [then ([$cat ("exempt row has class '", $cls, "', not one of step author quoted no-step: ", $where)])] [else ()]],
              [?if [$strings:is-blank [$string [?else $e@reason '']]]
                [then ([$cat ("exempt row has no reason=: ", $where)])] [else ()]],
              [?if [= $cls 'step']
                [then [?if [$member $held $on-run] [then ()]
                        [else ([$cat ("exempt row's held-by='", $held, "' is on no run (not in TEST_TARGETS nor a ring's check:): ", $where)])]]]
                [else ()]],
-             [?if [= $cls 'no-lane']
+             [?if [= $cls 'no-step']
                [then [?if [$re:matches $rx.issue $iss] [then ()]
-                       [else ([$cat ("exempt row of class no-lane needs issue='<owner>/<repo>#<n>': ", $where)])]]]
+                       [else ([$cat ("exempt row of class no-step needs issue='<owner>/<repo>#<n>': ", $where)])]]]
                [else ()]])]]]]]
 
 # Apply the register: an UNCITED sentence a row matches becomes exempt.
@@ -388,10 +389,10 @@
     [= $want ('1:UNCITED', '3:cited', '3:UNCITED', '10:cited', '12:cited', '14:UNCITED', '15:UNCITED', '15:UNCITED',
               '18:cited', '18:UNCITED', '20:UNCITED', '20:UNCITED')]
     # the register rules: a row matching many sentences, a held-by on no run,
-    # a no-lane row without an issue, a row on a cited sentence; one good row
+    # a no-step row without an issue, a row on a cited sentence; one good row
     [= $reg ([exempt file='t.md' class=author match='MUST' reason='too wide'],
              [exempt file='t.md' class=step held-by=clean match='a writer MUST act' reason='not a run target'],
-             [exempt file='t.md' class=no-lane match='it NEVER does' reason='no issue'],
+             [exempt file='t.md' class=no-step match='it NEVER does' reason='no issue'],
              [exempt file='t.md' class=author match='MUST stay one sentence' reason='stale'],
              [exempt file='t.md' class=quoted match='Per RFC 2119' reason='the definition'])]
     [= $errs [$register-errors $reg $rows ('fixtures', 'check-code-fixtures') $rx]]
