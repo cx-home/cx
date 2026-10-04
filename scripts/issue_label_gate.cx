@@ -129,6 +129,16 @@
                 [yield [$concat "c:" $repo "#" [$num $i]]]]]
     [?to-array [?for [in $xs ($bad-rows, $a, $b, $c)] [in $x $xs] [where [not [= [$string $x] ""]]] [yield $x]]]]]
 
+# ── what is printed ──────────────────────────────────────────────────────
+# refusal-line: the line one refusal key prints (the case table's [line]
+# rows grade it).
+[?def refusal-line scope=public ($release $key $private $components)
+  [$concat "issue-label-gate: REFUSED " $key]]
+# read-line: the line a read that failed prints, exit 2 (the case table's
+# [read-case] rows grade it).
+[?def read-line scope=public ($repo $why)
+  [$concat "issue-label-gate: REFUSED -- the open issues of " $repo " could not be read: " $why]]
+
 
 # ── the self-test (offline) ──────────────────────────────────────────────
 [?def self-test scope=public impure ()
@@ -149,11 +159,23 @@
                    [= $components [?for [in $p $c/component]
                                     [yield {repo: [$attr $p "repo" ""],
                                                       issues: [?to-array [$issues-of [$json:parse [$concat "[" [$string $p] "]"]]]]}]]]
-                   [= $got [$strings:join [$judge $release $cutoff $reg $private $components] " "]]
+                   [= $keys [$judge $release $cutoff $reg $private $components]]
+                   [= $got [$strings:join $keys " "]]
                    [= $want [$attr $c "want" ""]]
                    [= $id [$attr $c "id" "?"]]
-                   [= $ok [= $got $want]]
-                   [yield [row id=$id ok=$ok got=$got want=$want]]]]
+                   [; a case with [line] rows grades the printed lines too, in order ]
+                   [= $want-lines [?for [in $l $c/line] [yield [$string $l]]]]
+                   [= $got-lines [?if [$empty $want-lines] [then ()]
+                                   [else [?for [in $k $keys] [yield [$refusal-line $release $k $private $components]]]]]]
+                   [= $lines-ok [= [$strings:join $got-lines "\n"] [$strings:join $want-lines "\n"]]]
+                   [= $ok [and [= $got $want] $lines-ok]]
+                   [yield [row id=$id ok=$ok got=[?if $lines-ok [then $got] [else [$concat $got " | printed: " [$strings:join $got-lines " / "]]]]
+                               want=[?if $lines-ok [then $want] [else [$concat $want " | printed: " [$strings:join $want-lines " / "]]]]]]]]
+        [= $reads [?for [in $c $root/read-case]
+                    [= $got [$read-line [$attr $c "repo" ""] [$attr $c "why" ""]]]
+                    [= $want [$attr $c "want" ""]]
+                    [yield [row id=[$attr $c "id" "?"] ok=[= $got $want] got=$got want=$want]]]]
+        [= $rows [?to-array [?for [in $xs ($rows, $reads)] [in $x $xs] [yield $x]]]]
         [= $_l [?for [in $r $rows]
                  [yield [$say [$concat "  " [?if $r@ok [then "ok "] [else "RED"]] " " [$string $r@id] ": refused '"
                                        [$string $r@got] "'" [?if $r@ok [then ""] [else [$concat " — the table wants '" [$string $r@want] "'"]]]]]]]]
@@ -170,11 +192,11 @@
   ('gh', 'api', '--paginate', '--slurp', [$concat "repos/" ORG "/" $repo "/issues?state=open&per_page=100"])]
 # refuse-read: exit 2 naming the repository and why its answer is not one.
 [?def refuse-read scope=public impure ($repo $why)
-  [?let [= $_c [$cry [$concat "issue-label-gate: REFUSED -- the open issues of " $repo " could not be read: " $why]]] [$env:exit 2]]]
+  [?let [= $_c [$cry [$read-line $repo $why]]] [$env:exit 2]]]
 [?def fetch scope=public impure ($repo)
   [?let [= $r [$process:run [$gh-argv $repo]]]
     [?match $r
-      [case [err $e] [?let [= $_c [$cry [$concat "issue-label-gate: REFUSED — cannot run gh for " $repo ": " [$string $e@message]]]] [$env:exit 2]]]
+      [case [err $e] [$refuse-read $repo [$concat "gh could not be run: " [$string $e@message]]]]
       [else [?if [= [$string $r@exit-code] "0"]
               [then [?let [= $out [$strings:trim [$string $r@stdout]]]
                           [= $d [$json:parse $out]]
@@ -186,9 +208,7 @@
                         [else [?if [$strings:starts-with $out "[["]
                                 [then [?to-array [$issues-of $d]]]
                                 [else [$refuse-read $repo "gh did not answer an array of pages"]]]]]]]
-              [else [?let [= $_c [$cry [$concat "issue-label-gate: REFUSED — `gh api` for " $repo " exited " [$string $r@exit-code]
-                                                 ": " [$strings:trim [$string $r@stderr]]]]]
-                      [$env:exit 2]]]]]]]]
+              [else [$refuse-read $repo [$concat "`gh api` exited " [$string $r@exit-code] ": " [$strings:trim [$string $r@stderr]]]]]]]]]]
 
 [?let
   [= $_st [?if [> [$count [?for [in $x [$env:argv]] [where [= $x "--self-test"]] [yield $x]]] 0]
@@ -201,7 +221,7 @@
   [= $private [$fetch HOME]]
   [= $components [?for [in $n $names] [yield {repo: $n, issues: [$fetch $n]}]]]
   [= $keys [?to-array [$judge $release CUTOFF $reg $private $components]]]
-  [= $_r [?for [in $k $keys] [yield [$cry [$concat "issue-label-gate: REFUSED " $k]]]]]
+  [= $_r [?for [in $k $keys] [yield [$cry [$refusal-line $release $k $private $components]]]]]
   [= $stale [?for [in $x $reg/exclude]
               [where [= [$attr $x "repo" ""] HOME]]
               [where [not [$member [?for [in $i $private] [yield [$num $i]]] [$attr $x "number" ""]]]]

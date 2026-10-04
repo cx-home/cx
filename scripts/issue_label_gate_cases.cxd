@@ -15,6 +15,11 @@ want= is every refusal the gate must make, space-separated, in order:
   c:<repo>#N         an open component issue whose title lacks `<release> `
   register:<repo>#N  an exclusion row without a why= (it excludes nothing)
 want='' is a case the gate passes.
+
+  [line '…']          (optional, inside a case) a line the refusals must
+                     PRINT, in order; a case with any grades all of them
+  [read-case repo= why= want=]  the sentence a read that failed prints
+                     (exit 2) for that repository and reason
 #]]
 
   [case id=a-labelled-new want=''
@@ -80,4 +85,32 @@ want='' is a case the gate passes.
     [private '[{"number": 1800, "created_at": "2026-09-01T00:00:00Z", "title": "x", "labels": [{"name": "v7.7"}], "milestone": {}}]']]
   [case id=register-row-without-number want='register:cx-private#?'
     [register [exclude repo=cx-private why='a reason, but for no issue']]]
+
+  [; What a refusal PRINTS (run4 of batch H4: the flow's red message tails the
+     step's stdout, and the refusals went to stderr alone, so the table it
+     showed named none). A case with [line] rows grades every printed line,
+     in order: the key, why, and the issue's title -- the gate's header
+     promises "each named, with its title". ]
+  [case id=line-a-names-why-and-title want='a:cx-private#1801'
+    [private '[{"number": 1801, "created_at": "2026-10-04T18:12:00Z", "title": "v7.7 the runner failed", "labels": [{"name": "bug"}], "milestone": null}]']
+    [line "issue-label-gate: REFUSED a:cx-private#1801 -- created 2026-10-04T18:12:00Z without the label v7.7: 'v7.7 the runner failed'"]]
+  [case id=line-b-names-milestone-and-title want='b:cx-private#1802'
+    [private '[{"number": 1802, "created_at": "2026-09-01T00:00:00Z", "title": "a parked thing", "labels": [{"name": "v7.7"}], "milestone": {"title": "v7.7"}}]']
+    [line "issue-label-gate: REFUSED b:cx-private#1802 -- on the milestone 'v7.7', which no [parking] row names: 'a parked thing'"]]
+  [case id=line-c-names-prefix-and-title want='c:cx-platform-xap#6'
+    [component repo=cx-platform-xap '[{"number": 6, "created_at": "2026-09-01T00:00:00Z", "title": "the umbrella panics", "labels": [], "milestone": null}]']
+    [line "issue-label-gate: REFUSED c:cx-platform-xap#6 -- the title does not start with 'v7.7 ': 'the umbrella panics'"]]
+  [case id=line-register-names-the-row want='register:cx-private#1790 a:cx-private#1790'
+    [register [exclude repo=cx-private number=1790]]
+    [private '[{"number": 1790, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [], "milestone": null}]']
+    [line "issue-label-gate: REFUSED register:cx-private#1790 -- a row of scripts/issue_label_exclusions.cxd without a why= or a number=; it excludes nothing"]
+    [line "issue-label-gate: REFUSED a:cx-private#1790 -- created 2026-10-03T01:00:00Z without the label v7.7: 'x'"]]
+
+  [; A read that failed (exit 2) is the ENVIRONMENT, not a label refusal: its
+     own sentence, so an unreachable GitHub (no gh, no auth, no network) is
+     never read as an issue without its label. ]
+  [read-case id=read-gh-not-authenticated repo=cx-private why='`gh api` exited 4: To get started with GitHub CLI, please run:  gh auth login'
+    want="issue-label-gate: ENVIRONMENT -- the open issues of cx-private could not be read (`gh api` exited 4: To get started with GitHub CLI, please run:  gh auth login); nothing was judged, this is not a label refusal (exit 2)"]
+  [read-case id=read-gh-absent repo=cx-platform-xap why='gh could not be run: no such file'
+    want="issue-label-gate: ENVIRONMENT -- the open issues of cx-platform-xap could not be read (gh could not be run: no such file); nothing was judged, this is not a label refusal (exit 2)"]
 ]
