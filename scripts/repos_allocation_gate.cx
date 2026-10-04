@@ -234,6 +234,79 @@
       [pins n=[$count $pins] of=[- [$count $repos] 1]]
       [mode name=$mode]]]]
 
+# package-pins: the [package pins] join (#1714; RULED: RS-7, RS-8). A
+# `ships=package status=extracted` row is a pure-CX package (RS-25): it has no
+# vmodule=, so its pins= is not the V import graph product-import-gate holds
+# (RS-24) -- it is the record of the repositories the package BUILDS ON, and
+# the one place that fact lives is the repository's own deps.cxd, which the
+# pinned checkout carries at deps/<name>/deps.cxd. The registry is declared
+# once and read by the site's repository pages and plug-in figures, so a row
+# whose pins= disagrees with that file is a stale reader of the repository and
+# is refused, both ways: a pin the row omits and a pin the row invents.
+# `$readings` is one `[deps repo= found= pins=]` per package row -- found=false
+# when the pinned checkout has no deps.cxd to read, which is refused too
+# (fail closed: an unread file is not an agreeing one). Pure; the caller reads
+# the files.
+[?def pin-set scope=private pure ($words)
+  [$strings:join [?for [in $w $words] [group-by $w] [order-by $key] [yield $key]] " "]]
+
+# pin-list: the words sorted, duplicates KEPT -- `pins='a a'` is not `pins='a'`
+# (the refutation round found the set comparison waving a doubled pin through).
+[?def pin-list scope=private pure ($words)
+  [$strings:join [?for [in $w $words] [order-by $w] [yield $w]] " "]]
+
+# deps-reading: one package's deps.cxd as the join reads it, pure (the caller
+# reads the file). found="true" only when it is a regular file that parses, its
+# root is [deps], every [dep] row -- a CHILD of the root: a [dep] nested in a
+# doc block is an example, not a pin -- names its repo=, and no repository has
+# two rows (the format's "one [dep] row per pinned REPOSITORY"). Anything else
+# is found="false" with the reason, which the join refuses whatever the row
+# says: an unread file is not an agreeing one (fail closed).
+[?def deps-reading scope=private pure ($repo $is-file $text)
+  [?let [= $doc [?if $is-file [then [?else [$cx:parse $text] [unreadable]]] [else [unreadable]]]]
+        [= $root [$string [$name $doc]]]
+        [= $rows [?if [= $root "deps"] [then [?for [in $d $doc/dep] [yield $d]]] [else ()]]]
+        [= $named [?for [in $d $rows] [where [not [= [$string [?else $d@repo ""]] ""]]] [yield [$string $d@repo]]]]
+        [= $why [?if [not $is-file] [then "it is not a file in the pinned checkout (run make deps-sync)"]
+                  [else [?if [not [= $root "deps"]] [then "it does not read as a [deps] document"]
+                    [else [?if [not [= [$count $named] [$count $rows]]] [then "a [dep] row names no repo="]
+                      [else [?if [not [= [$pin-list $named] [$pin-set $named]]] [then "a repository has two [dep] rows"]
+                        [else ""]]]]]]]]]
+    [?if [= $why ""]
+      [then [deps repo=$repo found="true" pins=[$strings:join $named " "] why=""]]
+      [else [deps repo=$repo found="false" pins="" why=$why]]]]]
+
+[?def package-pins scope=private pure ($repos $readings)
+  [?for [in $x $repos]
+    [where [= [$string [?else $x@status ""]] "extracted"]]
+    [where [= [$string [?else $x@ships ""]] "package"]]
+    [= $name [$string $x@name]]
+    [= $declared [$pin-list [$strings:split-whitespace [$string [?else $x@pins ""]]]]]
+    [= $mine [?for [in $d $readings] [where [= [$string $d@repo] $name]] [yield $d]]]
+    [= $read [?for [in $d $mine] [where [= [$string $d@found] "true"]] [yield [$string $d@pins]]]]
+    [= $why [?if [= [$count $mine] 0] [then "it was not read"] [else [$string [$first $mine]@why]]]]
+    [where [?if [= [$count $read] 0] [then true]
+             [else [not [= $declared [$pin-list [$strings:split-whitespace [$first $read]]]]]]]]
+    [yield [?if [= [$count $read] 0]
+             [then [failure kind="package pins unreadable"
+                     what=[$concat $name " -- deps/" $name "/deps.cxd cannot be read as the join needs: " $why "; the row's pins= cannot be checked against it"]]]
+             [else [failure kind="package pins drift"
+                     what=[$concat $name " -- the row says pins='" $declared "', deps/" $name "/deps.cxd pins '"
+                                [$pin-list [$strings:split-whitespace [$first $read]]] "'"]]]]]]]
+
+# registry-values: a row whose ships= or status= is not one of the values the
+# header declares leaves every join keyed on them silently (the refutation
+# round: `ships=Package` skipped the package-pins join), so it is refused.
+[?def registry-values scope=private pure ($repos)
+  [?for [in $x $repos]
+    [= $s [$string [?else $x@ships ""]]]
+    [= $st [$string [?else $x@status ""]]]
+    [where [or [not [$member $s ("binary", "package", "pypi", "crate", "go-module", "v-module", "editor", "none", "archived")]]
+               [not [$member $st ("", "extracted")]]]]
+    [yield [failure kind="registry value"
+             what=[$concat [$string $x@name] " -- ships=" $s " status=" $st
+                           " (ships is binary|package|pypi|crate|go-module|v-module|editor|none|archived; status is absent or extracted)"]]]]]
+
 # -- the self-test: synthetic rules over a synthetic file list ---------------
 
 [?if [$member "--self-test" [$env:argv]]
@@ -350,10 +423,63 @@
       [= $lw-ok [and [= [$strings:length $lw-why] 1200]
                      [and [= [$count $lw-repos] 3] [= [$count $lw-fails] 0]]]]
 
+      # -- the [package pins] join (#1714): a package row's pins= against its own
+      # deps.cxd. Red before this case existed: the gate never read a package's
+      # deps.cxd, and three package rows (cx-platform-secrets, sso, ux) carried
+      # no pins= while each deps.cxd pinned the front door. The same set in another
+      # order agrees; a row with no pins= against a pinning deps.cxd, a row naming
+      # a pin its deps.cxd lacks, and a checkout with no deps.cxd are each refused;
+      # a binary row and a planned package are not this join's.
+      [= $pp-reg [$cx:parse "[r
+        [repo name=pkg-ok ships=package status=extracted pins='p q']
+        [repo name=pkg-none ships=package status=extracted]
+        [repo name=pkg-extra ships=package status=extracted pins='p r']
+        [repo name=pkg-unread ships=package status=extracted pins='p']
+        [repo name=bin ships=binary status=extracted pins='z']
+        [repo name=pkg-planned ships=package]
+      ]"]]
+      [= $pp-readings [?for [in $d [$cx:parse "[r
+        [deps repo=pkg-ok found=true pins='q p']
+        [deps repo=pkg-none found=true pins='cx-private']
+        [deps repo=pkg-extra found=true pins='p']
+        [deps repo=pkg-unread found=false pins='' why='it is not a file in the pinned checkout (run make deps-sync)']
+        [deps repo=bin found=true pins='other']
+        [deps repo=pkg-planned found=true pins='other']
+      ]"]//deps] [yield $d]]]
+      [= $pp-kinds [?for [in $f [$package-pins [?for [in $r $pp-reg//repo] [yield $r]] $pp-readings]]
+                     [yield [$concat [$string $f@kind] ":" [$string $f@what]]]]]
+      [= $pp-want ("package pins drift:pkg-none -- the row says pins='', deps/pkg-none/deps.cxd pins 'cx-private'",
+                    "package pins drift:pkg-extra -- the row says pins='p r', deps/pkg-extra/deps.cxd pins 'p'",
+                    "package pins unreadable:pkg-unread -- deps/pkg-unread/deps.cxd cannot be read as the join needs: it is not a file in the pinned checkout (run make deps-sync); the row's pins= cannot be checked against it")]
+      [= $pp-missing [?for [in $w $pp-want] [where [not [$member $w $pp-kinds]]] [yield $w]]]
+      [= $pp-extra [?for [in $k $pp-kinds] [where [not [$member $k $pp-want]]] [yield $k]]]
+      [= $pp-ok [and [= [$count $pp-missing] 0] [= [$count $pp-extra] 0]]]
+
+      # -- the refutation round's cases (REFUTE-1, batch H2): the READING fails
+      # closed -- a deps.cxd that is not a file, does not parse, is not a [deps]
+      # document, has a [dep] with no repo= or two rows for one repository is
+      # found=false whatever the row says, and only CHILD [dep] rows count (a
+      # nested example is not a pin); a doubled pin in a row is drift, not a set;
+      # and a ships=/status= value the header does not declare is refused.
+      [= $dr ([$deps-reading "r1" false ""],
+               [$deps-reading "r2" true "[deps [dep repo=a"],
+               [$deps-reading "r3" true "[deps [dep repo=a] [doc [x [dep repo=b]]]]"],
+               [$deps-reading "r4" true "[deps [dep sha=1]]"],
+               [$deps-reading "r5" true "[deps [dep repo=a] [dep repo=a]]"],
+               [$deps-reading "r6" true "[x [dep repo=a]]"])]
+      [= $dr-got [$strings:join [?for [in $d $dr] [yield [$concat [$string $d@repo] "=" [$string $d@found] ":" [$string $d@pins]]]] " "]]
+      [= $dr-ok [= $dr-got "r1=false: r2=false: r3=true:a r4=false: r5=false: r6=false:"]]
+      [= $dup-reg [$cx:parse "[r [repo name=pkg-dup ships=package status=extracted pins='p p'] [repo name=typo ships=Package status=extracted] [repo name=half ships=package status=done] [repo name=fine ships=none]]"]]
+      [= $dup-kinds [?for [in $f ([$package-pins [?for [in $r $dup-reg//repo] [yield $r]] ([deps repo=pkg-dup found="true" pins='p' why=""])],
+                                   [$registry-values [?for [in $r $dup-reg//repo] [yield $r]]])]
+                          [in $x $f] [yield [$concat [$string $x@kind] ":" [$first [$strings:split [$string $x@what] " "]]]]]]
+      [= $dup-ok [= [$strings:join $dup-kinds " | "] "package pins drift:pkg-dup | registry value:typo | registry value:half"]]
+      [= $pp-ok [and $pp-ok [and $dr-ok $dup-ok]]]
+
       [?if [?if [= [$count $missing] 0]
-             [then [?if [= [$count $extra] 0] [then [and $census-ok [and $mode-ok [and $fd-ok $lw-ok]]]] [else false]]]
+             [then [?if [= [$count $extra] 0] [then [and $census-ok [and $mode-ok [and $fd-ok [and $lw-ok $pp-ok]]]]] [else false]]]
              [else false]]
-        [then [?let [= $_ [$say "repos-allocation self-test OK -- unallocated, dead rule, duplicate, undeclared, empty repo, split module each caught once, and the split twice: a torn code= and a torn half= (#1609); an EXTRACTED repo that owns nothing is exempt and one that still claims a file is caught (RS-12); an unpinnable pin and a self-pin caught on the deps.cxd join (#1589 item 23); a whole module passes; census a=1 b=1 (y/ counted under the undeclared rule's repo, as it must); the v/six.md fixture forces cx-private mode so this whole-tree case is unchanged; the front-door case (repo=cx files only) passes clean with the other row's dead-rule/empty-repo checks skipped, and the same tree plus one lang/_archived/ file is refused by name (RS-8, D59a); a 1,200-byte why= row is read and its pinned neighbours are not unpinnable (#1668)."]]
+        [then [?let [= $_ [$say "repos-allocation self-test OK -- unallocated, dead rule, duplicate, undeclared, empty repo, split module each caught once, and the split twice: a torn code= and a torn half= (#1609); an EXTRACTED repo that owns nothing is exempt and one that still claims a file is caught (RS-12); an unpinnable pin and a self-pin caught on the deps.cxd join (#1589 item 23); a whole module passes; census a=1 b=1 (y/ counted under the undeclared rule's repo, as it must); the v/six.md fixture forces cx-private mode so this whole-tree case is unchanged; the front-door case (repo=cx files only) passes clean with the other row's dead-rule/empty-repo checks skipped, and the same tree plus one lang/_archived/ file is refused by name (RS-8, D59a); a 1,200-byte why= row is read and its pinned neighbours are not unpinnable (#1668); a package row whose pins= disagrees with its deps.cxd either way, or whose deps.cxd is unread, is refused and the same set in another order agrees (#1714)."]]
                 [$env:exit 0]]]
         [else [?let [= $_ [$cry [$concat "repos-allocation self-test FAILED -- missing: "
                                           [$strings:join $missing "; "]
@@ -364,7 +490,10 @@
                                           " | front-door case2 mode=" $fd-mode2
                                           " missing=" [$strings:join $fd-missing2 "; "]
                                           " unexpected=" [$strings:join $fd-extra2 "; "]
-                                          " | long-why rows=" [$string [$count $lw-repos]] " failures=" [$strings:join $lw-fails "; "]]]]
+                                          " | long-why rows=" [$string [$count $lw-repos]] " failures=" [$strings:join $lw-fails "; "]
+                                          " | package-pins missing=" [$strings:join $pp-missing "; "]
+                                          " unexpected=" [$strings:join $pp-extra "; "]
+                                          " | readings=" $dr-got " | duplicates/values=" [$strings:join $dup-kinds " | "]]]]
                 [$env:exit 1]]]]]]
   [else ""]]
 
@@ -396,7 +525,17 @@
              [else ()]]]
   [= $v [$check $rules $repos $files $modules $pins]]
   [= $mode [$string [$first $v/mode]@name]]
-  [= $failures [?for [in $f $v/failures/failure] [yield $f]]]
+  # the [package pins] join (#1714): each package row's own deps.cxd, read from
+  # the pinned checkout deps-sync populates. A front-door tree carries the same
+  # deps/, so the join runs in both modes.
+  [= $pkg-readings [?for [in $x $repos]
+                      [where [= [$string [?else $x@ships ""]] "package"]]
+                      [where [= [$string [?else $x@status ""]] "extracted"]]
+                      [= $dp [$concat "deps/" [$string $x@name] "/deps.cxd"]]
+                      [= $is-file [$io:is-file $dp]]
+                      [yield [$deps-reading [$string $x@name] $is-file [?if $is-file [then [?else [$io:read-file $dp] ""]] [else ""]]]]]]
+  [= $failures [?for [in $part ([?for [in $f $v/failures/failure] [yield $f]], [$package-pins $repos $pkg-readings], [$registry-values $repos])]
+                  [in $f $part] [yield $f]]]
   [= $_census [?for [in $c $v/census/row]
                 [yield [$say [$concat [$strings:pad-start [$string $c@n] 6 " "] "  " [$string $c@repo]]]]]]
   # the mode this run graded the tree as, and, in front-door mode, the one
