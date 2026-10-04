@@ -273,11 +273,16 @@ The full grouped shape, with per-group aggregates over a bound key:
 
 {{EXAMPLE:program-for-group-010-m5-revenue-by-region block}}
 
-`[order-by]` sorts, and takes a direction and multiple keys:
-
-{{EXAMPLE:program-order-by-desc-001 block}}
+`[order-by]` sorts. Its keys go in one clause, in order — the items sort by
+the first key, ties by the second, and so on, and items equal on every key
+keep their input order — and each key takes its own direction, `asc` (the
+default) or `desc`, written after it:
 
 {{EXAMPLE:program-order-by-multikey-001 block}}
+
+A second `[order-by]` clause in the same `[?for]` is refused at parse time,
+naming it, rather than read as a re-sort — so a sort always reads left to
+right, first key first (`program-order-by-multikey-009-second-clause-diagnostic-names-it`).
 
 ### Query with CXPath
 

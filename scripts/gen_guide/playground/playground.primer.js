@@ -419,33 +419,15 @@ window.cxPlaygroundPrimer = {
     },
     {
       "n": 24,
-      "id": "program-order-by-desc-001",
-      "suite": "cx-core-code/conformance/code.cxd",
-      "heading": "§5 Iterate with [?for]",
-      "role": "",
-      "title": "",
-      "reading": "code",
-      "doc": "",
-      "src": "[?let [= $users [u-set [u name=\"C\" age=30] [u name=\"A\" age=25] [u name=\"B\" age=30]]] [?for [in $u $users//u] [order-by $u/@age desc] [yield $u/@name]]]",
-      "cmd": "cx prog.cx",
-      "expected": "C\nB\nA",
-      "match": "exact",
-      "exit": "",
-      "runnable": true,
-      "why": "",
-      "wasmUnsupported": ""
-    },
-    {
-      "n": 25,
       "id": "program-order-by-multikey-001",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Iterate with [?for]",
       "role": "",
       "title": "",
       "reading": "code",
-      "doc": "",
-      "src": "[?let [= $users [u-set [u name=\"C\" age=30] [u name=\"A\" age=25] [u name=\"B\" age=30]]] [?for [in $u $users//u] [order-by $u/@name] [order-by $u/@age desc]\n        [yield [r n=$u/@name a=$u/@age]]]]",
-      "cmd": "cx prog.cx",
+      "doc": "[u-set [u name=\"C\" age=30] [u name=\"A\" age=25] [u name=\"B\" age=30]]",
+      "src": "[?for [in $u //u] [order-by $u/@age desc $u/@name asc]\n      [yield [r n=$u/@name a=$u/@age]]]",
+      "cmd": "cx --data=input.cx prog.cx",
       "expected": "[r n=B a=30]\n[r n=C a=30]\n[r n=A a=25]",
       "match": "exact",
       "exit": "",
@@ -454,7 +436,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 26,
+      "n": 25,
       "id": "program-cxpath-001-path-value-basic",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Query with CXPath",
@@ -472,7 +454,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 27,
+      "n": 26,
       "id": "program-cxpath-002-attribute-predicate",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Query with CXPath",
@@ -490,7 +472,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 28,
+      "n": 27,
       "id": "program-cxpath-004-count-aggregation",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Query with CXPath",
@@ -508,7 +490,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 29,
+      "n": 28,
       "id": "program-cxpath-008-binding-path-descendant",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Query with CXPath",
@@ -526,7 +508,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 30,
+      "n": 29,
       "id": "program-if-falsy-no-else-empty",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Branch with [?if]",
@@ -544,7 +526,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 31,
+      "n": 30,
       "id": "program-if-elem-002-existence-idiom",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Branch with [?if]",
@@ -562,7 +544,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 32,
+      "n": 31,
       "id": "program-match-multi-001-element-dispatch",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Destructure with [?match]",
@@ -580,7 +562,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 33,
+      "n": 32,
       "id": "program-match-multi-005-when-arm-predicate",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Destructure with [?match]",
@@ -598,7 +580,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 34,
+      "n": 33,
       "id": "program-match-multi-007-wildcard",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Destructure with [?match]",
@@ -616,7 +598,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 35,
+      "n": 34,
       "id": "program-match-single-025-destructure-or-refuse-idiom",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Destructure in one line — single-arm [?match]",
@@ -634,7 +616,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 36,
+      "n": 35,
       "id": "program-match-single-026-destructure-or-refuse-refuses",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Destructure in one line — single-arm [?match]",
@@ -652,7 +634,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 37,
+      "n": 36,
       "id": "program-match-of-001-exhaustive-in-set",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Enums in CX — the closed set travels with the data",
@@ -670,7 +652,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 38,
+      "n": 37,
       "id": "program-match-of-003-fallthrough-refuses",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Enums in CX — the closed set travels with the data",
@@ -688,7 +670,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 39,
+      "n": 38,
       "id": "validate-049-enum-values-atom-declared-order",
       "suite": "cx-core-code/conformance/stdlib/validate.cxd",
       "heading": "§5 Enums in CX — the closed set travels with the data",
@@ -706,7 +688,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 40,
+      "n": 39,
       "id": "program-ophole-001-unary-partial-value",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Callable values — one rule at every site",
@@ -724,7 +706,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 41,
+      "n": 40,
       "id": "program-ophole-002-binary-operator-value",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Callable values — one rule at every site",
@@ -742,7 +724,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 42,
+      "n": 41,
       "id": "program-ophole-006-op-table-end-to-end",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Callable values — one rule at every site",
@@ -760,7 +742,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 43,
+      "n": 42,
       "id": "program-ophole-009-reduce-using",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Callable values — one rule at every site",
@@ -778,7 +760,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 44,
+      "n": 43,
       "id": "map-013-get-computed-key",
       "suite": "cx-core-code/conformance/stdlib/map.cxd",
       "heading": "§5 Look a key up with a computed key",
@@ -796,7 +778,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 45,
+      "n": 44,
       "id": "map-014-get-computed-key-miss-composes-with-else",
       "suite": "cx-core-code/conformance/stdlib/map.cxd",
       "heading": "§5 Look a key up with a computed key",
@@ -814,7 +796,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 46,
+      "n": 45,
       "id": "program-computed-step-006-member-miss-fails-loud",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Look a key up with a computed key",
@@ -832,7 +814,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 47,
+      "n": 46,
       "id": "program-computed-step-007-member-miss-else-recovers",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Look a key up with a computed key",
@@ -850,7 +832,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 48,
+      "n": 47,
       "id": "env-013-parse-long-value-int",
       "suite": "cx-core-code/conformance/stdlib/env.cxd",
       "heading": "§5 Read your own arguments, and turn text into values",
@@ -868,7 +850,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 49,
+      "n": 48,
       "id": "env-023-parse-flag-type-mismatch",
       "suite": "cx-core-code/conformance/stdlib/env.cxd",
       "heading": "§5 Read your own arguments, and turn text into values",
@@ -886,7 +868,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 50,
+      "n": 49,
       "id": "program-cast-string-to-int",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Read your own arguments, and turn text into values",
@@ -904,7 +886,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 51,
+      "n": 50,
       "id": "strings-094-to-number-else-coalesce",
       "suite": "cx-core-code/conformance/stdlib/strings.cxd",
       "heading": "§5 Read your own arguments, and turn text into values",
@@ -922,7 +904,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 52,
+      "n": 51,
       "id": "program-def-002-parse-with-returns",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Define with [?def]",
@@ -940,7 +922,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 53,
+      "n": 52,
       "id": "program-def-mutual-recursion",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Define with [?def]",
@@ -958,7 +940,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 54,
+      "n": 53,
       "id": "program-fn-004-def-first-class",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Define with [?def]",
@@ -976,7 +958,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 55,
+      "n": 54,
       "id": "strings-001-upper",
       "suite": "cx-core-code/conformance/stdlib/strings.cxd",
       "heading": "§5 Import with [?lib]",
@@ -994,7 +976,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 56,
+      "n": 55,
       "id": "program-lib-004-as-alias",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Import with [?lib]",
@@ -1012,7 +994,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 57,
+      "n": 56,
       "id": "program-pipe-001-canonical-form",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Thread values with [?pipe]",
@@ -1030,7 +1012,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 58,
+      "n": 57,
       "id": "program-pipe-002-infix-sugar",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Thread values with [?pipe]",
@@ -1048,7 +1030,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 59,
+      "n": 58,
       "id": "program-str-001-binding",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Build strings with [?str]",
@@ -1066,7 +1048,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 60,
+      "n": 59,
       "id": "program-element-dynamic-head-001-string",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Construct with a computed name",
@@ -1084,7 +1066,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 61,
+      "n": 60,
       "id": "program-pvmatrix-026-construct-seq-refused",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Build element content with [?splice], never by dropping a sequence in",
@@ -1102,7 +1084,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 62,
+      "n": 61,
       "id": "program-pvmatrix-027-construct-splice-adopts",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Build element content with [?splice], never by dropping a sequence in",
@@ -1120,7 +1102,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 63,
+      "n": 62,
       "id": "program-modify-outer-pred-003-bound-outer-filters",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Transform with [?modify]",
@@ -1138,7 +1120,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 64,
+      "n": 63,
       "id": "program-iterator-lazy-002-take-bounds-output",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Stream with the iterator family",
@@ -1156,7 +1138,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 65,
+      "n": 64,
       "id": "program-reduce-002-sequential-left-fold",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Stream with the iterator family",
@@ -1174,7 +1156,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 66,
+      "n": 65,
       "id": "program-with-scope-001-basic-merge",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Bring names in from data with [?with-scope]",
@@ -1192,7 +1174,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 67,
+      "n": 66,
       "id": "program-do-001-yields-unit",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 Sequence effects with [?do]",
@@ -1210,7 +1192,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 68,
+      "n": 67,
       "id": "program-builtin-concat",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 The builtins you will reach for without a [?lib]",
@@ -1228,7 +1210,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 69,
+      "n": 68,
       "id": "program-builtin-distinct",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§5 The builtins you will reach for without a [?lib]",
@@ -1246,7 +1228,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 70,
+      "n": 69,
       "id": "program-construction-err-003-literal-err-stays-data",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§6 An error is a value, and position decides",
@@ -1264,7 +1246,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 71,
+      "n": 70,
       "id": "program-construction-err-004-captured-err-propagates",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§6 An error is a value, and position decides",
@@ -1282,7 +1264,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 72,
+      "n": 71,
       "id": "program-construction-err-005-rebuild-from-parts",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§6 An error is a value, and position decides",
@@ -1300,7 +1282,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 73,
+      "n": 72,
       "id": "program-construction-err-006-sequence-collects-outcomes",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§6 An error is a value, and position decides",
@@ -1318,7 +1300,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 74,
+      "n": 73,
       "id": "map-002-get-absent-is-empty",
       "suite": "cx-core-code/conformance/stdlib/map.cxd",
       "heading": "§6 Absence has a defined answer",
@@ -1336,7 +1318,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 75,
+      "n": 74,
       "id": "program-builtin-present-002-not-exists-content-arity",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§6 Absence is not emptiness — [$present], not [$exists]",
@@ -1354,7 +1336,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 76,
+      "n": 75,
       "id": "program-builtin-present-003-leaf-match-vs-no-match",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§6 Absence is not emptiness — [$present], not [$exists]",
@@ -1372,7 +1354,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 77,
+      "n": 76,
       "id": "store-err-boundary-001-put-doc-nested-err-refuses",
       "suite": "cx-platform-store/conformance/platform/store.cxd",
       "heading": "§6 An error may not leave the program silently",
@@ -1390,7 +1372,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 78,
+      "n": 77,
       "id": "store-err-boundary-002-put-doc-permit-externalizes",
       "suite": "cx-platform-store/conformance/platform/store.cxd",
       "heading": "§6 An error may not leave the program silently",
@@ -1408,7 +1390,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 79,
+      "n": 78,
       "id": "store-err-boundary-004-err-stays-a-value-in-process",
       "suite": "cx-platform-store/conformance/platform/store.cxd",
       "heading": "§6 An error may not leave the program silently",
@@ -1426,7 +1408,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 80,
+      "n": 79,
       "id": "program-eq-021-two-equality-notions",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§6 Two equality notions, both deliberate",
@@ -1444,7 +1426,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 81,
+      "n": 80,
       "id": "io-001-read-file-cap-denied",
       "suite": "cx-core-code/conformance/stdlib/io.cxd",
       "heading": "§7 Capabilities",
@@ -1462,7 +1444,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 82,
+      "n": 81,
       "id": "strings-004-length-char",
       "suite": "cx-core-code/conformance/stdlib/strings.cxd",
       "heading": "§8 Five you will reach for immediately",
@@ -1480,7 +1462,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 83,
+      "n": 82,
       "id": "re-002-compile-then-matches",
       "suite": "cx-core-code/conformance/stdlib/re.cxd",
       "heading": "§8 Five you will reach for immediately",
@@ -1498,7 +1480,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": "The wasm build links a stub for the RE2 shim (deps/cx-core-code/scripts/wasm/stubs/re2_shim.c: every pattern fails to compile), so [$re:compile] refuses with CXER3201 here (#1701)."
     },
     {
-      "n": 84,
+      "n": 83,
       "id": "json-001-parse-int",
       "suite": "cx-core-code/conformance/stdlib/json.cxd",
       "heading": "§8 Five you will reach for immediately",
@@ -1516,7 +1498,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 85,
+      "n": 84,
       "id": "fp-062-map-list-operator-value",
       "suite": "cx-core-code/conformance/stdlib/fp.cxd",
       "heading": "§8 Five you will reach for immediately",
@@ -1534,7 +1516,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 86,
+      "n": 85,
       "id": "time-001-date",
       "suite": "cx-core-code/conformance/stdlib/time.cxd",
       "heading": "§8 Five you will reach for immediately",
@@ -1552,7 +1534,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 87,
+      "n": 86,
       "id": "tab-001-typed-columns",
       "suite": "cx-core-data/conformance/table.cxd",
       "heading": "§8 Tables are a data form, not a convention",
@@ -1570,7 +1552,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 88,
+      "n": 87,
       "id": "ap-flags-after-file-wrong",
       "suite": "conformance/llm/antipatterns.cxd",
       "heading": "§9 Anti-patterns",
@@ -1588,7 +1570,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 89,
+      "n": 88,
       "id": "ap-flags-after-file-right",
       "suite": "conformance/llm/antipatterns.cxd",
       "heading": "§9 Anti-patterns",
@@ -1606,7 +1588,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 90,
+      "n": 89,
       "id": "ap-bare-head-typo-wrong",
       "suite": "conformance/llm/antipatterns.cxd",
       "heading": "§9 Anti-patterns",
@@ -1624,7 +1606,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 91,
+      "n": 90,
       "id": "ap-bare-head-typo-right",
       "suite": "conformance/llm/antipatterns.cxd",
       "heading": "§9 Anti-patterns",
@@ -1642,7 +1624,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 92,
+      "n": 91,
       "id": "ap-nested-let-wrong",
       "suite": "conformance/llm/antipatterns.cxd",
       "heading": "§9 Anti-patterns",
@@ -1660,7 +1642,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 93,
+      "n": 92,
       "id": "ap-wide-match-hot-path-wrong",
       "suite": "conformance/llm/antipatterns.cxd",
       "heading": "§9 Anti-patterns",
@@ -1678,7 +1660,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 94,
+      "n": 93,
       "id": "ap-wide-match-hot-path-right",
       "suite": "conformance/llm/antipatterns.cxd",
       "heading": "§9 Anti-patterns",
@@ -1696,7 +1678,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 95,
+      "n": 94,
       "id": "ap-cx-eval-inline-wrong",
       "suite": "conformance/llm/antipatterns.cxd",
       "heading": "§9 Anti-patterns",
@@ -1714,7 +1696,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 96,
+      "n": 95,
       "id": "ap-cx-eval-inline-right",
       "suite": "conformance/llm/antipatterns.cxd",
       "heading": "§9 Anti-patterns",
@@ -1732,7 +1714,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 97,
+      "n": 96,
       "id": "ap-adapter-lambda-wrong",
       "suite": "conformance/llm/antipatterns.cxd",
       "heading": "§9 Anti-patterns",
@@ -1750,7 +1732,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 98,
+      "n": 97,
       "id": "ap-adapter-lambda-right",
       "suite": "conformance/llm/antipatterns.cxd",
       "heading": "§9 Anti-patterns",
@@ -1768,7 +1750,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 99,
+      "n": 98,
       "id": "ap-match-else-rethrow-wrong",
       "suite": "conformance/llm/antipatterns.cxd",
       "heading": "§9 Anti-patterns",
@@ -1786,7 +1768,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 100,
+      "n": 99,
       "id": "ap-match-else-rethrow-right",
       "suite": "conformance/llm/antipatterns.cxd",
       "heading": "§9 Anti-patterns",
@@ -1804,7 +1786,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 101,
+      "n": 100,
       "id": "ap-open-string-dispatch-wrong",
       "suite": "conformance/llm/antipatterns.cxd",
       "heading": "§9 Anti-patterns",
@@ -1822,7 +1804,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 102,
+      "n": 101,
       "id": "ap-open-string-dispatch-right",
       "suite": "conformance/llm/antipatterns.cxd",
       "heading": "§9 Anti-patterns",
@@ -1840,7 +1822,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 103,
+      "n": 102,
       "id": "ap-exists-as-presence-wrong",
       "suite": "conformance/llm/antipatterns.cxd",
       "heading": "§9 Anti-patterns",
@@ -1858,7 +1840,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 104,
+      "n": 103,
       "id": "ap-exists-as-presence-right",
       "suite": "conformance/llm/antipatterns.cxd",
       "heading": "§9 Anti-patterns",
@@ -1876,7 +1858,7 @@ window.cxPlaygroundPrimer = {
       "wasmUnsupported": ""
     },
     {
-      "n": 105,
+      "n": 104,
       "id": "program-if-bare-then-else-err",
       "suite": "cx-core-code/conformance/code.cxd",
       "heading": "§9 One more, from the language itself",
