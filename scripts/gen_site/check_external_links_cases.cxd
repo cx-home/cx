@@ -39,4 +39,15 @@ which the cx-home/cx- prefix row expects.
         [a 'error cx-err:CXER4506']]
   [case id=connect-every-try-expected-404 expect='404' want=UNREACHABLE tries=3
         [a 'error cx-err:CXER4506']]
+
+  [; REFUTE-1 of batch H4: an error that is not transport — a forbidden
+     address, a missing grant — is no reason to retry and no UNREACHABLE; a
+     planted status 0 or -1 is no answer; a case with no planted answer is
+     refused by the self-test itself, never a hang. ]
+  [case id=forbidden-address-not-retried expect='' want=DEAD tries=1 [a 'error cx-err:CXER4504'] [a '200']]
+  [case id=grant-denied-not-retried expect='' want=DEAD tries=1 [a 'error cx-err:CXER0271'] [a '200']]
+  [case id=reset-then-200 expect='' want=ok tries=2 [a 'error cx-err:CXER4508'] [a '200']]
+  [case id=status-zero expect='' want=DEAD tries=1 [a '0']]
+  [case id=status-negative expect='' want=DEAD tries=1 [a '-1']]
+  [case id=no-answers-planted expect='' want=REFUSED tries=0]
 ]
