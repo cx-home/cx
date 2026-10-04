@@ -611,6 +611,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `fl-2` | [rulings_2026_08_20_columnar_lineage.md](rulings_2026_08_20_columnar_lineage.md) | FL-3 — the columnar backend joins the FL-1/FL-2 durability contract |
 | `fl-2` | [rulings_2026_08_20_s3_lineage.md](rulings_2026_08_20_s3_lineage.md) | FL-2 — bucket lineage: the s3 substrate joins the FL-1 durability contract |
 | `fl-3` | [rulings_2026_08_20_columnar_lineage.md](rulings_2026_08_20_columnar_lineage.md) | FL-3 — the columnar backend joins the FL-1/FL-2 durability contract |
+| `flip-1` | [rulings_2026_10_04_integrator_decisions_l186_l190.md](rulings_2026_10_04_integrator_decisions_l186_l190.md) | FLIP-1 — an enforced case that recorded a defect against its own title flips with the fix that removes the defect (the guide case g6-09) |
 | `fmt-1` | [rulings_2026_09_16_fmt_ratchet_fmt1.md](rulings_2026_09_16_fmt_ratchet_fmt1.md) | Integrator decision 2026-09-16 ~11:30Z — the fmt-sweep ratchet moves one way, and a decline fixed under it needs no spec sentence (RULED: FMT-1) |
 | `fmt-2` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | Integrator decisions, 2026-09-17 — the Ring 0 rulings owed (1363-b, 1387-a, FMT-2, GRADER-1, 1150-a, 1250-b) |
 | `fmt-2` | [rulings_2026_10_01_owner_decisions_l153_l156.md](rulings_2026_10_01_owner_decisions_l153_l156.md) | FMT-3 — FMT-2 gains the two break sites it lacks; a formatter places every comment it reads (L156 = (a); #1436) |
@@ -1097,6 +1098,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `vg-2` | [rulings_2026_09_04_view_grammar.md](rulings_2026_09_04_view_grammar.md) | VG-2 — durable per-viewer view preferences (RULED: VG-2 = a) |
 | `vg-2` | [rulings_2026_09_04_view_grammar.md](rulings_2026_09_04_view_grammar.md) | VG-2 — durable per-viewer view preferences (RULED: VG-2 = a) |
 | `vg-3` | [rulings_2026_09_15_views_group_vg3_schema_sd1.md](rulings_2026_09_15_views_group_vg3_schema_sd1.md) | Owner letters 2026-09-15 ~01:20Z — the fourth clause of `[views]`, and the schema-as-data feature kind (RULED: VG-3, SD-1) |
+| `vgate-1` | [rulings_2026_10_04_integrator_decisions_l186_l190.md](rulings_2026_10_04_integrator_decisions_l186_l190.md) | VGATE-1 — the fork's grow gate is fixed at its root, never landed red and never tuned around an unfound cause (Letters 186 = (a) and 190 = (a)) |
 | `vgcg-1` | [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md) | VGCG-1 — batch I-1's fork pin lands when the JSON convert gauge reads under the 2.5× bar on three consecutive default-setting reads in a quiet gap (Letter 179 = (a)) |
 | `walk-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | Owner decisions 2026-09-27 (afternoon) — Letters 52, 53 and 54: XCO's two readings (ACK-1, RT-1), a list verb through the host walks every page (WALK-1), the vendor budget is per process (BUDGET-1) |
 | `walk-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | WALK-1 — a list verb performed by the host walks every page (L53 = (a)) |
@@ -1506,7 +1508,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `prop-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md), [rulings_2026_10_03_owner_decision_l175.md](rulings_2026_10_03_owner_decision_l175.md), [rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md](rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md) |
 | `readr-1` | [rulings_2026_10_01_owner_decision_l160.md](rulings_2026_10_01_owner_decision_l160.md), [rulings_2026_10_01_owner_decision_overage.md](rulings_2026_10_01_owner_decision_overage.md) |
 | `refr-1` | [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md) |
-| `refute-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md), [rulings_2026_10_03_owner_decision_l175.md](rulings_2026_10_03_owner_decision_l175.md), [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md), [rulings_2026_10_04_integrator_decisions_l182_l185.md](rulings_2026_10_04_integrator_decisions_l182_l185.md) |
+| `refute-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md), [rulings_2026_10_03_owner_decision_l175.md](rulings_2026_10_03_owner_decision_l175.md), [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md), [rulings_2026_10_04_integrator_decisions_l182_l185.md](rulings_2026_10_04_integrator_decisions_l182_l185.md), [rulings_2026_10_04_integrator_decisions_l186_l190.md](rulings_2026_10_04_integrator_decisions_l186_l190.md) |
 | `rfc-7540` | [rulings_2026_08_20_h2_surface.md](rulings_2026_08_20_h2_surface.md) |
 | `ring-1` | [batch_796_post_gate_defects.md](batch_796_post_gate_defects.md), [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
 | `ring-2` | [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
@@ -1593,4 +1595,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*383 ledger pages; 853 ids declared, 402 cited only.*
+*384 ledger pages; 855 ids declared, 402 cited only.*
