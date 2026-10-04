@@ -1139,8 +1139,12 @@ prebuild() {
 # guide-render-gate, in the storm, remove and rewrite the same two trees. After
 # the storm drains nothing else writes them. test-site-phone-width (#1762)
 # joins for the same reason: its prerequisite `site` re-renders docs/guide/
-# and removes and copies site/, then it reads site/ in a browser.
-SERIAL_TAIL='test-profile-gate test-vcx-timing test-code-diagram test-playground-primer test-site-phone-width'
+# and removes and copies site/, then it reads site/ in a browser;
+# nav-shape-check has the same prerequisite (REFUTE-1 st01). site-live-check
+# is LAST (RULED: SITER-1, #1765): the post-merge refresh follows a red whose
+# only red step is site-live-check, so it runs only after every other
+# selected step passed (a red step stops the tail before it).
+SERIAL_TAIL='test-profile-gate test-vcx-timing test-code-diagram test-playground-primer test-site-phone-width nav-shape-check site-live-check'
 
 # The per-file narrowing of test-vcx-suite, filled in below when that step is
 # selected. Empty = the union, which is what the full-union path wants.

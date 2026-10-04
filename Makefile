@@ -2901,7 +2901,7 @@ test:
 	# all before the next tip. Nothing else moves: the sub-make's status is
 	# still non-zero on a red storm, so this recipe line still fails and the
 	# three serial tail lines below still run only after a GREEN storm.
-	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) storm"; $(MAKE) -k -j$(TEST_JOBS) $(OUTPUT_SYNC) build-profiles-dev $(filter-out test-profile-gate test-vcx-timing test-code-diagram test-playground-primer test-site-phone-width,$(TEST_TARGETS)); cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) storm exit=$$cx_step_rc"; exit $$cx_step_rc
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) storm"; $(MAKE) -k -j$(TEST_JOBS) $(OUTPUT_SYNC) build-profiles-dev $(filter-out test-profile-gate test-vcx-timing test-code-diagram test-playground-primer test-site-phone-width nav-shape-check site-live-check,$(TEST_TARGETS)); cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) storm exit=$$cx_step_rc"; exit $$cx_step_rc
 	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) profile-gate"; $(MAKE) test-profile-gate; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) profile-gate exit=$$cx_step_rc"; exit $$cx_step_rc
 	# #1216: the WALL-CLOCK assertions (the #1055 boot budget, the #816 try-send /
 	# try-receive upper bounds) run serially AFTER the storm too — they are
@@ -2933,6 +2933,13 @@ test:
 	# while site-check and guide-render-gate remove and rewrite both trees in
 	# the storm. Nothing ordered the three; after the storm nothing writes them.
 	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) site-phone-width"; $(MAKE) test-site-phone-width; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) site-phone-width exit=$$cx_step_rc"; exit $$cx_step_rc
+	# nav-shape-check has the same prerequisite, `site` (REFUTE-1 st01 on #1762).
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) nav-shape"; $(MAKE) nav-shape-check; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) nav-shape exit=$$cx_step_rc"; exit $$cx_step_rc
+	# site-live-check is the LAST tail line (RULED: SITER-1, #1765; REFUTE-1
+	# g16): the post-merge refresh follows a red whose only red step is
+	# site-live-check, so that step must run only after every other step has
+	# passed — a red storm, or a red tail step before it, never reaches it.
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) site-live"; $(MAKE) site-live-check; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) site-live exit=$$cx_step_rc"; exit $$cx_step_rc
 	@rm -f "$(CX_GATE_LOCK)"
 
 # Sequential fallback — useful for debugging output-order issues, sanitizer
