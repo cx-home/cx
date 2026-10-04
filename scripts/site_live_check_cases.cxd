@@ -15,7 +15,7 @@
 #   now      the moment of the reading (RFC 3339);
 #   ok       the verdict; `why` a substring its reason must carry.
 # P below is the public main, S an older build.
-[cases expectations=19
+[cases expectations=24
   [case id=stamp-equal ok=true why='live: the stamp is the public main'
         stamp='4d499e603f55f7bf0e6534bee0aba3a339ea6a73' lm='' maxage='600'
         public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73' run='unread' prev='' now='2026-10-03T07:00:00Z']
@@ -90,4 +90,30 @@
   [case id=queued-in-window ok=true why='deploying'
         stamp='eb8f1600230784e01931098816d9f357df42d182' lm='' maxage='600'
         public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73'
-        run='queued - 2026-10-03T06:00:00Z 2026-10-03T06:00:05Z' prev='2100' now='2026-10-03T06:05:00Z']]
+        run='queued - 2026-10-03T06:00:00Z 2026-10-03T06:00:05Z' prev='2100' now='2026-10-03T06:05:00Z']
+  [; #1770: gh answers an in-flight run's conclusion as '' (not null), so the
+     live reading is '<status>  <createdAt> <updatedAt>' — two spaces, three
+     words (measured 2026-10-04 on cx-home/cx: `in_progress  2026-10-04T01:50:26Z
+     2026-10-04T01:50:32Z`). 91cbc2cee's red: the deploy in flight read as "no
+     Site run". In the window it is deploying; past it, stale by name; a run
+     that ended failure stays red ]
+  [case id=gh-in-progress-young ok=true why='deploying'
+        stamp='' lm='Sat, 03 Oct 2026 06:30:02 GMT' maxage='0'
+        public='7a2007925f3b1e0c4d5a6b7c8d9e0f1a2b3c4d5e'
+        run='in_progress  2026-10-03T15:37:22Z 2026-10-03T15:37:30Z' prev='2100' now='2026-10-03T15:52:18Z']
+  [case id=gh-in-progress-stamped ok=true why='deploying'
+        stamp='cd90b622e7fe3777982e09a09e39223f2b3c1e75' lm='Sat, 03 Oct 2026 23:35:50 GMT' maxage='600'
+        public='0d55a442a06a4799a4d6630363dd272aba3051cc'
+        run='in_progress  2026-10-04T01:50:26Z 2026-10-04T01:50:32Z' prev='1873' now='2026-10-04T02:07:11Z']
+  [case id=gh-in-progress-past-bound ok=false why='stale'
+        stamp='' lm='Sat, 03 Oct 2026 06:30:02 GMT' maxage='0'
+        public='7a2007925f3b1e0c4d5a6b7c8d9e0f1a2b3c4d5e'
+        run='in_progress  2026-10-03T15:37:22Z 2026-10-03T15:37:30Z' prev='2100' now='2026-10-03T16:30:00Z']
+  [case id=gh-queued-young ok=true why='deploying'
+        stamp='cd90b622e7fe3777982e09a09e39223f2b3c1e75' lm='' maxage='600'
+        public='0d55a442a06a4799a4d6630363dd272aba3051cc'
+        run='queued  2026-10-04T01:50:26Z 2026-10-04T01:50:26Z' prev='1873' now='2026-10-04T01:51:00Z']
+  [case id=gh-completed-no-conclusion ok=false why='cannot read'
+        stamp='cd90b622e7fe3777982e09a09e39223f2b3c1e75' lm='' maxage='600'
+        public='0d55a442a06a4799a4d6630363dd272aba3051cc'
+        run='completed  2026-10-04T01:50:26Z 2026-10-04T02:20:00Z' prev='1873' now='2026-10-04T02:21:00Z']]
