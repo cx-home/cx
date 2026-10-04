@@ -81,6 +81,7 @@ for f in deps/cx-core-code/conformance/stdlib/*.cxd conformance/platform/*.cxd c
   printf '%s\t%s\n' "conformance/gates.cxd" "POLICY — the enforced/advisory register, DERIVED from the suites' [test-suite] elements and held equal to them by gates-manifest-gate (D49a; not a fixture suite)"
   printf '%s\t%s\n' "conformance/gates_register.cxd" "gates-manifest-gate (cx corpus conformance/gates_register.cxd — the derived gate register's drift check, scripts/gates_register.cx: every refusal over described trees, D49a)"
   printf '%s\t%s\n' "conformance/advisory_audit.cxd" "advisory-audit (cx corpus conformance/advisory_audit.cxd — the advisory audit, scripts/advisory_audit.cx: every refusal over described cases and issues, ADVIS-1, RULED: QUAL-1 (b))"
+  printf '%s\t%s\n' "conformance/property_gate.cxd" "property-gate (cx corpus conformance/property_gate.cxd -- the property step's register: each case the minimal reproducing program of a class the step found and filed, advisory with its open issue, PROP-1, RULED: QUAL-1 (a))"
 } >> "$claims"
 for f in conformance/llm/*.cxd; do [ -e "$f" ] && printf '%s\t%s\n' "$f" "docs-check (scripts/gen_docs/primer_build.cx — the LLM primer drift gate re-records every wrong/right pair, #938)"; done >> "$claims" || true
 for f in conformance/tools-export/*.cxd; do [ -e "$f" ] && printf '%s\t%s\n' "$f" "tools-export-gate"; done >> "$claims" || true

@@ -1858,7 +1858,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-build-slot check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate advisory-audit spec-invariant-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-search test-playground-readings test-oriel test-agent-real test-connector-real test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps test-site-phone-width test-playground-primer site-live-check ledger-index-check ledger-edit-map-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings check-bench-runners-compile check-flow-doc-lines
+TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-build-slot check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate advisory-audit property-gate spec-invariant-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-search test-playground-readings test-oriel test-agent-real test-connector-real test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps test-site-phone-width test-playground-primer site-live-check ledger-index-check ledger-edit-map-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings check-bench-runners-compile check-flow-doc-lines
 
 # PRIVMK-1: the private flow targets add themselves to TEST_TARGETS from
 # flows/private.mk. That file is absent from the public tree, and `-include`
@@ -2355,6 +2355,26 @@ advisory-audit:
 	@"$(CX_BIN)" corpus --quiet conformance/advisory_audit.cxd
 	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/advisory_audit_check.cx
 
+# ── PROPERTY GATE (PROP-1; RULED: QUAL-1 (a)) — scripts/property_gate.cx
+# generates documents and small programs from a seed and checks the invariants
+# the specs state on every one: (i) map keys unique after every map
+# constructor, (ii) the canonical round trip and a stable hash, (iii) exact
+# decimal arithmetic, (iv) an [err] built into any element propagating out,
+# (v) deny-by-default at every effect point of security.md §2.1 (each probed
+# in a child cx holding no grant), (vi) the two readers agreeing on a data
+# document, (vii) absence apart from emptiness. A class it found and the round
+# filed is marked advisory by a case of conformance/property_gate.cxd naming
+# its OPEN issue (ADVIS-1); the corpus is graded first, then the self-test
+# (every check can fail), then the run, which fails on any other class and
+# prints the seed and the failing value. PROPERTY_GATE_ARGS takes --seed N
+# --count N. Reads deps/cx-core-code/vcx/target/cx (or CX_BIN).
+.PHONY: property-gate
+property-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+property-gate: build-vcx
+	@"$(CX_BIN)" corpus --quiet conformance/property_gate.cxd
+	@"$(CX_BIN)" --allow-read --allow-write --allow-eval --allow-subprocess scripts/property_gate.cx --self-test
+	@"$(CX_BIN)" --allow-read --allow-write --allow-eval --allow-subprocess scripts/property_gate.cx $(PROPERTY_GATE_ARGS)
+
 # ── SPEC-INVARIANT GATE (SPECINV-1; RULED: QUAL-1 (d)) — every sentence of the
 # two rings' approved specs that carries MUST, MUST NOT, SHALL, REFUSES, REFUSED
 # or NEVER (cx-core-data spec/03-approved/{core,misc,formal}/*.md; cx-core-code
@@ -2362,11 +2382,11 @@ advisory-audit:
 # the sentence, the id of a conformance case (read with cx:parse from the pinned
 # corpora) that grades it (RS-38's shape) — or carries a row of
 # scripts/spec_invariants_exempt.cxd naming why no case can (a make step that
-# holds it, an obligation on the author, a quoted keyword, or a missing corpus
-# lane with its open issue). scripts/spec_invariants.cx refuses a sentence with
-# neither and a register row that is stale, ambiguous, unclassed or held by a
-# step on no run; its self-test runs first. `--list` prints the whole table. Reads
-# deps/cx-core-code/vcx/target/cx (or CX_BIN).
+# holds it, an obligation on the author, a quoted keyword, or no step that can
+# grade it yet, with its open issue). scripts/spec_invariants.cx refuses a
+# sentence with neither and a register row that is stale, ambiguous, unclassed
+# or held by a step on no run; its self-test runs first. `--list` prints the
+# whole table. Reads deps/cx-core-code/vcx/target/cx (or CX_BIN).
 .PHONY: spec-invariant-gate
 spec-invariant-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 spec-invariant-gate:
