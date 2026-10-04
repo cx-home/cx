@@ -18,6 +18,18 @@
 #   F  --allow-subprocess denied                   → REFUSED, exit 2, the flag named (#1738)
 #   G  a planted subjects file that is not there   → REFUSED, exit 2, by name (#1738)
 #   H  two unresolved ids                          → counted as two, one line each (#1738)
+#   I  an id-SHAPED token the id grammar does not parse (CAPADDR-1, seven
+#      letters) → REFUSED, exit 1, the token and the subject quoted (IDSH-1, #1767)
+#   J  the same for a lower-case token (zzqx-9)            (IDSH-1, #1767)
+#   K  the owner-letter shape D<digits><letter>[<digit>] is PARSED: D98y7,
+#      which no page carries, is refused as unresolved by name (IDSH-1, #1767)
+#   L  ... and D59a, which pages declare, resolves (IDSH-1, #1767)
+#   M  a subject dated before IDSH-1 (a `<epoch>\t` prefix, the shape `git log`
+#      is read in) keeps its unparsed prose; the same subject dated after it is
+#      refused (IDSH-1: the rule binds from the decision on; the history before
+#      it carries 89 such tokens, T-1 and sect-6 and CAPADDR-1 among them)
+#   N  under CX_LEDGER_SUBJECTS_FILE the refusal names that file, not
+#      release/0.18 (#1767)
 #
 # Planted through CX_LEDGER_SUBJECTS_FILE, which is the only input this reader
 # takes other than `git log`, so the rule is proven without a repository.
@@ -119,8 +131,57 @@ else
   bad H "wanted exit 1, a count of 2 and one line per id — exit $rc: $out"
 fi
 
+# I/J — id-shaped tokens the grammar does not parse (IDSH-1, #1767). Measured on
+# 8b63de0c7: each answered "0 subject id(s) … all resolve", exit 0.
+for tok in CAPADDR-1 zzqx-9; do
+  case $tok in CAPADDR-1) c=I ;; *) c=J ;; esac
+  printf '%s\n' "chore: x (RULED: $tok)" > "$T/shape.txt"
+  out=$(check_with "$T/shape.txt"); rc=$?
+  if [ "$rc" -eq 1 ] && case "$out" in *"$tok"*"chore: x (RULED: $tok)"*) true ;; *) false ;; esac; then
+    ok $c "an id-shaped token the grammar does not parse ($tok) is refused, the token and the subject quoted"
+  else
+    bad $c "wanted exit 1 quoting $tok and its subject — exit $rc: $out"
+  fi
+done
+
+# K/L — the owner-letter shape is parsed and resolved (IDSH-1)
+printf '%s\n' 'chore: x (RULED: D98y7)' > "$T/dbad.txt"
+out=$(check_with "$T/dbad.txt"); rc=$?
+if [ "$rc" -eq 1 ] && printf '%s\n' "$out" | grep -qx '    d98y7'; then
+  ok K "D98y7 parses as an owner-letter id and, carried by no page, is refused by name (D99z9, #1767's own case, is now quoted by the IDSH-1 page and so cited)"
+else
+  bad K "wanted exit 1 naming d98y7 as unresolved — exit $rc: $out"
+fi
+printf '%s\n' 'chore: x (RULED: D59a)' > "$T/dgood.txt"
+out=$(check_with "$T/dgood.txt"); rc=$?
+if [ "$rc" -eq 0 ] && case "$out" in *" 1 subject id(s)"*) true ;; *) false ;; esac; then
+  ok L "D59a parses as an owner-letter id and resolves to the pages that declare it"
+else
+  bad L "wanted exit 0 with one subject id resolved — exit $rc: $out"
+fi
+
+# M — the rule binds from IDSH-1 on: a dated line before it keeps its prose
+printf '%s\t%s\n' 1791000000 'chore: old prose (RULED: T-1/T-2, sect-6)' > "$T/old.txt"
+printf '%s\t%s\n' 1791100000 'chore: new prose (RULED: T-1/T-2, sect-6)' > "$T/new.txt"
+out1=$(check_with "$T/old.txt"); rc1=$?
+out2=$(check_with "$T/new.txt"); rc2=$?
+if [ "$rc1" -eq 0 ] && [ "$rc2" -eq 1 ] && case "$out2" in *T-1*sect-6*) true ;; *) false ;; esac; then
+  ok M "a subject dated before IDSH-1 keeps its unparsed prose; the same subject dated after it is refused"
+else
+  bad M "wanted exit 0 then exit 1 naming T-1 and sect-6 — exit $rc1 / $rc2: $out1 / $out2"
+fi
+
+# N — the refusal names where the subjects came from
+out=$(check_with "$T/unknown.txt"); rc=$?
+if [ "$rc" -eq 1 ] && case "$out" in *"unknown.txt"*) true ;; *) false ;; esac \
+   && ! case "$out" in *"on release/0.18"*) true ;; *) false ;; esac; then
+  ok N "under CX_LEDGER_SUBJECTS_FILE the refusal names the file, not release/0.18"
+else
+  bad N "wanted the planted file named and no release/0.18 — exit $rc: $out"
+fi
+
 if [ "$fails" -ne 0 ]; then
   echo "ledger-subject-ids self-test: $fails case(s) FAILED" >&2
   exit 1
 fi
-echo "ledger-subject-ids self-test: 8/8 (a known id passes; an id with no page is refused by name; a prose clause passes; the live history resolves; a denied env or subprocess grant and an unreadable planted file are refused, never counted; unresolved ids print one per line)"
+echo "ledger-subject-ids self-test: 14/14 (a known id passes; an id with no page is refused by name; a prose clause passes; the live history resolves; a denied env or subprocess grant and an unreadable planted file are refused, never counted; unresolved ids print one per line; an id-shaped token the grammar does not parse is refused with its subject (IDSH-1); the owner-letter D-shape parses and resolves; the rule binds from IDSH-1 on; the refusal names its source)"
