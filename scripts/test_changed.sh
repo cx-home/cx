@@ -654,6 +654,9 @@ step_globs() {
     # #1778 (RULED: FIX-1): the external-link check's retry decision, graded
     # offline on its case table; the program, the table and the allowlist.
     site-links-selftest)           echo 'scripts/gen_site/check_external_links* docs-src/site/links.cxd' ;;
+    # #1781 (RULED: LBL-1): the live tracker through gh; a selected run picks it
+    # only when its program, case table, register, the registry or VERSION move.
+    issue-label-gate)              echo 'scripts/issue_label_gate* scripts/issue_label_exclusions.cxd registry/repos.cxd VERSION' ;;
     # test-binding-api-parity row RETIRED (RULED: RS-12, RS-8; #1591 item K3):
     # the four drivers under lang/<lang>/binding_api_driver/ left with their
     # binding repositories, and the target itself is gone from the Makefile.
