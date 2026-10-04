@@ -1861,7 +1861,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-build-slot check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate advisory-audit property-gate spec-invariant-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-search test-playground-readings test-oriel test-agent-real test-connector-real test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps test-site-phone-width test-playground-primer site-live-check ledger-index-check ledger-edit-map-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-build-slot check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate advisory-audit property-gate spec-invariant-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-search test-playground-readings test-oriel test-agent-real test-connector-real test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps test-site-phone-width test-playground-primer site-live-check ledger-index-check ledger-edit-map-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings check-bench-runners-compile check-flow-doc-lines
 
 # PRIVMK-1: the private flow targets add themselves to TEST_TARGETS from
 # flows/private.mk. That file is absent from the public tree, and `-include`
@@ -2149,6 +2149,22 @@ flow-dogfood-gate: build-vcx
 	  echo "flow-dogfood-gate: deps/cx-platform-flow/ is not there — the gate lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
 	  exit 2; }
 	@cd deps/cx-platform-flow && CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/flow_dogfood_gate.cx
+
+# ── check-flow-doc-lines (#1688, RULED: CXF-8) ───────────────────────────────
+# Every `cx flow validate …` / `cx flow simulate …` line a flow document, env
+# program or simulated-results file DOCUMENTS in its comments — this tree's
+# flows/ and docs-src/flow/, and the pinned cx-platform-flow's flows/ — runs AS
+# WRITTEN from the repository root that owns it, and answers its verb's own
+# value. The dogfood gate above runs its OWN argv beside the header, so the
+# header's validate line sat refused CXER0271 (no --allow-read) with every
+# gate green: an example no fixture backs (AGENTS.md rule 2). `cx flow run`
+# lines are not run here — they perform real acts; the run surface is graded
+# by cx-platform-flow's real/flow_cli.cx (test-flow-umbrella).
+.PHONY: check-flow-doc-lines
+check-flow-doc-lines: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+check-flow-doc-lines: build-vcx
+	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/check_flow_doc_lines_selftest.cx
+	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/check_flow_doc_lines.cx
 
 # ── test-flow-umbrella — cx-platform-flow's real-process programs, out of the pin
 # deps/cx-core-code/vcx/tests/flow_umbrella_test.v was one file of test-vcx-suite's directory
@@ -4606,6 +4622,30 @@ bench-lazy-ceiling: build-vcx
 # 1 MiB accounting flush swamps the reading (the probe says so itself).
 bench-streamed-alloc: build-vcx
 	$(PATCHED_V) -enable-globals -prod run deps/cx-core-code/vcx/tests/runners/streamed_for_alloc_probe.v
+
+# check-bench-runners-compile (#1623, RULED: FIX-1) — every single-file bench /
+# probe runner the bench-* targets above `v run` still COMPILES. The benches are
+# decision instruments, owner-run and in no step (#804's census says so of
+# itself: "Not a gate — a decision instrument"), so nothing noticed when
+# cx.ChildValidation.node stopped taking a LazyRecord directly and
+# streamed_for_alloc_probe.v stopped compiling — the census was dead until the
+# day someone needed it. This step does not RUN them (load-sensitive, minutes
+# each); it `v -check`s each one against the pins, the way the build would
+# resolve it, so an instrument is always one command from a reading. The glob
+# is the directory, not a list: a runner added beside them is checked with no
+# edit here.
+BENCH_RUNNERS := $(sort $(wildcard deps/cx-core-code/vcx/tests/runners/*.v) $(wildcard deps/cx-platform-net/vcx/tests/runners/*.v))
+.PHONY: check-bench-runners-compile
+check-bench-runners-compile:
+	@test -n '$(strip $(BENCH_RUNNERS))' || { echo 'check-bench-runners-compile: no runner under deps/*/vcx/tests/runners/*.v — the pins are not synced (make deps-sync); a check over nothing is not a pass' >&2; exit 2; }
+	@rc=0; n=0; for f in $(BENCH_RUNNERS); do \
+	  n=$$((n+1)); \
+	  log=$$(mktemp); if ! VFLAGS='$(VFLAGS_VCX)' $(PATCHED_V) -enable-globals -check "$$f" > "$$log" 2>&1; then \
+	    echo "check-bench-runners-compile: $$f does NOT compile:" >&2; grep -A4 'error:' "$$log" | head -20 >&2; rc=1; \
+	  fi; rm -f "$$log"; \
+	done; \
+	test $$rc -eq 0 || { echo 'check-bench-runners-compile FAILED — a bench runner no longer compiles against the pins (#1623)' >&2; exit 1; }; \
+	echo "check-bench-runners-compile OK — $$n bench/probe runner(s) compile (v -check)"
 
 # Gate 16 — HTTP service throughput (in-process substrate per §1.2):
 # mean MUST be ≥ 10K req/s AND p99 ≤ 10 ms.

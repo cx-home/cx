@@ -756,6 +756,11 @@ pub fn grade_files(opts Options, names []string) Outcome {
 					if !thrown_matches_out_err(err.msg(), f.out_err) {
 						failures << '${fname}/${f.id}: eval threw "${err.msg()}" but expected ${f.out_err} (R3.12)'
 					}
+					// out-effects grades on the thrown path too: effects
+					// admitted BEFORE the throw are part of the witness.
+					if why := effects_trace_failure(f, fname, ' (thrown path)') {
+						failures << why
+					}
 					continue
 				}
 				failures << '${fname}/${f.id}: eval: ${err}'
@@ -770,7 +775,13 @@ pub fn grade_files(opts Options, names []string) Outcome {
 				if !code.out_err_matches(code.render_canonical(result), f.out_err) {
 					failures << '${fname}/${f.id}: expected ${f.out_err}, got ${code.render_canonical(result)}'
 				}
+				if why := effects_trace_failure(f, fname, '') {
+					failures << why
+				}
 				continue
+			}
+			if why := effects_trace_failure(f, fname, '') {
+				failures << why
 			}
 			rendered := code.render_canonical(result).trim_space()
 			if f.out_multiset != '' {
@@ -817,6 +828,24 @@ pub fn grade_files(opts Options, names []string) Outcome {
 		}
 	}
 	return o
+}
+
+// effects_trace_failure compares a case's DECLARED [out-effects …] trace — the
+// ordered admitted effect points, one `capability:resource` per line, exact in
+// order and count; a declared-but-empty trace asserts zero admissions —
+// against the evaluator's trace for this case (stream 22 W1). The program lane
+// read [out-effects …] and never compared it, so a wrong trace passed (#1636,
+// REFUTE-1 r01); the in-module eval test compared it for code.cxd alone.
+fn effects_trace_failure(f ParsedFixture, fname string, path_note string) ?string {
+	if !f.has_out_effects {
+		return none
+	}
+	got := code.effects_trace_snapshot().join('\n')
+	exp := f.out_effects.trim_space()
+	if got == exp {
+		return none
+	}
+	return '${fname}/${f.id}: effect-trace mismatch${path_note}\n  got:      ${got}\n  expected: ${exp}'
 }
 
 // build_identity_note is the line printed at a step's first recorded failure:
