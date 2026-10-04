@@ -23,7 +23,8 @@
 # Usage:
 #   scripts/release_linux.sh vX.Y.Z            # linux-arm64 (native on Apple Silicon)
 #   scripts/release_linux.sh --amd64 vX.Y.Z    # + linux-x86_64 (qemu emulation; slow)
-#   scripts/release_linux.sh --dev vX.Y.Z      # dev-shape build (fast; build validation only)
+#   scripts/release_linux.sh --dev vX.Y.Z      # dev-shape build (fast; build validation only:
+#                                               # stages and gates nothing)
 #
 # Docker-on-this-machine note: pulls hang behind the credsStore=desktop
 # helper; this script exports the documented bypass (anonymous auths config
@@ -58,21 +59,34 @@ if grep -q '"credsStore"' "$HOME/.docker/config.json" 2>/dev/null; then
   [ -f "$DOCKER_CONFIG/config.json" ] || printf '{"auths":{"https://index.docker.io/v1/":{}}}\n' > "$DOCKER_CONFIG/config.json"
 fi
 
-# Pre-flight: local=1 below builds V from the VENDORED vc bootstrap tree,
-# which is gitignored and therefore absent in a fresh submodule checkout
-# (the in-container tree has no network identity to pin a fetch to, and the
-# default network refresh path is broken on the copied detached-HEAD trees).
-# Fail here with the remediation instead of 4 minutes into the container.
-if [ ! -f third_party/v/vc/v.c ]; then
-  echo "release_linux.sh: third_party/v/vc/v.c is missing — the vendored V" >&2
-  echo "bootstrap tree is gitignored and this checkout never fetched it." >&2
-  echo "Seed it from a sibling checkout of the fork, e.g.:" >&2
-  echo "  cp -R ../cx-private/third_party/v/vc third_party/v/vc" >&2
-  echo "or fetch it: git clone --depth=1 https://github.com/vlang/vc third_party/v/vc" >&2
-  echo "(a vc revision proven against this fork pin is preferred; latest vc" >&2
-  echo "tracks vlang master and may not bootstrap an older fork)." >&2
+# Pre-flight (#1674): the tree since RS-12's extraction. vcx/, the bundled
+# stdlib and cx.h live in the pinned checkouts under deps/<repo>/ that
+# `make deps-sync` populates (deps.cxd names them); the container has no cx to
+# run deps-sync with, so it builds from the host's pins exactly as a fresh
+# clone builds from its own -- deps-present inside the container is the same
+# refusal, but four minutes and an apt-get later. Fail here instead.
+if [ ! -d deps/cx-core-code/vcx ] || ! make -s --no-print-directory deps-present >/dev/null 2>&1; then
+  echo "release_linux.sh: deps/ does not hold the pinned checkouts deps.cxd names" >&2
+  echo "(make deps-present refuses). Run \`make deps-sync\` first: the container" >&2
+  echo "copies deps/ from this tree and has no cx of its own to fetch them with." >&2
   exit 2
 fi
+# The vendored V bootstrap (third_party/v/vc) is gitignored and absent in most
+# checkouts, the main one included. When it is present the container builds V
+# from it as-is (local=1); when it is not, the fork's own GNUmakefile fetches
+# vc and tccbin at the commits it pins (VC_COMMIT, TCCBIN_COMMIT -- cx #491,
+# #504), so the bootstrap is reproducible either way and needs no seeding.
+V_LOCAL=$([ -f third_party/v/vc/v.c ] && echo 1 || echo 0)
+# A worktree may carry third_party/<x> as a SYMLINK to the main checkout's
+# submodule (the agent worktree layout). The container sees only /src, where
+# such a link dangles, so each linked directory's real path is mounted beside
+# it and copied in from there.
+TP_MOUNTS=()
+for tp in v re2; do
+  if [ -L "third_party/$tp" ]; then
+    TP_MOUNTS+=(-v "$(cd "third_party/$tp" && pwd -P):/src-tp/$tp:ro")
+  fi
+done
 
 BUILD_TARGET=$([ "$DEV" = 1 ] && echo build-vcx-dev || echo build-vcx)
 PROFILES_TARGET=$([ "$DEV" = 1 ] && echo build-profiles-dev || echo build-profiles)
@@ -86,20 +100,29 @@ CX_VFORK="$(git -C third_party/v rev-parse --short HEAD 2>/dev/null || echo unkn
 # same reason: in the container `git describe` has nothing to describe, so an
 # un-passed CX_RELEASE would stamp every linux artifact `-dev+` even at the
 # tag. The value is READ FROM the Makefile rather than re-derived here — one
-# implementation of the rule (`make -C vcx print-CX_RELEASE`), evaluated on the
+# implementation of the rule (`make -C deps/cx-core-code/vcx print-CX_RELEASE`), evaluated on the
 # host, where the tag and the working tree actually are. This script is invoked
 # by the release flow BEFORE its merge-to-main step, so the host HEAD is the tagged
 # commit at this point.
 # --no-print-directory: `make -C` otherwise brackets the value with
 # Entering/Leaving lines. Only the two known states are accepted — a probe that
 # picked up noise must not silently decide a release artifact's provenance.
-CX_RELEASE="$(make -s --no-print-directory -C vcx print-CX_RELEASE 2>/dev/null | tail -1 | tr -d '[:space:]')"
+CX_RELEASE="$(make -s --no-print-directory -C deps/cx-core-code/vcx CX_STAMP_ROOT="$ROOT" print-CX_RELEASE 2>/dev/null | tail -1 | tr -d '[:space:]')"
 case "$CX_RELEASE" in release|dev) ;; *) CX_RELEASE="" ;; esac
 if [ -z "$CX_RELEASE" ]; then
-  CX_RELEASE=dev
-  echo "release_linux.sh: WARNING — could not read CX_RELEASE from vcx/Makefile;" >&2
-  echo "the linux artifacts will stamp themselves as a pre-release (-dev+)." >&2
-  echo "At a real cut the R2.2 gate below rejects that, which is the intent." >&2
+  # Fail closed (#1674's adversarial reader): the old fallback stamped the
+  # artifacts `dev` and trusted R2.2 to reject them, but R2.2 checks the
+  # headline only when R22_EXPECT_HEADLINE is set -- the release flow sets it,
+  # a hand run does not -- so a probe that read nothing could stage `-dev+`
+  # assets under a release tag and print PASSED. A --dev build stamps dev.
+  if [ "$DEV" = 1 ]; then
+    CX_RELEASE=dev
+  else
+    echo "release_linux.sh: could not read CX_RELEASE from deps/cx-core-code/vcx/Makefile" >&2
+    echo "(make -C deps/cx-core-code/vcx print-CX_RELEASE answered neither release nor dev);" >&2
+    echo "refusing to stamp release artifacts with a guessed provenance." >&2
+    exit 2
+  fi
 fi
 
 build_one() {
@@ -109,50 +132,74 @@ build_one() {
   echo "== linux-${arch} (${platform}, ${BUILD_TARGET}) =="
   mkdir -p dist/public
   docker run --rm --platform "$platform" \
-    -v "$ROOT:/src:ro" -v "$ROOT/dist:/out" \
+    -v "$ROOT:/src:ro" ${TP_MOUNTS[@]+"${TP_MOUNTS[@]}"} -v "$ROOT/dist:/out" \
     -e SOURCE_DATE_EPOCH="$SDE" \
     -e R22_EXPECT_HEADLINE="${R22_EXPECT_HEADLINE:-}" \
     ubuntu:22.04 bash -euc '
+      # pipefail: the lean copy is a `tar | tar` pipeline, and without it a
+      # member the first tar cannot read exits 2 while the pipeline answers 0.
+      set -o pipefail
       export DEBIAN_FRONTEND=noninteractive
       apt-get update -qq
       apt-get install -y -qq build-essential libsqlite3-dev git make >/dev/null
       # Lean copy: only what the build consumes (the full checkout is ~13 GB
       # with .git/bindings/build outputs — copying it fills the Docker VM).
-      # stdlib/ and x/ are $embed_file-ed into the binary; third_party/v is
-      # the patched fork the build contract requires.
+      # Since RS-12 (#1674) that is the front door`s build files — Makefile,
+      # VERSION, deps.cxd, registry/ (deps-present derives the bundled
+      # sources from modules.cxd), vcx/ (the module-main stay-files the build
+      # links into the cx-core-code pin), scripts/, conformance/ and docs/llm —
+      # and deps/: every pinned checkout, WITH its .git (deps-present asks git
+      # for each V pin`s tracked modules and the core line of the version
+      # stamp is the pin`s own HEAD), without its build output. A symlink with
+      # an absolute target is a link into the HOST tree (sync-cmd-split`s
+      # stay-file links, the nested deps/ farm) and dangles here, so it is
+      # dropped and the build recreates it; third_party/v is the patched fork
+      # the build contract requires.
       mkdir -p /build && cd /src
       tar cf - \
-        --exclude=vcx/target \
+        --exclude="deps/*/vcx/target" \
         --exclude=third_party/v/v \
         --exclude=third_party/re2/obj \
-        Makefile VERSION cx.pc.in include vcx stdlib x docs/llm third_party scripts \
+        Makefile VERSION deps.cxd registry vcx scripts conformance docs/llm deps third_party \
         | tar xf - -C /build
+      find /build/deps -type l -lname "/*" -delete
+      for tp in v re2; do
+        if [ -d "/src-tp/$tp" ]; then
+          rm -rf "/build/third_party/$tp"; mkdir -p "/build/third_party/$tp"
+          ( cd "/src-tp/$tp" && tar cf - --exclude=./v --exclude=./obj --exclude=./.git . ) | tar xf - -C "/build/third_party/$tp"
+        fi
+      done
       cd /build
       git config --global --add safe.directory "*"
-      # local=1: build V from the vendored vc/tcc checkouts as-is — the
-      # copied tcc tree is on a detached HEAD, so the default network
-      # refresh (git pull --rebase) would fail; the fork pins both anyway.
-      make -C third_party/v local=1
+      # local=1: build V from the vendored vc/tcc checkouts as-is when the
+      # host carried them (the copied tcc tree is on a detached HEAD, so the
+      # default refresh would fail on it); otherwise the fork fetches both at
+      # its pinned commits.
+      if [ '"$V_LOCAL"' = 1 ]; then make -C third_party/v local=1; else make -C third_party/v; fi
       make '"$BUILD_TARGET"' CX_COMMIT='"$CX_COMMIT"' CX_VFORK='"$CX_VFORK"' CX_RELEASE='"$CX_RELEASE"'
+      # I4 (#651/#516): the §4 profile builds, through the front door`s own
+      # target (vcx/ has no Makefile since RS-12; the sub-make is the pin`s).
+      # PROFILE_BUILD_JOBS=1: the profile matrix builds serially here, as the
+      # pre-split lane did. Measured in an 8 GB Docker VM: the root Makefile`s
+      # default five concurrent -prod V compiles were OOM-killed (cli-cli,
+      # cli-embed: "Killed"), _gate_evidence/pipeline_batchh2/1674-linux-build.log.
+      make '"$PROFILES_TARGET"' PROFILE_BUILD_JOBS=1 CX_COMMIT='"$CX_COMMIT"' CX_VFORK='"$CX_VFORK"' CX_RELEASE='"$CX_RELEASE"'
+      if [ '"$DEV"' = 1 ]; then
+        echo "-- dev build: the -dev artifacts built; nothing staged, R2.2 not run (build validation only)"
+        exit 0
+      fi
+      # Staging is the shared implementation (RULED: PGL-1, #741): the same
+      # r22_* functions the release flow`s package act stages the darwin
+      # assets with, which read the artifacts where the split build lands
+      # them (r22_vcx_target, r22_include_dir — #1670).
+      . scripts/lib/r22_profile_gate.sh
       T=linux-'"$arch"'
       mkdir -p "/tmp/$T"
-      cp vcx/target/cx vcx/target/libcx.so include/cx.h "/tmp/$T/"
-      cp third_party/re2/LICENSE "/tmp/$T/LICENSE-re2.txt"
+      r22_collect_platform_files "/tmp/$T"
       ( cd /tmp && tar czf "/out/cx-'"$TAG"'-$T.tar.gz" "$T/" )
-      ( cd "/tmp/$T" && tar czf "/out/public/cx-$T.tar.gz" cx cx.h libcx.so LICENSE-re2.txt )
-      # I4 (#651/#516): the §4 profile tarballs (see the package act of the release flow for
-      # the composition rationale) — cx-<profile>-linux-<arch>.tar.gz.
-      make -C vcx '"$PROFILES_TARGET"' CX_COMMIT='"$CX_COMMIT"' CX_VFORK='"$CX_VFORK"' CX_RELEASE='"$CX_RELEASE"'
-      for prof in data embed cli; do
-        P="/tmp/prof-$prof"; mkdir -p "$P"
-        cp "vcx/target/profiles/$prof/cx" "$P/"
-        cp third_party/re2/LICENSE "$P/LICENSE-re2.txt"
-        case "$prof" in
-          data)  cp include/cx.h "$P/"; cp vcx/target/libcx-core.so "$P/" ;;
-          embed) cp include/cx.h "$P/"; cp vcx/target/profiles/embed/libcx.so "$P/" ;;
-        esac
-        ( cd "$P" && tar czf "/out/public/cx-$prof-$T.tar.gz" ./* )
-      done
+      r22_tar_platform "/tmp/$T" /out/public "$T"
+      # I4: the profile tarballs — cx-<profile>-linux-<arch>.tar.gz.
+      r22_stage_profiles /out/public "$T"
       echo "-- engines probe:"; "/tmp/$T/cx" -v || true
       # R2.2 (#651/#516 remediation register, ruled (a) 2026-08-09): BLOCKING
       # per-profile install verification, linux build — the same contract as
@@ -160,12 +207,16 @@ build_one() {
       # installer extracts it and its binary must report the expected profile
       # line, or the cut dies here (this script failing fails the release flow).
       # RULED: PGL-1 (#741) — ONE implementation, shared with the release flow and
-      # with the standalone pre-cut step. The lean container copy above
-      # includes scripts/, so the file is here at /build; cwd is /build.
-      . scripts/lib/r22_profile_gate.sh
+      # with the standalone pre-cut step. RLOAD-1 (#1131): R2.2 loads every
+      # staged library through the extraction probe, built here from the pin.
+      make build-extraction-probe
       r22_profile_gate /out/public "$T" /linux
       echo "-- release gate (R2.2/linux): per-profile install verification PASSED ($T platform/data/embed/cli)"
     '
+  if [ "$DEV" = 1 ]; then
+    echo "   → dev build validated; nothing staged"
+    return 0
+  fi
   ( cd dist/public && shasum -a 256 "$pub" ) || true
   echo "   → dist/public/${pub} + dist/${nested}"
 }
