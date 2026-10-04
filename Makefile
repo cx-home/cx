@@ -5188,7 +5188,9 @@ fmt-sweep-gate: build-vcx
 # file under a `timeout-ms`, in a process group the deadline kills whole, its
 # exit read directly, and a reading past CX_REPR_LANE_DEADLINE_S (default
 # 300 s) reds the step BY NAME — "lane <x> exceeded its N s deadline", which is
-# not the bound-exceedance text below, so no retry absorbs a stall. The recipe
+# not the bound-exceedance text below, so no retry absorbs a stall; and the
+# driver exits 3 only when EVERY failure is a bound exceedance (1 otherwise),
+# so a stall beside an exceedance is never re-measured away (REFUTE-1 r5). The recipe
 # writes the driver's output to the log FILE and prints it back after the exit
 # is read, so no pipe exists here either. `make repr-guard-selftest` proves the
 # deadline, the held-pipe shape and every verdict on planted lane drivers.
@@ -5201,7 +5203,7 @@ repr-guard: build-vcx
 	"$(CX_BIN)" $(REPR_GUARD_GRANTS) bench/repr/run.cx > $$log 2>&1; st=$$?; \
 	cat $$log; \
 	if [ $$st -ne 0 ]; then \
-	  if grep -aq 'exceeds the pinned bound' $$log; then \
+	  if [ $$st -eq 3 ] && grep -aq 'exceeds the pinned bound' $$log; then \
 	    rel=bench/repr/run.cx; \
 	    $(RETRY_REASON_CASE); \
 	    echo "──── serial retry ($$reason): $$rel ────"; \
@@ -5210,7 +5212,7 @@ repr-guard: build-vcx
 	    [ $$st -eq 0 ] || exit 1; \
 	    echo "──── the re-measurement is within every pinned bound; the first reading was load-induced (#1431) ────"; \
 	  else \
-	    echo "──── real failure (no retry class applies): bench/repr/run.cx did not report a bound exceedance ────"; \
+	    echo "──── real failure (no retry class applies): bench/repr/run.cx exited $$st, not 3 (every failure a bound exceedance) — a stall, a non-zero driver or an unparsable reading is never re-measured away ────"; \
 	  fi; \
 	fi; exit $$st
 

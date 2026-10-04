@@ -60,6 +60,10 @@
 # each line to stderr; answers true (the lane failed).
 [?def failed scope=private impure [returns bool] ($lines)
   [?let [= $_w [?to-sequence [?for [in $l $lines] [yield [$cry $l]]]]] true]]
+# each line to stderr; answers 'over' (the lane failed on its bound alone —
+# the one failure the Makefile's GAUGE retry may re-measure; REFUTE-1 r5).
+[?def failed-over scope=private impure [returns string] ($lines)
+  [?let [= $_w [?to-sequence [?for [in $l $lines] [yield [$cry $l]]]]] 'over']]
 # each line to stdout; answers false (the lane passed).
 [?def passed scope=private impure [returns bool] ($lines)
   [?let [= $_w [?to-sequence [?for [in $l $lines] [yield [$say $l]]]]] false]]
@@ -308,7 +312,7 @@
 
 # One lane: generate its corpus if absent, take the reading under its deadline,
 # print the row. Answers true when the lane failed.
-[?def lane scope=private impure [returns bool] ($lane)
+[?def lane scope=private impure [returns any] ($lane)
   [?let [= $recs [$records]] [= $corpus [$cat ([$corpus-dir], '/', $lane, '-', $recs, '.corpus')]]
         [= $lim [$string [$deadline-s]]]
         [= $gen [?if [$io:is-file $corpus] [then {stalled: false, code: '0', out: '', err: ''}]
@@ -325,7 +329,7 @@
 
 # One reading. The load THIS reading was taken under is sampled immediately
 # after the driver returns, so the 1-minute figure covers the measurement itself.
-[?def reading scope=private impure [returns bool] ($lane $corpus $recs $lim)
+[?def reading scope=private impure [returns any] ($lane $corpus $recs $lim)
   [?let [= $r [$bounded ([$bin], $lane, $corpus, $recs) [$cat ('read-', $lane)]]]
         [= $load [$load-1m]]
         [= $_e [$echo-err $r]]
@@ -340,7 +344,7 @@
               [else [$judge-reading $lane [$string $r.out] $load]]]]]]]
 
 # A reading's verdict: its row, its census, and the bound comparison.
-[?def judge-reading scope=private impure [returns bool] ($lane $out $load)
+[?def judge-reading scope=private impure [returns any] ($lane $out $load)
   [?let [= $bound [$map:get BOUNDS $lane]] [= $btxt [$map:get BOUND-TEXT $lane]]
         [= $head [$first-line $out]]
         [= $ratio [$field $head 'ratio']]
@@ -360,7 +364,7 @@
               # evidence is only visible on failure teaches nothing on the way past.
               [= $_census [$passed [?to-sequence [?for [in $l [$rest-lines $out $head]] [yield [$cat ('       ', $l)]]]]]]
           [?if $over
-            [then [$failed ([$cat ('bench/repr: FAIL — lane ', $lane, ' live multiplier ', $ratio, 'x exceeds the pinned bound ', $btxt, 'x.')],
+            [then [$failed-over ([$cat ('bench/repr: FAIL — lane ', $lane, ' live multiplier ', $ratio, 'x exceeds the pinned bound ', $btxt, 'x.')],
                             'bench/repr:        The ratchet is not loosened to accommodate a regression (RULED: RP-5).',
                             [$cat ('bench/repr:        ', $live, ' live bytes for ', $input, ' input bytes, at load average ', [$load-avgs], '.')],
                             'bench/repr:        A reading taken under a heavily loaded machine is a flaky test, not a regression',
@@ -376,7 +380,13 @@
 
 [?let [= $_d [$io:make-dirs [$build-dir]]]
       [= $v [?if [= [$planted] ''] [then [$v-compiler]] [else 'planted']]]
-  [?if [= $v '']
+  # a deadline of 0 s (or less) is no deadline: process:run's timeout-ms=0
+  # waits forever, the hang itself (REFUTE-1 r6). Refused by name, never run.
+  [?if [or [<= [$deadline-s] 0] [<= [$build-deadline-s] 0]]
+    [then [?do [$cry [$cat ('bench/repr: FAIL — CX_REPR_LANE_DEADLINE_S=', [$string [$deadline-s]], ' and CX_REPR_BUILD_DEADLINE_S=',
+                            [$string [$build-deadline-s]], ': each must be a positive number of seconds; a reading with no deadline is the hang #1766 removed.')]]
+               [$env:exit 2]]]
+  [else [?if [= $v '']
     [then [?do [$cry [$cat ('bench/repr: FAIL — no V compiler at ', [$repo], '/third_party/v/v.')]]
                [$cry 'bench/repr: build the pinned fork (git submodule update --init && make -C third_party/v)']
                [$cry 'bench/repr: or set CX_ALLOW_PATH_V=1 to accept a PATH-resolved `v` (the measurement needs -gc e).']
@@ -393,15 +403,23 @@
                                       ', load average at start: ', [$load-avgs], ')')]]]
                   [= $_t [$say [$row 'lane' 'input_bytes' 'live_bytes' 'ratio' 'bound' 'load1' 'verdict']]]
                   # A lane's verdict; an err out of the guard itself is a failure that says so.
-                  [= $fails [?to-sequence [?for [in $l LANES]
-                              [= $v [?match [$lane $l]
-                                      [case [err @message=$m] [?let [= $_m [$cry [$cat ('bench/repr: FAIL — lane ', $l, ': the guard itself erred: ', [$string $m])]]] true]]
-                                      [case true true]
-                                      [else false]]]
-                              [where $v] [yield $l]]]]
+                  # each lane's verdict as a word: 'over' (its bound alone), 'fail'
+                  # (anything else: a stall, a non-zero driver, no measurement, an
+                  # err out of the guard itself), 'ok'.
+                  [= $verdicts [?to-sequence [?for [in $l LANES]
+                                 [yield [?match [$lane $l]
+                                          [case [err @message=$m] [?let [= $_m [$cry [$cat ('bench/repr: FAIL — lane ', $l, ': the guard itself erred: ', [$string $m])]]] 'fail']]
+                                          [case 'over' 'over']
+                                          [case true 'fail']
+                                          [else 'ok']]]]]]
+                  [= $fails [?to-sequence [?for [in $w $verdicts] [where [not [= $w 'ok']]] [yield $w]]]]
+                  [= $overs [?to-sequence [?for [in $w $verdicts] [where [= $w 'over']] [yield $w]]]]
               [?if [> [$count $fails] 0]
                 [then [?do [$cry [$cat ('bench/repr: RED — at least one lane failed its reading or exceeded its pinned live-memory bound (load average ',
                                         [$load-avgs], ').')]]
-                           [$finish 1]]]
+                           # exit 3: every failure a bound exceedance, the GAUGE retry
+                           # class; exit 1: any other failure, which no re-measurement
+                           # may absorb (REFUTE-1 r5: a stall beside an exceedance).
+                           [$finish [?if [= [$count $fails] [$count $overs]] [then 3] [else 1]]]]]
                 [else [?do [$say [$cat ('bench/repr: GREEN — every lane within its pinned live-memory bound (load average ', [$load-avgs], ').')]]
-                           [$finish 0]]]]]]]]]]]
+                           [$finish 0]]]]]]]]]]]]]
