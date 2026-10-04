@@ -736,10 +736,16 @@ x_miss=""
 for s in test-xap-umbrella test-fabric-umbrella; do
 	targets "$T/x" | tr " " "\n" | grep -q "^$s\$" || x_miss="$x_miss $s"
 done
+# The V pin moves the compiler both umbrellas and the cx they start are built
+# with — it selects them as well (the round's adversarial reader).
+run third_party/v > "$T/x3"
+for s in test-xap-umbrella test-fabric-umbrella; do
+	targets "$T/x3" | tr " " "\n" | grep -q "^$s\$" || x_miss="$x_miss $s(third_party/v)"
+done
 if [ -z "$x_miss" ]; then
-	ok X "a pin bump (deps.cxd) selects test-xap-umbrella and test-fabric-umbrella, the pinned V umbrellas"
+	ok X "a pin bump (deps.cxd) and a V pin move (third_party/v) select test-xap-umbrella and test-fabric-umbrella, the pinned V umbrellas"
 else
-	bad X "deps.cxd did not select:${x_miss}"
+	bad X "not selected:${x_miss}"
 fi
 if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
