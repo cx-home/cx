@@ -39,6 +39,10 @@
 #   - A STAMP IT CANNOT READ (a 200 that is not a 40-hex sha — the
 #     assembler's `unknown`, an error page — or any other answer than 200 or
 #     404): refused.
+#   gh answers an in-flight run's conclusion as '' (#1770): the reading
+#   '<status>  <createdAt> <updatedAt>' (three words) is that run with
+#   conclusion '-', never "no Site run"; a `completed` run with no conclusion
+#   refuses as unreadable.
 #   The window counts only what gh can name: a run `completed`, or in flight
 #   (queued, waiting, requested, pending, in_progress); any other status, a
 #   run dated after the reading, refuses. The cache allowance is the stamp's
@@ -55,6 +59,9 @@
 
 [?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
 [?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def c-member scope=private pure [returns bool] ($x $xs)
+  [> [$count [?to-sequence [?for [in $y $xs] [where [= [$string $y] [$string $x]]] [yield $y]]]] 0]]
 
 [?def is-sha scope=private pure [returns bool] ($s)
   [$re:matches [$re:compile '^[0-9a-f]{40}$'] [$strings:trim [$string $s]]]]
@@ -91,7 +98,17 @@
         [= $st [$strings:trim [$string $stamp]]]
         [= $has [$is-sha $st]]
         [= $flight ('queued', 'waiting', 'requested', 'pending', 'in_progress')]
-        [= $rw [$words $run]]
+        # gh answers an in-flight run's conclusion as '' (not null; #1770,
+        # measured), so the reading is '<status>  <createdAt> <updatedAt>':
+        # three words. The missing conclusion reads as '-', never as no run.
+        [= $rw0 [$words $run]]
+        # Any other shape — more words, fewer, three words that are not an
+        # in-flight run, an in-flight run carrying a conclusion — is a reading
+        # this step cannot read (REFUTE-1 r12, r13, r17, r18), never "no Site
+        # run" and never deploying.
+        [= $three-flight [and [= [$count $rw0] 3] [$c-member [$string [$nth $rw0 1]] $flight]]]
+        [= $rw [?if $three-flight [then ([$nth $rw0 1], '-', [$nth $rw0 2], [$nth $rw0 3])] [else $rw0]]]
+        [= $shaped [or $three-flight [= [$count $rw0] 4]]]
         [= $rs [?if [>= [$count $rw] 4] [then [$string [$nth $rw 1]]] [else '']]]
         [= $rc [?if [>= [$count $rw] 4] [then [$string [$nth $rw 2]]] [else '']]]
         [= $created [?if [>= [$count $rw] 4] [then [$secs [$nth $rw 3]]] [else -1]]]
@@ -109,9 +126,12 @@
                                             '`, not a 40-hex sha): refused, never a pass']]]
         [else [?if [= [$strings:trim [$string $run]] 'unread']
           [then [$v false [$concat $site '; gh cannot read the Site run on the public main ' $p ': refused, never a pass']]]
-          [else [?if [or [= [$strings:trim [$string $run]] 'none'] [< [$count $rw] 4] [< $created 0]]
+          [else [?if [= [$strings:trim [$string $run]] 'none']
             [then [$v false [$concat $site '; no Site run on the public main ' $p]]]
-            [else [?if [not $known]
+          [else [?if [or [not $shaped] [< $created 0] [and [not [= $rs 'completed']] [not [= $rc '-']]]]
+            [then [$v false [$concat $site '; gh' "'" 's reading of the Site run on the public main ' $p ', `' [$strings:trim [$string $run]]
+                                     '`, is a reading this step cannot read (status conclusion createdAt updatedAt): refused']]]
+            [else [?if [or [not $known] [and [= $rs 'completed'] [= $rc '-']]]
               [then [$v false [$concat $site '; the Site run on the public main ' $p ' is `' $rs '`, a status this step cannot read: refused']]]
             [else [?if [< $t $created]
               [then [$v false [$concat $site '; the Site run on the public main ' $p ' is dated in the future of the reading: refused']]]
@@ -130,7 +150,7 @@
                         [then [$v true [$concat 'deploying: ' $site ', the public main ' $p ' for ' [$string $lag]
                                                            ' s, within the Site run duration plus the cache max-age (' [$string $window] ' s)']]]
                         [else [$v false [$concat 'stale: ' $site ', the public main ' $p ' for ' [$string $lag]
-                                                            ' s, past the Site run duration plus the cache max-age (' [$string $window] ' s)']]]]]]]]]]]]]]]]]]]]]]]]]]]]]
+                                                            ' s, past the Site run duration plus the cache max-age (' [$string $window] ' s)']]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
 
 # ── the self-test: the case table ───────────────────────────────────────────
 [?def self-test scope=private impure ()
@@ -192,7 +212,7 @@
         [= $gr [?if [or [= $slug ''] [= $p '']] [then [proc-result exit-code=1 stdout='' stderr='no repository']]
                  [else [$run-out ('gh', 'run', 'list', '--repo', $slug, '--workflow', 'site.yml', '--commit', $p, '--limit', '1',
                                   '--json', 'status,conclusion,createdAt,updatedAt',
-                                  '--jq', '.[0] | if . == null then "none" else "\(.status) \(.conclusion // "-") \(.createdAt) \(.updatedAt)" end') 120000]]]]
+                                  '--jq', '.[0] | if . == null then "none" else "\(.status) \(if (.conclusion // "") == "" then "-" else .conclusion end) \(.createdAt) \(.updatedAt)" end') 120000]]]]
         [= $run [?if [$ok $gr] [then [?if [= [$out $gr] ''] [then 'none'] [else [$out $gr]]]] [else 'unread']]]
         [= $pr [?if [= $slug ''] [then [proc-result exit-code=1 stdout='' stderr='no repository']]
                  [else [$run-out ('gh', 'run', 'list', '--repo', $slug, '--workflow', 'site.yml', '--status', 'success', '--limit', '1',
