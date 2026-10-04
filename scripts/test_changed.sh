@@ -450,6 +450,10 @@ step_globs() {
     # what can is the PIN (`deps.cxd`, with `registry/modules.cxd` where the
     # pinned paths are declared) and the verbs RS-20 kept in vcx/cmd/.
     flow-dogfood-gate)             echo 'deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
+    # #1688 (RULED: CXF-8): the documented flow lines live in this tree's flows/
+    # and docs-src/flow/ and in the pinned cx-platform-flow (deps.cxd); the
+    # binary that runs them is the flow verbs' and the evaluator's.
+    check-flow-doc-lines)          echo 'flows/* docs-src/flow/* scripts/check_flow_doc_lines.cx scripts/check_flow_doc_lines_selftest.cx deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
     # RULED: CICD-1 — the documentation flow's own fixture: the flow document,
     # its env, acts and simulate tables, the gate that reads them, and what can
     # move the vocabulary or the three subcommands it drives them through (the
@@ -642,6 +646,10 @@ step_globs() {
     # #1065: the rosters live in vcx/Makefile and are re-derived from the module
     # set each artifact compiles, so any vcx/ module moving is an input.
     check-build-input-roster)      echo 'vcx/Makefile vcx/*' ;;
+    # #1623 (RULED: FIX-1): the bench runners live in the pinned cx-core-code and
+    # cx-platform-net and import every V module of the graph, so a pin moving
+    # (deps.cxd), a front-door module (vcx/*), the recipe or the V fork selects it.
+    check-bench-runners-compile)   echo 'deps.cxd vcx/* Makefile third_party/*' ;;
     *)                             private_globs "$1" ;; # a flows/private.mk row, else unknown → ALWAYS RUN
   esac
 }
