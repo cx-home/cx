@@ -1115,6 +1115,9 @@ test-playground-wasm-traps: wasm-bundle-fresh
 # page-level scroll and is not refused. Red-proofed against the pre-#1740
 # tree: 4 of 5 non-playground pages scrolled horizontally (672-873px against
 # a 375/390px viewport) and the header's own "About" link read 41x18px.
+# In the serial tail after the storm (`test:`; SERIAL_TAIL in
+# scripts/test_changed.sh; #1762): `site` removes and rewrites site/ and
+# docs/guide/, which site-check and guide-render-gate rewrite in the storm.
 .PHONY: test-site-phone-width
 test-site-phone-width: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 test-site-phone-width: site
@@ -1858,7 +1861,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-build-slot check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate advisory-audit property-gate spec-invariant-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-search test-playground-readings test-oriel test-agent-real test-connector-real test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps test-site-phone-width test-playground-primer site-live-check ledger-index-check ledger-edit-map-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings check-bench-runners-compile check-flow-doc-lines
+TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-build-slot check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate advisory-audit property-gate spec-invariant-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-search test-playground-readings test-oriel test-agent-real test-connector-real test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard repr-guard-selftest check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps test-site-phone-width test-playground-primer site-live-check ledger-index-check ledger-edit-map-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings check-bench-runners-compile check-flow-doc-lines
 
 # PRIVMK-1: the private flow targets add themselves to TEST_TARGETS from
 # flows/private.mk. That file is absent from the public tree, and `-include`
@@ -2898,7 +2901,7 @@ test:
 	# all before the next tip. Nothing else moves: the sub-make's status is
 	# still non-zero on a red storm, so this recipe line still fails and the
 	# three serial tail lines below still run only after a GREEN storm.
-	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) storm"; $(MAKE) -k -j$(TEST_JOBS) $(OUTPUT_SYNC) build-profiles-dev $(filter-out test-profile-gate test-vcx-timing test-code-diagram test-playground-primer,$(TEST_TARGETS)); cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) storm exit=$$cx_step_rc"; exit $$cx_step_rc
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) storm"; $(MAKE) -k -j$(TEST_JOBS) $(OUTPUT_SYNC) build-profiles-dev $(filter-out test-profile-gate test-vcx-timing test-code-diagram test-playground-primer test-site-phone-width nav-shape-check site-live-check,$(TEST_TARGETS)); cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) storm exit=$$cx_step_rc"; exit $$cx_step_rc
 	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) profile-gate"; $(MAKE) test-profile-gate; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) profile-gate exit=$$cx_step_rc"; exit $$cx_step_rc
 	# #1216: the WALL-CLOCK assertions (the #1055 boot budget, the #816 try-send /
 	# try-receive upper bounds) run serially AFTER the storm too — they are
@@ -2924,6 +2927,19 @@ test:
 	# minutes, while site-check and guide-render-gate remove and rewrite the
 	# same two trees inside the storm. After the storm nothing else writes them.
 	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) site-primer"; $(MAKE) test-playground-primer; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) site-primer exit=$$cx_step_rc"; exit $$cx_step_rc
+	# #1762 — test-site-phone-width joins the tail for the same OUTPUT reason:
+	# its prerequisite `site` re-renders docs/guide/ and site_assemble.cx
+	# removes and copies site/ again, then it reads site/ in headless Chromium,
+	# while site-check and guide-render-gate remove and rewrite both trees in
+	# the storm. Nothing ordered the three; after the storm nothing writes them.
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) site-phone-width"; $(MAKE) test-site-phone-width; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) site-phone-width exit=$$cx_step_rc"; exit $$cx_step_rc
+	# nav-shape-check has the same prerequisite, `site` (REFUTE-1 st01 on #1762).
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) nav-shape"; $(MAKE) nav-shape-check; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) nav-shape exit=$$cx_step_rc"; exit $$cx_step_rc
+	# site-live-check is the LAST tail line (RULED: SITER-1, #1765; REFUTE-1
+	# g16): the post-merge refresh follows a red whose only red step is
+	# site-live-check, so that step must run only after every other step has
+	# passed — a red storm, or a red tail step before it, never reaches it.
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) site-live"; $(MAKE) site-live-check; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) site-live exit=$$cx_step_rc"; exit $$cx_step_rc
 	@rm -f "$(CX_GATE_LOCK)"
 
 # Sequential fallback — useful for debugging output-order issues, sanitizer
@@ -3520,7 +3536,7 @@ SUITE_SERIAL_RETRY := deps/cx-core-code/vcx/tests/env_retention_test.v \
 # ── The MEMORY GAUGE UNDER LOAD class (#1431, RULED: 1431-a) ────────────────
 # The two rosters above hold `v test` steps, matched against the paths the
 # suite reports. `repr-guard` is neither — it is its own target running one
-# script — so it needs its own roster row, and it needs one for the same
+# program (bench/repr/run.cx) — so it needs its own roster row, and it needs one for the same
 # reason the others do: it is an INSTRUMENT whose reading moves with machine
 # load, and a reading is not a regression.
 #
@@ -3547,7 +3563,7 @@ SUITE_SERIAL_RETRY := deps/cx-core-code/vcx/tests/env_retention_test.v \
 # it into a process of its own. It carries no roster row because it is not a
 # step: it is one fixture inside the conformance runner, and its isolation fix
 # is where its load sensitivity was addressed.
-GAUGE_SERIAL_RETRY := bench/repr/run.sh
+GAUGE_SERIAL_RETRY := bench/repr/run.cx
 
 # The retry ROSTERS above say WHICH steps get a serial retry. This says WHY,
 # PER STEP. The emitted line used to read "serial retry (known real-socket
@@ -3577,7 +3593,7 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="\#1432 early exit under load: the grader runs 20+ minutes over 4583 fixtures, and the failing run exited after 13.8 s with NO assertion while a parallel step relinked libcx.dylib/cx; the step's first line and its first failure now name the cx build identity, so a mid-run relink says so itself" ;; \
 	  deps/cx-core-code/vcx/tests/env_retention_test.v) \
 	    reason="\#1597 memory gauge under load: the bytes twelve connector loads retain over what two retain, read after forced collections, moves with the -gc e collection point under a -j storm (3.6 in the -j28 storm on 7ac722830, 98.4x in the storm on 684a12502, 0.05 idle); the 3.0 bound is NOT loosened" ;; \
-	  bench/repr/run.sh) \
+	  bench/repr/run.cx) \
 	    reason="\#1431 memory gauge under load: live-bytes/input-bytes moves with the -gc e collection point under a -j storm (read 8.941x against 8.35x at load ~300 on a LEDGER-ONLY head byte-identical to one that passed the same step four hours earlier; the retry passed)" ;; \
 	  *) \
 	    reason="NO REASON DECLARED for this step -- retried anyway; declare it in RETRY_REASON_CASE in the Makefile" ;; \
@@ -3703,7 +3719,7 @@ CACHE_ESCAPE_PROBE = \
 # before the suite runs.
 #
 # GAUGE_SERIAL_RETRY (#1431) is checked here on the same terms: its row is not
-# a `v test` step path but the script `repr-guard` runs, and a row naming a
+# a `v test` step path but the program `repr-guard` runs, and a row naming a
 # script that moved would silently disable that class exactly as a stale test
 # path does. Every roster the tree has is bound by this one target.
 #
@@ -5167,27 +5183,59 @@ fmt-sweep-gate: build-vcx
 # the script can fail with — an absent V, a driver exiting non-zero, a
 # measurement that does not parse — is a real failure with no retry, so the
 # class cannot absorb a broken instrument. The bound itself never moves here:
-# re-pinning is a wave-exit obligation in run.sh (RP-5), never a reaction to a
+# re-pinning is a wave-exit obligation in run.cx (RP-5), never a reaction to a
 # red. Every reading now carries the machine's load average, so the next such
 # row is classifiable from the log alone.
+#
+# NO PIPE, AND A DEADLINE ON EVERY READING (#1766, RULED: RUN-5, CXF-1). Twice
+# the post-merge run sat here until a pid was killed by hand (dfc9f12f9: 95 min;
+# 8b63de0c7: 5 h 14 m): the shell driver's `out=$$(…)` capture left a subshell
+# asleep holding its own pipe, and the recipe's `{ …; } | tee` waited on it.
+# The driver is CX now (bench/repr/run.cx): every child it runs writes to a
+# file under a `timeout-ms`, in a process group the deadline kills whole, its
+# exit read directly, and a reading past CX_REPR_LANE_DEADLINE_S (default
+# 300 s) reds the step BY NAME — "format <x> exceeded its N s deadline", which is
+# not the bound-exceedance text below, so no retry absorbs a stall; and the
+# driver exits 3 only when EVERY failure is a bound exceedance (1 otherwise),
+# so a stall beside an exceedance is never re-measured away (REFUTE-1 r5). The recipe
+# writes the driver's output to the log FILE and prints it back after the exit
+# is read, so no pipe exists here either. `make repr-guard-selftest` proves the
+# deadline, the held-pipe shape and every verdict on planted format drivers.
+REPR_GUARD_GRANTS := --allow-read --allow-write --allow-subprocess --allow-env
 .PHONY: repr-guard
+repr-guard: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 repr-guard: build-vcx
-	@log=deps/cx-core-code/vcx/target/repr-guard-run.log; stf=deps/cx-core-code/vcx/target/repr-guard-status; \
+	@log=deps/cx-core-code/vcx/target/repr-guard-run.log; \
 	mkdir -p deps/cx-core-code/vcx/target; \
-	{ bench/repr/run.sh 2>&1; echo $$? > $$stf; } | tee $$log; \
-	st=$$(cat $$stf); \
+	"$(CX_BIN)" $(REPR_GUARD_GRANTS) bench/repr/run.cx > $$log 2>&1; st=$$?; \
+	cat $$log; \
 	if [ $$st -ne 0 ]; then \
-	  if grep -aq 'exceeds the pinned bound' $$log; then \
-	    rel=bench/repr/run.sh; \
+	  if [ $$st -eq 3 ] && grep -aq 'exceeds the pinned bound' $$log; then \
+	    rel=bench/repr/run.cx; \
 	    $(RETRY_REASON_CASE); \
 	    echo "──── serial retry ($$reason): $$rel ────"; \
-	    bench/repr/run.sh || exit 1; \
+	    "$(CX_BIN)" $(REPR_GUARD_GRANTS) bench/repr/run.cx > $$log.retry 2>&1; st=$$?; \
+	    cat $$log.retry; \
+	    [ $$st -eq 0 ] || exit 1; \
 	    echo "──── the re-measurement is within every pinned bound; the first reading was load-induced (#1431) ────"; \
-	    st=0; \
 	  else \
-	    echo "──── real failure (no retry class applies): bench/repr/run.sh did not report a bound exceedance ────"; \
+	    echo "──── real failure (no retry class applies): bench/repr/run.cx exited $$st, not 3 (every failure a bound exceedance) — a stall, a non-zero driver or an unparsable reading is never re-measured away ────"; \
 	  fi; \
 	fi; exit $$st
+
+# ── repr-guard-selftest (#1766, RULED: RUN-5, CXF-1) ─────────────────────────
+# The driver's verdicts on PLANTED format drivers (CX_REPR_BIN; the build is
+# skipped for them), so it is load-insensitive and costs seconds: a reading
+# that sleeps past its deadline reds the step BY NAME inside the bound, a
+# grandchild holding the format's stdout cannot hold the step (the 8b63de0c7
+# shape — 5 h 14 m until a pid was killed by hand), and the bound-exceedance,
+# non-zero, unparsable and keep/cleanup answers stay what they were. Its
+# corpora live in a temp directory, so it runs beside `repr-guard` in a -j
+# storm without touching bench/repr/_corpus. Cases: scripts/repr_guard_selftest.cx.
+.PHONY: repr-guard-selftest
+repr-guard-selftest: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+repr-guard-selftest: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-env --allow-clock scripts/repr_guard_selftest.cx
 
 # ── bench-flow: the cx-platform/flow performance and scale step ────────────────
 #

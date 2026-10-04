@@ -10,9 +10,10 @@
 # can, so ONE failed run names EVERY red step and the fix branch carries them
 # all before the next tip.
 #
-# The four serial tail lines (test-profile-gate, test-vcx-timing,
-# test-code-diagram — wall-clock steps — and test-playground-primer, which
-# assembles and reads the site/ tree the storm's site-check rewrites, #1758)
+# The five serial tail lines (test-profile-gate, test-vcx-timing,
+# test-code-diagram — wall-clock steps — and test-playground-primer and
+# test-site-phone-width, which assemble and read the site/ tree the storm's
+# site-check and guide-render-gate remove and rewrite, #1758, #1762)
 # still run only after a GREEN storm: `-k` is on the storm's own sub-make, and
 # the recipe line's non-zero status still stops `test:`.
 #
@@ -23,7 +24,7 @@
 #      still exits non-zero. The control — the same makefile WITHOUT `-k` —
 #      leaves the second green unbuilt, so the fixture discriminates rather
 #      than passing on any make at all.
-#   B  the REAL recipe: `test:`'s storm line carries `-k`, and the four serial
+#   B  the REAL recipe: `test:`'s storm line carries `-k`, and the five serial
 #      tail lines are still separate recipe lines after it (so a red storm
 #      still stops the gate before the tail).
 #
@@ -111,20 +112,20 @@ else
 	bad B1 "the -j storm line does not carry -k: $(cat "$T/storm.txt")"
 fi
 
-# the serial tail is still four separate recipe lines AFTER the storm, each one
+# the serial tail is five separate recipe lines AFTER the storm, each one
 # filtered out of the storm line itself, so a red storm still stops `test:`
 # before them and none of them runs twice.
 tail_ok=1
 storm_n=$(printf '%s\n' "$recipe" | grep -nF '$(MAKE) -k -j$(TEST_JOBS)' | head -1 | cut -d: -f1)
-for s in test-profile-gate test-vcx-timing test-code-diagram test-playground-primer; do
+for s in test-profile-gate test-vcx-timing test-code-diagram test-playground-primer test-site-phone-width nav-shape-check site-live-check; do
 	tail_n=$(printf '%s\n' "$recipe" | grep -nF "\$(MAKE) $s" | head -1 | cut -d: -f1)
 	{ [ -n "$storm_n" ] && [ -n "$tail_n" ] && [ "$tail_n" -gt "$storm_n" ]; } || tail_ok=0
 	printf '%s\n' "$storm" | grep -qE "filter-out ([^,]* )?$s[ ,]" || tail_ok=0
 done
 if [ "$tail_ok" = 1 ]; then
-	ok B2 "the four serial tail lines still follow the storm on their own lines, each filtered out of the storm"
+	ok B2 "the seven serial tail lines follow the storm on their own lines, each filtered out of the storm"
 else
-	bad B2 "the serial tail (test-profile-gate, test-vcx-timing, test-code-diagram, test-playground-primer) is not four lines after the storm, each filtered out of it"
+	bad B2 "the serial tail (test-profile-gate, test-vcx-timing, test-code-diagram, test-playground-primer, test-site-phone-width, nav-shape-check, site-live-check) is not seven lines after the storm, each filtered out of it"
 fi
 
 # B3 (#1758) — the tail can be neither swallowed nor dropped without a red:
@@ -154,6 +155,35 @@ else
 	bad B3 "$b3"
 fi
 
+# B4 (#1762, REFUTE-1 st01; RULED: SITER-1 #1765, REFUTE-1 g16) — two
+# orderings the tail exists to hold:
+#   - no step left in the storm has `site` among its prerequisites: `site`
+#     re-renders docs/guide/ and removes and copies site/, which site-check and
+#     guide-render-gate rewrite in the storm (nav-shape-check was the one the
+#     adversarial reader found beside test-site-phone-width);
+#   - site-live-check is the LAST tail line and the last of SERIAL_TAIL, so a
+#     run whose only red step is site-live-check graded every other step first
+#     — the post-merge refresh follows exactly that red (SITER-1), and a red
+#     storm never reaches it.
+b4=""
+for s in $(printf '%s
+' "$targets_line" | tr ' ' '
+' | grep .); do
+	case " $filtered " in *" $s "*) continue ;; esac
+	pre=$(grep -E "^$s:[^=]*$" "$MAKEFILE" | sed "s/^$s://" | tr '\n' ' ')
+	case " $pre " in *" site "*) b4="$b4 [$s in the storm has the prerequisite site]" ;; esac
+done
+last_line=$(printf '%s
+' "$recipe" | grep -F '$(MAKE) ' | grep -vF -- '-j$(TEST_JOBS)' | tail -1)
+case "$last_line" in *'$(MAKE) site-live-check;'*) ;; *) b4="$b4 [the last tail line is not site-live-check's]" ;; esac
+last_serial=$(sed -n "s/^SERIAL_TAIL='\(.*\)'$/\1/p" "$ROOT/scripts/test_changed.sh" | tr ' ' '\n' | grep . | tail -1)
+[ "$last_serial" = site-live-check ] || b4="$b4 [SERIAL_TAIL ends '$last_serial', not site-live-check]"
+if [ -z "$b4" ]; then
+	ok B4 "no storm step has the prerequisite site, and site-live-check is the last tail line and the last of SERIAL_TAIL"
+else
+	bad B4 "$b4"
+fi
+
 # ── C — the selftest under the storm's own environment ──────────────────────
 # This is the row that would have caught it. The guard has to hold where it is
 # USED, and where it is used MAKEFLAGS carries `-k -j12 --output-sync`.
@@ -172,4 +202,4 @@ if [ "$fails" -ne 0 ]; then
 	echo "storm keep-going selftest: $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "storm keep-going selftest: 6/6 (planted -k runs past a red target and exits non-zero; the control without -k does not; the storm line carries -k; the serial tail is unchanged; the tail is SERIAL_TAIL, in TEST_TARGETS, never swallowed; and it holds under the storm's own MAKEFLAGS)"
+echo "storm keep-going selftest: 7/7 (planted -k runs past a red target and exits non-zero; the control without -k does not; the storm line carries -k; the serial tail is unchanged; the tail is SERIAL_TAIL, in TEST_TARGETS, never swallowed; no storm step needs site and site-live-check ends the tail; and it holds under the storm's own MAKEFLAGS)"
