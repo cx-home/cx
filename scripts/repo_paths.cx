@@ -13,6 +13,7 @@
 #   cx --allow-all scripts/repo_paths.cx cx-platform-sso
 #   cx --allow-all scripts/repo_paths.cx cx-platform-sso --with-history
 #   cx --allow-all scripts/repo_paths.cx cx
+#   cx --allow-all scripts/repo_paths.cx cx --with-history --published=<git-dir>
 #   cx --allow-all scripts/repo_paths.cx --self-test
 #
 # The repository is the argument EQUAL to a `[repo name=]` of the registry (the
@@ -30,6 +31,19 @@
 # exactly two (`spec/03-approved/std-lib/sso.md`, `conformance/stdlib/sso.cxd`,
 # both from the #1427 ring move) and without them the spec's and the corpus's
 # history stopped there. A truncated history is not a failure anyone sees.
+#
+# --published=<git-dir> (with --with-history; RULED: REFR-1, cx-private#1800)
+# adds the paths a PUBLISHED history carries that H no longer tracks: the
+# history of <git-dir>'s main, every path any of its commits added, deleted or
+# changed. A refresh derives the public history again from the whole private
+# ancestry, so a path the list drops loses its history in every commit since
+# it was added: deleting a published file (bench/repr/run.sh, 57dd5f925)
+# rewrote 4 500 published commits and the push was no fast-forward. The
+# deleted file's history is already public, so it stays. A published path
+# H's rules now send to ANOTHER repository is left out and named on stderr:
+# that is an allocation change, and its non-fast-forward is the forced push
+# Letter 12 (a) describes, never a silent publication of the other repo's
+# commits. An unreadable <git-dir> is exit 2, never a shorter list.
 #
 # cx-tooling's tooling/repo-template/HISTORY-FILTER.md is the `git filter-repo` invocation
 # that consumes this list.
@@ -118,6 +132,21 @@
                        [?if [< [$count $cols] 2] [then ()] [else ([$nth $cols 2])]]]]
               [yield $f]]]]]]
 
+# -- the published history (--published=<git-dir>) --------------------------
+
+# published-arg: the <git-dir> of the first `--published=` argument, "" when
+# none names one.
+[?def published-arg scope=private pure [returns string] ($argv)
+  [$string [?else [$first [?for [in $a $argv]
+                             [where [$strings:starts-with [$string $a] "--published="]]
+                             [yield [$strings:slice [$string $a] 12 [$strings:length [$string $a]]]]]] ""]]]
+
+# history-paths: every path a commit of <git-dir>'s main added, deleted or
+# changed. `-m` reads a merge against each parent and `--no-renames` names both
+# sides of a rename, so no path that was ever in a published tree is missed.
+[?def history-paths scope=private impure ($gitdir::string)
+  [$process:run ("git", "--git-dir", $gitdir, "log", "-m", "--no-renames", "--name-only", "--format=", "main")]]
+
 # -- the self-test: the matcher, red on a synthetic violation ----------------
 #
 # #1591: "Every moved gate is red-proofed on a synthetic violation before its
@@ -198,6 +227,22 @@
                       [yield [f path=$q from=$p]]]]
               [else ()]]]
   [= $former [?for [in $x $pairs] [group-by [$string $x@path]] [yield $key]]]
+  # the published paths H no longer tracks (--published=, REFR-1): kept when
+  # H's rules send them nowhere else, named and left out when they do.
+  [= $pubdir [?if $history [then [$published-arg $argv]] [else ""]]]
+  [= $ph [?if [= $pubdir ""] [then ""] [else [$history-paths $pubdir]]]]
+  [= $_no-pub [?if [= $pubdir ""] [then ()]
+                [else [?if [= [$string $ph@exit-code] "0"] [then ()]
+                  [else [?let [= $_ [$cry [$concat "repo-paths: --published=" $pubdir " -- git log of its main failed: "
+                                                   [$strings:trim [$string $ph@stderr]]]]]
+                          [$env:exit 2]]]]]]]
+  [= $gone [?if [= $pubdir ""] [then ()]
+             [else [?for [in $q [$distinct [$nonblank [$string $ph@stdout]]]]
+                     [where [not [or [$member $q $files] [$member $q $former]]]]
+                     [yield [?let [= $h [$first-rule $rules $q]]
+                              [g path=$q repo=[?match $h [case [miss] ""] [else [$string $h@repo]]]]]]]]]]
+  [= $published [?for [in $g $gone] [where [$member [$string $g@repo] ("", $want)]] [yield [$string $g@path]]]]
+  [= $elsewhere [?for [in $g $gone] [where [not [$member [$string $g@repo] ("", $want)]]] [yield $g]]]
   [= $_p [?for [in $h $mine]
            [yield [$say [?if $withrules
                           [then [$concat [$string $h@file] "	" [$string $h@key]]]
@@ -205,6 +250,10 @@
   [= $_h [?for [in $q $former]
            [yield [$say [?if $withrules
                           [then [$concat $q "	<renamed away; no rule claims it>"]]
+                          [else $q]]]]]]
+  [= $_g [?for [in $q $published]
+           [yield [$say [?if $withrules
+                          [then [$concat $q "	<published; H no longer tracks it>"]]
                           [else $q]]]]]]
   # Every former path, on stderr, beside the live path `--follow` derived it
   # from. READ THIS LIST. `--follow` can chase a rename between two files that
@@ -215,10 +264,18 @@
   # than piped straight into `git filter-repo`.
   [= $_hr [?for [in $x $pairs]
             [yield [$cry [$concat "  " [$string $x@path] "  <- --follow from " [$string $x@from]]]]]]
+  [= $_gr [?for [in $q $published] [yield [$cry [$concat "  " $q "  <- published, H no longer tracks it"]]]]]
+  [= $_er [?for [in $g $elsewhere]
+            [yield [$cry [$concat "  " [$string $g@path] "  <- published, but H's rules send it to "
+                                  [$string $g@repo] ": left out (an allocation change)"]]]]]
   [= $_c [$cry [$concat $want ": " [$string [$count $live]] " of " [$string [$count $files]] " tracked files"
                         [?if $history
                           [then [$concat ", plus " [$string [$count $former]] " former path(s) the rename closure adds"]]
-                          [else ""]]]]]
+                          [else ""]]
+                        [?if [= $pubdir ""] [then ""]
+                          [else [$concat ", plus " [$string [$count $published]] " published path(s) H no longer tracks"
+                                         [?if [= [$count $elsewhere] 0] [then ""]
+                                           [else [$concat " (" [$string [$count $elsewhere]] " left out: the rules send them elsewhere)"]]]]]]]]]
   [?if [= [$count $live] 0]
     [then [?let [= $_ [$cry [$concat "repo-paths: no tracked file lands in " $want]]] [$env:exit 1]]]
     [else [$env:exit 0]]]]
