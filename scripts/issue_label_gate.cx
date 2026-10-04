@@ -39,6 +39,7 @@
 [?lib 'cx-stdlib/map'     as=map]
 [?lib 'cx-stdlib/strings' as=strings]
 [?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/re'      as=re]
 
 [?const REGISTER "scripts/issue_label_exclusions.cxd"]
 [?const CASES    "scripts/issue_label_gate_cases.cxd"]
@@ -62,17 +63,31 @@
 # ── one issue, as GitHub answers it ──────────────────────────────────────
 [?def num    scope=public ($i) [$string [$map:get $i "number"]]]
 [?def title  scope=public ($i) [$string [$map:get $i "title"]]]
-[?def labels scope=public ($i) [?for [in $l [$map:get $i "labels"]] [yield [$string [$map:get $l "name"]]]]]
+# labels: the label names; a missing or null `labels` is none (REFUTE-1 i01).
+[?def labels scope=public ($i)
+  [?let [= $v [?else [$map:get $i "labels"] null]]
+    [?if [= [$string $v] "null"] [then ()]
+      [else [?for [in $l $v] [yield [$string [?else [$map:get $l "name"] ""]]]]]]]]
+# milestone: '' for none (missing or null); any other value is a milestone,
+# and one with no readable title is named `(untitled milestone)` -- so an
+# empty milestone object is refused like any other (REFUTE-1 i01).
 [?def milestone scope=public ($i)
-  [?let [= $m [$map:get $i "milestone"]]
-    [?if [= [$string $m] "null"] [then ""] [else [$string [$map:get $m "title"]]]]]]
+  [?let [= $m [?else [$map:get $i "milestone"] null]]
+    [?if [= [$string $m] "null"] [then ""]
+      [else [?let [= $t [?else [$map:get $m "title"] null]]
+              [?if [or [= [$string $t] "null"] [= [$string $t] ""]] [then "(untitled milestone)"] [else [$string $t]]]]]]]]
 [?def is-pr scope=public ($i) [$map:contains $i "pull_request"]]
 # stamp: an ISO-8601 UTC time as the integer its digits spell (2026-10-03T01:00:00Z
 # -> 20261003010000), so two can be ordered; a time that does not read as one
-# sorts after every cutoff, so an issue gh dates oddly is judged, never skipped.
+# sorts after every cutoff, so an issue gh dates oddly is judged, never skipped. Only
+# the UTC form GitHub answers reads (a null, a missing field or an offset do
+# not: REFUTE-1 i01).
 [?def stamp scope=public ($t)
-  [?let [= $n [$strings:to-int [$strings:replace [$strings:replace [$strings:replace [$strings:replace $t "-" ""] "T" ""] ":" ""] "Z" ""]]]
-    [?match $n [case [err] 99999999999999] [else $n]]]]
+  [?let [= $m [$re:find [$re:compile "^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})Z$"] $t]]
+    [?match $m
+      [case [no-match] 99999999999999]
+      [else [$strings:to-int [$concat [$re:group $m 1] [$re:group $m 2] [$re:group $m 3]
+                                        [$re:group $m 4] [$re:group $m 5] [$re:group $m 6]]]]]]]
 [?def member scope=public ($seq $x) [> [$count [?for [in $y $seq] [where [= $y $x]] [yield 1]]] 0]]
 
 # issues-of: the issues of one `gh api --paginate --slurp` answer (an array
@@ -88,16 +103,16 @@
 [?def judge scope=public ($release $cutoff $reg $private $components)
   [?let [= $why-ok [?fn ($r) [not [= [$strings:trim [$attr $r "why" ""]] ""]]]]
         [= $bad-rows (
-            [?for [in $x $reg//exclude] [where [not [$why-ok $x]]]
+            [?for [in $x $reg//exclude] [where [or [not [$why-ok $x]] [= [$attr $x "number" ""] ""]]]
               [yield [$concat "register:" [$attr $x "repo" "?"] "#" [$attr $x "number" "?"]]]],
             [?for [in $x $reg//parking] [where [not [$why-ok $x]]]
               [yield [$concat "register:milestone#" [$attr $x "milestone" "?"]]]])]
-        [= $excluded [?for [in $x $reg//exclude] [where [$why-ok $x]]
+        [= $excluded [?for [in $x $reg//exclude] [where [$why-ok $x]] [where [not [= [$attr $x "number" ""] ""]]]
                        [yield [$concat [$attr $x "repo" ""] "#" [$attr $x "number" ""]]]]]
         [= $parked [?for [in $x $reg//parking] [where [$why-ok $x]] [yield [$attr $x "milestone" ""]]]]
         [= $prefix [$concat $release " "]]
         [= $a [?for [in $i $private]
-                [where [> [$stamp [$string [$map:get $i "created_at"]]] [$stamp $cutoff]]]
+                [where [> [$stamp [$string [?else [$map:get $i "created_at"] ""]]] [$stamp $cutoff]]]
                 [where [not [$member [$labels $i] $release]]]
                 [where [not [$member $excluded [$concat HOME "#" [$num $i]]]]]
                 [yield [$concat "a:" HOME "#" [$num $i]]]]]
@@ -117,8 +132,14 @@
 
 # ── the self-test (offline) ──────────────────────────────────────────────
 [?def self-test scope=public impure ()
-  [?let [= $doc [$cx:parse [$io:read-file CASES]]]
-        [= $root $doc]
+  [?let [= $raw [$io:read-file CASES]]
+        [= $_r [?match $raw
+                  [case [err $e] [?let [= $_c [$cry [$concat "issue-label-gate --self-test: REFUSED -- cannot read " CASES ": " [$string $e@message]]]] [$env:exit 2]]]
+                  [else ()]]]
+        [= $root [$cx:parse $raw]]
+        [= $_n [?if [= [$count [?for [in $c $root/case] [yield 1]]] 0]
+                  [then [?let [= $_c [$cry [$concat "issue-label-gate --self-test: REFUSED -- " CASES " holds no case; a table that grades nothing vouches for nothing"]]] [$env:exit 2]]]
+                  [else ()]]]
         [= $release [$attr $root "release" ""]]
         [= $cutoff [$attr $root "cutoff" ""]]
         [= $rows [?for [in $c $root/case]
@@ -126,11 +147,13 @@
                    [= $reg [?if [$empty $regs] [then [$cx:parse "[register]"]] [else [$first $regs]]]]
                    [= $private [?for [in $p $c/private] [in $i [$issues-of [$json:parse [$concat "[" [$string $p] "]"]]]] [yield $i]]]
                    [= $components [?for [in $p $c/component]
-                                    [yield [$map:put [$map:put {} "repo" [$attr $p "repo" ""]] "issues"
-                                                     [?to-array [$issues-of [$json:parse [$concat "[" [$string $p] "]"]]]]]]]]
+                                    [yield {repo: [$attr $p "repo" ""],
+                                                      issues: [?to-array [$issues-of [$json:parse [$concat "[" [$string $p] "]"]]]]}]]]
                    [= $got [$strings:join [$judge $release $cutoff $reg $private $components] " "]]
                    [= $want [$attr $c "want" ""]]
-                   [yield [row id=[$attr $c "id" "?"] ok=[= $got $want] got=$got want=$want]]]]
+                   [= $id [$attr $c "id" "?"]]
+                   [= $ok [= $got $want]]
+                   [yield [row id=$id ok=$ok got=$got want=$want]]]]
         [= $_l [?for [in $r $rows]
                  [yield [$say [$concat "  " [?if $r@ok [then "ok "] [else "RED"]] " " [$string $r@id] ": refused '"
                                        [$string $r@got] "'" [?if $r@ok [then ""] [else [$concat " — the table wants '" [$string $r@want] "'"]]]]]]]]
@@ -143,13 +166,26 @@
 
 # ── the live reading ─────────────────────────────────────────────────────
 # fetch: every open issue of one repository, or exit 2 naming why not.
+[?def gh-argv scope=public ($repo)
+  ('gh', 'api', '--paginate', '--slurp', [$concat "repos/" ORG "/" $repo "/issues?state=open&per_page=100"])]
+# refuse-read: exit 2 naming the repository and why its answer is not one.
+[?def refuse-read scope=public impure ($repo $why)
+  [?let [= $_c [$cry [$concat "issue-label-gate: REFUSED -- the open issues of " $repo " could not be read: " $why]]] [$env:exit 2]]]
 [?def fetch scope=public impure ($repo)
-  [?let [= $r [$process:run ('gh', 'api', '--paginate', '--slurp',
-                             [$concat "repos/" ORG "/" $repo "/issues?state=open&per_page=100"])]]
+  [?let [= $r [$process:run [$gh-argv $repo]]]
     [?match $r
       [case [err $e] [?let [= $_c [$cry [$concat "issue-label-gate: REFUSED — cannot run gh for " $repo ": " [$string $e@message]]]] [$env:exit 2]]]
       [else [?if [= [$string $r@exit-code] "0"]
-              [then [?to-array [$issues-of [$json:parse [$string $r@stdout]]]]]
+              [then [?let [= $out [$strings:trim [$string $r@stdout]]]
+                          [= $d [$json:parse $out]]
+                      [; --slurp answers an array of pages, each an array: anything
+                         else (no output, not JSON, an object) is a read that
+                         failed, exit 2, never an empty tracker (REFUTE-1 g02-g04). ]
+                      [?match $d
+                        [case [err $e] [$refuse-read $repo [$concat "gh answered no JSON (" [$string $e@message] ")"]]]
+                        [else [?if [$strings:starts-with $out "[["]
+                                [then [?to-array [$issues-of $d]]]
+                                [else [$refuse-read $repo "gh did not answer an array of pages"]]]]]]]
               [else [?let [= $_c [$cry [$concat "issue-label-gate: REFUSED — `gh api` for " $repo " exited " [$string $r@exit-code]
                                                  ": " [$strings:trim [$string $r@stderr]]]]]
                       [$env:exit 2]]]]]]]]
@@ -163,9 +199,8 @@
               [where [= [$attr $r "status" ""] "extracted"]]
               [yield [$attr $r "name" ""]]]]
   [= $private [$fetch HOME]]
-  [= $components [?for [in $n $names] [yield [$map:put [$map:put {} "repo" $n] "issues" [$fetch $n]]]]]
+  [= $components [?for [in $n $names] [yield {repo: $n, issues: [$fetch $n]}]]]
   [= $keys [?to-array [$judge $release CUTOFF $reg $private $components]]]
-  [= $all [?to-array [?for [in $i $private] [yield [$map:put [$map:put {} "key" [$concat HOME "#" [$num $i]]] "title" [$title $i]]]]]]
   [= $_r [?for [in $k $keys] [yield [$cry [$concat "issue-label-gate: REFUSED " $k]]]]]
   [= $stale [?for [in $x $reg/exclude]
               [where [= [$attr $x "repo" ""] HOME]]
