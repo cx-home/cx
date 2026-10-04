@@ -774,17 +774,17 @@
     [case [err @message=$m] ([$fail 'vii' 'absent-probe-refused' $m $P-ABSENT],)]
     [case $r [$judge-absent $r]]]]
 
-# [$first] takes the first ITEM of a sequence, and a single value is a
-# one-item sequence (code.md §6.3 "Sequence built-ins": "a single
-# non-sequence value (treated as a 1-element sequence)"; primer §6: "[$first]
-# handing back an element"): a path that matched ONE element hands that
-# element back, as a path that matched two hands back the first of them --
-# never the matched element's own first child.
+# [$first] of a path that matched ONE [hit] holding a single item reads that
+# item: code.md §5's terminal labeled-field unwrap (#584) hands `$d/hit` back
+# as [inner] already, and the sequence built-ins read a single element by
+# content arity, its children (code.md §6.5; RULED: 1262-a, FRST-1 -- Letter
+# 181 = (b), cx-core-code#26). A path that matched two is a node-set, never
+# unwrapped, and [$first] hands back the first [hit].
 [?const P-FIRST "[?let [= $d [doc [hit n=1 [inner]]]] [= $two [doc [hit n=1 [inner]] [hit n=2]]] [r one=[$name [$first $d/hit]] two=[$name [$first $two/hit]]]]"]
 
 [?def judge-first scope=private pure ($r)
   [?let [= $row [$strings:trim-end [$cx:serialize $r]]]
-    [$when-not [= $row "[r one=hit two=hit]"] [$fail 'vii' 'first-of-one-match-descends' [$concat $row ' want [r one=hit two=hit]'] $P-FIRST]]]]
+    [$when-not [= $row "[r one=inner two=hit]"] [$fail 'vii' 'first-of-one-match-descends' [$concat $row ' want [r one=inner two=hit]'] $P-FIRST]]]]
 
 [?def chk-first scope=private impure ()
   [?match [$cx:eval $P-FIRST $NOCTX]
@@ -1327,7 +1327,7 @@
           [$st 'absence: every arity rule' 'else-coalesced-a-present-value empty-disagrees-with-exists exists-disagrees-with-count present-value-reads-absent'
                [$judge-arity [r p=false e=true c=0 m=true k=true] 'st']],
           [$st 'absence: the absent channel' 'absence-misread' [$judge-absent [r p=true c=0 c1=1 k=true f=false]]],
-          [$st 'absence: first of one match' 'first-of-one-match-descends' [$judge-first [r one=inner two=hit]]],
+          [$st 'absence: first of one match' 'first-of-one-match-descends' [$judge-first [r one=hit two=hit]]],
           [$st 'register: a class matches' 'for-map-duplicate-key'
                [?for [in $c ([$classify $f-dup $ST-REG],)] [where [= [$string $c@adv] 'true']] [yield $c]]],
           [$st 'register: a subject matches' 'effect-point-crash'
