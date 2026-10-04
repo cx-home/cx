@@ -173,14 +173,118 @@
 
 # run make under a runner: the lock stays scripts/build-slot.sh's (L102;
 # its stale-holder break needs #1706), the toolchain devbox's, the output a
-# log file per step so no capture is held in memory.
-[?def slot-make scope=public impure [returns element] ($runner $words $log)
-  [$process:run [$cat2 ('sh', 'scripts/build-slot.sh', 'devbox', 'run', '--', 'make', '--no-print-directory') $words]
-                env={CX_BUILD_SLOT: $runner} timeout-ms=[$make-ms]
-                capture={stdout: $log, stderr: [$concat $log '.err']}]]
+# log file per step so no capture is held in memory. The make runs under the
+# liveness watch below (#1787), stall-ms quiet before it is killed.
+[?def slot-make scope=public impure [returns element] ($runner $words $log $stall-ms)
+  [$watched-run [$cat2 ('sh', 'scripts/build-slot.sh', 'devbox', 'run', '--', 'make', '--no-print-directory') $words]
+                {CX_BUILD_SLOT: $runner} $log [$concat $runner '/pid'] $stall-ms 60000 [$make-ms]]]
+
+# ── the liveness watch on a step (#1787) ─────────────────────────────────────
+# A step's make once slept two hours with no child process and its log
+# stopped, under devbox's .cmd.sh (#1787), and process:run waited out the
+# whole make-ms budget on it. watched-run spawns the step in a process group
+# of its own and looks every poll-ms. A look counts as QUIET when neither of
+# the step's two log files grew and no LEAF of the group — a process with no
+# child in the group, the one doing the work — used CPU, came or went; any
+# other look resets the count. A look does not count while the runner waits
+# for its slot (the slot's pid file names some other holder): queued behind
+# another step is waiting, not stalled. Quiet for stall-ms, the group is sent
+# SIGTERM, then SIGKILL, the tree it was killed in is appended to the step's
+# .log.err, and the answer is exit 124 with stalled=true — so the red names
+# the hang by step instead of the run sitting for hours. The ancestors (the
+# runner's shell, devbox) are left out of the signature on purpose: a runtime
+# that ticks while its child sleeps is not the step working. stall-ms 0
+# turns the watch off; budget-ms bounds the whole step as before.
+[?def group-rows scope=public impure [returns any] ($pgid)
+  [?let [= $r [$process:run ('ps', '-A', '-o', 'pid=,ppid=,pgid=,stat=,time=,command=') timeout-ms=30000]]
+    [?to-sequence [?for [in $l [$nonblank-lines [$string $r@stdout]]]
+                    [= $w [$str-split-whitespace $l]]
+                    [where [and [>= [$count $w] 6] [= [$nth $w 3] [$string $pgid]]]]
+                    [yield $w]]]]]
+
+[?def leaf-signature scope=public pure [returns string] ($rows)
+  [?let [= $parents [?to-sequence [?for [in $w $rows] [yield [$nth $w 2]]]]]
+    [$strings:join [?to-sequence [?for [in $w $rows] [where [not [$member [$nth $w 1] $parents]]]
+                     [yield [$concat [$nth $w 1] '=' [$nth $w 5]]]]] ' ']]]
+
+[?def tree-text scope=public pure [returns string] ($rows)
+  [$strings:join [?to-sequence [?for [in $w $rows]
+                   [yield [$concat '  pid ' [$nth $w 1] ' ppid ' [$nth $w 2] ' ' [$nth $w 4] ' cpu ' [$nth $w 5] ' '
+                                   [$strings:join [?to-sequence [?drop 5 $w]] ' ']]]]] "\n"]]
+
+[?def file-size scope=public impure [returns int] ($p) [?if [$io:is-file $p] [then [$io:size $p]] [else 0]]]
+
+[?def holds-slot scope=public impure [returns bool] ($pidfile $pid)
+  [or [= $pidfile ''] [= [$str-trim [?else [$io:read-file $pidfile] '']] [$string $pid]]]]
+
+[?def watched-run scope=public impure [returns element] ($argv $env $log $pidfile $stall-ms $poll-ms $budget-ms)
+  [?let [= $p [$process:spawn $argv env=$env new-process-group=true stdin=:discard
+                              stdout=$log stderr=[$concat $log '.err']]]
+        [= $pid [$process:pid $p]]
+    [?loop [= $waited 0] [= $quiet 0] [= $mark '']
+      [?let [= $x [$process:wait-timeout $p $poll-ms]]
+        [?if [not [= [$count [?to-sequence [?concat () $x]]] 0]]
+          [then [break [proc-result exit-code=[$string $x] stalled='false']]]
+          [else [?let [= $rows [$group-rows $pid]]
+                      [= $sig [$concat [$string [$file-size $log]] '/' [$string [$file-size [$concat $log '.err']]] ' '
+                                       [$leaf-signature $rows]]]
+                      [= $q [?if [and [= $sig $mark] [$holds-slot $pidfile $pid]] [then [+ $quiet $poll-ms]] [else 0]]]
+                      [= $w [+ $waited $poll-ms]]
+                  [?if [and [> $stall-ms 0] [>= $q $stall-ms]]
+                    [then [?let [= $tree [$tree-text $rows]]
+                                [= $_t [$process:kill-group $p :term]]
+                                [= $y [$process:wait-timeout $p 10000]]
+                                [= $_k [?if [= [$count [?to-sequence [?concat () $y]]] 0] [then [$process:kill-group $p :kill]] [else null]]]
+                                [= $_r [?fallback [$process:wait $p] [recover-with 0]]]
+                                [= $_a [$io:append-file [$concat $log '.err']
+                                         [$concat "premerge-flow: STALLED — no line on either stream and no CPU in any leaf of the step's process group for " [$string [/ $q 1000]] ' s (#1787); killed by group. The tree at the kill:' "\n"
+                                                  $tree "\n"]]]
+                            [break [proc-result exit-code='124' stalled='true']]]]
+                    [else [?if [>= $w $budget-ms]
+                            [then [?let [= $_t [$process:kill-group $p :kill]]
+                                        [= $_r [?fallback [$process:wait $p] [recover-with 0]]]
+                                    [break [proc-result exit-code='124' timed-out='true' stalled='false']]]]
+                            [else [continue $w $q $sig]]]]]]]]]]]]
 
 [?def log-tail scope=public impure [returns string] ($log $k)
   [$tail-of [$concat [?else [$io:read-file $log] ''] "\n" [?else [$io:read-file [$concat $log '.err']] '']] $k]]
+
+# ── a red step's cause, from both streams (#1804) ────────────────────────────
+# A step writes its refusal on whichever stream it likes: issue-label-gate's
+# went to stderr while its self-test's 24 green lines went to stdout, and the
+# verdict named the red with no cause. The runner's own lines are no cause —
+# devbox's and rustup's banners, make's recipe-failure line and devbox's exit
+# relay land on stderr after every step — so red-cause leaves them out and
+# tails each stream on its own, saying which stream and file each tail is;
+# cause-line is the one line of it a table row carries (stderr's last step
+# line, else stdout's).
+[?const RUNNER-LINE '^(Info: |info: |Error: error running script |make(\[[0-9]+\])?: \*\*\* |  stable-[^ ]+ unchanged)']
+
+[?def step-lines scope=public impure [returns any] ($path)
+  [?to-sequence [?for [in $l [$strings:split [?else [$io:read-file $path] ''] "\n"]]
+                  [where [and [not [= [$str-trim $l] '']] [not [$found [$re:compile $RUNNER-LINE] $l]]]]
+                  [yield $l]]]]
+
+[?def last-k scope=public pure [returns any] ($ls $k)
+  [?to-sequence [?drop [?if [> [$count $ls] $k] [then [- [$count $ls] $k]] [else 0]] $ls]]]
+
+[?def red-cause scope=public impure [returns string] ($log $k)
+  [?let [= $err [$step-lines [$concat $log '.err']]]
+        [= $out [$step-lines $log]]
+        [= $parts [$cat2 [?if [= [$count $err] 0] [then ()]
+                           [else ([$concat 'stderr (' $log '.err):' "\n" [$strings:join [$last-k $err $k] "\n"]])]]
+                         [?if [= [$count $out] 0] [then ()]
+                           [else ([$concat 'stdout (' $log '):' "\n" [$strings:join [$last-k $out $k] "\n"]])]]]]
+    [?if [> [$count $parts] 0] [then [$strings:join $parts "\n"]]
+      [else [$concat 'no line of the step on either stream; the runner wrote (stderr, ' $log '.err):' "\n"
+                     [$tail-of [?else [$io:read-file [$concat $log '.err']] ''] $k]]]]]]
+
+[?def cause-line scope=public impure [returns string] ($log)
+  [?let [= $err [$step-lines [$concat $log '.err']]]
+        [= $out [$step-lines $log]]
+    [?if [> [$count $err] 0] [then [$concat 'stderr: ' [$first [$last-k $err 1]]]]
+      [else [?if [> [$count $out] 0] [then [$concat 'stdout: ' [$first [$last-k $out 1]]]]
+              [else 'no line of the step on either stream']]]]]]
 
 # ══ release.flow.cx — a release cut, as acts (RULED: RFLOW-1 L103) ═══════════
 #
