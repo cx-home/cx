@@ -272,6 +272,10 @@ step_globs() {
     check-no-legacy-try)           echo 'vcx/* conformance/* stdlib/* docs-src/*' ;;
     check-no-infix-range)          echo 'conformance/* stdlib/* docs-src/* examples/*' ;;
     check-no-cxl-token)            echo '*' ;;
+    # every listener a test binds is loopback (cx-private issue 1784): the V
+    # tests of this tree and of every pin, the pinned CX test programs, the
+    # flow documents, and the step itself
+    listener-bind-gate)            echo 'scripts/listener_bind_gate.cx deps.cxd vcx/* flows/*' ;;
     check-no-consumer-terms)       echo '*' ;;
     # K13, RULED: D59a, RS-28: a whole-tree secret scan, like
     # check-no-consumer-terms above — any change can add a secret.
