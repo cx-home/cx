@@ -10,7 +10,7 @@ make repr-guard          # or, from the repository root: cx --allow-read --allow
 CX_REPR_KEEP=1 make repr-guard           # keep the generated corpora for inspection
 CX_REPR_RECORDS=8000 make repr-guard
 CX_REPR_LANE_DEADLINE_S=120 make repr-guard   # the per-reading deadline (default 300 s)
-make repr-guard-selftest # the driver's verdicts on planted lane drivers (#1766)
+make repr-guard-selftest # the driver's verdicts on planted format drivers (#1766)
 ```
 
 In `TEST_TARGETS`, so it runs in every `make test`.
@@ -203,16 +203,16 @@ child is gone, capped at 1 MiB. A reading past `CX_REPR_LANE_DEADLINE_S`
 turns the step red **by name**:
 
 ```
-bench/repr: FAIL — lane xml exceeded its 300 s deadline at load average 62.70; the reading was killed and the step reds by name rather than hang the run (#1766).
+bench/repr: FAIL — format xml exceeded its 300 s deadline at load average 62.70; the reading was killed and the step reds by name rather than hang the run (#1766).
 ```
 
 That is not the bound-exceedance text, so the GAUGE retry does not absorb a
 stall. `make repr-guard` writes the output to its log file and prints it back
 after the exit is read — no pipe in the recipe either. `make
-repr-guard-selftest` (scripts/repr_guard_selftest.cx) proves it on planted lane
+repr-guard-selftest` (scripts/repr_guard_selftest.cx) proves it on planted format
 drivers (`CX_REPR_BIN`, with a corpus directory of its own via
 `CX_REPR_CORPUS_DIR`): a stalled reading reds by name inside the deadline, a
-grandchild holding the lane's stdout cannot hold the step (the `8b63de0c7`
+grandchild holding the format's stdout cannot hold the step (the `8b63de0c7`
 shape), and the bound-exceedance, non-zero, unparsable and keep/cleanup answers
 are unchanged.
 
