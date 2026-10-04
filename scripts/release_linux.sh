@@ -180,7 +180,7 @@ build_one() {
       # I4 (#651/#516): the §4 profile builds, through the front door`s own
       # target (vcx/ has no Makefile since RS-12; the sub-make is the pin`s).
       # PROFILE_BUILD_JOBS=1: the profile matrix builds serially here, as the
-      # pre-split lane did. Measured in an 8 GB Docker VM: the root Makefile`s
+      # pre-split build step did. Measured in an 8 GB Docker VM: the root Makefile`s
       # default five concurrent -prod V compiles were OOM-killed (cli-cli,
       # cli-embed: "Killed"), _gate_evidence/pipeline_batchh2/1674-linux-build.log.
       make '"$PROFILES_TARGET"' PROFILE_BUILD_JOBS=1 CX_COMMIT='"$CX_COMMIT"' CX_VFORK='"$CX_VFORK"' CX_RELEASE='"$CX_RELEASE"'
