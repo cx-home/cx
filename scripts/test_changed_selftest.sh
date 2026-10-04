@@ -747,8 +747,23 @@ if [ -z "$x_miss" ]; then
 else
 	bad X "not selected:${x_miss}"
 fi
+# ── Y — a V pin move selects every *-real step whose verdict rests on this tree's V (#1792) ──
+# test-connector-real compiles six V test files out of the pin with this tree's
+# V; test-agent-real and test-db-real run cx binaries this tree builds with it.
+# A change to third_party/v moves all three, and none of their rows named it
+# (the row test-xap-umbrella and test-fabric-umbrella copied, fixed under X).
+run third_party/v > "$T/y"
+y_miss=""
+for s in test-connector-real test-agent-real test-db-real; do
+	targets "$T/y" | tr " " "\n" | grep -q "^$s\$" || y_miss="$y_miss $s"
+done
+if [ -z "$y_miss" ]; then
+	ok Y "a V pin move (third_party/v) selects test-connector-real, test-agent-real and test-db-real, the *-real steps built with this tree's V"
+else
+	bad Y "third_party/v did not select:${y_miss}"
+fi
 if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop step; P the vcx/corpus grading core selects the steps that run it; R the stripped scripts/ paths select their own rows; S every selected suite file is where the suite is; T a deleted test file is not named; U a page a pinned test reads by name selects it; V a change of one stripped scripts/ path selects its rows; W a page the vocabulary [tree] rows read selects docs-vocabulary-check; X a pin bump selects the pinned xap and fabric V umbrellas)"
+echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop step; P the vcx/corpus grading core selects the steps that run it; R the stripped scripts/ paths select their own rows; S every selected suite file is where the suite is; T a deleted test file is not named; U a page a pinned test reads by name selects it; V a change of one stripped scripts/ path selects its rows; W a page the vocabulary [tree] rows read selects docs-vocabulary-check; X a pin bump selects the pinned xap and fabric V umbrellas; Y a V pin move selects the *-real steps)"
