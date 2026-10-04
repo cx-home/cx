@@ -118,11 +118,21 @@
                           [else [$string [$http:status $g]]]]]]
                 [else [$string $s]]]]]]]]
 
+# answered: an HTTP status from 100 to 399 (a 0 or a negative is no answer).
 [?def answered scope=public ($status)
   [?let [= $n [$strings:to-number $status]]
-    [?match $n [case [err] false] [else [< $n 400]]]]]
+    [?match $n [case [err] false] [else [and [>= $n 100] [< $n 400]]]]]]
 
-[?def transport scope=public ($status) [$strings:starts-with $status "error "]]
+# transport: the request failed on the way -- a name that did not resolve, a
+# refused, unreachable, reset or timed-out connection, a TLS handshake that
+# did not finish. Those are retried. Any other error (a forbidden address, a
+# grant the run lacks, a malformed URL, a redirect loop) is the run's or the
+# URL's fault and is judged at once, DEAD (REFUTE-1 e08).
+[?const TRANSPORT ("cx-err:CXER4502", "cx-err:CXER4505", "cx-err:CXER4506", "cx-err:CXER4507",
+                   "cx-err:CXER4508", "cx-err:CXER4512", "cx-err:CXER4534")]
+[?def transport scope=public ($status)
+  [and [$strings:starts-with $status "error "]
+       [> [$count [?for [in $c TRANSPORT] [where [$strings:starts-with $status [$concat "error " $c]]] [yield 1]]] 0]]]
 
 # fetch-tries: the answer after up to TRIES tries — $fetch is called with the
 # URL and the try's number; $wait says whether to back off between tries (the
@@ -148,7 +158,8 @@
 [?def verdict scope=public ($status $expected)
   [?if [$transport $status]
     [then "UNREACHABLE"]
-    [else [?if [or [$answered $status] [and [not [= $expected ""]] [= $expected $status]]]
+    [else [?if [and [not [$strings:starts-with $status "error "]]
+                    [or [$answered $status] [and [not [= $expected ""]] [= $expected $status]]]]
             [then "ok"]
             [else "DEAD"]]]]]
 
@@ -157,12 +168,25 @@
 [?const CASES "scripts/gen_site/check_external_links_cases.cxd"]
 
 [?def self-test scope=public impure ()
-  [?let [= $doc [$cx:parse [$io:read-file CASES]]]
+  [?let [= $raw [$io:read-file CASES]]
+        [= $_r [?match $raw
+                  [case [err $e] [?let [= $_c [$cry [$concat "check_external_links --self-test: REFUSED -- cannot read " CASES ": " [$string $e@message]]]] [$env:exit 2]]]
+                  [else ()]]]
+        [= $doc [$cx:parse $raw]]
+        [= $ids [?for [in $c $doc//case] [yield [$string $c@id]]]]
+        [= $_n [?if [= [$count $ids] 0]
+                  [then [?let [= $_c [$cry [$concat "check_external_links --self-test: REFUSED -- " CASES " holds no case; a table that grades nothing vouches for nothing"]]] [$env:exit 2]]]
+                  [else ()]]]
+        [= $dups [?for [in $i $ids] [where [> [$count [?for [in $j $ids] [where [= $i $j]] [yield 1]]] 1]] [yield $i]]]
+        [= $_d [?if [> [$count $dups] 0]
+                  [then [?let [= $_c [$cry [$concat "check_external_links --self-test: REFUSED -- duplicate case id(s): " [$strings:join $dups " "]]]] [$env:exit 2]]]
+                  [else ()]]]
         [= $rows [?for [in $c $doc//case]
                    [= $answers [?to-array [?for [in $a $c/a] [yield [$string $a]]]]]
                    [= $fetch [?fn ($u $n) [$nth $answers [?if [> $n [$count $answers]] [then [$count $answers]] [else $n]]]]]
-                   [= $r [$fetch-tries [$string $c@id] $fetch false 1]]
-                   [= $got [$verdict [$string $r@status] [$attr $c "expect" ""]]]
+                   [; a case with no planted answer is refused, never fetched (REFUTE-1 e02) ]
+                   [= $r [?if [= [$count $answers] 0] [then [ans status="" tries=0]] [else [$fetch-tries [$string $c@id] $fetch false 1]]]]
+                   [= $got [?if [= [$count $answers] 0] [then "REFUSED"] [else [$verdict [$string $r@status] [$attr $c "expect" ""]]]]]
                    [= $ok [and [= $got [$string $c@want]] [= [$string $r@tries] [$string $c@tries]]]]
                    [yield [row id=[$string $c@id] ok=$ok got=$got tries=[$string $r@tries]
                                want=[$string $c@want] want-tries=[$string $c@tries]]]]]
