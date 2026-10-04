@@ -529,6 +529,11 @@ step_globs() {
     # checkout by this tree's binary (RULED: RS-12, RS-8, RS-27; #1591 item
     # K3) — a pin bump, plus the in-tree mock the tests still boot
     test-connector-real)           echo 'deps.cxd registry/modules.cxd reference/acme/*' ;;
+    # xap's and fabric's V umbrellas, run from the pinned checkout by this
+    # tree's binary (#1689, RULED: RS-12) — a pin bump, and the front door's
+    # own vcx/ (testenv and the cx the tests start)
+    test-xap-umbrella)             echo 'deps.cxd registry/modules.cxd vcx/*' ;;
+    test-fabric-umbrella)          echo 'deps.cxd registry/modules.cxd vcx/*' ;;
     # the db corpus on sqlite, postgres and mysql against real servers in
     # containers, run from the pinned checkout by a cx binary this tree builds
     # with the two engines (RULED: DBLANE-1, DBSRV-1) — a pin bump, the
