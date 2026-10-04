@@ -1,0 +1,42 @@
+[external-link-cases
+  [doc [#
+scripts/gen_site/check_external_links_cases.cxd — the external-link check's
+case table (#1778, RULED: FIX-1, CXF-8).
+
+`check_external_links.cx --self-test` grades each case offline: the fetch is
+planted — `[a …]` children are the answers to the first, second, third try,
+in order (the last one repeats) — and the verdict, the tries spent and the
+line's word are compared with the row. An answer is an HTTP status, or
+`error <code>` when the request itself failed (no route, a refused or timed-out
+connection: a TRANSPORT error, not a status).
+
+  want=ok           the URL answered (below 400), or answered the status an
+                    allowlist row expects
+  want=DEAD         it answered a status that is no answer (404, 410, 503 …)
+                    and no row expects it — a status is never retried
+  want=UNREACHABLE  every try failed in transport; the line says how many
+
+expect= is the status an allowlist row accepts for the URL ('' for none).
+Measured 2026-10-04 on Site run 37172899968: two binding-repository URLs
+answered CXER4534 (the 20 s whole-request deadline) and CXER4506 (connect
+failed) on the macOS runner and were called DEAD after one try; fetched
+again anonymously the same hour both answered 404 — private repositories,
+which the cx-home/cx- prefix row expects.
+#]]
+
+  [case id=status-200 expect='' want=ok tries=1 [a '200']]
+  [case id=status-404-unexpected expect='' want=DEAD tries=1 [a '404']]
+  [case id=status-410-unexpected expect='' want=DEAD tries=1 [a '410']]
+  [case id=status-503-not-retried expect='' want=DEAD tries=1 [a '503'] [a '200']]
+  [case id=status-404-expected expect='404' want=ok tries=1 [a '404']]
+  [case id=connect-then-404-expected expect='404' want=ok tries=2
+        [a 'error cx-err:CXER4506'] [a '404']]
+  [case id=timeout-then-404-unexpected expect='' want=DEAD tries=2
+        [a 'error cx-err:CXER4534'] [a '404']]
+  [case id=timeout-timeout-200 expect='' want=ok tries=3
+        [a 'error cx-err:CXER4534'] [a 'error cx-err:CXER4534'] [a '200']]
+  [case id=connect-every-try expect='' want=UNREACHABLE tries=3
+        [a 'error cx-err:CXER4506']]
+  [case id=connect-every-try-expected-404 expect='404' want=UNREACHABLE tries=3
+        [a 'error cx-err:CXER4506']]
+]

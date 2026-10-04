@@ -416,7 +416,7 @@ step_globs() {
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
     # ledger-index-check (#1438) regenerates ledger/README.md from the store and
     # compares: its inputs are every ledger page and the generator itself.
-    ledger-index-check)            echo 'ledger/* scripts/ledger_index.cx' ;;
+    ledger-index-check)            echo 'ledger/* scripts/ledger_index.cx scripts/ledger_subject_ids_selftest.sh' ;;
     # ledger-edit-map-check (#1329, RULED: 1329-a, EDMAP-1) reads every edit map
     # against the owning repository's history: the pages, the allocation that
     # names the owner, the pins that name its sha, and the step with its selftest.
@@ -651,6 +651,9 @@ step_globs() {
     # its program and case table, the host (docs/CNAME) and the front door's
     # name (the manifest's [site repo=]).
     site-live-check)               echo 'scripts/site_live_check* docs/CNAME docs-src/site/manifest.cxd' ;;
+    # #1778 (RULED: FIX-1): the external-link check's retry decision, graded
+    # offline on its case table; the program, the table and the allowlist.
+    site-links-selftest)           echo 'scripts/gen_site/check_external_links* docs-src/site/links.cxd' ;;
     # test-binding-api-parity row RETIRED (RULED: RS-12, RS-8; #1591 item K3):
     # the four drivers under lang/<lang>/binding_api_driver/ left with their
     # binding repositories, and the target itself is gone from the Makefile.

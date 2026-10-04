@@ -99,24 +99,70 @@
 
 # ── the fetch ────────────────────────────────────────────────────────────
 
-# status-of: the answer for one URL — its status, or the error's code when the
-# request itself failed (no route, no name, a refused connection).
+# status-of: the answer for one URL — its status, or `error <code> (<message>)`
+# when the request itself failed (no route, no name, a refused or timed-out
+# connection): a TRANSPORT error, which is not a status.
 [?def status-of scope=public impure ($u)
   [?let [= $h [$http:head $u {timeout: TIMEOUT}]]
     [?match $h
-      [case [err $e] [$concat "error " [$string $e@code]]]
+      [case [err $e] [$concat "error " [$string $e@code] " (" [$string $e@message] ")"]]
       [else [?let [= $s [$http:status $h]]
               [?if [or [= $s 403] [= $s 405]]
-                [then [?match [$http:get $u {timeout: TIMEOUT}]
-                        [case [err $e] [$concat "error " [$string $e@code]]]
-                        [else [$string [$http:status [$http:get $u {timeout: TIMEOUT}]]]]]]
+                [then [?let [= $g [$http:get $u {timeout: TIMEOUT}]]
+                        [?match $g
+                          [case [err $e] [$concat "error " [$string $e@code] " (" [$string $e@message] ")"]]
+                          [else [$string [$http:status $g]]]]]]
                 [else [$string $s]]]]]]]]
 
 [?def answered scope=public ($status)
   [?let [= $n [$strings:to-number $status]]
     [?match $n [case [err] false] [else [< $n 400]]]]]
 
+[?def transport scope=public ($status) [$strings:starts-with $status "error "]]
+
+# fetch-tries: the answer after up to TRIES tries — $fetch is called with the
+# URL and the try's number; $wait says whether to back off between tries (the
+# self-test plants the answers and does not wait).
+[?const TRIES 1]
+[?def fetch-tries scope=public impure ($u $fetch $wait $n)
+  [?let [= $s [$fetch $u $n]]
+    [ans status=$s tries=$n]]]
+
+# verdict: ok, or DEAD.
+[?def verdict scope=public ($status $expected)
+  [?if [or [$answered $status] [and [not [= $expected ""]] [= $expected $status]]]
+    [then "ok"]
+    [else "DEAD"]]]
+
+# ── the self-test (#1778): the case table, offline ───────────────────────
+
+[?const CASES "scripts/gen_site/check_external_links_cases.cxd"]
+
+[?def self-test scope=public impure ()
+  [?let [= $doc [$cx:parse [$io:read-file CASES]]]
+        [= $rows [?for [in $c $doc//case]
+                   [= $answers [?to-array [?for [in $a $c/a] [yield [$string $a]]]]]
+                   [= $fetch [?fn ($u $n) [$nth $answers [?if [> $n [$count $answers]] [then [$count $answers]] [else $n]]]]]
+                   [= $r [$fetch-tries [$string $c@id] $fetch false 1]]
+                   [= $got [$verdict [$string $r@status] [$attr $c "expect" ""]]]
+                   [= $ok [and [= $got [$string $c@want]] [= [$string $r@tries] [$string $c@tries]]]]
+                   [yield [row id=[$string $c@id] ok=$ok got=$got tries=[$string $r@tries]
+                               want=[$string $c@want] want-tries=[$string $c@tries]]]]]
+        [= $_l [?for [in $r $rows]
+                 [yield [$say [$concat "  " [?if $r@ok [then "ok "] [else "RED"]] " " [$string $r@id]
+                                       ": " [$string $r@got] " after " [$string $r@tries] " try(ies)"
+                                       [?if $r@ok [then ""] [else [$concat " — the table wants " [$string $r@want]
+                                                                          " after " [$string $r@want-tries]]]]]]]]]
+        [= $red [$count [?for [in $r $rows] [where [not $r@ok]] [yield 1]]]]
+    [?if [= $red 0]
+      [then [?let [= $_k [$say [$concat "check_external_links --self-test: " [$string [$count $rows]] " case(s), every one as the table says"]]]
+              [$env:exit 0]]]
+      [else [?let [= $_k [$cry [$concat "check_external_links --self-test: " [$string $red] " of " [$string [$count $rows]] " case(s) RED"]]]
+              [$env:exit 1]]]]]]
+
 [?let
+  [= $_st [?if [> [$count [?for [in $x [$env:argv]] [where [= $x "--self-test"]] [yield $x]]] 0]
+            [then [$self-test]] [else ()]]]
   [= $out [$site-out]]
   [= $_o [?if [$io:is-directory $out] [then 0]
            [else [?let [= $_c [$cry [$concat "check_external_links: " $out "/ is not there — run `make site` first"]]]
@@ -132,29 +178,36 @@
   [= $al [$allow]]
   [= $urls [?for [in $u [$map:keys $cites]] [order-by $u] [yield $u]]]
   [= $skipped [?for [in $u $urls] [where [$member [$map:get $al "skip"] [$host-of $u]]] [yield $u]]]
+  [= $live [?fn ($u $n) [$status-of $u]]]
   [= $graded [?for [in $u $urls]
                [where [not [$member [$map:get $al "skip"] [$host-of $u]]]]
-               [= $status [$status-of $u]]
+               [= $r [$fetch-tries $u $live true 1]]
+               [= $status [$string $r@status]]
                [= $expected [?if [$map:contains [$map:get $al "expect"] $u]
                               [then [$map:get [$map:get $al "expect"] $u]]
                               [else [$prefix-status [$map:get $al "prefixes"] $u]]]]
-               [= $ok [?if [= $expected ""] [then [$answered $status]]
-                        [else [or [= $expected $status] [$answered $status]]]]]
-               [yield [r url=$u status=$status ok=$ok expected=[?if [= $expected $status] [then $expected] [else ""]]]]]]
+               [= $word [$verdict $status $expected]]
+               [yield [r url=$u status=$status word=$word tries=[$string $r@tries]
+                         expected=[?if [= $expected $status] [then $expected] [else ""]]]]]]
   [= $_t [?for [in $r $graded]
-           [yield [$say [$concat "  " [?if $r@ok [then "ok  "] [else "DEAD"]] " " [$string $r@status]
+           [yield [$say [$concat "  " [?if [= [$string $r@word] "ok"] [then "ok  "] [else [$string $r@word]]]
+                                 " " [$string $r@status]
                                  [?if [= [$string $r@expected] ""] [then ""] [else " (expected, allowlisted)"]]
+                                 [?if [= [$string $r@tries] "1"] [then ""] [else [$concat " (" [$string $r@tries] " tries)"]]]
                                  "\t" [$string $r@url]]]]]]
   [= $_s [?for [in $u $skipped] [yield [$say [$concat "  skip     \t" $u " (host allowlisted)"]]]]]
-  [= $dead [?for [in $r $graded] [where [not $r@ok]] [yield $r]]]
+  [= $dead [?for [in $r $graded] [where [not [= [$string $r@word] "ok"]]] [yield $r]]]
   [= $_d [?for [in $r $dead]
-           [yield [$cry [$concat "check_external_links: DEAD " [$string $r@url] " answered " [$string $r@status]
+           [yield [$cry [$concat "check_external_links: " [$string $r@word] " " [$string $r@url] " answered " [$string $r@status]
+                                 [?if [= [$string $r@word] "UNREACHABLE"] [then [$concat " on every one of " [$string $r@tries] " tries"]] [else ""]]
                                  " — cited by " [$map:get $cites [$string $r@url]]]]]]]
   [?if [$empty $dead]
     [then [?let [= $_k [$say [$concat "site-links-external: " [$string [$count $graded]] " external URL(s) fetched from "
                                       [$string [$count $pages]] " served pages, every one answered ("
                                       [$string [$count $skipped]] " skipped by host, "
                                       [$string [$count [?for [in $r $graded] [where [not [= [$string $r@expected] ""]]] [yield 1]]]]
-                                      " accepted as allowlisted)"]]]
+                                      " accepted as allowlisted, "
+                                      [$string [$count [?for [in $r $graded] [where [not [= [$string $r@tries] "1"]]] [yield 1]]]]
+                                      " after a retried transport error)"]]]
             [$env:exit 0]]]
     [else [$env:exit 1]]]]
