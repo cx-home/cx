@@ -301,8 +301,11 @@ step_globs() {
     docs-voice-check)              echo 'docs-src/* scripts/gen_site/docs_voice_check.cx' ;;
     # docs-vocabulary-check (RULED: DOCS-51 §1): the same served sources, the
     # playground's page and script, the guide generator (the navigation's
-    # labels), and its word list docs-src/site/vocabulary.cxd (under docs-src/*).
-    docs-vocabulary-check)         echo 'docs-src/* scripts/gen_site/docs_vocabulary_check.cx scripts/gen_guide/playground/* scripts/gen_guide/guide_build.cx' ;;
+    # labels), and its word list docs-src/site/vocabulary.cxd (under docs-src/*);
+    # and the pages its [tree] rows count (WORDS-1): the Makefile, flows/,
+    # scripts/ (.cx and .sh), spec/03-approved/ and the three agent pages — the
+    # red head 87699b217 was a scripts/release_linux.sh comment this row missed.
+    docs-vocabulary-check)         echo 'docs-src/* scripts/* Makefile flows/* spec/03-approved/* AGENTS.md AGENT-STANDING-RULES.md CONTRIBUTING.md' ;;
     # nav-shape-check (RULED: DOCS-51 §3): the sidebar guide_build.cx renders and
     # the assembled tree it walks — site-check's inputs and the check itself.
     nav-shape-check)               echo 'docs-src/* docs/* scripts/gen_site/* scripts/gen_guide/* scripts/gen_docs/* deps.cxd registry/* VERSION' ;;
