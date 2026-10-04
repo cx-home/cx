@@ -457,7 +457,7 @@ and is not duplicated here.
 | `CXER2600–CXER2603` | `cx-stdlib/path` | `spec/03-approved/stdlib/path.md` |
 | `CXER2700–CXER2702` | `cx-stdlib/format` | `spec/03-approved/stdlib/format.md` |
 | `CXER2800–CXER2804` | `cx-stdlib/mime` | `spec/03-approved/stdlib/mime.md` |
-| `CXER2900–CXER2904` | `cx-stdlib/strings` | `spec/03-approved/stdlib/strings.md` |
+| `CXER2900–CXER2905` | `cx-stdlib/strings` (2905 `E_STRINGS_NUMERAL_OUT_OF_RANGE`, cx-private#1786) | `spec/03-approved/stdlib/strings.md` |
 | `CXER3000–CXER3003` | `cx-stdlib/math` | `spec/03-approved/stdlib/math.md` |
 | `CXER3100–CXER3106` | `cx-stdlib/json` | `spec/03-approved/stdlib/json.md` |
 | `CXER3200–CXER3203` | `cx-stdlib/re` | `spec/03-approved/stdlib/re.md` |
