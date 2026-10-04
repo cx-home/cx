@@ -1115,6 +1115,9 @@ test-playground-wasm-traps: wasm-bundle-fresh
 # page-level scroll and is not refused. Red-proofed against the pre-#1740
 # tree: 4 of 5 non-playground pages scrolled horizontally (672-873px against
 # a 375/390px viewport) and the header's own "About" link read 41x18px.
+# In the serial tail after the storm (`test:`; SERIAL_TAIL in
+# scripts/test_changed.sh; #1762): `site` removes and rewrites site/ and
+# docs/guide/, which site-check and guide-render-gate rewrite in the storm.
 .PHONY: test-site-phone-width
 test-site-phone-width: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 test-site-phone-width: site
@@ -2882,7 +2885,7 @@ test:
 	# all before the next tip. Nothing else moves: the sub-make's status is
 	# still non-zero on a red storm, so this recipe line still fails and the
 	# three serial tail lines below still run only after a GREEN storm.
-	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) storm"; $(MAKE) -k -j$(TEST_JOBS) $(OUTPUT_SYNC) build-profiles-dev $(filter-out test-profile-gate test-vcx-timing test-code-diagram test-playground-primer,$(TEST_TARGETS)); cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) storm exit=$$cx_step_rc"; exit $$cx_step_rc
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) storm"; $(MAKE) -k -j$(TEST_JOBS) $(OUTPUT_SYNC) build-profiles-dev $(filter-out test-profile-gate test-vcx-timing test-code-diagram test-playground-primer test-site-phone-width,$(TEST_TARGETS)); cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) storm exit=$$cx_step_rc"; exit $$cx_step_rc
 	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) profile-gate"; $(MAKE) test-profile-gate; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) profile-gate exit=$$cx_step_rc"; exit $$cx_step_rc
 	# #1216: the WALL-CLOCK assertions (the #1055 boot budget, the #816 try-send /
 	# try-receive upper bounds) run serially AFTER the storm too — they are
@@ -2908,6 +2911,12 @@ test:
 	# minutes, while site-check and guide-render-gate remove and rewrite the
 	# same two trees inside the storm. After the storm nothing else writes them.
 	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) site-primer"; $(MAKE) test-playground-primer; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) site-primer exit=$$cx_step_rc"; exit $$cx_step_rc
+	# #1762 — test-site-phone-width joins the tail for the same OUTPUT reason:
+	# its prerequisite `site` re-renders docs/guide/ and site_assemble.cx
+	# removes and copies site/ again, then it reads site/ in headless Chromium,
+	# while site-check and guide-render-gate remove and rewrite both trees in
+	# the storm. Nothing ordered the three; after the storm nothing writes them.
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) site-phone-width"; $(MAKE) test-site-phone-width; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) site-phone-width exit=$$cx_step_rc"; exit $$cx_step_rc
 	@rm -f "$(CX_GATE_LOCK)"
 
 # Sequential fallback — useful for debugging output-order issues, sanitizer

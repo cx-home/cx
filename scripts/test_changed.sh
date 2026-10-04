@@ -1127,8 +1127,10 @@ prebuild() {
 # docs/guide/, and site_assemble.cx removes site/ before it copies) and then
 # reads that tree in a browser for minutes, while site-check and
 # guide-render-gate, in the storm, remove and rewrite the same two trees. After
-# the storm drains nothing else writes them.
-SERIAL_TAIL='test-profile-gate test-vcx-timing test-code-diagram test-playground-primer'
+# the storm drains nothing else writes them. test-site-phone-width (#1762)
+# joins for the same reason: its prerequisite `site` re-renders docs/guide/
+# and removes and copies site/, then it reads site/ in a browser.
+SERIAL_TAIL='test-profile-gate test-vcx-timing test-code-diagram test-playground-primer test-site-phone-width'
 
 # The per-file narrowing of test-vcx-suite, filled in below when that step is
 # selected. Empty = the union, which is what the full-union path wants.
