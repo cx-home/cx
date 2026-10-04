@@ -1,0 +1,157 @@
+# scripts/repr_guard_selftest.cx — the repr-guard driver's verdicts, proved on
+# planted lane drivers (#1766, RULED: RUN-5, CXF-1, RP-5).
+#
+# WHY IT EXISTS. Twice (dfc9f12f9 on 2026-10-01, 95 min; 8b63de0c7 on
+# 2026-10-03, 5 h 14 m) the post-merge run sat at `repr-guard` with the
+# driver's capturing subshell asleep at 0.0 % CPU holding its own pipe, and
+# `make` waited until a pid was killed by hand. A step that cannot finish is
+# worse than a red one: the run never reaches its verdict and every gap waits
+# with it. The driver now owes every reading a deadline, and a reading past it
+# turns the STEP red BY NAME inside that bound.
+#
+# THE CASES. Each runs the REAL driver (bench/repr/run.cx) against a planted lane driver (a shell
+# stub named by CX_REPR_BIN — the build is skipped for a planted driver), its
+# corpora in a temp directory (CX_REPR_CORPUS_DIR, so a `make test -j` running
+# `repr-guard` beside this step keeps its own), a tiny record count, and a
+# 2 s per-reading deadline (CX_REPR_LANE_DEADLINE_S). Each case is itself
+# bounded at CASE-MS; a driver still running at that bound is the hang this
+# step exists to catch and reads FAILED, never waited for:
+#   A  every lane's reading sleeps past the deadline   red, exit 1, each lane
+#      named "lane <x> exceeded its 2 s deadline", the bound-exceedance text
+#      the Makefile's GAUGE retry greps NOT printed (a stall is no load reading)
+#   B  a lane prints a good reading and exits while a grandchild holds its
+#      stdout open (the 8b63de0c7 shape: the driver gone, its pipe held)
+#                                                      green, exit 0, in bound
+#   C  every lane reads under its bound                green, exit 0, the PASS
+#      rows and the census lines printed, the corpora removed after
+#   D  the json lane reads over its pinned bound       red, exit 1, "exceeds the
+#      pinned bound 7.95x" (the GAUGE retry's text), the bound unchanged
+#   E  a lane driver exits non-zero                    red, "driver exited
+#      non-zero", no bound-exceedance text (no retry class applies)
+#   F  a lane driver prints no measurement             red, "produced no
+#      parsable measurement"
+#   G  CX_REPR_KEEP=1                                  green, the corpora kept
+#
+# Run via:  cx --allow-read --allow-write --allow-subprocess --allow-env --allow-clock scripts/repr_guard_selftest.cx
+# (make repr-guard-selftest). Exit 0 and the count line only when every case holds.
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=private pure [returns string] ($parts) [$strings:join $parts '']]
+
+# A case's own bound. Four lanes at a 2 s deadline are 8 s of stall; the bound
+# leaves the driver's start-up and four load reads ample room, and is far under
+# the stub's 90 s sleep, so a driver with no deadline reads FAILED here.
+[?const CASE-MS 60000]
+
+# The driver under test: the program `make repr-guard` runs, under the cx
+# running this self-test and the grants the Makefile gives it.
+[?def driver-argv scope=private impure [returns any] ()
+  ([$env:executable-path], '--allow-read', '--allow-write', '--allow-subprocess', '--allow-env', 'bench/repr/run.cx')]
+
+# A planted lane driver: `gen` writes an empty corpus; a reading runs $body.
+[?def plant scope=private impure [returns string] ($dir $mode $body)
+  [?let [= $p [$cat ($dir, '/stub-', $mode, '.sh')]]
+        [= $_w [$io:write-file $p [$cat ('#!/bin/sh\n',
+                                         'if [ "$1" = gen ]; then : > "$3"; exit 0; fi\n',
+                                         $body, '\n')]]]
+        [= $chmod ('chmod', '755', $p)]
+        [= $_x [$process:run $chmod timeout-ms=10000]]
+    $p]]
+
+[?def good-line scope=private pure [returns string] ($ratio)
+  [$cat ('echo "lane=$1 records=$3 input_bytes=1000 live_before=1 live_after=2 repr_bytes=7000 ratio=', $ratio, '"\n',
+         'echo "census elements=3 attrs=2"\n',
+         'echo "sizeof Node=24"')]]
+
+# one run of the driver: the planted lane driver, a corpus dir of its own.
+[?def drive scope=private impure [returns element] ($stub $corpus $keep)
+  [$process:run [$driver-argv]
+                env={CX_REPR_BIN: $stub, CX_REPR_CORPUS_DIR: $corpus, CX_REPR_LANE_DEADLINE_S: '2',
+                     CX_REPR_RECORDS: '100', CX_REPR_KEEP: $keep}
+                timeout-ms=CASE-MS new-process-group=true]]
+
+[?def said scope=private pure [returns string] ($r) [$cat ([$string [?else $r@stdout '']], [$string [?else $r@stderr '']])]]
+[?def hung scope=private pure [returns bool] ($r) [= [$string $r@timed-out] 'true']]
+[?def exit-of scope=private pure [returns string] ($r) [$string $r@exit-code]]
+[?def has scope=private pure [returns bool] ($r $s) [$strings:contains [$said $r] $s]]
+
+[?def judge scope=private pure [returns element] ($id $held $what $r)
+  [?if $held [then [ok id=$id what=$what]]
+    [else [?let [= $why [?if [$hung $r]
+                          [then [$cat ($what, ' — the driver HUNG: no verdict inside the case bound of ',
+                                       [$string [$div CASE-MS 1000]], ' s')]]
+                          [else [$cat ($what, ' — exit ', [$exit-of $r], ': ', [$strings:trim [$said $r]])]]]]
+            [bad id=$id what=$why]]]]]
+
+[?def every-lane scope=private pure [returns bool] ($r $fmt-pre $fmt-post)
+  [= [$count [?to-sequence [?for [in $l ('json', 'xml', 'cx', 'cxel')]
+                             [where [not [$has $r [$cat ($fmt-pre, $l, $fmt-post)]]]] [yield $l]]]] 0]]
+
+[?let [= $root [$io:temp-dir 'repr-guard-selftest-']]
+      # A — every reading stalls past the deadline
+      [= $sa [$plant $root 'stall' 'sleep 90']]
+      [= $ra [$drive $sa [$cat ($root, '/corpus-a')] '0']]
+      [= $a [$judge 'A' [and [not [$hung $ra]] [= [$exit-of $ra] '1']
+                             [$every-lane $ra 'bench/repr: FAIL — lane ' ' exceeded its 2 s deadline']
+                             [not [$has $ra 'exceeds the pinned bound']]]
+                    'a reading past its deadline reds the step by name, each lane, inside the bound — never a hung run' $ra]]
+
+      # B — the reading is printed, the driver exits, a grandchild holds stdout
+      [= $sb [$plant $root 'holder' [$cat ('sleep 90 </dev/null 2>/dev/null &\n', [$good-line '7.000'])]]]
+      [= $rb [$drive $sb [$cat ($root, '/corpus-b')] '0']]
+      [= $b [$judge 'B' [and [not [$hung $rb]] [= [$exit-of $rb] '0'] [$has $rb 'bench/repr: GREEN']]
+                    "a grandchild holding the lane driver's stdout cannot hold the step: the reading is a file, read once the driver exits" $rb]]
+
+      # C — every lane under its bound
+      [= $sc [$plant $root 'pass' [$good-line '7.000']]]
+      [= $cc [$cat ($root, '/corpus-c')]]
+      [= $rc [$drive $sc $cc '0']]
+      [= $c [$judge 'C' [and [not [$hung $rc]] [= [$exit-of $rc] '0'] [$has $rc 'bench/repr: GREEN — every lane within its pinned live-memory bound']
+                             [$has $rc '       census elements=3 attrs=2'] [$every-lane $rc '' ' ']
+                             [$has $rc 'PASS'] [not [$io:exists $cc]]]
+                    'every lane within its bound is green, with its PASS row and census, and the corpora removed after' $rc]]
+
+      # D — over the pinned bound
+      [= $sd [$plant $root 'over' [$cat ('if [ "$1" = json ]; then\n', [$good-line '9.500'], '\nelse\n', [$good-line '7.000'], '\nfi')]]]
+      [= $rd [$drive $sd [$cat ($root, '/corpus-d')] '0']]
+      [= $d [$judge 'D' [and [not [$hung $rd]] [= [$exit-of $rd] '1']
+                             [$has $rd 'bench/repr: FAIL — lane json live multiplier 9.500x exceeds the pinned bound 7.95x.']]
+                    'a reading over its pinned bound reds with the text the GAUGE retry greps, the bound unchanged' $rd]]
+
+      # E — a lane driver exits non-zero
+      [= $se [$plant $root 'nonzero' 'echo "repr: FATAL — planted" >&2\nexit 3']]
+      [= $re [$drive $se [$cat ($root, '/corpus-e')] '0']]
+      [= $e [$judge 'E' [and [not [$hung $re]] [= [$exit-of $re] '1'] [$has $re 'bench/repr: FAIL — lane json driver exited non-zero']
+                             [$has $re 'repr: FATAL — planted'] [not [$has $re 'exceeds the pinned bound']]]
+                    "a lane driver's non-zero exit reds with its diagnosis and no retry text" $re]]
+
+      # F — no measurement
+      [= $sf [$plant $root 'garbage' 'echo "nonsense"']]
+      [= $rf [$drive $sf [$cat ($root, '/corpus-f')] '0']]
+      [= $f [$judge 'F' [and [not [$hung $rf]] [= [$exit-of $rf] '1'] [$has $rf 'bench/repr: FAIL — lane json produced no parsable measurement']]
+                    'a reading with no measurement reds by name' $rf]]
+
+      # G — CX_REPR_KEEP=1 keeps the corpora
+      [= $cg [$cat ($root, '/corpus-g')]]
+      [= $rg [$drive $sc $cg '1']]
+      [= $g [$judge 'G' [and [not [$hung $rg]] [= [$exit-of $rg] '0'] [$io:exists [$cat ($cg, '/json-100.corpus')]]]
+                    'CX_REPR_KEEP=1 leaves the generated corpora on disk' $rg]]
+
+      [= $_rm [$io:remove-tree $root]]
+      [= $all ($a, $b, $c, $d, $e, $f, $g)]
+      [= $bad [?to-sequence [?for [in $x $all] [where [= [$name $x] 'bad']] [yield $x]]]]
+      [= $_say [?to-sequence [?for [in $x $all]
+                 [yield [$io:write-line [$env:stdout]
+                          [$cat ('  ', [$string $x@id], [?if [= [$name $x] 'ok'] [then '   ok   '] [else '   FAILED ']],
+                                 [$string $x@what])]]]]]]
+  [?if [= [$count $bad] 0]
+    [then ([$io:write-line [$env:stdout]
+             [$cat ('repr-guard selftest (#1766): ', [$string [$count $all]], '/', [$string [$count $all]],
+                    ' — a stalled reading reds the step by name inside its deadline; a held pipe, a bound exceedance, a non-zero driver, an unparsable reading and the corpora each answer as before')]],
+           [$env:exit 0], ())]
+    [else ([$io:write-line [$env:stderr]
+             [$cat ('repr-guard selftest (#1766): ', [$string [$count $bad]], ' of ', [$string [$count $all]], ' case(s) FAILED')]],
+           [$env:exit 1], ())]]]

@@ -6,16 +6,18 @@ design §8 of `spec/02-working/cxdm_representation.md`). Wave **W1** of the
 by.
 
 ```
-make repr-guard          # or: bench/repr/run.sh
-CX_REPR_KEEP=1 bench/repr/run.sh     # keep the generated corpora for inspection
-CX_REPR_RECORDS=8000 bench/repr/run.sh
+make repr-guard          # or, from the repository root: cx --allow-read --allow-write --allow-subprocess --allow-env bench/repr/run.cx
+CX_REPR_KEEP=1 make repr-guard           # keep the generated corpora for inspection
+CX_REPR_RECORDS=8000 make repr-guard
+CX_REPR_LANE_DEADLINE_S=120 make repr-guard   # the per-reading deadline (default 300 s)
+make repr-guard-selftest # the driver's verdicts on planted lane drivers (#1766)
 ```
 
 In `TEST_TARGETS`, so it runs in every `make test`.
 
 `make repr-guard` depends on `build-vcx`: the driver links the same vendored
-RE2 static archive (`third_party/re2/obj/libre2.a`) the CLI does. Calling
-`run.sh` directly in a fresh worktree therefore needs that archive and the
+RE2 static archive (`third_party/re2/obj/libre2.a`) the CLI does. Running
+`run.cx` directly in a fresh worktree therefore needs that archive and the
 pinned V first — `git submodule update --init third_party/re2 third_party/v`
 and a `make -C vcx re2-shim` (or just `make repr-guard`, which does it).
 
@@ -46,7 +48,7 @@ Re-pinned at W5+W6 (RP-5): the RP-1 flip and RP-4's inline attribute type. From
 the pre-campaign baseline of 18.779 / 15.316 / 10.348 that is **-8.0% json,
 -48.1% xml, -26.8% cx**.
 
-The table is the LIVE block in `run.sh`, not a snapshot: a wave that improves a
+The table is the LIVE block in `run.cx`, not a snapshot: a wave that improves a
 lane edits the bound there and this table in the same commit (RP-5). It read
 the W5+W6 numbers — json 17.271× against 19.20 with "RP-3 still to come" — for
 three re-pins after RP-3 had landed, which is the record disagreeing with the
@@ -76,7 +78,7 @@ pools. The census reads `attr_meta=0`, and the four lanes now sit together at 7.
 
 Bounds are pinned at **measured + 1.0, then +5%** (see "what the instrument can
 and cannot see" for what the +1.0 buys). They are a **ratchet**: every wave that
-improves a lane re-pins its bound DOWNWARD in `run.sh` in the same commit that
+improves a lane re-pins its bound DOWNWARD in `run.cx` in the same commit that
 lands the improvement, and records the new number here and on the #1119 wave
 row. A bound is never raised without a ruling — the ratchet is not loosened to
 accommodate a regression.
@@ -86,7 +88,7 @@ fail. RP-5 makes exceedance the failure and the downward re-pin a wave-exit
 obligation; failing on an improvement would red an unrelated `make test` before
 the campaign's own wave could re-pin.
 
-Red-proven at landing: `BOUND_xml=9.00` produces
+Red-proven at landing: an xml bound of 9.00 produced
 `FAIL — lane xml live multiplier 15.316x exceeds the pinned bound 9.00x`, RC=1,
 with the other two lanes still reported.
 
@@ -113,7 +115,7 @@ cx    [{id: 100001, name: user-100001, active: true, score: 1.005e2}, …]
 The CX lane is byte-for-byte what `cx --from=json --to=cx` emits for the JSON
 lane, so the two differ in carrier and in nothing else. Every field is a pure
 function of the record index — no clock, no environment, no random source — so
-the corpora are reproduced on demand instead of committed, and `run.sh` deletes
+the corpora are reproduced on demand instead of committed, and `run.cx` deletes
 them unless `CX_REPR_KEEP=1`.
 
 ## What the instrument can and cannot see
@@ -180,6 +182,44 @@ load"): a bound exceedance re-measures **once**, serially, and the run fails on
 the second reading. Any other failure — no V, a driver exiting non-zero, an
 unparsable measurement — is a real failure with no retry. **No bound moves for
 a load reading**: re-pinning stays a wave-exit obligation (RP-5).
+
+## Every reading has a deadline (#1766, RULED: RUN-5, CXF-1)
+
+The driver was a shell script until #1766, and it hung the post-merge run
+twice — `dfc9f12f9` for 95 minutes, `8b63de0c7` for 5 h 14 m — each ended only
+by killing a pid by hand. It captured each reading with `out=$("$BIN" …)`: a
+command substitution waits for EOF on its pipe, not for the driver, and under a
+load above ~50 the capturing subshell sat asleep at 0.0 % CPU with both ends of
+its own pipe open; the recipe's `{ …; } | tee` then waited on it, and so did
+`make`, every merge chain waiting for a gap, and every round's shared-slot step.
+
+`run.cx` is the driver now. Every child it runs — the build, a corpus
+generation, a reading, a load read — writes its output to a **file** (no pipe
+exists, so nothing can hold one), runs under a `timeout-ms` in a process group
+of its own (the deadline kills the reading and everything it started), and has
+its exit status read directly from the result; the output is read back once the
+child is gone, capped at 1 MiB. A reading past `CX_REPR_LANE_DEADLINE_S`
+(default 300 s; the build's is `CX_REPR_BUILD_DEADLINE_S`, default 1800 s)
+turns the step red **by name**:
+
+```
+bench/repr: FAIL — lane xml exceeded its 300 s deadline at load average 62.70; the reading was killed and the step reds by name rather than hang the run (#1766).
+```
+
+That is not the bound-exceedance text, so the GAUGE retry does not absorb a
+stall. `make repr-guard` writes the output to its log file and prints it back
+after the exit is read — no pipe in the recipe either. `make
+repr-guard-selftest` (scripts/repr_guard_selftest.cx) proves it on planted lane
+drivers (`CX_REPR_BIN`, with a corpus directory of its own via
+`CX_REPR_CORPUS_DIR`): a stalled reading reds by name inside the deadline, a
+grandchild holding the lane's stdout cannot hold the step (the `8b63de0c7`
+shape), and the bound-exceedance, non-zero, unparsable and keep/cleanup answers
+are unchanged.
+
+The bounds are exact decimals compared exactly (the shell compared them through
+`awk` floats); the build's content hash is the sha256 of `repr.v`, the compiler
+and the `cx` module's sources, so the first run after #1766 rebuilds the driver
+once.
 
 ## The census
 
