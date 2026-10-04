@@ -723,8 +723,26 @@ if [ -z "$w_miss" ] && ! grep -q 'running the FULL step union' "$T/w1"; then
 else
 	bad W "docs-vocabulary-check not selected by:${w_miss}"
 fi
+
+# ── X — a xap or fabric pin bump selects the pinned V umbrella steps (#1689) ──
+# cx-platform-xap's vcx/tests/xap_umbrella_test.v (the #1487 scaffold, comp-001…
+# 003, host/compose/init, the real-socket serve cases) and cx-platform-fabric's
+# vcx/tests/fabric_umbrella_test.v left with the extraction and NO step ran
+# either: test-vcx-suite reads deps/cx-core-code/vcx/tests/ only, and the
+# component gates run no V test. A pin bump — the change that brings a new
+# umbrella — selects the front-door step that runs each out of the pin.
+run deps.cxd > "$T/x"
+x_miss=""
+for s in test-xap-umbrella test-fabric-umbrella; do
+	targets "$T/x" | tr " " "\n" | grep -q "^$s\$" || x_miss="$x_miss $s"
+done
+if [ -z "$x_miss" ]; then
+	ok X "a pin bump (deps.cxd) selects test-xap-umbrella and test-fabric-umbrella, the pinned V umbrellas"
+else
+	bad X "deps.cxd did not select:${x_miss}"
+fi
 if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop step; P the vcx/corpus grading core selects the steps that run it; R the stripped scripts/ paths select their own rows; S every selected suite file is where the suite is; T a deleted test file is not named; U a page a pinned test reads by name selects it; V a change of one stripped scripts/ path selects its rows; W a page the vocabulary [tree] rows read selects docs-vocabulary-check)"
+echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop step; P the vcx/corpus grading core selects the steps that run it; R the stripped scripts/ paths select their own rows; S every selected suite file is where the suite is; T a deleted test file is not named; U a page a pinned test reads by name selects it; V a change of one stripped scripts/ path selects its rows; W a page the vocabulary [tree] rows read selects docs-vocabulary-check; X a pin bump selects the pinned xap and fabric V umbrellas)"
