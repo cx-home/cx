@@ -480,6 +480,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `comp-1` | [rulings_2026_09_14_owner_letters_1451b_m2_patterns.md](rulings_2026_09_14_owner_letters_1451b_m2_patterns.md) | Owner letters 2026-09-14 ~19:20Z — "1c 2a 3a" (RULED: 1451-b, INT-3 addendum 2, COMP-1 addendum) |
 | `comp-1` | [rulings_2026_09_14_platform_composition_comp1.md](rulings_2026_09_14_platform_composition_comp1.md) | Owner letter 2026-09-14 ~17:05Z — the platform's composition is stated once, checked, and read by the agents that build on it (RULED: COMP-1) |
 | `comp-2` | [rulings_2026_09_14_deployment_topology_comp2.md](rulings_2026_09_14_deployment_topology_comp2.md) | Owner letter 2026-09-14 ~19:05Z — the platform's runtimes, and every cross-runtime seam over XSP (RULED: COMP-2) |
+| `confn-1` | [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md) | CONFN-1 — the seven `kind=smtp` cases that call `$connector:confine` are re-routed through the published surface; `confine` stays a kind hook (Letter 180 = (a)) |
 | `cr-1` | [rulings_2026_08_30_codec_ring_layering.md](rulings_2026_08_30_codec_ring_layering.md) | CR-1 — where a codec's parse/emit core lives (#1126) (RULED: CR-1 = a) |
 | `cr-1` | [rulings_2026_08_30_codec_ring_layering.md](rulings_2026_08_30_codec_ring_layering.md) | CR-1 — where a codec's parse/emit core lives (#1126) (RULED: CR-1 = a) |
 | `cr-2` | [rulings_2026_08_30_codec_ring_layering.md](rulings_2026_08_30_codec_ring_layering.md) | CR-2 — one error conversion, one direction (RULED: CR-2 = a) |
@@ -761,6 +762,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pkgimp-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | PKGIMP-1 — a `pkg:` import exposes every feature of the package (L118 = (a), delegated) |
 | `play-2` | [rulings_2026_09_29_owner_direction_docs_5of5.md](rulings_2026_09_29_owner_direction_docs_5of5.md) | PLAY-2 — the playground's own 5 of 5, inside the nine criteria above |
 | `play-3` | [rulings_2026_10_01_owner_decision_play3.md](rulings_2026_10_01_owner_decision_play3.md) | PLAY-3 — two readings: data and code; a former query example is re-filed by what it is |
+| `pnat-1` | [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md) | PNAT-1 — one declared corpus tag names the platform natives a case reads, and the embed profile's grade skips such a case by that name (Letter 178 = (a)) |
 | `pq-1` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-1 — the ERD row comment carries a VALUE, and the `@` sigil is retired |
 | `pq-2` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-2 — every ERD column token is forced to a valid ATTRIBUTE_WORD |
 | `pq-3` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) | PQ-3 — golden movement, adjudicated (DR-8) |
@@ -911,6 +913,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `since-1` | [rulings_2026_09_28_owner_decisions_l89_l90.md](rulings_2026_09_28_owner_decisions_l89_l90.md) | SINCE-1 — an absent `:since` on a baseline sync run binds NULL, and it lands today (L90 = (a), today) |
 | `site-1` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | Owner decisions 2026-09-26 (evening) — Letters 35, 37, 38 and 39: the site token (SITE-1), the pace past the weekly meter (PACE-1), shared-slot steps beside a selected run (RUN-5), #1498 stays in v0.18 (SD-2) |
 | `site-1` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | SITE-1 — the public site builds on GitHub's runner with a read-only token (Letter 35 = (a)) |
+| `siter-1` | [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md) | SITER-1 — the post-merge refresh also follows a red verdict whose ONLY red step is `site-live-check` (#1765 = (a)) |
 | `sk-1` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) | Ruling 2026-09-06 — #1324, a restored one-shot that came due while the process was down (SK-1) |
 | `sk-1` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) | SK-1 — which side is right — RULED: (a) |
 | `sk-1` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) | SK-2 — 2026-09-06, the OWNER REVISED SK-1 (asked "is (a) the best long term?") |
@@ -918,6 +921,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `sk-2` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) | SK-2 — 2026-09-06, the OWNER REVISED SK-1 (asked "is (a) the best long term?") |
 | `sk-2` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) | SK-2 — RULED: (a), three parts |
 | `slot-1` | [rulings_2026_10_01_owner_decisions_l153_l156.md](rulings_2026_10_01_owner_decisions_l153_l156.md) | SLOT-1 — a sigil-free multi-token comma slot is prose in both readers (L153 = (a); #1576) |
+| `soapt-1` | [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md) | SOAPT-1 — connector-649 follows connector.md §3.12.9: the WSDL ingest's authoring TODOs for a two-operation WSDL are five, and the case is enforced (Letter 161 = (a)) |
 | `soapv-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | SOAPV-1 — #1595 closes on the trued soap version spelling (L139 = (a)) |
 | `spawnf-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | SPAWNF-1 — an exec-time ENOENT is the same refusal a pre-spawn one is, as a round of its own (L114 = (a), delegated; #1630) |
 | `spf-1` | [rulings_2026_08_21_supervise_profile_and_python.md](rulings_2026_08_21_supervise_profile_and_python.md) | SPF-1 — a unique id is not a scheduler's to lend; a missing pack refuses at composition |
@@ -958,6 +962,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `td-5` | [rulings_2026_08_26_playground_tree_detail_1001.md](rulings_2026_08_26_playground_tree_detail_1001.md) | TD-5 — a value LEAF is one row too |
 | `td-6` | [rulings_2026_08_26_playground_tree_detail_1001.md](rulings_2026_08_26_playground_tree_detail_1001.md) | TD-6 — the visual pass is part of the deliverable |
 | `td-7` | [rulings_2026_08_26_playground_tree_detail_1001.md](rulings_2026_08_26_playground_tree_detail_1001.md) | TD-7 — what holds it, and what does not |
+| `tdur-1` | [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md) | TDUR-1 — `time:parse-duration` and `time:duration-{ms,s,m,h,d}` answer the duration scalar their signature declares (Letter 176 = (a)) |
 | `tf-1` | [rulings_2026_08_30_text_format_surface.md](rulings_2026_08_30_text_format_surface.md) | TF-1 — per-format canonical emission and XML C14N (#1110) (RULED: TF-1 = a) |
 | `tf-1` | [rulings_2026_08_30_text_format_surface.md](rulings_2026_08_30_text_format_surface.md) | TF-1 — per-format canonical emission and XML C14N (#1110) (RULED: TF-1 = a) |
 | `tf-10` | [rulings_2026_08_30_text_format_residuals.md](rulings_2026_08_30_text_format_residuals.md) | TF-10 — the memory multiplier's priority (#1119) (RULED: TF-10 = a) |
@@ -995,6 +1000,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `timep-1` | [rulings_2026_09_30_integrator_decisions_l148.md](rulings_2026_09_30_integrator_decisions_l148.md) | TIMEP-1 — `parse-duration` and the pure duration functions are in every profile; only the clock reads stay behind the `clock` capability and the cli/platform builds (L148 = (a); #1586) |
 | `tme-1` | [rulings_2026_08_22_typed_map_entry.md](rulings_2026_08_22_typed_map_entry.md) | TME-1 — a map key is a declaration site, so it takes the glued annotation |
 | `tme-1` | [rulings_2026_08_22_typed_map_entry.md](rulings_2026_08_22_typed_map_entry.md) | TME-1 is SUPERSEDED — its premise was FALSE (recorded 2026-08-22) |
+| `tmpd-1` | [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md) | TMPD-1 — the io temp surface honours TMPDIR on every operating system; io.md §3.8 gains one sentence with its cases (Letter 177 = (a)) |
 | `tmpdir-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | TMPDIR-1 — `system-temp-dir` honours `TMPDIR` (L113 = (a), delegated; #1649) |
 | `trap-1` | [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) | The traps become fixtures — two batch branches for the CXF-8 defects, and the one ruling they need (RULED: TRAP-1, 1527-a) |
 | `treep-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | TREEP-1 — `cx_code_tree` projects the parsed tree (L126 = (a); #1041) |
@@ -1069,6 +1075,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `vc-9` | [rulings_2026_08_24_0170_campaign.md](rulings_2026_08_24_0170_campaign.md) | AMENDMENT 3 (2026-08-24) — VC-8, VC-9 |
 | `vc-9` | [rulings_2026_08_24_0170_campaign.md](rulings_2026_08_24_0170_campaign.md) | VC-9 (4a) — #874: editor-tooling distribution STAYS PARKED |
 | `vc-9` | [rulings_2026_08_24_0170_campaign.md](rulings_2026_08_24_0170_campaign.md) | CORRECTION to VC-9 (same day, measured after the ruling) |
+| `vcap-1` | [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md) | VCAP-1 — the V fork gains a checker diagnostic for a `[mut x]` closure capture of a VALUE that the closure assigns (#1440 = (a)) |
 | `vcost-1` | [rulings_2026_09_18_owner_decisions_0440z.md](rulings_2026_09_18_owner_decisions_0440z.md) | Owner decisions 2026-09-18 ~04:40Z — `cx --ast` arbitrates the two readings as `cx lint` does (1536-a); `[?fn]` has no labeled slots (1558-b); the verification-cost lane is written (VCOST-1) |
 | `verify-1` | [rulings_2026_09_18_owner_decisions_0235z.md](rulings_2026_09_18_owner_decisions_0235z.md) | Owner decision 2026-09-18 ~02:35Z — the eight-hour target: fifty more resolutions with two agents; batch branches verify through an inner loop, one graded run per merge point (RULED: VERIFY-1) |
 | `verify-1a` | [rulings_2026_09_18_owner_decisions_0250z.md](rulings_2026_09_18_owner_decisions_0250z.md) | Owner decision 2026-09-18 ~02:50Z — the eight-hour requirement amended: the order is the most recent issues first, then Ring 0, Ring 1, Ring 2; #1520 and #1515 ride the first batch; the fifty is a HARD REQUIREMENT (RULED: VERIFY-1a) |
@@ -1080,6 +1087,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `vg-2` | [rulings_2026_09_04_view_grammar.md](rulings_2026_09_04_view_grammar.md) | VG-2 — durable per-viewer view preferences (RULED: VG-2 = a) |
 | `vg-2` | [rulings_2026_09_04_view_grammar.md](rulings_2026_09_04_view_grammar.md) | VG-2 — durable per-viewer view preferences (RULED: VG-2 = a) |
 | `vg-3` | [rulings_2026_09_15_views_group_vg3_schema_sd1.md](rulings_2026_09_15_views_group_vg3_schema_sd1.md) | Owner letters 2026-09-15 ~01:20Z — the fourth clause of `[views]`, and the schema-as-data feature kind (RULED: VG-3, SD-1) |
+| `vgcg-1` | [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md) | VGCG-1 — batch I-1's fork pin lands when the JSON convert gauge reads under the 2.5× bar on three consecutive default-setting reads in a quiet gap (Letter 179 = (a)) |
 | `walk-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | Owner decisions 2026-09-27 (afternoon) — Letters 52, 53 and 54: XCO's two readings (ACK-1, RT-1), a list verb through the host walks every page (WALK-1), the vendor budget is per process (BUDGET-1) |
 | `walk-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | WALK-1 — a list verb performed by the host walks every page (L53 = (a)) |
 | `wasmc-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | WASMC-1 — the wasm wall-sleep and asyncify controls stay in Ring 1; abi.md names all four controls with their ring (L131 = (a); #1132) |
@@ -1334,7 +1342,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `789-wf-38` | [rulings_2026_09_08_flow_connector_seam_1334.md](rulings_2026_09_08_flow_connector_seam_1334.md) |
 | `789-wf-38a` | [rulings_2026_09_06_flow_resolver_idempotent_789.md](rulings_2026_09_06_flow_resolver_idempotent_789.md) |
 | `abi-14` | [partition_I1_rebless.md](partition_I1_rebless.md) |
-| `advis-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md) |
+| `advis-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md), [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md) |
 | `aes-256` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md), [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) |
 | `af-1` | [partition_I5_audit.md](partition_I5_audit.md), [partition_I5_exit_review_packet.md](partition_I5_exit_review_packet.md), [partition_I5_stream17_runtime.md](partition_I5_stream17_runtime.md) |
 | `af-10` | [partition_I5_audit.md](partition_I5_audit.md), [partition_corpus_audit.md](partition_corpus_audit.md) |
@@ -1487,7 +1495,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pq-9a` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) |
 | `prop-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md), [rulings_2026_10_03_owner_decision_l175.md](rulings_2026_10_03_owner_decision_l175.md) |
 | `readr-1` | [rulings_2026_10_01_owner_decision_l160.md](rulings_2026_10_01_owner_decision_l160.md), [rulings_2026_10_01_owner_decision_overage.md](rulings_2026_10_01_owner_decision_overage.md) |
-| `refute-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md), [rulings_2026_10_03_owner_decision_l175.md](rulings_2026_10_03_owner_decision_l175.md) |
+| `refr-1` | [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md) |
+| `refute-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md), [rulings_2026_10_03_owner_decision_l175.md](rulings_2026_10_03_owner_decision_l175.md), [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md) |
 | `rfc-7540` | [rulings_2026_08_20_h2_surface.md](rulings_2026_08_20_h2_surface.md) |
 | `ring-1` | [batch_796_post_gate_defects.md](batch_796_post_gate_defects.md), [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
 | `ring-2` | [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
@@ -1558,7 +1567,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `utf-7` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `utf-8` | [audit_2026_08_30_text_format_surface.md](audit_2026_08_30_text_format_surface.md), [partition_I1_rebless.md](partition_I1_rebless.md), [partition_I5_stream17_runtime.md](partition_I5_stream17_runtime.md), [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md), [rulings_2026_08_28_zip_module_1078.md](rulings_2026_08_28_zip_module_1078.md), [rulings_2026_08_30_text_format_residuals.md](rulings_2026_08_30_text_format_residuals.md), [rulings_2026_09_11_saml_metadata_exchange_1402a.md](rulings_2026_09_11_saml_metadata_exchange_1402a.md), [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md), [rulings_2026_09_15_websocket_stream_placement_int19.md](rulings_2026_09_15_websocket_stream_placement_int19.md) |
 | `vg-2a` | [issue_audit_2026_09_30_ship2.md](issue_audit_2026_09_30_ship2.md) |
-| `vocab-1` | [rulings_2026_09_30_integrator_decisions_l120.md](rulings_2026_09_30_integrator_decisions_l120.md), [rulings_2026_09_30_integrator_decisions_l150.md](rulings_2026_09_30_integrator_decisions_l150.md), [rulings_2026_10_01_owner_decision_play3.md](rulings_2026_10_01_owner_decision_play3.md), [rulings_2026_10_02_owner_decision_l173.md](rulings_2026_10_02_owner_decision_l173.md) |
+| `vocab-1` | [rulings_2026_09_30_integrator_decisions_l120.md](rulings_2026_09_30_integrator_decisions_l120.md), [rulings_2026_09_30_integrator_decisions_l150.md](rulings_2026_09_30_integrator_decisions_l150.md), [rulings_2026_10_01_owner_decision_play3.md](rulings_2026_10_01_owner_decision_play3.md), [rulings_2026_10_02_owner_decision_l173.md](rulings_2026_10_02_owner_decision_l173.md), [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md) |
 | `wave-3` | [rulings_2026_08_26_seq_classification.md](rulings_2026_08_26_seq_classification.md) |
 | `wf-26a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
 | `wf-27a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
@@ -1574,4 +1583,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*380 ledger pages; 836 ids declared, 401 cited only.*
+*381 ledger pages; 844 ids declared, 402 cited only.*
