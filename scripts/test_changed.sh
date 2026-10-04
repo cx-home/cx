@@ -556,6 +556,8 @@ step_globs() {
     # bench/repr (#1119 W1) compiles the `cx` module as SOURCE and measures the
     # live tree it builds, so it depends on Ring 0 and on nothing above it.
     repr-guard)                    echo 'vcx/cx/* vcx/v.mod third_party/* bench/repr/*' ;;
+    # #1766: the driver's verdicts on planted format drivers — the driver and the cases.
+    repr-guard-selftest)           echo 'bench/repr/* scripts/repr_guard_selftest.cx' ;;
     # the in-module Ring-0 test roster guard (#1209) reads the Makefile roster
     # and the vcx/cx test files it must account for.
     check-inmodule-test-roster)    echo 'Makefile vcx/cx/* registry/repos.cxd' ;;
@@ -1138,8 +1140,14 @@ prebuild() {
 # docs/guide/, and site_assemble.cx removes site/ before it copies) and then
 # reads that tree in a browser for minutes, while site-check and
 # guide-render-gate, in the storm, remove and rewrite the same two trees. After
-# the storm drains nothing else writes them.
-SERIAL_TAIL='test-profile-gate test-vcx-timing test-code-diagram test-playground-primer'
+# the storm drains nothing else writes them. test-site-phone-width (#1762)
+# joins for the same reason: its prerequisite `site` re-renders docs/guide/
+# and removes and copies site/, then it reads site/ in a browser;
+# nav-shape-check has the same prerequisite (REFUTE-1 st01). site-live-check
+# is LAST (RULED: SITER-1, #1765): the post-merge refresh follows a red whose
+# only red step is site-live-check, so it runs only after every other
+# selected step passed (a red step stops the tail before it).
+SERIAL_TAIL='test-profile-gate test-vcx-timing test-code-diagram test-playground-primer test-site-phone-width nav-shape-check site-live-check'
 
 # The per-file narrowing of test-vcx-suite, filled in below when that step is
 # selected. Empty = the union, which is what the full-union path wants.

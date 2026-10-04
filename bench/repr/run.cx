@@ -1,0 +1,425 @@
+# bench/repr/run.cx — the CXDM live-memory multiplier guard (#1119 W1, RULED: RP-5;
+# the driver in CX since #1766, RULED: CXF-1, RUN-5).
+#
+# Asserts, per format, that the LIVE representation of a parsed ~2 MB corpus
+# stays within a pinned multiple of the corpus's own byte count. The bounds are
+# a RATCHET: pinned here at W1 to today's measured multipliers with headroom, so
+# any wave that makes the representation worse reds the gate; each later wave
+# RE-PINS THEM DOWNWARD at its exit. They are never loosened without a ruling.
+#
+# The measured quantity is a RATIO, never a time and never an absolute byte
+# count, so the verdict holds on a loaded machine and on other hardware
+# (RP-5(a)(ii); an RSS-shaped bound was rejected as (c) for that reason).
+# The corpora are a pure function of the record index, and the live-byte reads
+# are all but exact run to run — see the ratchet block below for the measured
+# reproducibility and for what the headroom actually covers.
+#
+# Usage (from the repository root; flags before the file, cli.md §3):
+#   cx --allow-read --allow-write --allow-subprocess --allow-env bench/repr/run.cx
+#   CX_REPR_RECORDS=8000 cx … bench/repr/run.cx
+#   CX_REPR_KEEP=1 cx … bench/repr/run.cx   # leave the generated corpora on disk
+#   (or: make repr-guard)
+#
+# EVERY READING HAS A DEADLINE (#1766). The shell driver this replaced captured
+# each reading with `out=$("$BIN" …)`: a command substitution waits for EOF on
+# its pipe, not for the driver, so anything still holding the write end — and
+# under a load above ~50 the capturing subshell itself, asleep at 0.0 % CPU with
+# both ends open — held `make` forever (dfc9f12f9: 95 min; 8b63de0c7: 5 h 14 m,
+# both ended by killing a pid by hand). Now each child the guard runs — the
+# build, a corpus generation, a reading, a load read — writes its output to a
+# FILE (no pipe exists, so nothing can hold one), runs under `timeout-ms` in a
+# process group of its own (the deadline kills the reading and everything it
+# started), and its exit status is read directly from the result. A reading
+# past its deadline turns the step red BY NAME:
+#   bench/repr: FAIL — format xml exceeded its 300 s deadline …
+# inside that bound — never a run that cannot reach its verdict. A stall is not
+# a load reading: it does NOT print the bound-exceedance text the Makefile's
+# GAUGE retry greps, so no retry absorbs it.
+#
+# Environment:
+#   CX_REPR_RECORDS          records per corpus (default 32000)
+#   CX_REPR_KEEP=1           keep bench/repr/_corpus after the run
+#   CX_REPR_LANE_DEADLINE_S  the per-reading (and per-generation) deadline, s (default 300)
+#   CX_REPR_BUILD_DEADLINE_S the driver build's deadline, s (default 1800)
+#   CX_ALLOW_PATH_V=1        accept a PATH-resolved `v` when third_party/v/v is absent
+#   CX_V_SEARCH              the V -path for the build (default @vlib|@vmodules|<repo>/vcx)
+#   CX_REPR_BIN, CX_REPR_CORPUS_DIR — a planted format driver and a corpus
+#     directory of its own, for scripts/repr_guard_selftest.cx (the build is
+#     skipped for a planted driver).
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/hash'    as=hash]
+[?lib 'cx-stdlib/bytes'   as=bytes]
+[?lib 'cx-stdlib/map'     as=map]
+
+[?def cat scope=private pure [returns string] ($parts) [$strings:join $parts '']]
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+# each line to stderr; answers true (the format failed).
+[?def failed scope=private impure [returns bool] ($lines)
+  [?let [= $_w [?to-sequence [?for [in $l $lines] [yield [$cry $l]]]]] true]]
+# each line to stderr; answers 'over' (the format failed on its bound alone —
+# the one failure the Makefile's GAUGE retry may re-measure; REFUTE-1 r5).
+[?def failed-over scope=private impure [returns string] ($lines)
+  [?let [= $_w [?to-sequence [?for [in $l $lines] [yield [$cry $l]]]]] 'over']]
+# each line to stdout; answers false (the format passed).
+[?def passed scope=private impure [returns bool] ($lines)
+  [?let [= $_w [?to-sequence [?for [in $l $lines] [yield [$say $l]]]]] false]]
+
+# ── the ratchet ─────────────────────────────────────────────────────────────
+#
+# live bytes (vgc `marked` after a forced collect, minus the input string and
+# the runtime's own live set) ÷ input bytes. RE-PINNED 2026-09-02 at W5+W6
+# (RP-5): the RP-1 flip (Node and ScalarValue are 24-byte structs, scalars
+# inline, zero allocations per value) and RP-4's inline attribute type (96,000
+# AttributeMeta allocations, 12.29 MB, removed from the xml format).
+#
+#   format   measured   bound   what the headroom buys
+#   json    7.569      7.95   +5% (a different compiler or platform)
+#   xml     7.941      8.35   same
+#   cx      7.577-7.588   8.00  same
+#   cxel    7.600      8.00   same — the element format with atom / date / duration
+#                             attribute columns (#1247); 15.507 before #1275
+#                             retired the 128k AttributeMeta records (one per
+#                             autotyped attribute; the type name rides inline)
+#
+# RE-PINNED 2026-09-04 (#1208, #1247): the `+1.0` for one conservatively
+# retained input copy is GONE — codec_text_boundary and the parser entries no
+# longer copy the input, and the `-prod` / `-cflags -O2` drivers now agree
+# BYTE-FOR-BYTE on json and xml at 32k (7.569 / 7.941 both) where they used to
+# differ by exactly one input. Bounds are measured +5%.
+#
+# RE-PINNED 2026-09-04 (#1275): the `cxel` format 15.507 → 7.600. Every autotyped
+# attribute carried an AttributeMeta record holding its type NAME as a string —
+# 128,000 records on this corpus, more than half the format's live set — to say
+# what the inline `has_dtype` / `dtype` already say. `new_attribute` now routes
+# a round-tripping name inline through `set_data_type`'s guard (the sized
+# numerics and the namespace fields still pool); the census reads attr_meta=0
+# and the format sits with the other three at ~7.6×.
+#
+# Measured on darwin-arm64 with the `-prod` driver at 32,000 records. Run-to-run
+# the reading is all but exact: over six clean runs the json and xml formats were
+# byte-identical every time, and the cx format alternated between two values
+# 6,608 B apart (0.03% — one small transient retained or not); a run under eight
+# saturating CPU burners reported the same numbers as an idle one, which is what
+# a live-BYTES ratio buys over a timing gate. The headroom is not that jitter,
+# then — it is the one class this instrument cannot rule out. vgc scans stacks
+# and registers conservatively, so a dead slot may retain an input-sized parser
+# transient depending on codegen and on the process's own history (README.md,
+# "what the instrument can and cannot see"). +1.0 covers one such copy; the +5%
+# covers a different compiler or platform.
+#
+# RE-PIN PROTOCOL (RP-5): a wave that improves a format edits the bound in THIS
+# BLOCK in the same commit that lands the improvement, and records the new
+# measurement in README.md and in the #1119 wave row. A bound is never raised
+# without a ruling — the ratchet is not loosened to accommodate a regression.
+# The bounds are exact decimals, compared exactly (no float rounding).
+[?const LANES ('json', 'xml', 'cx', 'cxel')]
+[?const BOUNDS {json: 7.95, xml: 8.35, cx: 8.00, cxel: 8.00}]
+[?const BOUND-TEXT {json: '7.95', xml: '8.35', cx: '8.00', cxel: '8.00'}]
+
+# REPIN-SLACK — how far under its bound a format may sit before the runner says
+# so. Advisory, NOT a failure: an improvement must not red somebody else's
+# `make test` before the campaign's own wave re-pins. RP-5 makes exceedance the
+# failure and the downward re-pin a wave-exit obligation.
+[?const REPIN-SLACK 1.20]
+
+# A reading's output is a few hundred bytes (six lines); anything past this is
+# not a measurement and is not read whole.
+[?const OUTPUT-CAP 1048576]
+
+[?def deadline-s scope=private impure [returns int] () [$env:var-int 'CX_REPR_LANE_DEADLINE_S' 300]]
+[?def build-deadline-s scope=private impure [returns int] () [$env:var-int 'CX_REPR_BUILD_DEADLINE_S' 1800]]
+[?def records scope=private impure [returns string] () [$env:var-or-default 'CX_REPR_RECORDS' '32000']]
+[?def keep scope=private impure [returns bool] () [= [$env:var-or-default 'CX_REPR_KEEP' '0'] '1']]
+
+[?def repo scope=private impure [returns string] () [$env:cwd]]
+[?def here scope=private impure [returns string] () [$cat ([$repo], '/bench/repr')]]
+[?def build-dir scope=private impure [returns string] () [$cat ([$here], '/.build')]]
+[?def corpus-dir scope=private impure [returns string] ()
+  [?let [= $o [$env:var-or-default 'CX_REPR_CORPUS_DIR' '']]
+    [?if [= $o ''] [then [$cat ([$here], '/_corpus')]] [else $o]]]]
+[?def planted scope=private impure [returns string] () [$env:var-or-default 'CX_REPR_BIN' '']]
+[?def bin scope=private impure [returns string] ()
+  [?let [= $p [$planted]] [?if [= $p ''] [then [$cat ([$build-dir], '/repr')]] [else $p]]]]
+
+# A child's output file: under .build, named for THIS process, so a
+# `repr-guard-selftest` running beside `make repr-guard` in a -j storm never
+# reads the other's reading; removed once read.
+[?def scratch scope=private impure [returns string] ($leaf)
+  [$cat ([$build-dir], '/', [$string [$env:pid]], '.', $leaf)]]
+[?def drop scope=private impure ($f) [?fallback [$io:remove $f] [recover-with null]]]
+
+[?def executable scope=private impure [returns bool] ($p)
+  [and [$io:is-file $p]
+       [?let [= $perm [$string [?else [$io:stat $p]@permissions '']]]
+         [and [>= [$strings:length $perm] 3] [= [$strings:slice $perm 3 3] 'x']]]]]
+
+# A short bounded child whose stdout is read back from a file — the load reads
+# and the PATH lookup. Answers its stdout, or '' on any failure or timeout.
+[?def quick scope=private impure [returns string] ($argv)
+  [?let [= $f [$scratch 'quick.out']]
+        [= $r [?fallback [$process:run $argv capture={stdout: $f, stderr: :discard} timeout-ms=10000 new-process-group=true]
+                [recover-with [proc-result exit-code=1 timed-out=false]]]]
+        [= $t [?if [and [= [$string $r@exit-code] '0'] [not [= [$string $r@timed-out] 'true']] [$io:is-file $f]]
+                [then [$string [?else [$io:read-file $f] '']]]
+                [else '']]]
+        [= $_rm [$drop $f]]
+    $t]]
+
+# ── the load average beside every reading (#1431, RULED: 1431-a) ────────────
+#
+# The ratio is load-insensitive by construction and measured identical under
+# eight saturating CPU burners — but not at a load average of 300, where the
+# `-gc e` collection point moves far enough to read 8.941x against the 8.35x
+# xml bound on a tree byte-identical to one that had just passed. That run
+# (984cd3c99, 2026-09-12) could only be classified by correlating the runner's
+# own log with the other steps running beside it. Every reading states its
+# load now, so the next such row is classifiable from this output alone.
+#
+# Never fails the measurement: an unreadable load prints `?` and nothing else
+# changes. `make repr-guard` re-measures ONCE on a bound exceedance and reds on
+# the second (the "memory gauge under load" class, GAUGE_SERIAL_RETRY in the
+# top-level Makefile). The bound is NOT re-pinned for a load reading (RP-5).
+[?def three scope=private pure [returns string] ($txt)
+  [?let [= $parts [?to-sequence [$strings:split-whitespace [$strings:trim-chars [$strings:trim $txt] '{} ']]]]
+    [?if [>= [$count $parts] 3]
+      [then [$cat ([$nth $parts 1], ' ', [$nth $parts 2], ' ', [$nth $parts 3])]]
+      [else '? ? ?']]]]
+
+[?def load-avgs scope=private impure [returns string] ()
+  [?if [$io:is-file '/proc/loadavg']
+    [then [$three [?else [$io:read-file '/proc/loadavg'] '']]]
+    # darwin: `sysctl -n vm.loadavg` prints `{ 8.20 44.10 68.54 }`.
+    [else [$three [$quick ('sysctl', '-n', 'vm.loadavg')]]]]]
+
+[?def load-1m scope=private impure [returns string] ()
+  [?else [$first [?to-sequence [$strings:split-whitespace [$load-avgs]]]] '?']]
+
+# ── the V pin ───────────────────────────────────────────────────────────────
+# Same discipline as vcx/Makefile (#1063): the patched V in third_party/v is the
+# compiler; a PATH-resolved `v` is accepted only under an explicit override,
+# because the measurement depends on `-gc e` (vgc + Perceus), which is this
+# fork's mode. Answers the compiler's path, or '' when there is none.
+[?def v-compiler scope=private impure [returns string] ()
+  [?let [= $pinned [$cat ([$repo], '/third_party/v/v')]]
+    [?if [$executable $pinned] [then $pinned]
+      [else [?if [= [$env:var-or-default 'CX_ALLOW_PATH_V' '0'] '1']
+              [then [?let [= $p [$strings:trim [$quick ('sh', '-c', 'command -v v')]]]
+                      [?if [and [not [= $p '']] [$executable $p]] [then $p] [else '']]]]
+              [else '']]]]]]
+
+# ── build (only when stale) ─────────────────────────────────────────────────
+# `-prod` is load-bearing, for the reason gates 14/15/16 carry it (#835): the
+# driver compiles the `cx` module as SOURCE, so without it the guard would be
+# measuring a build CX does not ship. It is not a timing argument here — the
+# quantity is bytes — but the -prod and dev builds DO disagree on the XML format
+# by exactly one retained copy of the input (README.md, "what the instrument
+# can and cannot see"), and the shipped build is the one the campaign's RSS
+# bar is measured on.
+#
+# STALENESS IS BY CONTENT HASH, NOT MTIME. The obvious check — "is any
+# vcx/cx/*.v newer than the binary" — is wrong for the one workflow this guard
+# exists to serve. `git checkout` of an OLDER commit writes only the files that
+# differ, so a bisect step can leave every input older than a binary built from
+# a later tree and the guard then measures code that is not checked out. That
+# is not hypothetical: bisecting the #1201 XML regression reported the SAME
+# ratio for all seven candidate commits, including ones that provably differ,
+# until the build was forced. A guard that can silently measure the wrong tree
+# is worth less than no guard. Hashing the inputs is cheap and cannot lie: the
+# sha256 of repr.v, the compiler and the `cx` module's sources, in that order.
+[?def inputs-hash scope=private impure [returns string] ($v)
+  [?let [= $mods [$sort [?to-sequence [$io:glob [$cat ([$repo], '/deps/cx-core-data/vcx/cx/*.v')]]]]]
+        [= $files [?to-sequence [?concat ([$cat ([$here], '/repr.v')], $v) $mods]]]
+        [= $parts [?to-sequence [?for [in $f $files] [yield [?else [$io:read-file-bytes $f] [$bytes:from-hex '']]]]]]
+    [$hash:format-hex [$hash:sha256 [$bytes:concat $parts]]]]]
+
+# Answers '' when the driver is ready, else the failure line.
+[?def build-if-stale scope=private impure [returns string] ($v)
+  [?let [= $bin [$bin]] [= $stamp [$cat ([$build-dir], '/inputs.sha')]]
+        [= $h [$inputs-hash $v]]
+        [= $fresh [and [$executable $bin] [$io:is-file $stamp]
+                       [= [$strings:trim [?else [$io:read-file $stamp] '']] $h]]]
+    [?if $fresh [then '']
+      [else
+        [?let [= $_say [$say 'bench/repr: building the driver (v -gc e -prod over the cx module)…']]
+              [= $log [$cat ([$build-dir], '/build.log')]]
+              [= $search [$env:var-or-default 'CX_V_SEARCH' [$cat ('@vlib|@vmodules|', [$repo], '/vcx')]]]
+              [= $limit [$build-deadline-s]]
+              [= $argv ($v, '-path', $search, '-gc', 'e', '-enable-globals', '-prod', '-o', $bin, [$cat ([$here], '/repr.v')])]
+              [= $r [?fallback [$process:run $argv capture={stdout: $log, stderr: [$cat ($log, '.err')]}
+                                             timeout-ms=[* $limit 1000] new-process-group=true]
+                      [recover-with [proc-result exit-code=-1 timed-out=false]]]]
+              [= $_out [$io:write-string [$env:stdout] [?else [$io:read-file $log] '']]]
+              [= $_err [$io:write-string [$env:stderr] [?else [$io:read-file [$cat ($log, '.err')]] '']]]
+          [?if [= [$string $r@timed-out] 'true']
+            [then [$cat ('bench/repr: FAIL — the driver build exceeded its ', [$string $limit],
+                         ' s deadline at load average ', [$load-avgs], '; it was killed (#1766).')]]
+            [else [?if [= [$string $r@exit-code] '0']
+                    [then [?let [= $_w [$io:write-file $stamp $h]] '']]
+                    [else [$cat ('bench/repr: FAIL — the driver build exited ', [$string $r@exit-code],
+                                 '; its diagnosis is above.')]]]]]]]]]]
+
+# ── one child, bounded: output to files, exit read directly ─────────────────
+# Answers a map — stalled, code, out, err — out and err being what
+# the child wrote, read back once it is gone (and only up to OUTPUT-CAP).
+[?def read-capped scope=private impure [returns string] ($f)
+  [?if [not [$io:is-file $f]] [then '']
+    [else [?if [> [?else [$io:stat $f]@size 0] OUTPUT-CAP]
+            [then [$cat ('(output past ', [$string OUTPUT-CAP], ' bytes; not read)')]]
+            [else [$string [?else [$io:read-file $f] '']]]]]]]
+
+[?def bounded scope=private impure [returns any] ($argv $tag)
+  [?let [= $o [$scratch [$cat ($tag, '.out')]]]
+        [= $e [$scratch [$cat ($tag, '.err')]]]
+        [= $r [?fallback [$process:run $argv capture={stdout: $o, stderr: $e}
+                                        timeout-ms=[* [$deadline-s] 1000] new-process-group=true]
+                [recover-with [proc-result exit-code=-1 timed-out=false]]]]
+        [= $m {stalled: [= [$string $r@timed-out] 'true'], code: [$string $r@exit-code],
+               out: [$read-capped $o], err: [$read-capped $e]}]
+        [= $_ro [$drop $o]] [= $_re [$drop $e]]
+    $m]]
+
+[?def echo-err scope=private impure ($r)
+  [?let [= $t [$string $r.err]]
+    [?if [= $t ''] [then null] [else [$io:write-string [$env:stderr] $t]]]]]
+
+[?def field scope=private pure [returns string] ($line $key)
+  [?let [= $p [$cat ($key, '=')]]
+        [= $hits [?to-sequence [?for [in $t [$strings:split-whitespace $line]]
+                                 [where [$strings:starts-with $t $p]]
+                                 [yield [$strings:slice $t [+ [$strings:length $p] 1] [$strings:length $t]]]]]]
+    [?else [$first $hits] '']]]
+
+[?def digits scope=private pure [returns bool] ($s $dot)
+  [and [> [$strings:length $s] 0]
+       [= [$strings:trim-chars $s [?if $dot [then '0123456789.'] [else '0123456789']]] '']]]
+
+[?def row scope=private pure [returns string] ($a $b $c $d $e $f $g)
+  [$cat ([$strings:pad-end $a 6 ' '], ' ', [$strings:pad-start $b 12 ' '], ' ', [$strings:pad-start $c 12 ' '], ' ',
+         [$strings:pad-start $d 8 ' '], ' ', [$strings:pad-start $e 8 ' '], ' ', [$strings:pad-start $f 8 ' '], '   ', $g)]]
+
+# A reading's first line and the lines after it, the trailing newlines dropped
+# (what the shell's command substitution did).
+[?def first-line scope=private pure [returns string] ($s)
+  [?else [$first [?to-sequence [$strings:split-lines [$strings:trim-end-chars $s '\n']]]] '']]
+[?def rest-lines scope=private pure [returns any] ($s $head)
+  [?let [= $t [$strings:trim-end-chars $s '\n']]
+    [?if [<= [$strings:length $t] [+ [$strings:length $head] 1]] [then ()]
+      [else [?to-sequence [$strings:split-lines [$strings:slice $t [+ [$strings:length $head] 2] [$strings:length $t]]]]]]]]
+
+# One format: generate its corpus if absent, take the reading under its deadline,
+# print the row. Answers true when the format failed.
+[?def one-format scope=private impure [returns any] ($form)
+  [?let [= $recs [$records]] [= $corpus [$cat ([$corpus-dir], '/', $form, '-', $recs, '.corpus')]]
+        [= $lim [$string [$deadline-s]]]
+        [= $gen [?if [$io:is-file $corpus] [then {stalled: false, code: '0', out: '', err: ''}]
+                  [else [$bounded ([$bin], 'gen', $form, $corpus, $recs) [$cat ('gen-', $form)]]]]]
+        [= $_g1 [?if [= [$string $gen.out] ''] [then null] [else [$io:write-string [$env:stdout] [$string $gen.out]]]]]
+        [= $_g2 [$echo-err $gen]]
+    [?if $gen.stalled
+      [then [$failed ([$cat ('bench/repr: FAIL — format ', $form, ' corpus generation exceeded its ', $lim,
+                             ' s deadline at load average ', [$load-1m], '; it was killed (#1766).')],)]]
+      [else [?if [not [= [$string $gen.code] '0']]
+              [then [$failed ([$cat ('bench/repr: FAIL — format ', $form, ' corpus generation exited ', [$string $gen.code],
+                                     ' at load average ', [$load-1m], '; its diagnosis is above.')],)]]
+              [else [$reading $form $corpus $recs $lim]]]]]]]
+
+# One reading. The load THIS reading was taken under is sampled immediately
+# after the driver returns, so the 1-minute figure covers the measurement itself.
+[?def reading scope=private impure [returns any] ($form $corpus $recs $lim)
+  [?let [= $r [$bounded ([$bin], $form, $corpus, $recs) [$cat ('read-', $form)]]]
+        [= $load [$load-1m]]
+        [= $_e [$echo-err $r]]
+    [?if $r.stalled
+      [then [$failed ([$cat ('bench/repr: FAIL — format ', $form, ' exceeded its ', $lim, ' s deadline at load average ',
+                             $load, '; the reading was killed and the step reds by name rather than hang the run (#1766).')],
+                      'bench/repr:        A stalled reading is not a bound exceedance: no retry class applies.')]]
+      [else [?if [not [= [$string $r.code] '0']]
+              [then [?let [= $_o [$io:write-string [$env:stdout] [$string $r.out]]]
+                      [$failed ([$cat ('bench/repr: FAIL — format ', $form, ' driver exited non-zero at load average ', $load,
+                                       '; its diagnosis is above.')],)]]]
+              [else [$judge-reading $form [$string $r.out] $load]]]]]]]
+
+# A reading's verdict: its row, its census, and the bound comparison.
+[?def judge-reading scope=private impure [returns any] ($form $out $load)
+  [?let [= $bound [$map:get BOUNDS $form]] [= $btxt [$map:get BOUND-TEXT $form]]
+        [= $head [$first-line $out]]
+        [= $ratio [$field $head 'ratio']]
+        [= $input [$field $head 'input_bytes']]
+        [= $live [$field $head 'repr_bytes']]
+    [?if [not [and [$digits $ratio true] [$digits $input false] [$digits $live false]]]
+      [then [?let [= $_m [$cry [$cat ('bench/repr: FAIL — format ', $form, ' produced no parsable measurement (load average ', $load,
+                                      '). Driver output:')]]]
+              [$failed ([$strings:trim-end-chars $out '\n'],)]]]
+      [else
+        [?let [= $rv [cast $ratio :decimal]]
+              [= $over [> $rv $bound]]
+              [= $slack [< [* $rv REPIN-SLACK] $bound]]
+              [= $_row [$say [$row $form $input $live $ratio $btxt $load [?if $over [then 'FAIL'] [else 'PASS']]]]]
+              # The census and the struct sizes are the per-node accounting every later wave
+              # reads to see WHICH allocation it removed. Printed always: a gate whose
+              # evidence is only visible on failure teaches nothing on the way past.
+              [= $_census [$passed [?to-sequence [?for [in $l [$rest-lines $out $head]] [yield [$cat ('       ', $l)]]]]]]
+          [?if $over
+            [then [$failed-over ([$cat ('bench/repr: FAIL — format ', $form, ' live multiplier ', $ratio, 'x exceeds the pinned bound ', $btxt, 'x.')],
+                            'bench/repr:        The ratchet is not loosened to accommodate a regression (RULED: RP-5).',
+                            [$cat ('bench/repr:        ', $live, ' live bytes for ', $input, ' input bytes, at load average ', [$load-avgs], '.')],
+                            'bench/repr:        A reading taken under a heavily loaded machine is a flaky test, not a regression',
+                            'bench/repr:        (#1431): `make repr-guard` re-measures once, serially, and reds on the second.')]]
+            [else [?if $slack
+                    [then [$passed ([$cat ('       NOTE: ', $ratio, 'x sits well under the ', $btxt, "x bound — if this is a wave's improvement,")],
+                                    [$cat ('             RE-PIN the ratchet in run.cx (BOUNDS ', $form, ') in the same commit (RP-5).')])]]
+                    [else false]]]]]]]]]
+
+[?def finish scope=private impure ($code)
+  [?do [?if [$keep] [then null] [else [?fallback [$io:remove-tree [$corpus-dir]] [recover-with null]]]]
+       [$env:exit $code]]]
+
+[?let [= $_d [$io:make-dirs [$build-dir]]]
+      [= $v [?if [= [$planted] ''] [then [$v-compiler]] [else 'planted']]]
+  # a deadline of 0 s (or less) is no deadline: process:run's timeout-ms=0
+  # waits forever, the hang itself (REFUTE-1 r6). Refused by name, never run.
+  [?if [or [<= [$deadline-s] 0] [<= [$build-deadline-s] 0]]
+    [then [?do [$cry [$cat ('bench/repr: FAIL — CX_REPR_LANE_DEADLINE_S=', [$string [$deadline-s]], ' and CX_REPR_BUILD_DEADLINE_S=',
+                            [$string [$build-deadline-s]], ': each must be a positive number of seconds; a reading with no deadline is the hang #1766 removed.')]]
+               [$env:exit 2]]]
+  [else [?if [= $v '']
+    [then [?do [$cry [$cat ('bench/repr: FAIL — no V compiler at ', [$repo], '/third_party/v/v.')]]
+               [$cry 'bench/repr: build the pinned fork (git submodule update --init && make -C third_party/v)']
+               [$cry 'bench/repr: or set CX_ALLOW_PATH_V=1 to accept a PATH-resolved `v` (the measurement needs -gc e).']
+               [$env:exit 2]]]
+    [else
+      [?let [= $built [?if [= [$planted] ''] [then [$build-if-stale $v]] [else '']]]
+        [?if [not [= $built '']]
+          [then [?do [$cry $built] [$env:exit 2]]]
+          [else
+            # Generated corpora are scratch — dropped on every exit past here unless
+            # the caller asked to keep them for inspection (CX_REPR_KEEP=1).
+            [?let [= $_c [$io:make-dirs [$corpus-dir]]]
+                  [= $_h [$say [$cat ('bench/repr — CXDM live-memory multiplier (records=', [$records],
+                                      ', load average at start: ', [$load-avgs], ')')]]]
+                  [= $_t [$say [$row 'format' 'input_bytes' 'live_bytes' 'ratio' 'bound' 'load1' 'verdict']]]
+                  # A format's verdict; an err out of the guard itself is a failure that says so.
+                  # each format's verdict as a word: 'over' (its bound alone), 'fail'
+                  # (anything else: a stall, a non-zero driver, no measurement, an
+                  # err out of the guard itself), 'ok'.
+                  [= $verdicts [?to-sequence [?for [in $l LANES]
+                                 [yield [?match [$one-format $l]
+                                          [case [err @message=$m] [?let [= $_m [$cry [$cat ('bench/repr: FAIL — format ', $l, ': the guard itself erred: ', [$string $m])]]] 'fail']]
+                                          [case 'over' 'over']
+                                          [case true 'fail']
+                                          [else 'ok']]]]]]
+                  [= $fails [?to-sequence [?for [in $w $verdicts] [where [not [= $w 'ok']]] [yield $w]]]]
+                  [= $overs [?to-sequence [?for [in $w $verdicts] [where [= $w 'over']] [yield $w]]]]
+              [?if [> [$count $fails] 0]
+                [then [?do [$cry [$cat ('bench/repr: RED — at least one format failed its reading or exceeded its pinned live-memory bound (load average ',
+                                        [$load-avgs], ').')]]
+                           # exit 3: every failure a bound exceedance, the GAUGE retry
+                           # class; exit 1: any other failure, which no re-measurement
+                           # may absorb (REFUTE-1 r5: a stall beside an exceedance).
+                           [$finish [?if [= [$count $fails] [$count $overs]] [then 3] [else 1]]]]]
+                [else [?do [$say [$cat ('bench/repr: GREEN — every format within its pinned live-memory bound (load average ', [$load-avgs], ').')]]
+                           [$finish 0]]]]]]]]]]]]]
