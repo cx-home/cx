@@ -306,14 +306,14 @@ read
 #]]
  ]
 
- [case id=property-gate-023-first-of-one-match level=core gate=advisory issue='cx-home/cx-core-code#26'
+ [case id=property-gate-023-first-of-one-match level=core gate=enforced
   [tags property-gate vii first-of-one-match-descends]
-  [title [# [$first] of a path that matched one element hands that element back -- a single value is a one-item sequence (code.md §6.3 Sequence built-ins), as a path that matched two hands back the first #]]
+  [title [# [$first] of a path that matched ONE [hit] holding a single item reads that item, [inner]: code.md §5's terminal labeled-field unwrap (#584) already hands $d/hit back as [inner], and the sequence built-ins read a single element by content arity (RULED: 1262-a, FRST-1; Letter 181 = (b), cx-core-code#26) -- a path that matched two is a node-set and [$first] hands back the first [hit] #]]
   [in-code [#
 [?let [= $d [doc [hit n=1 [inner]]]] [$name [$first $d/hit]]]
 #]]
   [out-text [#
-hit
+inner
 #]]
  ]
 
