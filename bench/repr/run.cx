@@ -1,7 +1,7 @@
 # bench/repr/run.cx — the CXDM live-memory multiplier guard (#1119 W1, RULED: RP-5;
 # the driver in CX since #1766, RULED: CXF-1, RUN-5).
 #
-# Asserts, per lane, that the LIVE representation of a parsed ~2 MB corpus
+# Asserts, per format, that the LIVE representation of a parsed ~2 MB corpus
 # stays within a pinned multiple of the corpus's own byte count. The bounds are
 # a RATCHET: pinned here at W1 to today's measured multipliers with headroom, so
 # any wave that makes the representation worse reds the gate; each later wave
@@ -31,7 +31,7 @@
 # process group of its own (the deadline kills the reading and everything it
 # started), and its exit status is read directly from the result. A reading
 # past its deadline turns the step red BY NAME:
-#   bench/repr: FAIL — lane xml exceeded its 300 s deadline …
+#   bench/repr: FAIL — format xml exceeded its 300 s deadline …
 # inside that bound — never a run that cannot reach its verdict. A stall is not
 # a load reading: it does NOT print the bound-exceedance text the Makefile's
 # GAUGE retry greps, so no retry absorbs it.
@@ -43,7 +43,7 @@
 #   CX_REPR_BUILD_DEADLINE_S the driver build's deadline, s (default 1800)
 #   CX_ALLOW_PATH_V=1        accept a PATH-resolved `v` when third_party/v/v is absent
 #   CX_V_SEARCH              the V -path for the build (default @vlib|@vmodules|<repo>/vcx)
-#   CX_REPR_BIN, CX_REPR_CORPUS_DIR — a planted lane driver and a corpus
+#   CX_REPR_BIN, CX_REPR_CORPUS_DIR — a planted format driver and a corpus
 #     directory of its own, for scripts/repr_guard_selftest.cx (the build is
 #     skipped for a planted driver).
 [?lib 'cx-stdlib/io'      as=io]
@@ -57,14 +57,14 @@
 [?def cat scope=private pure [returns string] ($parts) [$strings:join $parts '']]
 [?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
 [?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
-# each line to stderr; answers true (the lane failed).
+# each line to stderr; answers true (the format failed).
 [?def failed scope=private impure [returns bool] ($lines)
   [?let [= $_w [?to-sequence [?for [in $l $lines] [yield [$cry $l]]]]] true]]
-# each line to stderr; answers 'over' (the lane failed on its bound alone —
+# each line to stderr; answers 'over' (the format failed on its bound alone —
 # the one failure the Makefile's GAUGE retry may re-measure; REFUTE-1 r5).
 [?def failed-over scope=private impure [returns string] ($lines)
   [?let [= $_w [?to-sequence [?for [in $l $lines] [yield [$cry $l]]]]] 'over']]
-# each line to stdout; answers false (the lane passed).
+# each line to stdout; answers false (the format passed).
 [?def passed scope=private impure [returns bool] ($lines)
   [?let [= $_w [?to-sequence [?for [in $l $lines] [yield [$say $l]]]]] false]]
 
@@ -74,13 +74,13 @@
 # the runtime's own live set) ÷ input bytes. RE-PINNED 2026-09-02 at W5+W6
 # (RP-5): the RP-1 flip (Node and ScalarValue are 24-byte structs, scalars
 # inline, zero allocations per value) and RP-4's inline attribute type (96,000
-# AttributeMeta allocations, 12.29 MB, removed from the xml lane).
+# AttributeMeta allocations, 12.29 MB, removed from the xml format).
 #
-#   lane   measured   bound   what the headroom buys
+#   format   measured   bound   what the headroom buys
 #   json    7.569      7.95   +5% (a different compiler or platform)
 #   xml     7.941      8.35   same
 #   cx      7.577-7.588   8.00  same
-#   cxel    7.600      8.00   same — the element lane with atom / date / duration
+#   cxel    7.600      8.00   same — the element format with atom / date / duration
 #                             attribute columns (#1247); 15.507 before #1275
 #                             retired the 128k AttributeMeta records (one per
 #                             autotyped attribute; the type name rides inline)
@@ -91,17 +91,17 @@
 # BYTE-FOR-BYTE on json and xml at 32k (7.569 / 7.941 both) where they used to
 # differ by exactly one input. Bounds are measured +5%.
 #
-# RE-PINNED 2026-09-04 (#1275): the `cxel` lane 15.507 → 7.600. Every autotyped
+# RE-PINNED 2026-09-04 (#1275): the `cxel` format 15.507 → 7.600. Every autotyped
 # attribute carried an AttributeMeta record holding its type NAME as a string —
-# 128,000 records on this corpus, more than half the lane's live set — to say
+# 128,000 records on this corpus, more than half the format's live set — to say
 # what the inline `has_dtype` / `dtype` already say. `new_attribute` now routes
 # a round-tripping name inline through `set_data_type`'s guard (the sized
 # numerics and the namespace fields still pool); the census reads attr_meta=0
-# and the lane sits with the other three at ~7.6×.
+# and the format sits with the other three at ~7.6×.
 #
 # Measured on darwin-arm64 with the `-prod` driver at 32,000 records. Run-to-run
-# the reading is all but exact: over six clean runs the json and xml lanes were
-# byte-identical every time, and the cx lane alternated between two values
+# the reading is all but exact: over six clean runs the json and xml formats were
+# byte-identical every time, and the cx format alternated between two values
 # 6,608 B apart (0.03% — one small transient retained or not); a run under eight
 # saturating CPU burners reported the same numbers as an idle one, which is what
 # a live-BYTES ratio buys over a timing gate. The headroom is not that jitter,
@@ -111,7 +111,7 @@
 # "what the instrument can and cannot see"). +1.0 covers one such copy; the +5%
 # covers a different compiler or platform.
 #
-# RE-PIN PROTOCOL (RP-5): a wave that improves a lane edits the bound in THIS
+# RE-PIN PROTOCOL (RP-5): a wave that improves a format edits the bound in THIS
 # BLOCK in the same commit that lands the improvement, and records the new
 # measurement in README.md and in the #1119 wave row. A bound is never raised
 # without a ruling — the ratchet is not loosened to accommodate a regression.
@@ -120,7 +120,7 @@
 [?const BOUNDS {json: 7.95, xml: 8.35, cx: 8.00, cxel: 8.00}]
 [?const BOUND-TEXT {json: '7.95', xml: '8.35', cx: '8.00', cxel: '8.00'}]
 
-# REPIN-SLACK — how far under its bound a lane may sit before the runner says
+# REPIN-SLACK — how far under its bound a format may sit before the runner says
 # so. Advisory, NOT a failure: an improvement must not red somebody else's
 # `make test` before the campaign's own wave re-pins. RP-5 makes exceedance the
 # failure and the downward re-pin a wave-exit obligation.
@@ -215,7 +215,7 @@
 # `-prod` is load-bearing, for the reason gates 14/15/16 carry it (#835): the
 # driver compiles the `cx` module as SOURCE, so without it the guard would be
 # measuring a build CX does not ship. It is not a timing argument here — the
-# quantity is bytes — but the -prod and dev builds DO disagree on the XML lane
+# quantity is bytes — but the -prod and dev builds DO disagree on the XML format
 # by exactly one retained copy of the input (README.md, "what the instrument
 # can and cannot see"), and the shipped build is the one the campaign's RSS
 # bar is measured on.
@@ -310,68 +310,68 @@
     [?if [<= [$strings:length $t] [+ [$strings:length $head] 1]] [then ()]
       [else [?to-sequence [$strings:split-lines [$strings:slice $t [+ [$strings:length $head] 2] [$strings:length $t]]]]]]]]
 
-# One lane: generate its corpus if absent, take the reading under its deadline,
-# print the row. Answers true when the lane failed.
-[?def lane scope=private impure [returns any] ($lane)
-  [?let [= $recs [$records]] [= $corpus [$cat ([$corpus-dir], '/', $lane, '-', $recs, '.corpus')]]
+# One format: generate its corpus if absent, take the reading under its deadline,
+# print the row. Answers true when the format failed.
+[?def one-format scope=private impure [returns any] ($form)
+  [?let [= $recs [$records]] [= $corpus [$cat ([$corpus-dir], '/', $form, '-', $recs, '.corpus')]]
         [= $lim [$string [$deadline-s]]]
         [= $gen [?if [$io:is-file $corpus] [then {stalled: false, code: '0', out: '', err: ''}]
-                  [else [$bounded ([$bin], 'gen', $lane, $corpus, $recs) [$cat ('gen-', $lane)]]]]]
+                  [else [$bounded ([$bin], 'gen', $form, $corpus, $recs) [$cat ('gen-', $form)]]]]]
         [= $_g1 [?if [= [$string $gen.out] ''] [then null] [else [$io:write-string [$env:stdout] [$string $gen.out]]]]]
         [= $_g2 [$echo-err $gen]]
     [?if $gen.stalled
-      [then [$failed ([$cat ('bench/repr: FAIL — lane ', $lane, ' corpus generation exceeded its ', $lim,
+      [then [$failed ([$cat ('bench/repr: FAIL — format ', $form, ' corpus generation exceeded its ', $lim,
                              ' s deadline at load average ', [$load-1m], '; it was killed (#1766).')],)]]
       [else [?if [not [= [$string $gen.code] '0']]
-              [then [$failed ([$cat ('bench/repr: FAIL — lane ', $lane, ' corpus generation exited ', [$string $gen.code],
+              [then [$failed ([$cat ('bench/repr: FAIL — format ', $form, ' corpus generation exited ', [$string $gen.code],
                                      ' at load average ', [$load-1m], '; its diagnosis is above.')],)]]
-              [else [$reading $lane $corpus $recs $lim]]]]]]]
+              [else [$reading $form $corpus $recs $lim]]]]]]]
 
 # One reading. The load THIS reading was taken under is sampled immediately
 # after the driver returns, so the 1-minute figure covers the measurement itself.
-[?def reading scope=private impure [returns any] ($lane $corpus $recs $lim)
-  [?let [= $r [$bounded ([$bin], $lane, $corpus, $recs) [$cat ('read-', $lane)]]]
+[?def reading scope=private impure [returns any] ($form $corpus $recs $lim)
+  [?let [= $r [$bounded ([$bin], $form, $corpus, $recs) [$cat ('read-', $form)]]]
         [= $load [$load-1m]]
         [= $_e [$echo-err $r]]
     [?if $r.stalled
-      [then [$failed ([$cat ('bench/repr: FAIL — lane ', $lane, ' exceeded its ', $lim, ' s deadline at load average ',
+      [then [$failed ([$cat ('bench/repr: FAIL — format ', $form, ' exceeded its ', $lim, ' s deadline at load average ',
                              $load, '; the reading was killed and the step reds by name rather than hang the run (#1766).')],
                       'bench/repr:        A stalled reading is not a bound exceedance: no retry class applies.')]]
       [else [?if [not [= [$string $r.code] '0']]
               [then [?let [= $_o [$io:write-string [$env:stdout] [$string $r.out]]]
-                      [$failed ([$cat ('bench/repr: FAIL — lane ', $lane, ' driver exited non-zero at load average ', $load,
+                      [$failed ([$cat ('bench/repr: FAIL — format ', $form, ' driver exited non-zero at load average ', $load,
                                        '; its diagnosis is above.')],)]]]
-              [else [$judge-reading $lane [$string $r.out] $load]]]]]]]
+              [else [$judge-reading $form [$string $r.out] $load]]]]]]]
 
 # A reading's verdict: its row, its census, and the bound comparison.
-[?def judge-reading scope=private impure [returns any] ($lane $out $load)
-  [?let [= $bound [$map:get BOUNDS $lane]] [= $btxt [$map:get BOUND-TEXT $lane]]
+[?def judge-reading scope=private impure [returns any] ($form $out $load)
+  [?let [= $bound [$map:get BOUNDS $form]] [= $btxt [$map:get BOUND-TEXT $form]]
         [= $head [$first-line $out]]
         [= $ratio [$field $head 'ratio']]
         [= $input [$field $head 'input_bytes']]
         [= $live [$field $head 'repr_bytes']]
     [?if [not [and [$digits $ratio true] [$digits $input false] [$digits $live false]]]
-      [then [?let [= $_m [$cry [$cat ('bench/repr: FAIL — lane ', $lane, ' produced no parsable measurement (load average ', $load,
+      [then [?let [= $_m [$cry [$cat ('bench/repr: FAIL — format ', $form, ' produced no parsable measurement (load average ', $load,
                                       '). Driver output:')]]]
               [$failed ([$strings:trim-end-chars $out '\n'],)]]]
       [else
         [?let [= $rv [cast $ratio :decimal]]
               [= $over [> $rv $bound]]
               [= $slack [< [* $rv REPIN-SLACK] $bound]]
-              [= $_row [$say [$row $lane $input $live $ratio $btxt $load [?if $over [then 'FAIL'] [else 'PASS']]]]]
+              [= $_row [$say [$row $form $input $live $ratio $btxt $load [?if $over [then 'FAIL'] [else 'PASS']]]]]
               # The census and the struct sizes are the per-node accounting every later wave
               # reads to see WHICH allocation it removed. Printed always: a gate whose
               # evidence is only visible on failure teaches nothing on the way past.
               [= $_census [$passed [?to-sequence [?for [in $l [$rest-lines $out $head]] [yield [$cat ('       ', $l)]]]]]]
           [?if $over
-            [then [$failed-over ([$cat ('bench/repr: FAIL — lane ', $lane, ' live multiplier ', $ratio, 'x exceeds the pinned bound ', $btxt, 'x.')],
+            [then [$failed-over ([$cat ('bench/repr: FAIL — format ', $form, ' live multiplier ', $ratio, 'x exceeds the pinned bound ', $btxt, 'x.')],
                             'bench/repr:        The ratchet is not loosened to accommodate a regression (RULED: RP-5).',
                             [$cat ('bench/repr:        ', $live, ' live bytes for ', $input, ' input bytes, at load average ', [$load-avgs], '.')],
                             'bench/repr:        A reading taken under a heavily loaded machine is a flaky test, not a regression',
                             'bench/repr:        (#1431): `make repr-guard` re-measures once, serially, and reds on the second.')]]
             [else [?if $slack
                     [then [$passed ([$cat ('       NOTE: ', $ratio, 'x sits well under the ', $btxt, "x bound — if this is a wave's improvement,")],
-                                    [$cat ('             RE-PIN the ratchet in run.cx (BOUNDS ', $lane, ') in the same commit (RP-5).')])]]
+                                    [$cat ('             RE-PIN the ratchet in run.cx (BOUNDS ', $form, ') in the same commit (RP-5).')])]]
                     [else false]]]]]]]]]
 
 [?def finish scope=private impure ($code)
@@ -401,25 +401,25 @@
             [?let [= $_c [$io:make-dirs [$corpus-dir]]]
                   [= $_h [$say [$cat ('bench/repr — CXDM live-memory multiplier (records=', [$records],
                                       ', load average at start: ', [$load-avgs], ')')]]]
-                  [= $_t [$say [$row 'lane' 'input_bytes' 'live_bytes' 'ratio' 'bound' 'load1' 'verdict']]]
-                  # A lane's verdict; an err out of the guard itself is a failure that says so.
-                  # each lane's verdict as a word: 'over' (its bound alone), 'fail'
+                  [= $_t [$say [$row 'format' 'input_bytes' 'live_bytes' 'ratio' 'bound' 'load1' 'verdict']]]
+                  # A format's verdict; an err out of the guard itself is a failure that says so.
+                  # each format's verdict as a word: 'over' (its bound alone), 'fail'
                   # (anything else: a stall, a non-zero driver, no measurement, an
                   # err out of the guard itself), 'ok'.
                   [= $verdicts [?to-sequence [?for [in $l LANES]
-                                 [yield [?match [$lane $l]
-                                          [case [err @message=$m] [?let [= $_m [$cry [$cat ('bench/repr: FAIL — lane ', $l, ': the guard itself erred: ', [$string $m])]]] 'fail']]
+                                 [yield [?match [$one-format $l]
+                                          [case [err @message=$m] [?let [= $_m [$cry [$cat ('bench/repr: FAIL — format ', $l, ': the guard itself erred: ', [$string $m])]]] 'fail']]
                                           [case 'over' 'over']
                                           [case true 'fail']
                                           [else 'ok']]]]]]
                   [= $fails [?to-sequence [?for [in $w $verdicts] [where [not [= $w 'ok']]] [yield $w]]]]
                   [= $overs [?to-sequence [?for [in $w $verdicts] [where [= $w 'over']] [yield $w]]]]
               [?if [> [$count $fails] 0]
-                [then [?do [$cry [$cat ('bench/repr: RED — at least one lane failed its reading or exceeded its pinned live-memory bound (load average ',
+                [then [?do [$cry [$cat ('bench/repr: RED — at least one format failed its reading or exceeded its pinned live-memory bound (load average ',
                                         [$load-avgs], ').')]]
                            # exit 3: every failure a bound exceedance, the GAUGE retry
                            # class; exit 1: any other failure, which no re-measurement
                            # may absorb (REFUTE-1 r5: a stall beside an exceedance).
                            [$finish [?if [= [$count $fails] [$count $overs]] [then 3] [else 1]]]]]
-                [else [?do [$say [$cat ('bench/repr: GREEN — every lane within its pinned live-memory bound (load average ', [$load-avgs], ').')]]
+                [else [?do [$say [$cat ('bench/repr: GREEN — every format within its pinned live-memory bound (load average ', [$load-avgs], ').')]]
                            [$finish 0]]]]]]]]]]]]]

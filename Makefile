@@ -5194,13 +5194,13 @@ fmt-sweep-gate: build-vcx
 # The driver is CX now (bench/repr/run.cx): every child it runs writes to a
 # file under a `timeout-ms`, in a process group the deadline kills whole, its
 # exit read directly, and a reading past CX_REPR_LANE_DEADLINE_S (default
-# 300 s) reds the step BY NAME — "lane <x> exceeded its N s deadline", which is
+# 300 s) reds the step BY NAME — "format <x> exceeded its N s deadline", which is
 # not the bound-exceedance text below, so no retry absorbs a stall; and the
 # driver exits 3 only when EVERY failure is a bound exceedance (1 otherwise),
 # so a stall beside an exceedance is never re-measured away (REFUTE-1 r5). The recipe
 # writes the driver's output to the log FILE and prints it back after the exit
 # is read, so no pipe exists here either. `make repr-guard-selftest` proves the
-# deadline, the held-pipe shape and every verdict on planted lane drivers.
+# deadline, the held-pipe shape and every verdict on planted format drivers.
 REPR_GUARD_GRANTS := --allow-read --allow-write --allow-subprocess --allow-env
 .PHONY: repr-guard
 repr-guard: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
@@ -5224,10 +5224,10 @@ repr-guard: build-vcx
 	fi; exit $$st
 
 # ── repr-guard-selftest (#1766, RULED: RUN-5, CXF-1) ─────────────────────────
-# The driver's verdicts on PLANTED lane drivers (CX_REPR_BIN; the build is
+# The driver's verdicts on PLANTED format drivers (CX_REPR_BIN; the build is
 # skipped for them), so it is load-insensitive and costs seconds: a reading
 # that sleeps past its deadline reds the step BY NAME inside the bound, a
-# grandchild holding the lane's stdout cannot hold the step (the 8b63de0c7
+# grandchild holding the format's stdout cannot hold the step (the 8b63de0c7
 # shape — 5 h 14 m until a pid was killed by hand), and the bound-exceedance,
 # non-zero, unparsable and keep/cleanup answers stay what they were. Its
 # corpora live in a temp directory, so it runs beside `repr-guard` in a -j
