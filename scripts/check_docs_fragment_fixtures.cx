@@ -75,7 +75,7 @@
 # -- the two comparisons, pure ------------------------------------------
 
 [?def canonical-of scope=private pure [returns string] ($in::string)
-  [$strings:trim-end-chars [$cx:canonical $in] "\n"]]
+  [$strings:trim-end-chars [$cx:canonical [$cx:parse $in]] "\n"]]
 
 # The verdict of scripts/docs_fragment.cx over the case's document, one line
 # per refusal or `ok`. `under=` is the repository DIRECTORY the fragment was
