@@ -85,7 +85,7 @@ Query the rings with `make ring-query` (env: `RING=`, `MODE=`,
 ## Grading semantics
 
 - `out-text` (eval fixtures) compares against the **normative result
-  image** — spec/core/code.md "The evaluation result image"
+  image** — spec/03-approved/core/code.md "The evaluation result image"
   (rule EV-RESULT-IMAGE). A `tol=` attribute relaxes numeric equality
   only.
 - `out-cx` / `out-xml` / `out-canonical` / … compare exactly after
@@ -181,4 +181,4 @@ live at the repo root under `fixtures/` (`api_config.cx`,
 `lang/*` consume them. The behavioral checklists formerly duplicated in
 this README live where they are enforced: `binding_api.cxd` (parity
 rows) and the per-language suites (API surface), against
-spec/bindings.md.
+spec/03-approved/misc/bindings.md.

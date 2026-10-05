@@ -1,4 +1,4 @@
-[# modify-crud.cx — pure-functional CRUD via [?modify], every action (v0.8.0).
+[# modify-crud.cx — pure-functional CRUD via [?modify], every action.
    Focus path + bare action clause (§8.10), structural sharing: each
    [?modify] returns a *new* document; $doc itself is never changed.
    With --data, $doc (and $input) is bound to the input document.
@@ -9,7 +9,7 @@
    Run:
      cx --data=examples/modify-crud.input.cx examples/modify-crud.cx #]
 
-[crud-tour version='0.8.0'
+[crud-tour
 
   [# ─── §1. [set] — replace a single scalar attribute ─── #]
 

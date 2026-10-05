@@ -373,7 +373,7 @@ planted
 
  [case id=property-gate-028-sleep-without-clock level=core grant='read subprocess'
   [tags property-gate v effect-point-wall-sleep-without-grant]
-  [title [# a wall-clock [?sleep] with no clock grant waits on the wall clock -- it reads no clock, so it is an impure effect and not a gated one (security.md §2 clock row, code.md §10.5.3 "No capability"; STREAM-1, cx-home/cx-core-code#37 taken as the exemption) #]]
+  [title [# a wall-clock [?sleep] with no clock grant is mock-only -- it does not wait on the wall clock (security.md §2 clock row: non-mock [?sleep], else mock-only; deny-by-default; cx-home/cx-core-code#37, the STREAM-1 exemption reading reversed) #]]
   [in-code [#
 [?lib 'cx-stdlib/env' as=env]
 [?lib 'cx-stdlib/process' as=process]
@@ -382,13 +382,13 @@ planted
   [?if [= [$string $r@timed-out] 'true'] [then 'waited'] [else 'not-waited']]]
 #]]
   [out-text [#
-waited
+not-waited
 #]]
  ]
 
  [case id=property-gate-029-include-without-read level=core grant='read write subprocess'
   [tags property-gate v effect-point-include-without-grant]
-  [title [# the CLI's --include-root pass reads the included file with no read grant -- the flag is the caller's grant of that one root (security.md §2 read row and §5, code.md §13.2; STREAM-1, cx-home/cx-core-code#37) #]]
+  [title [# the CLI's --include-root pass does not read the included file with no read grant -- [?cx include] is a read (security.md §2 read row; deny-by-default; cx-home/cx-core-code#37, the STREAM-1 exemption reading reversed) #]]
   [in-code [#
 [?lib 'cx-stdlib/env' as=env]
 [?lib 'cx-stdlib/io' as=io]
@@ -402,7 +402,7 @@ waited
   [?if [$strings:contains [$string $r@stdout] 'included-content'] [then 'read'] [else 'not-read']]]
 #]]
   [out-text [#
-read
+not-read
 #]]
  ]
 

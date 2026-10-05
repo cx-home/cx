@@ -1,6 +1,6 @@
-[# code-tour.cx — comprehensive tour of the CX code language (v0.8.0).
+[# code-tour.cx — comprehensive tour of the CX code language.
 
-   Covers every core directive + every v0.8.0 surface:
+   Covers every core directive + every surface:
       1. [?fn]                 — lambdas (§8.6)
       2. [?def]                — named module-scope functions (§12.2)
       3. [?let]                — lexical binding (§8.5)
@@ -63,7 +63,7 @@
 [?const PATTERN [$regex:compile "^[a-z]+"]]
 [?const lazy BIG-TABLE [?for [in $i [$range 1 1000]] [yield [row $i]]]]
 
-[tour version='0.8.0'
+[tour
 
   [# ─── §1. Lambdas via [?fn] ─── #]
 

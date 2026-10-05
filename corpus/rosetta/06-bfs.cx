@@ -1,7 +1,7 @@
 [; Walk a graph held as a DOCUMENT: the edges are elements, and traversal is a
    path query plus a shape-matching comprehension — no adjacency list is built,
    because the document already is one.
-   Rewritten for the v0.8.0 surface (RULED: VC-28); the original was
+   Rewritten for the current surface (RULED: VC-28); the original was
    pre-reshape (`[?let $x = … :in]`, `@from=$f` inside a `:in`/`:yield` for). ]
 [?let [= $graph [g
                   [edges from=A to=B] [edges from=A to=C]

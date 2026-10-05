@@ -41,7 +41,7 @@ Observed output:
 ```
 
 **Status:** WORKAROUND (reduced scope; re-derived 2026-08-25, RULED: VC-28).
-Rewritten for the v0.8.0 surface: `$graph//edges` plus a comprehension binding
+Rewritten for the current surface: `$graph//edges` plus a comprehension binding
 `$e@from` / `$e@to`. Runs rc=0 and enumerates all five edges.
 
 Still reduced scope, as before: it returns the edge list, not a path from A to
@@ -50,7 +50,7 @@ recursion exists on the current surface, so a frontier-based traversal is
 plausibly expressible now. It is not written here, and claiming it works
 without writing it would be a guess.
 
-## Historical (v0.7.x surface, superseded)
+## Historical (v0.7.x surface, superseded) <!-- version-literal-ok -->
 
 Everything below this line describes the **pre-reshape** surface and is kept as
 a discovery trail, not as findings. Several of its claims are now false —
@@ -90,7 +90,7 @@ Surface-completeness hypothesis confirmations:
 
 4. **No set / map literal with set operations.** Hypothesis-register row "Map iteration" partially covers this. Confirmed: there's no way to express a `visited` set without faking it as a sequence + `distinct()`, which doesn't have efficient membership-test.
 
-5. **Pattern destructure of attributes via `:from $f :to $t` keyword-style fails.** `[edges @from=$f @to=$t]` works; `[edges :from $f :to $t]` parses as `pattern body item` and rejects `:` between attrs. The `:foo` keyword-modifier shape only works in directive heads, not in match patterns over element shapes. Worth a one-line spec note in `spec/code.md §5.2`.
+5. **Pattern destructure of attributes via `:from $f :to $t` keyword-style fails.** `[edges @from=$f @to=$t]` works; `[edges :from $f :to $t]` parses as `pattern body item` and rejects `:` between attrs. The `:foo` keyword-modifier shape only works in directive heads, not in match patterns over element shapes. Worth a one-line spec note in `spec/03-approved/core/code.md §5.2`.
 
 The cascading nature of these gaps (#2 + #3 + #4 together block the
 real algorithm; #1 is a single-line fix) is the kind of finding the 0045 gap inventory anticipated. BFS is *the* canonical "do I have enough surface

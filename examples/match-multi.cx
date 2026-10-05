@@ -1,4 +1,4 @@
-[# Multi-arm [?match] tour — heterogeneous dispatch (v0.8.0).
+[# Multi-arm [?match] tour — heterogeneous dispatch.
    Showcases the §8.2 match surface: [case PATTERN RESULT] arms,
    [when GUARD RESULT] predicate arms, [else RESULT], scalar-literal
    patterns, pattern bindings, CXPath patterns, the _ wildcard, and

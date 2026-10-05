@@ -16,17 +16,128 @@
   --hairline: #d8d4c6;
   --rule: #b8b09a;
   --muted: #6b6552;
-  --faint: #8a8371;
+  --faint: #6e6754;        /* AA on every ground (#1418; was #8a8371, 3.1–3.4:1) */
 
   /* Ink code panels — warm dark, matching the sheet's ink */
   --code-bg: #211e15;
   --code-fg: #efe9d8;
   --code-border: #35301f;
-  --code-label: #8a8371;
+  --code-label: #918a77;
+  --copy-ok: #7dc98f;
+  --copy-fail: #e8927c;
+
+  /* washes: a highlighted search hit, an inline code chip */
+  --accent-wash: rgba(179, 64, 15, 0.16);
+  --ink-wash: rgba(26, 24, 18, 0.07);
+  --chip: rgba(26, 24, 18, 0.06);
+
+  /* syntax highlighting — drawn on the ink code panel in either mode */
+  --hl-comment: #938b73;
+  --hl-string: #e3b76a;
+  --hl-number: #dd9046;
+  --hl-literal: #c9b8e8;
+  --hl-keyword: #e8927c;
+  --hl-element: #9ecbe0;
+  --hl-directive: #e8a9c0;
+  --hl-sigil: #ecd08a;
+  --hl-type: #b3bce6;
+  --hl-attr: #a9cc9e;
+  --hl-fn: #a8c3e8;
+
+  /* the brand mark (assets/cx-logo.svg, #0039BA) as an <img>: drawn as it
+     is on paper; lifted on the dark sheet, where the blue reads at 1.6:1 */
+  --mark-filter: none;
 
   --font-display: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
   --font-body: 'Newsreader', Georgia, 'Times New Roman', serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ── dark mode (#1418, the owner's directive of 2026-09-11) ─────────────
+   The same drawing at night: a warm ink sheet, paper-coloured ink, the
+   vermilion lifted until it reads at WCAG AA on the dark ground. Three
+   states: the light palette above on bare :root; this one when the reader's
+   system asks for dark and no explicit light choice is stored
+   (:root:not([data-theme="light"])); and again on an explicit dark choice
+   (:root[data-theme="dark"]), so a choice wins in both directions. The
+   toggle in the sheet bar stores the choice (cx-theme) and the head script
+   applies it before paint. scripts/gen_guide/theme_check.cx (in
+   guide-render-gate) refuses a colour token missing from either block and
+   a colour literal anywhere but a token definition. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #1c1a14;
+    --paper-deep: #131109;
+    --paper-panel: #26231a;
+    --ink: #ece6d4;
+    --ink-soft: #d2cbb5;
+    --accent: #ee7d48;
+    --accent-dark: #f6a47a;
+    --hairline: #38332a;
+    --rule: #595243;
+    --muted: #aaa28b;
+    --faint: #9a937e;
+    --code-bg: #100f0a;
+    --code-fg: #efe9d8;
+    --code-border: #34301f;
+    --code-label: #9a937e;
+    --copy-ok: #7dc98f;
+    --copy-fail: #e8927c;
+    --accent-wash: rgba(238, 125, 72, 0.22);
+    --ink-wash: rgba(236, 230, 212, 0.08);
+    --chip: rgba(236, 230, 212, 0.08);
+    --hl-comment: #8f876f;
+    --hl-string: #e3b76a;
+    --hl-number: #dd9046;
+    --hl-literal: #c9b8e8;
+    --hl-keyword: #e8927c;
+    --hl-element: #9ecbe0;
+    --hl-directive: #e8a9c0;
+    --hl-sigil: #ecd08a;
+    --hl-type: #b3bce6;
+    --hl-attr: #a9cc9e;
+    --hl-fn: #a8c3e8;
+    --mark-filter: brightness(2.4);
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #1c1a14;
+  --paper-deep: #131109;
+  --paper-panel: #26231a;
+  --ink: #ece6d4;
+  --ink-soft: #d2cbb5;
+  --accent: #ee7d48;
+  --accent-dark: #f6a47a;
+  --hairline: #38332a;
+  --rule: #595243;
+  --muted: #aaa28b;
+  --faint: #9a937e;
+  --code-bg: #100f0a;
+  --code-fg: #efe9d8;
+  --code-border: #34301f;
+  --code-label: #9a937e;
+  --copy-ok: #7dc98f;
+  --copy-fail: #e8927c;
+  --accent-wash: rgba(238, 125, 72, 0.22);
+  --ink-wash: rgba(236, 230, 212, 0.08);
+  --chip: rgba(236, 230, 212, 0.08);
+  --hl-comment: #8f876f;
+  --hl-string: #e3b76a;
+  --hl-number: #dd9046;
+  --hl-literal: #c9b8e8;
+  --hl-keyword: #e8927c;
+  --hl-element: #9ecbe0;
+  --hl-directive: #e8a9c0;
+  --hl-sigil: #ecd08a;
+  --hl-type: #b3bce6;
+  --hl-attr: #a9cc9e;
+  --hl-fn: #a8c3e8;
+  --mark-filter: brightness(2.4);
+}
+:root { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { color-scheme: dark; }
 }
 
 * { box-sizing: border-box; }
@@ -81,6 +192,21 @@ header.sheet-bar .sb-right { display: flex; gap: 1.6rem; white-space: nowrap; }
 header.sheet-bar .sb-right a { color: var(--faint); text-decoration: none; }
 header.sheet-bar .sb-right a:hover { color: var(--accent); text-decoration: none; }
 header.sheet-bar .sb-rev { color: var(--ink); font-weight: 600; }
+/* #1418 — the colour-theme toggle: a mono label button in the sheet bar's own
+   voice; it stays on a phone, where .sb-right is dropped. */
+header.sheet-bar .sb-theme {
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--faint);
+  background: transparent;
+  border: 0.5px solid var(--rule);
+  border-radius: 0;
+  padding: 0.2rem 0.55rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+header.sheet-bar .sb-theme:hover, header.sheet-bar .sb-theme:focus-visible { color: var(--accent); border-color: var(--accent); }
 
 /* ── sidebar as the drawing margin ──────────────────────────────────── */
 aside.sidebar {
@@ -176,7 +302,7 @@ aside.sidebar .brand-sub:hover { color: var(--accent); text-decoration: none; }
   line-height: 1.4;
 }
 .side-search-hit mark {
-  background: rgba(179, 64, 15, 0.16);
+  background: var(--accent-wash);
   color: inherit;
   padding: 0 1px;
   border-radius: 0;
@@ -317,7 +443,7 @@ a:hover { color: var(--accent-dark); text-decoration: underline; }
 code {
   font-family: var(--font-mono);
   font-size: 0.82em;
-  background: rgba(26, 24, 18, 0.07);
+  background: var(--ink-wash);
   padding: 0.08em 0.3em;
   border-radius: 0;
   color: var(--ink);
@@ -378,21 +504,21 @@ pre code {
 pre:hover .copy-btn,
 pre:focus-within .copy-btn { opacity: 1; }
 .copy-btn:hover { color: var(--code-fg); border-color: var(--code-label); }
-.copy-btn.copied { color: #7dc98f; border-color: #7dc98f; }
-.copy-btn.failed { color: #e8927c; border-color: #e8927c; }
+.copy-btn.copied { color: var(--copy-ok); border-color: var(--copy-ok); }
+.copy-btn.failed { color: var(--copy-fail); border-color: var(--copy-fail); }
 
 /* Syntax highlighting — warm tones against the warm-ink panel. */
-.hl-comment   { color: #837b64; font-style: italic; }
-.hl-string    { color: #e3b76a; }
-.hl-number    { color: #dd9046; }
-.hl-literal   { color: #c9b8e8; }
-.hl-keyword   { color: #e8927c; }
-.hl-element   { color: #9ecbe0; }
-.hl-directive { color: #e8a9c0; }
-.hl-sigil     { color: #ecd08a; }
-.hl-type      { color: #b3bce6; }
-.hl-attr      { color: #a9cc9e; }
-.hl-fn        { color: #a8c3e8; }
+.hl-comment   { color: var(--hl-comment); font-style: italic; }
+.hl-string    { color: var(--hl-string); }
+.hl-number    { color: var(--hl-number); }
+.hl-literal   { color: var(--hl-literal); }
+.hl-keyword   { color: var(--hl-keyword); }
+.hl-element   { color: var(--hl-element); }
+.hl-directive { color: var(--hl-directive); }
+.hl-sigil     { color: var(--hl-sigil); }
+.hl-type      { color: var(--hl-type); }
+.hl-attr      { color: var(--hl-attr); }
+.hl-fn        { color: var(--hl-fn); }
 
 /* The verified expected-output block — a paper panel, the print that the
    ink block produces. */
@@ -458,7 +584,7 @@ thead th {
   border-bottom: 1.5px solid var(--ink);
 }
 tbody tr:nth-child(even) { background: none; }
-td code { font-size: 11.5px; background: rgba(26, 24, 18, 0.06); }
+td code { font-size: 11.5px; background: var(--chip); }
 
 /* ── title block (footer of every sheet) ────────────────────────────── */
 footer.title-block {
@@ -640,7 +766,7 @@ section.fn > h3 {
   padding-top: 0;
 }
 p.fn-sig { margin: 0 0 0.4rem; color: var(--muted); font-size: 0.95rem; }
-p.fn-sig code { font-size: 0.82em; color: var(--ink); background: rgba(26,24,18,0.06); }
+p.fn-sig code { font-size: 0.82em; color: var(--ink); background: var(--chip); }
 
 .example { margin: 0.5rem 0 0.3rem; }
 
@@ -682,7 +808,7 @@ p.fn-sig code { font-size: 0.82em; color: var(--ink); background: rgba(26,24,18,
   /* Tap targets ≥ 44px (DOCS-51 / #1740): the sidebar's own link rows and
      the nav-group summary toggles are the primary phone navigation now
      that the header's link row is gone. */
-  aside.sidebar a, aside.sidebar summary, .toc-groups summary {
+  aside.sidebar a, aside.sidebar summary, .toc-groups summary, header.sheet-bar .sb-theme {
     min-height: 44px;
     display: flex;
     align-items: center;
@@ -723,7 +849,7 @@ ul.tldr li { margin: 0.25rem 0; }
 }
 .home-hero-text { flex: 1.05; min-width: 0; }
 .home-hero .hero-head { margin: 0 0 0.9rem; }
-.home-hero img.hero-mark { width: 96px; height: 96px; flex-shrink: 0; }
+.home-hero img.hero-mark { width: 96px; height: 96px; flex-shrink: 0; filter: var(--mark-filter); }
 .home-hero h1 { font-size: 2.35rem; line-height: 1.02; margin: 0; white-space: nowrap; }
 .home-hero h1 .accent { color: var(--accent); }
 .home-hero p.lede { font-size: 1.08rem; margin: 0 0 0.6rem; }

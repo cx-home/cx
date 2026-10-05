@@ -1,4 +1,4 @@
-[; vcore.cx — v0.8.0 core-grammar showcase.
+[; vcore.cx — core-grammar showcase.
    Demonstrates each non-trivial core feature in isolation so the test
    suite, format roundtrips, and binding parity tests have one canonical
    sample to exercise per feature. ]

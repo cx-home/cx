@@ -24,7 +24,7 @@
       [tr [th 'was'] [th 'is']]
       [tr [td 'cx_program_eval'] [td 'cx_code_eval']]
       [tr [td 'vcx/programs/'] [td 'vcx/code/']]
-      [tr [td 'spec/programs.md'] [td 'spec/code.md']]
+      [tr [td 'spec/programs.md'] [td 'spec/03-approved/core/code.md']]
       [tr [td 'conformance/programs.txt'] [td 'conformance/code.cxd (today’s CX-native suite)']]
       [tr [td '_cx_program_diagram (wasm)'] [td '_cx_code_diagram (wasm)']]
       [tr [td '--- in_cxl (fixture marker)'] [td '--- in_code (fixture marker)']]]

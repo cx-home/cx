@@ -106,7 +106,7 @@
         [= $_l [?for [in $h $hits] [yield [$say [$cat ("  ", $h)]]]]]
         [= $_t [$say [$cat ([$string [$count $hits]],
                             " hit(s). Handling unifies on [?match]/[?else]/[?fallback]/",
-                            "[?with-error-hook] + ?/! (spec/core/code.md §9.3).")]]]
+                            "[?with-error-hook] + ?/! (spec/03-approved/core/code.md §9.3).")]]]
         [$env:exit 1]]]
     [else
       [?let [= $_ok [$say "NO-LEGACY-TRY gate OK — no retired [?try]/[on-error] surface in corpus."]]

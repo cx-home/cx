@@ -127,7 +127,7 @@ while IFS= read -r file; do
 done < <(find . -name '*.sh' -not -path './third_party/*' -not -path './.git/*' -not -path './.claude/*' | sort)
 # ^ .claude/ excluded: agent WORKTREES nest whole stale repo copies under
 #   .claude/worktrees/, and sweeping their old script snapshots graded the
-#   v0.16.0 release gate against files fixed weeks earlier (measured
+#   v0.16.0 release gate against files fixed weeks earlier (measured  (version-literal-ok: incident history)
 #   2026-08-23: 337 scripts / 22 phantom violations in the cx-private
 #   checkout vs 46 / 0 in a worktree-free checkout at the SAME commit).
 
