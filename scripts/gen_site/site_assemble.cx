@@ -318,7 +318,7 @@
                VALUE out of it — a regex the engine refused, a file it could
                not read — must not rest in a binding while the listing passes ]
             [?match [$walk-links $out $have]
-              [case [err $e] [$die [$concat "the link walk failed before it could grade: " [$string $e@message]]]]
+              [case [err$e] [$die [$concat "the link walk failed before it could grade: " [$string $e@message]]]]
               [else [$report [$concat $out "/"] $have]]]]]]]
 
 # check-list: the same verdict against a captured LISTING rather than a live

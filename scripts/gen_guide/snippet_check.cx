@@ -81,7 +81,7 @@
 [?def file-fails scope=public impure ($cxbin $tmp $f)
   [?let [= $d [$cx:parse [$io:read-file $f]]]
     [?match $d
-      [case [err $e]
+      [case [err$e]
         ([fail file=$f head='<file does not parse>' [detail $e@message]])]
       [else
         [?for [in $ex $d//example]
@@ -92,7 +92,7 @@
 [?def counts scope=public impure ($f)
   [?let [= $d [$cx:parse [$io:read-file $f]]]
     [?match $d
-      [case [err $e] [c total=0 optout=0]]
+      [case [err$e] [c total=0 optout=0]]
       [else
         [c total=[$count [?for [in $ex $d//example]
                    [where [= $ex@lang 'cx']] [yield 1]]]
@@ -108,7 +108,7 @@
    cry (stderr needs --allow-write), so the ONLY loud channel an
    ungranted program has is a TOP-LEVEL err — return one. ]
 [?match [$io:read-file 'VERSION']
-  [case [err $e]
+  [case [err$e]
     [err code=$e@code message=[$cat ('snippet-check REFUSED: ', $e@message,
       ' — this gate needs --allow-read --allow-write --allow-subprocess',
       ' --allow-env BEFORE the script path')]]]
@@ -146,12 +146,12 @@
                       [else 0]]]
   [= $cited [$fp:fold $files $landing-cited [?fn ($a $f)
               [?match [$cx:parse [$io:read-file $f]]
-                [case [err $e] $a]
+                [case [err$e] $a]
                 [else [+ $a [+ [$count [$cx:parse [$io:read-file $f]]//fixture]
                                [* 2 [$count [$cx:parse [$io:read-file $f]]//pair]]]]]]]]]
   [= $floor [?let [= $v [$cx:parse [$io:read-file 'docs-src/site/voice.cxd']]]
               [?match $v
-                [case [err $e] 0]
+                [case [err$e] 0]
                 [else [$fp:fold [?for [in $k $v//fixtures] [yield [$strings:to-number [$string $k@floor]]]] 0
                                 [?fn ($a $n) $n]]]]]]
   [= $done (
@@ -161,7 +161,7 @@
       [else ()]],
     [?for [in $x $fails] [yield
       [?match $x
-        [case [err $e]
+        [case [err$e]
           ([$cry [$cat ('snippet-check: INTERNAL ERROR — ', $e@message,
                         ' (missing a capability grant? run with --allow-read --allow-write --allow-subprocess --allow-env)')]],
            [$env:exit 2])]

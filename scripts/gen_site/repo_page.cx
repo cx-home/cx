@@ -283,7 +283,7 @@
 
 [?def fixtures-in scope=public impure ($path)
   [?match [$cx:parse [$io:read-file $path]]
-    [case [err $e] [$die [$concat $path " does not parse — " [$string $e@message]]]]
+    [case [err$e] [$die [$concat $path " does not parse — " [$string $e@message]]]]
     [else [?for [in $f [$cx:parse [$io:read-file $path]]//fixture] [yield [$string $f@id]]]]]]
 
 [?def root-name scope=public impure ($path)
