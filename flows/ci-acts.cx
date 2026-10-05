@@ -184,17 +184,28 @@
 # stopped, under devbox's .cmd.sh (#1787), and process:run waited out the
 # whole make-ms budget on it. watched-run spawns the step in a process group
 # of its own and looks every poll-ms. A look counts as QUIET when neither of
-# the step's two log files grew and no LEAF of the group — a process with no
-# child in the group, the one doing the work — used CPU, came or went; any
-# other look resets the count. A look does not count while the runner waits
+# the step's two log files grew and no process of the group but the runner's
+# own used CPU, came or went — a busy parent over a sleeping child is working
+# as much as a busy leaf (REFUTE-1 c7 of batch H5); any other look resets
+# the count. A look does not count while the runner waits
 # for its slot (the slot's pid file names some other holder): queued behind
 # another step is waiting, not stalled. Quiet for stall-ms, the group is sent
-# SIGTERM, then SIGKILL, the tree it was killed in is appended to the step's
-# .log.err, and the answer is exit 124 with stalled=true — so the red names
-# the hang by step instead of the run sitting for hours. The ancestors (the
-# runner's shell, devbox) are left out of the signature on purpose: a runtime
-# that ticks while its child sleeps is not the step working. stall-ms 0
-# turns the watch off; budget-ms bounds the whole step as before.
+# SIGTERM, given 10 s, then SIGKILL whatever the leader did — a member that
+# ignores SIGTERM dies with the rest (c9) — the tree it was killed in is
+# appended to the step's .log.err and the STALLED line after it, last, so the
+# red's cause names the hang (c4); the answer is exit 124 with stalled=true —
+# the red names the hang by step instead of the run sitting for hours. The
+# runner's own processes (build-slot.sh, devbox and its .cmd.sh) are left out
+# of the signature on purpose: a runtime that ticks while its child sleeps is
+# not the step working. stall-ms 0 turns the watch off (ci/make never passes
+# it: flows/load.cxd's bounds are refused unless positive, private-acts'
+# load-refusals); budget-ms bounds the whole step as before.
+#
+# What the watch cannot see, stated: a process that leaves the group
+# (setsid, a double fork into a new session) is not looked at, so a step whose
+# work escaped is judged by what stayed (c8); and a step that polls — a loop
+# that starts a short sleep each turn — comes and goes every look and is never
+# quiet, so it is bounded by budget-ms alone (c12).
 [?def group-rows scope=public impure [returns any] ($pgid)
   [?let [= $r [$process:run ('ps', '-A', '-o', 'pid=,ppid=,pgid=,stat=,time=,command=') timeout-ms=30000]]
     [?to-sequence [?for [in $l [$nonblank-lines [$string $r@stdout]]]
@@ -202,10 +213,13 @@
                     [where [and [>= [$count $w] 6] [= [$nth $w 3] [$string $pgid]]]]
                     [yield $w]]]]]
 
-[?def leaf-signature scope=public pure [returns string] ($rows)
-  [?let [= $parents [?to-sequence [?for [in $w $rows] [yield [$nth $w 2]]]]]
-    [$strings:join [?to-sequence [?for [in $w $rows] [where [not [$member [$nth $w 1] $parents]]]
-                     [yield [$concat [$nth $w 1] '=' [$nth $w 5]]]]] ' ']]]
+# the runner's own processes: build-slot.sh's shell, devbox, devbox's .cmd.sh.
+[?const RUNNER-PROC '(scripts/build-slot\.sh devbox |^devbox |\.devbox/gen/scripts/\.cmd\.sh)']
+
+[?def work-signature scope=public pure [returns string] ($rows)
+  [$strings:join [?to-sequence [?for [in $w $rows]
+                   [where [not [$found [$re:compile $RUNNER-PROC] [$strings:join [?to-sequence [?drop 5 $w]] ' ']]]]
+                   [yield [$concat [$nth $w 1] '=' [$nth $w 5]]]]] ' ']]
 
 [?def tree-text scope=public pure [returns string] ($rows)
   [$strings:join [?to-sequence [?for [in $w $rows]
@@ -227,18 +241,18 @@
           [then [break [proc-result exit-code=[$string $x] stalled='false']]]
           [else [?let [= $rows [$group-rows $pid]]
                       [= $sig [$concat [$string [$file-size $log]] '/' [$string [$file-size [$concat $log '.err']]] ' '
-                                       [$leaf-signature $rows]]]
+                                       [$work-signature $rows]]]
                       [= $q [?if [and [= $sig $mark] [$holds-slot $pidfile $pid]] [then [+ $quiet $poll-ms]] [else 0]]]
                       [= $w [+ $waited $poll-ms]]
                   [?if [and [> $stall-ms 0] [>= $q $stall-ms]]
                     [then [?let [= $tree [$tree-text $rows]]
                                 [= $_t [$process:kill-group $p :term]]
                                 [= $y [$process:wait-timeout $p 10000]]
-                                [= $_k [?if [= [$count [?to-sequence [?concat () $y]]] 0] [then [$process:kill-group $p :kill]] [else null]]]
+                                [= $_k [?fallback [$process:kill-group $p :kill] [recover-with null]]]
                                 [= $_r [?fallback [$process:wait $p] [recover-with 0]]]
                                 [= $_a [$io:append-file [$concat $log '.err']
-                                         [$concat "premerge-flow: STALLED — no line on either stream and no CPU in any leaf of the step's process group for " [$string [/ $q 1000]] ' s (#1787); killed by group. The tree at the kill:' "\n"
-                                                  $tree "\n"]]]
+                                         [$concat "premerge-flow: the step's process group at the kill:\n" $tree "\n"
+                                                  "premerge-flow: STALLED — no line on either stream and no CPU in any process of the step's group for " [$string [/ $q 1000]] ' s (#1787); killed by group, the tree above' "\n"]]]
                             [break [proc-result exit-code='124' stalled='true']]]]
                     [else [?if [>= $w $budget-ms]
                             [then [?let [= $_t [$process:kill-group $p :kill]]
@@ -254,11 +268,13 @@
 # went to stderr while its self-test's 24 green lines went to stdout, and the
 # verdict named the red with no cause. The runner's own lines are no cause —
 # devbox's and rustup's banners, make's recipe-failure line and devbox's exit
-# relay land on stderr after every step — so red-cause leaves them out and
+# relay land on stderr after every step — so red-cause leaves out exactly
+# those lines, whole (a step's own `info: ` or `Error: ` line is a cause,
+# REFUTE-1 c3 of batch H5), and
 # tails each stream on its own, saying which stream and file each tail is;
 # cause-line is the one line of it a table row carries (stderr's last step
 # line, else stdout's).
-[?const RUNNER-LINE '^(Info: |info: |Error: error running script |make(\[[0-9]+\])?: \*\*\* |  stable-[^ ]+ unchanged)']
+[?const RUNNER-LINE '^(Info: New devbox available: .*|Info: Running script "make" on .*|info: using existing install for .*|info: default toolchain set to .*|info: syncing channel updates for .*|  stable-[^ ]+ unchanged( - .*)?|Error: error running script "make" in Devbox: exit status [0-9]+|make(\[[0-9]+\])?: \*\*\* \[[^]]*\] Error [0-9]+)$']
 
 [?def step-lines scope=public impure [returns any] ($path)
   [?to-sequence [?for [in $l [$strings:split [?else [$io:read-file $path] ''] "\n"]]
