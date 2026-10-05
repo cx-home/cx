@@ -183,12 +183,68 @@
   // ── Line-number gutter helpers ────────────────────────────
   // Renders a `\n`-separated column of line numbers and keeps the
   // gutter's scrollTop in sync with the source/output element's.
-  function updateGutter(gutterEl, text) {
+  //
+  // One number per LOGICAL line (#1744): a line the pane wraps keeps one
+  // number, and the next number sits beside the next line, not beside the
+  // wrapped tail. `refEl` is the element that shows the text (the editor's
+  // textarea, an output's <pre>); each line's rendered height is measured
+  // in a hidden mirror styled as that element, and the line's gutter row is
+  // given that height. Where nothing is laid out (a hidden pane, jsdom) the
+  // rows fall back to one text line each, which is exact for unwrapped text.
+  // `mark` (1-based, or 0) is the line an error points at: its number is
+  // marked and titled, so a refusal names the source line it came from.
+  // The numbers are never part of the text: aria-hidden, user-select:none,
+  // and a sibling of the <pre>/<textarea>, so a copy of a pane's text
+  // carries no number.
+  let gutterMirror = null;
+  function lineHeights(refEl, lines) {
+    // A very long text keeps one text line per row: measuring thousands of
+    // lines on every keystroke would cost more than the alignment is worth.
+    if (!refEl || !refEl.clientWidth || lines.length > 2000) return null;
+    const cs = getComputedStyle(refEl);
+    const width = refEl.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+    if (!(width > 0)) return null;
+    if (!gutterMirror) {
+      gutterMirror = document.createElement('div');
+      gutterMirror.setAttribute('aria-hidden', 'true');
+      gutterMirror.style.cssText = 'position:absolute;visibility:hidden;left:-99999px;top:0;padding:0;border:0;margin:0;';
+      document.body.appendChild(gutterMirror);
+    }
+    const m = gutterMirror;
+    m.style.width = width + 'px';
+    for (const k of ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'tabSize',
+                     'whiteSpace', 'wordBreak', 'overflowWrap']) m.style[k] = cs[k];
+    m.textContent = '';
+    const frag = document.createDocumentFragment();
+    for (const l of lines) {
+      const d = document.createElement('div');
+      d.textContent = l === '' ? '\u200b' : l;
+      frag.appendChild(d);
+    }
+    m.appendChild(frag);
+    const hs = [...m.children].map((d) => d.getBoundingClientRect().height);
+    m.textContent = '';
+    return hs.every((h) => h > 0) ? hs : null;
+  }
+  function updateGutter(gutterEl, text, refEl, mark) {
     if (!gutterEl) return;
-    const n = (text || '').split('\n').length;
-    let s = '';
-    for (let i = 1; i <= n; i++) s += i + '\n';
-    gutterEl.textContent = s;
+    const lines = (text || '').split('\n');
+    const hs = lineHeights(refEl, lines);
+    gutterEl.textContent = '';
+    const frag = document.createDocumentFragment();
+    lines.forEach((_, i) => {
+      const row = document.createElement('div');
+      row.className = 'cxp-gutter-row';
+      row.textContent = String(i + 1);
+      if (hs) row.style.height = hs[i] + 'px';
+      if (mark === i + 1) {
+        row.classList.add('is-marked');
+        row.title = 'The error points at line ' + (i + 1);
+      }
+      frag.appendChild(row);
+    });
+    gutterEl.appendChild(frag);
+    gutterEl.dataset.lines = String(lines.length);
   }
   function wireGutterScroll(gutterEl, scrollEl) {
     if (!gutterEl || !scrollEl) return;
@@ -364,7 +420,7 @@
       const raw = el.dataset.raw || '';
       const text = prettyMode ? pretty(lang, raw) : minimised(lang, raw);
       el.innerHTML = highlight(lang, text);
-      updateGutter(outGutters[lang], text);
+      updateGutter(outGutters[lang], text, outPres[lang] && outPres[lang].querySelector('pre'));
     }
     if (fmtBtn) fmtBtn.textContent = prettyMode ? 'Pretty' : 'Minified';
   }
@@ -517,15 +573,41 @@
     return ex.input;
   }
 
+  // The source line the last run's [err] points at (#1744), kept only while
+  // the editor still holds the text that ran: an edit clears it.
+  let errMark = null;
+  function errPosition(text) {
+    if (!/^\s*\[err\b/.test(text || '') && !/cx-err:|CXER\d/.test(text || '')) return null;
+    const m = /\bat='(\d+):(\d+)'/.exec(text) || /\bat="(\d+):(\d+)"/.exec(text)
+           || /\bat line (\d+):(\d+)/.exec(text) || /\bline (\d+):(\d+)/.exec(text);
+    return m ? { line: Number(m[1]), col: Number(m[2]) } : null;
+  }
+  function markFor(ed, text) {
+    return errMark && errMark.ed === ed && errMark.text === text ? errMark.line : 0;
+  }
   function syncRender() {
     if (renderEl) {
       renderEl.innerHTML = highlight('cx', input.value);
-      updateGutter(inputGutter, input.value);
+      updateGutter(inputGutter, input.value, input, markFor('prog', input.value));
     }
     if (docRender) {
       docRender.innerHTML = highlight('cx', docInput.value);
-      updateGutter(docGutter, docInput.value);
+      updateGutter(docGutter, docInput.value, docInput, markFor('doc', docInput.value));
     }
+  }
+  // A pane that changes width rewraps its lines, so the gutter rows are
+  // measured again (one frame later, once per burst of resizes).
+  if (typeof ResizeObserver === 'function') {
+    let gutterFrame = 0;
+    const ro = new ResizeObserver(() => {
+      if (gutterFrame) return;
+      gutterFrame = requestAnimationFrame(() => {
+        gutterFrame = 0;
+        syncRender();
+        applyOutputProjection();
+      });
+    });
+    for (const el of [input, docInput, ...Object.values(outPres)]) if (el) ro.observe(el);
   }
   function syncScroll() {
     if (renderEl) {
@@ -877,6 +959,7 @@
     for (const k of Object.keys(outPres)) {
       outPres[k].classList.toggle('is-active', k === name);
     }
+    applyOutputProjection();   // the pane now shown is laid out: measure its rows
   }
   if (fmtBtn) {
     fmtBtn.addEventListener('click', () => {
@@ -2312,6 +2395,10 @@
       refreshView();
       showVerdict(raw);
       const isErr = /^\s*\[err\b/.test(accumulated);
+      const pos = isErr ? errPosition(accumulated) : null;
+      const ranEd = rd === 'data' ? 'doc' : 'prog';
+      errMark = pos ? { ed: ranEd, line: pos.line, text: ranEd === 'doc' ? doc : input.value } : null;
+      syncRender();
       const note = o.capNote || (grantsNote ? grantsLine(grantsNote) : '');
       if (accumulated) {
         setStatus(note || (isErr ? `Evaluated to an error value — ${accumulated.length} bytes.`
@@ -2345,7 +2432,7 @@
     for (const k of Object.keys(outs)) {
       outs[k].dataset.raw = text;
       outs[k].textContent = text;
-      updateGutter(outGutters[k], text);
+      updateGutter(outGutters[k], text, outPres[k] && outPres[k].querySelector('pre'));
     }
     if (fmtBtn) fmtBtn.textContent = prettyMode ? 'Pretty' : 'Minified';
   }
@@ -2366,5 +2453,7 @@
   // to reach this builder rather than reimplement it; a reimplementation
   // would verify a copy and let the shipped one rot. That is the whole
   // seam: one function, read-only, named for what it is.
-  window.cxPlaygroundInternals = { buildInstanceGraph };
+  // errPosition joins it (#1744): test-playground-nav reads the source line a
+  // refusal names through the page's own reader, not a copy of its regexes.
+  window.cxPlaygroundInternals = { buildInstanceGraph, errPosition };
 })();

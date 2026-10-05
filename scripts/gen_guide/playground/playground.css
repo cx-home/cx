@@ -447,6 +447,16 @@ body.cxp-resizing.is-row { cursor: row-resize; }
   pointer-events: none;
   min-width: 0;
 }
+/* One row per logical line (#1744): playground.js gives a wrapped line's
+   row the line's rendered height, so the next number sits beside the next
+   line; the number is at the top of its row. */
+.cxp-gutter-row { overflow: hidden; }
+/* The line the last run's error points at. */
+.cxp-gutter-row.is-marked {
+  color: var(--err);
+  font-weight: 700;
+  box-shadow: inset -2px 0 0 var(--err);
+}
 /* Source editor gutter is layered (textarea+render are absolute),
    so the gutter participates as a sibling absolute layer. */
 .cxp-editor-wrap > .cxp-gutter {
