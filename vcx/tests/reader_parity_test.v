@@ -639,6 +639,10 @@ const accepted_by_one_table = [
 	// class's own shape, `[$process:run ('sysctl', '-n', 'hw.ncpu') …]` and the
 	// plan's `('bash', 'scripts/test_changed.sh', …)` (RULED: STREAM-1, CXF-1).
 	AcceptedByOne{'scripts/postmerge_steps.cx', .program, reason_1536},
+	// 84 -> 85: #1730's scripts/bare_head_calls_selftest.cx -- the class's own shape,
+	// `[$process:run ([$env:executable-path], '--allow-subprocess', …) …]` running the
+	// two programs as their callers do (RULED: STREAM-1, CXF-1).
+	AcceptedByOne{'scripts/bare_head_calls_selftest.cx', .program, reason_1536},
 	// ── recorded exception — a computed attribute `name=[EXPR]` (25) ──
 	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
 	// 21 -> 22: scripts/check_migrate_namespace_fixtures.cx, RS-4's sweep grader.

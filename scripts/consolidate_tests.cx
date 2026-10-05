@@ -261,7 +261,7 @@
             [?for [in $s $starts]
               [= $non-attach-dists
                 [?for [in $d [$range 1 [- $s 1]]]
-                  [where [not [is-attach $lines[[- $s $d]]]]]
+                  [where [not [$is-attach $lines[[- $s $d]]]]]
                   [yield $d]]]
               [= $first-non
                 [?if [= [$count $non-attach-dists] 0] [then $s] [else $non-attach-dists[1]]]]
