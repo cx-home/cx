@@ -88,7 +88,7 @@
 [?def stamp scope=public ($t)
   [?let [= $m [$re:find [$re:compile "^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})Z$"] $t]]
     [?match $m
-      [case [no-match] 99999999999999]
+      [case () 99999999999999]
       [else [$strings:to-int [$concat [$re:group $m 1] [$re:group $m 2] [$re:group $m 3]
                                         [$re:group $m 4] [$re:group $m 5] [$re:group $m 6]]]]]]]
 [?def member scope=public ($seq $x) [> [$count [?for [in $y $seq] [where [= $y $x]] [yield 1]]] 0]]
@@ -149,7 +149,7 @@
 [?def refusal-line scope=public ($release $key $private $components)
   [?let [= $m [$re:find [$re:compile "^(a|b|c|register):([^#]*)#(.*)$"] $key]]
     [?match $m
-      [case [no-match] [$concat "issue-label-gate: REFUSED " $key]]
+      [case () [$concat "issue-label-gate: REFUSED " $key]]
       [else [?let [= $kind [$re:group $m 1]] [= $repo [$re:group $m 2]] [= $n [$re:group $m 3]]
                   [= $i [$find-issue $repo $n $private $components]]
                   [= $t [?if [or [= $kind "register"] [= [$string $i] "null"]] [then ""] [else [$concat ": '" [$title $i] "'"]]]]

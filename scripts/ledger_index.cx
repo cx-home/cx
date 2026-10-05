@@ -242,7 +242,7 @@
             [= $rows [?to-array [?for [in $l [$nth $sl 2]]
               [= $dm [$re:find $dated-rx $l]]
               [yield [?match $dm
-                       [case [no-match] [subj text=$l new=true]]
+                       [case () [subj text=$l new=true]]
                        [else [subj text=[$re:group $dm 2]
                                    new=[>= [$strings:to-int [$re:group $dm 1]] IDSH-CUTOFF]]]]]]]]
             [= $src [$nth $sl 3]]
