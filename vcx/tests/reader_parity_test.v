@@ -518,13 +518,15 @@ const accepted_by_one_table = [
 	//    and deps/cx-core-data/conformance/ only (pinned_conformance_dir(), RS-7),
 	//    so the entry cannot be repointed at the pin the way a corpus grader's
 	//    would be; it is simply gone from the population this step scans) ──
-	AcceptedByOne{'examples/doc.cx', .data, reason_l25c_residue},
+	// 1 -> 0: examples/doc.cx left with the DATA stream's reader-parity fixes
+	// (cx-core-data#5, #29, #32, #38; RULED: STREAM-1) -- both readers read it;
+	// the judgement below forced the removal.
 	// ── recorded exception — an `&Name;` entity reference (2) ──
 	AcceptedByOne{'examples/cx-tour.cx', .data, reason_entity},
 	AcceptedByOne{'examples/env.cx', .data, reason_entity},
 	// ── recorded exception — a token-initial operator head (1) ──
 	AcceptedByOne{'examples/logs.cx', .data, reason_ophead},
-	// ── recorded exception — a DATA-only lane the program grammar has no form for (5) ──
+	// ── recorded exception — a DATA-only lane the program grammar has no form for (3) ──
 	// 4 -> 6: the front door's two corpora (#1589 item 23, RULED: RS-7, RS-9) -- a
 	// [title] of bare prose carrying a word the program reader takes as a keyword
 	// (`module`, `shape`). The three data-language suites are read at cx-core-data's
@@ -540,8 +542,9 @@ const accepted_by_one_table = [
 	// reader too, so both readers answer one tree; the judgement below forced
 	// the removal.
 	AcceptedByOne{'deps/cx-core-data/conformance/conversions.cxd', .data, reason_datalane},
-	AcceptedByOne{'conformance/docs_fragment.cxd', .data, reason_datalane},
-	AcceptedByOne{'conformance/gates_register.cxd', .data, reason_datalane},
+	// 5 -> 3: conformance/docs_fragment.cxd and conformance/gates_register.cxd
+	// left with the same DATA stream fixes (RULED: STREAM-1) -- the judgement
+	// below forced the removal.
 	AcceptedByOne{'deps/cx-core-data/conformance/fmt.cxd', .data, reason_datalane},
 	AcceptedByOne{'deps/cx-core-data/conformance/xml.cxd', .data, reason_datalane},
 	// ── #1536 — a call-shaped head beside a ws-delimited literal (22) ──
@@ -738,7 +741,7 @@ fn test_accepted_by_one_is_named() {
 		msg := refusals[path] or { '' }
 		assert false, '${first}\n  the refusing reader said: ${msg.all_before('\n')}\n  ${unexplained.len} unexplained of ${observed.len} observed.'
 	}
-	assert stale.len == 0, '${stale[0]}\n  ${stale.len} stale of ${accepted_by_one_table.len} declared.'
+	assert stale.len == 0, stale.join('\n') + '\n  ${stale.len} stale of ${accepted_by_one_table.len} declared.'
 }
 
 // The column's RED-PROOF (1548-c's fixture-first clause): a planted entry the
