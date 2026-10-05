@@ -9118,7 +9118,7 @@ reading what the step checks.
 | 47 | `check-editor-surface-parity` |  | `scripts/check_editor_surface_parity.cx` |
 | 48 | `guide-check` | yes, in the docs flow | `scripts/gen_guide/stdlib_docs_check.cx` |
 | 49 | `guide-snippets-check` |  | `scripts/gen_guide/snippet_check.cx` |
-| 50 | `guide-render-gate` |  | — |
+| 50 | `guide-render-gate` |  | `scripts/gen_guide/theme_check.cx` |
 | 51 | `site-check` | yes, in the docs flow | `scripts/gen_site/site_assemble.cx` |
 | 52 | `directive-docs-check` |  | `scripts/gen_guide/directive_docs_check.cx` |
 | 53 | `verify-doc-blocks` | yes, in the docs flow | `tools/verify-doc-blocks.sh` |
