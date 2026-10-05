@@ -33,7 +33,7 @@ is reported as stale so the row can go.
   [exclude repo=cx-private number=784 why='SHIP-2: not scheduled by its own record — after M5\'s replica consumer']
   [exclude repo=cx-private number=521 why='SHIP-2: trigger-bound — multi-node demand proven by a consumer']
   [exclude repo=cx-private number=517 why='SHIP-2: Windows investigation-only by ruling; no Windows host']
-  [exclude repo=cx-platform-xap number=9 why='SHIP-2: HKEY-1 (Letter 125 = (a)) puts it after the v0.18.0 cut']
+  [exclude repo=cx-platform-xap number=9 why='SHIP-2: HKEY-1 (Letter 125 = (a)) puts it after the v0.18.0 cut']  [; version-literal-ok — the ruling names the cut ]
   [exclude repo=cx-platform-xap number=8 why='SHIP-2: a duplicate of cx-platform-xap#4 (the umbrella\'s pre-split path scans)']
   [exclude repo=cx-platform-xap number=6 why='SHIP-2: a duplicate of cx-platform-xap#4 (the same panic of the pinned layout)']
 

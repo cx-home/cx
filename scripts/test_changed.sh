@@ -1149,7 +1149,7 @@ fi
 # carries (Makefile's `test` recipe): every step's recursive build then hits
 # the vcx Makefile's up-to-date guard and skips the relink. Without it,
 # concurrent sub-makes RELINK target/cx while sibling steps are exec'ing it
-# — the v0.16.0 cut's 'Exec format error' / empty-output-rc-0 class. Adding
+# — the v0.16.0 cut's 'Exec format error' / empty-output-rc-0 class. Adding  (version-literal-ok: incident history)
 # -j here without this would have reintroduced exactly that. Both artifacts
 # are pre-built: `make test` only pre-builds build-vcx, but the steps this
 # script selects depend on build-vcx-dev too, and it is free when current.

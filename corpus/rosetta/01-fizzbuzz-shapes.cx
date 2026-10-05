@@ -1,7 +1,7 @@
 [; FizzBuzz over 1..30, yielding SHAPES rather than printed strings: the
    classifier's answer is an atom (:fizz / :buzz / :fizzbuzz) or the number
    itself, so a caller can dispatch on it instead of re-parsing text.
-   Rewritten for the v0.8.0 surface (RULED: VC-28); the original was
+   Rewritten for the current surface (RULED: VC-28); the original was
    pre-reshape (`:in 1 to 30 :yield`, retired infix range). ]
 [?for [in $n [$range 1 30]]
   [yield

@@ -166,7 +166,7 @@ structural, not procedural:
   examples that embed inner `"""` via `\"\"\"` render with literal backslashes
   under the in-memory path (the old multi-subprocess pipeline masked this via a
   non-idempotent text round-trip). This is a core-language question, tracked in
-  `spec/02-inprogress/triple_quote_escape_bijection.md` — not a renderer bug.
+  `cx-decisions:spec/_archived/triple_quote_escape_bijection.md` — not a renderer bug.
 - **Collapse the 4-level child unroll.** `render-doc` unrolls `[child]` nesting
   to four levels; now that CX has user-defined functions (`[?def]`), it could be
   a single recursive `render-block` call.

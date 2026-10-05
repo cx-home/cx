@@ -5038,8 +5038,8 @@ the part that matters.
 ## A retired verb tells you what replaced it
 
 A verb that once existed and no longer does answers with **its own
-retirement**, never with "unknown subcommand". `cx store-token`, retired at
-v0.16.0, is the current example — it says the bearer/RBAC plane is gone, that
+retirement**, never with "unknown subcommand". `cx store-token` is the
+current example — it says the bearer/RBAC plane is gone, that
 store credentials are now XSP-AUTH principals granted in the daemon config,
 and which verb mints one. Retirement entries are kept indefinitely.
 
@@ -9609,7 +9609,7 @@ deny-by-default daemon → the client presents its DID.**
 
 #### Retired verbs answer for themselves
 
-`cx store-token` was retired at v0.16.0 — the bearer/RBAC plane is gone. It
+`cx store-token` is retired — the bearer/RBAC plane is gone. It
 does not answer "unknown subcommand"; it names its own retirement and points
 at the replacement. If you recall a store verb that is not in `cx --help`,
 run it: the tool will tell you what replaced it.

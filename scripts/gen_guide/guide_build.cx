@@ -1033,7 +1033,7 @@
 
 [# ── Standard-library projection ──────────────────────────────────────────
    Reads the co-located [module-doc] / [fn-doc] blocks in stdlib/<m>.cx
-   (single source of truth; spec/02-inprogress/stdlib_colocated_docs.md) and
+   (single source of truth; spec/03-approved/process/stdlib_colocated_docs.md) and
    reshapes them into guide [section] trees — one page per module + a landing
    index. Pure projection: read → [$cx:parse] → extract → reshape. #]
 
@@ -1253,7 +1253,7 @@
         [h1 'Directive reference']
         [p class="lede"
           'Every directive in the closed directive registry ('
-          [code 'spec/core/code.md'] ' §4.1) — the bracketed '
+          [code 'spec/03-approved/core/code.md'] ' §4.1) — the bracketed '
           [code '[?…]'] ' forms that drive pattern dispatch, comprehensions, '
           'binding, iterators, resilience, services, concurrency, and async. '
           'Each entry is generated from the co-located reference source and, '

@@ -1,6 +1,6 @@
 [# Conformance gate policy — the cx-wide gate REGISTER (derived).
 
-   DEFAULT = enforced (deny-by-default, mirroring spec/core/security.md's grant
+   DEFAULT = enforced (deny-by-default, mirroring spec/03-approved/core/security.md's grant
    model): a failing fixture BLOCKS its gate. A suite marked `advisory` is the
    spec-first frontier — its failures are RUN and REPORTED but do NOT block the
    gate. Promote `advisory -> enforced` as the implementation lands; that

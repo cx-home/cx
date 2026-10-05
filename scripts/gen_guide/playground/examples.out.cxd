@@ -1042,9 +1042,9 @@ C
 [shop [product sku=A1 name=widget price=9.99] [product sku=A2 name=gadget price=19.99] [customer id=1 name=alice [order id=100 [item sku=A1 qty=2] [item sku=A2 qty=1]]] [customer id=2 name=bob [order id=102 [item sku=A2 qty=3]]]]
 #]]
  ]
- [ex key=168-erd-large-org-structure chars=552
+ [ex key=168-erd-large-org-structure chars=558
   [out-text [#
-[company [department id=1 name=engineering [team id=10 name=parser [employee id=100 name=alice role=lead] [employee id=101 name=bob role=engineer]] [team id=11 name=runtime [employee id=102 name=carol role=engineer]]] [department id=2 name=design [team id=20 name=ux [employee id=200 name=dave role=designer]]] [project id=1000 name='v0.8.0' [owner employee-id=100] [milestone date='2026-06-01' status=active] [milestone date='2026-08-01' status=planned]] [project id=1001 name=docs [owner employee-id=200] [milestone date='2026-07-01' status=active]]]
+[company [department id=1 name=engineering [team id=10 name=parser [employee id=100 name=alice role=lead] [employee id=101 name=bob role=engineer]] [team id=11 name=runtime [employee id=102 name=carol role=engineer]]] [department id=2 name=design [team id=20 name=ux [employee id=200 name=dave role=designer]]] [project id=1000 name=parser-rewrite [owner employee-id=100] [milestone date='2026-06-01' status=active] [milestone date='2026-08-01' status=planned]] [project id=1001 name=docs [owner employee-id=200] [milestone date='2026-07-01' status=active]]]
 #]]
  ]
  [ex key=169-cfg-small-bare-if chars=3

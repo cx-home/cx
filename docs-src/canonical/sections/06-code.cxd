@@ -24,7 +24,7 @@
          err_out)` at the C ABI level; every binding's Layer-1
          `Doc.eval(code)` wraps it (see [[bindings]]). The full
          normative spec is
-         [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md).
+         [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md).
          This section is the working developer guide."""]
 
     [body
@@ -41,7 +41,7 @@
          exactly the way you pattern-match on `[user ...]`. You can
          transform code with `[?modify]`. You can hash it, project it
          to JSON, ship it across a wire, and evaluate it on the other
-         end. The render rules in [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)
+         end. The render rules in [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)
          §10.1 turn any well-formed program into a sequence diagram
          deterministically — because the program is just a tree."""]
 
@@ -57,9 +57,9 @@
     [intro
       """There are currently **eighty normative directives**.
          Adding or removing any directive requires a governance change per
-         [`spec/process/governance.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/process/governance.md). The
+         [`spec/03-approved/process/governance.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/process/governance.md). The
          authoritative registry lives in
-         [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §4.1; this
+         [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §4.1; this
          subsection is an at-a-glance grouping of the directives this
          guide teaches — see the registry for the complete set."""]
 
@@ -158,7 +158,7 @@
          specified** but not all are wired through every binding
          yet. The reference evaluator carries the spec-conformant
          implementation; the bindings follow per the parity matrix in
-         [`spec/misc/parity-matrix.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/parity-matrix.md). Where
+         [`spec/03-approved/misc/parity-matrix.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/parity-matrix.md). Where
          a feature is spec'd-but-not-shipped this guide says so
          explicitly."""]]
 
@@ -166,7 +166,7 @@
     [intro
       """CXPath is the single selector vocabulary across reading,
          iteration, dispatch, and update. It aligns with XPath 3.1
-         (see [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §5.5)
+         (see [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §5.5)
          with deliberate divergences kept minimal. **Path is a value
          kind**, not parser sugar — paths compile, cache, round-trip
          through every projection, and visualize as themselves."""]
@@ -303,13 +303,13 @@
         """**Status note.** CXPath value-kind at non-`[?for]`
            positions is production-ready in V; full Tier-2 binding parity is
            tracked in
-           [`spec/misc/parity-matrix.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/parity-matrix.md)."""]]
+           [`spec/03-approved/misc/parity-matrix.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/parity-matrix.md)."""]]
 
     [child id=cxpath-divergences n=6.3.6 title='Deliberate divergences from XPath 3.1'
       [body
         """CXPath is a working subset of XPath 3.1 + deliberate
            changes. The normative treatment is
-           [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §5.5;
+           [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §5.5;
            the headline differences:"""]
       [list
         [item """**One comparison family** (`= != < <= > >=`) —
@@ -338,7 +338,7 @@
       [note
         """The normative CXPath treatment — semantics, the desugar
            table, and predicate evaluation — is
-           [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §5.5;
+           [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §5.5;
            the XPath 3.1 parity corpus is
            [`conformance/xpath_31_parity.cxd`](https://github.com/cx-home/cx-core-code/blob/main/conformance/xpath_31_parity.cxd)."""]]]
 
@@ -349,7 +349,7 @@
          (`:TypeName`), scalar literals, and CXPath values. Patterns
          appear in `[?for]`'s first generator, in `[?match]` arms,
          and in destructuring `[?let]`. The full pattern grammar is
-         in [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §5."""]
+         in [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §5."""]
 
     [child id=pattern-element-shape n=6.4.1 title='Element-shape patterns'
       [body
@@ -371,7 +371,7 @@
            structured body binds the element. A pattern
            `[NAME @attr… $x]` **with** attribute predicates always
            binds `$x` to the matched element. The rationale is in
-           [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §5.2 rule 5: when
+           [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §5.2 rule 5: when
            you name attributes you are filtering "what kind of
            element", so the bind value is the element; when you
            don't, the bind value is the inner content."""]]
@@ -508,7 +508,7 @@
            couples the generator to a streaming input source so that
            the iteration runs in bounded memory regardless of input
            size. Full semantics in
-           [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §7."""]
+           [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §7."""]
       [body
         """**Multiple `[where …]` clauses** AND together; **multiple
            `[yield …]` clauses** concatenate (per the sequence-flat
@@ -567,7 +567,7 @@
         """**Status.** Multi-arm `[?match]` is fully spec'd.
            V's evaluator carries the production-ready
            implementation; Tier-2 binding parity is per
-           [`spec/misc/parity-matrix.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/parity-matrix.md)."""]]
+           [`spec/03-approved/misc/parity-matrix.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/parity-matrix.md)."""]]
 
     [child id=if n=6.6.3 title='[?if] — boolean branch (with EBV)'
       [body
@@ -591,7 +591,7 @@
       [child id=ebv n=6.6.3.1 title='EBV — the Effective Boolean Value rule'
         [body
           """The EBV rule, applied in order (per
-             [`spec/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md) §4.6):"""]
+             [`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md) §4.6):"""]
         [list
           [item """**Empty sequence** `()` → false."""]
           [item """**Single Scalar** of kind `bool` → that bool's
@@ -697,7 +697,7 @@
         """**Status.** `[?modify]` is fully spec'd.
            The V evaluator carries the production-ready
            implementation. Tier-2 binding parity is tracked in
-           [`spec/misc/parity-matrix.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/parity-matrix.md)."""]]
+           [`spec/03-approved/misc/parity-matrix.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/parity-matrix.md)."""]]
 
     [child id=pipe n=6.6.6 title='Pipelines and composition'
       [body
@@ -757,7 +757,7 @@
          layer. They are pure-functional, total over their
          declared input types, and stable across bindings.
          Full normative table in
-         [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §6.5; the
+         [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §6.5; the
          subsections below organize the ~47 names by category."""]
 
     [body
@@ -926,7 +926,7 @@
          element with kind `[err :code "cx-err:CXERnnnn" …]`. It
          can be passed around, pattern-matched, transformed, and
          recovered from. Full error registry in
-         [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §9.5."""]
+         [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §9.5."""]
 
     [body
       """**Propagation operators.** Two postfix operators thread
@@ -979,7 +979,7 @@
         """The CXER0100–0299 range is reserved for code-language
            errors. Errors are organized into subsystems by tens
            digits. The complete normative map is in
-           [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §9.5 — this
+           [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §9.5 — this
            subsection is the developer-facing summary."""]
 
       [body
@@ -993,7 +993,7 @@
       [body
         """Nearby classes that are **not** CXER010x: anchor / merge
            errors are data-language `E` codes
-           ([`spec/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md) §11);
+           ([`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md) §11);
            a sized-integer literal out of range is the lex-time
            `CXERLEX-RANGE` refusal; a failed `cast` is `CXER0290`
            (E_CAST_FAILED), recovered by matching on the code or
@@ -1069,7 +1069,7 @@
          every channel send, every worker call, every async
          await sees only immutable values, so there is no
          shared-mutable-state hazard. Spec:
-         [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §10.3–§10.5."""]
+         [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §10.3–§10.5."""]
 
     [child id=services n=6.9.1 title='Services and clients'
       [body
@@ -1195,7 +1195,7 @@
         """**Shape.** `[?select]` clauses are clause-children:
            `[case [from CH $msg] HANDLER]` for a receive and
            `[case [timeout DURATION] HANDLER]` for a deadline. The
-           [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)
+           [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)
            §10.4.7 registry holds the authoritative shape. The v0.7.x `:case [:from CH $msg H]` [; version-literal-ok ]
            colon-slot form is retired — there is no dual-accept."""]]
 
@@ -1270,7 +1270,7 @@
       [body
         """**Status.** Async/await is a stable surface of the
            reference evaluator; binding parity ships per
-           [`spec/misc/parity-matrix.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/parity-matrix.md)."""]]]
+           [`spec/03-approved/misc/parity-matrix.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/misc/parity-matrix.md)."""]]]
 
   [child id=resilience n=6.10 title='Resilience directives'
     [intro
@@ -1278,7 +1278,7 @@
          expression with a failure-handling policy. They are
          not new control-flow primitives — they are normal CX
          code with cleanly-named policies. Spec:
-         [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §10.2."""]
+         [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §10.2."""]
 
     [body
       """**Common error shape.** Every resilience directive
@@ -1503,7 +1503,7 @@
              `program-cxpath-fncall-slice-composition`
              verifies grammar disambiguation against the fused
              predicate-body closure
-             ([`spec/formal/grammar.ebnf`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/formal/grammar.ebnf)
+             ([`spec/03-approved/formal/grammar.ebnf`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/formal/grammar.ebnf)
              [159b]) — bare-fn-call, path predicate, and slice
              postfix coexist."""]
 
@@ -1533,11 +1533,11 @@
   [child id=cxpath-quickref n=6.12 title='CXPath reference — quick form'
     [intro
       """At-a-glance CXPath reference. The normative grammar lives
-         in [`spec/formal/grammar.ebnf`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/formal/grammar.ebnf)
+         in [`spec/03-approved/formal/grammar.ebnf`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/formal/grammar.ebnf)
          productions [130]/[131]/[135] (path steps / binding paths) and
          [159]/[160a] (general PredicateExpr + the `(bind $name)`
          step annotation). XPath 3.1 alignment and divergences are
-         in [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §5.5.
+         in [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md) §5.5.
          CXPath is a first-class value kind;
          general predicates with `$_` / `$_position` / `$_last`."""]
 
@@ -1641,9 +1641,9 @@
          value. Bindings preserve this shape so `[?match]` can match
          on code rather than on text. The catalog below
          covers the current ranges; the normative registry is
-         [`spec/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)
+         [`spec/03-approved/core/code.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md)
          §9.4/§9.5, with the governance rules for code allocation in
-         [`spec/process/governance.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/process/governance.md)
+         [`spec/03-approved/process/governance.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/process/governance.md)
          §9.6."""]
 
     [child id=errors-security n=6.13.1 title='Capability and runtime caps'

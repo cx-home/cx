@@ -96,14 +96,23 @@
 [?const STRAY-FILES ('README.md', 'ROADMAP.md', 'CONTRIBUTING.md', 'SECURITY.md')]
 
 # ── Check 5: dead spec paths (#1166 C1) ─────────────────────────────────
-[?const SPEC-PATH-RX [$re:compile "spec/[A-Za-z0-9_./-]+\\.(?:md|ebnf|txt)"]]
+# A citation may name its repository, `<repo>:spec/…` or a GitHub URL
+# `github.com/cx-home/<repo>/blob/<ref>/spec/…`: one deps.cxd pins is
+# resolved in its checkout; one registry/repos.cxd names but this tree does
+# not pin (cx-decisions — the process specs, the working and archived spec
+# trees since the split) cannot be read here and is taken as the deliberate
+# cross-repository citation it spells. An unprefixed path resolves here or in
+# any pin.
+[?const SPEC-PATH-RX [$re:compile "(?:([a-z][a-z0-9-]*):|github\\.com/cx-home/([a-z0-9-]+)/(?:blob|tree)/[^/ )]+/)?(spec/[A-Za-z0-9_./-]+\\.(?:md|ebnf|txt))"]]
+[?const REPO-ROW-RX [$re:compile "\\[repo name=([a-z0-9-]+)"]]
 [?const SPEC-MARKER "spec-path-ok"]
 
 # Dirs never scanned (build artifacts / vendored deps / immutable history).
 [?const STRAY-EXCLUDE-DIRS ('node_modules','dist','_archive','_archived',
                             '_gate_evidence')]
 
-# Whole files allowed to carry release literals as legitimate history.
+# Whole files allowed to carry release literals (and the spec paths of
+# their day) as legitimate history.
 [?const STRAY-ALLOW-FILES (
   'docs-src/canonical/sections/10-migration.cxd',
   'ledger/partition_I5_audit.md')]
@@ -121,13 +130,27 @@
 # (already prefiltered to files whose whole text matches).
 [?def stray-line scope=public ($line)
   [?match [$re:find STRAY-RX $line] [case [no-match] false] [else true]]]
-[?def stray-hits-in scope=public impure ($p)
-  [?let [= $lines [$strings:split-lines [$io:read-file $p]]]
+# A history block — a released-versions table, say — is exempt whole between
+# a line carrying `version-literal-ok:begin` and one carrying
+# `version-literal-ok:end` (in Markdown, inside an HTML comment, so a reader
+# never sees it); every line between is a deliberate survivor (#1166 C1).
+[?def in-history-block scope=public ($lines $i)
+  [?let [= $opens [?for [in $k [$range 1 $i]] [where [$strings:contains [$nth $lines $k] [$concat STRAY-MARKER ":begin"]]] [yield $k]]]
+        [= $closes [?for [in $k [$range 1 $i]] [where [$strings:contains [$nth $lines $k] [$concat STRAY-MARKER ":end"]]] [yield $k]]]
+    [> [$count $opens] [$count $closes]]]]
+[?def stray-hits-in-text scope=public ($p $text)
+  [?let [= $lines [$strings:split-lines $text]]
+        [= $blocks [$strings:contains $text [$concat STRAY-MARKER ":begin"]]]
     [?for [in $i [$range 1 [$count $lines]]]
       [= $line [$nth $lines $i]]
       [where [not [$strings:contains $line STRAY-MARKER]]]
       [where [$stray-line $line]]
+      [where [not [and $blocks [$in-history-block $lines $i]]]]
+      [; the README version badge is check 3's: stamped by bump_version.sh, equal to VERSION ]
+      [where [not [$strings:contains $line "badge/version-v"]]]
       [yield [$concat $p ":" [$string $i] ": " [$strings:trim-end $line]]]]]]
+[?def stray-hits-in scope=public impure ($p)
+  [$stray-hits-in-text $p [$io:read-file $p]]]
 
 # live-files: every file of the scanned trees and the root documents.
 [?def live-files scope=public impure ()
@@ -160,13 +183,24 @@
       [= $line [$nth $lines $i]]
       [where [not [$strings:contains $line SPEC-MARKER]]]
       [in $m [$re:find-all SPEC-PATH-RX $line]]
-      [= $sp [$re:group $m 0]]
-      [where [not [$spec-resolves $sp $bases]]]
-      [yield [$concat $p ":" [$string $i] ": " $sp]]]]]
+      [= $r1 [$string [?else [$re:group $m 1] ""]]]
+      [= $repo [?if [= $r1 ""] [then [$string [?else [$re:group $m 2] ""]]] [else $r1]]]
+      [= $sp [$re:group $m 3]]
+      [where [not [?if [= $repo ""] [then [$spec-resolves $sp $bases]]
+                    [else [?if [$io:is-directory [$concat "deps/" $repo]]
+                            [then [$spec-resolves $sp ([$concat "deps/" $repo],)]]
+                            [else [$has-repo $repo]]]]]]]
+      [yield [$concat $p ":" [$string $i] ": " [?if [= $repo ""] [then ""] [else [$concat $repo ":"]]] $sp]]]]]
+
+# has-repo: registry/repos.cxd carries a row of that name.
+[?def has-repo scope=public impure ($repo)
+  [> [$count [?for [in $m [$re:find-all REPO-ROW-RX [?else [$io:read-file "registry/repos.cxd"] ""]]]
+               [where [= [$re:group $m 1] $repo]] [yield 1]]] 0]]
 
 [?def dead-spec-hits scope=public impure ()
   [?let [= $bases [$cat-seqs ((".",), [$io:glob "deps/*"])]]
     [?for [in $p [$cat-seqs ([$live-files], ('Makefile',))]]
+      [where [not [$allowed-file $p]]]
       [in $hit [$dead-spec-hits-in $p $bases]]
       [yield $hit]]]]
 
@@ -174,11 +208,11 @@
 # positives — a matcher that silently stops matching turns this gate into
 # a no-op; these assertions make that a red build.
 [?const MUST-MATCH (
-  "// shipped in v0.8.0",
-  "**Status:** Current for v0.11.0.",
-  "error('only foo is recognised at v0.7.6')",
-  "see v1.2.3-rc1 notes",
-  "deferred to v0.8.x refinement")]
+  [$concat "// shipped in v" "0.8.0"],
+  [$concat "**Status:** Current for v" "0.11.0."],
+  [$concat "error('only foo is recognised at v" "0.7.6')"],
+  [$concat "see v" "1.2.3-rc1 notes"],
+  [$concat "deferred to v" "0.8.x refinement"])]
 [?const MUST-NOT-MATCH (
   "// see §9.1.2 and §6.4.2",
   "bind_host := '127.0.0.1'",
@@ -196,30 +230,40 @@
       ([?for [in $s MUST-NOT-MATCH] [where [$rx-hits $s]]
         [yield [$concat "self-test: matcher false-positived on: '" $s "'"]]]),
       [$spec-self-test],
+      [?let [= $h [$stray-hits-in-text "t" [$concat "a v" "0.1.0 line\n<!-- " STRAY-MARKER ":begin -->\n| v" "0.2.0 | x |\n<!-- "
+                                                   STRAY-MARKER ":end -->\nafter v" "0.3.0\n"]]]
+        [?if [and [= [$count $h] 2] [$strings:contains [$string [$first $h]] "t:1:"] [$strings:contains [$string [$nth $h 2]] "t:5:"]]
+          [then ()]
+          [else ([$concat "self-test: the history block did not exempt exactly its own lines: " [$strings:join [?for [in $x $h] [yield [$string $x]]] " | "]],)]]],
       [?if [and [$strings:contains $marked STRAY-MARKER] [$rx-hits $marked]]
         [then ()]
         [else ("self-test: marker fixture is malformed")]])]]]
 
 # spec-self-test: a planted tree — a live path here, a live path only in a
-# planted pin, a dead path, a dead path on a marked line, and a path ended
-# by prose punctuation — must yield exactly the dead unmarked one.
+# planted pin, a dead path, a dead path on a marked line, a path ended by
+# prose punctuation, a cx-decisions: citation (a registry repository this
+# tree does not pin) and one naming no repository row — must yield exactly
+# the dead unmarked path and the unknown repository's.
 [?def spec-self-test scope=public impure ()
   [?let [= $root [$io:temp-dir "spec-paths-"]]
         [= $_a [$io:make-dirs [$concat $root "/spec/03-approved/core"]]]
         [= $_b [$io:write-file [$concat $root "/spec/03-approved/core/code.md"] "x"]]
         [= $_c [$io:make-dirs [$concat $root "/pin/spec/03-approved/std-lib"]]]
-        [= $_d [$io:write-file [$concat $root "/pin/spec/03-approved/std-lib/io.md"] "x"]]
+        [= $_d [$io:write-file [$concat $root "/pin/spec" "/03-approved/std-lib/io.md"] "x"]]
         [= $f [$concat $root "/doc.md"]]
         [= $_e [$io:write-file $f [$concat "see spec/03-approved/core/code.md.\n"
-                                       "and spec/03-approved/std-lib/io.md\n"
-                                       "the old spec/code.md is gone\n"
-                                       "planted spec/thing.md -- " "spec-path-ok\n"]]]
+                                       "and spec" "/03-approved/std-lib/io.md\n"
+                                       "the old spec" "/code.md is gone\n"
+                                       "planted spec/thing.md -- " "spec-path-ok\n"
+                                       "cx-decisions:spec/03-approved/core/cx_partition.md\n"
+                                       "nosuchrepo:spec" "/03-approved/core/cx_partition.md\n"]]]
         [= $hits [$dead-spec-hits-in $f ($root, [$concat $root "/pin"])]]
         [= $_r [$io:remove-tree $root]]
-    [?if [and [= [$count $hits] 1] [$strings:ends-with [$string [$first $hits]] ":3: spec/code.md"]]
+    [?if [and [= [$count $hits] 2] [$strings:ends-with [$string [$first $hits]] [$concat ":3: spec" "/code.md"]]
+              [$strings:ends-with [$string [$nth $hits 2]] [$concat ":6: nosuchrepo:spec" "/03-approved/core/cx_partition.md"]]]
       [then ()]
       [else ([$concat "self-test: the dead-spec-path check answered " [$string [$count $hits]]
-                      " hit(s) on the planted tree (want exactly line 3's spec/code.md): "
+                      " hit(s) on the planted tree (want line 3's dead path and line 6's unknown-repository citation): "
                       [$strings:join [?for [in $h $hits] [yield [$string $h]]] " | "]],)]]]]
 
 # read-or: file text, or the [missing] sentinel.

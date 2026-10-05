@@ -1,5 +1,5 @@
 [; Blog post in plain element markup: headings, inline markup, code blocks,
-   lists, blockquote, link. All v0.8.0 — no markdown surface. ]
+   lists, blockquote, link. All CX — no markdown surface. ]
 
 [article
   [h1 CX in Practice: A Field Guide]

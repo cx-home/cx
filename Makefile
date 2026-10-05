@@ -729,7 +729,7 @@ wasm-bundle-fresh:
 	@OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/check_wasm_fresh.sh
 
 # Optional Apache Arrow C-Data interop library (libcx_arrow per ADR
-# 0015 D9 / spec/abi.md §2.11). Separate from libcx; a binding dlopens
+# 0015 D9 / spec/03-approved/core/abi.md §2.11). Separate from libcx; a binding dlopens
 # this library independently — none is built from this tree any more
 # (RULED: RS-12, RS-8; #1591 item K3: the four active bindings left whole).
 build-lib-arrow: build-vcx
@@ -2098,7 +2098,7 @@ check-version-consistency: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 check-version-consistency: build-vcx
 	@"$(CX_BIN)" --allow-read --allow-write scripts/check_version_consistency.cx
 
-# ── check-null-absence-conflation gate (SAP C1 / spec/core/code.md §9.1.2.1
+# ── check-null-absence-conflation gate (SAP C1 / spec/03-approved/core/code.md §9.1.2.1
 # rule (b)) — the no-conflation guard: no builtin returns `null` to mean
 # "absent." An optional read signals "nothing here" via the absence channel
 # (the empty sequence `()`), never `null`. Token-aware: it flags the
@@ -2111,7 +2111,7 @@ check-null-absence-conflation: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/
 check-null-absence-conflation:
 	@"$(CX_BIN)" --allow-read --allow-write scripts/check_null_absence_conflation.cx
 
-# ── ALIGNMENT gate (SAP C2 / spec/core/code.md §6.5.1) — the one-way
+# ── ALIGNMENT gate (SAP C2 / spec/03-approved/core/code.md §6.5.1) — the one-way
 # capability-alignment invariant: (1) every capability-gated effect point is
 # reached only through an `impure` builtin (gated ⇒ impure, by construction in
 # builtin_purity_table); (2) every impure-without-capability builtin is in the
@@ -3185,7 +3185,7 @@ reader-parity: build-vcx
 # graded against an expectation DERIVED from that same binary. Before VC-7 those
 # 23 cases had no conformance/gates.cxd row and no step read them, so they ran
 # NOWHERE while the register showed a gate. Normative reference:
-# spec/02-working/cxpath_alignment.md. In TEST_TARGETS.
+# cx-decisions:spec/02-working/cxpath_alignment.md. In TEST_TARGETS.
 .PHONY: test-xpath-parity-cx
 test-xpath-parity-cx: CX_RUNNER ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 test-xpath-parity-cx: build-vcx
@@ -3234,7 +3234,7 @@ test-xpath-parity: build-vcx
 # it. Catches the boundary-surface bugs binding rollouts have surfaced
 # (size-header garbage, double-free on Export error, NULL-input
 # rejection) at the source instead of via N binding rollouts. See
-# spec/abi.md §1.5 / §2.10 / §2.11 for the surface;
+# spec/03-approved/core/abi.md §1.5 / §2.10 / §2.11 for the surface;
 # deps/cx-core-code/tests/abi/c_abi_test.c for what is exercised.
 #
 # Sanitizer choice: UBSan only by default. Apple clang's AddressSanitizer
@@ -4655,7 +4655,8 @@ bench-streaming: build-vcx
 	$(PATCHED_V) -prod run deps/cx-core-code/vcx/tests/runners/streaming_bench.v
 
 # cxparse unification — parser perf baseline / per-phase N3 gate
-# (spec/02-inprogress/cxparse_unification_PLAN.md §6). MUST use the patched V:
+# (the cxparse unification plan's §6 — removed as spent in abd068d4d; read it
+# with `git show abd068d4d^ -- spec/02-inprogress/`). MUST use the patched V:
 # the PATH/devbox V bundles a boehm GC source-compile that corrupts the heap
 # during collection and segfaults in -prod on macOS (the patched V carries the
 # hardened-runtime libgc bypass — same reason bench-streaming uses $(PATCHED_V)).
@@ -4673,7 +4674,7 @@ bench-eval: build-vcx
 # ── v0.8.0 §11.6 release-gate harnesses ────────────────────────────────────────
 #
 # Each target runs one of the three perf gates blocking the v0.8.0 tag
-# (conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded), spec/code.md §11.4.4). Exit code
+# (conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded), spec/03-approved/core/code.md §11.4.4). Exit code
 # is 0 on PASS, non-zero on FAIL; CI consumes the gate verdict line.
 # The benches print their threshold + measured numbers so PASS/FAIL is
 # self-evident in logs. Env knobs documented in each .v file header.

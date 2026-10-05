@@ -1,5 +1,5 @@
 #!/bin/sh
-# campaign-status.sh — what the autonomous v0.18.0 campaign is doing right now.
+# campaign-status.sh — what the autonomous release campaign is doing right now.
 #
 #   sh scripts/campaign-status.sh          # one snapshot
 #   watch -n 30 sh scripts/campaign-status.sh

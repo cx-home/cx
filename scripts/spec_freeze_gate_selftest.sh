@@ -29,7 +29,7 @@ trap 'rm -rf "$T"' EXIT
   git add -A && git commit -qm "seed ledger"
 
   sha_of_mixed() { # $1 = message
-    printf 'spec\n' >> spec/03-approved/thing.md
+    printf 'spec\n' >> spec/03-approved/thing.md  # spec-path-ok (a planted path)
     printf 'impl\n' >> vcx/thing.v
     git add -A && git commit -qm "$1"
     git rev-parse HEAD
@@ -53,7 +53,7 @@ trap 'rm -rf "$T"' EXIT
   fi
 
   # D — spec-only, no token → must pass
-  printf 'spec only\n' >> spec/03-approved/thing.md
+  printf 'spec only\n' >> spec/03-approved/thing.md  # spec-path-ok (a planted path)
   git add -A && git commit -qm "spec-only change"
   bash "$GATE" --check-commit "$(git rev-parse HEAD)" || {
     echo "SELFTEST FAILED: scenario D (spec-only) was refused" >&2; exit 1; }
@@ -84,7 +84,7 @@ trap 'rm -rf "$T"' EXIT
   # gate must REFUSE (R6.1 tree check; the per-commit classifier deliberately
   # treats the legacy spelling as ledger-class for history, so the tree check
   # is the only thing standing between the carve-out and a loophole)
-  printf 'sneaky ledger\n' > spec/02-working/partition_sneaky.md
+  printf 'sneaky ledger\n' > spec/02-working/partition_sneaky.md  # spec-path-ok (a planted path)
   git add -A && git commit -qm "re-enter the legacy namespace"
   if bash "$GATE" 2>/dev/null; then
     echo "SELFTEST FAILED: scenario I (legacy-namespace file at HEAD) passed the default-mode gate" >&2; exit 1

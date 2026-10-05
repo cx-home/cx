@@ -3,7 +3,7 @@
 **Status:** Current
 
 This document records per-binding compliance with the parity rule in
-[`spec/process/governance.md`](../process/governance.md). Active
+[`spec/03-approved/process/governance.md`](../process/governance.md). Active
 bindings in scope: **V (native)**, **Python**, **Go**, **Rust**.
 
 ---

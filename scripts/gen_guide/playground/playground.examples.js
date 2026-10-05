@@ -483,7 +483,7 @@
     "57-map-par-bulkhead": {
       label: "[57] [par N] bounds the width \u2014 [?bulkhead] isolates the failure",
       input: "[?map (1, 2, 3, 4, 5, 6, 7, 8)\n  [using [?fn $shard\n           [?bulkhead max-concurrent=8\n             [?if [= $shard 5]\n               [then [err code=\"shard-offline\" shard=$shard]]\n               [else [* $shard $shard]]]]]]\n  [par 2]]",
-      note:  "**Introduces:** `[par N]` \u2014 the width bound. Since #94 **`[par]` owns its own concurrency**: `[par 2]` runs a two-worker pool over the eight shards (bare `[par]` defaults to `min(4, ncpu)`, `[par max]` uses `ncpu`). `[?bulkhead]` is *not* the fan-out limiter \u2014 that lint was retired \u2014 so the compartment here is sized to the whole batch (`max-concurrent=8`) and never sheds.\n\nWhat it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and that failure stays in shard 5's own slot. The other seven still return their squares and the batch completes \u2014 a failed compartment does not sink the ship. Output is always source order (\u00a77.3), so the result is the same every run and in the browser.\n\n**Why not show `CXER0152`?** A `[?bulkhead]` can only shed when two workers contend for the last permit, and *which* one loses is thread timing \u2014 a program with no single answer. `[?bulkhead]` is EXPERIMENTAL (spec/code.md \u00a710.2.6): its permit counter is a non-atomic read-modify-write, so under real contention the cap is not reliably enforced in either direction. For production load-shedding reach for `[?rate-limit]` (examples 96\u201397) or a buffered `[?channel]`.",
+      note:  "**Introduces:** `[par N]` \u2014 the width bound. Since #94 **`[par]` owns its own concurrency**: `[par 2]` runs a two-worker pool over the eight shards (bare `[par]` defaults to `min(4, ncpu)`, `[par max]` uses `ncpu`). `[?bulkhead]` is *not* the fan-out limiter \u2014 that lint was retired \u2014 so the compartment here is sized to the whole batch (`max-concurrent=8`) and never sheds.\n\nWhat it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and that failure stays in shard 5's own slot. The other seven still return their squares and the batch completes \u2014 a failed compartment does not sink the ship. Output is always source order (\u00a77.3), so the result is the same every run and in the browser.\n\n**Why not show `CXER0152`?** A `[?bulkhead]` can only shed when two workers contend for the last permit, and *which* one loses is thread timing \u2014 a program with no single answer. `[?bulkhead]` is EXPERIMENTAL (spec/03-approved/core/code.md \u00a710.2.6): its permit counter is a non-atomic read-modify-write, so under real contention the cap is not reliably enforced in either direction. For production load-shedding reach for `[?rate-limit]` (examples 96\u201397) or a buffered `[?channel]`.",
       tags:  ["bulkhead", "eq", "fn", "if", "map", "mul", "parallel", "resilience"],
       section: "code/comprehensions",
       runnable: true,
@@ -491,7 +491,7 @@
     "58-par-shared-cb": {
       label: "[58] [?map :par] \u2014 shared [?circuit-breaker]",
       input: "[?map (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)\n  [using [?fn $n\n           [?circuit-breaker threshold=0.5 window=1s reset=10s name=\"shared\"\n             [* $n $n]]]]\n  [par]]",
-      note:  "**Introduces:** state-sharing under `[par]`. The named `[?circuit-breaker]` shares state across parallel workers per spec/code.md \u00a710.2.7 \u2014 same source-text directive = one shared breaker.",
+      note:  "**Introduces:** state-sharing under `[par]`. The named `[?circuit-breaker]` shares state across parallel workers per spec/03-approved/core/code.md \u00a710.2.7 \u2014 same source-text directive = one shared breaker.",
       tags:  ["circuit-breaker", "fn", "map", "mul", "parallel", "resilience"],
       section: "code/resilience",
       runnable: true,
@@ -1162,7 +1162,7 @@
     "141-reachability-1hop": {
       label: "[141] Graph \u2014 one-hop reachability",
       input: "[?let [= $g [triples\n              [t s=A p=knows o=B]\n              [t s=A p=knows o=C]\n              [t s=B p=knows o=D]]]\n  [?for [in $t $g//t[and [= $_@s \"A\"] [= $_@p \"knows\"]]]\n    [yield $t/@o]]]",
-      note:  "**Pattern:** who can `A` reach in one hop via `knows`? **Uses:** `[and [= $_@s \"A\"] [= $_@p \"knows\"]]` compound predicate. RHS literals are quoted (`\"A\"` / `\"knows\"`) \u2014 bare-identifier RHS in operator predicates currently produces no matches and is a separate spec ambiguity, distinct from gaps A/B/C. Multi-hop reachability needs recursion; v0.8.0 surfaces single-hop cleanly.",
+      note:  "**Pattern:** who can `A` reach in one hop via `knows`? **Uses:** `[and [= $_@s \"A\"] [= $_@p \"knows\"]]` compound predicate. The right-hand literals are quoted here (`\"A\"` / `\"knows\"`); a bare `A` / `knows` reads the same. Multi-hop reachability needs recursion; this example stays at one hop.",
       tags:  ["and", "builtin", "cxpath", "descendant", "eq", "for", "let"],
       section: "code/queries",
       runnable: true,
@@ -1322,7 +1322,7 @@
     "161-sequence-worker-top": {
       label: "[161] Sequence diagram \u2014 top-level `[?worker]`",
       input: "[?worker name=\"task\"\n  [?let [= $_ [?sleep 100ms mock]]\n    [ok value=\"done\"]]]",
-      note:  "**Pattern:** background task as program entry-point. **Diagram:** because the program is sequence-shaped the emitter switches to Mermaid `sequenceDiagram` instead of `flowchart TD` (per spec/code.md \u00a710.1.2). The worker becomes an actor lifeline with its body events as messages along that lifeline. A trigger reached through a `[?let]` binding counts too \u2014 `[?let [= $w [?worker \u2026]] \u2026]` is still a sequence, since the binding only aliases the lifeline (examples 171-172 are that shape).",
+      note:  "**Pattern:** background task as program entry-point. **Diagram:** because the program is sequence-shaped the emitter switches to Mermaid `sequenceDiagram` instead of `flowchart TD` (per spec/03-approved/core/code.md \u00a710.1.2). The worker becomes an actor lifeline with its body events as messages along that lifeline. A trigger reached through a `[?let]` binding counts too \u2014 `[?let [= $w [?worker \u2026]] \u2026]` is still a sequence, since the binding only aliases the lifeline (examples 171-172 are that shape).",
       tags:  ["eq", "let", "mock", "sleep", "worker"],
       section: "code/diagrams",
       runnable: true,
@@ -1378,7 +1378,7 @@
     },
     "168-erd-large-org-structure": {
       label: "[168] ERD \u2014 company / department / team / project (large)",
-      input: "[company\n  [department id=1 name=\"engineering\"\n    [team id=10 name=\"parser\"\n      [employee id=100 name=\"alice\" role=\"lead\"]\n      [employee id=101 name=\"bob\" role=\"engineer\"]]\n    [team id=11 name=\"runtime\"\n      [employee id=102 name=\"carol\" role=\"engineer\"]]]\n  [department id=2 name=\"design\"\n    [team id=20 name=\"ux\"\n      [employee id=200 name=\"dave\" role=\"designer\"]]]\n  [project id=1000 name=\"v0.8.0\"\n    [owner employee-id=100]\n    [milestone date=\"2026-06-01\" status=\"active\"]\n    [milestone date=\"2026-08-01\" status=\"planned\"]]\n  [project id=1001 name=\"docs\"\n    [owner employee-id=200]\n    [milestone date=\"2026-07-01\" status=\"active\"]]]",
+      input: "[company\n  [department id=1 name=\"engineering\"\n    [team id=10 name=\"parser\"\n      [employee id=100 name=\"alice\" role=\"lead\"]\n      [employee id=101 name=\"bob\" role=\"engineer\"]]\n    [team id=11 name=\"runtime\"\n      [employee id=102 name=\"carol\" role=\"engineer\"]]]\n  [department id=2 name=\"design\"\n    [team id=20 name=\"ux\"\n      [employee id=200 name=\"dave\" role=\"designer\"]]]\n  [project id=1000 name=\"parser-rewrite\"\n    [owner employee-id=100]\n    [milestone date=\"2026-06-01\" status=\"active\"]\n    [milestone date=\"2026-08-01\" status=\"planned\"]]\n  [project id=1001 name=\"docs\"\n    [owner employee-id=200]\n    [milestone date=\"2026-07-01\" status=\"active\"]]]",
       note:  "**Pattern:** organizational hierarchy with cross-cutting projects \u2014 the canonical 'real schema' shape. **Diagram:** large ERD with 7 types (company, department, team, employee, project, owner, milestone); `full` level surfaces the inferred-FK candidate `owner.employee-id \u2192 employee.id` as a dashed link (FK inference is name-only \u2014 no schema). 4-deep nesting + sibling-projects exercises the path-walker. Use this as the 'step-back' test: at `compact` the layout stays readable; at `full` per-attribute value enumeration is where the renderer must decide what to truncate.",
       tags:  [],
       section: "code/diagrams",

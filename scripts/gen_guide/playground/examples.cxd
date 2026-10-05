@@ -809,7 +809,7 @@ line 3''']
 
 What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and that failure stays in shard 5's own slot. The other seven still return their squares and the batch completes — a failed compartment does not sink the ship. Output is always source order (§7.3), so the result is the same every run and in the browser.
 
-**Why not show `CXER0152`?** A `[?bulkhead]` can only shed when two workers contend for the last permit, and *which* one loses is thread timing — a program with no single answer. `[?bulkhead]` is EXPERIMENTAL (spec/code.md §10.2.6): its permit counter is a non-atomic read-modify-write, so under real contention the cap is not reliably enforced in either direction. For production load-shedding reach for `[?rate-limit]` (examples 96–97) or a buffered `[?channel]`.
+**Why not show `CXER0152`?** A `[?bulkhead]` can only shed when two workers contend for the last permit, and *which* one loses is thread timing — a program with no single answer. `[?bulkhead]` is EXPERIMENTAL (spec/03-approved/core/code.md §10.2.6): its permit counter is a non-atomic read-modify-write, so under real contention the cap is not reliably enforced in either direction. For production load-shedding reach for `[?rate-limit]` (examples 96–97) or a buffered `[?channel]`.
 #]]
  ]
 
@@ -824,7 +824,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
   [par]]
 #]]
   [note [#
-**Introduces:** state-sharing under `[par]`. The named `[?circuit-breaker]` shares state across parallel workers per spec/code.md §10.2.7 — same source-text directive = one shared breaker.
+**Introduces:** state-sharing under `[par]`. The named `[?circuit-breaker]` shares state across parallel workers per spec/03-approved/core/code.md §10.2.7 — same source-text directive = one shared breaker.
 #]]
  ]
 
@@ -2028,7 +2028,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
     [yield $t/@o]]]
 #]]
   [note [#
-**Pattern:** who can `A` reach in one hop via `knows`? **Uses:** `[and [= $_@s "A"] [= $_@p "knows"]]` compound predicate. RHS literals are quoted (`"A"` / `"knows"`) — bare-identifier RHS in operator predicates currently produces no matches and is a separate spec ambiguity, distinct from gaps A/B/C. Multi-hop reachability needs recursion; v0.8.0 surfaces single-hop cleanly.
+**Pattern:** who can `A` reach in one hop via `knows`? **Uses:** `[and [= $_@s "A"] [= $_@p "knows"]]` compound predicate. The right-hand literals are quoted here (`"A"` / `"knows"`); a bare `A` / `knows` reads the same. Multi-hop reachability needs recursion; this example stays at one hop.
 #]]
  ]
 
@@ -2309,7 +2309,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
     [ok value="done"]]]
 #]]
   [note [#
-**Pattern:** background task as program entry-point. **Diagram:** because the program is sequence-shaped the emitter switches to Mermaid `sequenceDiagram` instead of `flowchart TD` (per spec/code.md §10.1.2). The worker becomes an actor lifeline with its body events as messages along that lifeline. A trigger reached through a `[?let]` binding counts too — `[?let [= $w [?worker …]] …]` is still a sequence, since the binding only aliases the lifeline (examples 171-172 are that shape).
+**Pattern:** background task as program entry-point. **Diagram:** because the program is sequence-shaped the emitter switches to Mermaid `sequenceDiagram` instead of `flowchart TD` (per spec/03-approved/core/code.md §10.1.2). The worker becomes an actor lifeline with its body events as messages along that lifeline. A trigger reached through a `[?let]` binding counts too — `[?let [= $w [?worker …]] …]` is still a sequence, since the binding only aliases the lifeline (examples 171-172 are that shape).
 #]]
   [wasm-unsupported [#`[?worker]` spawns an OS thread; the playground's default single-threaded wasm build refuses it (`go code__run_worker_thread(): Not supported`).#]]
  ]
@@ -2427,7 +2427,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
   [department id=2 name="design"
     [team id=20 name="ux"
       [employee id=200 name="dave" role="designer"]]]
-  [project id=1000 name="v0.8.0"
+  [project id=1000 name="parser-rewrite"
     [owner employee-id=100]
     [milestone date="2026-06-01" status="active"]
     [milestone date="2026-08-01" status="planned"]]

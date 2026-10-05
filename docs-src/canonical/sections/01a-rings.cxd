@@ -1,6 +1,6 @@
 [# Section 1a — The rings and the platform group.
    WORKED EXAMPLE for the #826 restructure proposal
-   (spec/_archived/docs_restructure_826.md §5). Authored 2026-08-17.
+   (cx-decisions:spec/_archived/docs_restructure_826.md §5). Authored 2026-08-17.
    Brought current under RS-1/RS-27 (D52a): "Ring 2" and "Ring 3" left the
    vocabulary — the platform, bindings and ecosystem GROUPS sit above the
    two frozen rings instead (RULED: RS-1, RS-27).
@@ -10,7 +10,7 @@
    much of CX you take on, and the import contract arrives second as the
    promise that keeps that true — not as the definition.
 
-   Authority: spec/03-approved/core/cx_partition.md §2 (the rings) and §3 (the
+   Authority: cx-decisions:spec/03-approved/core/cx_partition.md §2 (the rings) and §3 (the
    import contracts). The business-facing account stays in
    the value map that became [[enterprise]] (09-enterprise.cxd) and links here.
 

@@ -27,8 +27,8 @@ want='' is a case the gate passes.
   [case id=a-unlabelled-new want='a:cx-private#1790'
     [private '[{"number": 1790, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [{"name": "bug"}], "milestone": null}]']]
   [case id=a-label-near-miss want='a:cx-private#1790 a:cx-private#1791'
-    [private '[{"number": 1790, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [{"name": "v7.7.1"}], "milestone": null},
-                 {"number": 1791, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [{"name": "V7.7"}], "milestone": null}]']]
+    [private '[{"number": 1790, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [{"name": "v0.18-rc"}], "milestone": null},
+                 {"number": 1791, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [{"name": "V0.18"}], "milestone": null}]']]
   [case id=a-unlabelled-before-cutoff want=''
     [private '[{"number": 1700, "created_at": "2026-10-02T23:59:58Z", "title": "x", "labels": [], "milestone": null}]']]
   [case id=a-unlabelled-excluded want=''

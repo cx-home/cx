@@ -158,8 +158,8 @@
           # an external one, not a CX record
           "examples/etl_conventions_cx.md",
           # shipped/frozen release notes — historical record, grandfathered
-          "RELEASE_NOTES_v0.6.0.md",
-          "RELEASE_NOTES_v0.8.0.md",
+          "RELEASE_NOTES_v0.6.0.md",  [; version-literal-ok — a release-notes file name ]
+          "RELEASE_NOTES_v0.8.0.md",  [; version-literal-ok — a release-notes file name ]
           # the TABLED I5 adversarial audit report (read-only record): its
           # gate-registry table QUOTES the archived rows it found evaporated —
           # describing the archived record, never citing it as authority.

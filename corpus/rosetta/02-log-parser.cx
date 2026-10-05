@@ -1,7 +1,7 @@
 [; Classify log lines into typed entries. The point is that the OUTPUT is
    structure, not text: each line becomes an [entry] element carrying a level
    atom, so a consumer filters by shape instead of re-matching the message.
-   Rewritten for the v0.8.0 surface (RULED: VC-28); the original was
+   Rewritten for the current surface (RULED: VC-28); the original was
    pre-reshape (`[?let $x = … :in]`, `contains(a, b)` call-parens,
    `:level :error` atom-as-attribute-name). ]
 [?let [= $lines ("2026-05-26 10:00:00 INFO  app starting",
