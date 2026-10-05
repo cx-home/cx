@@ -528,6 +528,11 @@ pub:
 	status string // 'graded' | 'skip' | 'other-lane' | 'skip-pack'
 	gate   string // the effective gate for a graded row
 	note   string // the reason a skipped row carries
+pub mut:
+	// us is a graded row's wall time in microseconds — the #1515 per-case
+	// stopwatch, read when the case's grading ends (start-up excluded) — which
+	// `cx corpus --times` prints (GAPS-1, cx-private#1813 §24); -1 otherwise.
+	us i64 = -1
 }
 
 pub struct Outcome {
