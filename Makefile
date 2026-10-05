@@ -5517,16 +5517,12 @@ test-connector-real: build-vcx
 ##                  The directory's six other test files ran on no step
 ##                  either (#1798): the fulfilment, host-courier, render,
 ##                  serve-capability, surface-routes and unservable-verb
-##                  cases, several on ports — the same class. Four are green
-##                  out of the pin and run here; render and surface-routes
-##                  assert a quoted printed spelling the serializer prints
-##                  bare (cx-platform-xap issue 10) and join when it lands —
-##                  then the step reads every *_test.v of the directory.
-XAP_UMBRELLA_TESTS := deps/cx-platform-xap/vcx/tests/xap_umbrella_test.v \
-                      deps/cx-platform-xap/vcx/tests/xap_fulfilment_test.v \
-                      deps/cx-platform-xap/vcx/tests/xap_host_courier_test.v \
-                      deps/cx-platform-xap/vcx/tests/xap_serve_cap_test.v \
-                      deps/cx-platform-xap/vcx/tests/xap_unservable_verb_test.v
+##                  cases, several on ports — the same class. The step reads
+##                  every *_test.v of the directory: render and
+##                  surface-routes joined when cx-platform-xap issue 10 (the
+##                  quoted printed spelling the serializer prints bare)
+##                  landed (RULED: STREAM-1).
+XAP_UMBRELLA_TESTS = $(sort $(wildcard deps/cx-platform-xap/vcx/tests/*_test.v))
 .PHONY: test-xap-umbrella
 test-xap-umbrella: build-vcx-dev
 	@test -f deps/cx-platform-xap/vcx/tests/xap_umbrella_test.v || { \
@@ -5575,36 +5571,19 @@ test-mail-real: build-vcx-dev
 ##                  gate.yml runs deps, deps-check, lint, corpus and build, and
 ##                  `make build` compiles vcx/ and runs nothing under vcx/tests/.
 ##                  So #1551's ephemeral-bind tests and the real-socket service
-##                  tests ran only by hand. Fifteen of the pin's twenty
-##                  vcx/tests/ files are green out of the pin and run here;
-##                  five wait on cx-platform-net issue 5 (quoted printed
-##                  spellings, a GNU timeout) — then every *_test.v of the
-##                  directory (the bench runners under runners/ are
-##                  check-bench-runners-compile's). Against this tree's
+##                  tests ran only by hand. Every *_test.v of the pin's
+##                  vcx/tests/ runs here (the bench runners under runners/
+##                  are check-bench-runners-compile's): the last five joined
+##                  when cx-platform-net issue 5 (quoted printed spellings, a
+##                  GNU timeout) landed (RULED: STREAM-1). Against this tree's
 ##                  cx-dev; load-SENSITIVE (flows/load.cxd: real listeners,
 ##                  TLS, DTLS).
-NET_REAL_TESTS := deps/cx-platform-net/vcx/tests/http_client_real_test.v \
-                  deps/cx-platform-net/vcx/tests/http_client_tls_transport_test.v \
-                  deps/cx-platform-net/vcx/tests/http_gzip_test.v \
-                  deps/cx-platform-net/vcx/tests/http_h2_serve_test.v \
-                  deps/cx-platform-net/vcx/tests/http_redirect_test.v \
-                  deps/cx-platform-net/vcx/tests/http_server_real_test.v \
-                  deps/cx-platform-net/vcx/tests/http_service_real_socket_test.v \
-                  deps/cx-platform-net/vcx/tests/http_slow_handler_isolation_test.v \
-                  deps/cx-platform-net/vcx/tests/http_sse_real_test.v \
-                  deps/cx-platform-net/vcx/tests/http_umbrella_test.v \
-                  deps/cx-platform-net/vcx/tests/http_ws_real_test.v \
-                  deps/cx-platform-net/vcx/tests/net_dtls_test.v \
-                  deps/cx-platform-net/vcx/tests/net_real_socket_test.v \
-                  deps/cx-platform-net/vcx/tests/real_services_umbrella_test.v \
-                  deps/cx-platform-net/vcx/tests/testdata_no_private_key_test.v
+NET_REAL_TESTS = $(sort $(wildcard deps/cx-platform-net/vcx/tests/*_test.v))
 .PHONY: test-net-real
 test-net-real: build-vcx-dev
-	@for t in $(NET_REAL_TESTS); do \
-	  test -f $$t || { \
-	    echo "test-net-real: $$t is not there — the tests live in the pinned repository (RULED: RS-12); run \`make deps-sync\`" >&2; \
-	    exit 2; }; \
-	done
+	@test -f deps/cx-platform-net/vcx/tests/net_real_socket_test.v || { \
+	  echo "test-net-real: deps/cx-platform-net/vcx/tests/net_real_socket_test.v is not there — the tests live in the pinned repository (RULED: RS-12); run \`make deps-sync\`" >&2; \
+	  exit 2; }
 	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(NET_REAL_TESTS)
 
 ## test-db-real  The whole db corpus on sqlite, postgres AND mysql, the
