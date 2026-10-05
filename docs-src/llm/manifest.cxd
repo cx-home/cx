@@ -117,7 +117,9 @@ deps/cx-core-code/conformance/stdlib/validate
     [summary [#
 The one file to load before writing CX. The surface taught through runnable
 examples, a ring decision table, the core idioms, and the anti-patterns that
-Lisp/Clojure/shell priors produce — each with its real diagnostic.
+Lisp/Clojure/shell priors produce — each with its real diagnostic — and,
+near the top, the forms a model arriving from another language reaches for
+that do not exist, each beside the cx form.
 #]]]
 
   [output id=data out='reference-data-language.md'
