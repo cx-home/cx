@@ -21,8 +21,12 @@
 # What is scanned: the served sources docs_voice_check.cx scans (the landing,
 # the guide sections and about page, the repository pages, the reference
 # sources, the LLM templates, the dev pages) plus the playground's
-# playground.js and playground.html and the guide generator (the navigation's
-# labels are its strings).
+# playground.js and playground.html, the primer bundle playground.primer.js
+# and the jspi_probe.html page served beside them (REFUTE-1 c15 of batch H5),
+# its served examples bundle
+# playground.examples.js with the examples.cxd it is generated from and the
+# examples.out.cxd answers beside it (cx-private issue 1785), and the guide
+# generator (the navigation's labels are its strings).
 # And the tree's own prose (RULED: WORDS-1): the [tree] rows of the
 # vocabulary file name the words (today "lane") also held over the Makefile,
 # flows/, scripts/, the approved specs and the three root rule files, in the
@@ -58,6 +62,11 @@
                "docs-src/llm/*.tmpl", "docs-src/llm/primer-platform.chapter.md",
                "scripts/gen_guide/playground/playground.js",
                "scripts/gen_guide/playground/playground.html",
+               "scripts/gen_guide/playground/playground.primer.js",
+               "scripts/gen_guide/playground/jspi_probe.html",
+               "scripts/gen_guide/playground/playground.examples.js",
+               "scripts/gen_guide/playground/examples.cxd",
+               "scripts/gen_guide/playground/examples.out.cxd",
                "scripts/gen_guide/guide_build.cx")]
 
 [?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]

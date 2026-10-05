@@ -1,7 +1,7 @@
-# scripts/check_lint_rules.cx — V6, the pre-commit lint rules (v0.8.0 V-row).
+# scripts/check_lint_rules.cx — V6, the pre-commit lint rules (the V-row).
 #
 # Checks staged (or all-tracked) .cx files for breaking-rename violations and
-# retired v0.7.x syntax forms that the v0.8.0 parser rejects. Failing the gate
+# retired syntax forms that the parser rejects. Failing the gate
 # at commit time is cheaper than failing it in CI.
 #
 # Rules (each prefixed with a short ID for grep-able output):
@@ -12,7 +12,7 @@
 #        as a low-signal heuristic that something with directives is being
 #        touched.
 #   L02  .cx file uses the retired attribute-slot form (a colon-then /
-#        colon-else assignment) → ERROR (the v0.8.0 parser rejects this
+#        colon-else assignment) → ERROR (the parser rejects this
 #        shape). The trigger tokens are spelled via $cat below so this
 #        file never flags itself.
 #   L03  .cx file uses the bare cond directive → ERROR.

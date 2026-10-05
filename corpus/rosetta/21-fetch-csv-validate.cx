@@ -2,7 +2,7 @@
    satisfy a schema — the minimum viable agentic data-ingest pipeline, written
    as three [?def]s so each stage is separately nameable and testable.
 
-   Rewritten for the v0.8.0 surface (RULED: VC-28, completing the corpus-wide
+   Rewritten for the current surface (RULED: VC-28, completing the corpus-wide
    migration the other five programs got on 2026-08-25). The original was
    pre-reshape throughout: `:scope`/`:returns`/`:pure` colon-slot modifiers on
    [?def] (retired — grammar [152a] refuses them by name), the

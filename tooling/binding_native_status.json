@@ -1,5 +1,5 @@
 {
-  "comment": "Per-binding native-implementation dashboard. Tracks which program-evaluator-surface features each binding's native path covers vs which routes through the libcx C ABI. The evaluator family is cx_code_eval / cx_code_eval_with_len / cx_code_eval_streaming / cx_code_diagram (spec/abi.md §2.16.1 + §2.16.2). Active binding set per backlog d-2026-05-22-03: V / Python / Go (Tier 1, c-abi-passthrough by design, locked at parity) + Rust (Tier 2, catches up once per release). All other bindings live in lang/_archived/.",
+  "comment": "Per-binding native-implementation dashboard. Tracks which program-evaluator-surface features each binding's native path covers vs which routes through the libcx C ABI. The evaluator family is cx_code_eval / cx_code_eval_with_len / cx_code_eval_streaming / cx_code_diagram (spec/03-approved/core/abi.md §2.16.1 + §2.16.2). Active binding set per backlog d-2026-05-22-03: V / Python / Go (Tier 1, c-abi-passthrough by design, locked at parity) + Rust (Tier 2, catches up once per release). All other bindings live in lang/_archived/.",
   "version": "current",
   "as_of": "2026-07-14",
   "bindings": {
@@ -32,7 +32,7 @@
     }
   },
   "frozen_bindings": {
-    "typescript": {"tier": 3, "status": "archived", "reason": "Archived to lang/_archived/ per backlog d-2026-05-22-03 (active set is V/Python/Go/Rust); restoration is community opt-in once the Layer-1 16-method surface stabilizes (spec/bindings.md)"},
+    "typescript": {"tier": 3, "status": "archived", "reason": "Archived to lang/_archived/ per backlog d-2026-05-22-03 (active set is V/Python/Go/Rust); restoration is community opt-in once the Layer-1 16-method surface stabilizes (spec/03-approved/misc/bindings.md)"},
     "csharp": {"tier": 3, "status": "archived", "reason": "Not in the d-2026-05-22-03 active set; in lang/_archived/"},
     "java":   {"tier": 3, "status": "archived", "reason": "Same"},
     "kotlin": {"tier": 3, "status": "archived", "reason": "Same"},

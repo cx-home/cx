@@ -1,7 +1,7 @@
 [; scripts/release_asset_links_gate.cx -- the release ASSET portability gate
    (#1670).
 
-   WHY THIS EXISTS. v0.17.0's shipped darwin-arm64 asset loaded a Nix-store
+   WHY THIS EXISTS. v0.17.0's shipped darwin-arm64 asset loaded a Nix-store  (version-literal-ok: incident history)
    sqlite by absolute path:
 
      /nix/store/dbgh5dmm0w2ya1rjwm7by3vb91chgkij-sqlite-3.53.3/lib/libsqlite3.dylib
@@ -12,9 +12,9 @@
    already makes the CLASS impossible to reintroduce in a fresh build --
    but that gate reads `vcx/target/` directly, and nothing reads the actual
    STAGED release assets (`dist/public/*.tar.gz`, what a user's `curl | sh`
-   really extracts) before a cut ships them. v0.17.0 was tagged BEFORE
+   really extracts) before a cut ships them. v0.17.0 was tagged BEFORE  (version-literal-ok: incident history)
    check_portable_links.cx existed at all (#1102, 2026-08-29 landing, two
-   days after the v0.17.0 tag) -- the R2.2 install gate never saw the class
+   days after the v0.17.0 tag) -- the R2.2 install gate never saw the class  (version-literal-ok: incident history)
    because nothing in the release PIPELINE asked the question.
 
    THIS gate closes that: it scans every asset in a release staging
@@ -35,7 +35,7 @@
    STAGED, TARBALLED asset a user actually downloads carry the defect",
    scoped to the release pipeline, and it is ELF-aware where the other
    deliberately is not (linux was out of scope there -- "SKIP", by design,
-   since v0.17.0's linux asset was measured clean; #1670 asks this gate to
+   since v0.17.0's linux asset was measured clean; #1670 asks this gate to  (version-literal-ok: incident history)
    MEASURE that claim on every cut rather than assume it forever).
 
    Wired into the release flow's package act, the R2.2 stage (scripts/lib/r22_profile_gate.sh)
@@ -43,7 +43,7 @@
    the cut does not proceed on a refusal. Also `make check-release-asset-links`
    (TEST_TARGETS), which runs it against whatever is currently staged, and the
    self-test (scripts/release_asset_links_selftest.sh, #1672 files the shell
-   gap for the download half) which proves it RED on the real v0.17.0 darwin
+   gap for the download half) which proves it RED on the real v0.17.0 darwin  (version-literal-ok: incident history)
    asset and GREEN on this tree's own build. ]
 
 [?lib 'cx-stdlib/io']

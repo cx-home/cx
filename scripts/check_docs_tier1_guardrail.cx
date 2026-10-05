@@ -1,7 +1,7 @@
 # scripts/check_docs_tier1_guardrail.cx — the check-docs-tier1-guardrail gate
 # (spec-authoring-guide.md §4) — learnability.
 #
-# The §4 progressive-disclosure rule (`spec/process/spec-authoring-guide.md`)
+# The §4 progressive-disclosure rule (`spec/03-approved/process/spec-authoring-guide.md`)
 # is normative for the guide: CX's mantra is "easy to learn and fun to code,"
 # so the depth the errors/effects/fp layer adds (four channels, an fp
 # protocol, effect-totality, concurrency) is **available, never required**.

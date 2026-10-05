@@ -107,7 +107,7 @@ function setupFail(msg, hint) {
 // #1377 (the view axis): a subject is now drawn under SIX views, not two,
 // so an example costs ~30 MB of arena instead of ~10 (measured: RSS
 // 295 → 692 MB over examples 1-14 in one instance, `V panic: memory
-// allocation failure` at example 15; the lane saw the same wall at 19 as
+// allocation failure` at example 15; the step saw the same wall at 19 as
 // 240 cascading "Program terminated with exit(1)" failures). Twenty per
 // shard no longer fits the 512 MB wasm ceiling, and six does not either:
 // 168-erd-large-org-structure ALONE grows the process by ~310 MB across its

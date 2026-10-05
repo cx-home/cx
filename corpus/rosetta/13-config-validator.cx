@@ -1,7 +1,7 @@
 [; Validate a config document by asking the SHAPE questions rather than
    walking it: does a port exist, does a host exist. The document is data and
    the check is a path query over it, which is the whole point of the exercise.
-   Rewritten for the v0.8.0 surface (RULED: VC-28); the original was
+   Rewritten for the current surface (RULED: VC-28); the original was
    pre-reshape (`[?let $x = … :in]`, `count(…)` call-parens, `:backoff 100ms`
    atom-as-attribute-name). ]
 [?let [= $config [config

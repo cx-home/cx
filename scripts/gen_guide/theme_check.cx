@@ -1,0 +1,220 @@
+# scripts/gen_guide/theme_check.cx — the guide's dark mode, gated (#1418, the
+# owner's directive of 2026-09-11; RULED: STREAM-1, CXF-1).
+#
+# The site's whole visual layer is scripts/gen_guide/style.css. Two complete
+# palettes, three states: the light palette on bare `:root`; the dark one
+# under `@media (prefers-color-scheme: dark)` guarded as
+# `:root:not([data-theme="light"])`, and again under `:root[data-theme="dark"]`,
+# so an explicit choice wins in both directions. This check refuses:
+#   - a colour token of the light `:root` that either dark block does not
+#     define, and a dark-block token the light palette does not have;
+#   - a colour literal (#hex, rgb()/rgba(), hsl()/hsla()) anywhere but a token
+#     definition line (`--name: value;`), comments aside — a colour with no
+#     token cannot follow the theme;
+#   - a text/ground token pair (PAIRS below) whose contrast is under WCAG AA
+#     (4.5:1) in any of the three palettes — the issue's "contrast at WCAG AA
+#     in both modes", computed from the tokens (WCAG 2.x relative luminance),
+#     not eyeballed;
+#   - a rendered page that carries the sheet bar but not the theme toggle
+#     (`data-theme-toggle`), the head script that applies a stored choice
+#     before paint (`cx-theme`), or `<meta name="color-scheme">`.
+# The playground is the one page without the sheet bar: it is the dark
+# instrument bench in either mode by design (its stylesheet says so).
+#
+#   cx --allow-read --allow-write --allow-env scripts/gen_guide/theme_check.cx [--pages <dir>]…
+#   cx --allow-read --allow-write --allow-env scripts/gen_guide/theme_check.cx --self-test
+# (guide-render-gate runs both, the pages being docs/guide/ it just rendered.)
+# Exit 0 green; 1 a refusal (each named on stderr).
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/math'    as=math]
+
+[?const STYLE 'scripts/gen_guide/style.css']
+[?const COLOR [$re:compile "#[0-9a-fA-F]{3,8}\\b|rgba?\\(|hsla?\\("]]
+[?const DECL [$re:compile "--([a-z0-9-]+)\\s*:\\s*([^;]+);"]]
+[?const COMMENT [$re:compile "(?s)/\\*.*?\\*/"]]
+[?const LIGHT [$re:compile ":root\\s*\\{([^}]*)\\}"]]
+[?const DARK-MEDIA [$re:compile "(?s)@media\\s*\\(prefers-color-scheme:\\s*dark\\)\\s*\\{\\s*:root:not\\(\\[data-theme=\"light\"\\]\\)\\s*\\{([^}]*)\\}"]]
+[?const DARK-EXPLICIT [$re:compile ":root\\[data-theme=\"dark\"\\]\\s*\\{([^}]*)\\}"]]
+[?const TOKEN-LINE [$re:compile "^\\s*--[a-z0-9-]+\\s*:"]]
+
+# The text-on-ground pairs the stylesheet draws: prose, links and labels on the
+# sheet, the sidebar and the output panels; the code panel's text, labels,
+# copy states and every highlight class on the code ground.
+[?const PAIRS (('ink', 'paper'), ('ink-soft', 'paper'), ('accent', 'paper'), ('accent-dark', 'paper'), ('muted', 'paper'), ('faint', 'paper'),
+               ('ink', 'paper-deep'), ('ink-soft', 'paper-deep'), ('accent', 'paper-deep'), ('muted', 'paper-deep'), ('faint', 'paper-deep'),
+               ('ink', 'paper-panel'), ('ink-soft', 'paper-panel'), ('accent', 'paper-panel'), ('muted', 'paper-panel'), ('faint', 'paper-panel'),
+               ('code-fg', 'code-bg'), ('code-label', 'code-bg'), ('copy-ok', 'code-bg'), ('copy-fail', 'code-bg'),
+               ('hl-comment', 'code-bg'), ('hl-string', 'code-bg'), ('hl-number', 'code-bg'), ('hl-literal', 'code-bg'), ('hl-keyword', 'code-bg'),
+               ('hl-element', 'code-bg'), ('hl-directive', 'code-bg'), ('hl-sigil', 'code-bg'), ('hl-type', 'code-bg'), ('hl-attr', 'code-bg'), ('hl-fn', 'code-bg'))]
+[?const HEX6 [$re:compile "^#[0-9a-fA-F]{6}$"]]
+
+# WCAG 2.x relative luminance and contrast ratio of two #rrggbb colours.
+[?def fl scope=private pure [returns float] ($x) [cast $x :float]]
+[?def nib scope=private pure [returns int] ($c) [- [$strings:find '0123456789abcdef' $c] 1]]
+[?def chan scope=private pure [returns int] ($h $i)
+  [+ [* 16 [$nib [$strings:slice $h $i $i]]] [$nib [$strings:slice $h [+ $i 1] [+ $i 1]]]]]
+[?def lin scope=private pure [returns float] ($v)
+  [?let [= $c [$fl [/ $v 255]]]
+    [?if [<= $c [$fl 0.03928]] [then [/ $c [$fl 12.92]]]
+      [else [$math:pow [/ [+ $c [$fl 0.055]] [$fl 1.055]] [$fl 2.4]]]]]]
+[?def lum scope=private pure [returns float] ($hex)
+  [?let [= $h [$strings:lower [$strings:slice $hex 2 7]]]
+    [+ [* [$fl 0.2126] [$lin [$chan $h 1]]] [* [$fl 0.7152] [$lin [$chan $h 3]]] [* [$fl 0.0722] [$lin [$chan $h 5]]]]]]
+[?def ratio scope=private pure [returns float] ($a $b)
+  [?let [= $x [$lum $a]] [= $y [$lum $b]]
+    [/ [+ [$math:max ($x, $y)] [$fl 0.05]] [+ [$math:min ($x, $y)] [$fl 0.05]]]]]
+# a ratio as text with two decimals (a float prints in exponent form).
+[?def two-places scope=private pure [returns string] ($r)
+  [?let [= $n [$math:round [* $r [$fl 100]]]]
+        [= $w [$math:floor [$fl [/ $n 100]]]]
+        [= $f [- $n [* $w 100]]]
+    [$cat ([$string $w], '.', [?if [< $f 10] [then '0'] [else '']], [$string $f])]]]
+# the #rrggbb value a block gives a token, or '' (absent, or not a plain hex).
+[?def value-of scope=private pure [returns string] ($name $text)
+  [?let [= $vs [?to-sequence [?for [in $m [$re:find-all DECL $text]]
+                               [where [= [$re:group $m 1] $name]]
+                               [yield [$strings:trim [$re:group $m 2]]]]]]
+    [?if [= [$count $vs] 0] [then '']
+      [else [?if [$hit HEX6 [$first $vs]] [then [$first $vs]] [else '']]]]]]
+# every pair under AA in one palette ($text; $base is where a token it does
+# not define is read from — the light palette for itself, a dark block for
+# itself, since a token a dark block lacks is refused above). A pair whose
+# tokens are not both #rrggbb there is not judged.
+[?def contrast-refusals scope=private pure [returns any] ($where $label $base $text)
+  [?to-sequence [?for [in $p PAIRS]
+                  [= $fg [?let [= $v [$value-of [$nth $p 1] $text]] [?if [= $v ''] [then [$value-of [$nth $p 1] $base]] [else $v]]]]
+                  [= $bg [?let [= $v [$value-of [$nth $p 2] $text]] [?if [= $v ''] [then [$value-of [$nth $p 2] $base]] [else $v]]]]
+                  [where [and [not [= $fg '']] [not [= $bg '']]]]
+                  [= $r [$ratio $fg $bg]]
+                  [where [< $r [$fl 4.5]]]
+                  [yield [$cat ($where, ': contrast of --', [$nth $p 1], ' (', $fg, ') on --', [$nth $p 2], ' (', $bg, ') is ',
+                                [$two-places $r], ':1 in ', $label, ', under WCAG AA 4.5:1')]]]]]
+
+[?def cat scope=private pure [returns string] ($parts) [$strings:join $parts '']]
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+# re:matches is a whole-string match and re:find answers a [no-match] element,
+# so "does the text carry the pattern anywhere" is a count of find-all.
+[?def hit scope=private pure [returns bool] ($re $s) [> [$count [$re:find-all $re $s]] 0]]
+[?def block scope=private pure [returns string] ($re $css)
+  [?let [= $ms [$re:find-all $re $css]] [?if [= [$count $ms] 0] [then ''] [else [$re:group [$first $ms] 1]]]]]
+# the colour tokens a block defines (a declaration whose value carries a colour literal).
+[?def colour-tokens scope=private pure [returns any] ($text)
+  [?to-sequence [?for [in $m [$re:find-all DECL $text]]
+                  [where [$hit COLOR [$re:group $m 2]]]
+                  [yield [$re:group $m 1]]]]]
+[?def all-tokens scope=private pure [returns any] ($text)
+  [?to-sequence [?for [in $m [$re:find-all DECL $text]] [yield [$re:group $m 1]]]]]
+[?def has scope=private pure [returns bool] ($x $xs)
+  [> [$count [?to-sequence [?for [in $y $xs] [where [= $y $x]] [yield $y]]]] 0]]
+
+# every refusal the stylesheet text earns, as strings.
+[?def style-refusals scope=private pure [returns any] ($css $where)
+  [?let [= $bare [$re:replace COMMENT $css '']]
+        [= $light [$block LIGHT $bare]]
+        [= $dm [$block DARK-MEDIA $bare]]
+        [= $de [$block DARK-EXPLICIT $bare]]
+        [= $want [$colour-tokens $light]]
+        [= $all-light [$all-tokens $light]]
+        [= $missing-blocks [?to-sequence [?concat
+              [?if [= $dm ''] [then ([$cat ($where, ': no dark palette under @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { … } }')],)] [else ()]]
+              [?if [= $de ''] [then ([$cat ($where, ': no dark palette under :root[data-theme="dark"] { … }')],)] [else ()]]]]]
+        [= $gaps [?to-sequence [?for [in $pair ((':root:not([data-theme="light"]) in the dark media query', $dm), (':root[data-theme="dark"]', $de))]
+                                 [where [not [= [$nth $pair 2] '']]]
+                                 [= $have [$all-tokens [$nth $pair 2]]]
+                                 [in $line [?to-sequence [?concat
+                                    [?to-sequence [?for [in $t $want] [where [not [$has $t $have]]]
+                                                    [yield [$cat ($where, ': --', $t, ' (a light colour token) is not defined in ', [$nth $pair 1])]]]]
+                                    [?to-sequence [?for [in $t $have] [where [not [$has $t $all-light]]]
+                                                    [yield [$cat ($where, ': --', $t, ' is defined in ', [$nth $pair 1], ' but not in the light :root')]]]]]]]
+                                 [yield $line]]]]
+        [= $lines [?to-sequence [$strings:split-lines $bare]]]
+        [= $literals [?to-sequence [?for [in $i [$range 1 [$count $lines]]]
+                                     [= $l [$nth $lines $i]]
+                                     [where [and [$hit COLOR $l] [not [$hit TOKEN-LINE $l]]]]
+                                     [yield [$cat ($where, ' line ', [$string $i], ': a colour literal outside a token definition — ', [$strings:trim $l])]]]]]
+        [= $contrast [?to-sequence [?concat
+              [$contrast-refusals $where 'the light palette' $light $light]
+              [?if [= $dm ''] [then ()] [else [$contrast-refusals $where 'the dark palette (the media query)' $dm $dm]]]
+              [?if [= $de ''] [then ()] [else [$contrast-refusals $where 'the dark palette (data-theme="dark")' $de $de]]]]]]
+    [?to-sequence [?concat $missing-blocks $gaps $literals $contrast]]]]
+
+[?def page-refusals scope=private impure [returns any] ($dir)
+  [?to-sequence [?for [in $f [$sort [?to-sequence [$io:glob [$cat ($dir, '/*.html')]]]]]
+                  [= $t [$string [?else [$io:read-file $f] '']]]
+                  [where [$strings:contains $t 'class="sheet-bar"']]
+                  [in $need (('data-theme-toggle', 'the theme toggle'), ("localStorage.getItem('cx-theme')", 'the head script that applies a stored theme'),
+                             ('<meta name="color-scheme"', 'the color-scheme meta'))]
+                  [where [not [$strings:contains $t [$nth $need 1]]]]
+                  [yield [$cat ($f, ': no ', [$nth $need 2], ' (', [$nth $need 1], ')')]]]]]
+
+[?def pages-of scope=private pure [returns any] ($argv)
+  [?to-sequence [?for [in $i [$range 1 [- [$count $argv] 1]]] [where [= [$nth $argv $i] '--pages']] [yield [$nth $argv [+ $i 1]]]]]]
+
+# ── the self-test: planted stylesheets and pages ────────────────────────────
+[?const GOOD-CSS ':root {\n  --paper: #f7f4ea;\n  --ink: #1a1812;\n  --font: serif;\n}\n@media (prefers-color-scheme: dark) {\n  :root:not([data-theme="light"]) {\n    --paper: #1d1a11;\n    --ink: #efe9d8;\n  }\n}\n:root[data-theme="dark"] {\n  --paper: #1d1a11;\n  --ink: #efe9d8;\n}\n/* a #comment colour #abcdef is not a literal */\nbody { color: var(--ink); background: var(--paper); }\n']
+[?const GOOD-PAGE '<html><head><meta name="color-scheme" content="light dark"><script>try{localStorage.getItem(\'cx-theme\')}catch(e){}</script></head><body><header class="sheet-bar"><button data-theme-toggle>Theme</button></header></body></html>']
+
+[?def self-test scope=private impure ()
+  [?let [= $root [$io:temp-dir 'theme-check-']]
+        [= $ok-css [$style-refusals GOOD-CSS 'good']]
+        [= $no-dark [$style-refusals ':root {\n  --ink: #1a1812;\n}\nbody { color: var(--ink); }\n' 'nodark']]
+        [= $gap [$style-refusals [$strings:replace GOOD-CSS ':root[data-theme="dark"] {\n  --paper: #1d1a11;\n' ':root[data-theme="dark"] {\n'] 'gap']]
+        [= $extra [$style-refusals [$strings:replace GOOD-CSS '    --ink: #efe9d8;\n  }\n}' '    --ink: #efe9d8;\n    --glow: #ffffff;\n  }\n}'] 'extra']]
+        [= $lit [$style-refusals [$cat (GOOD-CSS, 'a { color: #b3400f; }\n')] 'lit']]
+        [= $rgba [$style-refusals [$cat (GOOD-CSS, 'td code { background: rgba(26, 24, 18, 0.06); }\n')] 'rgba']]
+        [= $dim [$style-refusals [$strings:replace GOOD-CSS ':root[data-theme="dark"] {\n  --paper: #1d1a11;\n  --ink: #efe9d8;' ':root[data-theme="dark"] {\n  --paper: #1d1a11;\n  --ink: #3a372c;'] 'dim']]
+        [= $faint [$style-refusals [$strings:replace GOOD-CSS '  --ink: #1a1812;\n  --font' '  --ink: #1a1812;\n  --faint: #8a8371;\n  --font'] 'faint']]
+        [= $d1 [$cat ($root, '/good')]] [= $_1 [$io:make-dirs $d1]] [= $_2 [$io:write-file [$cat ($d1, '/a.html')] GOOD-PAGE]]
+        [= $_2b [$io:write-file [$cat ($d1, '/playground.html')] '<html><body class="cxp-body">no sheet bar</body></html>']]
+        [= $d2 [$cat ($root, '/bad')]] [= $_3 [$io:make-dirs $d2]]
+        [= $_4 [$io:write-file [$cat ($d2, '/b.html')] [$strings:replace GOOD-PAGE '<button data-theme-toggle>Theme</button>' '']]]
+        [= $p-ok [$page-refusals $d1]] [= $p-bad [$page-refusals $d2]]
+        [= $_rm [$io:remove-tree $root]]
+        [= $a [= [$count $ok-css] 0]]
+        [= $b [= [$count $no-dark] 2]]
+        [= $c [and [= [$count $gap] 1] [$strings:contains [$string [$first $gap]] '--paper']]]
+        [= $d [and [= [$count $extra] 1] [$strings:contains [$string [$first $extra]] '--glow']]]
+        [= $e [and [= [$count $lit] 1] [$strings:contains [$string [$first $lit]] '#b3400f']]]
+        [= $f [= [$count $rgba] 1]]
+        [= $g [= [$count $p-ok] 0]]
+        [= $h [and [= [$count $p-bad] 1] [$strings:contains [$string [$first $p-bad]] 'theme toggle']]]
+        [= $i [and [= [$count $dim] 1] [$strings:contains [$string [$first $dim]] '--ink (#3a372c) on --paper'] [$strings:contains [$string [$first $dim]] 'data-theme="dark"']]]
+        [= $j [?let [= $t [$string [$first [?to-sequence [?for [in $x $faint] [where [$strings:contains [$string $x] 'contrast']] [yield $x]]]]]]
+                [and [$strings:contains $t '--faint (#8a8371) on --paper (#f7f4ea) is 3.43:1 in the light palette'] [> [$count $faint] 0]]]]
+        [= $cases ([row id='A' ok=$a what='a stylesheet with both dark blocks, every colour token in each, no literal outside a token (a colour in a comment is not one), passes'],
+                   [row id='B' ok=$b what='a stylesheet with no dark palette is refused twice (the media block and the explicit one)'],
+                   [row id='C' ok=$c what='a light colour token missing from one dark block is refused by name'],
+                   [row id='D' ok=$d what='a dark-block token the light palette lacks is refused by name'],
+                   [row id='E' ok=$e what='a #hex literal in a rule is refused with its line'],
+                   [row id='F' ok=$f what='an rgba() literal in a rule is refused'],
+                   [row id='G' ok=$g what='a page with the toggle, the head script and the color-scheme meta passes; a page without the sheet bar (the playground) is not read'],
+                   [row id='H' ok=$h what='a sheet-bar page without the toggle is refused by name'],
+                   [row id='I' ok=$i what='dark ink too close to the dark paper in the data-theme="dark" block is refused with both colours and the palette named'],
+                   [row id='J' ok=$j what='a light --faint of #8a8371 on the #f7f4ea paper (3.43:1, the head palette) is refused under WCAG AA'])]
+        [= $bad [?to-sequence [?for [in $r $cases] [where [not $r@ok]] [yield $r]]]]
+        [= $_s [?to-sequence [?for [in $r $cases] [yield [$say [$cat ('  ', [$string $r@id], [?if $r@ok [then '   ok   '] [else '   FAILED ']], [$string $r@what])]]]]]]
+    [?if [= [$count $bad] 0]
+      [then [?do [$say [$cat ('theme-check self-test (#1418): ', [$string [$count $cases]], '/', [$string [$count $cases]])]] [$env:exit 0]]]
+      [else [?do [$cry [$cat ('theme-check self-test (#1418): ', [$string [$count $bad]], ' case(s) FAILED')]] [$env:exit 1]]]]]]
+
+[?let [= $argv [$env:argv]]
+  [?if [$has '--self-test' $argv] [then [$self-test]]
+    [else
+      [?let [= $css [$string [?else [$io:read-file STYLE] '']]]
+            [= $sr [?if [= $css ''] [then ([$cat (STYLE, ': not readable')],)] [else [$style-refusals $css STYLE]]]]
+            [= $dirs [$pages-of $argv]]
+            [= $pr [?to-sequence [?for [in $d $dirs] [in $r [$page-refusals $d]] [yield $r]]]]
+            [= $pages [?to-sequence [?for [in $d $dirs] [in $f [$io:glob [$cat ($d, '/*.html')]]] [yield $f]]]]
+            [= $all [?to-sequence [?concat $sr $pr]]]
+        [?if [= [$count $all] 0]
+          [then [?do [$say [$cat ('theme-check OK — ', STYLE, ' carries the light palette and both dark blocks with every colour token, no colour outside a token; ',
+                                  [$string [$count $pages]], ' page(s) read, each sheet-bar page with the toggle, the head script and the color-scheme meta (#1418)')]]
+                     [$env:exit 0]]]
+          [else [?do [?to-sequence [?for [in $r $all] [yield [$cry [$cat ('theme-check: ', $r)]]]]]
+                     [$cry [$cat ('theme-check: ', [$string [$count $all]], ' refusal(s) (#1418)')]]
+                     [$env:exit 1]]]]]]]]

@@ -129,7 +129,7 @@
   if (expectSync) {
     check('sync bundle flags', cxlib.isAsyncify() === false
         && typeof cxlib.isJspi === 'function' && cxlib.isJspi() === false,
-      'plain build: cx_wasm_is_asyncify()=0, no JSPI lane');
+      'plain build: cx_wasm_is_asyncify()=0, no JSPI path');
   } else {
     check('asyncify build flag', cxlib.isAsyncify() === true, 'cx_wasm_is_asyncify() must report 1');
     check('jspi mode active', typeof cxlib.isJspi === 'function' && cxlib.isJspi() === true,
@@ -199,7 +199,7 @@
     !outErr && outDiag.trim().length > 0 && !outDiag.includes('CXER'),
     outErr || (outDiag.split('\n').length + ' mermaid lines: ' + outDiag.slice(0, 100) + '…'));
 
-  // ── 4. wall-clock sleep policy through the async lane ─────────
+  // ── 4. wall-clock sleep policy through the async path ─────────
   const hidden = document.visibilityState === 'hidden';
   if (expectSync) {
     // Sync bundle: bare wall sleep must REFUSE with catchable CXER0270

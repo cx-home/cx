@@ -91,9 +91,45 @@
 
 # ── the colour tokens ───────────────────────────────────────────────────
 
+# #1418: style.css now carries a dark palette after the light one, so the
+# tokens are read from the FIRST :root block only — the light palette, the
+# figure's fallback colours (a whole-file read took the dark values, the last
+# definition of each name, and drew the light page's figure in night colours).
 [?def tokens scope=public impure ()
-  [$fp:fold [$re:find-all [$re:compile "--([a-z-]+):\\s*(#[0-9a-fA-F]{3,6})"] [$io:read-file STYLE]] {}
-    [?fn ($acc $m) [$map:put $acc [$re:group $m 1] [$re:group $m 2]]]]]
+  [?let [= $css [$io:read-file STYLE]]
+        [= $roots [$re:find-all [$re:compile ":root\\s*\\{([^}]*)\\}"] $css]]
+        [= $light [?if [= [$count $roots] 0] [then ""] [else [$re:group [$first $roots] 1]]]]
+    [$fp:fold [$re:find-all [$re:compile "--([a-z-]+):\\s*(#[0-9a-fA-F]{3,6})"] $light] {}
+      [?fn ($acc $m) [$map:put $acc [$re:group $m 1] [$re:group $m 2]]]]]]
+
+# themed (#1418): every fill= or stroke= of the figure that is one of the
+# figure's colour tokens also gets style="fill:var(--<token>, <light hex>)",
+# so an inlined figure follows the page's theme (light, dark, or the
+# reader's system) and a figure read on its own (assets/rings.svg) paints
+# the light palette from the fallback. The attributes stay as they were.
+[?const FIG-TOKENS ("ink", "accent", "paper-panel", "paper", "muted", "faint", "rule")]
+[?const PAINT [$re:compile " (fill|stroke)=\"(#[0-9a-fA-F]{3,6})\""]]
+[?const OPEN-TAG [$re:compile "<[a-z][a-z0-9]*\\b[^<>]*>"]]
+[?def token-of scope=private impure ($toks $hex)
+  [?let [= $hits [?to-sequence [?for [in $n FIG-TOKENS]
+                                 [where [and [$map:contains $toks $n] [= [$strings:lower [$string [$map:get $toks $n]]] [$strings:lower $hex]]]]
+                                 [yield $n]]]]
+    [?if [= [$count $hits] 0] [then ""] [else [$first $hits]]]]]
+[?def theme-tag scope=private impure ($toks $tag)
+  [?let [= $decls [?to-sequence [?for [in $m [$re:find-all PAINT $tag]]
+                                  [= $n [$token-of $toks [$re:group $m 2]]]
+                                  [where [not [= $n ""]]]
+                                  [yield [$concat [$re:group $m 1] ":var(--" $n ", " [$re:group $m 2] ")"]]]]]
+        [= $self-closing [$strings:ends-with $tag "/>"]]
+        [= $cut [?if $self-closing [then 2] [else 1]]]
+        [= $len [$strings:length $tag]]
+    [?if [or [= [$count $decls] 0] [$strings:contains $tag " style="]] [then $tag]
+      [else [$concat [$strings:slice $tag 1 [- $len $cut]]
+                     " style=\"" [$strings:join $decls ";"] "\""
+                     [?if $self-closing [then "/>"] [else ">"]]]]]]]
+[?def themed scope=public impure ($svg)
+  [?let [= $toks [$tokens]]
+    [$re:replace-fn OPEN-TAG $svg [?fn ($m) [$theme-tag $toks [$re:group $m 0]]]]]]
 
 [?def tok scope=public impure ($toks $name)
   [?if [$map:contains $toks $name] [then [$map:get $toks $name]]
@@ -347,8 +383,8 @@
 # in empty-name <>/</> tags in content position; they are stripped, as the
 # guide's post-body strips them).
 [?def emit-figure scope=public impure ($names)
-  [$re:replace [$re:compile " cx:attr-types=\"[^\"]*\""]
-    [$strings:replace [$strings:replace [$xml:emit [$ring-figure $names]] "<>" ""] "</>" ""] ""]]
+  [$themed [$re:replace [$re:compile " cx:attr-types=\"[^\"]*\""]
+    [$strings:replace [$strings:replace [$xml:emit [$ring-figure $names]] "<>" ""] "</>" ""] ""]]]
 [?def ring-svg scope=public impure () [$emit-figure true]]
 # ring-svg-plain: the landing's figure (HOME-1) — the same rings, ticks,
 # sectors, titles, arrow and stamp, with no module or repository name.

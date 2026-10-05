@@ -24,19 +24,20 @@
          touch nothing. This program tries to read a file:"""]
     [example lang=cx
       """[?lib 'cx-stdlib/io']
-[$io:read-file 'VERSION']"""]
+[$io:read-file 'greeting.txt']"""]
     [body
       """Without a grant, the read is refused at the effect point —
          before any filesystem access happens:"""]
     [output
-      """[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)']"""]
+      """[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)' at='2:1']"""]
     [body
       """The error is **actionable by contract**: it names the missing
          capability, the operation that wanted it, and the exact flag
-         that grants it. Add the grant and the same program works:"""]
+         that grants it. Add the grant and the same program works — here
+         beside a `greeting.txt` holding the line `hello`:"""]
     [example lang=sh
-      """$ cx --allow-read read_version.cx
-'0.16.0\\n'"""]
+      """$ cx --allow-read read_greeting.cx
+'hello\\n'"""]
     [body
       """Grants combine — a program that reads the environment and
          writes a file needs both flags:"""]
