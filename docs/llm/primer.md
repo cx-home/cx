@@ -193,9 +193,14 @@ fraction as a binary float and CX does not.
 | Kind | How you get one |
 |---|---|
 | **decimal** | a plain fraction literal: `1.5`, `2.50`, `0.1`. Exact, base-10, arbitrary precision |
-| **float** | an `e`-exponent literal (`1.5e0`), a `::float` annotation, `[cast x :float]`, division `[/ …]`, `[$avg …]`, and the float-returning `math` functions |
+| **float** | an `e`-exponent literal (`1.5e0`), a `::float` annotation, `[cast x :float]`, a division of ints whose quotient is not whole (`[/ 7 2]`), a float operand, `[$avg …]`, and the float-returning `math` functions |
 
-`[price 19.99]` is a decimal and stays exact; `[/ 7 2]` is a float.
+`[price 19.99]` is a decimal and stays exact. Division follows its operands: `[/ 6 2]` is the
+int `3` and `[/ 7 2]` the float `3.5` (an int result only when every operand is an int
+and the quotient is whole — write `[/ [cast $a :float] $b]` when a function must always
+answer a float), and a decimal or bigint operand divides exactly into a decimal
+(`[/ 1 [cast 4 :bigint]]` is `0.25`) or refuses a quotient that does not terminate,
+naming `$math:div-decimal` (code.md §6.5, CO-17).
 Arithmetic keeps a decimal a decimal — `[* 2 1.5]` is `3.0`, and ints mix in
 freely — but the two kinds never mix with each other:
 
