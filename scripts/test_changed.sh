@@ -693,6 +693,8 @@ step_globs() {
     check-build-input-roster)      echo 'vcx/Makefile vcx/*' ;;
     # #1616: sync-cmd-split links vcx/cmd/'s stay-files into the pin's cmd/.
     check-sync-cmd-split)          echo 'vcx/cmd/* deps.cxd scripts/sync_cmd_split_selftest.cx' ;;
+    # #1601: devbox run setup's gitconfig rewrite — the program, its self-test, the setup line.
+    check-gitconfig-home)          echo 'devbox.json scripts/gitconfig_home.cx scripts/gitconfig_home_selftest.cx' ;;
     # #1623 (RULED: FIX-1): the bench runners live in the pinned cx-core-code and
     # cx-platform-net and import every V module of the graph, so a pin moving
     # (deps.cxd), a front-door module (vcx/*), the recipe or the V fork selects it.
