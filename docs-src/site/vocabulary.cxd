@@ -119,6 +119,8 @@ never rises. Not scanned, by name: "landing" ("landing page").
     [page path="scripts/gen_guide/playground/playground.examples.js" word=job allow=11 why="generated from examples.cxd: the `jobs` channel and the `[schema of=job]` record, the examples' data"]
     [page path="scripts/gen_guide/playground/examples.cxd" word=task allow=6 why="the examples' data: a `[?worker name=\"task\"]` background task and the `[task …]` nodes of the build-graph example — not a pipeline unit"]
     [page path="scripts/gen_guide/playground/playground.examples.js" word=task allow=6 why="generated from examples.cxd: the background worker task and the build graph's `[task …]` nodes, the examples' data"]
+    [; the primer bundle the playground serves (REFUTE-1 c15 of batch H5): generated from the primer's fixtures, its data examples carry their own nouns ]
+    [page path="scripts/gen_guide/playground/playground.primer.js" word=job allow=6 why="generated from the primer's fixtures: the `[schema of=job]` record and its `Jobs` schema name, the validation example's data — not a pipeline unit"]
     [page path="scripts/gen_guide/playground/examples.out.cxd" word=task allow=5 why="generated: the audited answers of the worker and build-graph examples, which name their `[task …]` data"]
     [; the tree's own prose (RULED: WORDS-1): a sentence that NAMES the refused word, or quotes it as history, and nothing else ]
     [page path="Makefile" word=lane allow=1 why="docs-vocabulary-check's own comment names the words the step counts"]
