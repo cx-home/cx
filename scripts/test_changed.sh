@@ -523,12 +523,15 @@ step_globs() {
     test-sso-interop)              echo 'deps.cxd registry/modules.cxd stdlib/oidc.cx stdlib/saml.cx stdlib/session.cx stdlib/crypto.cx stdlib/http.cx stdlib/net.cx vcx/code/stdlib_oidc.v vcx/code/stdlib_saml*.v vcx/identity/stdlib_session.v vcx/code/stdlib_crypto.v vcx/code/stdlib_http_notd_cx_no_pack_http_client.v vcx/code/net_core_notd_cx_no_pack_http_client.v' ;;
     tools-export-gate)             echo 'deps.cxd registry/modules.cxd vcx/* stdlib/*' ;;
     # the four agent real-socket programs, CX programs run from the pinned
-    # checkout by this tree's binary (RS-12, RS-31)
-    test-agent-real)               echo 'deps.cxd registry/modules.cxd vcx/* stdlib/*' ;;
+    # checkout by this tree's binary (RS-12, RS-31) — and third_party/, the V
+    # that binary is built with (#1792)
+    test-agent-real)               echo 'deps.cxd registry/modules.cxd vcx/* stdlib/* third_party/*' ;;
     # connector's two real-socket tests, V test files run from the pinned
     # checkout by this tree's binary (RULED: RS-12, RS-8, RS-27; #1591 item
-    # K3) — a pin bump, plus the in-tree mock the tests still boot
-    test-connector-real)           echo 'deps.cxd registry/modules.cxd reference/acme/*' ;;
+    # K3) — a pin bump, plus the in-tree mock the tests still boot, and
+    # third_party/: the V that compiles the six test files and the cx they
+    # start (#1792; the row the two umbrellas below copied before #1689)
+    test-connector-real)           echo 'deps.cxd registry/modules.cxd reference/acme/* third_party/*' ;;
     # xap's and fabric's V umbrellas, run from the pinned checkout by this
     # tree's binary (#1689, RULED: RS-12) — a pin bump, and the front door's
     # own vcx/ (testenv and the cx the tests start) and third_party/ (the V
@@ -538,8 +541,9 @@ step_globs() {
     # the db corpus on sqlite, postgres and mysql against real servers in
     # containers, run from the pinned checkout by a cx binary this tree builds
     # with the two engines (RULED: DBLANE-1, DBSRV-1) — a pin bump, the
-    # runtime and client libraries devbox pins, and the front door's own vcx/
-    test-db-real)                  echo 'deps.cxd registry/modules.cxd devbox.json devbox.lock vcx/*' ;;
+    # runtime and client libraries devbox pins, the front door's own vcx/, and
+    # third_party/ — the V db-real-cx is built with (#1792)
+    test-db-real)                  echo 'deps.cxd registry/modules.cxd devbox.json devbox.lock vcx/* third_party/*' ;;
     # the roster rows live in the Makefile and name files under vcx/
     check-serial-retry-rosters)    echo 'Makefile vcx/*' ;;
     # #1448: the partition guard reads the manifest, the corpus it partitions
