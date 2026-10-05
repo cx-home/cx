@@ -453,6 +453,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ck-7` | [rulings_2026_09_06_connector_open_items_728.md](rulings_2026_09_06_connector_open_items_728.md) | CK-7 — where `client_credentials` lands — RULED: (a) |
 | `ck-8` | [rulings_2026_09_06_connector_open_items_728.md](rulings_2026_09_06_connector_open_items_728.md) | CK-8 — `Retry-After` — RULED: (a) |
 | `ck-9` | [rulings_2026_09_06_connector_open_items_728.md](rulings_2026_09_06_connector_open_items_728.md) | CK-9 — pagination's vocabulary — RULED: (a) |
+| `ckey-1` | [rulings_2026_10_05_owner_decisions_l194_l200.md](rulings_2026_10_05_owner_decisions_l194_l200.md) | CKEY-1 — a sequence or an array is a set member and a map key: Ring 0 admits compound keys (Letter 198 = (a); #1809 §10; the scalar-key decisions amended) |
 | `co-1` | [rulings_2026_08_25_0170_closeout.md](rulings_2026_08_25_0170_closeout.md) | CO-1 (#974, ruled 1a) — store multicodec read-compat |
 | `co-10` | [rulings_2026_08_25_0170_closeout.md](rulings_2026_08_25_0170_closeout.md) | CO-10 (#969 edges, ruled 3a) — all three mint hardenings |
 | `co-11` | [rulings_2026_08_25_0170_closeout.md](rulings_2026_08_25_0170_closeout.md) | CO-11 (#990, ruled 1a) — $eq's attribute atomization IS the ruled compare |
@@ -689,6 +690,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `kit-6` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | KIT-6 — the design pages tell the truth |
 | `kwarr-1` | [rulings_2026_10_04_owner_decisions_l187_l193.md](rulings_2026_10_04_owner_decisions_l187_l193.md) | KWARR-1 — a keyword literal (`true`, `false`, `null`) followed by `,` is an array literal; L83 is amended so an array headed by a keyword has one canonical spelling (Letter 188 = (a); cx-core-data#25) |
 | `lbl-1` | [rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md](rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md) | LBL-1 — the `v0.18` label is the one truth of release membership; the milestone retires from open issues; every new issue is labelled at creation (the owner, 2026-10-04 ~05:1xZ) |
+| `letd-1` | [rulings_2026_10_05_owner_decisions_l194_l200.md](rulings_2026_10_05_owner_decisions_l194_l200.md) | LETD-1 — `[= PATTERN value]` destructures in `[?let]` as the single-arm `[?match]` does; a shape that does not fit is a loud refusal (Letter 195 = (a); #1810 §6; the earlier let-binding decision reversed on this one point) |
 | `lim-1` | [rulings_2026_08_20_limits_second_half.md](rulings_2026_08_20_limits_second_half.md) | 876 closes: LIM-1 (spec home) + LIM-2 (this ruling) cover both halves. |
 | `lim-1` | [rulings_2026_08_20_limits_spec.md](rulings_2026_08_20_limits_spec.md) | Ruling LIM-1 (2026-08-20) — limits spec home (#876, first half) |
 | `lim-2` | [rulings_2026_08_20_limits_second_half.md](rulings_2026_08_20_limits_second_half.md) | Ruling LIM-2 (2026-08-20) — no blanket caps; amplification is a gated property (#876 second half, owner "2a") |
@@ -718,6 +720,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `names-1` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | NAMES-1 — the names #1498 wave 2 chose get fixture-backed sentences (L66 = (a)) |
 | `ncnam-1` | [rulings_2026_09_30_owner_decisions_l115_l116.md](rulings_2026_09_30_owner_decisions_l115_l116.md) | NCNAM-1 — a computed attribute named `null`, `true` or `false` stays refused, CXER0236 (L115 = (a); #1699) |
 | `newb-1` | [rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md](rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md) | NEWB-1 — the newest bugs are scheduled first |
+| `nopau-1` | [rulings_2026_10_05_owner_decisions_l194_l200.md](rulings_2026_10_05_owner_decisions_l194_l200.md) | NOPAU-1 — no budget pause: running agents finish into extra usage rather than pay a resume (Letter 194 = (b)) |
 | `nt-1` | [rulings_2026_08_26_diagram_nested_tables_1031.md](rulings_2026_08_26_diagram_nested_tables_1031.md) | NT-1 — the defect, and why `cd-label` was not the place to fix it |
 | `nt-10` | [rulings_2026_08_26_diagram_nested_tables_1031.md](rulings_2026_08_26_diagram_nested_tables_1031.md) | NT-10 — the visual pass is part of the deliverable |
 | `nt-2` | [rulings_2026_08_26_diagram_nested_tables_1031.md](rulings_2026_08_26_diagram_nested_tables_1031.md) | NT-2 — the form is a flowchart HTML label; #992's measurement is not re-litigated |
@@ -764,6 +767,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pc-1` | [rulings_2026_09_04_flow_w1_map_scale_1265.md](rulings_2026_09_04_flow_w1_map_scale_1265.md) | PC-1 — "O(1) transitions per map" — RULED (a) |
 | `pc-2` | [rulings_2026_09_04_flow_w1_map_scale_1265.md](rulings_2026_09_04_flow_w1_map_scale_1265.md) | PC-2 — the 1 000-item map fixture and the 10⁵ / 10⁶ bench rows — RULED (a) |
 | `pc-3` | [rulings_2026_09_04_flow_w1_map_scale_1265.md](rulings_2026_09_04_flow_w1_map_scale_1265.md) | PC-3 — `max-parallel=` in the W1 profile — RULED (a) |
+| `pchld-1` | [rulings_2026_10_05_owner_decisions_l194_l200.md](rulings_2026_10_05_owner_decisions_l194_l200.md) | PCHLD-1 — a child position in an element pattern binds the child, always (Letter 199 = (a); #1809 §18; the one-child binding decision reversed) |
 | `pd-1` | [rulings_2026_09_04_flow_w1_cli_1265.md](rulings_2026_09_04_flow_w1_cli_1265.md) | PD-1 — the `cx flow` subcommands and how acts are found — RULED (a) |
 | `pe-1` | [rulings_2026_09_06_flow_snapshot_interval_1265.md](rulings_2026_09_06_flow_snapshot_interval_1265.md) | Ruling 2026-09-06 — #1265 W1-E, the snapshot-anchor interval (PE-1) |
 | `pe-1` | [rulings_2026_09_06_flow_snapshot_interval_1265.md](rulings_2026_09_06_flow_snapshot_interval_1265.md) | PE-1 — the default interval — RULED: (a) |
@@ -1216,7 +1220,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1170-a` | [rulings_2026_09_08_bare_builtin_head_lint_1170.md](rulings_2026_09_08_bare_builtin_head_lint_1170.md), [rulings_2026_09_08_let_cascade_lint_1170.md](rulings_2026_09_08_let_cascade_lint_1170.md), [rulings_2026_09_08_playground_output_pin_1170.md](rulings_2026_09_08_playground_output_pin_1170.md), [rulings_2026_09_08_seq4_pin_page_sync_1170.md](rulings_2026_09_08_seq4_pin_page_sync_1170.md) |
 | `1170-b` | [rulings_2026_09_08_bare_builtin_head_lint_1170.md](rulings_2026_09_08_bare_builtin_head_lint_1170.md), [rulings_2026_09_08_let_cascade_lint_1170.md](rulings_2026_09_08_let_cascade_lint_1170.md), [rulings_2026_09_08_seq4_pin_page_sync_1170.md](rulings_2026_09_08_seq4_pin_page_sync_1170.md), [rulings_2026_09_09_playground_expect_check_1170g.md](rulings_2026_09_09_playground_expect_check_1170g.md), [rulings_2026_09_30_integrator_decisions_l141_l142.md](rulings_2026_09_30_integrator_decisions_l141_l142.md) |
 | `1170-c` | [rulings_2026_09_08_let_cascade_lint_1170.md](rulings_2026_09_08_let_cascade_lint_1170.md), [rulings_2026_09_08_seq4_pin_page_sync_1170.md](rulings_2026_09_08_seq4_pin_page_sync_1170.md), [rulings_2026_09_09_diagram_node_id_ordinals_1349.md](rulings_2026_09_09_diagram_node_id_ordinals_1349.md), [rulings_2026_09_30_owner_decision_l122.md](rulings_2026_09_30_owner_decision_l122.md) |
-| `1172-q1a` | [rulings_2026_09_04_head_bind_whole_element_1172.md](rulings_2026_09_04_head_bind_whole_element_1172.md), [rulings_2026_09_05_pattern_attr_rest_1270.md](rulings_2026_09_05_pattern_attr_rest_1270.md) |
+| `1172-q1a` | [rulings_2026_09_04_head_bind_whole_element_1172.md](rulings_2026_09_04_head_bind_whole_element_1172.md), [rulings_2026_09_05_pattern_attr_rest_1270.md](rulings_2026_09_05_pattern_attr_rest_1270.md), [rulings_2026_10_05_owner_decisions_l194_l200.md](rulings_2026_10_05_owner_decisions_l194_l200.md) |
 | `1173-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md), [rulings_2026_09_17_owner_decisions_0345z.md](rulings_2026_09_17_owner_decisions_0345z.md) |
 | `1174-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md), [rulings_2026_09_17_owner_decisions_0345z.md](rulings_2026_09_17_owner_decisions_0345z.md), [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) |
 | `1175-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md), [rulings_2026_09_17_owner_decisions_0410z.md](rulings_2026_09_17_owner_decisions_0410z.md) |
@@ -1603,4 +1607,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*386 ledger pages; 862 ids declared, 402 cited only.*
+*387 ledger pages; 866 ids declared, 402 cited only.*
