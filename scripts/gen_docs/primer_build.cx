@@ -1029,10 +1029,14 @@
   # every cited fixture, replayed ONCE and verified against its fixture
   [= $refs [$distinct [$fp:flat-map [?for [in $d $docs]
       [yield [$refs-in [$map:get $sources [$string $d@id]]]]] [?fn ($x) $x]]]]
-  [= $tmpdir [$path:join [$env:var-or-default "TMPDIR" "/tmp"] "cx-primer-build"]]
-  [= $_md [$io:make-dirs $tmpdir]]
+  # A scratch directory of this run's own: a fixed $TMPDIR/cx-primer-build
+  # was shared by every concurrent run on the box (two streams' gates, or a
+  # gate's docs-check beside the post-merge run's), each overwriting and
+  # reading the other's prog.cx.
+  [= $tmpdir [$io:temp-dir "cx-primer-build-"]]
   [= $replays [$fp:fold $refs {}
     [?fn ($acc $id) [$add-replay $acc $id $index $cxbin $tmpdir]]]]
+  [= $_rmt [$io:remove-tree $tmpdir]]
 
   # render + write (or diff)
   [= $_mo [?if $check [then 0] [else [$io:make-dirs OUT-DIR]]]]
