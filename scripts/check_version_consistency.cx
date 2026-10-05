@@ -24,11 +24,22 @@
 #      guard hand back a library whose stamp is a lie.
 #   3. README version badges + SECURITY.md supported series (X.Y.x)
 #      equal / derive from VERSION.
-#   4. STRAY `vX.Y.Z` release literals in the live vcx/ + spec/ +
-#      docs-src/ + stdlib/ + tooling/ trees (issue #67) — fails on any
-#      hit outside the allowlist; a line carrying the
+#   4. STRAY `vX.Y.Z` release literals in every live tree of this
+#      repository (issue #67; widened by #1166 C1 to the published and
+#      internal trees a reader follows — examples/, conformance/,
+#      corpus/, registry/, scripts/, tooling/, spec/, docs-src/ (its .tmpl
+#      templates too) and the root README/ROADMAP/CONTRIBUTING/SECURITY),
+#      — fails on any hit outside the allowlist (a bare `version='0.8.0'`
+#      attribute is not read: a feature's or package's own version is
+#      spelled the same way, so #1166 A1's tour attributes were fixed by
+#      hand); a line carrying the
 #      `version-literal-ok` marker is exempt. A per-run self-test
 #      proves the matcher still has detection power.
+#   5. DEAD SPEC PATHS (#1166 C1): every `spec/….md|.ebnf|.txt` a live file
+#      of those trees (and the Makefile) names must resolve — in this tree,
+#      or in a pinned repository's checkout under deps/<repo>/ (RS-8: since
+#      the split most of the spec lives in the pins). A path a self-test
+#      plants on purpose carries the `spec-path-ok` marker on its line.
 #
 # Matcher note (this rewrite): the Python anchored the stray pattern
 # with lookarounds; RE2 has none, so the boundary is spelled as a
@@ -71,7 +82,22 @@
   [scan root='spec/03-approved' exts='md ebnf'],
   [scan root='docs-src'         exts='md cx cxd html'],
   [scan root='stdlib'           exts='cx'],
-  [scan root='tooling'          exts='md json vim lua bash zsh fish js scm cx cxd'])]
+  [scan root='tooling'          exts='md json vim lua bash zsh fish js scm cx cxd'],
+  [; #1166 C1: the trees the 2026-08-31 sweep found unscanned, as they stand
+     in this repository after the split ]
+  [scan root='examples'         exts='cx cxd md html'],
+  [scan root='conformance'      exts='md cxd'],
+  [scan root='corpus'           exts='cx md'],
+  [scan root='registry'         exts='cxd'],
+  [scan root='scripts'          exts='cx cxd sh md mk'],
+  [scan root='docs-src'         exts='tmpl'])]
+
+# Root documents scanned whole (#1166 C1).
+[?const STRAY-FILES ('README.md', 'ROADMAP.md', 'CONTRIBUTING.md', 'SECURITY.md')]
+
+# ── Check 5: dead spec paths (#1166 C1) ─────────────────────────────────
+[?const SPEC-PATH-RX [$re:compile "spec/[A-Za-z0-9_./-]+\\.(?:md|ebnf|txt)"]]
+[?const SPEC-MARKER "spec-path-ok"]
 
 # Dirs never scanned (build artifacts / vendored deps / immutable history).
 [?const STRAY-EXCLUDE-DIRS ('node_modules','dist','_archive','_archived',
@@ -93,27 +119,56 @@
 
 # stray-hits-in: one "path:line: text" entry per stray literal in one file
 # (already prefiltered to files whose whole text matches).
+[?def stray-line scope=public ($line)
+  [?match [$re:find STRAY-RX $line] [case [no-match] false] [else true]]]
 [?def stray-hits-in scope=public impure ($p)
   [?let [= $lines [$strings:split-lines [$io:read-file $p]]]
     [?for [in $i [$range 1 [$count $lines]]]
       [= $line [$nth $lines $i]]
       [where [not [$strings:contains $line STRAY-MARKER]]]
-      [where [?match [$re:find STRAY-RX $line]
-               [case [no-match] false] [else true]]]
+      [where [$stray-line $line]]
       [yield [$concat $p ":" [$string $i] ": " [$strings:trim-end $line]]]]]]
 
-# stray-hits: scan every tree; whole-file RE2 prefilter, then per-line.
+# live-files: every file of the scanned trees and the root documents.
+[?def live-files scope=public impure ()
+  [$cat-seqs (
+    [?for [in $sc STRAY-SCAN]
+      [in $ext [$strings:split-whitespace [$string $sc@exts]]]
+      [in $p [$io:glob [$concat [$string $sc@root] "/**/*." [$string $ext]]]]
+      [where [not [$strings:ends-with $p "_test.v"]]]
+      [where [not [$excluded $p]]]
+      [yield $p]],
+    [?for [in $f STRAY-FILES] [where [$io:exists $f]] [yield $f]])]]
+
+# stray-hits: every live file; per-line.
 [?def stray-hits scope=public impure ()
-  [?for [in $sc STRAY-SCAN]
-    [in $ext [$strings:split-whitespace [$string $sc@exts]]]
-    [in $p [$io:glob [$concat [$string $sc@root] "/**/*." [$string $ext]]]]
-    [where [not [$strings:ends-with $p "_test.v"]]]
-    [where [not [$excluded $p]]]
+  [?for [in $p [$live-files]]
     [where [not [$allowed-file $p]]]
-    [where [?match [$re:find STRAY-RX [$io:read-file $p]]
-             [case [no-match] false] [else true]]]
     [in $hit [$stray-hits-in $p]]
     [yield $hit]]]
+
+# spec-resolves: the path exists under one of the bases — this tree ('.')
+# or a pin's checkout (deps/<repo>).
+[?def spec-resolves scope=public impure ($path $bases)
+  [> [$count [?for [in $d $bases] [where [$io:exists [$concat $d "/" $path]]] [yield $d]]] 0]]
+
+# dead-spec-hits-in: one "path:line: spec/…" per unresolved citation; a
+# path is read up to its extension (a trailing '.' of prose is not part).
+[?def dead-spec-hits-in scope=public impure ($p $bases)
+  [?let [= $lines [$strings:split-lines [$io:read-file $p]]]
+    [?for [in $i [$range 1 [$count $lines]]]
+      [= $line [$nth $lines $i]]
+      [where [not [$strings:contains $line SPEC-MARKER]]]
+      [in $m [$re:find-all SPEC-PATH-RX $line]]
+      [= $sp [$re:group $m 0]]
+      [where [not [$spec-resolves $sp $bases]]]
+      [yield [$concat $p ":" [$string $i] ": " $sp]]]]]
+
+[?def dead-spec-hits scope=public impure ()
+  [?let [= $bases [$cat-seqs ((".",), [$io:glob "deps/*"])]]
+    [?for [in $p [$cat-seqs ([$live-files], ('Makefile',))]]
+      [in $hit [$dead-spec-hits-in $p $bases]]
+      [yield $hit]]]]
 
 # self-test: prove the matcher has detection power and no obvious false
 # positives — a matcher that silently stops matching turns this gate into
@@ -132,19 +187,40 @@
   "url = 'https://x/regex-helpers-1.2.3.zip'",
   "the v0.8.xyz identifier is not a version")]
 
-[?def rx-hits scope=public ($s)
-  [?match [$re:find STRAY-RX $s] [case [no-match] false] [else true]]]
-
-[?def self-test scope=public ()
+[?def rx-hits scope=public ($s) [$stray-line $s]]
+[?def self-test scope=public impure ()
   [?let [= $marked "// kept as history v0.8.0  // version-literal-ok"]
     [$cat-seqs (
       ([?for [in $s MUST-MATCH] [where [not [$rx-hits $s]]]
         [yield [$concat "self-test: matcher FAILED to flag a stray literal: '" $s "'"]]]),
       ([?for [in $s MUST-NOT-MATCH] [where [$rx-hits $s]]
         [yield [$concat "self-test: matcher false-positived on: '" $s "'"]]]),
+      [$spec-self-test],
       [?if [and [$strings:contains $marked STRAY-MARKER] [$rx-hits $marked]]
         [then ()]
         [else ("self-test: marker fixture is malformed")]])]]]
+
+# spec-self-test: a planted tree — a live path here, a live path only in a
+# planted pin, a dead path, a dead path on a marked line, and a path ended
+# by prose punctuation — must yield exactly the dead unmarked one.
+[?def spec-self-test scope=public impure ()
+  [?let [= $root [$io:temp-dir "spec-paths-"]]
+        [= $_a [$io:make-dirs [$concat $root "/spec/03-approved/core"]]]
+        [= $_b [$io:write-file [$concat $root "/spec/03-approved/core/code.md"] "x"]]
+        [= $_c [$io:make-dirs [$concat $root "/pin/spec/03-approved/std-lib"]]]
+        [= $_d [$io:write-file [$concat $root "/pin/spec/03-approved/std-lib/io.md"] "x"]]
+        [= $f [$concat $root "/doc.md"]]
+        [= $_e [$io:write-file $f [$concat "see spec/03-approved/core/code.md.\n"
+                                       "and spec/03-approved/std-lib/io.md\n"
+                                       "the old spec/code.md is gone\n"
+                                       "planted spec/thing.md -- " "spec-path-ok\n"]]]
+        [= $hits [$dead-spec-hits-in $f ($root, [$concat $root "/pin"])]]
+        [= $_r [$io:remove-tree $root]]
+    [?if [and [= [$count $hits] 1] [$strings:ends-with [$string [$first $hits]] ":3: spec/code.md"]]
+      [then ()]
+      [else ([$concat "self-test: the dead-spec-path check answered " [$string [$count $hits]]
+                      " hit(s) on the planted tree (want exactly line 3's spec/code.md): "
+                      [$strings:join [?for [in $h $hits] [yield [$string $h]]] " | "]],)]]]]
 
 # read-or: file text, or the [missing] sentinel.
 [?def read-or scope=public impure ($p)
@@ -256,9 +332,12 @@
               # 4. Stray release-version literals in live code/spec (#67).
               [= $stray [?for [in $h [$stray-hits]]
                 [yield [$concat "stray version literal (genericize or derive): " $h]]]]
+              # 5. Dead spec paths (#1166 C1).
+              [= $dead [?for [in $h [$dead-spec-hits]]
+                [yield [$concat "dead spec path (no such file here or in a pin): " $h]]]]
               [= $fails [$cat-seqs ($manifest-fails, $derive-fails, $lib-recipe-fails,
                                     $lib-build-id-fails, $badge-fails,
-                                    $security-fails, $stray)]]
+                                    $security-fails, $stray, $dead)]]
               [?if [> [$count $fails] 0]
                 [then
                   [?let
@@ -269,12 +348,13 @@
                       "stray `vX.Y.Z` literals in code/spec → genericize the prose "
                       "(an error/status describes CURRENT behavior, never a release), "
                       "or add the inline `" STRAY-MARKER "` marker for a genuine "
-                      "historical-migration note."]]]
+                      "historical-migration note; a dead spec path → name the file that "
+                      "exists (here or in deps/<repo>/), or `" SPEC-MARKER "` on a planted one."]]]
                     [$env:exit 1]]]
                 [else
                   [?let [= $_ok [$say [$concat "VERSION-CONSISTENCY: OK — manifests + README badges + vscode + "
                       "SECURITY.md series == VERSION (" $version "); cabi.v + main.v derive "
                       "from the build define; every shared-library recipe passes it and "
-                      "LIB_BUILD_ID carries what it stamps; no stray vX.Y.Z literals in vcx/ + spec/ + "
-                      "docs-src/ + stdlib/ + tooling/"]]]
+                      "LIB_BUILD_ID carries what it stamps; no stray release literal and no dead "
+                      "spec path in " [$string [$count [$live-files]]] " live files (#1166)"]]]
                     [$env:exit 0]]]]]]]]]]]
