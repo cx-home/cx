@@ -120,7 +120,10 @@ fn xap_init_base_a(name string) string {
  [keys   [key name=owner-id via=owner]]
 
  [nouns
-  [noun name=thing
+  [; identity=id: a record IS its id — what the state fold merges on
+     (composition §4.8). Left out, identity defaults to the sole key
+     registration, owner, and every thing of one owner would read as one. ]
+  [noun name=thing identity=id
    [field name=id type=text]
    [field name=owner type=text doc='the shared key — same name and type in owner.feature.cxd']
    [field name=created-at type=instant doc='the time-frame coordinate']
@@ -213,7 +216,7 @@ fn xap_init_composite(name string) string {
  [keys   [key name=owner-id via=owner]]
 
  [nouns
-  [noun name=owned-thing derived=true
+  [noun name=owned-thing derived=true identity=thing-id
    [summary 'One thing with its owner resolved — derived, never sourced.']
    [field name=thing-id type=text]
    [field name=owner type=text]
@@ -789,8 +792,13 @@ ${comps}
 
   [; run ASSEMBLY (composition §4.2): a grammar carrying a derived noun
      refuses to assemble until its producer is bound, and the declared
-     reads must sit inside the noun's [from …] envelope. ]
+     reads must sit inside the noun's [from …] envelope.
+     The features' [governance] grants bind under [\$xap:run] (xap.md §4.2):
+     `roles:` names who holds each granted role — the seeding principal,
+     and `:anonymous` for the intents this shell posts on the localhost
+     dev-floor, which carry no actor. Name your own principals here. ]
   [= \$rt [\$xap:run {tenant: \"${name}\" grammar: \$g
+                    roles: {operator: (\"principal:operator\", :anonymous)}
                     derivers: ({name: \"join\"
                                 produces: \"thing-of-owner/owned-thing\"
                                 reads: (\"thing/thing\", \"owner/owner\")})}]]
