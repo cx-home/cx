@@ -52,7 +52,6 @@ a no-step row without an issue.
   [exempt file='cx-core-data/spec/03-approved/core/ast.md' class=no-step issue='cx-home/cx-core-code#27' match='When the data reader REFUSES and the program reader accepts' reason='the cx --ast dispatch is a CLI projection no corpus case drives (the document grader parses with the data codec, the program grader evaluates); note the shipped reader reads [$f 1] as an Array with a Hole, so the dispatch never reaches the program tree']
 
   [; ── canonical.md ── ]
-  [exempt file='cx-core-data/spec/03-approved/core/canonical.md' class=no-step issue='cx-home/cx-core-data#18' match='implementations MUST check the AST shape, not the surface' reason='an AttrTest-template predicate cannot be fed: PathNode values exist only as decoded ast_bin, ast-bin.md section 4.1 defines no ProgramExpr tag, and the shipped decoder reads predicates as a String source']
 
   [; ── lockfile.md ── ]
   [exempt file='cx-core-data/spec/03-approved/core/lockfile.md' class=no-step issue='cx-home/cx-core-data#17' match='Loaders MUST reject any `version` value they do not recognise' reason='the loader rejects it (CXLOCK_UNSUPPORTED_VERSION in lockfile_reader.v) but program cases resolve modules against the runner-fixed cx.lock in stdlib_bundle.v, so no corpus case can hand the loader a lockfile']
