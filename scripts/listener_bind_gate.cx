@@ -38,29 +38,53 @@
 [?lib 'cx-stdlib/fp'      as=fp]
 [?lib 'cx-stdlib/strings' as=strings]
 
+
 [?const GLOBS ("vcx/**/*_test.v", "vcx/tests/**/*.v",
                "deps/*/vcx/**/*_test.v", "deps/*/vcx/tests/**/*.v", "deps/*/vcx/tests/**/*.cx",
                "flows/**/*.cx", "flows/**/*.cxd")]
-[?const V-RX "listen_(tcp|udp)\\([^']*'(:|0\\.0\\.0\\.0|\\[::\\])"]
-[?const URL-RX "(tcp|udp|tls|http|https|ws|wss|smtp|smtps|imap|imaps)://(0\\.0\\.0\\.0|\\[::\\])"]
+# The host shapes that mean every interface, after the opening quote of an
+# address: the empty host (`:port`), 0.0.0.0, the bare 0, [::] and [::0].
+[?const V-RX "listen_(tcp|udp)\\([^'\"]*['\"](:|0\\.0\\.0\\.0:|0:|\\[::0?\\]:)"]
+# A listen call left open at the end of its line (no quote, no close): the
+# reading joins the next line to it, so an address on the continuation line is
+# read with its call.
+[?const OPEN-RX "listen_(tcp|udp)\\([^'\")]*$"]
+# A server struct's address field on a wildcard host (`http.Server{addr: ':8080'}`).
+[?const ADDR-RX "addr:\\s*['\"](:|0\\.0\\.0\\.0:|0:|\\[::0?\\]:)"]
+# The C spellings of the wildcard a V test reaches through C interop.
+[?const ANY-RX "\\b(INADDR_ANY|in6addr_any|IN6ADDR_ANY_INIT)\\b"]
+# A bind URL on a wildcard host: empty, 0.0.0.0, 0, [::] or [::0].
+[?const URL-RX "(tcp|udp|tls|http|https|ws|wss|smtp|smtps|imap|imaps)://((0\\.0\\.0\\.0|\\[::0?\\]|0)?:[0-9]|(0\\.0\\.0\\.0|\\[::0?\\]))"]
+# The marker counts only as a comment that gives its reason: a `//` or `#`
+# outside every quoted literal on the line, then the marker, then a dash or a
+# colon and a word — a bare marker, or one inside a string, marks nothing.
 [?const MARK "listener-bind: every interface"]
+[?const MARK-RX "^([^'\"]|'[^']*'|\"[^\"]*\")*(//|#)\\s*listener-bind: every interface\\s*(—|--|-|:)\\s*\\S"]
 
 [?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
 [?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
 [?def hit scope=public pure [returns bool] ($rx $s) [> [$count [$re:find-all [$re:compile $rx] [$string $s]]] 0]]
 
+# binds: a line (joined with the next one when it leaves a listen call open)
+# reads as a listener on every interface.
+[?def binds scope=public pure [returns bool] ($l $next)
+  [?let [= $read [?if [$hit OPEN-RX $l] [then [$strings:join ($l, $next) " "]] [else $l]]]
+    [or [$hit V-RX $read] [$hit URL-RX $read] [$hit ADDR-RX $read] [$hit ANY-RX $read]]]]
+
 # refused: the 1-based line numbers of a text whose line binds a wildcard and
-# carries no marker on itself or on the line above.
+# carries no marker comment (with its reason) on itself or on the line above.
 [?def refused scope=public pure [returns any] ($text)
   [?let [= $ls [?to-sequence [$strings:split [$string $text] "\n"]]]
         [= $n [$count $ls]]
     [?to-sequence [?for [in $i [$range 1 $n]]
                     [= $l [$nth $ls $i]]
                     [= $above [?if [> $i 1] [then [$nth $ls [- $i 1]]] [else '']]]
-                    [where [and [or [$hit V-RX $l] [$hit URL-RX $l]]
-                                [not [$strings:contains $l MARK]]
-                                [not [$strings:contains $above MARK]]]]
+                    [= $next [?if [< $i $n] [then [$nth $ls [+ $i 1]]] [else '']]]
+                    [where [and [$binds $l $next]
+                                [not [$hit MARK-RX $l]]
+                                [not [$hit MARK-RX $above]]]]
                     [yield $i]]]]]
+
 
 # the planted table: each row a text and the count the reading must refuse.
 [?const SELF (
@@ -108,7 +132,10 @@
         [= $hits [?to-sequence [?for [in $f $seen] [in $i [$refused [?else [$io:read-file $f] '']]]
                    [yield [$strings:join ($f, ':', [$string $i], ' — ',
                                           [$strings:trim [$nth [?to-sequence [$strings:split [$io:read-file $f] "\n"]] $i]]) '']]]]]
-    [?if [> [$count $hits] 0]
+    [?if [= [$count $seen] 0]
+      [then [?let [= $_z [$cry "listener-bind-gate: the scan read no file — a glob or the working directory is wrong; refusing to vouch for nothing (cx-private issue 1784)"]]
+              [$env:exit 1]]]
+    [else [?if [> [$count $hits] 0]
       [then [?let [= $_e [?to-sequence [?for [in $h $hits] [yield [$cry [$strings:join ('listener-bind-gate: REFUSED ', $h) '']]]]]]
                   [= $_t [$cry [$strings:join ('listener-bind-gate: ', [$string [$count $hits]], ' listener(s) not on loopback in ',
                                                [$string [$count $seen]], ' files — bind 127.0.0.1 or ::1, or mark the line `',
@@ -116,7 +143,7 @@
               [$env:exit 1]]]
       [else [?let [= $_o [$say [$strings:join ('listener-bind-gate: ', [$string [$count $seen]],
                                                ' test and flow files, every listener on loopback or marked') '']]]
-              [$env:exit 0]]]]]]
+              [$env:exit 0]]]]]]]]
 
 [?if [> [$count [?to-sequence [?for [in $a [$env:argv]] [where [= [$string $a] '--self-test']] [yield $a]]]] 0]
   [then [$self-test]]

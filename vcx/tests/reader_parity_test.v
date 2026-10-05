@@ -630,6 +630,11 @@ const accepted_by_one_table = [
 	// '-c', $script) timeout-ms=120000]` and `[$process:run ('cc', '-shared',
 	// ...)]` building its fake libraries (RULED: RLOAD-1, CXF-1).
 	AcceptedByOne{'scripts/r22_profile_load_selftest.cx', .program, reason_1536},
+	// 82 -> 83: #1784's scripts/listener_bind_gate.cx, the loopback-listener gate --
+	// the class's own shape, `[$strings:join ($f, ':', …) '']` building each
+	// refusal line and `[$strings:join ($l, $next) " "]` joining a listen call
+	// left open to its continuation line (RULED: CXF-1, FIX-1).
+	AcceptedByOne{'scripts/listener_bind_gate.cx', .program, reason_1536},
 	// ── recorded exception — a computed attribute `name=[EXPR]` (25) ──
 	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
 	// 21 -> 22: scripts/check_migrate_namespace_fixtures.cx, RS-4's sweep grader.
