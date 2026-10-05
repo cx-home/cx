@@ -52,7 +52,7 @@ is a clause-shape refusal (`cx-err:CXER0111`), not a positional shorthand.
 
 ```console
 $ cx prog.cx
-error: cx-err:CXER0111: [?if] expects [then …] / [else …] clause children after the condition — got a bare positional branch expression; write [?if cond [then thenExpr] [else elseExpr]?]
+error: cx-err:CXER0111: [?if] expects [then …] / [else …] clause children after the condition — got a bare positional branch expression; write [?if cond [then thenExpr] [else elseExpr]?] at line 1:11
 ```
 
 `[else]` may be omitted, and a false condition then yields empty:
@@ -99,8 +99,8 @@ order. `[when …]` adds a predicate arm, `[where …]` guards a case.
 `prog.cx`
 ```cx
 [?let [= $u [user age=20 [name Alice]]] [?match $u
-    [case [user $u] [where [>= $u@age 18]] :adult]
-    [case [user $u] :minor]]]
+    [case [user$u] [where [>= $u@age 18]] :adult]
+    [case [user$u] :minor]]]
 ```
 
 ```console
@@ -124,7 +124,7 @@ error:
 
 ```console
 $ cx --data=input.cx prog.cx
-error: cx-err:CXER0100: [?match] no match for value (single-arm form)
+error: cx-err:CXER0100: [?match] no match for value (single-arm form) at line 1:1
 ```
 
 Dropping the arm keywords entirely gives the **single-arm** form —
@@ -188,7 +188,7 @@ claim about which nodes to visit, not about every item's shape.)
 
 ```console
 $ cx --data=input.cx prog.cx
-error: cx-err:CXER0100: [?for] generator pattern does not match item 2 (NO_MATCH): `[in PATTERN SRC]` is a destructuring BIND — every item of SRC must fit the pattern. To keep only the items that fit, filter by shape with [where] or a [?match] in the yield body (code.md §7.5)
+error: cx-err:CXER0100: [?for] generator pattern does not match item 2 (NO_MATCH): the item `(b)` does not fit the pattern of the [in …] clause at line 1:7. `[in PATTERN SRC]` is a destructuring BIND — every item of SRC must fit the pattern. To keep only the items that fit, filter by shape with [where] or a [?match] in the yield body (code.md §7.5)
 ```
 
 `input.cx`
@@ -460,7 +460,7 @@ rather than silently reordered:
 
 ```console
 $ cx --data=input.cx prog.cx
-error: cx-err:CXER0100: [?reduce] takes a single positional source slot
+error: cx-err:CXER0100: [?reduce] takes a single positional source slot at line 1:1
 ```
 
 ## Transformation
