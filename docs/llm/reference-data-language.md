@@ -279,11 +279,6 @@ deliberate, and neither may drift into the other:
 So a decimal attribute and the string of its image compare *equal* as values,
 by design:
 
-`input.cx`
-```cx
-[ignored]
-```
-
 `prog.cx`
 ```cx
 [probe
@@ -292,7 +287,7 @@ by design:
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 [probe dec-str=true atom-str=true]
 ```
 

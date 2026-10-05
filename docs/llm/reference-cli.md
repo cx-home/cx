@@ -144,7 +144,7 @@ Run flags (the default action; flags bind BEFORE the resource):
   Unknown flags BEFORE FILE are hard usage errors (exit 2) — nothing is
   ignored; AFTER FILE a cx-flag spelling is the PROGRAM's argv and warns
   once on stderr, unless the program's [argspec] declares it.
-  Capabilities are deny-by-default (spec/core/security.md); grant explicitly:
+  Capabilities are deny-by-default (spec/03-approved/core/security.md); grant explicitly:
     --allow-read --allow-write --allow-net --allow-env --allow-clock
     --allow-random --allow-subprocess --allow-eval --allow-secret-reveal --allow-common --allow-all
     (three grants take an enforced scope: --allow-net=host[:port],
