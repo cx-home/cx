@@ -1659,6 +1659,11 @@ $ cx prog.cx
 ([err code=c message=m], kept, [box c])
 ```
 
+Keep that sequence standing on its own. Once an element adopts it, or adopts
+a map or array that carries an err the same way, the err propagates out of
+the element like any other computed child. A refusal never rests in a
+document, and a collection inside one is no exception.
+
 ### `[?else]` is the recovery idiom
 
 `[?else VALUE FALLBACK]` yields `VALUE` unless it errored or is absent. There
