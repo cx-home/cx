@@ -28,7 +28,7 @@
    for real with:
      cx --allow-net=crm.example.com corpus/rosetta/21-fetch-csv-validate.cx ]
 
-[?lib 'cx-stdlib/http-client' :as http]
+[?lib 'cx-stdlib/http-client' as=http]
 [?lib 'cx-stdlib/csv']
 [?lib 'cx-stdlib/validate']
 

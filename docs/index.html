@@ -289,8 +289,8 @@
 <p>We speak the agents' protocols as plain values — an MCP request is a CX element projected to its wire form, with no serializer in the path — and every one of the 4 examples on this page was replayed byte for byte by the <code>cx</code> that built it, which refuses the page when one stops holding.</p>
 <div class="fixture">
 <p class="fixture-file"><code>prog.cx</code></p>
-<pre><code lang="cx">[?lib 'cx-platform/mcp' :as mcp]
-[?lib 'cx-stdlib/json' :as json]
+<pre><code lang="cx">[?lib 'cx-platform/mcp' as=mcp]
+[?lib 'cx-stdlib/json' as=json]
 [$json:emit [$mcp:call-tool-request 1 "get_weather" {location: "NYC"}]]</code></pre>
 <pre class="sample-output"><code>$ cx prog.cx
 '{"id":1,"jsonrpc":"2.0","method":"tools/call","params":{"arguments":{"location":"NYC"},"name":"get_weather"}}'</code></pre>

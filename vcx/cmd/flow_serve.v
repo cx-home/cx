@@ -1091,10 +1091,10 @@ const flow_serve_helpers = "
 // resolves here exactly as it resolves there.
 fn flow_serve_program(r FlowRunner, directives []string, acts []FlowCliAct, ticks i64, tick_ms i64) string {
 	mut b := []string{}
-	b << "[?lib 'cx-platform/flow' :as cxflow]"
-	b << "[?lib 'cx-platform/store' :as cxstore]"
-	b << "[?lib 'cx-platform/journal' :as cxjournal]"
-	b << "[?lib 'cx-platform/authz-store' :as cxauthzstore]"
+	b << "[?lib 'cx-platform/flow' as=cxflow]"
+	b << "[?lib 'cx-platform/store' as=cxstore]"
+	b << "[?lib 'cx-platform/journal' as=cxjournal]"
+	b << "[?lib 'cx-platform/authz-store' as=cxauthzstore]"
 	// BOTH halves of http, because this driver is both (RULED: 1427-e). It
 	// SERVES — `cxhttp:serve` below — and it READS A MESSAGE, `body-text`,
 	// which is a pure codec verb and went to the Ring-1 `http-client` module
@@ -1105,11 +1105,11 @@ fn flow_serve_program(r FlowRunner, directives []string, acts []FlowCliAct, tick
 	// half, `body-text` stopped resolving, and every delivery answered 400
 	// with E_NO_CALLABLE (the post-merge red on 100989e09). The pair is
 	// written here by hand, in the shape the tool would have produced.
-	b << "[?lib 'cx-platform/http' :as cxhttp]"
-	b << "[?lib 'cx-stdlib/http-client' :as cxhttpc]"
-	b << "[?lib 'cx-stdlib/io' :as cxio]"
-	b << "[?lib 'cx-stdlib/re' :as cxre]"
-	b << "[?lib 'cx-stdlib/log' :as cxlog]"
+	b << "[?lib 'cx-platform/http' as=cxhttp]"
+	b << "[?lib 'cx-stdlib/http-client' as=cxhttpc]"
+	b << "[?lib 'cx-stdlib/io' as=cxio]"
+	b << "[?lib 'cx-stdlib/re' as=cxre]"
+	b << "[?lib 'cx-stdlib/log' as=cxlog]"
 	b << directives.join('\n')
 	b << flow_serve_helpers
 	// THE LOOP is the one def that must be GENERATED rather than written once:

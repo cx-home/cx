@@ -224,7 +224,7 @@ $ cx store-serve --config cxstore.service.cx \\
     [; check=none — a live daemon on the loopback port is the program's
        input; no corpus case owns the presented-identity open. ]
     [example lang=cx check=none
-      """[?lib 'cx-platform/store' :as store]
+      """[?lib 'cx-platform/store' as=store]
 [?let [= $c [$store:open-opts 'cx-store+xsp://127.0.0.1:18762/main/'
               [map xsp-did='did:key:z6Mk…' xsp-seed-env='CX_XSP_SEED_OPS']]]
   [$store:put-doc $c [note [body 'first write']]]]"""]

@@ -70,7 +70,7 @@ element that is not there refuses rather than guessing:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [= $comps ([component name=hero], [component name=departments], [component name=promo], [component name=group container=true])]
   [= $l0 [ux:layout [placed id=hero component=hero] [placed id=promo component=promo] [placed id=depts component=departments]]]
@@ -85,7 +85,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [; R-A1 migration: envelope → spliced children (2026-08-25) ]
   [= $comps ([component name=hero])]
@@ -104,7 +104,7 @@ what makes an edit stream auditable and reversible rather than a diff:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [= $comps ([component name=hero], [component name=featured], [component name=promo], [component name=group container=true])]
   [= $l0 [ux:layout [placed id=hero component=hero] [placed id=featured component=featured]]]
@@ -128,7 +128,7 @@ A batch is atomic, so a tenant never lands half an edit:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [= $comps ([component name=hero])]
   [= $l0 [ux:layout [placed id=hero component=hero]]]
@@ -147,7 +147,7 @@ name refuses:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [; R-A1 migration: envelope → spliced children (2026-08-25) ]
   [= $comps ([component name=hero [param name=heading default="Everyday things." carrier=ux-heading]],
@@ -175,8 +175,8 @@ unsafe value refuses **the whole sheet** rather than emitting a partial one:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
-[?lib 'cx-platform/ux-web' :as web]
+[?lib 'cx-platform/ux' as=ux]
+[?lib 'cx-platform/ux-web' as=web]
 [?let
   [; R-A1 migration: envelope → spliced children (2026-08-25) ]
   [= $ok  [ux:theme [token name=bg value="#111"] [token name=fg value="white"]]]
@@ -218,9 +218,9 @@ demonstration that `of=` is derivable rather than magic:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $arch
   [feature name=stamp version="1"
    [nouns [noun name=mark [field name=id type=text] [field name=note type=text label='Note']]]
@@ -255,9 +255,9 @@ An instance may also add views onto a noun it inherited:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $arch
   [feature name=stamp version="1"
    [nouns [noun name=mark [field name=id type=text] [field name=note type=text]]]
@@ -289,9 +289,9 @@ Repurposing an inherited name:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $arch
   [feature name=stamp version="1"
    [nouns [noun name=mark [field name=id type=text]]]
@@ -314,9 +314,9 @@ valve is authoring your own feature."*
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $arch
   [feature name=stamp version="1"
    [nouns [noun name=mark [field name=id type=text]]]
@@ -338,9 +338,9 @@ caught at instantiation rather than at first render:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $arch
   [feature name=stamp version="1"
    [nouns [noun name=mark [field name=id type=text]]]
@@ -362,9 +362,9 @@ its own code:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $arch
   [feature name=stamp version="1"
    [nouns [noun name=mark [field name=id type=text]]]
@@ -394,9 +394,9 @@ through another feature that offers one:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $arch
   [feature name=stamp version="1"
    [nouns [noun name=mark [field name=id type=text]]]
@@ -469,9 +469,9 @@ it the new archetype **refuses**, naming both addresses:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $v1
   [feature name=thing version="1"
    [nouns [noun name=thing [field name=id type=text] [field name=label type=text]]]
@@ -504,9 +504,9 @@ vendor's additions:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $v2
   [feature name=thing version="2"
    [nouns [noun name=thing [field name=id type=text] [field name=label type=text]
@@ -538,9 +538,9 @@ refuses rather than lowering the vendor's new floor for one tenant:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $v2
   [feature name=thing version="2"
    [nouns [noun name=thing [field name=id type=text] [field name=label type=text]]]
@@ -562,9 +562,9 @@ refinement against v1 is fine:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $v1
   [feature name=thing version="1"
    [nouns [noun name=thing [field name=id type=text] [field name=label type=text]]]
@@ -677,7 +677,7 @@ W2 is the one an adopter meets first, because the shared key is the join:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $ais
   [feature name=ais
    [types [type 'mmsi::text' [pattern '^[0-9]{9}$']]]
@@ -705,7 +705,7 @@ oracle rather than a checksum:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -727,7 +727,7 @@ true
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -757,7 +757,7 @@ and `ok=` is untouched:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let
  [= $alpha [feature name=alpha version='1' [summary 'A.']
    [keys [key name=order-id via=oid]]
@@ -782,7 +782,7 @@ carries information rather than noise:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let
  [= $alpha [feature name=alpha version='1' [summary 'A.']
    [keys [key name=order-id via=oid]]
@@ -823,7 +823,7 @@ report-first — a healthy feature is one component:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $f
   [feature name=till version="1"
    [nouns [noun name=sale [field name=id type=text]]
@@ -844,7 +844,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $f
   [feature name=till-and-piano version="1"
    [nouns [noun name=sale [field name=id type=text]]
@@ -875,9 +875,9 @@ field and tightens `create` to irreversible; `borough` renames and withdraws
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $thing
   [feature name=thing version="1"
    [summary 'The things this XAP is about. Rename it to your own noun.']
@@ -954,9 +954,9 @@ per tenant:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $v1
   [feature name=thing version="1"
    [nouns [noun name=thing [field name=id type=text] [field name=label type=text]]]
@@ -991,9 +991,9 @@ vendor made the floor) and `135` (clean, both faces agreeing):
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $v1
   [feature name=thing version="1"
    [nouns [noun name=thing [field name=id type=text] [field name=label type=text]]]

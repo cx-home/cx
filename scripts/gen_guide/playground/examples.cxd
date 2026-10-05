@@ -2644,7 +2644,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
   [section [# code/functions #]]
   [src [#
 [?lib 'cx-stdlib/fp']
-[?lib 'cx-stdlib/http-client' :as http]
+[?lib 'cx-stdlib/http-client' as=http]
 
 [$fp:traverse ("https://example.com/a", "https://example.com/b")
   [?fn ($u) [$http:get $u]]]
@@ -2944,7 +2944,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
   [label [#[205] a hole makes a callable you can bind and call#]]
   [section [# code/functions #]]
   [src [#
-[?lib 'cx-stdlib/strings' :as strings]
+[?lib 'cx-stdlib/strings' as=strings]
 [?let [= $shout [$strings:upper _]] [names [?splice [?for [in $n ("ada", "bo")] [yield [$shout $n]]]]]]
 #]]
   [note [#
@@ -3135,7 +3135,7 @@ The message names the offending call. The next example shows the honest declarat
   [label [#[219] `[$div 1.0 3.0]` refuses — an exact result does not exist#]]
   [section [# data/numbers #]]
   [src [#
-[?lib 'cx-stdlib/math' :as math]
+[?lib 'cx-stdlib/math' as=math]
 [divisions
   [exact [?fallback recover-with=[refused code=$err@code] body=[$div 1.0 3.0]]]
   [rounded [$math:div-decimal 1.0 3.0 {scale: 2 mode: :half-up}]]
@@ -3163,7 +3163,7 @@ The message names the offending call. The next example shows the honest declarat
   [label [#[221] `[$math:wrapping-mul …]` — modular arithmetic, asked for by name#]]
   [section [# data/numbers #]]
   [src [#
-[?lib 'cx-stdlib/math' :as math]
+[?lib 'cx-stdlib/math' as=math]
 [$math:wrapping-mul 9223372036854775807 2]
 #]]
   [note [#
@@ -3265,7 +3265,7 @@ The message names the offending call. The next example shows the honest declarat
   [label [#[229] `{name: "Ada" age: ::int}` — a declared kind with NO value is absent, not null#]]
   [section [# data/collections #]]
   [src [#
-[?lib 'cx-stdlib/map' :as map]
+[?lib 'cx-stdlib/map' as=map]
 [?let [= $m {name: "Ada" age: ::int}] [entry name=[$map:get $m "name"] has-age=[$present [$map:get $m "age"]]]]
 #]]
   [note [#
@@ -3389,7 +3389,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [label [#[237] `[$xml:parse]` refuses a duplicate attribute by position#]]
   [section [# data/formats #]]
   [src [#
-[?lib 'cx-stdlib/xml' :as xml]
+[?lib 'cx-stdlib/xml' as=xml]
 [$xml:parse "<r x='1' x='2'/>"]
 #]]
   [note [#
@@ -3438,7 +3438,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [label [#[241] JSON in, CX out — and back again#]]
   [section [# data/formats #]]
   [src [#
-[?lib 'cx-stdlib/json' :as json]
+[?lib 'cx-stdlib/json' as=json]
 [?let [= $doc [$json:parse '{"order": {"id": 7, "items": ["pen", "ink"], "paid": true}}']]
   [round-trip [as-cx $doc] [items [?splice $doc.order.items]] [back [$json:emit {order: {id: 7, items: ["pen", "ink"], paid: true}}]]]]
 #]]
@@ -3451,7 +3451,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [label [#[242] XML in, CX out — attributes and text#]]
   [section [# data/formats #]]
   [src [#
-[?lib 'cx-stdlib/xml' :as xml]
+[?lib 'cx-stdlib/xml' as=xml]
 [?let [= $doc [$xml:parse '<order id="7"><item sku="pen">2</item><item sku="ink">1</item></order>']]
   [round-trip [as-cx $doc] [skus [?splice [?for [in $i $doc//item] [yield [$string $i@sku]]]]] [back [$xml:emit [order id=7 [item sku=pen 2]]]]]]
 #]]
@@ -3464,7 +3464,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [label [#[243] YAML in, CX out — a config as a map#]]
   [section [# data/formats #]]
   [src [#
-[?lib 'cx-stdlib/yaml' :as yaml]
+[?lib 'cx-stdlib/yaml' as=yaml]
 [?let [= $cfg [$yaml:parse "service: api\nreplicas: 3\nports:\n  - 8080\n  - 8443\n"]]
   [round-trip [as-cx $cfg] [replicas $cfg.replicas] [back [$yaml:emit {service: "api", replicas: 3, ports: [8080, 8443]}]]]]
 #]]
@@ -3477,7 +3477,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [label [#[244] TOML in, CX out — tables are nested maps#]]
   [section [# data/formats #]]
   [src [#
-[?lib 'cx-stdlib/toml' :as toml]
+[?lib 'cx-stdlib/toml' as=toml]
 [?let [= $cfg [$toml:parse 'title = "cx"\n[owner]\nname = "Ada"\nyear = 2026\n']]
   [round-trip [as-cx $cfg] [owner $cfg.owner.name] [back [$toml:emit {title: "cx", owner: {name: "Ada", year: 2026}}]]]]
 #]]
@@ -3490,7 +3490,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [label [#[245] CSV in, CX out — rows as maps keyed by the header#]]
   [section [# data/formats #]]
   [src [#
-[?lib 'cx-stdlib/csv' :as csv]
+[?lib 'cx-stdlib/csv' as=csv]
 [?let [= $rows [$csv:parse "sku,qty,price\npen,2,1.50\nink,1,4.25"]]
   [round-trip [rows [$count $rows]] [head-row [$first $rows]] [back [$csv:emit $rows]]]]
 #]]
@@ -4400,7 +4400,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [grants [# --allow-net=127.0.0.1 #]]
   [src [#
 [?lib 'cx-platform/http']
-[?lib 'cx-stdlib/http-client' :as hc]
+[?lib 'cx-stdlib/http-client' as=hc]
 [?lib 'cx-stdlib/json']
 [?def api ($req::element)
   [?let [= $caller [$hc:header $req 'x-caller']/@value]
@@ -4429,7 +4429,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [grants [# --allow-net=127.0.0.1 #]]
   [src [#
 [?lib 'cx-platform/http']
-[?lib 'cx-stdlib/http-client' :as hc]
+[?lib 'cx-stdlib/http-client' as=hc]
 [?lib 'cx-stdlib/json']
 [?def api ($req::element)
   [?let [= $in [$json:parse [$hc:body-text $req]]]
@@ -4458,7 +4458,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [grants [# --allow-net=127.0.0.1 #]]
   [src [#
 [?lib 'cx-platform/http']
-[?lib 'cx-stdlib/http-client' :as hc]
+[?lib 'cx-stdlib/http-client' as=hc]
 [?def api ($req::element)
   [?if [= [$string $req@path] '/orders/4821']
     [then [response status=200 [body 'desk lamp']]]

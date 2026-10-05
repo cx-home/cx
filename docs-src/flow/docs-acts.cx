@@ -1,7 +1,7 @@
 # The acts of the documentation flow, docs-src/flow/docs.flow.cx (RULED:
 # CICD-1). ORDINARY command defs: the flow document names them by qualified
 # name, and this module is reached through docs-src/flow/docs.env.cx's
-# [?lib … :as docs], which is what makes them `docs/<def>` in the resolver
+# [?lib … as=docs], which is what makes them `docs/<def>` in the resolver
 # (flow.md §4.1; `cx flow --env`).
 #
 # Every act is a make target underneath, and that is the point, not a
@@ -22,11 +22,11 @@
 # rewriting. It is not hypothetical here: every `build-vcx` on the head
 # relinks (#1697), so without these flags each check would relink cx for
 # ~150 s while `cx flow run` itself is executing it.
-[?lib 'cx-stdlib/process' :as process]
-[?lib 'cx-stdlib/io' :as io]
-[?lib 'cx-stdlib/strings' :as strings]
-[?lib 'cx-stdlib/env' :as env]
-[?lib './flows/ci-acts.cx' :as c]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/io' as=io]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/env' as=env]
+[?lib './flows/ci-acts.cx' as=c]
 
 
 # make-one: flows/ci-acts.cx's, labelled for this flow.
