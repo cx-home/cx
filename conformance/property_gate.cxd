@@ -294,7 +294,7 @@ answered
 #]]
  ]
 
- [case id=property-gate-022-null-before-a-sequence level=core
+ [case id=property-gate-022-null-before-a-sequence grant='eval' level=core
   [tags property-gate vi program-reader-refused]
   [title [# the program reader reads `null (1, 2)` in an element body as the data reader does -- a null and a sequence, not a retired paren-call (code.md §1.3, RULED: CXF-5) #]]
   [in-code [#

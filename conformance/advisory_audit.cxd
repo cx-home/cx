@@ -28,7 +28,7 @@
 # check_conformance_coverage.sh carries for this suite.
 #]]
 
- [case id=advisory-audit-001-open-in-release level=core
+ [case id=advisory-audit-001-open-in-release grant='read' level=core
   [tags advisory-audit ok]
   [title [# every advisory case names an open issue in the release -- by label, by milestone, by title prefix -- and nothing is refused #]]
   [in-code [#
@@ -50,7 +50,7 @@
 #]]
  ]
 
- [case id=advisory-audit-002-closed-issue-refuses level=core
+ [case id=advisory-audit-002-closed-issue-refuses grant='read' level=core
   [tags advisory-audit closed]
   [title [# an advisory case whose issue is CLOSED is refused -- the red outlived the issue that tracked it #]]
   [in-code [#
@@ -65,7 +65,7 @@
 #]]
  ]
 
- [case id=advisory-audit-003-off-release-refuses level=core
+ [case id=advisory-audit-003-off-release-refuses grant='read' level=core
   [tags advisory-audit off-release]
   [title [# an open issue with neither the release label nor its milestone nor a title beginning with the release is refused #]]
   [in-code [#
@@ -84,7 +84,7 @@
 #]]
  ]
 
- [case id=advisory-audit-004-unread-refuses level=core
+ [case id=advisory-audit-004-unread-refuses grant='read' level=core
   [tags advisory-audit unread fail-closed]
   [title [# an issue the audit could not read is refused with the reason, never taken for an open one -- and so is a reference no lookup row answers #]]
   [in-code [#
@@ -101,7 +101,7 @@
 #]]
  ]
 
- [case id=advisory-audit-005-missing-and-malformed-refuse level=core
+ [case id=advisory-audit-005-missing-and-malformed-refuse grant='read' level=core
   [tags advisory-audit no-issue bad-issue]
   [title [# an advisory case naming no issue, or an issue= that is not owner/repo#n, is refused -- even with a row that would answer it #]]
   [in-code [#
@@ -119,7 +119,7 @@
 #]]
  ]
 
- [case id=advisory-audit-006-the-report-lines level=core
+ [case id=advisory-audit-006-the-report-lines grant='read' level=core
   [tags advisory-audit report]
   [title [# the report is the census line, then ok or one named line per refusal -- what make advisory-audit prints #]]
   [in-code [#
@@ -135,7 +135,7 @@
 #]]
  ]
 
- [case id=advisory-audit-007-the-listing level=core
+ [case id=advisory-audit-007-the-listing grant='read' level=core
   [tags advisory-audit listing]
   [title [# every advisory case is listed with its issue and the issue's state as read, refused or not #]]
   [in-code [#
@@ -154,7 +154,7 @@
 #]]
  ]
 
- [case id=advisory-audit-008-the-reference-shape level=core
+ [case id=advisory-audit-008-the-reference-shape grant='read' level=core
   [tags advisory-audit issue-ref]
   [title [# an issue reference is owner/repo#n -- the same shape the shared loader's is_issue_ref admits #]]
   [in-code [#
@@ -178,7 +178,7 @@ false
 #]]
  ]
 
- [case id=advisory-audit-009-a-milestone-outranks-a-label-or-title level=core
+ [case id=advisory-audit-009-a-milestone-outranks-a-label-or-title grant='read' level=core
   [tags advisory-audit off-release milestone]
   [title [# an issue carrying the release label or title prefix but ANOTHER milestone is outside the current milestone and refused (refutation a04, a05) #]]
   [in-code [#
@@ -199,7 +199,7 @@ false
 #]]
  ]
 
- [case id=advisory-audit-010-a-suite-element-resolves-as-the-loader-does level=core
+ [case id=advisory-audit-010-a-suite-element-resolves-as-the-loader-does grant='read' level=core
   [tags advisory-audit resolution]
   [title [# the audit reads a suite the way the shared loader does -- per-case gate= over the element over the policy default, per-case issue= over the element, an empty issue= inheriting (refutation r03, r09) #]]
   [in-code [#
@@ -223,7 +223,7 @@ false
 #]]
  ]
 
- [case id=advisory-audit-011-a-file-the-audit-cannot-read-refuses level=core
+ [case id=advisory-audit-011-a-file-the-audit-cannot-read-refuses grant='read' level=core
   [tags advisory-audit unparsed fail-closed]
   [title [# a corpus file naming advisory that the audit cannot parse (a multi-document stream) is refused by name, never skipped (refutation w-check) #]]
   [in-code [#
