@@ -466,10 +466,10 @@ and do not carry one over from another Lisp.
 | `[?take]` | Iterator stdlib — prefix of `count` items |
 | `[?drop]` | Iterator stdlib — suffix after `count` items |
 | `[?zip]` | Iterator stdlib — per-position tuples |
-| `[?enumerate]` | Iterator stdlib — emit `(i, item)` pairs |
+| `[?enumerate]` | Iterator stdlib — emit `(position, item)` pairs, the position 1-based (D4) |
 | `[?chunks]` | Iterator stdlib — group by `count` |
 | `[?concat]` | Iterator stdlib — flatten one level across sources |
-| `[?cycle]` | Iterator stdlib — bounded repeat |
+| `[?cycle]` | Iterator stdlib — bounded repeat: a leading round count `[?cycle N SOURCE]` or an item bound `max=K` |
 | `[?scan]` | Iterator stdlib — running-fold prefixes |
 | `[?flatten]` | Iterator stdlib — flatten one level of nesting |
 | `[?partition]` | Iterator stdlib — split by predicate |
@@ -842,6 +842,20 @@ $ cx --data=input.cx prog.cx
 :other
 ```
 
+With no subject at all, a `[?match]` of `[when …]` arms is the **cond** — CX's
+one spelling of `if … elif … else`: the first condition that holds answers,
+and `[else]` answers when none does. Write no decorative subject:
+
+`prog.cx`
+```cx
+([?let [= $x 1] [?match [when [> $x 3] big] [when [> $x 0] mid] [else small]]], [?let [= $x -1] [?match [when [> $x 3] big] [when [> $x 0] mid] [else small]]])
+```
+
+```console
+$ cx prog.cx
+(mid, small)
+```
+
 ### Destructure in one line — single-arm `[?match]`
 
 Drop the arm keywords and `[?match]` takes one pattern and one body:
@@ -867,6 +881,19 @@ $ cx --data=input.cx prog.cx
 7
 ```
 
+The body may be bare, as every other body is — `[yield …]` is the long form of
+the same thing:
+
+`prog.cx`
+```cx
+[?match (3, 4) ($a, $b) [+ $a $b]]
+```
+
+```console
+$ cx prog.cx
+7
+```
+
 The refuse half is the point. A stack too short to take apart stops the
 program instead of computing something from absent operands:
 
@@ -884,7 +911,7 @@ program instead of computing something from absent operands:
 
 ```console
 $ cx --data=input.cx prog.cx
-error: cx-err:CXER0100: [?match] no match for value (single-arm form)
+error: cx-err:CXER0100: [?match] no match for value (single-arm form) at line 2:3
 ```
 
 Reach for `[?match]` when you are taking a value *apart*, and for the
@@ -970,7 +997,7 @@ That buys three things a hand-rolled dispatch cannot have:
 
 ```console
 $ cx --data=input.cx prog.cx
-error: cx-err:CXER0100: [?match] [of status]: no arm claimed :pending — a match over a declared-closed type has no silent fall-through; add the missing [case …] arm or an explicit [else] (code.md §8.2)
+error: cx-err:CXER0100: [?match] [of status]: no arm claimed :pending — a match over a declared-closed type has no silent fall-through; add the missing [case …] arm or an explicit [else] (code.md §8.2) at line 4:1
 ```
 
 `[else …]` is the opt-out, and writing one is how you say you meant it.
@@ -1125,12 +1152,12 @@ minus
 ```cx
 [?lib 'cx-stdlib/map']
 [?let [= $m {'+': plus}] [= $k 'zz']
-  ([$map:get $m $k], [?else [$map:get $m $k] :default])]
+  ([$present [$map:get $m $k]], [?else [$map:get $m $k] :default])]
 ```
 
 ```console
 $ cx prog.cx
-((), :default)
+(false, :default)
 ```
 
 `$m.$k` — the path step with a computed name — reads the same entry and
@@ -2435,7 +2462,7 @@ than guessed at:
 
 ```console
 $ cx prog.cx
-error: cx-err:CXER0111: [?if] expects [then …] / [else …] clause children after the condition — got a bare positional branch expression; write [?if cond [then thenExpr] [else elseExpr]?]
+error: cx-err:CXER0111: [?if] expects [then …] / [else …] clause children after the condition — got a bare positional branch expression; write [?if cond [then thenExpr] [else elseExpr]?] at line 1:11
 ```
 
 ## 10. Before you emit CX, check these

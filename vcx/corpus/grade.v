@@ -137,6 +137,7 @@ pub:
 	tags            []string // case tags (e.g. 'strict-mode' enables --strict typing)
 	ring            string   // per-case ring override ('' = inherit the suite header's ring=)
 	packs           []string // declared local-effect pack dependencies (fixtures.cxs `packs=`)
+	files           []fixtures.FixtureFile // the [file name='N' [#TEXT#]] inputs the case reads, laid down in a scratch directory the program runs from (gap-129, cx-private#1809, RULED: GAPS-1)
 }
 
 pub fn parsed_from(c fixtures.FixtureCase) ParsedFixture {
@@ -158,6 +159,7 @@ pub fn parsed_from(c fixtures.FixtureCase) ParsedFixture {
 		tags:            c.tags
 		ring:            c.ring
 		packs:           c.packs
+		files:           c.files
 	}
 }
 
@@ -610,6 +612,12 @@ pub fn grade_files(opts Options, names []string) Outcome {
 		// cases). Declared here for the same reason `pend_id` is: the body
 		// `continue`s from a dozen places.
 		mut env := code.MatchEnv{}
+		// gap-129 (cx-private#1809, RULED: GAPS-1): the scratch directory the
+		// previous case's [file …] inputs were laid down in, torn down (and the
+		// working directory restored) at the same point `env` is — the body
+		// `continue`s from a dozen places.
+		mut case_dir := ''
+		orig_cwd := os.getwd()
 		for f in cases {
 			if failures.len > 0 && !identity_reported {
 				identity_reported = true
@@ -692,6 +700,16 @@ pub fn grade_files(opts Options, names []string) Outcome {
 			}
 			adv_ids['${fname}/${f.id}'] = eff_gate == 'advisory'
 			env.close()
+			case_dir = case_files_teardown(case_dir, orig_cwd)
+			// gap-129: the case's own input files, laid down in a fresh scratch
+			// directory the program runs from, so a relative read finds them.
+			if f.files.len > 0 {
+				case_dir = case_files_lay_down(f.files) or {
+					failures << '${fname}/${f.id}: ${err.msg()}'
+					env = code.new_env()
+					continue
+				}
+			}
 			env = code.new_env()
 			// sched.md §3.3 loop-construction selector: the conformance harness runs the
 			// DETERMINISTIC clock (RULED: 1358-b). Production defaults to :wall, so
@@ -819,6 +837,7 @@ pub fn grade_files(opts Options, names []string) Outcome {
 			}
 		}
 		env.close()
+		case_dir = case_files_teardown(case_dir, orig_cwd)
 		case_ms_line(fname, pend_id, csw)
 		if opts.file_ms {
 			ms_line('file', fname, ' cases=${o.ran - file_ran_at_entry}', fsw)
@@ -886,4 +905,49 @@ pub fn failures_for(o Outcome, file string, id string) []string {
 		}
 	}
 	return out
+}
+
+// case_files_lay_down writes a case's `[file name='N' [#TEXT#]]` inputs into a
+// fresh scratch directory and makes it the working directory, so the program
+// reads them by their relative names (gap-129, cx-private#1809, RULED:
+// GAPS-1). The loader's files_refusal (cx corpus refuses the file before any
+// grading) is asked again here, so a shard grading the same case refuses it
+// too rather than writing outside the directory.
+fn case_files_lay_down(files []fixtures.FixtureFile) !string {
+	why := fixtures.files_refusal(files)
+	if why != '' {
+		return error('REFUSED — the case ${why}')
+	}
+	dir := os.join_path(os.temp_dir(), 'cx-corpus-files-${os.getpid()}-${time.now().unix_nano()}')
+	os.mkdir_all(dir) or { return error('cannot create the case\'s scratch directory ${dir}: ${err.msg()}') }
+	for f in files {
+		target := os.join_path(dir, f.name)
+		parent := os.dir(target)
+		if parent != dir {
+			os.mkdir_all(parent) or {
+				os.rmdir_all(dir) or {}
+				return error('cannot create ${parent} for [file name=\'${f.name}\']: ${err.msg()}')
+			}
+		}
+		os.write_file(target, f.text) or {
+			os.rmdir_all(dir) or {}
+			return error('cannot write [file name=\'${f.name}\']: ${err.msg()}')
+		}
+	}
+	os.chdir(dir) or {
+		os.rmdir_all(dir) or {}
+		return error('cannot enter the case\'s scratch directory ${dir}: ${err.msg()}')
+	}
+	return dir
+}
+
+// case_files_teardown restores the working directory and removes the scratch
+// directory a case's files were laid down in; a no-op when the case had none.
+fn case_files_teardown(case_dir string, orig_cwd string) string {
+	if case_dir == '' {
+		return ''
+	}
+	os.chdir(orig_cwd) or {}
+	os.rmdir_all(case_dir) or {}
+	return ''
 }

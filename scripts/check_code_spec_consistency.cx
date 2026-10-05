@@ -203,7 +203,7 @@
         # non-participating group is a typed refusal, caught here.
         [?let [= $g1v [$re:group $m 1]]
               [= $d [?match $g1v
-                [case [err $e] [$re:group $m 2]]
+                [case [err$e] [$re:group $m 2]]
                 [else [?if [= $g1v ""] [then [$re:group $m 2]] [else $g1v]]]]]
           [$set-put $a [$concat "D" $d]]]]]]]
     [$map:put $a7 "decrefs" [$fp:fold

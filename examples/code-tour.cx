@@ -109,7 +109,7 @@
        section (R-A1 — a bare sequence as content refuses loudly). #]
     [?splice [?match [?for [user $u]
               [yield [profile name=$u/@name email=$u/@email]]]
-      [case [err $e] [needs-input-doc run-with='--data=examples/code-tour.input.cx']]
+      [case [err$e] [needs-input-doc run-with='--data=examples/code-tour.input.cx']]
       [case $v $v]]]]
 
   [section title='iteration with [where] + [= …] + [order-by]'
@@ -151,7 +151,7 @@
   [section title='per-iteration recovery folds into the yield body'
     [?for [in $n (1, 0, 2)]
       [yield [?match [/ 100 $n]
-        [case [err $e] [skipped n=$n reason=$e/@code]]
+        [case [err$e] [skipped n=$n reason=$e/@code]]
         [case $v $v]]]]]
 
   [# ─── §8. Pipe composition (§8.9 — prefix-only, no infix |) ─── #]

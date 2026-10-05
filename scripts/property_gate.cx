@@ -49,7 +49,7 @@
 # that did not fail as planted); 2 a usage error or an unreadable register.
 #
 # Run from the checkout root (the paths below are cwd-relative):
-#   cx --allow-read --allow-write --allow-eval --allow-subprocess scripts/property_gate.cx
+#   cx --allow-read --allow-write --allow-eval --allow-subprocess --allow-random scripts/property_gate.cx
 #      [--seed N] [--count N] [--register FILE] [--self-test]
 # (or: make property-gate, which grades the register's corpus, runs the
 # self-test, then the step). ALL FOUR GRANTS ARE LOAD-BEARING: it reads the
