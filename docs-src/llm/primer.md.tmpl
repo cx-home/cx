@@ -326,6 +326,12 @@ wildcard, and `[else]` is the fallback.
 
 {{EXAMPLE:program-match-multi-007-wildcard block}}
 
+With no subject at all, a `[?match]` of `[when …]` arms is the **cond** — CX's
+one spelling of `if … elif … else`: the first condition that holds answers,
+and `[else]` answers when none does. Write no decorative subject:
+
+{{EXAMPLE:program-gap-165-subject-less-match-is-a-cond block}}
+
 ### Destructure in one line — single-arm `[?match]`
 
 Drop the arm keywords and `[?match]` takes one pattern and one body:
@@ -335,6 +341,11 @@ refusal, never a silent skip. The full pattern grammar applies here, rest
 marker included:
 
 {{EXAMPLE:program-match-single-025-destructure-or-refuse-idiom block}}
+
+The body may be bare, as every other body is — `[yield …]` is the long form of
+the same thing:
+
+{{EXAMPLE:program-gap-155-single-arm-match-bare-body block}}
 
 The refuse half is the point. A stack too short to take apart stops the
 program instead of computing something from absent operands:
