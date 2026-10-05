@@ -588,7 +588,8 @@ step_globs() {
     corpus-audit)                  echo "corpus/* $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/corpus_audit.sh" ;;
     # bench/repr (#1119 W1) compiles the `cx` module as SOURCE and measures the
     # live tree it builds, so it depends on Ring 0 and on nothing above it.
-    repr-guard)                    echo 'vcx/cx/* vcx/v.mod third_party/* bench/repr/*' ;;
+    # A cx-core-data pin move (deps.cxd) moves the module it compiles (#1822).
+    repr-guard)                    echo "$RING0 vcx/v.mod third_party/* bench/repr/*" ;;
     # #1766: the driver's verdicts on planted format drivers — the driver and the cases.
     repr-guard-selftest)           echo 'bench/repr/* scripts/repr_guard_selftest.cx' ;;
     # the in-module Ring-0 test roster guard (#1209) reads the Makefile roster

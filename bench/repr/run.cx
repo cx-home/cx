@@ -43,10 +43,14 @@
 #   CX_REPR_LANE_DEADLINE_S  the per-reading (and per-generation) deadline, s (default 300)
 #   CX_REPR_BUILD_DEADLINE_S the driver build's deadline, s (default 1800)
 #   CX_ALLOW_PATH_V=1        accept a PATH-resolved `v` when third_party/v/v is absent
-#   CX_V_SEARCH              the V -path for the build (default @vlib|@vmodules|<repo>/vcx)
+#   CX_V_SEARCH              the V -path for the build (default
+#                            @vlib|@vmodules|<repo>/deps/cx-core-data/vcx, the pinned
+#                            module `cx`'s root — #1822)
 #   CX_REPR_BIN, CX_REPR_CORPUS_DIR — a planted format driver and a corpus
 #     directory of its own, for scripts/repr_guard_selftest.cx (the build is
 #     skipped for a planted driver).
+#   CX_REPR_V, CX_REPR_BUILD_DIR — a planted V compiler and a build directory
+#     of its own, for the self-test's build case (#1822).
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
 [?lib 'cx-stdlib/process' as=process]
@@ -138,7 +142,9 @@
 
 [?def repo scope=private impure [returns string] () [$env:cwd]]
 [?def here scope=private impure [returns string] () [$cat ([$repo], '/bench/repr')]]
-[?def build-dir scope=private impure [returns string] () [$cat ([$here], '/.build')]]
+[?def build-dir scope=private impure [returns string] ()
+  [?let [= $o [$env:var-or-default 'CX_REPR_BUILD_DIR' '']]
+    [?if [= $o ''] [then [$cat ([$here], '/.build')]] [else $o]]]]
 [?def corpus-dir scope=private impure [returns string] ()
   [?let [= $o [$env:var-or-default 'CX_REPR_CORPUS_DIR' '']]
     [?if [= $o ''] [then [$cat ([$here], '/_corpus')]] [else $o]]]]
@@ -206,11 +212,13 @@
 # fork's mode. Answers the compiler's path, or '' when there is none.
 [?def v-compiler scope=private impure [returns string] ()
   [?let [= $pinned [$cat ([$repo], '/third_party/v/v')]]
-    [?if [$executable $pinned] [then $pinned]
+        [= $plant [$env:var-or-default 'CX_REPR_V' '']]
+    [?if [not [= $plant '']] [then [?if [$executable $plant] [then $plant] [else '']]]
+    [else [?if [$executable $pinned] [then $pinned]
       [else [?if [= [$env:var-or-default 'CX_ALLOW_PATH_V' '0'] '1']
               [then [?let [= $p [$strings:trim [$quick ('sh', '-c', 'command -v v')]]]
                       [?if [and [not [= $p '']] [$executable $p]] [then $p] [else '']]]]
-              [else '']]]]]]
+              [else '']]]]]]]]
 
 # ── build (only when stale) ─────────────────────────────────────────────────
 # `-prod` is load-bearing, for the reason gates 14/15/16 carry it (#835): the
@@ -247,9 +255,18 @@
       [else
         [?let [= $_say [$say 'bench/repr: building the driver (v -gc e -prod over the cx module)…']]
               [= $log [$cat ([$build-dir], '/build.log')]]
-              [= $search [$env:var-or-default 'CX_V_SEARCH' [$cat ('@vlib|@vmodules|', [$repo], '/vcx')]]]
+              # The pinned module `cx` (deps/cx-core-data/vcx) and the two RE2
+              # archives its regex_re2.v links: their defaults are cx-core-data's
+              # own layout, so a consumer names where its build wrote them — the
+              # shim in cx-core-code's target, the vendored libre2 under the front
+              # door's third_party (deps/cx-core-code/vcx/Makefile, CX_NATIVE_DEFINES;
+              # repr-guard depends on build-vcx, which builds both) (#1822).
+              [= $search [$env:var-or-default 'CX_V_SEARCH' [$cat ('@vlib|@vmodules|', [$repo], '/deps/cx-core-data/vcx')]]]
               [= $limit [$build-deadline-s]]
-              [= $argv ($v, '-path', $search, '-gc', 'e', '-enable-globals', '-prod', '-o', $bin, [$cat ([$here], '/repr.v')])]
+              [= $argv ($v, '-path', $search,
+                        '-d', [$cat ('cx_re2_lib_dir=', [$repo], '/deps/cx-core-code/vcx/target')],
+                        '-d', [$cat ('cx_re2_static=', [$repo], '/third_party/re2/obj/libre2.a')],
+                        '-gc', 'e', '-enable-globals', '-prod', '-o', $bin, [$cat ([$here], '/repr.v')])]
               [= $r [?fallback [$process:run $argv capture={stdout: $log, stderr: [$cat ($log, '.err')]}
                                              timeout-ms=[* $limit 1000] new-process-group=true]
                       [recover-with [proc-result exit-code=-1 timed-out=false]]]]

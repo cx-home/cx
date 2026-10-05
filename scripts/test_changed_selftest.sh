@@ -779,8 +779,18 @@ if [ -z "$z_miss" ]; then
 else
 	bad Z "not selected:${z_miss}"
 fi
+# ── B — a pin bump selects repr-guard (#1822) ──
+# bench/repr compiles the pinned module `cx` (deps/cx-core-data/vcx) as source;
+# its pre-split row named vcx/cx/* only, so the pin bump that moves the module
+# (and the driver's inputs hash, and so its rebuild) selected no repr-guard.
+run deps.cxd > "$T/q"
+if targets "$T/q" | tr " " "\n" | grep -q "^repr-guard\$"; then
+	ok B "a pin bump (deps.cxd) selects repr-guard, which compiles the pinned module cx"
+else
+	bad B "deps.cxd did not select repr-guard"
+fi
 if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop step; P the vcx/corpus grading core selects the steps that run it; R the stripped scripts/ paths select their own rows; S every selected suite file is where the suite is; T a deleted test file is not named; U a page a pinned test reads by name selects it; V a change of one stripped scripts/ path selects its rows; W a page the vocabulary [tree] rows read selects docs-vocabulary-check; X a pin bump selects the pinned xap and fabric V umbrellas; Y a V pin move selects the *-real steps; Z a pin bump selects the pinned mail and net V tests)"
+echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop step; P the vcx/corpus grading core selects the steps that run it; B a pin bump selects repr-guard (#1822); R the stripped scripts/ paths select their own rows; S every selected suite file is where the suite is; T a deleted test file is not named; U a page a pinned test reads by name selects it; V a change of one stripped scripts/ path selects its rows; W a page the vocabulary [tree] rows read selects docs-vocabulary-check; X a pin bump selects the pinned xap and fabric V umbrellas; Y a V pin move selects the *-real steps; Z a pin bump selects the pinned mail and net V tests)"
