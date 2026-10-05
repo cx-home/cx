@@ -608,7 +608,7 @@ build-profiles: build-vcx
 # to system V at the cost of broken Option payloads — see
 # the patched-V README at third_party/v/README.md (P1).
 build-wasm:
-	DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
+	CX_VERSION_FILE=$(CURDIR)/VERSION DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
 
 # Gate 17 — stage the playground bundle under dist/playground-preview/
 # so scripts/test_playground_smoke.sh has a docroot to boot Python's
@@ -657,9 +657,9 @@ build-playground:
 	@# selects this one when WebAssembly.Suspending is absent — full
 	@# recursion window, wall-clock [?sleep] raises catchable CXER0270
 	@# (mock sleeps work). No pthreads.
-	@SINGLE_FILE=1 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=0 OUT_NAME=libcx-async    DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
-	@SINGLE_FILE=0 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=1 OUT_NAME=libcx-pthreads DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
-	@SINGLE_FILE=1 ASYNCIFY=0                 PTHREADS=0 OUT_NAME=libcx-sync     DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
+	@SINGLE_FILE=1 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=0 OUT_NAME=libcx-async    CX_VERSION_FILE=$(CURDIR)/VERSION DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
+	@SINGLE_FILE=0 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=1 OUT_NAME=libcx-pthreads CX_VERSION_FILE=$(CURDIR)/VERSION DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
+	@SINGLE_FILE=1 ASYNCIFY=0                 PTHREADS=0 OUT_NAME=libcx-sync     CX_VERSION_FILE=$(CURDIR)/VERSION DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
 	@echo "[build-playground] staging dist/playground-preview/"
 	@rm -rf dist/playground-preview
 	@mkdir -p dist/playground-preview/playground
@@ -716,7 +716,7 @@ build-playground:
 # existing bundle by design, but must never do so silently).
 .PHONY: wasm-fresh-gate
 wasm-fresh-gate:
-	@OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/check_wasm_fresh.sh
+	@CX_VERSION_FILE=$(CURDIR)/VERSION OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/check_wasm_fresh.sh
 
 # One shared prerequisite for every step that RUNS the playground bundle: build
 # it when stale, prove it fresh, once. Two steps each doing "check || build"
@@ -725,8 +725,8 @@ wasm-fresh-gate:
 # input". A prerequisite serializes the build ahead of both.
 .PHONY: wasm-bundle-fresh
 wasm-bundle-fresh:
-	@OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/check_wasm_fresh.sh >/dev/null 2>&1 || $(MAKE) build-playground
-	@OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/check_wasm_fresh.sh
+	@CX_VERSION_FILE=$(CURDIR)/VERSION OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/check_wasm_fresh.sh >/dev/null 2>&1 || $(MAKE) build-playground
+	@CX_VERSION_FILE=$(CURDIR)/VERSION OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/check_wasm_fresh.sh
 
 # Optional Apache Arrow C-Data interop library (libcx_arrow per ADR
 # 0015 D9 / spec/03-approved/core/abi.md §2.11). Separate from libcx; a binding dlopens
