@@ -159,13 +159,13 @@
 [?def stage-budget scope=public impure ()
   [?let [= $raw [$strings:trim [?else [$env:var "CX_XPATH_LANE_TIMEOUT_MS"] ""]]]
         [= $n [?if [= $raw ""] [then 60000] [else [cast $raw :int]]]]
-    [?match $n [case [err $e] 60000] [else [?if [> $n 0] [then $n] [else 60000]]]]]]
+    [?match $n [case [err$e] 60000] [else [?if [> $n 0] [then $n] [else 60000]]]]]]
 
 [?def spawn-once scope=public impure ($binpath $args $stdin $budget)
   [?let [= $argv [$fp:flat-map (($binpath), $args) [?fn ($x) $x]]]
         [= $r [$process:run $argv stdin=$stdin timeout-ms=$budget]]
     [?match $r
-      [case [err $e]
+      [case [err$e]
         [inv ok=false code=-1 stdout=""
              stderr=[$concat "spawn failed: " [$string $e@message]]]]
       [else [?if $r@timed-out
@@ -210,7 +210,7 @@
 
 [?def tiers-of scope=public ($gp $suite)
   [?match $gp
-    [case [err $e]
+    [case [err$e]
       {found: false, suite-default: "", policy-default: "",
        err: [$concat "gate manifest did not re-parse: " [$string $e@message]]}]
     [else
@@ -282,7 +282,7 @@
 
 [?def need-suite scope=public impure ($doc $p)
   [?match $doc
-    [case [err $e]
+    [case [err$e]
       [$die2 [$concat "error: malformed fixture file " $p ": "
                       [$string $e@message]]]]
     [else true]]]

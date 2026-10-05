@@ -260,7 +260,7 @@ $ cx --allow-all reveal.cx
     [example lang=cx
       """[?lib 'cx-stdlib/io']
 [?match [$io:read-file 'config.cx']
-  [case [err $e] 'no read grant or no config - using defaults']
+  [case [err$e] 'no read grant or no config - using defaults']
   [else 'loaded config']]"""]
     [output
       """$ cx degrade.cx

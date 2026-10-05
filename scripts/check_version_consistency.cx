@@ -149,7 +149,7 @@
 # read-or: file text, or the [missing] sentinel.
 [?def read-or scope=public impure ($p)
   [?match [$io:read-file $p]
-    [case [err $e] [missing]]
+    [case [err$e] [missing]]
     [case $t $t]]]
 
 # check-manifest: () when the manifest's version field equals $version;

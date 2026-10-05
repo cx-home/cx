@@ -64,9 +64,9 @@
                          'CX_BUILD_SLOT=', 'CX_GATE_OWNER=')
             timeout-ms=120000]]
     [= $t1 [$time:monotonic-now]]
-    [inv exit=[?match $r [case [err $e] -1] [else $r@exit-code]]
+    [inv exit=[?match $r [case [err$e] -1] [else $r@exit-code]]
          ms=[$math:round [cast [/ [- $t1 $t0] 1000000] :float]]
-         out=[?match $r [case [err $e] [$string $e@message]]
+         out=[?match $r [case [err$e] [$string $e@message]]
                         [else [$cat ([$string $r@stdout], [$string $r@stderr])]]]]]]
 
 # queued — run `make check-gate-lock` with NO budget under a $ms deadline and
@@ -79,7 +79,7 @@
                              'CX_GATE_LOCK_WAIT=', 'CX_GATE_LOCK_POLL=1',
                              'CX_BUILD_SLOT=', 'CX_GATE_OWNER=')
                   timeout-ms=$ms kill-on-timeout=true]]
-    [?match $r [case [err $e] false] [else [?else $r@timed-out false]]]]]
+    [?match $r [case [err$e] false] [else [?else $r@timed-out false]]]]]
 
 # refused — the subject here is `make`, not the recipe, and make answers 2 for
 # ANY failed recipe whatever that recipe's own exit was. So a refusal is

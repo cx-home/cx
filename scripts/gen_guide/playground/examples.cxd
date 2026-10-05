@@ -1069,7 +1069,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 [$position (10, 20, 30, 20, 40) 20]
 #]]
   [note [#
-**Introduces:** `[$position xs needle]` — **1-based** index of the first occurrence, or `0` when the needle is absent. Here that is `2`.
+**Introduces:** `[$position xs needle]` — **1-based** index of the first occurrence, or absence `()` when the needle is not there (the one "not found" answer of the lookup verbs, so `[?else]` and `[$present]` see it). Here that is `2`.
 #]]
  ]
 
@@ -2050,11 +2050,11 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
   [src [#
 [?let [= $a (1, 2, 3, 4)] [= $b (3, 4, 5, 6)]
   [?for [in $x $a]
-    [where [> [$position $b $x] 0]]
+    [where [$present [$position $b $x]]]
     [yield $x]]]
 #]]
   [note [#
-**Pattern:** keep items that appear in both sequences. **Uses:** `[$position xs needle]` as the membership test — it answers the **1-based** index of the first occurrence and `0` when the needle is absent, so `[> [$position $b $x] 0]` reads "is in `$b`". Both bindings are actually read; one flat `[?let]` takes them both.
+**Pattern:** keep items that appear in both sequences. **Uses:** `[$position xs needle]` as the membership test — it answers the **1-based** index of the first occurrence and absence `()` when the needle is not there, so `[$present [$position $b $x]]` reads "is in `$b`". Both bindings are actually read; one flat `[?let]` takes them both.
 #]]
  ]
 
@@ -3138,11 +3138,11 @@ The message names the offending call. The next example shows the honest declarat
 [?lib 'cx-stdlib/math' :as math]
 [divisions
   [exact [?fallback recover-with=[refused code=$err@code] body=[$div 1.0 3.0]]]
-  [rounded [$math:div-decimal 1.0 3.0 {precision: 2 mode: :half-up}]]
+  [rounded [$math:div-decimal 1.0 3.0 {scale: 2 mode: :half-up}]]
   [float [/ 1 3]]]
 #]]
   [note [#
-**Introduces:** the refusal side of the exact lane, and the two ways to ask properly. `1.0 / 3.0` has no terminating decimal, so `$div` REFUSES BY NAME (`CXER3002`) rather than inventing a precision — here the refusal is caught as a value and only its code is shown. `[$math:div-decimal a b {precision: N mode: :half-up}]` from `cx-stdlib/math` supplies the rounding context and answers `0.33`; `[/ 1 3]` on integers takes the float lane and answers the nearest double. Three spellings, three different contracts, each visible in the output.
+**Introduces:** the refusal side of the exact lane, and the two ways to ask properly. `1.0 / 3.0` has no terminating decimal, so `$div` REFUSES BY NAME (`CXER3002`) rather than inventing a precision — here the refusal is caught as a value and only its code is shown. `[$math:div-decimal a b {scale: N mode: :half-up}]` from `cx-stdlib/math` supplies the rounding context — `scale` digits after the point, or `precision` significant digits — and answers `0.33`; `[/ 1 3]` on integers takes the float lane and answers the nearest double. Three spellings, three different contracts, each visible in the output.
 #]]
   [expect [# [rounded 0.33] #]]
  ]

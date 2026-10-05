@@ -104,11 +104,11 @@
 [?def status-of scope=public impure ($u)
   [?let [= $h [$http:head $u {timeout: TIMEOUT}]]
     [?match $h
-      [case [err $e] [$concat "error " [$string $e@code]]]
+      [case [err$e] [$concat "error " [$string $e@code]]]
       [else [?let [= $s [$http:status $h]]
               [?if [or [= $s 403] [= $s 405]]
                 [then [?match [$http:get $u {timeout: TIMEOUT}]
-                        [case [err $e] [$concat "error " [$string $e@code]]]
+                        [case [err$e] [$concat "error " [$string $e@code]]]
                         [else [$string [$http:status [$http:get $u {timeout: TIMEOUT}]]]]]]
                 [else [$string $s]]]]]]]]
 
