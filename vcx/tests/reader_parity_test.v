@@ -506,6 +506,14 @@ const reason_prog = 'RECORDED EXCEPTION (1548-c) — a program document whose BR
 // 2026-09-18 morning, seventy-five after, and every departure forced by this
 // judgement rather than asserted by a commit message.
 const accepted_by_one_table = [
+	// ── the DATA stream (RULED: STREAM-1; cx-private reader-parity red) ──
+	// 32 -> 17: the data reader reads [?lib]/[?const] as EvalDirectives and a
+	// module-qualified `$prefix:local` as a hole (lexicon [L78]), so the
+	// fifteen call-shaped files whose only divergence was `[$mod:verb (…)]`
+	// read alike and left the table; the two below are the program forms the
+	// data grammar states its own rule about.
+	AcceptedByOne{'scripts/gitconfig_home_selftest.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/repr_guard_selftest.cx', .program, reason_1536},
 	// ── #1559's split-out tail (#1576, #1578, #1579) — 5 -> 0 ──
 	// 6 -> 4 -> 5 -> 0: conformance/code.cxd and conformance/stdlib/array.cxd left
 	// with cx-core-code's extraction (RULED: RS-12, D68a); lockfile.cxd and
@@ -556,31 +564,20 @@ const accepted_by_one_table = [
 	// owns those files judges its own reader parity, or nothing does, and
 	// RESULTS.md says which. `examples/platform/together/sso-flow-xap/actor.cx`
 	// stays -- it is cx's composition, not sso's.
-	AcceptedByOne{'examples/platform/together/sso-flow-xap/actor.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/check_code_diagram_fixtures.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/check_code_fixtures.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/check_code_spec_consistency.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/check_completions_drift.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/check_no_adr_citations.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/check_no_cxl_token.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/check_null_absence_conflation.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/check_portable_links.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/check_xpath_parity_fixtures.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/compare_bench.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/compile_binding_api_fixtures.cx', .program, reason_1536},
 	// 22 -> 23: scripts/deps_cx_selftest.cx, #1643's bootstrap self-test -- the
 	// class's own shape, `[$process:run ("sh", "-c", $script)]` (RULED: RS-7).
 	AcceptedByOne{'scripts/deps_cx_selftest.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/fmt_corpus_sweep.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/gate_lock_selftest.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/gen_docs/primer_build.cx', .program, reason_1536},
 	// 21 -> 22: scripts/gen_site/site_build.cx, the cxhome.org landing-page
 	// generator (RULED: RS-28, RS-30) -- the class's own shape,
 	// `[$pb:cat-seqs ($acc, ($item,))]`, the same fold primer_build.cx above
 	// folds with, whose functions it imports.
-	AcceptedByOne{'scripts/gen_site/site_build.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/gen_guide/snippet_check.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/lang_stats.cx', .program, reason_1536},
 	// 23 -> 24: #1670's scripts/release_asset_links_gate.cx, the same shape as
 	// check_portable_links.cx above (`[$array:flatten (…)]`) -- the release
 	// staging directory scan reuses its glob-then-flatten idiom verbatim.
@@ -604,9 +601,7 @@ const accepted_by_one_table = [
 	// (check_external_links.cx) and `[$pb:cat-seqs ($acc, ($p,))]`
 	// (site_assemble.cx, the same fold site_build.cx above folds with).
 	AcceptedByOne{'scripts/gen_site/ring_svg.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/gen_site/llm_index.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/gen_site/check_external_links.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/gen_site/site_assemble.cx', .program, reason_1536},
 	// DOCS-4 wave 2 (RULED: DOCS-41, DOCS-49): the repository pages' facts
 	// generator, scripts/gen_site/repo_page.cx -- the class's own shape once
 	// more, `[$fp:flat-map ($ordered, $stray) [?fn ($g) $g]]` (its
@@ -708,9 +703,7 @@ const accepted_by_one_table = [
 	// (RULED: RS-12, RS-8, RS-27; #1591 item K3).
 	AcceptedByOne{'scripts/bisect_batch.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/check_editor_surface_parity.cx', .program, reason_prog},
-	AcceptedByOne{'scripts/diagnostics_census.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/docs_fragment.cx', .program, reason_prog},
-	AcceptedByOne{'scripts/fuzz_cx.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/gate_on_suite_migrate.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/gen_docs/primer_platform.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/repos_allocation_gate.cx', .program, reason_prog},
