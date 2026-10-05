@@ -390,14 +390,23 @@ check-gate-lock:
 # stay-files, RS-8, D73a): `v` refuses two directory targets ("Too many
 # targets"), so the pinned checkout's own vcx/cmd/ gains a SYMLINK per
 # stay-file instead of a second compile root — deps/ is gitignored, so this
-# never touches a tracked byte of the pin, and a stale symlink from an older
-# pin is cleared first (find -type l).
+# never touches a tracked byte of the pin. It is IDEMPOTENT (#1616): a link
+# already pointing at this tree's file is left alone, only a missing or wrong
+# one is made, and only a stale one (a stay-file this tree no longer has, or a
+# link to anywhere else) is removed — deleting and re-making every link on
+# every build left the pin's cmd/ newer than the artifact, so every build
+# relinked (check-sync-cmd-split holds it).
 .PHONY: sync-cmd-split
 sync-cmd-split:
 	@[ -d deps/cx-core-code/vcx/cmd ] || exit 0; \
-	find deps/cx-core-code/vcx/cmd -maxdepth 1 -type l -delete; \
+	for l in deps/cx-core-code/vcx/cmd/*.v; do \
+	  [ -L "$$l" ] || continue; \
+	  b=$$(basename "$$l"); \
+	  [ -f "vcx/cmd/$$b" ] && [ "$$(readlink "$$l")" = "$(CURDIR)/vcx/cmd/$$b" ] || rm -f "$$l"; \
+	done; \
 	for f in vcx/cmd/*.v; do \
-	  ln -sf "$(CURDIR)/$$f" "deps/cx-core-code/vcx/cmd/$$(basename $$f)"; \
+	  l="deps/cx-core-code/vcx/cmd/$$(basename $$f)"; \
+	  [ -L "$$l" ] && [ "$$(readlink "$$l")" = "$(CURDIR)/$$f" ] || ln -sfn "$(CURDIR)/$$f" "$$l"; \
 	done
 	@# Every artifact this recipe (or an ordinary build) leaves untracked in the
 	@# pin checkout -- the stay-file symlinks just made, this repository's own
