@@ -1,0 +1,17 @@
+# Owner direction 2026-10-05 ~02:2xZ — the continuous stream replaces batches, briefs, pre-merge runs and per-branch ceremony; correctness at the source, one hourly union, one reader per hour; "go"
+
+**Status: RULED (owner, 2026-10-05 ~02:0xZ–02:2xZ, in session, on Letters 201 and 202 and the integrator's plan; recorded by the integrator the same hour). GAPS-1, NOPAU-1, QUAL-1, REFUTE-1, FIX-1, RS-36, RS-38, DELEG-3, MQUE-1, MADM-1, AGENTS.md rules 1–3.**
+
+## The owner's words, verbatim
+
+"you are complicating things too much and killing us with so many gates. another llm just fixed 400 issues in about an hour. you are broken and need to rethink how we can move through at least 20-30 issues per hour." — "you don't write great code and the gates aren't finding the issues. so we're spending time for testing that adds little value at the expense of days that should be a few hours. We are no proceeding the same way we have. it must be different and aggressive about getting code implemented correctly and fixed." — on the plan (streams per repository; the issue's repro as the fixture, run red, fixed, run green by the agent; the hourly union as the one grade; one adversarial reader per hour; a spec-silent choice taken long-term-best and listed hourly; the in-flight work finishing as is): "go."
+
+## STREAM-1 — the continuous stream
+
+1. **Streams, not batches.** One long-running agent (opus) per repository on one branch `impl/<repo>-stream` (cx-private: `impl/cx-F-stream-<repo>` carrying its pins), taking the open `v0.18` issues newest-first from the tracker, continuously; no brief per batch, no RESULTS.md, no MERGE-READY, no pre-merge run.
+2. **Correct at the source.** Per issue: the issue's own reproduction as the fixture in the module's corpus, run red; the fix; the module's corpus file and the repro run green by the agent; the component's own `make check` when a shared file moved; commit (test/fix pair, the issue named, `RULED: STREAM-1`), push, next issue. No stub, no partial fix, no silent scope cut (AGENTS.md rule 3): an issue that cannot be finished is left open with the reason as a comment.
+3. **The hourly union is the one grade.** Every hour the integrator queues every stream branch (and any READY branch) as one union through the merge queue (MQUE-1, MADM-1); the post-merge run grades the union; a red step is the stream agent's next issue, fixed under allow-red when the head is red; issues close on the hourly green. The pre-merge pass of ~80 steps per branch retires; the post-merge flow's load-insensitive steps run in parallel (Letter 201 (a)(1), one tooling change in LSWAP-1's shape).
+4. **One reader per hour.** One adversarial reader (REFUTE-1's shape) per repository per hour over that hour's union diff against the spec sections moved; its REDs are the stream's next issues. The per-batch reader retires.
+5. **No decision blocks a fix.** A spec-silent or spec-contradicting reading is taken by the stream agent on the long-term-best standard (DELEG-3), the sentence moved with its case ids beside it (RS-38) and `RULED: STREAM-1` cited, and listed on the hourly board for the owner's reversal; a reading the owner reverses is re-done as an issue.
+6. **The in-flight work finishes as is** (the gap union, CKEY-1, the red-head fix); the seven paused branches are folded into the streams' first commits or the first hourly union, not resumed.
+7. **Target:** 20–30 issues per hour across four to six streams; the integrator's work is the hourly queue, the readers' launch and the board.
