@@ -1404,14 +1404,14 @@ error: the result carries an error value — cx-err:CXER0136 at /err
 failed
 #]]
  ]
- [ex key=233-of-clause-membership-refusal chars=106
+ [ex key=233-of-clause-membership-refusal chars=118
   [out-text [#
-[refused [why 'cx-err:CXER0100: [?match] [of status]: S007: value :gone not in [enum :ok :err :pending]']]
+[refused [why 'cx-err:CXER0100: [?match] [of status]: S007: value :gone not in [enum :ok :err :pending] at line 5:8']]
 #]]
  ]
- [ex key=234-of-clause-no-silent-fall-through chars=212
+ [ex key=234-of-clause-no-silent-fall-through chars=224
   [out-text [#
-[refused [why 'cx-err:CXER0100: [?match] [of status]: no arm claimed :pending — a match over a declared-closed type has no silent fall-through; add the missing [case …] arm or an explicit [else] (code.md §8.2)']]
+[refused [why 'cx-err:CXER0100: [?match] [of status]: no arm claimed :pending — a match over a declared-closed type has no silent fall-through; add the missing [case …] arm or an explicit [else] (code.md §8.2) at line 5:8']]
 #]]
  ]
  [ex key=235-of-clause-else-opts-out chars=5

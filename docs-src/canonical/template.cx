@@ -77,8 +77,8 @@
      anchoring against the rendered section heading. Unresolved anchors
      emit a warning (gate: make verify-doc-links). #]
   [?match
-    [when [$exists //section[@id=$slug]] [anchor href=[$concat "#" $slug]]]
-    [when [$exists //child[@id=$slug]]   [anchor href=[$concat "#" $slug]]]
+    [when [$exists //section[= $_@id $slug]] [anchor href=[$concat "#" $slug]]]
+    [when [$exists //child[= $_@id $slug]]   [anchor href=[$concat "#" $slug]]]
     [else                                [warning unresolved-anchor=$slug]]]]
 
 [# ─── Top-level emit ───
