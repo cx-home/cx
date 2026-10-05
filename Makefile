@@ -968,6 +968,13 @@ guide-check: build-vcx
 ## stamp and index.html both 15:10:45, a false red). The proof is now that the
 ## page did not exist before the render: both are removed first, and both must
 ## exist after it. No mtime comparison is left.
+## #1418: the rendered site then passes theme_check.cx — style.css carries the
+## light palette on :root and the dark one under both the prefers-color-scheme
+## guard and :root[data-theme="dark"], every colour token in each, no colour
+## literal outside a token; every sheet-bar page carries the theme toggle, the
+## head script that applies a stored choice before paint, and the color-scheme
+## meta. Its self-test runs first.
+guide-render-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 guide-render-gate: build-vcx
 	@rm -f docs/guide/index.html docs/guide/codec-xml.html
 	@$(MAKE) --no-print-directory guide GUIDE_SKIP_CX_BUILD=1
@@ -976,7 +983,9 @@ guide-render-gate: build-vcx
 	    echo "guide-render-gate: FAILED — the render exited 0 but $$p does not exist; it was removed before the render, so this run did not write it"; exit 1; \
 	  fi; \
 	done
-	@echo "guide-render-gate OK — the generator rendered docs/guide/, index page and the synthesized codec-xml module page both written by THIS run"
+	@"$(CX_BIN)" --allow-read --allow-write --allow-env scripts/gen_guide/theme_check.cx --self-test
+	@"$(CX_BIN)" --allow-read --allow-write --allow-env scripts/gen_guide/theme_check.cx --pages docs/guide
+	@echo "guide-render-gate OK — the generator rendered docs/guide/, index page and the synthesized codec-xml module page both written by THIS run; both palettes and every page's theme toggle read (#1418)"
 
 # Directive + syntax reference drift gate — every code.md §4.1 registry
 # directive has a [directive-doc], no orphans, and each example is backed
