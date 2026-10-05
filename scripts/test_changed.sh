@@ -358,7 +358,11 @@ step_globs() {
     property-gate)                 echo 'conformance/property_gate.cxd scripts/property_gate.cx deps.cxd registry/modules.cxd vcx/* stdlib/* third_party/*' ;;
     spec-invariant-gate)           echo 'deps.cxd registry/repos.cxd scripts/spec_invariants* VERSION' ;;
     ring-tag-gate)                 echo 'conformance/* scripts/*' ;;
-    cxer-registry-gate)            echo 'vcx/* spec/* scripts/cxer_registry*' ;;
+    # #1725: both read this tree's vcx/, stdlib/, conformance/ AND every pin's,
+    # so a pin move (deps.cxd) selects them; the census check also holds its
+    # tracked file.
+    cxer-registry-gate)            echo 'vcx/* spec/* stdlib/* conformance/* scripts/cxer_registry* deps.cxd registry/modules.cxd' ;;
+    diagnostics-census-check)      echo 'vcx/* spec/* stdlib/* conformance/* scripts/cxer_registry* scripts/diagnostics_census* _gate_evidence/diagnostics_census.cxd deps.cxd registry/modules.cxd' ;;
     spec-freeze-gate)              echo '*' ;;
     # ── the expensive binary-driving steps (VC-22 ring-scoping, #700 wave 2
     # part ii) ──────────────────────────────────────────────────────────────
