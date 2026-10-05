@@ -43,6 +43,12 @@
 #      the group (REFUTE-1 r4 on batch H3, #1775)
 #                                                      green, exit 0, and none
 #      of the eight pids alive once the driver has answered
+#   K  the driver BUILD on a planted compiler (CX_REPR_V) into a build
+#      directory of its own (CX_REPR_BUILD_DIR): the argv names the pinned
+#      module root deps/cx-core-data/vcx and the two RE2 archives the front
+#      door's build writes, each present (#1822)
+#                                                      green, exit 0, the
+#      planted driver built and stamped there, the argv as stated
 #
 # Run via:  cx --allow-read --allow-write --allow-subprocess --allow-env --allow-clock scripts/repr_guard_selftest.cx
 # (make repr-guard-selftest). Exit 0 and the count line only when every case holds.
@@ -122,6 +128,28 @@
 [?def alive scope=private impure [returns bool] ($pid)
   [= [$string [?fallback [$process:run ('kill', '-0', $pid) capture={stdout: :discard, stderr: :discard} timeout-ms=10000]
                 [recover-with [proc-result exit-code=1]]]@exit-code] '0']]
+
+# K's planted compiler: records its argv one word a line, then writes the
+# 'pass' format driver at its -o path.
+[?def planted-v scope=private impure [returns string] ($dir)
+  [?let [= $p [$cat ($dir, '/v')]]
+        [= $_w [$io:write-file $p [$cat ('#!/bin/sh\n',
+                                         ': > "', $dir, '/argv.txt"\n',
+                                         'out=\n',
+                                         'while [ $# -gt 0 ]; do printf \'%s\\n\' "$1" >> "', $dir, '/argv.txt"; ',
+                                         'if [ "$1" = -o ]; then out="$2"; fi; shift; done\n',
+                                         'printf \'%s\\n\' \'#!/bin/sh\' \'if [ "$1" = gen ]; then : > "$3"; exit 0; fi\' ',
+                                         '\'echo "format=$1 records=$3 input_bytes=1000 live_before=1 live_after=2 repr_bytes=7000 ratio=7.000"\' > "$out"\n',
+                                         'chmod 755 "$out"\n')]]]
+        [= $_x [$process:run ('chmod', '755', $p) timeout-ms=10000]]
+    $p]]
+# the word after $flag in an argv list, '' when absent.
+[?def after scope=private pure [returns string] ($words $flag)
+  [?let [= $n [$count $words]]
+        [= $hits [?to-sequence [?for [in $i [$range 1 [- $n 1]]] [where [= [$nth $words $i] $flag]] [yield [$nth $words [+ $i 1]]]]]]
+    [?else [$first $hits] '']]]
+[?def has-word scope=private pure [returns bool] ($words $w)
+  [> [$count [?to-sequence [?for [in $x $words] [where [= $x $w]] [yield $x]]]] 0]]
 
 [?def every-format scope=private pure [returns bool] ($r $fmt-pre $fmt-post)
   [= [$count [?to-sequence [?for [in $l ('json', 'xml', 'cx', 'cxel')]
@@ -209,8 +237,33 @@
                            [?if [= [$count $jlive] 0] [then ''] [else [$cat (' (', [$strings:join $jlive ' '], ')')]]])]
                     $rj2]]
 
+      # K — the driver build: the pinned module root and the RE2 archives (#1822)
+      [= $kd [$cat ($root, '/build-k')]]
+      [= $_kd [$io:make-dirs $kd]]
+      [= $kv [$planted-v $kd]]
+      [= $rk [$process:run [$driver-argv]
+                           env={CX_REPR_V: $kv, CX_REPR_BUILD_DIR: $kd, CX_REPR_CORPUS_DIR: [$cat ($root, '/corpus-k')],
+                                CX_REPR_LANE_DEADLINE_S: '10', CX_REPR_BUILD_DEADLINE_S: '60', CX_REPR_RECORDS: '100', CX_REPR_KEEP: '0'}
+                           timeout-ms=CASE-MS new-process-group=true]]
+      [= $kw [?to-sequence [?for [in $l [$strings:split-lines [?else [$io:read-file [$cat ($kd, '/argv.txt')]] '']]] [yield $l]]]]
+      [= $repo [$env:cwd]]
+      [= $kpath [$after $kw '-path']]
+      [= $klib [$cat ('cx_re2_lib_dir=', $repo, '/deps/cx-core-code/vcx/target')]]
+      [= $kstatic [$cat ('cx_re2_static=', $repo, '/third_party/re2/obj/libre2.a')]]
+      [= $k [$judge 'K' [and [not [$hung $rk]] [= [$exit-of $rk] '0'] [$has $rk 'bench/repr: GREEN']
+                             [$strings:contains $kpath [$cat ($repo, '/deps/cx-core-data/vcx')]]
+                             [not [$strings:contains [$cat ('|', $kpath, '|')] [$cat ('|', $repo, '/vcx|')]]]
+                             [$has-word $kw $klib] [$has-word $kw $kstatic]
+                             [$io:is-file [$cat ($repo, '/deps/cx-core-code/vcx/target/libcx_re2_shim.a')]]
+                             [$io:is-file [$cat ($repo, '/third_party/re2/obj/libre2.a')]]
+                             [$io:is-file [$cat ($kd, '/repr')]] [$io:is-file [$cat ($kd, '/inputs.sha')]]]
+                    [$cat ('the driver build names the pinned module root and the RE2 archives the front door builds — -path ', $kpath,
+                           [?if [$has-word $kw $klib] [then ''] [else [$cat (' (no ', $klib, ')')]]],
+                           [?if [$has-word $kw $kstatic] [then ''] [else [$cat (' (no ', $kstatic, ')')]]])]
+                    $rk]]
+
       [= $_rm [$io:remove-tree $root]]
-      [= $all ($a, $b, $c, $d, $e, $f, $g, $h, $i, $j)]
+      [= $all ($a, $b, $c, $d, $e, $f, $g, $h, $i, $j, $k)]
       [= $bad [?to-sequence [?for [in $x $all] [where [= [$name $x] 'bad']] [yield $x]]]]
       [= $_say [?to-sequence [?for [in $x $all]
                  [yield [$io:write-line [$env:stdout]
