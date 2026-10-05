@@ -690,6 +690,8 @@ step_globs() {
     # #1065: the rosters live in vcx/Makefile and are re-derived from the module
     # set each artifact compiles, so any vcx/ module moving is an input.
     check-build-input-roster)      echo 'vcx/Makefile vcx/*' ;;
+    # #1616: sync-cmd-split links vcx/cmd/'s stay-files into the pin's cmd/.
+    check-sync-cmd-split)          echo 'vcx/cmd/* deps.cxd scripts/sync_cmd_split_selftest.cx' ;;
     # #1623 (RULED: FIX-1): the bench runners live in the pinned cx-core-code and
     # cx-platform-net and import every V module of the graph, so a pin moving
     # (deps.cxd), a front-door module (vcx/*), the recipe or the V fork selects it.
