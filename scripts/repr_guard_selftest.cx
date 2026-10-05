@@ -120,7 +120,7 @@
                   [yield $t]]]]
 # alive: kill -0 answers 0.
 [?def alive scope=private impure [returns bool] ($pid)
-  [= [$string [?fallback [$process:run ('kill', '-0', $pid) capture=:none timeout-ms=10000]
+  [= [$string [?fallback [$process:run ('kill', '-0', $pid) capture={stdout: :discard, stderr: :discard} timeout-ms=10000]
                 [recover-with [proc-result exit-code=1]]]@exit-code] '0']]
 
 [?def every-format scope=private pure [returns bool] ($r $fmt-pre $fmt-post)
@@ -201,7 +201,7 @@
       [= $jp [$leaver-pids $jd]]
       [= $jlive [?to-sequence [?for [in $p $jp] [where [$alive $p]] [yield $p]]]]
       # a red run leaves nothing behind either: the recorded pids, and only those.
-      [= $_jk [?to-sequence [?for [in $p $jlive] [yield [?fallback [$process:run ('kill', '-9', $p) capture=:none timeout-ms=10000] [recover-with null]]]]]]
+      [= $_jk [?to-sequence [?for [in $p $jlive] [yield [?fallback [$process:run ('kill', '-9', $p) capture={stdout: :discard, stderr: :discard} timeout-ms=10000] [recover-with null]]]]]]
       [= $j [$judge 'J' [and [not [$hung $rj2]] [= [$exit-of $rj2] '0'] [$has $rj2 'bench/repr: GREEN']
                              [= [$count $jp] 8] [= [$count $jlive] 0]]
                     [$cat ('grandchildren that left the reading\'s process group (setsid) are killed when the reading answers — ',
@@ -219,7 +219,7 @@
   [?if [= [$count $bad] 0]
     [then ([$io:write-line [$env:stdout]
              [$cat ('repr-guard selftest (#1766): ', [$string [$count $all]], '/', [$string [$count $all]],
-                    ' — a stalled reading reds the step by name inside its deadline; a held pipe, a bound exceedance, a non-zero driver, an unparsable reading and the corpora each answer as before')]],
+                    ' — a stalled reading reds the step by name inside its deadline; a held pipe, a bound exceedance, a non-zero driver, an unparsable reading and the corpora each answer as before; a grandchild that left the reading\'s process group is killed when the reading answers (#1775)')]],
            [$env:exit 0], ())]
     [else ([$io:write-line [$env:stderr]
              [$cat ('repr-guard selftest (#1766): ', [$string [$count $bad]], ' of ', [$string [$count $all]], ' case(s) FAILED')]],

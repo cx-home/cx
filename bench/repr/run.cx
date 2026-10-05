@@ -29,7 +29,8 @@
 # build, a corpus generation, a reading, a load read — writes its output to a
 # FILE (no pipe exists, so nothing can hold one), runs under `timeout-ms` in a
 # process group of its own (the deadline kills the reading and everything it
-# started), and its exit status is read directly from the result. A reading
+# started; a grandchild that left the group is found and killed when the
+# child answers, #1775), and its exit status is read directly. A reading
 # past its deadline turns the step red BY NAME:
 #   bench/repr: FAIL — format xml exceeded its 300 s deadline …
 # inside that bound — never a run that cannot reach its verdict. A stall is not
@@ -271,14 +272,92 @@
             [then [$cat ('(output past ', [$string OUTPUT-CAP], ' bytes; not read)')]]
             [else [$string [?else [$io:read-file $f] '']]]]]]]
 
+# ── what a reading leaves behind (#1775, REFUTE-1 r4 on batch H3) ──────────
+# The deadline kills the reading's process group, but a grandchild that called
+# setsid (or otherwise moved to a group of its own) is not in it, and outlives
+# the run. So when a child answers — exited or killed at its deadline — the
+# guard takes ONE process table and kills, by pid:
+#   - every process still in the child's group (its pgid is the child's pid:
+#     a background job of the reading's, which the exit alone does not end);
+#   - every process still holding the child's stdout or stderr file open
+#     (`lsof -t` on the two capture files: a descendant that inherited the
+#     reading's stdio, wherever its session now is);
+#   - every descendant of either, by parent pid, to a fixed point (a setsid'd
+#     process under a surviving member of the group).
+# Never this process itself, and nothing found any other way: the census is
+# what the child started, so a step running beside it is never touched. What
+# it cannot see is stated: a descendant that left the group, closed or
+# redirected every inherited stream, AND whose parent already exited carries
+# no mark this process can read (macOS gives no subreaper and no readable
+# environment), so it is out of reach — the real driver (repr.v) forks nothing.
+# A sweep that killed anything says so on stderr, by pid.
+[?def ps-table scope=private impure [returns any] ()
+  [?let [= $f [$scratch 'ps.out']]
+        [= $r [?fallback [$process:run ('ps', '-A', '-o', 'pid=,ppid=,pgid=') capture={stdout: $f, stderr: :discard} timeout-ms=30000]
+                [recover-with [proc-result exit-code=1 timed-out=false]]]]
+        [= $t [?if [= [$string $r@exit-code] '0'] [then [$string [?else [$io:read-file $f] '']]] [else '']]]
+        [= $_rm [$drop $f]]
+    [?to-sequence [?for [in $l [$strings:split-lines $t]]
+                    [= $w [?to-sequence [$strings:split-whitespace $l]]]
+                    [where [= [$count $w] 3]]
+                    [yield $w]]]]]
+
+[?def holders scope=private impure [returns any] ($files)
+  [?let [= $here-ones [?to-sequence [?for [in $x $files] [where [$io:is-file $x]] [yield $x]]]]
+    [?if [= [$count $here-ones] 0] [then ()]
+      # lsof exits 1 when any named file is open nowhere (the usual case for
+      # one of the two), so its stdout is read whatever its exit.
+      [else [?let [= $f [$scratch 'lsof.out']]
+                  [= $_r [?fallback [$process:run [?to-sequence [?concat ('lsof', '-t', '--') $here-ones]]
+                                                  capture={stdout: $f, stderr: :discard} timeout-ms=30000 new-process-group=true]
+                           [recover-with null]]]
+                  [= $t [$string [?else [$io:read-file $f] '']]]
+                  [= $_rm [$drop $f]]
+              [?to-sequence [?for [in $l [$strings:split-lines $t]]
+                            [= $p [$strings:trim $l]]
+                            [where [$digits $p false]]
+                            [yield $p]]]]]]]]
+
+[?def has-pid scope=private pure [returns bool] ($p $ps)
+  [> [$count [?to-sequence [?for [in $x $ps] [where [= $x $p]] [yield $x]]]] 0]]
+
+[?def leftovers scope=private impure [returns any] ($pid $files)
+  [?let [= $rows [$ps-table]]
+        [= $me [$string [$env:pid]]]
+        [= $grp [?to-sequence [?for [in $w $rows] [where [= [$nth $w 3] $pid]] [yield [$nth $w 1]]]]]
+        [= $seed [?to-sequence [?concat $grp [?to-sequence [?for [in $p [$holders $files]] [where [not [$has-pid $p $grp]]] [yield $p]]]]]]
+    [?loop [= $set $seed]
+      [?let [= $more [?to-sequence [?for [in $w $rows]
+                                     [where [and [$has-pid [$nth $w 2] $set] [not [$has-pid [$nth $w 1] $set]]]]
+                                     [yield [$nth $w 1]]]]]
+        [?if [= [$count $more] 0]
+          [then [break [?to-sequence [?for [in $q $set] [where [not [= $q $me]]] [yield $q]]]]]
+          [else [continue [?to-sequence [?concat $set $more]]]]]]]]]
+
+[?def sweep scope=private impure ($pid $tag $files)
+  [?let [= $ps [$leftovers $pid $files]]
+    [?if [= [$count $ps] 0] [then null]
+      [else [?let [= $_k [$quick [?to-sequence [?concat ('kill', '-9') $ps]]]]
+              [$cry [$cat ('bench/repr: ', $tag, ' left ', [$string [$count $ps]], ' process(es) behind (pids ',
+                           [$strings:join $ps ' '], '); killed (#1775).')]]]]]]]
+
+# The child runs as a process group of its own; at its deadline the whole
+# group is killed. Either way the sweep above runs before its files are read.
 [?def bounded scope=private impure [returns any] ($argv $tag)
   [?let [= $o [$scratch [$cat ($tag, '.out')]]]
         [= $e [$scratch [$cat ($tag, '.err')]]]
-        [= $r [?fallback [$process:run $argv capture={stdout: $o, stderr: $e}
-                                        timeout-ms=[* [$deadline-s] 1000] new-process-group=true]
-                [recover-with [proc-result exit-code=-1 timed-out=false]]]]
-        [= $m {stalled: [= [$string $r@timed-out] 'true'], code: [$string $r@exit-code],
-               out: [$read-capped $o], err: [$read-capped $e]}]
+        [= $h [?fallback [$process:spawn $argv new-process-group=true stdin=:discard stdout=$o stderr=$e]
+                [recover-with null]]]
+        [= $m [?if [= $h null]
+                [then {stalled: false, code: '-1', out: '', err: [$cat ('bench/repr: could not start ', [$strings:join $argv ' '], '\n')]}]
+                [else
+                  [?let [= $pid [$string [$process:pid $h]]]
+                        [= $x [$process:wait-timeout $h [* [$deadline-s] 1000]]]
+                        [= $done [not [= [$count [?to-sequence [?concat () $x]]] 0]]]
+                        [= $_t [?if $done [then null] [else [?fallback [$process:kill-group $h :kill] [recover-with null]]]]]
+                        [= $rc [?if $done [then [$string $x]] [else [$string [?fallback [$process:wait $h] [recover-with -1]]]]]]
+                        [= $_s [$sweep $pid $tag ($o, $e)]]
+                    {stalled: [not $done], code: $rc, out: [$read-capped $o], err: [$read-capped $e]}]]]]
         [= $_ro [$drop $o]] [= $_re [$drop $e]]
     $m]]
 
