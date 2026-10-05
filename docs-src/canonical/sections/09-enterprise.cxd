@@ -74,7 +74,7 @@
            is not `1.1`, and neither is ever `1.0999…`. Mixing a decimal with
            a binary float is refused out loud, naming the one bridge between
            them. The scalar kinds are
-           [`spec/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md);
+           [`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md);
            the sign rule is decision 1353-b."""]
       [pair wrong=ap-decimal-float-mix-wrong right=ap-decimal-float-mix-right]]
 
@@ -116,7 +116,7 @@
            code, a path and a message, and an unknown enumeration type or an
            unregistered name is refused rather than waved through. Bad data
            stops at the door, not at quarter close. The schema language is
-           [`spec/core/schema.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/schema.md)."""]
+           [`spec/03-approved/core/schema.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/schema.md)."""]
       [fixture id=cx-136-validate-violation-item]
       [fixture id=validate-054-enum-values-unknown-type-fail-closed]]
 
@@ -130,7 +130,7 @@
            against the same cases we grade ours. The governance page's
            clean-room clause is the rule that keeps the spec implementable
            from its text and corpus alone
-           ([`spec/process/governance.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/process/governance.md)
+           ([`spec/03-approved/process/governance.md`](https://github.com/cx-home/cx/blob/main/spec/03-approved/process/governance.md)
            §10.1a). No lock-in — including on our own implementation."""]]
 
     [child id=ent-columnar n=9.1.10 title='Fast bulk without a second system'
@@ -170,7 +170,7 @@
            one is refused before anything happens. The blast radius is known
            before the program runs — incident prevention rather than
            response. The vocabulary is
-           [`spec/core/commands_effects.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/commands_effects.md)."""]
+           [`spec/03-approved/core/commands_effects.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/commands_effects.md)."""]
       [fixture id=cmd-001-command-effects-declared-cap-allowed]
       [fixture id=cmd-002-command-effects-undeclared-cap-denied]]
 
@@ -222,7 +222,7 @@
            value projected to its wire form. New capabilities are
            agent-ready the day they ship, and there is no wrapper to drift.
            The projection is
-           [`spec/x/agent_tool_projection.md`](https://github.com/cx-home/cx-platform-agent/blob/main/spec/03-approved/x/agent_tool_projection.md)."""]
+           [`spec/03-approved/x/agent_tool_projection.md`](https://github.com/cx-home/cx-platform-agent/blob/main/spec/03-approved/x/agent_tool_projection.md)."""]
       [fixture id=tools-004-zero-item-effects-is-a-command]
       [fixture id=mcp-001-call-tool-request-shape]]
 
@@ -245,7 +245,7 @@
            and-set against a stale head refuses. "Who changed what, when,
            and to what" is intrinsic to the store, so the audit-trail line
            item leaves every application built on it. The store is
-           [`spec/platform/store.md`](https://github.com/cx-home/cx-platform-store/blob/main/spec/03-approved/platform/store.md)."""]
+           [`spec/03-approved/platform/store.md`](https://github.com/cx-home/cx-platform-store/blob/main/spec/03-approved/platform/store.md)."""]
       [fixture id=store-log-003-branch-advances-appear]
       [fixture id=store-branch-002-force-moves]
       [fixture id=store-branch-003-cas-conflict]]
@@ -268,7 +268,7 @@
            third" and "what did we believe on the third" are both ordinary
            reads. Back-dated corrections and restatements become queries.
            The semantics are
-           [`spec/core/bitemporal.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/bitemporal.md)."""]
+           [`spec/03-approved/core/bitemporal.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/bitemporal.md)."""]
       [fixture id=journal-111-open-ended-validity]
       [fixture id=journal-146-m5-correction-chain-depth-two]]
 
@@ -280,7 +280,7 @@
            the bytes we no longer hold. Compliance without giving up
            tamper-evident history — the combination regulated industries
            cannot otherwise buy. The design is
-           [`spec/platform/store/erasure_compliance.md`](https://github.com/cx-home/cx-platform-store/blob/main/spec/03-approved/platform/store/erasure_compliance.md)."""]
+           [`spec/03-approved/platform/store/erasure_compliance.md`](https://github.com/cx-home/cx-platform-store/blob/main/spec/03-approved/platform/store/erasure_compliance.md)."""]
       [fixture id=journal-137-apply-erasures]
       [fixture id=journal-131-erase-purges-dedup-records]]
 
@@ -311,7 +311,7 @@
            conflict value is how disagreement is spelled, and a resolution
            is an entry anyone can read later. Field, branch and edge
            scenarios work disconnected and reconcile honestly. The design is
-           [`spec/platform/store/distributed_store.md`](https://github.com/cx-home/cx-platform-store/blob/main/spec/03-approved/platform/store/distributed_store.md)."""]
+           [`spec/03-approved/platform/store/distributed_store.md`](https://github.com/cx-home/cx-platform-store/blob/main/spec/03-approved/platform/store/distributed_store.md)."""]
       [fixture id=journal-117-offline-replica-seed]
       [fixture id=store-reconcile-003-resolution-merge-entry]]
 
@@ -324,7 +324,7 @@
            half-committed transaction —
            the worst outage class in distributed systems — is designed
            out; what remains is visible and recoverable. The runner law is
-           [`spec/platform/flow.md`](https://github.com/cx-home/cx-platform-flow/blob/main/spec/03-approved/platform/flow.md)."""]
+           [`spec/03-approved/platform/flow.md`](https://github.com/cx-home/cx-platform-flow/blob/main/spec/03-approved/platform/flow.md)."""]
       [fixture id=flow-057-attempts-exhausted-compensates]
       [fixture id=flow-012-simulate-compensation-and-incomplete]]
 
@@ -346,7 +346,7 @@
            everything else. One vendor, one cluster and one pager rotation
            fewer, with a stronger audit story than the broker they replace.
            The unified model is
-           [`spec/core/delivery.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/delivery.md)."""]
+           [`spec/03-approved/core/delivery.md`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/delivery.md)."""]
       [fixture id=fabric-004-subscribe-glob-receive]
       [fixture id=bus-005-delivered-count]
       [fixture id=sync-011-a-record-over-the-byte-bound-is-dead-lettered]]]

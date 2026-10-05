@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# CX v0.8.0 — Gates 28.6 + 28.9: Layer-1 binding-API parity.
+# CX — Gates 28.6 + 28.9: Layer-1 binding-API parity.
 #
 # Drives every fixture in conformance/binding_api.txt through the
 # Layer-1 surface of every active binding (V / Python / Go / Rust) and

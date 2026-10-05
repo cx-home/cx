@@ -37,6 +37,18 @@
 #      may not absorb it (REFUTE-1 r5)
 #   I  CX_REPR_LANE_DEADLINE_S=0 (or the build's)      red by name, exit 2, in
 #      bound: a reading with no deadline is the hang itself (REFUTE-1 r6)
+#   J  each reading prints a good line and leaves two grandchildren behind
+#      that LEFT its process group (setsid): one still holding the reading's
+#      stdout, one with every stream on /dev/null under a waiting subshell of
+#      the group (REFUTE-1 r4 on batch H3, #1775)
+#                                                      green, exit 0, and none
+#      of the eight pids alive once the driver has answered
+#   K  the driver BUILD on a planted compiler (CX_REPR_V) into a build
+#      directory of its own (CX_REPR_BUILD_DIR): the argv names the pinned
+#      module root deps/cx-core-data/vcx and the two RE2 archives the front
+#      door's build writes, each present (#1822)
+#                                                      green, exit 0, the
+#      planted driver built and stamped there, the argv as stated
 #
 # Run via:  cx --allow-read --allow-write --allow-subprocess --allow-env --allow-clock scripts/repr_guard_selftest.cx
 # (make repr-guard-selftest). Exit 0 and the count line only when every case holds.
@@ -95,6 +107,49 @@
                                        [$string [$div CASE-MS 1000]], ' s')]]
                           [else [$cat ($what, ' — exit ', [$exit-of $r], ': ', [$strings:trim [$said $r]])]]]]
             [bad id=$id what=$why]]]]]
+
+# J's leftovers: each format's reading starts two setsid'd sleepers that record
+# their pids in <dir>/<format>.pids (one keeps the reading's stdout, one sits
+# under a subshell of the group with every stream on /dev/null), waits until
+# both are recorded, then prints a good reading and exits.
+[?def leaver-body scope=private pure [returns string] ($dir)
+  [?let [= $perl [$cat ("perl -MPOSIX -e 'POSIX::setsid(); open(my $f, \">>\", \"", $dir, "/\" . $ARGV[0] . \".pids\"); print $f \"$$\\n\"; close $f; sleep 90' \"$1\"")]]
+    [$cat ($perl, ' </dev/null 2>/dev/null &\n',
+           '( ', $perl, ' </dev/null >/dev/null 2>&1 & wait ) </dev/null >/dev/null 2>&1 &\n',
+           'n=0; while [ "$(cat "', $dir, '/$1.pids" 2>/dev/null | wc -l | tr -d " ")" -lt 2 ] && [ $n -lt 200 ]; do sleep 0.05; n=$((n+1)); done\n',
+           [$good-line '7.000'])]]]
+
+# the pids J's sleepers recorded, every format.
+[?def leaver-pids scope=private impure [returns any] ($dir)
+  [?to-sequence [?for [in $l ('json', 'xml', 'cx', 'cxel')]
+                  [in $t [$strings:split-whitespace [?else [$io:read-file [$cat ($dir, '/', $l, '.pids')]] '']]]
+                  [yield $t]]]]
+# alive: kill -0 answers 0.
+[?def alive scope=private impure [returns bool] ($pid)
+  [= [$string [?fallback [$process:run ('kill', '-0', $pid) capture={stdout: :discard, stderr: :discard} timeout-ms=10000]
+                [recover-with [proc-result exit-code=1]]]@exit-code] '0']]
+
+# K's planted compiler: records its argv one word a line, then writes the
+# 'pass' format driver at its -o path.
+[?def planted-v scope=private impure [returns string] ($dir)
+  [?let [= $p [$cat ($dir, '/v')]]
+        [= $_w [$io:write-file $p [$cat ('#!/bin/sh\n',
+                                         ': > "', $dir, '/argv.txt"\n',
+                                         'out=\n',
+                                         'while [ $# -gt 0 ]; do printf \'%s\\n\' "$1" >> "', $dir, '/argv.txt"; ',
+                                         'if [ "$1" = -o ]; then out="$2"; fi; shift; done\n',
+                                         'printf \'%s\\n\' \'#!/bin/sh\' \'if [ "$1" = gen ]; then : > "$3"; exit 0; fi\' ',
+                                         '\'echo "format=$1 records=$3 input_bytes=1000 live_before=1 live_after=2 repr_bytes=7000 ratio=7.000"\' > "$out"\n',
+                                         'chmod 755 "$out"\n')]]]
+        [= $_x [$process:run ('chmod', '755', $p) timeout-ms=10000]]
+    $p]]
+# the word after $flag in an argv list, '' when absent.
+[?def after scope=private pure [returns string] ($words $flag)
+  [?let [= $n [$count $words]]
+        [= $hits [?to-sequence [?for [in $i [$range 1 [- $n 1]]] [where [= [$nth $words $i] $flag]] [yield [$nth $words [+ $i 1]]]]]]
+    [?else [$first $hits] '']]]
+[?def has-word scope=private pure [returns bool] ($words $w)
+  [> [$count [?to-sequence [?for [in $x $words] [where [= $x $w]] [yield $x]]]] 0]]
 
 [?def every-format scope=private pure [returns bool] ($r $fmt-pre $fmt-post)
   [= [$count [?to-sequence [?for [in $l ('json', 'xml', 'cx', 'cxel')]
@@ -166,8 +221,49 @@
                              [not [$hung $rj]] [= [$exit-of $rj] '2'] [$has $rj 'CX_REPR_BUILD_DEADLINE_S']]
                     'a deadline of 0 s (a reading or the build) is refused by name, never run without one' [?if [$hung $ri] [then $ri] [else $rj]]]]
 
+      # J — grandchildren that left the reading's process group are killed at its exit
+      [= $jd [$cat ($root, '/leavers')]]
+      [= $_jd [$io:make-dirs $jd]]
+      [= $sj [$plant $root 'leaver' [$leaver-body $jd]]]
+      [= $rj2 [$drive $sj [$cat ($root, '/corpus-jj')] '0']]
+      [= $jp [$leaver-pids $jd]]
+      [= $jlive [?to-sequence [?for [in $p $jp] [where [$alive $p]] [yield $p]]]]
+      # a red run leaves nothing behind either: the recorded pids, and only those.
+      [= $_jk [?to-sequence [?for [in $p $jlive] [yield [?fallback [$process:run ('kill', '-9', $p) capture={stdout: :discard, stderr: :discard} timeout-ms=10000] [recover-with null]]]]]]
+      [= $j [$judge 'J' [and [not [$hung $rj2]] [= [$exit-of $rj2] '0'] [$has $rj2 'bench/repr: GREEN']
+                             [= [$count $jp] 8] [= [$count $jlive] 0]]
+                    [$cat ('grandchildren that left the reading\'s process group (setsid) are killed when the reading answers — ',
+                           [$string [$count $jp]], ' recorded, ', [$string [$count $jlive]], ' alive after the run',
+                           [?if [= [$count $jlive] 0] [then ''] [else [$cat (' (', [$strings:join $jlive ' '], ')')]]])]
+                    $rj2]]
+
+      # K — the driver build: the pinned module root and the RE2 archives (#1822)
+      [= $kd [$cat ($root, '/build-k')]]
+      [= $_kd [$io:make-dirs $kd]]
+      [= $kv [$planted-v $kd]]
+      [= $rk [$process:run [$driver-argv]
+                           env={CX_REPR_V: $kv, CX_REPR_BUILD_DIR: $kd, CX_REPR_CORPUS_DIR: [$cat ($root, '/corpus-k')],
+                                CX_REPR_LANE_DEADLINE_S: '10', CX_REPR_BUILD_DEADLINE_S: '60', CX_REPR_RECORDS: '100', CX_REPR_KEEP: '0'}
+                           timeout-ms=CASE-MS new-process-group=true]]
+      [= $kw [?to-sequence [?for [in $l [$strings:split-lines [?else [$io:read-file [$cat ($kd, '/argv.txt')]] '']]] [yield $l]]]]
+      [= $repo [$env:cwd]]
+      [= $kpath [$after $kw '-path']]
+      [= $klib [$cat ('cx_re2_lib_dir=', $repo, '/deps/cx-core-code/vcx/target')]]
+      [= $kstatic [$cat ('cx_re2_static=', $repo, '/third_party/re2/obj/libre2.a')]]
+      [= $k [$judge 'K' [and [not [$hung $rk]] [= [$exit-of $rk] '0'] [$has $rk 'bench/repr: GREEN']
+                             [$strings:contains $kpath [$cat ($repo, '/deps/cx-core-data/vcx')]]
+                             [not [$strings:contains [$cat ('|', $kpath, '|')] [$cat ('|', $repo, '/vcx|')]]]
+                             [$has-word $kw $klib] [$has-word $kw $kstatic]
+                             [$io:is-file [$cat ($repo, '/deps/cx-core-code/vcx/target/libcx_re2_shim.a')]]
+                             [$io:is-file [$cat ($repo, '/third_party/re2/obj/libre2.a')]]
+                             [$io:is-file [$cat ($kd, '/repr')]] [$io:is-file [$cat ($kd, '/inputs.sha')]]]
+                    [$cat ('the driver build names the pinned module root and the RE2 archives the front door builds — -path ', $kpath,
+                           [?if [$has-word $kw $klib] [then ''] [else [$cat (' (no ', $klib, ')')]]],
+                           [?if [$has-word $kw $kstatic] [then ''] [else [$cat (' (no ', $kstatic, ')')]]])]
+                    $rk]]
+
       [= $_rm [$io:remove-tree $root]]
-      [= $all ($a, $b, $c, $d, $e, $f, $g, $h, $i)]
+      [= $all ($a, $b, $c, $d, $e, $f, $g, $h, $i, $j, $k)]
       [= $bad [?to-sequence [?for [in $x $all] [where [= [$name $x] 'bad']] [yield $x]]]]
       [= $_say [?to-sequence [?for [in $x $all]
                  [yield [$io:write-line [$env:stdout]
@@ -176,7 +272,7 @@
   [?if [= [$count $bad] 0]
     [then ([$io:write-line [$env:stdout]
              [$cat ('repr-guard selftest (#1766): ', [$string [$count $all]], '/', [$string [$count $all]],
-                    ' — a stalled reading reds the step by name inside its deadline; a held pipe, a bound exceedance, a non-zero driver, an unparsable reading and the corpora each answer as before')]],
+                    ' — a stalled reading reds the step by name inside its deadline; a held pipe, a bound exceedance, a non-zero driver, an unparsable reading and the corpora each answer as before; a grandchild that left the reading\'s process group is killed when the reading answers (#1775)')]],
            [$env:exit 0], ())]
     [else ([$io:write-line [$env:stderr]
              [$cat ('repr-guard selftest (#1766): ', [$string [$count $bad]], ' of ', [$string [$count $all]], ' case(s) FAILED')]],

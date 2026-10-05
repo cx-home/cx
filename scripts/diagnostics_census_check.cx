@@ -1,0 +1,57 @@
+# scripts/diagnostics_census_check.cx — the diagnostics census, held
+# (cx-private issue 1725; RULED: STREAM-1, CXF-3, RS-8).
+#
+# `make diagnostics-census` rewrites the tracked _gate_evidence/
+# diagnostics_census.cxd, and no step read it: after the repository split the
+# census kept reading this tree's vcx/, stdlib/ and conformance/ — where the
+# evaluator no longer lives — and counted 16 codes where the tracked file
+# said 784. This step regenerates the census into a temporary file and
+# refuses
+#   - a census whose observed codes (emitted or asserted, every root it reads)
+#     are not the codes scripts/cxer_registry_report.sh counts — the two read
+#     the same roots, this tree's and every pin's, or one of them is stale;
+#   - a tracked census that is not the regenerated one (drift: run
+#     `make diagnostics-census` and commit the file), as ledger-index-check
+#     holds ledger/README.md.
+#
+# Run (from the repository root):
+#   cx --allow-read --allow-write --allow-subprocess scripts/diagnostics_census_check.cx
+#   (or: make diagnostics-census-check)
+# Exit: 0 held; 1 a refusal (each on stdout).
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+
+[?const TRACKED '_gate_evidence/diagnostics_census.cxd']
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+
+[?def first-group scope=private pure [returns string] ($rx $s)
+  [?let [= $m [$re:find-all [$re:compile $rx] [$string $s]]]
+    [?if [= [$count $m] 0] [then ''] [else [$re:group [$first $m] 1]]]]]
+
+[?let [= $d [$io:temp-dir 'diagnostics-census-check']]
+      [= $tmp [$concat $d '/census.cxd']]
+      [= $c [$process:run ([$env:executable-path], '--allow-read', '--allow-write', 'scripts/diagnostics_census.cx', $tmp) timeout-ms=900000]]
+      [= $fresh [?else [$io:read-file $tmp] '']]
+      [= $_rm [$io:remove-tree $d]]
+      [= $tracked [?else [$io:read-file TRACKED] '']]
+      [= $r [$process:run ('bash', 'scripts/cxer_registry_report.sh') timeout-ms=900000]]
+      [= $reg [$first-group 'cxer_registry_report: ([0-9]+) distinct codes' [$string $r@stdout]]]
+      [= $obs [$first-group '\[summary [^]]*observed=([0-9]+)' $fresh]]
+      [= $refusals [?to-sequence [?concat
+        [?if [= [$string $c@exit-code] '0'] [then ()]
+          [else ([$concat 'diagnostics-census-check: the census exited ' [$string $c@exit-code] ': ' [$strings:trim [$string $c@stderr]]])]]
+        [?if [= $obs ''] [then ('diagnostics-census-check: the census reports no observed= count in its [summary] row')]
+          [else [?if [= $obs $reg] [then ()]
+            [else ([$concat 'diagnostics-census-check: the census observes ' $obs ' codes and cxer_registry_report counts '
+                            [?if [= $reg ''] [then 'none (it printed no count)'] [else $reg]]
+                            ' — the two must read the same roots, this tree and every pin (RS-8)'])]]]]
+        [?if [= $fresh $tracked] [then ()]
+          [else ([$concat 'diagnostics-census-check: ' TRACKED ' is not the census this tree generates — run `make diagnostics-census` and commit it'])]]]]]
+  [?if [> [$count $refusals] 0]
+    [then [?let [= $_o [?to-sequence [?for [in $x $refusals] [yield [$say $x]]]]] [$env:exit 1]]]
+    [else [?let [= $_o [$say [$concat 'diagnostics-census-check: ' $obs ' codes observed, as cxer_registry_report counts; ' TRACKED ' is current']]]
+            [$env:exit 0]]]]]

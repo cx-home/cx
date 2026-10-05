@@ -1,0 +1,64 @@
+# scripts/bare_head_calls_selftest.cx — the two tooling programs whose def
+# calls were bare heads after BARE-1 made a bare head data (cx-private issue
+# 1730; RULED: STREAM-1, FIX-1, CXF-1). Each case runs the program as its
+# callers do and reads what only a CALL can answer:
+#
+#   measure   bench/parallel-alloc/measure.cx times `sleep 0.3` twice, best
+#             of two: the answer is a whole number of milliseconds of at
+#             least 250 — `[timed-run …]` / `[best-of …]` as data time
+#             nothing (the head answered an error, the run never started).
+#   attach    scripts/consolidate_tests.cx merges two V test files that
+#             carry the SAME helper, a `// doc` line attached above it: the
+#             merged file holds the helper once, its doc line directly above
+#             it — `[not [is-attach …]]` as data never reads the attach block,
+#             so every chunk starts at line 1 and nothing is deduped.
+#
+# Run (from the repository root):
+#   cx --allow-read --allow-write --allow-env --allow-subprocess --allow-clock scripts/bare_head_calls_selftest.cx
+#   (or: make check-bare-head-calls)
+# Exit: 0 both cases as written; 1 a case read otherwise.
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+
+[?def measure-case scope=private impure [returns element] ()
+  [?let [= $r [$process:run ([$env:executable-path], '--allow-subprocess', '--allow-clock', '--allow-env', '--allow-write',
+                             'bench/parallel-alloc/measure.cx', 'sleep', '0.3')
+                            env={MEASURE_RUNS: '2'} timeout-ms=60000]]
+        [= $out [$strings:trim [$string $r@stdout]]]
+        [= $ms [?else [$strings:to-int $out] -1]]
+    [case id=measure ok=[$string [and [= [$string $r@exit-code] '0'] [>= $ms 250]]]
+          got=[$concat 'exit ' [$string $r@exit-code] ', stdout ' $out ', stderr ' [$strings:trim [$string $r@stderr]]]]]]
+
+[?const HELPER "// helper_doc: the shared helper's doc line\nfn shared_helper() int {\n\treturn 7\n}\n"]
+
+[?def attach-case scope=private impure [returns element] ()
+  [?let [= $d [$io:temp-dir 'bare-head-calls']]
+        [= $a [$concat $d '/in/a_test.v']] [= $b [$concat $d '/in/b_test.v']]
+        [= $_m [$io:make-dirs [$concat $d '/in']]]
+        [= $_a [$io:write-file $a [$concat "module main\n\n" $HELPER "\nfn test_a() {\n\tassert shared_helper() == 7\n}\n"]]]
+        [= $_b [$io:write-file $b [$concat "module main\n\n" $HELPER "\nfn test_b() {\n\tassert shared_helper() == 7\n}\n"]]]
+        [= $_r [$io:write-file [$concat $d '/roster.files'] [$concat $a "\n" $b "\n"]]]
+        [= $out [$concat $d '/merged_test.v']]
+        [= $r [$process:run ([$env:executable-path], '--allow-read', '--allow-write', '--allow-env', 'scripts/consolidate_tests.cx')
+                            env={MANIFEST: [$concat $d '/roster.files'], OUT: $out, AREA: 'selftest'} timeout-ms=60000]]
+        [= $text [?else [$io:read-file $out] '']]
+        [= $helpers [- [$count [?to-sequence [$strings:split $text 'fn shared_helper()']]] 1]]
+        [= $docd [$strings:contains $text "// helper_doc: the shared helper's doc line\nfn shared_helper()"]]
+        [= $_x [$io:remove-tree $d]]
+    [case id=attach ok=[$string [and [= [$string $r@exit-code] '0'] [= $helpers 1] $docd]]
+          got=[$concat 'exit ' [$string $r@exit-code] ', helper copies ' [$string $helpers] ', doc line above it ' [$string $docd]
+                       ', stderr ' [$strings:trim [$string $r@stderr]]]]]]
+
+[?let [= $cs ([$measure-case], [$attach-case])]
+      [= $bad [?to-sequence [?for [in $c $cs] [where [not [= [$string $c@ok] 'true']]] [yield $c]]]]
+      [= $_o [?to-sequence [?for [in $c $cs]
+               [yield [$say [$concat '  ' [?if [= [$string $c@ok] 'true'] [then 'ok  '] [else 'RED ']] [$string $c@id] ' — ' [$string $c@got]]]]]]]
+  [?if [> [$count $bad] 0]
+    [then [?let [= $_e [$io:write-line [$env:stderr] [$concat 'bare-head-calls selftest: ' [$string [$count $bad]] ' of 2 case(s) RED (cx-private issue 1730)']]]
+            [$env:exit 1]]]
+    [else [?let [= $_s [$say 'bare-head-calls selftest: 2/2 — measure times its child, the merge reads the attach block']]
+            [$env:exit 0]]]]]

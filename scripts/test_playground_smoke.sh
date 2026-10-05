@@ -245,7 +245,7 @@ if [[ "$mmd_bytes" -lt 1000000 ]]; then
     fail "playground/vendor/mermaid.min.js served only $mmd_bytes bytes — not a mermaid bundle"
 fi
 
-# Symbol smoke check — grep the wasm-loader JS for the v0.8.0 export names.
+# Symbol smoke check — grep the wasm-loader JS for the code-eval export names.
 # Use the pthreads variant: it is NOT SINGLE_FILE, so its emscripten loader JS
 # references the export symbols as greppable text. The async variant is
 # SINGLE_FILE (wasm inlined as base64 — symbols not greppable, and its ~16 MB
@@ -261,13 +261,13 @@ if [[ -z "$js" ]]; then
     fail "libcx-pthreads.js fetch returned nothing within ${CURL_MAX_TIME}s"
 fi
 if ! grep -q '_cx_code_eval' <<< "$js"; then
-    fail "_cx_code_eval not present in libcx-pthreads.js — wasm not rebuilt against v0.8.0 ABI"
+    fail "_cx_code_eval not present in libcx-pthreads.js — wasm not rebuilt against the current ABI"
 fi
 if ! grep -q '_cx_code_diagram' <<< "$js"; then
     fail "_cx_code_diagram not present in libcx-pthreads.js — diagram export missing"
 fi
 
-# cxlib.js JS surface — check Layer-1 method names per spec/bindings.md
+# cxlib.js JS surface — check Layer-1 method names per spec/03-approved/misc/bindings.md
 cxlib_js="$(curl -sf --max-time "$CURL_MAX_TIME" \
               "http://127.0.0.1:$PORT/dist/wasm/cxlib.js")"
 if [[ -z "$cxlib_js" ]]; then

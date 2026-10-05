@@ -13,7 +13,7 @@
 // an example marked wasm-unsupported that in fact evaluates correctly
 // here — is a FAILURE, not a pass. Without that rule the gate could be
 // defeated by marking the corpus wholesale, which is exactly the
-// green-by-construction this lane exists to prevent.
+// green-by-construction this step exists to prevent.
 //
 // WHY IT EXISTS. `make verify-playground-examples` replays all 182
 // examples through NATIVE cx; `make test-playground-mermaid` checks that
@@ -71,7 +71,7 @@
 // the published playground and a local file:// reader actually get. Real
 // OS threads under pthreads are a second configuration; several
 // examples' own notes already promise different behavior there, and this
-// lane does not speak for it.
+// step does not speak for it.
 //
 // THE EXPECTATION IS DERIVED, NOT SNAPSHOTTED. The reference value comes
 // from spawning THIS TREE's `cx` on the same source with zero grants —
@@ -255,7 +255,7 @@ for (const key of keys) {
     continue;
   }
 
-  // Evaluated. If the example has no stable value, that is all this lane
+  // Evaluated. If the example has no stable value, that is all this step
   // can honestly assert — do not derive an expectation it would only be
   // comparing against luck.
   if (unstableNote) {

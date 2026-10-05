@@ -48,7 +48,7 @@ carry), and its `LICENSE` ships beside the artifact in every release tarball as
 | SHA-384 (SRI) | `sha384-N3QqR/7q+xm3BGX+CBbNI8AUmRRqcsDzToy+0z1NLDI0QmTKW8zvwLvqulJgk3dP` |
 | Source tarball | `https://registry.npmjs.org/mermaid/-/mermaid-10.9.8.tgz` |
 | Tarball integrity | `sha512-gmIhmkmD/3DL5lErDV71E/cFUkEbBW4VTFpsJH1HSYjeBICRKOoc4AZem+RNz/FhhCXKBMZiD75bIfBlb2A4yA==` |
-| License | MIT — `LICENSE-mermaid.txt`, fetched from the `v10.9.8` tag |
+| License | MIT — `LICENSE-mermaid.txt`, fetched from the `v10.9.8` tag | <!-- version-literal-ok: a third-party pin -->
 
 **10.9.8 was the newest 10.x when the pin was taken**, which is the whole point:
 vendoring froze the bytes visitors were *already* getting from

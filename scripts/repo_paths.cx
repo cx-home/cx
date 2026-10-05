@@ -28,7 +28,7 @@
 # with `git log --follow --diff-filter=AR`. Those paths no longer exist and no
 # allocation rule can name them, but `git filter-repo` needs them or it
 # silently truncates a file's history at its last rename — the sso prep found
-# exactly two (`spec/03-approved/std-lib/sso.md`, `conformance/stdlib/sso.cxd`,
+# exactly two (`spec/03-approved/platform/sso.md`, `conformance/stdlib/sso.cxd`,
 # both from the #1427 ring move) and without them the spec's and the corpus's
 # history stopped there. A truncated history is not a failure anyone sees.
 #

@@ -272,6 +272,10 @@ step_globs() {
     check-no-legacy-try)           echo 'vcx/* conformance/* stdlib/* docs-src/*' ;;
     check-no-infix-range)          echo 'conformance/* stdlib/* docs-src/* examples/*' ;;
     check-no-cxl-token)            echo '*' ;;
+    # every listener a test binds is loopback (cx-private issue 1784): the V
+    # tests of this tree and of every pin, the pinned CX test programs, the
+    # flow documents, and the step itself
+    listener-bind-gate)            echo 'scripts/listener_bind_gate.cx deps.cxd vcx/* flows/*' ;;
     check-no-consumer-terms)       echo '*' ;;
     # K13, RULED: D59a, RS-28: a whole-tree secret scan, like
     # check-no-consumer-terms above — any change can add a secret.
@@ -296,6 +300,9 @@ step_globs() {
     # completion file reaches this tree as a deps.cxd pin bump.
     check-completions-drift)       echo 'vcx/* deps.cxd scripts/check_completions_drift.cx' ;;
     guide-check)                   echo 'docs-src/* vcx/* stdlib/*' ;;
+    # #1667: every [example lang=cx] of the guide's sections run against this
+    # tree's binary (a pin move changes the binary), and the retired-surface scan.
+    guide-snippets-check)          echo 'docs-src/* vcx/* stdlib/* deps.cxd registry/modules.cxd scripts/gen_guide/snippet_check.cx scripts/gen_guide/check_retired_surface.sh scripts/gen_guide/guide.mk' ;;
     # docs-voice-check (RULED: DOCS-43): the served sources it counts, and its
     # allowlist docs-src/site/voice.cxd (under docs-src/*).
     docs-voice-check)              echo 'docs-src/* scripts/gen_site/docs_voice_check.cx' ;;
@@ -354,7 +361,11 @@ step_globs() {
     property-gate)                 echo 'conformance/property_gate.cxd scripts/property_gate.cx deps.cxd registry/modules.cxd vcx/* stdlib/* third_party/*' ;;
     spec-invariant-gate)           echo 'deps.cxd registry/repos.cxd scripts/spec_invariants* VERSION' ;;
     ring-tag-gate)                 echo 'conformance/* scripts/*' ;;
-    cxer-registry-gate)            echo 'vcx/* spec/* scripts/cxer_registry*' ;;
+    # #1725: both read this tree's vcx/, stdlib/, conformance/ AND every pin's,
+    # so a pin move (deps.cxd) selects them; the census check also holds its
+    # tracked file.
+    cxer-registry-gate)            echo 'vcx/* spec/* stdlib/* conformance/* scripts/cxer_registry* deps.cxd registry/modules.cxd' ;;
+    diagnostics-census-check)      echo 'vcx/* spec/* stdlib/* conformance/* scripts/cxer_registry* scripts/diagnostics_census* _gate_evidence/diagnostics_census.cxd deps.cxd registry/modules.cxd' ;;
     spec-freeze-gate)              echo '*' ;;
     # ── the expensive binary-driving steps (VC-22 ring-scoping, #700 wave 2
     # part ii) ──────────────────────────────────────────────────────────────
@@ -416,7 +427,7 @@ step_globs() {
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
     # ledger-index-check (#1438) regenerates ledger/README.md from the store and
     # compares: its inputs are every ledger page and the generator itself.
-    ledger-index-check)            echo 'ledger/* scripts/ledger_index.cx' ;;
+    ledger-index-check)            echo 'ledger/* scripts/ledger_index.cx scripts/ledger_subject_ids_selftest.sh' ;;
     # ledger-edit-map-check (#1329, RULED: 1329-a, EDMAP-1) reads every edit map
     # against the owning repository's history: the pages, the allocation that
     # names the owner, the pins that name its sha, and the step with its selftest.
@@ -538,6 +549,18 @@ step_globs() {
     # compiler both the umbrellas and that cx are built with)
     test-xap-umbrella)             echo 'deps.cxd registry/modules.cxd vcx/* third_party/*' ;;
     test-fabric-umbrella)          echo 'deps.cxd registry/modules.cxd vcx/* third_party/*' ;;
+    # #1807, #1753: the pinned mail and net V tests (real sockets), run out of
+    # the pin against this tree's cx-dev — the umbrellas' row.
+    test-mail-real)                echo 'deps.cxd registry/modules.cxd vcx/* third_party/*' ;;
+    test-net-real)                 echo 'deps.cxd registry/modules.cxd vcx/* third_party/*' ;;
+    # #1763: code.md §10.1.4 (the diagram component renders with no server) and
+    # gate 14 (the pattern compile p99 bound) on a run. The component and demo
+    # are the cx-tooling pin's, the renderer the vendored mermaid; the bench is
+    # a cx-core-code runner compiled -prod with this tree's V.
+    # #1730: the two programs whose def calls were bare heads, and their selftest.
+    check-bare-head-calls)         echo 'scripts/bare_head_calls_selftest.cx bench/parallel-alloc/measure.cx scripts/consolidate_tests.cx' ;;
+    test-web-component-offline)    echo 'scripts/test_web_component_offline.sh scripts/gen_guide/playground/vendor/* deps.cxd registry/modules.cxd' ;;
+    bench-code-pattern-compile)    echo 'deps.cxd registry/modules.cxd vcx/* third_party/*' ;;
     # the db corpus on sqlite, postgres and mysql against real servers in
     # containers, run from the pinned checkout by a cx binary this tree builds
     # with the two engines (RULED: DBLANE-1, DBSRV-1) — a pin bump, the
@@ -565,7 +588,8 @@ step_globs() {
     corpus-audit)                  echo "corpus/* $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/corpus_audit.sh" ;;
     # bench/repr (#1119 W1) compiles the `cx` module as SOURCE and measures the
     # live tree it builds, so it depends on Ring 0 and on nothing above it.
-    repr-guard)                    echo 'vcx/cx/* vcx/v.mod third_party/* bench/repr/*' ;;
+    # A cx-core-data pin move (deps.cxd) moves the module it compiles (#1822).
+    repr-guard)                    echo "$RING0 vcx/v.mod third_party/* bench/repr/*" ;;
     # #1766: the driver's verdicts on planted format drivers — the driver and the cases.
     repr-guard-selftest)           echo 'bench/repr/* scripts/repr_guard_selftest.cx' ;;
     # the in-module Ring-0 test roster guard (#1209) reads the Makefile roster
@@ -655,12 +679,22 @@ step_globs() {
     # its program and case table, the host (docs/CNAME) and the front door's
     # name (the manifest's [site repo=]).
     site-live-check)               echo 'scripts/site_live_check* docs/CNAME docs-src/site/manifest.cxd' ;;
+    # #1778 (RULED: FIX-1): the external-link check's retry decision, graded
+    # offline on its case table; the program, the table and the allowlist.
+    site-links-selftest)           echo 'scripts/gen_site/check_external_links* docs-src/site/links.cxd' ;;
+    # #1781 (RULED: LBL-1): the live tracker through gh; a selected run picks it
+    # only when its program, case table, register, the registry or VERSION move.
+    issue-label-gate)              echo 'scripts/issue_label_gate* scripts/issue_label_exclusions.cxd registry/repos.cxd VERSION' ;;
     # test-binding-api-parity row RETIRED (RULED: RS-12, RS-8; #1591 item K3):
     # the four drivers under lang/<lang>/binding_api_driver/ left with their
     # binding repositories, and the target itself is gone from the Makefile.
     # #1065: the rosters live in vcx/Makefile and are re-derived from the module
     # set each artifact compiles, so any vcx/ module moving is an input.
     check-build-input-roster)      echo 'vcx/Makefile vcx/*' ;;
+    # #1616: sync-cmd-split links vcx/cmd/'s stay-files into the pin's cmd/.
+    check-sync-cmd-split)          echo 'vcx/cmd/* deps.cxd scripts/sync_cmd_split_selftest.cx' ;;
+    # #1601: devbox run setup's gitconfig rewrite — the program, its self-test, the setup line.
+    check-gitconfig-home)          echo 'devbox.json scripts/gitconfig_home.cx scripts/gitconfig_home_selftest.cx' ;;
     # #1623 (RULED: FIX-1): the bench runners live in the pinned cx-core-code and
     # cx-platform-net and import every V module of the graph, so a pin moving
     # (deps.cxd), a front-door module (vcx/*), the recipe or the V fork selects it.
@@ -1115,7 +1149,7 @@ fi
 # carries (Makefile's `test` recipe): every step's recursive build then hits
 # the vcx Makefile's up-to-date guard and skips the relink. Without it,
 # concurrent sub-makes RELINK target/cx while sibling steps are exec'ing it
-# — the v0.16.0 cut's 'Exec format error' / empty-output-rc-0 class. Adding
+# — the v0.16.0 cut's 'Exec format error' / empty-output-rc-0 class. Adding  (version-literal-ok: incident history)
 # -j here without this would have reintroduced exactly that. Both artifacts
 # are pre-built: `make test` only pre-builds build-vcx, but the steps this
 # script selects depend on build-vcx-dev too, and it is free when current.

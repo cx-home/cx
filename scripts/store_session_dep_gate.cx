@@ -54,9 +54,10 @@
 
 # code-of: one line with its `//` comment dropped. A comment that names a
 # session symbol is prose, not an edge -- this file's own header says
-# `session_kv` and must not fail its own rule.
+# `session_kv` and must not fail its own rule. An empty line splits into no
+# segment at all (strings:split-limit of '' answers ()), so its code is ''.
 [?def code-of scope=private pure [returns string] ($line::string)
-  [$first [$strings:split-limit $line "//" 2]]]
+  [?else [$first [$strings:split-limit $line "//" 2]] ""]]
 
 # blank-seps: every character that can bound a V identifier, turned into a
 # space. `_` and the digits stay -- they are identifier characters. `.` goes,

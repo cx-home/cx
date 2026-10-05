@@ -1,5 +1,5 @@
 #!/bin/sh
-# scripts/campaign-gist.sh [GIST_ID] — render the v0.18.0 campaign status as
+# scripts/campaign-gist.sh [GIST_ID] — render the release campaign status as
 # markdown and publish it to a private GitHub gist (owner request 2026-09-09:
 # status lives in a gist, not a local page). Without GIST_ID prints to stdout.
 set -u
@@ -13,7 +13,7 @@ gstate=$(sh scripts/gate-status.sh 2>/dev/null | awk '/^state/{print $2}')
 slot=$(cat "$HOME/git-repos/cx/.build-slot/cmd" 2>/dev/null | grep -oE 'lane_[A-Za-z0-9_]+|gate\.sh' | head -1)
 since=$(cat "$HOME/git-repos/cx/.build-slot/since" 2>/dev/null)
 {
-echo "# cx v0.18.0 close-out — status"
+echo "# cx v$(cat VERSION 2>/dev/null) close-out — status"
 echo
 echo "updated $(date -u +%FT%TZ) · tip \`$tip\` · **open issues: ${open:-?}**"
 echo

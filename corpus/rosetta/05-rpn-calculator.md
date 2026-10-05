@@ -69,7 +69,7 @@ rather than a preference:
    program's whole contribution to the corpus, and a sequence-stack variant
    would teach the opposite lesson under the same number.
 
-## Historical (v0.7.x surface, superseded)
+## Historical (v0.7.x surface, superseded) <!-- version-literal-ok -->
 
 Everything below this line describes the **pre-reshape** surface and is kept as
 a discovery trail, not as findings. Its blocking item — `$path/child` raising
@@ -101,11 +101,11 @@ empty-path-as-empty-sequence" XPath divergence.
 
 *(2026-08-25: items 1 and 4 below are CLOSED by the Cluster A settlement —
 a missing child reads as absence, and `[?splice]` in element content is the
-push idiom. Items 2 and 3 are v0.7.x-era observations kept for history;
+push idiom. Items 2 and 3 are v0.7.x-era observations kept for history; <!-- version-literal-ok -->
 item 3's arithmetic atomization landed with the comparison-atomization
 companion.)*
 
-1. **`$path/child` raises `CXER0001` instead of returning empty sequence when the parent has no such child.** This contradicts the XPath 3.1 model (where `/a/missing-child` is empty, not an error). Filing this would close cleanly via a one-line eval-loop change. **Warrants a spec item or an amendment to `spec/cxpath.md` §6.**
+1. **`$path/child` raises `CXER0001` instead of returning empty sequence when the parent has no such child.** This contradicts the XPath 3.1 model (where `/a/missing-child` is empty, not an error). Filing this would close cleanly via a one-line eval-loop change. **Warrants a spec item or an amendment to the path section of `spec/03-approved/core/code.md` (§5.5).**
 
 2. **Predicate-context arithmetic on positional builtins.** `last()-1` doesn't parse inside `[...]` predicate. Filing under existing CXPath predicate completeness work. **May close as an extension to that work.**
 

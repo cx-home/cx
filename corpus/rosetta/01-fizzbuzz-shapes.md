@@ -54,12 +54,12 @@ Observed output (truncated; 30 lines total):
 ```
 
 **Status:** GREEN (re-derived 2026-08-25, RULED: VC-28). Rewritten for the
-v0.8.0 surface — `[?for [in $n [$range 1 30]] …]` replacing the retired infix
+current surface — `[?for [in $n [$range 1 30]] …]` replacing the retired infix
 `1 to 30`, and `[?match true [when …] [else …]]` replacing the `:when`/`:yield`
 colon arms. Runs rc=0 with correct FizzBuzz (`:fizz` at 3, `:buzz` at 5,
 `:fizzbuzz` at 15 and 30). No workarounds; nothing outstanding.
 
-## Historical (v0.7.x surface, superseded)
+## Historical (v0.7.x surface, superseded) <!-- version-literal-ok -->
 
 Everything below this line describes the **pre-reshape** surface and is kept as
 a discovery trail, not as findings. Its gap items are closed today — `[$mod]`,
@@ -86,7 +86,7 @@ sequence — matching the Python / Clojure / jq reference renditions.
 | `($n mod 3)` XPath-style infix | Parser rejects `mod` as an unknown token at the `mod` position |
 | `floor($n / 3)` then `[- $n [* floor(...) 3]]` | XPath `$n / 3` rejects `/` between bindings; even with literals `[/ N 3]` returns float, then `[floor X]` in directive position does NOT reduce — `floor`/`ceiling`/`round` are XPath-call-only builtins, never directive-callable. The chain stays unevaluated. |
 | Hand-enumerated `:case` arms (`:case 3 :yield :fizz`, `:case 5 :yield :buzz`, etc., up to 30 cases) | Works correctly but defeats the purpose of the exercise |
-| `[?def imod (a b) ...]` module-level function | Parse error — `[?def NAME (params) body]` form not implemented yet on `v0.8.0-dev` |
+| `[?def imod (a b) ...]` module-level function | Parse error — the parameter list takes `$name`s: `[?def imod ($a $b) …]` is the form (code.md §12.2) and works today; bare names are refused `CXDEF_PARSE` |
 | Multi-arg `[?fn ($a, $b) :body BODY]` | Body never substitutes `$a`/`$b` when called; only single-arg `[?fn ($x) :body ...]` works correctly |
 
 After the math-operator surface landed, items #1 and #2 are closed in
@@ -105,11 +105,11 @@ Surface-completeness hypothesis confirmations from this program:
 
 1. **Numeric coercion / integer arithmetic edge — `mod` / `div` / `idiv` missing.** Listed in 0045 §"Confidence-ranked gap inventory" row "High — Numeric coercion / promotion edges." Confirmed here: no integer modulo, no integer division, no XPath `mod` / `div` / `idiv` infix tokens. **Warrants a spec item.**
 
-2. **Math builtins are XPath-call-only, not directive-form callable.** Newly surfaced — *not* in 0045's hypothesis register. `floor` / `ceiling` / `round` / `abs` work as `floor(EXPR)` only; `[floor EXPR]` returns the literal directive shape without reducing. **Warrants a spec item or amends `spec/code.md §6.5`.**
+2. **Math builtins are XPath-call-only, not directive-form callable.** Newly surfaced — *not* in 0045's hypothesis register. `floor` / `ceiling` / `round` / `abs` work as `floor(EXPR)` only; `[floor EXPR]` returns the literal directive shape without reducing. **Warrants a spec item or amends `spec/03-approved/core/code.md §6.5`.**
 
 3. **Paren-expression `(EXPR OP EXPR)` rejects comparison / arithmetic ops.** `($score >= 90)`, `($x > 4)`, `(1 = 1)`, `($a + $b)` all parse-fail. Only the directive forms `[>= $score 90]` / `[> $x 4]` / `[= 1 1]` / `[+ $a $b]` work. This contradicts the conformance-fixture example at `conformance/code.txt:3495` (`:when ($score >= 90)`), which itself fails on current HEAD. **Warrants a spec item or surfaces an open fixture-status item.**
 
-4. **`[?def NAME (params) body]` module-level function form unimplemented.** Per `spec/code.md §12.2.1` this is the v0.8.0 normative function-declaration form. `[?def add (a b) [+ a b]]` parse-fails on current HEAD. The form is specced; V reference impl is Phase 2 work (per spec/v0_8_0_status.md row 2.12). **Tracked under `[?def]` implementation.**
+4. **~~`[?def NAME (params) body]` module-level function form unimplemented.~~ Not a gap:** the form is `[?def add ($a $b) [+ $a $b]]` (`spec/03-approved/core/code.md` §12.2), which answers `3` for `[$add 1 2]` today; a bare-name list `(a b)` is refused `CXDEF_PARSE` (re-verified 2026-10-05, #1166).
 
 5. **Multi-arg `[?fn ($a, $b) :body BODY]` body does not substitute parameters on application.** `[?let $f = [?fn ($a, $b) :body [+ $a $b]] :in $f(1, 2)]` returns the literal body. Single-arg form works. **Warrants a spec item.**
 

@@ -4,7 +4,7 @@
 #
 # WHY THIS IS SHELL AND NOT CX (AGENTS.md rule 6; gap filed at
 # cx-home/cx-private#1672 before this file was written): the RED half needs
-# to download a real historical GitHub release asset (v0.17.0's darwin and
+# to download a real historical GitHub release asset (v0.17.0's darwin and  (version-literal-ok: incident history)
 # linux tarballs) and verify its SHA-256 before the gate ever sees it.
 # cx-stdlib has no capability-appropriate raw-binary-download primitive for
 # this bootstrap context (the platform-group http-client is out of reach of
@@ -14,9 +14,9 @@
 # POSIX sh for the identical reason.
 #
 # What this proves, run against THIS tree:
-#   RED   — the gate FAILS on the real v0.17.0 darwin-arm64.tar.gz, naming
+#   RED   — the gate FAILS on the real v0.17.0 darwin-arm64.tar.gz, naming  (version-literal-ok: incident history)
 #           the exact /nix/store sqlite load path #1670 measured.
-#   GREEN — the gate FAILS on nothing else: v0.17.0's linux-arm64 asset (which
+#   GREEN — the gate FAILS on nothing else: v0.17.0's linux-arm64 asset (which  (version-literal-ok: incident history)
 #           had no gate to catch it either, and turns out clean — measured,
 #           not assumed), and a staging directory built by THIS tree's own
 #           (already-fixed, #1102) link step.
@@ -53,7 +53,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 REPO="cx-home/cx"
-HIST_TAG="v0.17.0"
+HIST_TAG="v0.17.0"  (version-literal-ok: incident history)
 BASE="https://github.com/$REPO/releases/download/$HIST_TAG"
 
 echo "== #1670 self-test: fetching the historical $HIST_TAG assets (docs/install's own resolution, pinned to this tag) =="

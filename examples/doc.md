@@ -1,7 +1,7 @@
 ---
 title: CX Language Guide
 author: Erik
-version: 0.8.0
+version: 1.2
 ---
 
 # CX Language Guide

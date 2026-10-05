@@ -142,7 +142,7 @@ COLUMNS
                    is here so that merge does not fail this check. Graded
                    when present, not required
 
-MEMBERSHIP TEST (spec/03-approved/core/cx_partition.md §10, carried from
+MEMBERSHIP TEST (cx-decisions:spec/03-approved/core/cx_partition.md §10, carried from
 ledger/partition_I3_ring12_split.md, read through RS-1): a module that
 imports the store or a protocol module, or that SERVES, is in the platform
 group (`ring=1 group=platform`); otherwise it is Ring 1 with no group. A

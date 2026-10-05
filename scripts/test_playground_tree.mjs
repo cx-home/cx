@@ -173,7 +173,7 @@ function probeCase(example, rung) {
 
     // The placeholder means the pane drew NOTHING — an unavailable tree, an
     // empty subject. Reported rather than counted as zero rows, because a
-    // gate that reads 0/0/0 off a broken pane is the vacuous pass this lane
+    // gate that reads 0/0/0 off a broken pane is the vacuous pass this step
     // exists to prevent.
     const ph = sec.querySelector('.cxp-viz-placeholder');
     out.placeholder = ph ? txt(ph) : '';
