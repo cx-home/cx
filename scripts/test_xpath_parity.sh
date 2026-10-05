@@ -59,10 +59,10 @@
 #   4. `cx select` reads a CX document, not XML — an xml->cx stage was missing;
 #   5. `[out-text]` recorded XML while cx emits canonical CX (the frame bug
 #      above);
-#   6. `spec/cxpath_alignment.md`, cited as normative for the divergence
+#   6. `cx-decisions:spec/02-working/cxpath_alignment.md`, cited as normative for the divergence
 #      cases, did not exist in the tree.
 # Findings 1-5 are fixed by the 28.5a step and the re-derived fixture.
-# Finding 6 is fixed by spec/02-working/cxpath_alignment.md (authored under
+# Finding 6 is fixed by cx-decisions:spec/02-working/cxpath_alignment.md (authored under
 # VC-7; PROPOSED for graduation to spec/03-approved/, NOT graduated — G3 is
 # owner-only).
 #
@@ -138,7 +138,7 @@ For each [case] in conformance/xpath_31_parity.cxd:
 
 normative reference
 ───────────────────
-spec/02-working/cxpath_alignment.md — what CXPath aligns with in XPath 3.1,
+cx-decisions:spec/02-working/cxpath_alignment.md — what CXPath aligns with in XPath 3.1,
 what it deliberately does not carry, and what each case pins. Read it before
 adjudicating any disagreement: several disagreements with Saxon are the
 SPECIFIED answer, not a defect.

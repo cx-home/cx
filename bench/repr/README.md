@@ -15,11 +15,13 @@ make repr-guard-selftest # the driver's verdicts on planted format drivers (#176
 
 In `TEST_TARGETS`, so it runs in every `make test`.
 
-`make repr-guard` depends on `build-vcx`: the driver links the same vendored
-RE2 static archive (`third_party/re2/obj/libre2.a`) the CLI does. Running
-`run.cx` directly in a fresh worktree therefore needs that archive and the
-pinned V first — `git submodule update --init third_party/re2 third_party/v`
-and a `make -C vcx re2-shim` (or just `make repr-guard`, which does it).
+`make repr-guard` depends on `build-vcx`: the driver compiles the pinned
+module `cx` (`deps/cx-core-data/vcx`) and links the same RE2 shim
+(`deps/cx-core-code/vcx/target/libcx_re2_shim.a`) and vendored static archive
+(`third_party/re2/obj/libre2.a`) the CLI does, naming all three on its V
+command line (#1822). Running `run.cx` directly in a fresh worktree therefore
+needs `make deps-sync`, the archives and the pinned V first — or just
+`make repr-guard`, which does it.
 
 ## What it asserts
 

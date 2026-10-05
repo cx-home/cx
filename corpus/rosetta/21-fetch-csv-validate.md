@@ -2,7 +2,7 @@
 
 ## What it does
 
-The gate 47.7 probe for the v0.8.0 stdlib surface. Exercises the stdlib triad `http` + `csv` + `validate`:
+The gate 47.7 probe for the stdlib surface. Exercises the stdlib triad `http` + `csv` + `validate`:
 
 1. Fetch a CSV file body via `cx-stdlib/http-client`'s one-shot `get`.
 2. Parse the CSV into a sequence of typed record rows via `cx-stdlib/csv`.
@@ -11,7 +11,7 @@ The gate 47.7 probe for the v0.8.0 stdlib surface. Exercises the stdlib triad `h
 
 (The original also routed the URL through `cx-stdlib/url` parse-then-rebuild. That step was decorative — it reconstructed the same literal string it was handed — and the rewrite drops it rather than keep a round-trip that demonstrates nothing. `url` is exercised by its own conformance suite.)
 
-This is the canonical "agentic data-ingest pipeline" shape — fetch a vendor CSV (lead exports, contract logs, audit traces), filter for valid records, return a count or further-processed slice. Three new v0.8.0 stdlib modules collaborate.
+This is the canonical "agentic data-ingest pipeline" shape — fetch a vendor CSV (lead exports, contract logs, audit traces), filter for valid records, return a count or further-processed slice. Three stdlib modules collaborate.
 
 ## Idiomatic shape in other languages
 
@@ -33,7 +33,7 @@ Observed output:
 ```
 
 **Status:** BLOCKED — and the reason has CHANGED. Re-derived 2026-08-25 (RULED:
-VC-28) after the program was rewritten for the v0.8.0 surface; before that
+VC-28) after the program was rewritten for the current surface; before that
 rewrite it did not parse at all (`CXER0100`: retired `:scope` colon-slot on
 `[?def]`).
 

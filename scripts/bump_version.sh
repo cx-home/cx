@@ -44,7 +44,7 @@ stamp lang/rust/cxlib/Cargo.lock  "/^name = \"cxlib\"\$/{n;s/^version = \".*\"/v
 stamp lang/python/pyproject.toml  "s/^version = \".*\"/version = \"$NEW\"/"
 # The §1.2 contract-revision stamp derives the toolchain version from VERSION
 # (#1272); `check-contract-revision` refuses a tree where the two disagree, and
-# the v0.18.0-pre.1 cut left it behind (#1435) — regenerate it with the bump.
+# the v0.18.0-pre.1 cut left it behind (#1435) — regenerate it with the bump.  (version-literal-ok: incident history)
 bash scripts/gen_contract_revision.sh
 # The generated docs (docs/llm/*, the README badge) stamp the version too and
 # `docs-check` refuses drift; regenerate them with the bump (#1435).

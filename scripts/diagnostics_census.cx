@@ -11,9 +11,15 @@
 #                parentheticals: a "(sparse: …)" list REPLACES the row body,
 #                an "(… excluded/reserved …)" parenthetical SUBTRACTS.
 #   emissions  — every *.v under vcx/ except vcx/target/, with //-comment
-#                text stripped, plus every stdlib/*.cx with #-comment text
-#                stripped.
-#   assertions — every conformance/**/*.cxd fixture.
+#                text stripped, plus every stdlib/**/*.cx with #-comment text
+#                stripped — of this tree AND every pinned checkout under
+#                deps/ (cx-private issue 1725, RS-8: since the split the
+#                evaluator, the stdlib and the corpus live in the pins).
+#   assertions — every conformance/**/*.cxd fixture, this tree's and the
+#                pins'; a code a corpus file only NAMES (a doc block, a
+#                comment) is observed too, as the predecessor counts it.
+# diagnostics-census-check holds the two counts equal and the tracked file
+# current.
 # A count of this tool's that disagrees with the predecessor's is a FLAG in
 # the audit page, never a silent choice.
 #
@@ -287,6 +293,14 @@
     [> [$count [?for [in $m FIX-MARKERS]
          [where [$strings:contains $low $m]] [yield $m]]] 0]]]
 
+# every code a corpus file NAMES anywhere — a case, a doc block, a comment
+# (cx-private issue 1725): a code the corpus names is observed in the tree
+# even when no case asserts it, as cxer_registry_report counts it.
+[?def scan-file-mentions scope=public impure ($path)
+  [?let [= $src [$io:read-file $path]]
+    [?if [not [$strings:contains $src "CXER"]] [then ()]
+      [else [$distinct [?for [in $m [$re:find-all CXER-RX $src]] [yield [$re:group $m 0]]]]]]]]
+
 [?def scan-file-assertions scope=public impure ($path)
   [?let [= $src [$io:read-file $path]]
     [?if [not [$strings:contains $src "CXER"]]
@@ -331,16 +345,20 @@
         [= $singles [$to-arr [$fp:flat-map $gov-rows-txt
            [?fn ($ln) [$scan-singles [$row-body $ln]]]]]]
 
-        [= $v-files [?for [in $p [$io:glob "vcx/**/*.v"]]
-           [where [not [$strings:starts-with $p "vcx/target/"]]] [yield $p]]]
-        [= $cx-files [$io:glob "stdlib/*.cx"]]
-        [= $cxd-files [$io:glob "conformance/**/*.cxd"]]
+        # this tree's roots AND every pinned checkout's under deps/ (cx-private
+        # issue 1725, RS-8): since the split the evaluator, the stdlib and the
+        # corpus live in the pins — the same roots cxer_registry_report reads.
+        [= $v-files [?for [in $p [$fp:flat-map ("vcx/**/*.v", "deps/*/vcx/**/*.v") [?fn ($g) [$io:glob $g]]]]
+           [where [not [$strings:contains [$concat "/" $p] "/vcx/target/"]]] [yield $p]]]
+        [= $cx-files [$fp:flat-map ("stdlib/**/*.cx", "deps/*/stdlib/**/*.cx") [?fn ($g) [$io:glob $g]]]]
+        [= $cxd-files [$fp:flat-map ("conformance/**/*.cxd", "deps/*/conformance/**/*.cxd") [?fn ($g) [$io:glob $g]]]]
 
         [= $emissions [$fp:flat-map $v-files
            [?fn ($p) [$scan-file-emissions $p true]]]]
         [= $emissions2 [$fp:flat-map $cx-files [?fn ($p) [$scan-file-emissions $p false]]]]
         [= $all-emissions [$fp:flat-map ($emissions, $emissions2) [?fn ($x) $x]]]
         [= $assertions [$fp:flat-map $cxd-files [?fn ($p) [$scan-file-assertions $p]]]]
+        [= $mentions [$fp:flat-map $cxd-files [?fn ($p) [$scan-file-mentions $p]]]]
 
         # the universe: every code observed, plus every code a §9.6 row names
         # singly in its code column (a registered code emitted nowhere is a
@@ -348,9 +366,18 @@
         [= $observed [$distinct [$fp:flat-map (
              ([?for [in $e $all-emissions] [yield [$map:get $e "code"]]]),
              ([?for [in $a $assertions] [yield [$map:get $a "code"]]]),
+             $mentions,
              ([?for [in $n $singles] [yield [$code-of $n]]]))
            [?fn ($x) $x]]]]
         [= $universe [$sort [?for [in $c $observed]
+           [where [not [$member ('CXER0000','CXER9999') $c]]] [yield $c]]]]
+        # the codes OBSERVED — emitted or asserted, without the singles a §9.6 row
+        # names: what cxer_registry_report counts (diagnostics-census-check).
+        [= $n-observed [$count [?for [in $c [$distinct [$fp:flat-map (
+             ([?for [in $e $all-emissions] [yield [$map:get $e "code"]]]),
+             ([?for [in $a $assertions] [yield [$map:get $a "code"]]]),
+             $mentions)
+           [?fn ($x) $x]]]]
            [where [not [$member ('CXER0000','CXER9999') $c]]] [yield $c]]]]
 
         # per-code indexes
@@ -460,6 +487,7 @@
              "\n#]]"
              "\n  [summary codes=" [$string [$count $rows]]
              " registered=" [$string $n-registered]
+             " observed=" [$string $n-observed]
              " emitted=" [$string $n-emitted]
              " covered=" [$string $n-covered]
              " weak=" [$string $n-weak]

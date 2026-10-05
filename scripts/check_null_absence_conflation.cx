@@ -1,7 +1,7 @@
 # scripts/check_null_absence_conflation.cx — the check-null-absence-conflation
 # gate (SAP C1, §1) — the no-conflation guard.
 #
-# The value-channel model (spec/core/code.md §9.1.2.1 rule (b)) is normative
+# The value-channel model (spec/03-approved/core/code.md §9.1.2.1 rule (b)) is normative
 # and conformance-checked: **no builtin returns `null` to mean "absent."** An
 # optional, pure, in-memory read that finds nothing rides the **absence
 # channel** (the empty node-set / empty sequence `()`), NEVER a `null` scalar.
@@ -126,7 +126,7 @@
         [= $_h [$say [$cat ("check-null-absence-conflation FAILED — a builtin declares a ",
                             "null-for-absent return (`[returns [or T null]]`):")]]]
         [= $_l [?for [in $h $hits] [yield [$say [$cat ("  ", $h)]]]]]
-        [= $_t [$say [$cat ("Per spec/core/code.md §9.1.2.1 (b) the no-conflation guard, an ",
+        [= $_t [$say [$cat ("Per spec/03-approved/core/code.md §9.1.2.1 (b) the no-conflation guard, an ",
                             "optional read signals 'nothing here' via the ABSENCE channel ",
                             "(the empty sequence `()`), never `null`. Migrate the return to ",
                             "`[returns [or T [sequence T]]]` (present = (x), absent = ()).")]]]

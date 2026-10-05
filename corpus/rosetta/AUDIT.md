@@ -13,7 +13,7 @@ Seed: 5 of 20 programs (acceptance-criteria minimum five). Programs 03/04,
 exercises the `http` + `csv` + `validate` triad.
 
 **Last revised: 2026-08-25 against `release/0.17`** — re-derived from
-measurement after all six programs were rewritten for the v0.8.0 surface.
+measurement after all six programs were rewritten for the current surface.
 
 **Re-run 2026-08-31 against `release/0.18`** (ergonomics campaign #1144 W4):
 all six programs re-run unchanged, every live status matches the table below.
@@ -27,7 +27,7 @@ the campaign *did* find live in the teaching corpus landed in
 
 ## What the 2026-08-25 re-derivation found, and why it was needed
 
-Every program in this corpus had been **unrunnable since the v0.8.0 homoiconic
+Every program in this corpus had been **unrunnable since the v0.8.0 homoiconic <!-- version-literal-ok: the reshape, dated -->
 reshape**, and the table recorded two of them as `green`. `make corpus-audit`
 detects exactly that, correctly, and was wired into no lane — so nothing read
 it (#957).
@@ -65,7 +65,7 @@ reason, which is the capability boundary rather than a missing surface.
 | 05-rpn-calculator | `release/0.17` 2026-08-25 | green | 0 | Folds with `[?reduce … [using [?fn ($acc $tok) …]] [init …]]`, stack carried as a document. Both former constraints RETIRED by the Cluster A settlement (R-A1, 2026-08-25): a node-set in element content now splices — `[?splice $acc/*]` IS the push (new head + every existing item) — and the child axis reads the stack (`$acc/n`); the silent grouping envelope (#961) can no longer be constructed (a bare sequence as content refuses loudly, #847-1a). Re-measured: `[stack [n 35]]`, rc=0. |
 | 06-bfs | `release/0.17` 2026-08-25 | workaround | 1 | Graph-as-document: `$graph//edges` + a comprehension, no adjacency list built. Enumerates edges — as the original did. A true breadth-first TRAVERSAL (frontier queue, visited set) is not demonstrated; `[?def]` recursion exists on the current surface, so it is plausibly expressible now, but claiming so without writing it would be a guess. |
 | 13-config-validator | `release/0.17` 2026-08-25 | green | 0 | Clean: `[$count $config//port]` + `[$and]` + `[?match true …]`. Verified DISCRIMINATING, not vacuous: removing `[port 8080]` flips it to `:invalid`. |
-| 21-fetch-csv-validate | `release/0.17` 2026-08-25 | blocked | 0 | Rewritten for the v0.8.0 surface (it did not parse: retired `:scope` colon-slot on `[?def]`, and `[?http-client]` is a client-handle constructor, not a request form). Now `http` + `csv` + `validate`, all three `gate=enforced`. Blocked by the **capability boundary, not a surface gap**: the fetch needs `net`, the offline audit grants none, so `[$http:get]` refuses with `CXER0271` before any byte moves. The pipeline downstream of the fetch is measured working and discriminating — same three `[?def]`s over a literal CSV body return `1` from 3 rows. |
+| 21-fetch-csv-validate | `release/0.17` 2026-08-25 | blocked | 0 | Rewritten for the current surface (it did not parse: retired `:scope` colon-slot on `[?def]`, and `[?http-client]` is a client-handle constructor, not a request form). Now `http` + `csv` + `validate`, all three `gate=enforced`. Blocked by the **capability boundary, not a surface gap**: the fetch needs `net`, the offline audit grants none, so `[$http:get]` refuses with `CXER0271` before any byte moves. The pipeline downstream of the fetch is measured working and discriminating — same three `[?def]`s over a literal CSV body return `1` from 3 rows. |
 
 ## Summary
 
@@ -108,7 +108,7 @@ switch that had already been made. Recorded here because it is the same
 failure mode the whole re-derivation was about: one half of a document
 updated, the other half left asserting the old world.
 
-## Retired: the 2026-05-26 gap register (v0.7.x surface)
+## Retired: the 2026-05-26 gap register (v0.7.x surface) <!-- version-literal-ok -->
 
 The previous table's gaps are retired because they were measured against the
 pre-reshape surface. Kept as history, not as findings:

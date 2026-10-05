@@ -3,7 +3,7 @@
    Walks one bundle module's on-disk source, reads its co-located
    [module-doc] + [fn-doc] blocks via [$cx:parse] + CXPath, and re-emits a
    clean digest tree per documented function. Proves the schema in
-   spec/02-inprogress/stdlib_colocated_docs.md is machine-readable from CX
+   spec/03-approved/process/stdlib_colocated_docs.md is machine-readable from CX
    (the extraction idiom: iterate `node/*`, [?match] each child, bind text
    via [case [tag $t] …] — the same idiom scripts/gen_guide/guide_build.cx
    uses).

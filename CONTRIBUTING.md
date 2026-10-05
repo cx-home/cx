@@ -34,10 +34,10 @@ generated build output). For the formal contracts, see
  [vlang.io](https://vlang.io) is only a degraded fallback (`-prod`
  is silently dropped and GC patches are absent).
 - For each language binding you intend to test, the corresponding
- toolchain. v0.8.0 Tier-1 bindings: Python 3.10+, Go 1.21+,
- Rust 1.75+. (TypeScript / Java / C# / Kotlin / Swift / Ruby are
- archived under `lang/_archived/` for v0.8.0; restoration is
- post-tag.)
+ toolchain. The Tier-1 bindings (each its own `cx-binding-*`
+ repository, pinned in `deps.cxd`): Python 3.10+, Go 1.21+, Rust 1.75+.
+ TypeScript / Java / C# / Kotlin / Swift / Ruby are archived under
+ `lang/_archived/` and not built.
 
 [devbox](https://www.jetify.com/devbox) optionally pins all of the
 above; `devbox shell` drops you into an environment with the right
@@ -295,7 +295,7 @@ them is a release gate. The full text is in
 
 The audit (CB-1..CB-3) found this pattern in every binding — it was
 slow, lossy, and undermined the multi-format guarantees. All five
-findings closed in the v0.6.0 cycle; please don't reintroduce them.
+findings are closed; please don't reintroduce them.
 
 In practice: when you add a new public function in a binding,
 
@@ -312,7 +312,7 @@ in the binding.
 
 - **Parity matrix** ([`spec/03-approved/process/governance.md` §2](spec/03-approved/process/governance.md)) —
  every public function exists with consistent signatures across all
- Tier-1 bindings (V / Python / Go / Rust as of v0.8.0). New API
+ Tier-1 bindings (V / Python / Go / Rust). New API
  additions touch every Tier-1 binding in the same PR series; see
  [`spec/03-approved/misc/bindings.md`](spec/03-approved/misc/bindings.md) for the two-layer contract.
 - **Strategy declaration** (§3) — each binding's README declares

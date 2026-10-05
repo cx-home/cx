@@ -155,8 +155,9 @@
         [$concat "DRAWN FROM " REPOS "'s pins= COLUMN AND registry/modules.cxd WHEN THIS PAGE WAS BUILT"]]]]]
 
 [?def plugs-svg scope=public impure ($name)
-  [$re:replace [$re:compile " cx:attr-types=\"[^\"]*\""]
-    [$strings:replace [$strings:replace [$xml:emit [$figure $name]] "<>" ""] "</>" ""] ""]]
+  [; #1418: the figure follows the page's theme — ring_svg.cx's themed ]
+  [$rs:themed [$re:replace [$re:compile " cx:attr-types=\"[^\"]*\""]
+    [$strings:replace [$strings:replace [$xml:emit [$figure $name]] "<>" ""] "</>" ""] ""]]]
 
 # node-count: the boxes the figure draws for $name.
 [?def node-count scope=public impure ($name)

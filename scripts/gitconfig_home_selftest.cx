@@ -1,0 +1,115 @@
+# scripts/gitconfig_home_selftest.cx — `devbox run setup`'s gitconfig check,
+# proved on planted global gitconfigs (#1601, from #1594 D5a; RULED: STREAM-1,
+# CXF-1).
+#
+# WHY. dev2's ~/.gitconfig was dev1's copy: core.excludesfile,
+# commit.template and the kdiff3/sourcetree tool paths named /Users/ep, so the
+# run logs showed every ignored file as untracked until someone edited it by
+# hand. scripts/gitconfig_home.cx finds a path under another user's home in
+# the user's GLOBAL gitconfig and rewrites it to $HOME (or, with --check, names
+# it and exits 1); setup runs it.
+#
+# Each case runs the real program as a child with HOME and GIT_CONFIG_GLOBAL
+# planted under a temp directory, so the user's own gitconfig is never read or
+# written:
+#   A  --check over a copied config      exit 1, the three foreign keys named
+#      (core.excludesfile, commit.template, mergetool.kdiff3.path), nothing
+#      else named, the file unchanged
+#   B  the rewrite over the same config  exit 0, the three values now under
+#      $HOME, /Users/Shared and $HOME paths and a quoted tool command left
+#      exactly as they were
+#   C  --check after B                    exit 0
+#   D  the rewrite over a config with only $HOME paths   exit 0, the file
+#      byte-for-byte unchanged
+#
+#   cx --allow-read --allow-write --allow-subprocess --allow-env scripts/gitconfig_home_selftest.cx
+#   (make check-gitconfig-home)
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=private pure [returns string] ($parts) [$strings:join $parts '']]
+
+[?def run-prog scope=private impure [returns element] ($home $mode)
+  [$process:run [?to-sequence [?concat ([$env:executable-path], '--allow-read', '--allow-write', '--allow-subprocess', '--allow-env',
+                                        'scripts/gitconfig_home.cx') $mode]]
+                env={HOME: $home, GIT_CONFIG_GLOBAL: [$cat ($home, '/.gitconfig')], GIT_CONFIG_NOSYSTEM: '1'}
+                timeout-ms=60000]]
+
+[?def get scope=private impure [returns string] ($home $key)
+  [$strings:trim [$string [?else [$process:run ('git', 'config', '--global', '--get', $key)
+                                               env={HOME: $home, GIT_CONFIG_GLOBAL: [$cat ($home, '/.gitconfig')], GIT_CONFIG_NOSYSTEM: '1'}
+                                               timeout-ms=30000]@stdout '']]]]
+
+[?def said scope=private pure [returns string] ($r) [$cat ([$string [?else $r@stdout '']], [$string [?else $r@stderr '']])]]
+[?def exit-of scope=private pure [returns string] ($r) [$string $r@exit-code]]
+[?def has scope=private pure [returns bool] ($r $s) [$strings:contains [$said $r] $s]]
+
+[?def judge scope=private pure [returns element] ($id $held $what $detail)
+  [?if $held [then [ok id=$id what=$what]] [else [bad id=$id what=[$cat ($what, ' — ', $detail)]]]]]
+
+[?def copied scope=private pure [returns string] ($h)
+  [$cat ('[user]\n\tname = Someone\n',
+         '[core]\n\texcludesfile = /Users/ep/.gitignore_global\n\tsharedtools = /Users/Shared/tools/bin\n',
+         '[commit]\n\ttemplate = /Users/ep/.stCommitMsg\n',
+         '[difftool "sourcetree"]\n\tcmd = opendiff \\"$LOCAL\\" \\"$REMOTE\\"\n',
+         '[mergetool "kdiff3"]\n\tpath = /Users/ep/Applications/kdiff3.app/Contents/MacOS/kdiff3\n',
+         '[x]\n\tmine = ', $h, '/notes\n')]]
+
+[?let [= $root [$io:temp-dir 'gitconfig-home-selftest-']]
+      [= $h [$cat ($root, '/home')]]
+      [= $_d [$io:make-dirs $h]]
+      [= $cfg [$cat ($h, '/.gitconfig')]]
+      [= $_w [$io:write-file $cfg [$copied $h]]]
+      [= $before [$io:read-file $cfg]]
+
+      # A — --check names the three foreign keys and changes nothing
+      [= $ra [$run-prog $h ('--check',)]]
+      [= $a [$judge 'A' [and [= [$exit-of $ra] '1'] [$has $ra 'core.excludesfile'] [$has $ra 'commit.template']
+                             [$has $ra 'mergetool.kdiff3.path'] [not [$has $ra 'core.sharedtools']] [not [$has $ra 'x.mine']]
+                             [not [$has $ra 'difftool.sourcetree.cmd']] [= [$io:read-file $cfg] $before]]
+                    '--check names core.excludesfile, commit.template and mergetool.kdiff3.path under /Users/ep, nothing else, and writes nothing'
+                    [$cat ('exit ', [$exit-of $ra], ': ', [$strings:trim [$said $ra]])]]]
+
+      # B — the rewrite moves the three under $HOME and leaves the rest alone
+      [= $rb [$run-prog $h ()]]
+      [= $ex [$get $h 'core.excludesfile']] [= $tp [$get $h 'commit.template']] [= $kd [$get $h 'mergetool.kdiff3.path']]
+      [= $b [$judge 'B' [and [= [$exit-of $rb] '0']
+                             [= $ex [$cat ($h, '/.gitignore_global')]]
+                             [= $tp [$cat ($h, '/.stCommitMsg')]]
+                             [= $kd [$cat ($h, '/Applications/kdiff3.app/Contents/MacOS/kdiff3')]]
+                             [= [$get $h 'core.sharedtools'] '/Users/Shared/tools/bin']
+                             [= [$get $h 'x.mine'] [$cat ($h, '/notes')]]
+                             [= [$get $h 'difftool.sourcetree.cmd'] 'opendiff "$LOCAL" "$REMOTE"']]
+                    'the rewrite moves the three values under $HOME; /Users/Shared, a $HOME path and a quoted tool command are left exactly'
+                    [$cat ('exit ', [$exit-of $rb], ': ', [$strings:trim [$said $rb]], ' | excludesfile=', $ex, ' template=', $tp, ' kdiff3=', $kd)]]]
+
+      # C — --check after the rewrite is clean
+      [= $rc [$run-prog $h ('--check',)]]
+      [= $c [$judge 'C' [= [$exit-of $rc] '0'] '--check after the rewrite finds nothing'
+                    [$cat ('exit ', [$exit-of $rc], ': ', [$strings:trim [$said $rc]])]]]
+
+      # D — a config with only $HOME paths is not touched
+      [= $h2 [$cat ($root, '/home2')]]
+      [= $_d2 [$io:make-dirs $h2]]
+      [= $cfg2 [$cat ($h2, '/.gitconfig')]]
+      [= $_w2 [$io:write-file $cfg2 [$cat ('[core]\n\texcludesfile = ', $h2, '/.gitignore_global\n[commit]\n\ttemplate = ~/.stCommitMsg\n')]]]
+      [= $before2 [$io:read-file $cfg2]]
+      [= $rd [$run-prog $h2 ()]]
+      [= $d [$judge 'D' [and [= [$exit-of $rd] '0'] [= [$io:read-file $cfg2] $before2]]
+                    'a config with only $HOME and ~ paths is left byte-for-byte unchanged'
+                    [$cat ('exit ', [$exit-of $rd], ': ', [$strings:trim [$said $rd]])]]]
+
+      [= $_rm [$io:remove-tree $root]]
+      [= $all ($a, $b, $c, $d)]
+      [= $bad [?to-sequence [?for [in $x $all] [where [= [$name $x] 'bad']] [yield $x]]]]
+      [= $_say [?to-sequence [?for [in $x $all]
+                 [yield [$io:write-line [$env:stdout]
+                          [$cat ('  ', [$string $x@id], [?if [= [$name $x] 'ok'] [then '   ok   '] [else '   FAILED ']], [$string $x@what])]]]]]]
+  [?if [= [$count $bad] 0]
+    [then [?do [$io:write-line [$env:stdout] [$cat ('gitconfig-home selftest (#1601): ', [$string [$count $all]], '/', [$string [$count $all]],
+                                                    ' — a copied gitconfig\'s foreign home paths are named by --check and rewritten to $HOME; everything else is left exactly')]]
+               [$env:exit 0]]]
+    [else [?do [$io:write-line [$env:stderr] [$cat ('gitconfig-home selftest (#1601): ', [$string [$count $bad]], ' of ', [$string [$count $all]], ' case(s) FAILED')]]
+               [$env:exit 1]]]]]

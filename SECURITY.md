@@ -40,10 +40,11 @@ publish the advisory immediately.
 
 In scope:
 
-- The V core (`vcx/`) parser, emitters, and conversion logic.
+- The V core parser, emitters, and conversion logic (`cx-core-data`,
+  `cx-core-code`, and the front door's `vcx/`).
 - The C ABI surface in `libcx`.
-- The Tier-1 language bindings under `lang/` (V / Python / Go / Rust
-  as of v0.8.0). Archived bindings under `lang/_archived/` are not in
+- The Tier-1 language bindings (V / Python / Go / Rust — the
+  `cx-binding-*` repositories). Archived bindings under `lang/_archived/` are not in
   scope for the current security-fix window.
 - The `cx` CLI.
 
