@@ -55,12 +55,15 @@ want='' is a case the gate passes.
     [private '[{"number": 1794, "created_at": "2026-09-01T00:00:00Z", "title": "x", "labels": [{"name": "v7.7"}], "milestone": {"title": "v7.8"}}]']]
   [case id=c-prefixed want=''
     [component repo=cx-platform-xap '[{"number": 4, "created_at": "2026-09-01T00:00:00Z", "title": "v7.7 the umbrella panics", "labels": [], "milestone": null}]']]
+  [case id=c-colon-prefixed want=''
+    [component repo=cx-platform-xap '[{"number": 5, "created_at": "2026-09-01T00:00:00Z", "title": "v7.7: the umbrella panics", "labels": [], "milestone": null}]']]
   [case id=c-unprefixed want='c:cx-platform-xap#8'
     [component repo=cx-platform-xap '[{"number": 8, "created_at": "2026-09-01T00:00:00Z", "title": "the umbrella panics", "labels": [{"name": "v7.7"}], "milestone": null}]']]
-  [case id=c-prefix-near-miss want='c:cx-platform-xap#10 c:cx-platform-xap#11 c:cx-platform-xap#12'
+  [case id=c-prefix-near-miss want='c:cx-platform-xap#10 c:cx-platform-xap#11 c:cx-platform-xap#12 c:cx-platform-xap#14'
     [component repo=cx-platform-xap '[{"number": 10, "created_at": "2026-09-01T00:00:00Z", "title": "v7.70 x", "labels": [], "milestone": null},
                                        {"number": 11, "created_at": "2026-09-01T00:00:00Z", "title": "x v7.7 y", "labels": [], "milestone": null},
-                                       {"number": 12, "created_at": "2026-09-01T00:00:00Z", "title": "v7.7", "labels": [], "milestone": null}]']]
+                                       {"number": 12, "created_at": "2026-09-01T00:00:00Z", "title": "v7.7", "labels": [], "milestone": null},
+                                       {"number": 14, "created_at": "2026-09-01T00:00:00Z", "title": "v7.7:x", "labels": [], "milestone": null}]']]
   [case id=c-excluded want=''
     [register [exclude repo=cx-platform-xap number=9 why='after the cut by a ruling']]
     [component repo=cx-platform-xap '[{"number": 9, "created_at": "2026-09-01T00:00:00Z", "title": "v7.8 later", "labels": [], "milestone": null}]']]

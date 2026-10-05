@@ -13,7 +13,7 @@
 #   b  an open cx-private issue on a milestone, unless a [parking] row of the
 #      register names it (v0.19 stays a parking milestone, LBL-1);
 #   c  an open issue of a status=extracted repository of registry/repos.cxd
-#      whose title does not start with `<release> `;
+#      whose title does not start with `<release> ` (or `<release>: `);
 #
 # unless an [exclude] row of scripts/issue_label_exclusions.cxd names the
 # issue with its reason (SHIP-2's named exclusions). A register row without a
@@ -114,6 +114,9 @@
                        [yield [$concat [$attr $x "repo" ""] "#" [$attr $x "number" ""]]]]]
         [= $parked [?for [in $x $reg//parking] [where [$why-ok $x]] [yield [$attr $x "milestone" ""]]]]
         [= $prefix [$concat $release " "]]
+        # `<release>: ` is the same prefix (STREAM-1's brief spells it so,
+        # 2026-10-05; eighteen issues were filed that way the first hour).
+        [= $colon-prefix [$concat $release ": "]]
         [= $a [?for [in $i $private]
                 [where [> [$stamp [$string [?else [$map:get $i "created_at"] ""]]] [$stamp $cutoff]]]
                 [where [not [$member [$labels $i] $release]]]
@@ -127,7 +130,8 @@
         [= $c [?for [in $p $components]
                 [= $repo [$string [$map:get $p "repo"]]]
                 [in $i [$map:get $p "issues"]]
-                [where [not [$strings:starts-with [$title $i] $prefix]]]
+                [where [not [or [$strings:starts-with [$title $i] $prefix]
+                                [$strings:starts-with [$title $i] $colon-prefix]]]]
                 [where [not [$member $excluded [$concat $repo "#" [$num $i]]]]]
                 [yield [$concat "c:" $repo "#" [$num $i]]]]]
     [?to-array [?for [in $xs ($bad-rows, $a, $b, $c)] [in $x $xs] [where [not [= [$string $x] ""]]] [yield $x]]]]]

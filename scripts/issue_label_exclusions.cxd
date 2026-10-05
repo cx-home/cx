@@ -21,7 +21,6 @@ An exclusion whose issue is closed, or now carries what the gate asks for,
 is reported as stale so the row can go.
 #]]
 
-  [exclude repo=cx-private number=1728 why='filed during the SHIP-2 audit and seen there unlabelled (issue_audit_2026_09_30_ship2.md, "not in scope"); a cx-gap record (CXF-1), named an exclusion on #1781']
   [exclude repo=cx-private number=1697 why='SHIP-2: a duplicate of cx-core-code#2 (the same DEPS_V_DIRS defect, filed in the owning repository)']
   [exclude repo=cx-private number=1622 why='SHIP-2: stale and bound by D35a (the five register files moved to their pins)']
   [exclude repo=cx-private number=1444 why='SHIP-2: blocked outside the tree — a question for upstream V; posting it is the owner\'s']
