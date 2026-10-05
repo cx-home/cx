@@ -144,6 +144,7 @@ program-mapnode-nav- program-match- program-planar- program-purity-
 program-pvmatrix- program-reserved-ns- program-slot-singleton- program-table-
 program-tree-eval- program-ophead-
 program-shadow- program-ophole-
+program-grant-default- program-prose-join- program-emit-
 #]],
   [prefixes level=resilience [#
 program-retry- program-timeout- program-cb- program-fallback-
