@@ -557,7 +557,8 @@
 [?def g-datetime-key-value scope=private impure ()
   [?match [$cx:parse [$cx:canonical [$cx:parse [$concat "[x " [$g-datetime] "]"]]]] [x $q] [yield $q]]]
 
-# -- (iii) decimal arithmetic is exact, and never mixes with a float (code.md
+# -- (iii) decimal arithmetic is exact, and never mixes with a float -- a
+#          bigint does, as an int does (gap-240) (code.md
 #          §6.3 "Operand kind", "Exact division", RULED: CO-14, CO-17;
 #          cxdm.md §2.3 "decimal and bigint are SEMANTIC KINDS") ---------------
 #
@@ -667,7 +668,24 @@
       [$judge-refusal 'mix-avg' [$concat "[$avg (" $a ", " $f ")]"] 'cx-err:CXER0100']
       [$judge-refusal 'mix-max' [$concat "[$max (" $f ", " $a ")]"] 'cx-err:CXER0100']
       [$judge-refusal 'mix-div' [$concat "[$div " $a " " $f "]"] 'cx-err:CXER0100']
-      [$judge-refusal 'mix-bigint' [$concat "[+ " [$g-bigint] " " $f "]"] 'cx-err:CXER0100']]]]]
+      [; a bigint beside a float widens as an int of the same value does
+         (gap-240, cx-private#1818 §21; code.cxd program-gap1818-240b): the
+         answer is the float the bigint's nearest float makes with it ]
+      [?let [= $big [$g-bigint]]
+            [= $src [$concat "[+ " $big " " $f "]"]]
+            [= $want [$concat "[+ [cast " $big " :float] " $f "]"]]
+        [?match [$eval-src $src]
+          [case [err @message=$m] ([$fail 'iii' 'mix-bigint-refused' $m $src],)]
+          [case $got
+            [?match [$eval-src $want]
+              [case [err @message=$m] ([$fail 'iii' 'reference-unreadable' $m $want],)]
+              [case $ref
+                [; the sum may round once where the reference rounds twice
+                   (cast, then add), so the two agree to a relative 1e-12 ]
+                [?to-sequence [?concat
+                  [$when-not [= [$kind $got] 'float'] [$fail 'iii' 'mix-bigint-wrong-kind' [$concat 'answered ' [$kind $got] ' ' [$string $got]] $src]]
+                  [$when-not [?match [<= [$abs [- $got $ref]] [* 1.0e-12 [$abs $ref]]] [case [err] false] [case $b $b]]
+                             [$fail 'iii' 'mix-bigint-widens-inexact' [$concat 'answered ' [$string $got] ' want ' $want] $src]]]]]]]]]]]]]
 
 # -- (iv) an [err] built into any element propagates out (code.md §9.2
 #         "Implicit operand propagation", §6.4.1 "Construction is
