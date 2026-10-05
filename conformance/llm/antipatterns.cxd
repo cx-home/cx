@@ -332,7 +332,8 @@ cx eval: error reading program "[+ 1 2]": failed to open file "[+ 1 2]"; code: 2
 Almost every language reads a bare fraction as a binary float. CX does not:
 `1.5` is a **decimal** — exact, base-10, arbitrary precision — and only an
 `e`-exponent literal (`1.5e0`), a `::float` annotation, a `[cast … :float]`,
-a division, `[$avg]`, or a float-returning `math` function produces a float.
+a division, `[$avg]` of ints or floats (of decimals it stays an exact
+decimal), or a float-returning `math` function produces a float.
 
 The two kinds do not silently mix. Adding them is a loud refusal naming the
 only bridge, rather than a quiet promotion that would put binary rounding

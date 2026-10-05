@@ -192,8 +192,8 @@ fraction as a binary float and CX does not.
 
 | Kind | How you get one |
 |---|---|
-| **decimal** | a plain fraction literal: `1.5`, `2.50`, `0.1`. Exact, base-10, arbitrary precision |
-| **float** | an `e`-exponent literal (`1.5e0`), a `::float` annotation, `[cast x :float]`, division `[/ …]`, `[$avg …]`, and the float-returning `math` functions |
+| **decimal** | a plain fraction literal: `1.5`, `2.50`, `0.1`. Exact, base-10, arbitrary precision. Arithmetic over decimals stays decimal, and so does `[$avg …]` of decimals: `[$avg [0.5, 1.5]]` is `1.00` |
+| **float** | an `e`-exponent literal (`1.5e0`), a `::float` annotation, `[cast x :float]`, division `[/ …]`, `[$avg …]` of ints or floats (`[$avg [2, 4, 6]]` is `4.0e0`), and the float-returning `math` functions |
 
 `[price 19.99]` is a decimal and stays exact; `[/ 7 2]` is a float.
 Arithmetic keeps a decimal a decimal — `[* 2 1.5]` is `3.0`, and ints mix in
@@ -204,7 +204,8 @@ freely — but the two kinds never mix with each other:
 Almost every language reads a bare fraction as a binary float. CX does not:
 `1.5` is a **decimal** — exact, base-10, arbitrary precision — and only an
 `e`-exponent literal (`1.5e0`), a `::float` annotation, a `[cast … :float]`,
-a division, `[$avg]`, or a float-returning `math` function produces a float.
+a division, `[$avg]` of ints or floats (of decimals it stays an exact
+decimal), or a float-returning `math` function produces a float.
 
 The two kinds do not silently mix. Adding them is a loud refusal naming the
 only bridge, rather than a quiet promotion that would put binary rounding
@@ -466,10 +467,10 @@ and do not carry one over from another Lisp.
 | `[?take]` | Iterator stdlib — prefix of `count` items |
 | `[?drop]` | Iterator stdlib — suffix after `count` items |
 | `[?zip]` | Iterator stdlib — per-position tuples |
-| `[?enumerate]` | Iterator stdlib — emit `(i, item)` pairs |
+| `[?enumerate]` | Iterator stdlib — emit `(position, item)` pairs, the position 1-based (D4) |
 | `[?chunks]` | Iterator stdlib — group by `count` |
 | `[?concat]` | Iterator stdlib — flatten one level across sources |
-| `[?cycle]` | Iterator stdlib — bounded repeat |
+| `[?cycle]` | Iterator stdlib — bounded repeat: a leading round count `[?cycle N SOURCE]` or an item bound `max=K` |
 | `[?scan]` | Iterator stdlib — running-fold prefixes |
 | `[?flatten]` | Iterator stdlib — flatten one level of nesting |
 | `[?partition]` | Iterator stdlib — split by predicate |
@@ -884,7 +885,7 @@ program instead of computing something from absent operands:
 
 ```console
 $ cx --data=input.cx prog.cx
-error: cx-err:CXER0100: [?match] no match for value (single-arm form)
+error: cx-err:CXER0100: [?match] no match for value (single-arm form) at line 2:3
 ```
 
 Reach for `[?match]` when you are taking a value *apart*, and for the
@@ -970,7 +971,7 @@ That buys three things a hand-rolled dispatch cannot have:
 
 ```console
 $ cx --data=input.cx prog.cx
-error: cx-err:CXER0100: [?match] [of status]: no arm claimed :pending — a match over a declared-closed type has no silent fall-through; add the missing [case …] arm or an explicit [else] (code.md §8.2)
+error: cx-err:CXER0100: [?match] [of status]: no arm claimed :pending — a match over a declared-closed type has no silent fall-through; add the missing [case …] arm or an explicit [else] (code.md §8.2) at line 4:1
 ```
 
 `[else …]` is the opt-out, and writing one is how you say you meant it.
@@ -1125,12 +1126,12 @@ minus
 ```cx
 [?lib 'cx-stdlib/map']
 [?let [= $m {'+': plus}] [= $k 'zz']
-  ([$map:get $m $k], [?else [$map:get $m $k] :default])]
+  ([$present [$map:get $m $k]], [?else [$map:get $m $k] :default])]
 ```
 
 ```console
 $ cx prog.cx
-((), :default)
+(false, :default)
 ```
 
 `$m.$k` — the path step with a computed name — reads the same entry and
@@ -2435,7 +2436,7 @@ than guessed at:
 
 ```console
 $ cx prog.cx
-error: cx-err:CXER0111: [?if] expects [then …] / [else …] clause children after the condition — got a bare positional branch expression; write [?if cond [then thenExpr] [else elseExpr]?]
+error: cx-err:CXER0111: [?if] expects [then …] / [else …] clause children after the condition — got a bare positional branch expression; write [?if cond [then thenExpr] [else elseExpr]?] at line 1:11
 ```
 
 ## 10. Before you emit CX, check these

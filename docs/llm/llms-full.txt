@@ -194,8 +194,8 @@ fraction as a binary float and CX does not.
 
 | Kind | How you get one |
 |---|---|
-| **decimal** | a plain fraction literal: `1.5`, `2.50`, `0.1`. Exact, base-10, arbitrary precision |
-| **float** | an `e`-exponent literal (`1.5e0`), a `::float` annotation, `[cast x :float]`, division `[/ …]`, `[$avg …]`, and the float-returning `math` functions |
+| **decimal** | a plain fraction literal: `1.5`, `2.50`, `0.1`. Exact, base-10, arbitrary precision. Arithmetic over decimals stays decimal, and so does `[$avg …]` of decimals: `[$avg [0.5, 1.5]]` is `1.00` |
+| **float** | an `e`-exponent literal (`1.5e0`), a `::float` annotation, `[cast x :float]`, division `[/ …]`, `[$avg …]` of ints or floats (`[$avg [2, 4, 6]]` is `4.0e0`), and the float-returning `math` functions |
 
 `[price 19.99]` is a decimal and stays exact; `[/ 7 2]` is a float.
 Arithmetic keeps a decimal a decimal — `[* 2 1.5]` is `3.0`, and ints mix in
@@ -206,7 +206,8 @@ freely — but the two kinds never mix with each other:
 Almost every language reads a bare fraction as a binary float. CX does not:
 `1.5` is a **decimal** — exact, base-10, arbitrary precision — and only an
 `e`-exponent literal (`1.5e0`), a `::float` annotation, a `[cast … :float]`,
-a division, `[$avg]`, or a float-returning `math` function produces a float.
+a division, `[$avg]` of ints or floats (of decimals it stays an exact
+decimal), or a float-returning `math` function produces a float.
 
 The two kinds do not silently mix. Adding them is a loud refusal naming the
 only bridge, rather than a quiet promotion that would put binary rounding
@@ -468,10 +469,10 @@ and do not carry one over from another Lisp.
 | `[?take]` | Iterator stdlib — prefix of `count` items |
 | `[?drop]` | Iterator stdlib — suffix after `count` items |
 | `[?zip]` | Iterator stdlib — per-position tuples |
-| `[?enumerate]` | Iterator stdlib — emit `(i, item)` pairs |
+| `[?enumerate]` | Iterator stdlib — emit `(position, item)` pairs, the position 1-based (D4) |
 | `[?chunks]` | Iterator stdlib — group by `count` |
 | `[?concat]` | Iterator stdlib — flatten one level across sources |
-| `[?cycle]` | Iterator stdlib — bounded repeat |
+| `[?cycle]` | Iterator stdlib — bounded repeat: a leading round count `[?cycle N SOURCE]` or an item bound `max=K` |
 | `[?scan]` | Iterator stdlib — running-fold prefixes |
 | `[?flatten]` | Iterator stdlib — flatten one level of nesting |
 | `[?partition]` | Iterator stdlib — split by predicate |
@@ -886,7 +887,7 @@ program instead of computing something from absent operands:
 
 ```console
 $ cx --data=input.cx prog.cx
-error: cx-err:CXER0100: [?match] no match for value (single-arm form)
+error: cx-err:CXER0100: [?match] no match for value (single-arm form) at line 2:3
 ```
 
 Reach for `[?match]` when you are taking a value *apart*, and for the
@@ -972,7 +973,7 @@ That buys three things a hand-rolled dispatch cannot have:
 
 ```console
 $ cx --data=input.cx prog.cx
-error: cx-err:CXER0100: [?match] [of status]: no arm claimed :pending — a match over a declared-closed type has no silent fall-through; add the missing [case …] arm or an explicit [else] (code.md §8.2)
+error: cx-err:CXER0100: [?match] [of status]: no arm claimed :pending — a match over a declared-closed type has no silent fall-through; add the missing [case …] arm or an explicit [else] (code.md §8.2) at line 4:1
 ```
 
 `[else …]` is the opt-out, and writing one is how you say you meant it.
@@ -1127,12 +1128,12 @@ minus
 ```cx
 [?lib 'cx-stdlib/map']
 [?let [= $m {'+': plus}] [= $k 'zz']
-  ([$map:get $m $k], [?else [$map:get $m $k] :default])]
+  ([$present [$map:get $m $k]], [?else [$map:get $m $k] :default])]
 ```
 
 ```console
 $ cx prog.cx
-((), :default)
+(false, :default)
 ```
 
 `$m.$k` — the path step with a computed name — reads the same entry and
@@ -2437,7 +2438,7 @@ than guessed at:
 
 ```console
 $ cx prog.cx
-error: cx-err:CXER0111: [?if] expects [then …] / [else …] clause children after the condition — got a bare positional branch expression; write [?if cond [then thenExpr] [else elseExpr]?]
+error: cx-err:CXER0111: [?if] expects [then …] / [else …] clause children after the condition — got a bare positional branch expression; write [?if cond [then thenExpr] [else elseExpr]?] at line 1:11
 ```
 
 ## 10. Before you emit CX, check these
@@ -3323,13 +3324,15 @@ $ cx --from=cx --to=cx input.cx
 
 A bare fraction is a **decimal**: exact, base-10, arbitrary precision. A
 float arises only from an `e`-exponent literal (`1.5e0`), a `::float`
-annotation, `[cast … :float]`, division (`[/ …]`), `[$avg …]`, and the
-float-returning `math` functions.
+annotation, `[cast … :float]`, division (`[/ …]`), `[$avg …]` of ints or
+floats, and the float-returning `math` functions; `[$avg …]` of decimals
+keeps the exact decimal (`[$avg [0.5, 1.5]]` is `1.00`).
 
 ```
 1.5        decimal        1.5e0      float
 19.99      decimal        [/ 7 2]    float
-[* 2 1.5]  decimal        [$avg …]   float
+[* 2 1.5]  decimal        [$avg [2, 4]]  float
+[$avg [0.5, 1.5]]  decimal
 ```
 
 They do not mix in arithmetic — `[cast]` is the only bridge — and they are
@@ -3651,7 +3654,7 @@ is a clause-shape refusal (`cx-err:CXER0111`), not a positional shorthand.
 
 ```console
 $ cx prog.cx
-error: cx-err:CXER0111: [?if] expects [then …] / [else …] clause children after the condition — got a bare positional branch expression; write [?if cond [then thenExpr] [else elseExpr]?]
+error: cx-err:CXER0111: [?if] expects [then …] / [else …] clause children after the condition — got a bare positional branch expression; write [?if cond [then thenExpr] [else elseExpr]?] at line 1:11
 ```
 
 `[else]` may be omitted, and a false condition then yields empty:
@@ -3698,8 +3701,8 @@ order. `[when …]` adds a predicate arm, `[where …]` guards a case.
 `prog.cx`
 ```cx
 [?let [= $u [user age=20 [name Alice]]] [?match $u
-    [case [user $u] [where [>= $u@age 18]] :adult]
-    [case [user $u] :minor]]]
+    [case [user$u] [where [>= $u@age 18]] :adult]
+    [case [user$u] :minor]]]
 ```
 
 ```console
@@ -3723,7 +3726,7 @@ error:
 
 ```console
 $ cx --data=input.cx prog.cx
-error: cx-err:CXER0100: [?match] no match for value (single-arm form)
+error: cx-err:CXER0100: [?match] no match for value (single-arm form) at line 1:1
 ```
 
 Dropping the arm keywords entirely gives the **single-arm** form —
@@ -3787,7 +3790,7 @@ claim about which nodes to visit, not about every item's shape.)
 
 ```console
 $ cx --data=input.cx prog.cx
-error: cx-err:CXER0100: [?for] generator pattern does not match item 2 (NO_MATCH): `[in PATTERN SRC]` is a destructuring BIND — every item of SRC must fit the pattern. To keep only the items that fit, filter by shape with [where] or a [?match] in the yield body (code.md §7.5)
+error: cx-err:CXER0100: [?for] generator pattern does not match item 2 (NO_MATCH): the item `(b)` does not fit the pattern of the [in …] clause at line 1:7. `[in PATTERN SRC]` is a destructuring BIND — every item of SRC must fit the pattern. To keep only the items that fit, filter by shape with [where] or a [?match] in the yield body (code.md §7.5)
 ```
 
 `input.cx`
@@ -4059,7 +4062,7 @@ rather than silently reordered:
 
 ```console
 $ cx --data=input.cx prog.cx
-error: cx-err:CXER0100: [?reduce] takes a single positional source slot
+error: cx-err:CXER0100: [?reduce] takes a single positional source slot at line 1:1
 ```
 
 ## Transformation

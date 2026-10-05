@@ -45,13 +45,15 @@ $ cx --from=cx --to=cx input.cx
 
 A bare fraction is a **decimal**: exact, base-10, arbitrary precision. A
 float arises only from an `e`-exponent literal (`1.5e0`), a `::float`
-annotation, `[cast … :float]`, division (`[/ …]`), `[$avg …]`, and the
-float-returning `math` functions.
+annotation, `[cast … :float]`, division (`[/ …]`), `[$avg …]` of ints or
+floats, and the float-returning `math` functions; `[$avg …]` of decimals
+keeps the exact decimal (`[$avg [0.5, 1.5]]` is `1.00`).
 
 ```
 1.5        decimal        1.5e0      float
 19.99      decimal        [/ 7 2]    float
-[* 2 1.5]  decimal        [$avg …]   float
+[* 2 1.5]  decimal        [$avg [2, 4]]  float
+[$avg [0.5, 1.5]]  decimal
 ```
 
 They do not mix in arithmetic — `[cast]` is the only bridge — and they are
