@@ -1861,7 +1861,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-build-slot check-bench-isolation check-no-infix-range check-no-cxl-token listener-bind-gate check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate advisory-audit property-gate spec-invariant-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-search test-playground-readings test-oriel test-agent-real test-connector-real test-xap-umbrella test-fabric-umbrella test-mail-real test-net-real test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard repr-guard-selftest check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps test-site-phone-width test-playground-primer site-live-check site-links-selftest issue-label-gate ledger-index-check ledger-edit-map-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings check-bench-runners-compile check-flow-doc-lines
+TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-build-slot check-bench-isolation check-no-infix-range check-no-cxl-token listener-bind-gate check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate advisory-audit property-gate spec-invariant-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-search test-playground-readings test-oriel test-agent-real test-connector-real test-xap-umbrella test-fabric-umbrella test-mail-real test-net-real test-web-component-offline bench-code-pattern-compile test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard repr-guard-selftest check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps test-site-phone-width test-playground-primer site-live-check site-links-selftest issue-label-gate ledger-index-check ledger-edit-map-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings check-bench-runners-compile check-flow-doc-lines
 
 # PRIVMK-1: the private flow targets add themselves to TEST_TARGETS from
 # flows/private.mk. That file is absent from the public tree, and `-include`
@@ -4630,6 +4630,10 @@ bench-eval: build-vcx
 # passed either way, so this only ever moved them in the passing direction —
 # but a gate that measures a build CX does not ship is not measuring the
 # threshold it claims to.
+# Gate 14 is on a run (#1763): a TEST_TARGETS step, load-sensitive in
+# flows/load.cxd (a wall clock): after the storm, on the post-merge runner;
+# measured p99 0.031 ms against the 1 ms bound. Gate 15 stays off a run while
+# its throughput half is red (#804).
 bench-code-pattern-compile: build-vcx
 	$(PATCHED_V) -enable-globals -prod run deps/cx-core-code/vcx/tests/runners/code_pattern_compile_bench.v
 
@@ -4823,7 +4827,7 @@ test-vcx-services: build-vcx
 .PHONY: test-vcx-diagram-roundtrip
 test-vcx-diagram-roundtrip: build-vcx
 	$(MAKE) test-code-diagram
-	VFLAGS='$(VFLAGS_VCX)' v test deps/cx-core-code/vcx/tests/code_diagram_roundtrip_test.v \
+	VFLAGS='$(VFLAGS_VCX)' $(V) test deps/cx-core-code/vcx/tests/code_diagram_roundtrip_test.v \
 		deps/cx-core-code/vcx/tests/code_units_umbrella_test.v
 
 # ── Gate 12 — reference renderer (CLI + web + LSP) ────────────────────────
@@ -5658,6 +5662,9 @@ stage-web-component:
 ##                  component carries no off-origin URL, demo.html loads no
 ##                  off-origin script, and the staged renderer is the ONE
 ##                  vendored bundle byte-for-byte (never a second pin).
+# On a run (#1763): a TEST_TARGETS step, so code.md §10.1.4's MUST — the
+# component renders client-side with no server round-trip — is graded by the
+# post-merge run, not by hand (scripts/spec_invariants_exempt.cxd names it).
 .PHONY: test-web-component-offline
 test-web-component-offline: stage-web-component
 	@bash scripts/test_web_component_offline.sh

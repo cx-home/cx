@@ -546,6 +546,12 @@ step_globs() {
     # the pin against this tree's cx-dev — the umbrellas' row.
     test-mail-real)                echo 'deps.cxd registry/modules.cxd vcx/* third_party/*' ;;
     test-net-real)                 echo 'deps.cxd registry/modules.cxd vcx/* third_party/*' ;;
+    # #1763: code.md §10.1.4 (the diagram component renders with no server) and
+    # gate 14 (the pattern compile p99 bound) on a run. The component and demo
+    # are the cx-tooling pin's, the renderer the vendored mermaid; the bench is
+    # a cx-core-code runner compiled -prod with this tree's V.
+    test-web-component-offline)    echo 'scripts/test_web_component_offline.sh scripts/gen_guide/playground/vendor/* deps.cxd registry/modules.cxd' ;;
+    bench-code-pattern-compile)    echo 'deps.cxd registry/modules.cxd vcx/* third_party/*' ;;
     # the db corpus on sqlite, postgres and mysql against real servers in
     # containers, run from the pinned checkout by a cx binary this tree builds
     # with the two engines (RULED: DBLANE-1, DBSRV-1) — a pin bump, the
