@@ -974,8 +974,19 @@ guide-check: build-vcx
 ## literal outside a token; every sheet-bar page carries the theme toggle, the
 ## head script that applies a stored choice before paint, and the color-scheme
 ## meta. Its self-test runs first.
-guide-render-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+## The post-merge flow runs guide-render-gate, site-check and docs-check (via
+## site-index-check) each as its own make (#1817), and each renders docs/guide/
+## before it reads it: on 73a02bbd4 site-check's render removed index.html under
+## this one. scripts/docs_tree_lock.sh holds one render-and-read per checkout;
+## the *-locked target is the body, run under the lock (re-entrant for the
+## nested site-check -> guide-render-gate-locked path). The prerequisites stay on
+## the outer target so the lock is never held across a build.
+DOCS_TREE_LOCK = sh $(CURDIR)/scripts/docs_tree_lock.sh
 guide-render-gate: build-vcx
+	@$(DOCS_TREE_LOCK) $(MAKE) --no-print-directory guide-render-gate-locked
+.PHONY: guide-render-gate-locked
+guide-render-gate-locked: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+guide-render-gate-locked:
 	@rm -f docs/guide/index.html docs/guide/codec-xml.html
 	@$(MAKE) --no-print-directory guide GUIDE_SKIP_CX_BUILD=1
 	@for p in docs/guide/index.html docs/guide/codec-xml.html; do \
