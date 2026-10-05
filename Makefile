@@ -396,18 +396,29 @@ check-gate-lock:
 # link to anywhere else) is removed — deleting and re-making every link on
 # every build left the pin's cmd/ newer than the artifact, so every build
 # relinked (check-sync-cmd-split holds it).
-.PHONY: sync-cmd-split
-sync-cmd-split:
-	@[ -d deps/cx-core-code/vcx/cmd ] || exit 0; \
-	for l in deps/cx-core-code/vcx/cmd/*.v; do \
+#
+# sync-cmd-links is the link half alone, over SYNC_CMD_DIR (the pin's vcx/cmd/
+# by default): check-sync-cmd-split points it at a scratch directory, so the
+# self-test never plants a stale link in, or touches, the cmd/ that the steps
+# running beside it build from (two landing-gate reds 2026-10-05, 18:44Z and
+# 23:08Z: a parallel build's sync and relink touched the pin's cmd/ between the
+# check's stamp and its third run, and the check's own planted link made every
+# build running beside it relink).
+.PHONY: sync-cmd-split sync-cmd-links
+SYNC_CMD_DIR ?= deps/cx-core-code/vcx/cmd
+sync-cmd-links:
+	@[ -d "$(SYNC_CMD_DIR)" ] || exit 0; \
+	for l in "$(SYNC_CMD_DIR)"/*.v; do \
 	  [ -L "$$l" ] || continue; \
 	  b=$$(basename "$$l"); \
 	  [ -f "vcx/cmd/$$b" ] && [ "$$(readlink "$$l")" = "$(CURDIR)/vcx/cmd/$$b" ] || rm -f "$$l"; \
 	done; \
 	for f in vcx/cmd/*.v; do \
-	  l="deps/cx-core-code/vcx/cmd/$$(basename $$f)"; \
+	  l="$(SYNC_CMD_DIR)/$$(basename $$f)"; \
 	  [ -L "$$l" ] && [ "$$(readlink "$$l")" = "$(CURDIR)/$$f" ] || ln -sfn "$(CURDIR)/$$f" "$$l"; \
 	done
+
+sync-cmd-split: sync-cmd-links
 	@# Every artifact this recipe (or an ordinary build) leaves untracked in the
 	@# pin checkout -- the stay-file symlinks just made, this repository's own
 	@# nested deps/ mirror (already covered by the pin's OWN tracked .gitignore,
