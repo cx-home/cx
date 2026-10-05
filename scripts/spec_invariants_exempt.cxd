@@ -122,12 +122,12 @@ a no-step row without an issue.
   [exempt file='cx-core-code/spec/03-approved/stdlib/re.md' class=author
     match='callers MUST NOT rely on cache-hit timing'
     reason='an obligation on callers; the cache is an internal optimization with no observable contract to grade']
-  [exempt file='cx-core-code/spec/03-approved/stdlib/oidc.md' class=no-step issue='cx-home/cx-platform-sso#1'
+  [exempt file='cx-core-code/spec/03-approved/stdlib/oidc.md' class=step held-by=test-sso-interop
     match='if present it **MUST** equal the original'
-    reason='the §12.2 nonce continuity check runs only inside refresh, which needs a live token endpoint; test-sso-interop exercises the equal-nonce half only, and no corpus case can feed a refreshed ID token offline']
-  [exempt file='cx-core-code/spec/03-approved/stdlib/oidc.md' class=no-step issue='cx-home/cx-platform-sso#1'
+    reason='the §12.2 nonce continuity check runs only inside refresh, which needs a live token endpoint; test-sso-interop grades both halves: rp_drive.cx row refresh-revalidates (the equal nonce) and row refresh-nonce-mismatch (the identity provider\'s hostile tenant answers a refresh with another nonce: CXER5305) (cx-home/cx-platform-sso#1)']
+  [exempt file='cx-core-code/spec/03-approved/stdlib/oidc.md' class=step held-by=test-sso-interop
     match="the response's `sub` MUST equal the ID token's"
-    reason='the UserInfo sub check runs only inside userinfo, which needs a live userinfo endpoint; test-sso-interop exercises the matching-sub half only, and no corpus case can feed a mismatched response offline']
+    reason='the UserInfo sub check runs only inside userinfo, which needs a live userinfo endpoint; test-sso-interop grades both halves: rp_drive.cx row userinfo (the matching sub) and row userinfo-sub-mismatch (the hostile tenant\'s userinfo answers about another subject: CXER5308) (cx-home/cx-platform-sso#1)']
   [exempt file='cx-core-code/spec/03-approved/stdlib/supervise.md' class=step held-by=test-profile-gate
     match='`start` MUST refuse rather than return one that silently never backs off'
     reason='a no-sched build is a profile build; the profile gate probes supervise:start in the cx_no_pack_sched build and requires CXER5095 (profile_gate.v dependent_module_probe)']
