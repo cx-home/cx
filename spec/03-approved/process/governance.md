@@ -78,7 +78,7 @@ def loads(cx_str):
 
 State of compliance — capability matrix, idiomatic-divergence table,
 known gaps — is in
-[`spec/misc/parity-matrix.md`](../misc/parity-matrix.md). This section
+[`spec/03-approved/misc/parity-matrix.md`](../misc/parity-matrix.md). This section
 defines the rule; the matrix records the state.
 
 ### 2.1 Structure
@@ -245,9 +245,9 @@ gates but are published with each release for community scrutiny.
 
 > **Once per year, a designated reviewer audits every binding against
 > §1, §2, §3, §5, and §6. Findings are documented in
-> `spec/binding_audit_YYYY.md`.**
+> `spec/binding_audit_YYYY.md`.** <!-- spec-path-ok: the audit's future file -->
 
-The first audit artifact is not yet present; `spec/binding_audit_YYYY.md`
+The first audit artifact is not yet present; `spec/binding_audit_YYYY.md` <!-- spec-path-ok -->
 lands at the first annual audit cycle. This section is informational
 now and becomes enforcement (a release blocker if missing for a
 given annual cycle) in a future cycle.
@@ -263,7 +263,7 @@ given annual cycle) in a future cycle.
 3. Findings are graded CRITICAL / SUBOPTIMAL / COSMETIC.
 4. CRITICAL findings are tracked as release blockers for the next minor
    version.
-5. The audit is published in `spec/binding_audit_YYYY.md`.
+5. The audit is published in `spec/binding_audit_YYYY.md`. <!-- spec-path-ok -->
 
 ### 7.2 Anti-pattern checklist
 
@@ -303,12 +303,12 @@ A third-party binding declares conformance by:
 3. Documenting its implementation strategy per §3.
 4. Adopting the versioning and capability conventions in §5.
 5. A maintainer review of a one-line addition to
-   `spec/conformance_registry.md`.
+   `spec/conformance_registry.md`. <!-- spec-path-ok: created with the first third-party binding -->
 
 Conformance is not exclusive. A binding may be certified, drift, and be
 de-listed in a future audit.
 
-Currently ships without `spec/conformance_registry.md`; the registry file
+Currently ships without `spec/conformance_registry.md`; the registry file <!-- spec-path-ok -->
 is created when the first third-party binding submits a conformance
 claim. This section is informational now and becomes enforcement
 (a missing registry entry blocks a third-party "conformant" claim) in
@@ -428,13 +428,13 @@ before being used in a module's error table.
 The CX core language reserves `CXER0001` (generic-core panic) and
 `CXER0100–CXER0299` (CX-code directive errors); the full sub-block
 allocation table inside that range lives in
-[`spec/core/code.md §9.4`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md#§9.4-cx-code-error-code-reservation)
+[`spec/03-approved/core/code.md §9.4`](https://github.com/cx-home/cx-core-code/blob/main/spec/03-approved/core/code.md#§9.4-cx-code-error-code-reservation)
 and is not duplicated here.
 
 | Range | Owner module / subsystem | Spec file |
 |---|---|---|
-| `CXER0001–CXER0009` | Generic-core panic + core-internal failures (0001 = `CX_PANIC`, runtime `!`; 0003 = RE2 shim internal failure/OOM, shipped `vcx/cx/regex_re2.v`; rest reserved) | `spec/core/code.md` §9.2 / §9.4 |
-| `CXER0100–CXER0299` | CX language core (directive errors) | `spec/core/code.md` §9.4 |
+| `CXER0001–CXER0009` | Generic-core panic + core-internal failures (0001 = `CX_PANIC`, runtime `!`; 0003 = RE2 shim internal failure/OOM, shipped `vcx/cx/regex_re2.v`; rest reserved) | `spec/03-approved/core/code.md` §9.2 / §9.4 |
+| `CXER0100–CXER0299` | CX language core (directive errors) | `spec/03-approved/core/code.md` §9.4 |
 | `CXER0300–CXER0309` | `cx fmt` — the canonical formatter's own refusals (`E_FMT_*`; issues #1384 / #1391, RULED: 1384-a / 1391-a — registered 2026-09-12 BEFORE the first emission, per invariant 4. `code.md` §9.4's closing note already held `CXER0300+` for future subsystems, and a band scan at registration returned nothing anywhere in the tree — no spec, no `.v`, no `.cx`, no `.cxd`, no header. It sits directly above the CX-code range rather than above the stdlib blocks because `cx fmt` is core tooling under a CORE spec, not a module). 0300 `E_FMT_TREE_CHANGED` (the §1 guard: the formatted output re-parses to a node tree that is not the input's — a node kind, the node order, a text value after entity decoding, or an attribute's typed value moved. The source is returned UNCHANGED and the one-line refusal names the first differing node path and BOTH values. Never raised for a difference in scalar SPELLING or quoting: `1_000` and `1000` are one integer and `'s'` and `"s"` one string, both are §2 presentation axes, and neither is a difference in the tree — which is why the comparison is a PROJECTION of the node tree and not a byte comparison of either serialization. Measured over all 189 readable `.cx` sources at 469ec08e7: the canonical-data-TEXT oracle refuses 96 of them and the RAW AST-JSON emitter refuses 103, so neither is usable as it stands — the projection is §1's list made executable, with whitespace inside a text value collapsed (§2's first axis), a PI's raw payload excluded (it IS the program source, so comparing it compares fmt's output against its own input), and a Text node equal to a string Scalar of the same value (bare-versus-quoted is the same granted axis as `'` versus `"`). Under it 14 of the 189 refuse, and every one is a real §1 violation outside #1384's two shapes), 0301 `E_FMT_DECLINED` (the formatter could not produce a VERIFIED canonical form: the program emitter is not a fixed point on this file, the canonical text re-parses to a different program shape, the comment-bearing layout cannot carry every comment back, or the candidate is not its own fixed point (§7). The source is returned UNCHANGED and the one-line refusal names the construct and its position. Fail-closed is unchanged; what this code adds is that it is SAID — #1391 measured 36% of the tracked corpus coming back verbatim at exit 0 with no diagnostic, which read as stubborn legacy files rather than as one hole); 0302–0309 reserved. Reused, never re-coded: a source that does not parse keeps its READER's own diagnostic (`CXER0100` for the program reading, the data-parse `E` codes for the data one) — a formatter that re-coded a parse error would hide which reader refused, and `cx fmt` must agree with `cx run` on that (#391) | `spec/03-approved/core/formatting.md` §7 |
 | `CXERLEX-*` (named suffix, non-numeric) | Lexical-layer rejects defined by the formal token grammar. Shipped: `CXERLEX-CODEPOINT` (a `\u`/`\U` escape or `&#…;` char-ref decoding to a surrogate or > U+10FFFF — lexicon [L32] / grammar [67]); `CXERLEX-RANGE` (sized `iN`/`uN` ascribed value out of range — grammar [55] / lexicon [L25d]). Registered at I1 stream 13; the sub-namespace is append-only and owned by the formal files (invariants 1–4 apply to the suffix names) | `spec/03-approved/formal/lexicon.ebnf` |
 | `CXER1100–CXER1149` | `cx-platform/store` (sparse: 1100, 1101, 1110, 1113–1119, 1120, 1121, 1130–1132, 1140–1145) — the last three of the 1113 run = the stream-5 computation-cache admission refusals; the last two of the 1140 run = `E_STORE_SUBJECT_UNSUPPORTED` + `E_STORE_SHREDDED`, the erasure/compliance store surface shipped at I5 stream 20; the band's remaining tail stays reserved for that surface | `spec/03-approved/platform/store.md` §13 |
@@ -470,9 +470,9 @@ and is not duplicated here.
 | `CXER3800–CXER3805` | `cx-stdlib/i18n` | `spec/03-approved/stdlib/i18n.md` |
 | `CXER3900–CXER3902` | `cx-stdlib/html` | `spec/03-approved/stdlib/html.md` |
 | `CXER4000–CXER4013` | `cx-stdlib/process` | `spec/03-approved/stdlib/process.md` |
-| `CXER4100–CXER4119` | `module-cx` | `spec/modules/cx.md` |
-| `CXER4200–CXER4209` | `module-sqlite` | `spec/modules/sqlite.md` |
-| `CXER4300–CXER4309` | `module-tree-sitter` | `spec/modules/tree-sitter.md` |
+| `CXER4100–CXER4119` | `module-cx` | `spec/03-approved/stdlib/cx.md` |
+| `CXER4200–CXER4209` | `module-sqlite` | `spec/03-approved/modules/sqlite.md` |
+| `CXER4300–CXER4309` | `module-tree-sitter` | `spec/03-approved/modules/tree-sitter.md` |
 | `CXER4400–CXER4409` | `cx-stdlib/fp` (functor/monad protocol; `CXER4400 E_NO_INSTANCE`) | `spec/03-approved/stdlib/fp.md` |
 | `CXER4500–CXER4524` | `cx-platform/net` (L4 networking — `E_NET_*`; allocated above fp's 4400-band). The band is **unchanged** by the server-role stream upgrade `net:tls-accept` (RULED: 1421-a — the `STARTTLS` handshake over an already-accepted socket): its refusals are the ones already here — 4512 handshake failure (including a client certificate under mutual TLS), 4514 a missing or unreadable `cert`/`key`, 4515 a handle naming no live or already-consumed socket, 4522 a listener, a datagram socket or an already-TLS socket. No new code is allocated, for §3.6a's reason: an operation that is refused where §7's matrix already says it does not apply needs no code of its own | `spec/03-approved/platform/net.md` |
 | `CXER4525–CXER4589` | `cx-platform/http` (L7 HTTP/1.1 client + server — `E_HTTP_*`; allocated above net's 4500-band; 4544–4589 SSE/streaming) | `spec/03-approved/platform/http.md` |
@@ -485,12 +485,12 @@ and is not duplicated here.
 | `CXER4900–CXER4901` | `cx-stdlib/similar` (island: shipped inside the pre-amendment xap proposal; regularized by the 2026-08-05 xap.md §8 yield — the 4900/4901 collision that triggered audit C5) | `spec/03-approved/stdlib/similar.md` §7 |
 | `CXER4902–CXER4919` | `cx-xap` subsystem — the served bridge's attribution surface (`E_XAP_SERVE_UNATTRIBUTED` 4902) and, from 2026-09-16, the compose-time FULFILMENT refusals (`E_XAP_FULFILMENT_UNDECLARED` 4903, `E_XAP_FULFILMENT_INCOMPLETE` 4904, `E_XAP_FULFILMENT_AMBIGUOUS` 4905, `E_XAP_FEATURE_UNFULFILLED` 4906 — issue #1359, RULED: 1359-a, the kit ↔ fulfilment binding's four checks: 4903–4905 are the compose gate's, defined in `spec/03-approved/xap/xap_grammar_composition.md` §4.3b, and 4906 is the DEPLOYMENT's, defined in `spec/03-approved/xap/xap_feature_distribution_market.md` §6.3 step 1 beside the pin checks, because a contract nobody fulfils is a fact about a deployment rather than about a set of feature documents; 4907 is `E_XAP_FLOW_HOST_FAULT` (RULED: HOST-2, `ledger/rulings_2026_09_26_owner_decisions_designs_l26_l29.md`) — the ONE code for the deployment host's internal boot faults when it embeds the flow runner: the hosted runtime vanishing before the runner boots, a bound `[runtime [journal …]]` row with no journal handle for it, and the runner driver failing to load, register or boot (`spec/03-approved/xap/xap.md` §8, distribution spec §6.3.1) — kept apart from `CXER4965`, which stays the caller-fault code for every binding-row and delivery-shape refusal on both faces (`flow.md` §8), because the two are different FACTS: one names a document the caller wrote wrong, the other names a mechanism that failed under a document that validated; 4908–4919 stay reserved for the cx-xap subsystem). The 2026-09-12 reservation of 4903–4919 "for this surface" is amended rather than honored, and the amendment is the same **band decision** that made this range cx-xap's: the fulfilment refusals could not take the `CXER4850–4889` their ruling names, because that band carries no free code (4850–4863 xap.md, the §4.9 sub-band 4864–4869 FULL per 1268-d, 4870–4879 the compose surface, 4880–4889 xap-dist, 4885 reserved unallocated), and a refusal class that cannot reach its own band takes the subsystem's registered growth room rather than a sibling's meaning. Registered 2026-09-12 (issue #1292, RULED: 1292-a, `ledger/rulings_2026_09_12_sessions_on_the_bridge_1292.md`) — the **band decision** the row above says the next xap refusal class needs, taken with knowledge of what it is for: `[$xap:serve]` gained a `session:` configuration and, with it, a BOOT refusal for a journal-bound runtime that nothing would attribute. It could not join `CXER4850–CXER4889`: `4850–4879` is spent (the §4.9 sub-band closed at 4869), `4880–4889` is xap-dist's, and `4885` is reserved unallocated for partial-consent semantics, so reusing any of them would make one code mean two failures the spec separates. This range is one the 2026-08-05 amendment returned to the unallocated pool, between the `similar` island at 4900–4901 and `fabric` at 4920 | `spec/03-approved/xap/xap.md` §8 |
 | `CXER4920–CXER4949` | `cx-stdlib/fabric` (`E_FABRIC_*`) | `spec/03-approved/platform/fabric.md` |
-| `CXER4950–CXER4969` | cross-stream coordination — the choreography/escrow vocabulary (campaign stream 10, #682, `E_COORD_*`). `CXER4950` / `CXER4951` are the `[requires-at]` pin refusals: the stale-pin refusal at the admission read, and the unevaluated-pin fail-closed refusal on direct invocation of a pinned command. The band's TAIL, `CXER4952–CXER4969`, is occupied by **`cx-platform/flow`** — the general workflow module that retired stream 10's saga surface cutover-first (RULED: 789-WF-0); its per-code rows are listed in `platform/flow.md`, *Error codes*, not here. Registered 2026-08-12 before first use per this file's invariant; the tail's occupant named at `flow`'s W1 landing | `spec/03-approved/platform/flow.md`; `spec/_archived/cross_stream_coordination.md` §2/§5 |
+| `CXER4950–CXER4969` | cross-stream coordination — the choreography/escrow vocabulary (campaign stream 10, #682, `E_COORD_*`). `CXER4950` / `CXER4951` are the `[requires-at]` pin refusals: the stale-pin refusal at the admission read, and the unevaluated-pin fail-closed refusal on direct invocation of a pinned command. The band's TAIL, `CXER4952–CXER4969`, is occupied by **`cx-platform/flow`** — the general workflow module that retired stream 10's saga surface cutover-first (RULED: 789-WF-0); its per-code rows are listed in `platform/flow.md`, *Error codes*, not here. Registered 2026-08-12 before first use per this file's invariant; the tail's occupant named at `flow`'s W1 landing | `spec/03-approved/platform/flow.md`; `cx-decisions:spec/_archived/cross_stream_coordination.md` §2/§5 |
 | `CXER4970–CXER4989` | `cx-stdlib/sched` (scheduled events & timers — `E_SCHED_*`) | `spec/03-approved/stdlib/sched.md` |
 | `CXER4990–CXER4999` | `cx-core/consistency` (campaign stream 7, #679 — the declare-and-verify guarantee vocabulary, `E_CONSISTENCY_*`: the unsatisfiable-declaration primary + the uncoverable-pin companion; the remainder of the band reserved for this vocabulary. Registered 2026-08-11; the sweep's original proposal inside the XAP band was corrected to this verified-free band at the S3 recording — L125) | `spec/03-approved/core/consistency_vocabulary.md` §5 (normative landing: `spec/03-approved/platform/journal.md` §4.4 first; store/fabric/xsp rows follow with their stream-7 waves) |
 | `CXER5000–CXER5049` | XSP generic layer + store profile (campaign stream 4, L166; per-code rows LANDED with the W3 implementation per #717 — sub-block 5000–5009 = the generic frame/session layer, the numeric cutover of the retired symbolic `CXER-XSP-*` spellings; 5010–5021 = the store profile (5019–5021 landed with the W4 feed/authority implementation), 5022–5025 = the W5 peer/pushdown rows. 5026–5028 registered 2026-09-18 (RULED: 1544-b, issue #1544) for the three meanings the retired `17xx` band carried and this band lacked — 5026 `E_XSP_STORE_FORBIDDEN`: the caller is authenticated and not permitted; 5027 `E_XSP_STORE_SERVER_UNAVAILABLE`: the store is not ready to serve; 5028 `E_XSP_STORE_NOT_FOUND`: the named object is absent. Each is a NEW code rather than a widening of a neighbour: `5018 ADMIN` is daemon-level verbs in open mode and not any op under a configured grant, `5010 ATTACH` is handshake state and not a server declining to serve yet, and the band had no "the object you named is absent" row at all. 5029–5049 reserved; the `17xx` range is Reserved/never-reissued, never reused) | `spec/03-approved/xap/xsp_store_profile.md` §4.2 |
 | `CXER5050–CXER5069` | store/journal sync — distributed store (campaign stream 9, #681, `E_SYNC_*`; the first three codes shipped with the W1 stream-ingestion implementation — the divergent-stream refusal, the invalid-chain refusal, the reserved-target refusal; the fourth with the W2 reconciliation engine — the enforcing reconcile's diverged raise, carrying every `[conflict]` value; the band's remaining tail stays reserved for the sync surface. Registered 2026-08-12 before first use per this file's invariant) | `spec/03-approved/platform/store/distributed_store.md` §8 |
-| `CXER5070–CXER5089` | `cx-platform/live` — live modes / incremental evaluation (campaign stream 3, #675; relocated 2026-08-05 from the colliding 4902–4919 proposal — audit C5, band pre-registered per invariant "added here before being used"). Per-code rows live in the pack spec §9: 5070–5078 assigned; 5070–5078 ALL SHIPPED: 5070–5073 with the W1 `changes-since` implementation, 5074–5075 with the W2 `observe` implementation, 5076 with the W3 `materialize` implementation, 5077–5078 with the W4 adapter contract (#717 same-change discipline); 5079–5089 reserved. Reused, never duplicated: `CXER0120`/`CXER4700`/`CXER1114` | `spec/03-approved/platform/live.md` §9 (band claimed at `spec/_archived/live_modes.md` §2) |
+| `CXER5070–CXER5089` | `cx-platform/live` — live modes / incremental evaluation (campaign stream 3, #675; relocated 2026-08-05 from the colliding 4902–4919 proposal — audit C5, band pre-registered per invariant "added here before being used"). Per-code rows live in the pack spec §9: 5070–5078 assigned; 5070–5078 ALL SHIPPED: 5070–5073 with the W1 `changes-since` implementation, 5074–5075 with the W2 `observe` implementation, 5076 with the W3 `materialize` implementation, 5077–5078 with the W4 adapter contract (#717 same-change discipline); 5079–5089 reserved. Reused, never duplicated: `CXER0120`/`CXER4700`/`CXER1114` | `spec/03-approved/platform/live.md` §9 (band claimed at `cx-decisions:spec/_archived/live_modes.md` §2) |
 | `CXER5090–CXER5109` | `cx-stdlib/supervise` — restart policies over monitored workers (`E_SUP_*`; issue #765, RULED: SUP-1 — registered 2026-08-20 with the graduation + implementation, next free block above live's `5070–5089`, band-scan confirmed). 5090 `E_SUP_ARG_INVALID` (malformed policy/child spec), 5091 `E_SUP_DUPLICATE_CHILD`, 5092 `E_SUP_UNKNOWN_CHILD` (RESERVED — v1 has no verb that requires a child: `stop-child` of an unknown name returns `false`, a value), 5093 `E_SUP_CLOSED` (ops on a stopped supervisor; `status` stays readable), 5094 `E_SUP_RESTART_INTENSITY` (the give-up terminal on the loop worker — the escalation carrier, observed by parents in the `CXER0220` panic's cause chain), 5095 `E_SUP_NO_SCHED` (issue #895, RULED: SPF-1 — `start` refuses AT COMPOSITION in a build with the `sched` local-effect pack excluded, naming the pack and what it is needed for: backoff delays, the intensity window and per-child attempt-reset. Argument validation runs FIRST and is profile-independent, so `5090`/`5091` remain the answer to a malformed policy or spec in every build); 5096–5109 reserved. Reused, never re-coded: a child's own `[err]` (any code) rides `[child-exited]` as `err-code=`; cancellation is `CXER0260`/`CXER0221`; a child's capability denial is `CXER0271` at the child's own effect point; the events-laggard gap is the channel contract's `CXER0218` | `spec/03-approved/stdlib/supervise.md` §8 |
 | `CXER5200–CXER5299` | `cx-stdlib/zip` — zip archive codec over bytes (`E_ZIP_*`; issue #1078, RULED: Z-6 — registered 2026-08-28 with the graduation + implementation, next free hundred-block above supervise's `5090–5109`, band-scan confirmed). 5200 `E_ZIP_MALFORMED` (structural violation: bad signature, truncation, header disagreement, non-UTF-8 stored name), 5201 `E_ZIP_UNSUPPORTED` (encryption, compression method ∉ {store, deflate}, multi-disk, EOCD beyond the scan window — zip64 LEFT this list when #1095 stage 2 implemented it, RULED: Z-8.1), 5202 `E_ZIP_ENTRY_NOT_FOUND` (`extract` miss), 5203 `E_ZIP_ENTRY_INVALID` (pack entry shape / §2 name hygiene / duplicate name), 5204 `E_ZIP_CRC_MISMATCH` (payload fails its stored CRC-32), 5205 `E_ZIP_LENGTH_EXCEEDED` (pack output would exceed the bytes 2^32-1 ceiling; or decoding an entry whose uncompressed size exceeds it); 5206–5299 reserved | `spec/03-approved/stdlib/zip.md` §8 |
 | `CXER5300–CXER5399` | `cx-stdlib/oidc` — the OpenID Connect relying party (`E_OIDC_*`; issue #1090, RULED: O-8 — registered 2026-08-29 with the graduation + implementation, next free hundred-block above zip's `5200–5299`, band-scan confirmed). Each ID-token check gets a DISTINCT code on purpose: an integration that cannot tell "wrong nonce" from "expired" cannot be debugged. 5300 `E_OIDC_DISCOVERY_FAILED` (non-2xx / transport fault / not a discovery document), 5301 `E_OIDC_ISSUER_MISMATCH` (the discovery document names a different issuer than was asked for — the mix-up check — or an ID token's `iss` differs from the provider's), 5302 `E_OIDC_CONFIG_INVALID` (missing client-id/redirect-uri, non-https endpoint without the loopback allowance, malformed provider), 5303 `E_OIDC_PROVIDER_ERROR` (the IdP's own `error`, surfaced verbatim from the callback or the token endpoint), 5304 `E_OIDC_CALLBACK_INVALID` (no `code`), 5305 `E_OIDC_BINDING_MISMATCH` (`state` or `nonce` disagrees with the `[auth-request]`), 5306 `E_OIDC_TOKEN_EXCHANGE_FAILED`, 5307 `E_OIDC_CLIENT_AUTH_INVALID`, 5308 `E_OIDC_CLAIM_INVALID` (`aud` / `azp` / `at_hash` / `auth_time`), 5309 `E_OIDC_LOGOUT_TOKEN_INVALID` (missing the logout event or `sub`/`sid`, or carrying a `nonce` — an ID token replayed as a logout token), 5310 `E_OIDC_ARG_INVALID`; 5311–5399 reserved. Reused, never re-coded: signature / expiry / `alg` answers stay `crypto`'s `CXER371x` and propagate UNCHANGED; a capability denial is `CXER0271` at the effect point | `spec/03-approved/stdlib/oidc.md` §7 |
@@ -576,7 +576,7 @@ implementation).
 
 ### 10.2 Grammar changes
 
-A change to `spec/core/grammar.ebnf` additionally requires:
+A change to `spec/03-approved/formal/grammar.ebnf` additionally requires:
 
 - Updates to `tooling/tree-sitter-cx/grammar.js`.
 - Tree-sitter parser tests in `tooling/tree-sitter-cx/test/`.
@@ -585,7 +585,7 @@ A change to `spec/core/grammar.ebnf` additionally requires:
 
 ### 10.3 ABI changes
 
-A change to `spec/core/abi.md` (and `vcx/cx/cabi.v` and `include/cx.h`)
+A change to `spec/03-approved/core/abi.md` (and `vcx/cx/cabi.v` and `include/cx.h`)
 additionally requires:
 
 - The ABI symbol whitelist update.
@@ -715,8 +715,8 @@ append-only and never reassigned.
 
 | Prefix | Addresses | Owner spec |
 |---|---|---|
-| `code:` | Tier-1 tagged content addresses of CX code / definition text (`code:sha2-256:<hex>`) | `spec/core/code-identity.md` |
-| `computes-as:` | Tier-2 semantic fn-identity claims (`computes-as:<algo>:<hex>`) — dispatch-only, never an address; never a trust input | `spec/core/code-identity.md` |
+| `code:` | Tier-1 tagged content addresses of CX code / definition text (`code:sha2-256:<hex>`) | `spec/03-approved/core/code-identity.md` |
+| `computes-as:` | Tier-2 semantic fn-identity claims (`computes-as:<algo>:<hex>`) — dispatch-only, never an address; never a trust input | `spec/03-approved/core/code-identity.md` |
 | `cap:` | any **authority-artifact** value — `[capability …]`, `[delegation …]`, the C4 grant-set document (`cap:sha2-256:<hex>`); resolution is FAIL-CLOSED against the live authority registry (commands and effects, stream 6 — L114) | `spec/03-approved/stdlib/authz.md` |
 
 (`cx-err:` is a wire-code namespace, not a reference prefix — governed

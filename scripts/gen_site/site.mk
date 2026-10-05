@@ -51,6 +51,10 @@ site: guide
 site-check: guide-render-gate
 	@$(SITE_CX_BIN) --allow-read --allow-write --allow-subprocess $(SITE_GEN)/site_assemble.cx
 	@$(SITE_CX_BIN) --allow-read --allow-write --allow-env $(SITE_GEN)/site_assemble.cx --check
+	@# #1418: the assembled site's own pages (the landing, the LLM and
+	@# developer doors) carry the theme chrome too; guide-render-gate read
+	@# docs/guide/ and the stylesheet.
+	@$(SITE_CX_BIN) --allow-read --allow-write --allow-env scripts/gen_guide/theme_check.cx --pages site --pages site/llm --pages site/dev
 
 # HOME-1: the landing page wears the guide's sidebar, read from
 # docs/guide/index.html as `make guide` rendered it — so the render comes

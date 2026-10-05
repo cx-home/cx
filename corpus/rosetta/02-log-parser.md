@@ -44,7 +44,7 @@ Observed output:
 ```
 
 **Status:** WORKAROUND (re-derived 2026-08-25, RULED: VC-28). Rewritten for the
-v0.8.0 surface — `[?let [= $lines (…)]]`, `[?for [in $line $lines] [yield …]]`,
+current surface — `[?let [= $lines (…)]]`, `[?for [in $line $lines] [yield …]]`,
 `[$contains]`, and `name=value` attributes — and it runs rc=0 producing three
 correctly-levelled `[entry]` elements.
 
@@ -54,7 +54,7 @@ carries the whole raw line instead of the timestamp / level / message being
 distinct attributes. The syntax is current; the missing surface is not. This
 remains the largest cross-program gap in the corpus.
 
-## Historical (v0.7.x surface, superseded)
+## Historical (v0.7.x surface, superseded) <!-- version-literal-ok -->
 
 Everything below this line describes the **pre-reshape** surface and is kept as
 a discovery trail, not as findings. Note in particular that its item 2 —
@@ -88,6 +88,6 @@ Surface-completeness hypothesis confirmations:
 
 1. **String ops beyond basics missing — `split` / `tokenize` / `format` / interpolation.** Listed in 0045 §"Confidence-ranked gap inventory" as "Very high" confidence (hypothesis #34 in the task brief). Confirmed here: no way to split a log line into timestamp / level / message. RE2 shim is built (per memory `project_v_re2_gap` and `vcx/Makefile` `LIB_RE2`) but not exposed in the code surface. **Warrants a spec item (string-ops surface).**
 
-2. **Atom-as-attribute-value syntax — `[entry :level :info]` vs `[entry level=info]`.** Discovered while writing the program. `[entry level=:info]` parse-fails (atom can't be an attribute value); `[entry :level :info]` works but uses keyword-modifier shape rather than the conventional `name=value` attribute pair. This is consistent with §3.5 of `spec/code.md` (atoms are values, attribute values are scalars/strings), but the surface friction is real. **Probably closed by spec — but worth noting.**
+2. **Atom-as-attribute-value syntax — `[entry :level :info]` vs `[entry level=info]`.** Discovered while writing the program. `[entry level=:info]` parse-fails (atom can't be an attribute value); `[entry :level :info]` works but uses keyword-modifier shape rather than the conventional `name=value` attribute pair. This is consistent with §3.5 of `spec/03-approved/core/code.md` (atoms are values, attribute values are scalars/strings), but the surface friction is real. **Probably closed by spec — but worth noting.**
 
 3. **`contains` (and friends `starts-with`, `ends-with`) are XPath-call-only.** Same gap as `floor` / `ceiling` / `round` in program #01. Filed there. Re-confirmed here on string-typed input.

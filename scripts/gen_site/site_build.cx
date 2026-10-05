@@ -110,6 +110,8 @@
 # The ring figure, rendered from the registries (RULED: DOCS-42), inlined by
 # {{FIGURE:rings}}.
 [?lib './scripts/gen_site/ring_svg.cx' as=rs]
+# #1418: the colour-theme chrome, shared with the guide's pages.
+[?lib './scripts/gen_site/theme_chrome.cx' as=theme]
 
 [?const MANIFEST "docs-src/site/manifest.cxd"]
 
@@ -516,6 +518,7 @@
     "<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>",
     "<link href=\"https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap\" rel=\"stylesheet\">",
     [$concat "<link rel=\"stylesheet\" href=\"style.css?v=" $ver "\">"],
+    [$strings:trim-end-chars [$theme:head] "\n"],
     "</head>",
     "<body class=\"site-home\">",
     [$strings:trim-end-chars $sidebar "\n"],
@@ -524,6 +527,7 @@
     [$concat "  <div class=\"sb-right\"><a href=\"playground.html\">Playground</a>"
              "<a href=\"downloads.html\">Downloads</a><a href=\"about.html\">About</a>"
              "<span class=\"sb-rev\">v" $ver "</span></div>"],
+    [$concat "  " [$theme:toggle]],
     "</header>",
     "<main>",
     [$strings:trim-end-chars $body "\n"],
@@ -540,6 +544,7 @@
     [$concat "<script src=\"search/search.js?v=" $ver "\" defer></script>"],
     [$concat "<script src=\"wasm/cxlib.js?v=" $ver "\" defer></script>"],
     [$home-script],
+    [$strings:trim-end-chars [$theme:script] "\n"],
     "</body>",
     "</html>",
     "") "\n"]]

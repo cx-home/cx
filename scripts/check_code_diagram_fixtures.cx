@@ -453,7 +453,7 @@
         [or [or [$strings:contains $s "unrecognized"]
                 [or [$strings:contains $s "no such command"]
                     [$strings:contains $s "no such subcommand"]]]
-            # pre-v0.8.0 fallback-to-filename shape
+            # pre-v0.8.0 fallback-to-filename shape (version-literal-ok: the shape's history)
             [or [$strings:contains $s [$concat "failed to open file \"" $subcommand "\""]]
                 [$strings:contains $s [$concat "error reading file " $subcommand]]]]]]]
 

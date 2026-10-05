@@ -95,7 +95,7 @@ CUR_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 # The LINE is X.Y whatever follows: vX.Y.Z and a pre-release vX.Y.Z-pre.N both
 # cut from release/X.Y — the same derivation release.sh uses. `${VERSION%.*}`
 # stripped only the last dotted field and asked for release/0.18.0-pre on the
-# first pre-release tag (v0.18.0-pre.1, measured 2026-09-13), so the cut
+# first pre-release tag (v0.18.0-pre.1, measured 2026-09-13), so the cut  (version-literal-ok: incident history)
 # refused a branch that was right.
 EXPECT_BRANCH="release/$(echo "$VERSION" | sed -E 's/^([0-9]+\.[0-9]+)\..*$/\1/')"
 if [[ $DRY_RUN -eq 0 ]]; then
@@ -142,7 +142,7 @@ if [[ $DRY_RUN -eq 1 ]]; then
     fi
 else
     # Full log KEPT, never piped through tail (the gates-never-piped rule):
-    # the v0.16.0 cut failed here twice with the failing target's output
+    # the v0.16.0 cut failed here twice with the failing target's output  (version-literal-ok: incident history)
     # already discarded — tail -10 kept the passing test-vcx summary and
     # threw away everything else, so the actual red was unidentifiable
     # from the run that found it. Digest on failure: the make error lines
@@ -243,7 +243,7 @@ fi
 # (#666) The build stamps CX_COMMIT from HEAD and CX_VERSION from the VERSION
 # file. Building while the bump sat uncommitted stamped the NEW version against
 # the PRE-bump commit — an artifact whose provenance claim could not both be
-# true (`cx version` said v0.15.0 @ a commit whose VERSION file said 0.14.0),
+# true (`cx version` said v0.15.0 @ a commit whose VERSION file said 0.14.0),  (version-literal-ok: incident history)
 # and rev-parse is silent about the dirty tree that would have explained it.
 # Committing first makes the stamped commit the SAME commit the tag points at:
 # the artifact reproduces from its tag.

@@ -390,14 +390,23 @@ check-gate-lock:
 # stay-files, RS-8, D73a): `v` refuses two directory targets ("Too many
 # targets"), so the pinned checkout's own vcx/cmd/ gains a SYMLINK per
 # stay-file instead of a second compile root — deps/ is gitignored, so this
-# never touches a tracked byte of the pin, and a stale symlink from an older
-# pin is cleared first (find -type l).
+# never touches a tracked byte of the pin. It is IDEMPOTENT (#1616): a link
+# already pointing at this tree's file is left alone, only a missing or wrong
+# one is made, and only a stale one (a stay-file this tree no longer has, or a
+# link to anywhere else) is removed — deleting and re-making every link on
+# every build left the pin's cmd/ newer than the artifact, so every build
+# relinked (check-sync-cmd-split holds it).
 .PHONY: sync-cmd-split
 sync-cmd-split:
 	@[ -d deps/cx-core-code/vcx/cmd ] || exit 0; \
-	find deps/cx-core-code/vcx/cmd -maxdepth 1 -type l -delete; \
+	for l in deps/cx-core-code/vcx/cmd/*.v; do \
+	  [ -L "$$l" ] || continue; \
+	  b=$$(basename "$$l"); \
+	  [ -f "vcx/cmd/$$b" ] && [ "$$(readlink "$$l")" = "$(CURDIR)/vcx/cmd/$$b" ] || rm -f "$$l"; \
+	done; \
 	for f in vcx/cmd/*.v; do \
-	  ln -sf "$(CURDIR)/$$f" "deps/cx-core-code/vcx/cmd/$$(basename $$f)"; \
+	  l="deps/cx-core-code/vcx/cmd/$$(basename $$f)"; \
+	  [ -L "$$l" ] && [ "$$(readlink "$$l")" = "$(CURDIR)/$$f" ] || ln -sfn "$(CURDIR)/$$f" "$$l"; \
 	done
 	@# Every artifact this recipe (or an ordinary build) leaves untracked in the
 	@# pin checkout -- the stay-file symlinks just made, this repository's own
@@ -496,6 +505,25 @@ deps-present: sync-cmd-split
 	  echo "  place of the pinned module is the failure this refusal exists to prevent (RULED: RS-7)." >&2; \
 	  exit 1; \
 	fi
+
+# check-sync-cmd-split (cx-private issue 1616, the front door's half): the
+# recipe above is idempotent — a run over links already right touches
+# nothing in the pin's vcx/cmd/ (it deleted and re-made every link, so every
+# build relinked), and a stale link is still removed.
+.PHONY: check-sync-cmd-split
+check-sync-cmd-split: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+check-sync-cmd-split:
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-env scripts/sync_cmd_split_selftest.cx
+
+# check-gitconfig-home (cx-private issue 1601, from #1594 D5a): `devbox run
+# setup` rewrites a copied global gitconfig's paths under another user's home
+# (core.excludesfile, commit.template, tool paths) to $HOME with
+# scripts/gitconfig_home.cx; the self-test proves it on planted configs under
+# a temp HOME and never reads or writes the user's own.
+.PHONY: check-gitconfig-home
+check-gitconfig-home: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+check-gitconfig-home:
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-env scripts/gitconfig_home_selftest.cx
 
 # CX_STAMP_ROOT=$(CURDIR) (D91a, #1591 item K14, on every recursive call into
 # the cx-core-code pin below): `commit` in `cx --version` names the tree the
@@ -701,7 +729,7 @@ wasm-bundle-fresh:
 	@OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/check_wasm_fresh.sh
 
 # Optional Apache Arrow C-Data interop library (libcx_arrow per ADR
-# 0015 D9 / spec/abi.md §2.11). Separate from libcx; a binding dlopens
+# 0015 D9 / spec/03-approved/core/abi.md §2.11). Separate from libcx; a binding dlopens
 # this library independently — none is built from this tree any more
 # (RULED: RS-12, RS-8; #1591 item K3: the four active bindings left whole).
 build-lib-arrow: build-vcx
@@ -940,6 +968,13 @@ guide-check: build-vcx
 ## stamp and index.html both 15:10:45, a false red). The proof is now that the
 ## page did not exist before the render: both are removed first, and both must
 ## exist after it. No mtime comparison is left.
+## #1418: the rendered site then passes theme_check.cx — style.css carries the
+## light palette on :root and the dark one under both the prefers-color-scheme
+## guard and :root[data-theme="dark"], every colour token in each, no colour
+## literal outside a token; every sheet-bar page carries the theme toggle, the
+## head script that applies a stored choice before paint, and the color-scheme
+## meta. Its self-test runs first.
+guide-render-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 guide-render-gate: build-vcx
 	@rm -f docs/guide/index.html docs/guide/codec-xml.html
 	@$(MAKE) --no-print-directory guide GUIDE_SKIP_CX_BUILD=1
@@ -948,7 +983,9 @@ guide-render-gate: build-vcx
 	    echo "guide-render-gate: FAILED — the render exited 0 but $$p does not exist; it was removed before the render, so this run did not write it"; exit 1; \
 	  fi; \
 	done
-	@echo "guide-render-gate OK — the generator rendered docs/guide/, index page and the synthesized codec-xml module page both written by THIS run"
+	@"$(CX_BIN)" --allow-read --allow-write --allow-env scripts/gen_guide/theme_check.cx --self-test
+	@"$(CX_BIN)" --allow-read --allow-write --allow-env scripts/gen_guide/theme_check.cx --pages docs/guide
+	@echo "guide-render-gate OK — the generator rendered docs/guide/, index page and the synthesized codec-xml module page both written by THIS run; both palettes and every page's theme toggle read (#1418)"
 
 # Directive + syntax reference drift gate — every code.md §4.1 registry
 # directive has a [directive-doc], no orphans, and each example is backed
@@ -1861,7 +1898,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-build-slot check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate advisory-audit property-gate spec-invariant-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-search test-playground-readings test-oriel test-agent-real test-connector-real test-xap-umbrella test-fabric-umbrella test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard repr-guard-selftest check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps test-site-phone-width test-playground-primer site-live-check ledger-index-check ledger-edit-map-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings check-bench-runners-compile check-flow-doc-lines
+TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests check-bare-head-calls test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-build-slot check-bench-isolation check-no-infix-range check-no-cxl-token listener-bind-gate check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-snippets-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate advisory-audit property-gate spec-invariant-gate ring-tag-gate cxer-registry-gate diagnostics-census-check spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-search test-playground-readings test-oriel test-agent-real test-connector-real test-xap-umbrella test-fabric-umbrella test-mail-real test-net-real test-web-component-offline bench-code-pattern-compile test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard repr-guard-selftest check-inmodule-test-roster check-build-input-roster check-sync-cmd-split check-gitconfig-home check-selection-manifest fmt-sweep-gate test-playground-wasm-traps test-site-phone-width test-playground-primer site-live-check site-links-selftest issue-label-gate ledger-index-check ledger-edit-map-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings check-bench-runners-compile check-flow-doc-lines
 
 # PRIVMK-1: the private flow targets add themselves to TEST_TARGETS from
 # flows/private.mk. That file is absent from the public tree, and `-include`
@@ -1997,6 +2034,21 @@ check-no-cxl-token: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 check-no-cxl-token:
 	@"$(CX_BIN)" --allow-read --allow-write scripts/check_no_cxl_token.cx
 
+# ── listener-bind-gate (cx-private issue 1784; RULED: CXF-1, FIX-1) — every
+# listener a test binds is loopback: a V test file of this tree or of a pinned
+# repository (`*_test.v`, and every file under a vcx/tests/ directory), a CX
+# program under a pinned vcx/tests/, or a flow document that binds the empty
+# host, 0.0.0.0 or [::] is refused by file and line, because macOS's
+# application firewall asks the owner about every rebuilt cx that listens off
+# loopback. A line that needs every interface carries the marker
+# `listener-bind: every interface — <why>`. The --self-test over a planted
+# table runs first, so the step cannot pass by matching nothing.
+.PHONY: listener-bind-gate
+listener-bind-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+listener-bind-gate:
+	@"$(CX_BIN)" --allow-read --allow-write --allow-env scripts/listener_bind_gate.cx --self-test
+	@"$(CX_BIN)" --allow-read --allow-write --allow-env scripts/listener_bind_gate.cx
+
 # ── NO-CONSUMER-TERMS gate — downstream-consumer identity (names, products,
 # business-domain vocabulary) must never appear in tracked content: the public
 # release repos are CUT from this one, so anything here flows into them. The
@@ -2046,7 +2098,7 @@ check-version-consistency: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 check-version-consistency: build-vcx
 	@"$(CX_BIN)" --allow-read --allow-write scripts/check_version_consistency.cx
 
-# ── check-null-absence-conflation gate (SAP C1 / spec/core/code.md §9.1.2.1
+# ── check-null-absence-conflation gate (SAP C1 / spec/03-approved/core/code.md §9.1.2.1
 # rule (b)) — the no-conflation guard: no builtin returns `null` to mean
 # "absent." An optional read signals "nothing here" via the absence channel
 # (the empty sequence `()`), never `null`. Token-aware: it flags the
@@ -2059,7 +2111,7 @@ check-null-absence-conflation: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/
 check-null-absence-conflation:
 	@"$(CX_BIN)" --allow-read --allow-write scripts/check_null_absence_conflation.cx
 
-# ── ALIGNMENT gate (SAP C2 / spec/core/code.md §6.5.1) — the one-way
+# ── ALIGNMENT gate (SAP C2 / spec/03-approved/core/code.md §6.5.1) — the one-way
 # capability-alignment invariant: (1) every capability-gated effect point is
 # reached only through an `impure` builtin (gated ⇒ impure, by construction in
 # builtin_purity_table); (2) every impure-without-capability builtin is in the
@@ -2408,6 +2460,17 @@ diagnostics-census: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 diagnostics-census: build-vcx
 	@"$(CX_BIN)" --allow-read --allow-write scripts/diagnostics_census.cx _gate_evidence/diagnostics_census.cxd
 
+
+# ── diagnostics-census-check (cx-private issue 1725; RULED: CXF-3, RS-8) ──
+# The census above rewrites a TRACKED file, so a step holds it: the census
+# regenerated must be the tracked one, and the codes it observes must be the
+# codes cxer-registry-gate counts — the two read the same roots, this tree's
+# and every pin's (after the split the census read only this tree and
+# counted 16 codes of 784).
+.PHONY: diagnostics-census-check
+diagnostics-census-check: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+diagnostics-census-check:
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/diagnostics_census_check.cx
 # ── CXER REGISTRY GATE (corpus-audit G18; remediation register R3.7) —
 # every emitted CXER code must have a governance §9.6 registry row and no
 # registry-internal band overlap. --strict = the mechanical certainties.
@@ -2680,7 +2743,8 @@ check-profile-gate-selection:
 # <= 20 min, the union <= 60 min — as a STEP, because "a written bound has to be
 # a step or it is a wish". The bounds live in scripts/verification_budget.cxd,
 # one row each carrying the measurement that set it and the issue that last
-# moved it; the measurements live in deps/cx-core-code/vcx/target/verification_timings.cxd, left
+# moved it; the measurements live in vcx/target/verification_timings.cxd (the
+# checkout's own, which the fixture grader and the post-merge verdict write), left
 # behind by whatever ran. An IDLE measurement over its bound fails the run; a
 # LOADED one is advisory with the load printed beside it; an absent one is
 # reported and fails nothing. A bound moves only in a commit that names why.
@@ -3121,7 +3185,7 @@ reader-parity: build-vcx
 # graded against an expectation DERIVED from that same binary. Before VC-7 those
 # 23 cases had no conformance/gates.cxd row and no step read them, so they ran
 # NOWHERE while the register showed a gate. Normative reference:
-# spec/02-working/cxpath_alignment.md. In TEST_TARGETS.
+# cx-decisions:spec/02-working/cxpath_alignment.md. In TEST_TARGETS.
 .PHONY: test-xpath-parity-cx
 test-xpath-parity-cx: CX_RUNNER ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 test-xpath-parity-cx: build-vcx
@@ -3170,7 +3234,7 @@ test-xpath-parity: build-vcx
 # it. Catches the boundary-surface bugs binding rollouts have surfaced
 # (size-header garbage, double-free on Export error, NULL-input
 # rejection) at the source instead of via N binding rollouts. See
-# spec/abi.md §1.5 / §2.10 / §2.11 for the surface;
+# spec/03-approved/core/abi.md §1.5 / §2.10 / §2.11 for the surface;
 # deps/cx-core-code/tests/abi/c_abi_test.c for what is exercised.
 #
 # Sanitizer choice: UBSan only by default. Apple clang's AddressSanitizer
@@ -3824,6 +3888,17 @@ check-no-nested-make: build-vcx
 # manifest — no live row an umbrella already carries, no absorbed original
 # back in the tree — which is a standing property of the tree, not just of a
 # regeneration, so it belongs in the gate and not only in the driver.
+
+# ── check-bare-head-calls (cx-private issue 1730; RULED: STREAM-1, BARE-1) ──
+# BARE-1 made a bare head data, and two tooling programs kept calling their
+# defs bare: bench/parallel-alloc/measure.cx timed nothing ([timed-run …],
+# [best-of …]) and scripts/consolidate_tests.cx never read a declaration's
+# attach block ([not [is-attach …]]). The selftest runs each as its callers
+# do and reads what only a call answers: a measured child, a deduped helper.
+.PHONY: check-bare-head-calls
+check-bare-head-calls: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+check-bare-head-calls:
+	@"$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess --allow-clock scripts/bare_head_calls_selftest.cx
 .PHONY: check-consolidation-manifests
 check-consolidation-manifests:
 	@scripts/consolidate_tests.sh audit all
@@ -4082,7 +4157,7 @@ docs-voice-check: build-vcx
 # ring", the "monorepo", "lane", campaign, gate run, steward, ruling, landed,
 # green/red, job, stage, task, and Document/Program as a playground tab or
 # crumb label — outside code spans, in every served source, the
-# playground's page and script and the guide generator, and holds
+# playground's page, script and examples bundle and the guide generator, and holds
 # each file to docs-src/site/vocabulary.cxd in the voice ratchet's shape: a
 # file with no row reads zero, a row's count only ever moves down.
 .PHONY: docs-vocabulary-check
@@ -4137,9 +4212,23 @@ ring-svg-check: build-vcx
 # TEST_TARGETS and carrying no selection-manifest row: it needs the network.
 # It runs in .github/workflows/site.yml after site-check and in the CICD-1
 # flow's check step.
-.PHONY: site-links-external
+#
+# A transport error (no route, a refused or timed-out connection) is not a
+# status: it is retried, three tries with a short backoff, and a URL that never
+# answers is UNREACHABLE, apart from a DEAD one that answered 404 or 410 (#1778,
+# RULED: FIX-1 -- Site run 37172899968 called two URLs DEAD on one timeout and
+# one failed connect, and the deploy was skipped). The decision is a pure
+# function proven offline first: site-links-selftest grades
+# scripts/gen_site/check_external_links_cases.cxd on planted answers, in
+# TEST_TARGETS (no network), and the live run starts with it.
+.PHONY: site-links-external site-links-selftest
+site-links-selftest: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+site-links-selftest: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write --allow-env scripts/gen_site/check_external_links.cx --self-test
+
 site-links-external: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 site-links-external:
+	@"$(CX_BIN)" --allow-read --allow-write --allow-env scripts/gen_site/check_external_links.cx --self-test
 	@"$(CX_BIN)" --allow-read --allow-write --allow-net --allow-env scripts/gen_site/check_external_links.cx
 
 # ── site-live-check — the live site is the public main (RULED: DOCS-51
@@ -4154,6 +4243,23 @@ site-links-external:
 # cannot make is a refusal, never a pass (advisory-audit's shape). A site
 # with no stamp yet (assembled before it existed) is the public main's when
 # its Last-Modified follows the start of the successful Site run on it.
+# ── issue-label-gate (#1781, RULED: LBL-1, SHIP-2, CXF-1) — the label is the
+# release ──────────────────────────────────────────────────────────────────
+# The release label is the one truth of release membership (LBL-1): the step
+# refuses an open cx-private issue created after 2026-10-02 without it, an
+# open cx-private issue on a milestone no [parking] row names, and an open
+# issue of a status=extracted repository whose title lacks the release
+# prefix, unless scripts/issue_label_exclusions.cxd names it with its reason.
+# First the case table on planted GitHub answers (offline), then the live
+# tracker through `gh api`. In TEST_TARGETS (the daily full run); it needs the
+# network, so its selection row names only its own inputs and a selected run
+# picks it by name only when one of them changes.
+.PHONY: issue-label-gate
+issue-label-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+issue-label-gate:
+	@"$(CX_BIN)" --allow-read --allow-write --allow-env scripts/issue_label_gate.cx --self-test
+	@"$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/issue_label_gate.cx
+
 .PHONY: site-live-check
 site-live-check: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 site-live-check:
@@ -4549,7 +4655,8 @@ bench-streaming: build-vcx
 	$(PATCHED_V) -prod run deps/cx-core-code/vcx/tests/runners/streaming_bench.v
 
 # cxparse unification — parser perf baseline / per-phase N3 gate
-# (spec/02-inprogress/cxparse_unification_PLAN.md §6). MUST use the patched V:
+# (the cxparse unification plan's §6 — removed as spent in abd068d4d; read it
+# with `git show abd068d4d^ -- spec/02-inprogress/`). MUST use the patched V:
 # the PATH/devbox V bundles a boehm GC source-compile that corrupts the heap
 # during collection and segfaults in -prod on macOS (the patched V carries the
 # hardened-runtime libgc bypass — same reason bench-streaming uses $(PATCHED_V)).
@@ -4567,7 +4674,7 @@ bench-eval: build-vcx
 # ── v0.8.0 §11.6 release-gate harnesses ────────────────────────────────────────
 #
 # Each target runs one of the three perf gates blocking the v0.8.0 tag
-# (conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded), spec/code.md §11.4.4). Exit code
+# (conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded), spec/03-approved/core/code.md §11.4.4). Exit code
 # is 0 on PASS, non-zero on FAIL; CI consumes the gate verdict line.
 # The benches print their threshold + measured numbers so PASS/FAIL is
 # self-evident in logs. Env knobs documented in each .v file header.
@@ -4584,6 +4691,10 @@ bench-eval: build-vcx
 # passed either way, so this only ever moved them in the passing direction —
 # but a gate that measures a build CX does not ship is not measuring the
 # threshold it claims to.
+# Gate 14 is on a run (#1763): a TEST_TARGETS step, load-sensitive in
+# flows/load.cxd (a wall clock): after the storm, on the post-merge runner;
+# measured p99 0.031 ms against the 1 ms bound. Gate 15 stays off a run while
+# its throughput half is red (#804).
 bench-code-pattern-compile: build-vcx
 	$(PATCHED_V) -enable-globals -prod run deps/cx-core-code/vcx/tests/runners/code_pattern_compile_bench.v
 
@@ -4777,7 +4888,7 @@ test-vcx-services: build-vcx
 .PHONY: test-vcx-diagram-roundtrip
 test-vcx-diagram-roundtrip: build-vcx
 	$(MAKE) test-code-diagram
-	VFLAGS='$(VFLAGS_VCX)' v test deps/cx-core-code/vcx/tests/code_diagram_roundtrip_test.v \
+	VFLAGS='$(VFLAGS_VCX)' $(V) test deps/cx-core-code/vcx/tests/code_diagram_roundtrip_test.v \
 		deps/cx-core-code/vcx/tests/code_units_umbrella_test.v
 
 # ── Gate 12 — reference renderer (CLI + web + LSP) ────────────────────────
@@ -5403,14 +5514,24 @@ test-connector-real: build-vcx
 ##                  load-SENSITIVE step (flows/load.cxd). Refuses with exit 2
 ##                  and names `make deps-sync` when the checkout is absent —
 ##                  never a skip.
-XAP_UMBRELLA_TESTS := deps/cx-platform-xap/vcx/tests/xap_umbrella_test.v
+##                  The directory's six other test files ran on no step
+##                  either (#1798): the fulfilment, host-courier, render,
+##                  serve-capability, surface-routes and unservable-verb
+##                  cases, several on ports — the same class. Four are green
+##                  out of the pin and run here; render and surface-routes
+##                  assert a quoted printed spelling the serializer prints
+##                  bare (cx-platform-xap issue 10) and join when it lands —
+##                  then the step reads every *_test.v of the directory.
+XAP_UMBRELLA_TESTS := deps/cx-platform-xap/vcx/tests/xap_umbrella_test.v \
+                      deps/cx-platform-xap/vcx/tests/xap_fulfilment_test.v \
+                      deps/cx-platform-xap/vcx/tests/xap_host_courier_test.v \
+                      deps/cx-platform-xap/vcx/tests/xap_serve_cap_test.v \
+                      deps/cx-platform-xap/vcx/tests/xap_unservable_verb_test.v
 .PHONY: test-xap-umbrella
 test-xap-umbrella: build-vcx-dev
-	@for t in $(XAP_UMBRELLA_TESTS); do \
-	  test -f $$t || { \
-	    echo "test-xap-umbrella: $$t is not there — the test lives in the pinned repository (RULED: RS-12); run \`make deps-sync\`" >&2; \
-	    exit 2; }; \
-	done
+	@test -f deps/cx-platform-xap/vcx/tests/xap_umbrella_test.v || { \
+	  echo "test-xap-umbrella: deps/cx-platform-xap/vcx/tests/xap_umbrella_test.v is not there — the tests live in the pinned repository (RULED: RS-12); run \`make deps-sync\`" >&2; \
+	  exit 2; }
 	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(XAP_UMBRELLA_TESTS)
 
 ## test-fabric-umbrella  cx-platform-fabric's V umbrella, run out of the pin
@@ -5431,6 +5552,60 @@ test-fabric-umbrella: build-vcx-dev
 	    exit 2; }; \
 	done
 	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(FABRIC_UMBRELLA_TESTS)
+
+## test-mail-real   cx-platform-mail's real-socket V tests, run out of the pin
+##                  (#1807; #1689's class, RULED: RS-12). deps/cx-platform-mail/
+##                  vcx/tests/imap_real_socket_test.v and smtp_real_socket_test.v
+##                  — the IMAP and SMTP servers and clients on loopback sockets,
+##                  STARTTLS over the loopback pair — and the testdata guard ran
+##                  on no step since mail's extraction: mail's own `make check`
+##                  runs no V test. Same shape and load class as
+##                  test-xap-umbrella (flows/load.cxd: real listeners).
+MAIL_REAL_TESTS = $(sort $(wildcard deps/cx-platform-mail/vcx/tests/*_test.v))
+.PHONY: test-mail-real
+test-mail-real: build-vcx-dev
+	@test -f deps/cx-platform-mail/vcx/tests/imap_real_socket_test.v || { \
+	  echo "test-mail-real: deps/cx-platform-mail/vcx/tests/imap_real_socket_test.v is not there — the tests live in the pinned repository (RULED: RS-12); run \`make deps-sync\`" >&2; \
+	  exit 2; }
+	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(MAIL_REAL_TESTS)
+
+## test-net-real    cx-platform-net's V tests, run out of the pin (#1753;
+##                  #1689's class, RULED: RS-12). The front door said they left
+##                  with net's leave step and "its own CI grades them now"; net's
+##                  gate.yml runs deps, deps-check, lint, corpus and build, and
+##                  `make build` compiles vcx/ and runs nothing under vcx/tests/.
+##                  So #1551's ephemeral-bind tests and the real-socket service
+##                  tests ran only by hand. Fifteen of the pin's twenty
+##                  vcx/tests/ files are green out of the pin and run here;
+##                  five wait on cx-platform-net issue 5 (quoted printed
+##                  spellings, a GNU timeout) — then every *_test.v of the
+##                  directory (the bench runners under runners/ are
+##                  check-bench-runners-compile's). Against this tree's
+##                  cx-dev; load-SENSITIVE (flows/load.cxd: real listeners,
+##                  TLS, DTLS).
+NET_REAL_TESTS := deps/cx-platform-net/vcx/tests/http_client_real_test.v \
+                  deps/cx-platform-net/vcx/tests/http_client_tls_transport_test.v \
+                  deps/cx-platform-net/vcx/tests/http_gzip_test.v \
+                  deps/cx-platform-net/vcx/tests/http_h2_serve_test.v \
+                  deps/cx-platform-net/vcx/tests/http_redirect_test.v \
+                  deps/cx-platform-net/vcx/tests/http_server_real_test.v \
+                  deps/cx-platform-net/vcx/tests/http_service_real_socket_test.v \
+                  deps/cx-platform-net/vcx/tests/http_slow_handler_isolation_test.v \
+                  deps/cx-platform-net/vcx/tests/http_sse_real_test.v \
+                  deps/cx-platform-net/vcx/tests/http_umbrella_test.v \
+                  deps/cx-platform-net/vcx/tests/http_ws_real_test.v \
+                  deps/cx-platform-net/vcx/tests/net_dtls_test.v \
+                  deps/cx-platform-net/vcx/tests/net_real_socket_test.v \
+                  deps/cx-platform-net/vcx/tests/real_services_umbrella_test.v \
+                  deps/cx-platform-net/vcx/tests/testdata_no_private_key_test.v
+.PHONY: test-net-real
+test-net-real: build-vcx-dev
+	@for t in $(NET_REAL_TESTS); do \
+	  test -f $$t || { \
+	    echo "test-net-real: $$t is not there — the tests live in the pinned repository (RULED: RS-12); run \`make deps-sync\`" >&2; \
+	    exit 2; }; \
+	done
+	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(NET_REAL_TESTS)
 
 ## test-db-real  The whole db corpus on sqlite, postgres AND mysql, the
 ##                  two servers real, as its own step (RULED: DBLANE-1,
@@ -5552,6 +5727,9 @@ stage-web-component:
 ##                  component carries no off-origin URL, demo.html loads no
 ##                  off-origin script, and the staged renderer is the ONE
 ##                  vendored bundle byte-for-byte (never a second pin).
+# On a run (#1763): a TEST_TARGETS step, so code.md §10.1.4's MUST — the
+# component renders client-side with no server round-trip — is graded by the
+# post-merge run, not by hand (scripts/spec_invariants_exempt.cxd names it).
 .PHONY: test-web-component-offline
 test-web-component-offline: stage-web-component
 	@bash scripts/test_web_component_offline.sh

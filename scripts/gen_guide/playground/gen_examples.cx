@@ -65,7 +65,8 @@
 
 [?def cat scope=public ($parts) [$strings:join $parts '']]
 # seq-flat: splice one level of nested sequences (sequence literals and
-# nested [?for] yields do NOT auto-splice — measured on v0.16.0).
+# nested [?for] yields do NOT auto-splice — re-measured 2026-10-05: a [?for]
+# yielding two two-item [?for]s counts 2).
 [?def seq-flat scope=public ($xs) [$fp:flat-map $xs [?fn ($x) $x]]]
 [?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
 # scratch-dir: this run's temp dir (the pid in the name — see `$tmpdir` in

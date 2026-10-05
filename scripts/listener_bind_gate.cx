@@ -1,0 +1,150 @@
+# scripts/listener_bind_gate.cx — every listener a test binds is a loopback
+# one (cx-private issue 1784; RULED: CXF-1, FIX-1).
+#
+# macOS's application firewall asks the owner "Do you want the application cx
+# to accept incoming network connections?" whenever a binary it has not seen
+# listens on an interface other than loopback, and every build relinks cx and
+# every premerge run copies it, so to the firewall each run is a new program.
+# A listener bound to 127.0.0.1 (or ::1) never asks. So a test binds
+# loopback, explicitly, never the wildcard: this step reads every V test file
+# of this tree and of each pinned repository (`*_test.v`, and every file under
+# a vcx/tests/ directory, where the helpers that bind live), the CX programs
+# under a pinned vcx/tests/, and the flow documents, and refuses by file and
+# line:
+#   - a V `listen_tcp(…)` / `listen_udp(…)` whose address literal opens on an
+#     empty host (`':${port}'`), the v4 wildcard (`'0.0.0.0:…'`) or the v6 one
+#     (`'[::]:…'`);
+#   - a bind URL on a wildcard host (`tcp://0.0.0.0:…`, `http://[::]:…`, and
+#     the mail schemes).
+# A line that needs every interface — or that names a wildcard URL only to be
+# refused before any socket exists — says why in its source: the marker
+# `listener-bind: every interface` on the line or the line above it, followed
+# by the reason. A listener whose host is a variable, or a library default
+# (an omitted host), is not read here: that is a call this text cannot judge,
+# and is named in the issue's record rather than passed silently.
+#
+# `--self-test` grades the reading itself over a planted table first, so the
+# step cannot pass by matching nothing: each refused shape must be refused,
+# and each loopback, marked or data-only line must not.
+#
+# Run (from the repository root):
+#   cx --allow-read --allow-write --allow-env scripts/listener_bind_gate.cx [--self-test]
+#   (or: make listener-bind-gate)
+# Exit: 0 clean; 1 a refused line, or a self-test row read wrongly.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/strings' as=strings]
+
+
+[?const GLOBS ("vcx/**/*_test.v", "vcx/tests/**/*.v",
+               "deps/*/vcx/**/*_test.v", "deps/*/vcx/tests/**/*.v", "deps/*/vcx/tests/**/*.cx",
+               "flows/**/*.cx", "flows/**/*.cxd")]
+# The host shapes that mean every interface, after the opening quote of an
+# address: the empty host (`:port`), 0.0.0.0, the bare 0, [::] and [::0].
+[?const V-RX "listen_(tcp|udp)\\([^'\"]*['\"](:|0\\.0\\.0\\.0:|0:|\\[::0?\\]:)"]
+# A listen call left open at the end of its line (no quote, no close): the
+# reading joins the next line to it, so an address on the continuation line is
+# read with its call.
+[?const OPEN-RX "listen_(tcp|udp)\\([^'\")]*$"]
+# A server struct's address field on a wildcard host (`http.Server{addr: ':8080'}`).
+[?const ADDR-RX "addr:\\s*['\"](:|0\\.0\\.0\\.0:|0:|\\[::0?\\]:)"]
+# The C spellings of the wildcard a V test reaches through C interop.
+[?const ANY-RX "\\b(INADDR_ANY|in6addr_any|IN6ADDR_ANY_INIT)\\b"]
+# A bind URL on a wildcard host: empty, 0.0.0.0, 0, [::] or [::0].
+[?const URL-RX "(tcp|udp|tls|http|https|ws|wss|smtp|smtps|imap|imaps)://((0\\.0\\.0\\.0|\\[::0?\\]|0)?:[0-9]|(0\\.0\\.0\\.0|\\[::0?\\]))"]
+# The marker counts only as a comment that gives its reason: a `//` or `#`
+# outside every quoted literal on the line, then the marker, then a dash or a
+# colon and a word — a bare marker, or one inside a string, marks nothing.
+[?const MARK "listener-bind: every interface"]
+[?const MARK-RX "^([^'\"]|'[^']*'|\"[^\"]*\")*(//|#)\\s*listener-bind: every interface\\s*(—|--|-|:)\\s*\\S"]
+
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def hit scope=public pure [returns bool] ($rx $s) [> [$count [$re:find-all [$re:compile $rx] [$string $s]]] 0]]
+
+# binds: a line (joined with the next one when it leaves a listen call open)
+# reads as a listener on every interface.
+[?def binds scope=public pure [returns bool] ($l $next)
+  [?let [= $read [?if [$hit OPEN-RX $l] [then [$strings:join ($l, $next) " "]] [else $l]]]
+    [or [$hit V-RX $read] [$hit URL-RX $read] [$hit ADDR-RX $read] [$hit ANY-RX $read]]]]
+
+# refused: the 1-based line numbers of a text whose line binds a wildcard and
+# carries no marker comment (with its reason) on itself or on the line above.
+[?def refused scope=public pure [returns any] ($text)
+  [?let [= $ls [?to-sequence [$strings:split [$string $text] "\n"]]]
+        [= $n [$count $ls]]
+    [?to-sequence [?for [in $i [$range 1 $n]]
+                    [= $l [$nth $ls $i]]
+                    [= $above [?if [> $i 1] [then [$nth $ls [- $i 1]]] [else '']]]
+                    [= $next [?if [< $i $n] [then [$nth $ls [+ $i 1]]] [else '']]]
+                    [where [and [$binds $l $next]
+                                [not [$hit MARK-RX $l]]
+                                [not [$hit MARK-RX $above]]]]
+                    [yield $i]]]]]
+
+
+# the planted table: each row a text and the count the reading must refuse.
+[?const SELF (
+  [row n=1 why="an empty host" text="mut l := net.listen_tcp(.ip, ':${port}') or { panic(err) }"],
+  [row n=1 why="the v4 wildcard" text="mut l := net.listen_tcp(.ip, '0.0.0.0:0')!"],
+  [row n=1 why="the v6 wildcard" text="mut l := net.listen_tcp(.ip6, '[::]:8080')!"],
+  [row n=1 why="a udp empty host" text="mut s := net.listen_udp(':9000')!"],
+  [row n=1 why="a wildcard bind URL" text="[$http:serve 'tcp://0.0.0.0:8080' $h]"],
+  [row n=1 why="a v6 wildcard mail URL" text="[$imap:listen \"imap://[::]:143\"]"],
+  [row n=0 why="v4 loopback" text="mut l := net.listen_tcp(.ip, '127.0.0.1:0')!"],
+  [row n=0 why="v6 loopback" text="mut l := net.listen_tcp(.ip6, '[::1]:0')!"],
+  [row n=0 why="marked on the line above" text="// listener-bind: every interface — the case asserts the bind refusal\nmut l := net.listen_tcp(.ip, ':80')!"],
+  [row n=0 why="marked on the line" text="mut l := net.listen_tcp(.ip, ':80')! // listener-bind: every interface — why"],
+  [row n=0 why="a host attribute in data, not a bind" text="[server host=0.0.0.0 tls=true]"],
+  [row n=2 why="a mark covers only its own line and the next" text="// listener-bind: every interface — one\nnet.listen_tcp(.ip, ':1')!\nnet.listen_tcp(.ip, ':2')!\nnet.listen_tcp(.ip, ':3')!"],
+  [row n=1 why="a double-quoted wildcard address" text="mut l := net.listen_tcp(.ip, \"0.0.0.0:0\")!"],
+  [row n=1 why="a double-quoted empty host" text="mut l := net.listen_tcp(.ip, \":${port}\")!"],
+  [row n=1 why="host 0" text="mut l := net.listen_tcp(.ip, '0:8080')!"],
+  [row n=1 why="the spelled-out v6 wildcard" text="mut l := net.listen_tcp(.ip6, '[::0]:8080')!"],
+  [row n=1 why="a call split over two lines" text="mut l := net.listen_tcp(.ip,\n\t':8080')!"],
+  [row n=1 why="INADDR_ANY" text="addr.sin_addr.s_addr = C.INADDR_ANY"],
+  [row n=1 why="a server struct on the empty host" text="mut s := http.Server{addr: ':8080'}"],
+  [row n=1 why="an empty host in a bind URL" text="[$net:listen 'tcp://:8080']"],
+  [row n=1 why="host 0 in a bind URL" text="[$http:serve 'http://0:8080' $h]"],
+  [row n=1 why="a marker with no reason" text="// listener-bind: every interface\nnet.listen_tcp(.ip, ':80')!"],
+  [row n=1 why="the marker inside a string literal" text="s := '// listener-bind: every interface — quoted, not a comment'\nnet.listen_tcp(.ip, '0.0.0.0:80')!"],
+  [row n=0 why="a loopback bind URL" text="[$http:serve 'tcp://127.0.0.1:80' $h]"],
+  [row n=0 why="localhost resolves to loopback" text="[$http:serve 'http://localhost:8080' $h]"])]
+
+[?def self-test scope=public impure ()
+  [?let [= $bad [?to-sequence [?for [in $r SELF]
+                  [= $got [$count [$refused [$string $r@text]]]]
+                  [where [not [= $got [$strings:to-int [$string $r@n]]]]]
+                  [yield [$strings:join ('listener-bind-gate --self-test: ', [$string $r@why], ' refused ', [$string $got],
+                                         ', want ', [$string $r@n]) '']]]]]
+    [?if [> [$count $bad] 0]
+      [then [?let [= $_e [?to-sequence [?for [in $b $bad] [yield [$cry $b]]]]] [$env:exit 1]]]
+      [else [?let [= $_o [$say [$strings:join ('listener-bind-gate --self-test: ', [$string [$count SELF]],
+                                               ' rows, every one read as the table says') '']]]
+              [$env:exit 0]]]]]]
+
+[?def scan scope=public impure ()
+  [?let [= $files [$fp:flat-map GLOBS [?fn ($g) [$io:glob $g]]]]
+        [= $seen [?to-sequence [$distinct [?to-sequence [?for [in $f $files] [yield [$string $f]]]]]]]
+        [= $hits [?to-sequence [?for [in $f $seen] [in $i [$refused [?else [$io:read-file $f] '']]]
+                   [yield [$strings:join ($f, ':', [$string $i], ' — ',
+                                          [$strings:trim [$nth [?to-sequence [$strings:split [$io:read-file $f] "\n"]] $i]]) '']]]]]
+    [?if [= [$count $seen] 0]
+      [then [?let [= $_z [$cry "listener-bind-gate: the scan read no file — a glob or the working directory is wrong; refusing to vouch for nothing (cx-private issue 1784)"]]
+              [$env:exit 1]]]
+    [else [?if [> [$count $hits] 0]
+      [then [?let [= $_e [?to-sequence [?for [in $h $hits] [yield [$cry [$strings:join ('listener-bind-gate: REFUSED ', $h) '']]]]]]
+                  [= $_t [$cry [$strings:join ('listener-bind-gate: ', [$string [$count $hits]], ' listener(s) not on loopback in ',
+                                               [$string [$count $seen]], ' files — bind 127.0.0.1 or ::1, or mark the line `',
+                                               MARK, ' — <why>` (cx-private issue 1784)') '']]]
+              [$env:exit 1]]]
+      [else [?let [= $_o [$say [$strings:join ('listener-bind-gate: ', [$string [$count $seen]],
+                                               ' test and flow files, every listener on loopback or marked') '']]]
+              [$env:exit 0]]]]]]]]
+
+[?if [> [$count [?to-sequence [?for [in $a [$env:argv]] [where [= [$string $a] '--self-test']] [yield $a]]]] 0]
+  [then [$self-test]]
+  [else [$scan]]]

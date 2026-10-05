@@ -1,7 +1,7 @@
 # scripts/check_no_cxl_token.cx — the NO-STALE-VERSION gate: the retired
 # language-name token (spelled C·X·L) must not reappear in the working corpus.
 #
-# CX is one language named just "CX" (spec/core/code.md). The three-letter
+# CX is one language named just "CX" (spec/03-approved/core/code.md). The three-letter
 # name was retired terminology; it must not describe the current language
 # anywhere in the doc/example/tooling corpus. This guard fails the suite if
 # the bare retired token reappears.
@@ -69,7 +69,7 @@
 
   [= $scan-dirs ("conformance", "docs-src", "examples", "scripts", "tooling")]
   # Top-level files also scanned (current-facing project prose).
-  [= $scan-files ("README.md", "ROADMAP.md", "CONTRIBUTING.md", "RELEASE_NOTES_v0.8.0.md")]
+  [= $scan-files ("README.md", "ROADMAP.md", "CONTRIBUTING.md", "RELEASE_NOTES_v0.8.0.md")]  [; version-literal-ok — a release-notes file name ]
   [= $exclude-substr ("/_archive/", "/_gate_evidence/", "/_worktree_salvage/",
                       "/lang/_archived/")]
   [= $text-exts (".cx", ".cxd", ".cxs", ".md", ".txt", ".py", ".go", ".rs",
@@ -124,7 +124,7 @@
         [= $_l [?for [in $h $hits] [yield [$say [$cat ("  ", $h)]]]]]
         [= $_t [$say [$cat ([$string [$count $hits]],
                             " hit(s). CX is one language named `CX` ",
-                            "(spec/core/code.md). `", $cxl, "` is retired terminology — use `CX`. ",
+                            "(spec/03-approved/core/code.md). `", $cxl, "` is retired terminology — use `CX`. ",
                             "`", $csrp, "` is the retired store-protocol name (#1544, RULED: 1544-a) — ",
                             "the emissions carry the XSP store-profile codes by meaning. ",
                             "Live identifiers cxlib / cxl: / ", $cxl, "S / ", $cxl, "ib are not matched.")]]]

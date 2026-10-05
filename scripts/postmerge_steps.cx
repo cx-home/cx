@@ -1,0 +1,165 @@
+# scripts/postmerge_steps.cx — the post-merge run's steps (cx-private issue
+# 1817, Letter 201 (a)(1); RULED: STREAM-1, RFLOW-1, CXF-1).
+#
+# ci/postmerge-run (flows/private-acts.cx) runs this under the post-merge
+# runner, scripts/build-slot.sh holding it for the run's life, with the
+# program's two streams appended to the checkout's vcx/target/gate.log, in
+# place of the one `make test` / `make test-changed BASE=<sha>` it ran before.
+# That make was a `-k -j<cores>` storm (make test's storm line,
+# test_changed.sh's run_step_set) with the load-sensitive steps inside it and
+# VJOBS-wide `v test` runners in many of its targets: on 069b93f57's run one
+# V test compiled for 26 minutes that compiles in two on a quiet box.
+#
+# THE RUN, in order:
+#   1. prebuild — `make deps-sync`, `make build-vcx`, `make build-vcx-dev` on
+#      the post-merge runner, one at a time (as make test and test_changed.sh
+#      prebuild): every step after runs `-o` of both binaries, so none relinks.
+#   2. the plan — test_changed.sh's own --dry-run split, `parallel (-j):` and
+#      `serial tail:`, of the full union (its build-infra escalation, over a
+#      change list naming the Makefile) or of the selection from BASE; its
+#      test-vcx-suite narrowing kept as SUITE_FILES. One source for the step
+#      list, never a second copy.
+#   3. the storm's load-INSENSITIVE steps, in parallel: flows/load.cxd's
+#      [parallel steps=N] at a time, each on its own runner (<slot>-own<k>,
+#      under scripts/build-slot.sh), with VJOBS = the box's cores / N, each
+#      under the liveness watch (#1787) — ci-acts' pool-run;
+#   4. the storm's load-SENSITIVE steps (flows/load.cxd's rows), one at a time
+#      on the post-merge runner itself, the box quiet;
+#   5. the serial tail, in its order, only after every step before it passed
+#      (site-live-check last: SITER-1).
+# Every step is red or green on its own and every red one is named (-k, RUN-2):
+# each ended step's output goes to the log between its STEP-START and
+# STEP-END lines with make's own `make: *** [<step>] Error <n>` line for a red
+# one, so every reader of gate.log (the refresh's site-live-check reading, a
+# person's grep) reads what it read. The exit is 0 when every step passed and
+# 2 otherwise, a red storm's code.
+#
+#   cx --allow-read --allow-write --allow-subprocess --allow-env --allow-clock \
+#      scripts/postmerge_steps.cx --checkout=<checkout> test
+#   cx … scripts/postmerge_steps.cx --checkout=<checkout> test-changed BASE=<sha>
+#
+# Its cwd is the tree whose flows/ it reads (the acts', the checkout on the
+# box); every make and test_changed.sh runs in the checkout.
+[?lib 'cx-stdlib/io'      :as io]
+[?lib 'cx-stdlib/env'     :as env]
+[?lib 'cx-stdlib/strings' :as strings]
+[?lib 'cx-stdlib/process' :as process]
+[?lib './flows/ci-acts.cx' :as c]
+[?lib './flows/private-acts.cx' :as ci]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+
+[?def arg-value scope=private pure [returns string] ($words $key)
+  [?let [= $hits [?to-sequence [?for [in $w $words] [where [$strings:starts-with [$string $w] $key]] [yield [$string $w]]]]]
+    [?if [= [$count $hits] 0] [then ''] [else [$strings:slice [$first $hits] [+ [$strings:length $key] 1] [$strings:length [$first $hits]]]]]]]
+
+# the box's cores: sysctl, else nproc, else 8.
+[?def cores scope=private impure [returns int] ()
+  [?let [= $a [$process:run ('sysctl', '-n', 'hw.ncpu') timeout-ms=10000]]
+        [= $b [?if [$c:ok $a] [then $a] [else [$process:run ('nproc') timeout-ms=10000]]]]
+        [= $n [?else [$strings:to-int [$c:out $b]] 0]]
+    [?if [> $n 0] [then $n] [else 8]]]]
+
+# the plan: test_changed.sh --dry-run's split, the words after its two labels.
+[?def plan-words scope=private pure [returns any] ($out $label)
+  [?let [= $ls [?to-sequence [?for [in $l [$c:nonblank-lines $out]] [where [$strings:contains $l $label]] [yield $l]]]]
+        [= $rest [?if [= [$count $ls] 0] [then ''] [else [$strings:trim [$re-after [$first $ls] $label]]]]]
+    [?if [or [= $rest ''] [= $rest 'none']] [then ()] [else [$str-split-whitespace $rest]]]]]
+
+[?def re-after scope=private pure [returns string] ($s $label)
+  [$strings:join [?to-sequence [?drop 1 [?to-sequence [$strings:split [$string $s] $label]]]] $label]]
+
+# test_changed.sh's narrowing of test-vcx-suite: `test-vcx-suite: <n> of <m>
+# test files: <files>` — the files, '' when the whole suite runs.
+[?def suite-files scope=private pure [returns string] ($out)
+  [?let [= $ls [?to-sequence [?for [in $l [$c:nonblank-lines $out]] [where [$strings:contains $l ' test files: ']] [yield $l]]]]
+    [?if [= [$count $ls] 0] [then ''] [else [$strings:trim [$re-after [$first $ls] ' test files: ']]]]]]
+
+[?def plan scope=private impure [returns element] ($c $words)
+  [?let [= $base [$arg-value $words 'BASE=']]
+        [= $union [$c:member 'test' $words]]
+        [= $cf [$concat $c '/vcx/target/postmerge-union-changes.txt']]
+        [= $_w [?if $union [then [$io:write-file $cf "Makefile\n"]] [else null]]]
+        [= $argv [?if $union [then ('bash', 'scripts/test_changed.sh', 'HEAD', '--dry-run', '--changed-files', $cf)]
+                   [else ('bash', 'scripts/test_changed.sh', $base, '--dry-run')]]]
+        [= $r [$process:run $argv cwd=$c timeout-ms=600000]]
+        [= $out [$string $r@stdout]]
+    [?if [not [$c:ok $r]] [then [plan-refused why=[$concat 'test_changed.sh --dry-run exited ' [$string $r@exit-code] ': ' [$c:why $r]]]]
+      [else [?if [and [not $union] [= $base '']] [then [plan-refused why='test-changed without BASE=']]
+        [else [plan storm=[$strings:join [$plan-words $out 'parallel (-j):'] ' ']
+                    tail=[$strings:join [$plan-words $out 'serial tail:'] ' ']
+                    suite=[$suite-files $out]]]]]]]]
+
+# one step's make words: -o of both binaries and the docs targets' own builds
+# (ci/make's BUILT), SUITE_FILES for a narrowed test-vcx-suite, the target.
+[?def make-words scope=private pure [returns any] ($t $suite)
+  [$c:cat2 [$c:cat2 ('make', '--no-print-directory') [$ci:built-flags]]
+           [?if [and [= $t 'test-vcx-suite'] [not [= $suite '']]] [then ([$concat 'SUITE_FILES=' $suite], $t)] [else ($t)]]]]
+
+# a step run on the post-merge runner, alone: the liveness watch, the block.
+[?def serial-step scope=private impure [returns element] ($c $t $argv $runner)
+  [?let [= $log [$concat $c '/vcx/target/steps/' $t '.log']]
+        [= $_d [$io:make-dirs [$concat $c '/vcx/target/steps']]]
+        [= $t0 [$c:now-sec]] [= $t0s [$c:utc-iso]]
+        [= $r [?else [$c:watched-run-in $c $argv {} $log '' [$ci:stall-ms $t] 60000 [$c:make-ms]]
+                     [proc-result exit-code='2' stalled='false' why='the step could not be started']]]
+        [= $_w [?if [= [$string [?else $r@why '']] ''] [then null]
+                 [else [$io:append-file [$concat $log '.err'] [$concat 'postmerge-steps: ' [$string $r@why] "\n"]]]]]
+        [= $e [ran-step name=$t runner=$runner rc=[$string $r@exit-code] stalled=[$string $r@stalled]
+                        t0=[$string $t0] t0s=$t0s t1=[$string [$c:now-sec]] log=$log]]
+        [= $_s [$c:say-step $e]]
+    $e]]
+
+[?def red-names scope=private pure [returns any] ($es)
+  [?to-sequence [?for [in $e $es] [where [not [= [$string $e@rc] '0']]] [yield [$string $e@name]]]]]
+
+[?def finish scope=private impure ($es $why)
+  [?let [= $reds [$red-names $es]]
+        [= $_s [$say [$concat 'postmerge-steps: ' [$string [$count $es]] ' step(s), ' [$string [$count $reds]] ' red'
+                              [?if [= [$count $reds] 0] [then ''] [else [$concat ': ' [$strings:join $reds ' ']]]]
+                              [?if [= $why ''] [then ''] [else [$concat ' — ' $why]]]]]]
+    [$env:exit [?if [= [$count $reds] 0] [then 0] [else 2]]]]]
+
+[?let [= $argv [?to-sequence [?for [in $a [$env:argv]] [yield [$string $a]]]]]
+      [= $words [?to-sequence [?drop 1 $argv]]]
+      [= $c [$arg-value $words '--checkout=']]
+      [= $rest [?to-sequence [?for [in $w $words] [where [not [$strings:starts-with $w '--checkout=']]] [yield $w]]]]
+      [= $slot0 [$env:var-or-default 'CX_BUILD_SLOT' '']]
+      [= $slot [?if [= $slot0 ''] [then [$concat [$env:var-or-default 'HOME' ''] '/git-repos/cx/.build-slot']] [else $slot0]]]
+      [= $lr [$ci:load-refusals [$ci:load-doc]]]
+  [?if [or [= $c ''] [= [$count $rest] 0]]
+    [then [?let [= $_e [$say 'usage: postmerge_steps.cx --checkout=<checkout> test | test-changed BASE=<sha>']] [$env:exit 64]]]
+  [else [?if [> [$count $lr] 0]
+    [then [?let [= $_e [$say [$strings:join $lr "\n"]]] [$env:exit 2]]]
+  [else [?let
+    [= $_d [?if [$io:exists [$concat $c '/vcx/target/steps']] [then [$io:remove-tree [$concat $c '/vcx/target/steps']]] [else null]]]
+    [= $pre [?to-sequence [?for [in $t ('deps-sync', 'build-vcx', 'build-vcx-dev')]
+              [yield [$serial-step $c $t ('make', '--no-print-directory', $t) 'post-merge']]]]]
+    [?if [> [$count [$red-names $pre]] 0] [then [$finish $pre 'the prebuild is red: no step ran']]
+    [else [?let
+      [= $p [$plan $c $rest]]
+      [?if [= [$name $p] 'plan-refused'] [then [?let [= $_e [$say [$concat 'postmerge-steps: ' [$string $p@why]]]] [$env:exit 2]]]
+      [else [?let
+        [= $storm [$str-split-whitespace [$string $p@storm]]]
+        [= $tail [$str-split-whitespace [$string $p@tail]]]
+        [= $sens [$ci:sensitive]]
+        [= $own [?to-sequence [?for [in $t $storm] [where [not [$c:member $t $sens]]] [yield $t]]]]
+        [= $shared [?to-sequence [?for [in $t $storm] [where [$c:member $t $sens]] [yield $t]]]]
+        [= $n [$ci:parallel-steps]]
+        [= $vj [?if [< [$floor [/ [$cores] $n]] 1] [then 1] [else [$floor [/ [$cores] $n]]]]]
+        [= $_h [$say [$concat 'postmerge-steps: ' [$string [$count $own]] ' load-insensitive step(s), ' [$string $n]
+                              ' at a time on their own runners (VJOBS=' [$string $vj] '); then ' [$string [$count $shared]]
+                              ' load-sensitive on the post-merge runner: ' [?if [= [$count $shared] 0] [then 'none'] [else [$strings:join $shared ' ']]]
+                              '; then the tail: ' [?if [= [$count $tail] 0] [then 'none'] [else [$strings:join $tail ' ']]]]]]
+        [= $slotsh ('sh', [$concat $c '/scripts/build-slot.sh'])]
+        [= $jobs [?to-sequence [?for [in $t $own]
+                   [yield [job name=$t log=[$concat $c '/vcx/target/steps/' $t '.log'] stall-ms=[$string [$ci:stall-ms $t]] cwd=$c
+                            [?splice [?to-sequence [?for [in $w [$c:cat2 $slotsh [$make-words $t [$string $p@suite]]]]
+                                       [yield [arg v=$w]]]]]]]]]]
+        [= $par [$c:pool-run $jobs $n $slot $vj 60000]]
+        [= $sh [?to-sequence [?for [in $t $shared] [yield [$serial-step $c $t [$make-words $t [$string $p@suite]] 'post-merge']]]]]
+        [= $before [$c:cat2 [$c:cat2 $pre $par] $sh]]
+        [= $tl [?if [> [$count [$red-names $before]] 0] [then ()]
+                 [else [?to-sequence [?for [in $t $tail] [yield [$serial-step $c $t [$make-words $t [$string $p@suite]] 'tail']]]]]]]
+        [$finish [$c:cat2 $before $tl]
+                 [?if [and [> [$count [$red-names $before]] 0] [> [$count $tail] 0]] [then 'the serial tail did not run: a step before it is red'] [else '']]]]]]]]]]]]]]]

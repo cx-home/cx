@@ -677,6 +677,23 @@ pub fn grade_files(opts Options, names []string) Outcome {
 				}
 				continue // excluded from the gate (not run)
 			}
+			// cx-core-code#67: a `level=visualization` case is RENDER-spec, not
+			// eval — its out-text is the structure recovered by rendering the
+			// program to a diagram and reverse-parsing it (code.md §11.4.2
+			// gate 9), graded by the diagram round-trip lane. The V grader skips
+			// it; so does this lane, by name, never evaluating it as a program.
+			if f.level == 'visualization' {
+				if opts.record {
+					o.records << CaseRecord{
+						file:   fname
+						id:     f.id
+						status: 'skip'
+						gate:   eff_gate
+						note:   'level=visualization: graded by the diagram round-trip lane (gate 9)'
+					}
+				}
+				continue
+			}
 			if opts.skip_packs && needs_excluded_pack(f, packs_off) {
 				if opts.record {
 					o.records << CaseRecord{
@@ -809,6 +826,21 @@ pub fn grade_files(opts Options, names []string) Outcome {
 			}
 			// EV-PULL: force at the runner's result boundary.
 			result = code.force_lazy_result(result, mut env)
+			// cx-core-code#67: the serialization boundary — a function value
+			// reaching the result has no data image and refuses CXER0291
+			// (code.md §9.2), as the CLI's render() and the V grader do; this
+			// lane renders with render_canonical (never fallible), so it
+			// reproduces the deep predicate.
+			if cx.contains_fn_value(result) {
+				if f.out_err != '' {
+					if !f.out_err.contains('CXER0291') {
+						failures << '${fname}/${f.id}: expected ${f.out_err}, got function value (CXER0291)'
+					}
+				} else {
+					failures << '${fname}/${f.id}: function value not serialisable (CXER0291), expected ${f.out_text.trim_space()}'
+				}
+				continue
+			}
 			if f.out_err != '' {
 				// Expected an err: accept a V-error (handled above) or an
 				// err-value whose TOP-LEVEL code is the expected one
