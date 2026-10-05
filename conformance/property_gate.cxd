@@ -335,7 +335,7 @@ inner
 #]]
  ]
 
- [case id=property-gate-025-null-key-literal level=core gate=advisory issue='cx-home/cx-core-data#19' grant='eval'
+ [case id=property-gate-025-null-key-literal level=core grant='eval'
   [tags property-gate i literal-accepted-inadmissible-key:program]
   [title [# the program reader refuses the map literal {null: 1} as the data reader does -- cxdm.md §2.6 "null key: Not permitted (parse error)"; code.md §1.3 (RULED: CXF-5) #]]
   [in-code [#
@@ -347,7 +347,7 @@ refused
 #]]
  ]
 
- [case id=property-gate-026-bytes-at-the-top level=core gate=advisory issue='cx-home/cx-core-data#20'
+ [case id=property-gate-026-bytes-at-the-top level=core
   [tags property-gate ii kind-lost-on-canonical:bytes@top]
   [title [# a bytes value at the document top keeps its ascription in canonical form -- canonical.md §2.6a "the ascription is always load-bearing" in an unnamed slot; §1.4 #]]
   [in-code [#
