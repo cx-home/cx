@@ -184,8 +184,8 @@ fraction as a binary float and CX does not.
 
 | Kind | How you get one |
 |---|---|
-| **decimal** | a plain fraction literal: `1.5`, `2.50`, `0.1`. Exact, base-10, arbitrary precision |
-| **float** | an `e`-exponent literal (`1.5e0`), a `::float` annotation, `[cast x :float]`, a division of ints whose quotient is not whole (`[/ 7 2]`), a float operand, `[$avg …]`, and the float-returning `math` functions |
+| **decimal** | a plain fraction literal: `1.5`, `2.50`, `0.1`. Exact, base-10, arbitrary precision. Arithmetic over decimals stays decimal, and so does `[$avg …]` of decimals: `[$avg [0.5, 1.5]]` is `1.00` |
+| **float** | an `e`-exponent literal (`1.5e0`), a `::float` annotation, `[cast x :float]`, a division of ints whose quotient is not whole (`[/ 7 2]`), a float operand, `[$avg …]` of ints or floats (`[$avg [2, 4, 6]]` is `4.0e0`), and the float-returning `math` functions |
 
 `[price 19.99]` is a decimal and stays exact. Division follows its operands: `[/ 6 2]` is the
 int `3` and `[/ 7 2]` the float `3.5` (an int result only when every operand is an int
