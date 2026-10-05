@@ -37,6 +37,12 @@
 #      may not absorb it (REFUTE-1 r5)
 #   I  CX_REPR_LANE_DEADLINE_S=0 (or the build's)      red by name, exit 2, in
 #      bound: a reading with no deadline is the hang itself (REFUTE-1 r6)
+#   J  each reading prints a good line and leaves two grandchildren behind
+#      that LEFT its process group (setsid): one still holding the reading's
+#      stdout, one with every stream on /dev/null under a waiting subshell of
+#      the group (REFUTE-1 r4 on batch H3, #1775)
+#                                                      green, exit 0, and none
+#      of the eight pids alive once the driver has answered
 #
 # Run via:  cx --allow-read --allow-write --allow-subprocess --allow-env --allow-clock scripts/repr_guard_selftest.cx
 # (make repr-guard-selftest). Exit 0 and the count line only when every case holds.
@@ -95,6 +101,27 @@
                                        [$string [$div CASE-MS 1000]], ' s')]]
                           [else [$cat ($what, ' — exit ', [$exit-of $r], ': ', [$strings:trim [$said $r]])]]]]
             [bad id=$id what=$why]]]]]
+
+# J's leftovers: each format's reading starts two setsid'd sleepers that record
+# their pids in <dir>/<format>.pids (one keeps the reading's stdout, one sits
+# under a subshell of the group with every stream on /dev/null), waits until
+# both are recorded, then prints a good reading and exits.
+[?def leaver-body scope=private pure [returns string] ($dir)
+  [?let [= $perl [$cat ("perl -MPOSIX -e 'POSIX::setsid(); open(my $f, \">>\", \"", $dir, "/\" . $ARGV[0] . \".pids\"); print $f \"$$\\n\"; close $f; sleep 90' \"$1\"")]]
+    [$cat ($perl, ' </dev/null 2>/dev/null &\n',
+           '( ', $perl, ' </dev/null >/dev/null 2>&1 & wait ) </dev/null >/dev/null 2>&1 &\n',
+           'n=0; while [ "$(cat "', $dir, '/$1.pids" 2>/dev/null | wc -l | tr -d " ")" -lt 2 ] && [ $n -lt 200 ]; do sleep 0.05; n=$((n+1)); done\n',
+           [$good-line '7.000'])]]]
+
+# the pids J's sleepers recorded, every format.
+[?def leaver-pids scope=private impure [returns any] ($dir)
+  [?to-sequence [?for [in $l ('json', 'xml', 'cx', 'cxel')]
+                  [in $t [$strings:split-whitespace [?else [$io:read-file [$cat ($dir, '/', $l, '.pids')]] '']]]
+                  [yield $t]]]]
+# alive: kill -0 answers 0.
+[?def alive scope=private impure [returns bool] ($pid)
+  [= [$string [?fallback [$process:run ('kill', '-0', $pid) capture=:none timeout-ms=10000]
+                [recover-with [proc-result exit-code=1]]]@exit-code] '0']]
 
 [?def every-format scope=private pure [returns bool] ($r $fmt-pre $fmt-post)
   [= [$count [?to-sequence [?for [in $l ('json', 'xml', 'cx', 'cxel')]
@@ -166,8 +193,24 @@
                              [not [$hung $rj]] [= [$exit-of $rj] '2'] [$has $rj 'CX_REPR_BUILD_DEADLINE_S']]
                     'a deadline of 0 s (a reading or the build) is refused by name, never run without one' [?if [$hung $ri] [then $ri] [else $rj]]]]
 
+      # J — grandchildren that left the reading's process group are killed at its exit
+      [= $jd [$cat ($root, '/leavers')]]
+      [= $_jd [$io:make-dirs $jd]]
+      [= $sj [$plant $root 'leaver' [$leaver-body $jd]]]
+      [= $rj2 [$drive $sj [$cat ($root, '/corpus-jj')] '0']]
+      [= $jp [$leaver-pids $jd]]
+      [= $jlive [?to-sequence [?for [in $p $jp] [where [$alive $p]] [yield $p]]]]
+      # a red run leaves nothing behind either: the recorded pids, and only those.
+      [= $_jk [?to-sequence [?for [in $p $jlive] [yield [?fallback [$process:run ('kill', '-9', $p) capture=:none timeout-ms=10000] [recover-with null]]]]]]
+      [= $j [$judge 'J' [and [not [$hung $rj2]] [= [$exit-of $rj2] '0'] [$has $rj2 'bench/repr: GREEN']
+                             [= [$count $jp] 8] [= [$count $jlive] 0]]
+                    [$cat ('grandchildren that left the reading\'s process group (setsid) are killed when the reading answers — ',
+                           [$string [$count $jp]], ' recorded, ', [$string [$count $jlive]], ' alive after the run',
+                           [?if [= [$count $jlive] 0] [then ''] [else [$cat (' (', [$strings:join $jlive ' '], ')')]]])]
+                    $rj2]]
+
       [= $_rm [$io:remove-tree $root]]
-      [= $all ($a, $b, $c, $d, $e, $f, $g, $h, $i)]
+      [= $all ($a, $b, $c, $d, $e, $f, $g, $h, $i, $j)]
       [= $bad [?to-sequence [?for [in $x $all] [where [= [$name $x] 'bad']] [yield $x]]]]
       [= $_say [?to-sequence [?for [in $x $all]
                  [yield [$io:write-line [$env:stdout]
