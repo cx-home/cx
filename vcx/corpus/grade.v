@@ -700,7 +700,7 @@ pub fn grade_files(opts Options, names []string) Outcome {
 			}
 			adv_ids['${fname}/${f.id}'] = eff_gate == 'advisory'
 			env.close()
-			case_files_teardown(mut case_dir, orig_cwd)
+			case_dir = case_files_teardown(case_dir, orig_cwd)
 			// gap-129: the case's own input files, laid down in a fresh scratch
 			// directory the program runs from, so a relative read finds them.
 			if f.files.len > 0 {
@@ -837,7 +837,7 @@ pub fn grade_files(opts Options, names []string) Outcome {
 			}
 		}
 		env.close()
-		case_files_teardown(mut case_dir, orig_cwd)
+		case_dir = case_files_teardown(case_dir, orig_cwd)
 		case_ms_line(fname, pend_id, csw)
 		if opts.file_ms {
 			ms_line('file', fname, ' cases=${o.ran - file_ran_at_entry}', fsw)
@@ -943,11 +943,11 @@ fn case_files_lay_down(files []fixtures.FixtureFile) !string {
 
 // case_files_teardown restores the working directory and removes the scratch
 // directory a case's files were laid down in; a no-op when the case had none.
-fn case_files_teardown(mut case_dir string, orig_cwd string) {
+fn case_files_teardown(case_dir string, orig_cwd string) string {
 	if case_dir == '' {
-		return
+		return ''
 	}
 	os.chdir(orig_cwd) or {}
 	os.rmdir_all(case_dir) or {}
-	case_dir = ''
+	return ''
 }
