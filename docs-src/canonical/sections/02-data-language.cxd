@@ -1029,11 +1029,12 @@
       [fixture id=program-cxpath-g2-30-auto-typing]
       [note
         """**Leading-zero strings.** Tokens with a leading zero
-           stay strings — `0x` (hex) is the **only** numeric radix
-           prefix; there is no octal or binary literal form. Postal
-           codes, area codes, account numbers, BIC codes — anywhere
-           the leading zero is data, not a numeric value — round-trip
-           as the strings they are."""]
+           stay strings unless a radix prefix follows it — `0x` (hex),
+           `0o` (octal) and `0b` (binary) read as the int they spell
+           (`0o755` is `493`, `0b1101` is `13`). Postal codes, area
+           codes, account numbers, BIC codes — anywhere the leading
+           zero is data, not a numeric value — round-trip as the
+           strings they are."""]
       [fixture id=program-cxpath-g2-31-leading-zero-stays-string]
       [body
         """**Sized integer and float.** A colon-type pins the
