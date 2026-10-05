@@ -42,7 +42,7 @@ organisation moves.
   [dep repo=cx-platform-db sha=2cad4457b081f1929fbe79609947dc1aa6ca9aa3 module='db sql redis' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-net sha=06e4acfff86987c9586646dcab8c52f3c859a63c module='cx-platform/net cx-platform/http cx-platform/ftp cx-platform/sftp' v-fork=4660968c34e3609368f309ebd92e1d68c86fef66]
   [dep repo=cx-platform-mail sha=874ca95fa375fcb4afa5769e1fb6672478427299 module='cx-platform/imap cx-platform/smtp cx-stdlib/sasl' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
-  [dep repo=cx-platform-store sha=39c433f8057fa5136dca3fe611bbeca5e8583627 module='cx-platform/store cx-platform/journal cx-platform/live cx-platform/audit cx-stdlib/ft' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
+  [dep repo=cx-platform-store sha=6eb78a3488acc826ddebf9b577f26f2783d4a1fe module='cx-platform/store cx-platform/journal cx-platform/live cx-platform/audit cx-stdlib/ft' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-identity sha=748f0d736fcab83300ef0d1b455f7d2981fab8ee module='cx-platform/session cx-platform/authz-store cx-platform/did-web cx-platform/vc-revocation' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-connector sha=790748e29105131b63bda547504cc994a17d463c module='cx-platform/connector cx-platform/sync']
   [dep repo=cx-platform-secrets sha=de6a310f31a9f2c961f9de8b1b0c6f5c44513c61 module='cx-platform/secrets']
