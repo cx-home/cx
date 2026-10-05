@@ -99,7 +99,7 @@
       [= $line [$nth $lines $i]]
       [where [not [$strings:contains $line STRAY-MARKER]]]
       [where [?match [$re:find STRAY-RX $line]
-               [case [no-match] false] [else true]]]
+               [case () false] [else true]]]
       [yield [$concat $p ":" [$string $i] ": " [$strings:trim-end $line]]]]]]
 
 # stray-hits: scan every tree; whole-file RE2 prefilter, then per-line.
@@ -111,7 +111,7 @@
     [where [not [$excluded $p]]]
     [where [not [$allowed-file $p]]]
     [where [?match [$re:find STRAY-RX [$io:read-file $p]]
-             [case [no-match] false] [else true]]]
+             [case () false] [else true]]]
     [in $hit [$stray-hits-in $p]]
     [yield $hit]]]
 
@@ -133,7 +133,7 @@
   "the v0.8.xyz identifier is not a version")]
 
 [?def rx-hits scope=public ($s)
-  [?match [$re:find STRAY-RX $s] [case [no-match] false] [else true]]]
+  [?match [$re:find STRAY-RX $s] [case () false] [else true]]]
 
 [?def self-test scope=public ()
   [?let [= $marked "// kept as history v0.8.0  // version-literal-ok"]
@@ -160,7 +160,7 @@
       [case [missing] [$concat $path ": missing (expected a stamped manifest)"]]
       [else
         [?match [$re:find [$re:compile $pattern] $t]
-          [case [no-match] [$concat $path ": no version field matched '" $pattern "'"]]
+          [case () [$concat $path ": no version field matched '" $pattern "'"]]
           [case $m
             [?if [= [$re:group $m 1] $version] [then ()]
               [else [$concat $path ": version '" [$re:group $m 1]
@@ -226,7 +226,7 @@
             [case $t
               [?if [$strings:contains $t $badge] [then ()]
                 [else [?match [$re:find $badge-rx $t]
-                  [case [no-match] [$concat $p ": version badge 'no version badge' != VERSION '" $version "'"]]
+                  [case () [$concat $p ": version badge 'no version badge' != VERSION '" $version "'"]]
                   [case $m [$concat $p ": version badge '" [$re:group $m 1] "' != VERSION '" $version "'"]]]]]]]]
           [where [not [$empty $f]]]
           [yield $f]]]
@@ -238,7 +238,7 @@
           [case [missing] ("SECURITY.md: missing (expected the supported-series text)")]
           [case $t
             [?match [$re:find [$re:compile "\\*\\*([0-9]+\\.[0-9]+\\.x)\\*\\*"] $t]
-              [case [no-match] ("SECURITY.md: no bolded supported-series token (**X.Y.x**) found")]
+              [case () ("SECURITY.md: no bolded supported-series token (**X.Y.x**) found")]
               [case $m
                 [?if [= [$re:group $m 1] $series] [then ()]
                   [else ([$concat "SECURITY.md: supported series '" [$re:group $m 1]

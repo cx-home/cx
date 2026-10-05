@@ -118,7 +118,7 @@
   [?let [= $id-rx   [$re:compile ID-PATTERN]]
         [= $date-rx [$re:compile "^(19|20)[0-9]{2}-[0-9]{2}"]]
     [?for [in $m [$re:find-all $id-rx $text]]
-      [where [?match [$re:find $date-rx [$re:group $m 1]] [case [no-match] true] [else false]]]
+      [where [?match [$re:find $date-rx [$re:group $m 1]] [case () true] [else false]]]
       [yield [$strings:lower [$re:group $m 1]]]]]]
 
 # cites: does any subject's `RULED:` clause name one of $ids?
