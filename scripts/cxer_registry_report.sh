@@ -87,8 +87,16 @@ sort -n -u "$ranges" -o "$ranges"; sort -n -u "$excluded" -o "$excluded"
 # ── Emitted / asserted codes.
 #   *.v under all of vcx/ with //-comments stripped (string literals keep
 #   their text; a // inside a string is rare enough to accept),
-#   stdlib/*.cx + conformance/**/*.cxd with #-comments stripped.
+#   stdlib/*.cx + conformance/**/*.cxd with #-comments stripped — in this
+#   tree AND in every pinned checkout under deps/ (cx-private issue 1725,
+#   RS-8): since the split the evaluator, the stdlib and the corpus live in
+#   the pins, and a reader of this tree alone counted 42 codes of 818.
 {
+  for d in "$ROOT"/deps/*/; do
+    [ -d "$d/vcx" ] && find "$d/vcx" -name '*.v' -not -path "$d/vcx/target/*" -print0 | xargs -0 sed -E 's|//.*$||' 2>/dev/null
+    [ -d "$d/stdlib" ] && find "$d/stdlib" -name '*.cx' -print0 | xargs -0 sed -E 's/(^|[[:space:]])#.*$//' 2>/dev/null
+    [ -d "$d/conformance" ] && find "$d/conformance" -name '*.cxd' -print0 | xargs -0 cat 2>/dev/null
+  done
   find "$ROOT/vcx" -name '*.v' -not -path "$ROOT/vcx/target/*" -print0 \
     | xargs -0 sed -E 's|//.*$||' 2>/dev/null
   find "$ROOT/stdlib" -name '*.cx' -print0 2>/dev/null \
@@ -158,7 +166,7 @@ awk -F'\t' '
   }
 ' "$ranges" > "$reg_overlaps" || true
 
-echo "cxer_registry_report: $(wc -l < "$emitted" | tr -d ' ') distinct codes emitted/asserted (all vcx/*.v, stdlib/*.cx, conformance/**/*.cxd; comments stripped); $(wc -l < "$ranges" | tr -d ' ') registered ranges ($(wc -l < "$excluded" | tr -d ' ') sparse-list exclusions honored)."
+echo "cxer_registry_report: $(wc -l < "$emitted" | tr -d ' ') distinct codes emitted/asserted (all vcx/*.v, stdlib/*.cx, conformance/**/*.cxd of this tree and every pin; comments stripped); $(wc -l < "$ranges" | tr -d ' ') registered ranges ($(wc -l < "$excluded" | tr -d ' ') sparse-list exclusions honored)."
 
 strict_fail=0
 if [ "$unregistered" -ne 0 ]; then

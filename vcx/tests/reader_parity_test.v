@@ -643,6 +643,10 @@ const accepted_by_one_table = [
 	// `[$process:run ([$env:executable-path], '--allow-subprocess', …) …]` running the
 	// two programs as their callers do (RULED: STREAM-1, CXF-1).
 	AcceptedByOne{'scripts/bare_head_calls_selftest.cx', .program, reason_1536},
+	// 85 -> 86: #1725's scripts/diagnostics_census_check.cx -- the class's own shape,
+	// `[$process:run ([$env:executable-path], '--allow-read', …) …]` running the
+	// census and the registry report (RULED: STREAM-1, CXF-1).
+	AcceptedByOne{'scripts/diagnostics_census_check.cx', .program, reason_1536},
 	// ── recorded exception — a computed attribute `name=[EXPR]` (25) ──
 	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
 	// 21 -> 22: scripts/check_migrate_namespace_fixtures.cx, RS-4's sweep grader.
