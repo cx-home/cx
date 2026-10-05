@@ -215,10 +215,10 @@ B"""] [expect """50"""]]
   [example [code """[?zip (1, 2, 3) ("a", "b", "c")]"""] [expect """((1, a), (2, b), (3, c))"""]]
 ]
 
-[directive-doc name='?enumerate' category="Iterator stdlib — emit `(i, item)` pairs" spec="§8"
-  [sig """[?enumerate SRC] -> iterator of (i, item)"""]
-  [summary """Iterator combinator: pair each element with its zero-based index."""]
-  [example [code """[?enumerate ("a", "b", "c")]"""] [expect """((0, a), (1, b), (2, c))"""]]
+[directive-doc name='?enumerate' category="Iterator stdlib — emit `(position, item)` pairs, the position 1-based (D4)" spec="§8"
+  [sig """[?enumerate SRC] -> iterator of (position, item)"""]
+  [summary """Iterator combinator: pair each element with its 1-based position — the index $nth reads it back with (code.md D4)."""]
+  [example [code """[?enumerate ("a", "b", "c")]"""] [expect """((1, a), (2, b), (3, c))"""]]
 ]
 
 [directive-doc name='?chunks' category="Iterator stdlib — group by `count`" spec="§8"
@@ -233,10 +233,10 @@ B"""] [expect """50"""]]
   [example [code """[?concat (1, 2) (3, 4)]"""] [expect """(1, 2, 3, 4)"""]]
 ]
 
-[directive-doc name='?cycle' category="Iterator stdlib — bounded repeat" spec="§8"
-  [sig """[?cycle SRC max=N] -> iterator"""]
-  [summary """Iterator combinator: repeat a source cyclically, bounded by `max`."""]
-  [example [code """[?cycle (1, 2, 3) max=7]"""] [expect """(1, 2, 3, 1, 2, 3, 1)"""]]
+[directive-doc name='?cycle' category="Iterator stdlib — bounded repeat: a leading round count or an item bound max=K" spec="§8"
+  [sig """[?cycle N SRC] | [?cycle SRC max=K] -> iterator"""]
+  [summary """Iterator combinator: repeat a source cyclically — N rounds of it with a leading count (as [?take N …] and [?chunks N …] lead with theirs), or K items with `max=K`; one bound, never both."""]
+  [example [code """([?cycle 2 (a, b)], [?cycle (1, 2, 3) max=7])"""] [expect """((a, b, a, b), (1, 2, 3, 1, 2, 3, 1))"""]]
 ]
 
 [directive-doc name='?scan' category="Iterator stdlib — running-fold prefixes" spec="§8"

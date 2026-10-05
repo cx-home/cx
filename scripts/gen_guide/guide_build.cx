@@ -72,7 +72,7 @@
 [?def parse-or-die scope=public impure ($f)
   [?let [= $d [$cx:parse [$io:read-file $f]]]
     [?match $d
-      [case [err $e]
+      [case [err$e]
         ([$io:write-line [$env:stderr]
            [$cat ('guide_build: PARSE FAILED — ', $f, ' — ', $e@message)]],
          [$env:exit 1])]
@@ -1162,7 +1162,7 @@
 [?def module-docs scope=public impure ($f)
   [?let [= $raw [$cx:ast [$module-source-of $f]]]
     [?match $raw
-      [case [err $e]
+      [case [err$e]
         ([$io:write-line [$env:stderr]
            [$cat ('guide_build: AST FAILED — ', $f, ' — ', $e@message)]],
          [$env:exit 1])]
@@ -1382,7 +1382,7 @@
      in the site manifest, links modules that have a reference page. ]
   [= $repos [$rp:repo-sources]]
   [= $_rc [?match [$rp:check]
-            [case [err $e] [$guide-die [$cat ("the repository pages' self-test failed before it could grade: ", [$string $e@message])]]]
+            [case [err$e] [$guide-die [$cat ("the repository pages' self-test failed before it could grade: ", [$string $e@message])]]]
             [else 0]]]
   [= $site-files [$sb:site-files [$site-manifest]]]
   [; RS-30: every fixture the guide home, the sections and the repository

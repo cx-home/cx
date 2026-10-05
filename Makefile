@@ -2427,8 +2427,8 @@ advisory-audit:
 property-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 property-gate: build-vcx
 	@"$(CX_BIN)" corpus --quiet conformance/property_gate.cxd
-	@"$(CX_BIN)" --allow-read --allow-write --allow-eval --allow-subprocess scripts/property_gate.cx --self-test
-	@"$(CX_BIN)" --allow-read --allow-write --allow-eval --allow-subprocess scripts/property_gate.cx $(PROPERTY_GATE_ARGS)
+	@"$(CX_BIN)" --allow-read --allow-write --allow-eval --allow-subprocess --allow-random scripts/property_gate.cx --self-test
+	@"$(CX_BIN)" --allow-read --allow-write --allow-eval --allow-subprocess --allow-random scripts/property_gate.cx $(PROPERTY_GATE_ARGS)
 
 # ── SPEC-INVARIANT GATE (SPECINV-1; RULED: QUAL-1 (d)) — every sentence of the
 # two rings' approved specs that carries MUST, MUST NOT, SHALL, REFUSES, REFUSED

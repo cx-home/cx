@@ -109,12 +109,12 @@
 [?def status-of scope=public impure ($u)
   [?let [= $h [$http:head $u {timeout: TIMEOUT}]]
     [?match $h
-      [case [err $e] [$concat "error " [$string $e@code] " (" [$string $e@message] ")"]]
+      [case [err$e] [$concat "error " [$string $e@code] " (" [$string $e@message] ")"]]
       [else [?let [= $s [$http:status $h]]
               [?if [or [= $s 403] [= $s 405]]
                 [then [?let [= $g [$http:get $u {timeout: TIMEOUT}]]
                         [?match $g
-                          [case [err $e] [$concat "error " [$string $e@code] " (" [$string $e@message] ")"]]
+                          [case [err$e] [$concat "error " [$string $e@code] " (" [$string $e@message] ")"]]
                           [else [$string [$http:status $g]]]]]]
                 [else [$string $s]]]]]]]]
 
@@ -170,7 +170,7 @@
 [?def self-test scope=public impure ()
   [?let [= $raw [$io:read-file CASES]]
         [= $_r [?match $raw
-                  [case [err $e] [?let [= $_c [$cry [$concat "check_external_links --self-test: REFUSED -- cannot read " CASES ": " [$string $e@message]]]] [$env:exit 2]]]
+                  [case [err$e] [?let [= $_c [$cry [$concat "check_external_links --self-test: REFUSED -- cannot read " CASES ": " [$string $e@message]]]] [$env:exit 2]]]
                   [else ()]]]
         [= $doc [$cx:parse $raw]]
         [= $ids [?for [in $c $doc//case] [yield [$string $c@id]]]]

@@ -627,7 +627,7 @@
     "75-builtin-position": {
       label: "[75] Sequence \u2014 position",
       input: "[$position (10, 20, 30, 20, 40) 20]",
-      note:  "**Introduces:** `[$position xs needle]` \u2014 **1-based** index of the first occurrence, or `0` when the needle is absent. Here that is `2`.",
+      note:  "**Introduces:** `[$position xs needle]` \u2014 **1-based** index of the first occurrence, or absence `()` when the needle is not there (the one \"not found\" answer of the lookup verbs, so `[?else]` and `[$present]` see it). Here that is `2`.",
       tags:  [],
       section: "code/builtins",
       runnable: true,
@@ -1177,9 +1177,9 @@
     },
     "143-set-intersection": {
       label: "[143] Set \u2014 intersection (in both)",
-      input: "[?let [= $a (1, 2, 3, 4)] [= $b (3, 4, 5, 6)]\n  [?for [in $x $a]\n    [where [> [$position $b $x] 0]]\n    [yield $x]]]",
-      note:  "**Pattern:** keep items that appear in both sequences. **Uses:** `[$position xs needle]` as the membership test \u2014 it answers the **1-based** index of the first occurrence and `0` when the needle is absent, so `[> [$position $b $x] 0]` reads \"is in `$b`\". Both bindings are actually read; one flat `[?let]` takes them both.",
-      tags:  ["eq", "for", "gt", "let"],
+      input: "[?let [= $a (1, 2, 3, 4)] [= $b (3, 4, 5, 6)]\n  [?for [in $x $a]\n    [where [$present [$position $b $x]]]\n    [yield $x]]]",
+      note:  "**Pattern:** keep items that appear in both sequences. **Uses:** `[$position xs needle]` as the membership test \u2014 it answers the **1-based** index of the first occurrence and absence `()` when the needle is not there, so `[$present [$position $b $x]]` reads \"is in `$b`\". Both bindings are actually read; one flat `[?let]` takes them both.",
+      tags:  ["eq", "for", "let"],
       section: "code/queries",
       runnable: true,
     },
@@ -1788,8 +1788,8 @@
     },
     "219-non-terminating-division-refuses-by-name": {
       label: "[219] `[$div 1.0 3.0]` refuses \u2014 an exact result does not exist",
-      input: "[?lib 'cx-stdlib/math' :as math]\n[divisions\n  [exact [?fallback recover-with=[refused code=$err@code] body=[$div 1.0 3.0]]]\n  [rounded [$math:div-decimal 1.0 3.0 {precision: 2 mode: :half-up}]]\n  [float [/ 1 3]]]",
-      note:  "**Introduces:** the refusal side of exact arithmetic, and the two ways to ask properly. `1.0 / 3.0` has no terminating decimal, so `$div` REFUSES BY NAME (`CXER3002`) rather than inventing a precision \u2014 here the refusal is caught as a value and only its code is shown. `[$math:div-decimal a b {precision: N mode: :half-up}]` from `cx-stdlib/math` supplies the rounding context and answers `0.33`; `[/ 1 3]` on integers takes the float path and answers the nearest double. Three spellings, three different contracts, each visible in the output.",
+      input: "[?lib 'cx-stdlib/math' :as math]\n[divisions\n  [exact [?fallback recover-with=[refused code=$err@code] body=[$div 1.0 3.0]]]\n  [rounded [$math:div-decimal 1.0 3.0 {scale: 2 mode: :half-up}]]\n  [float [/ 1 3]]]",
+      note:  "**Introduces:** the refusal side of exact arithmetic, and the two ways to ask properly. `1.0 / 3.0` has no terminating decimal, so `$div` REFUSES BY NAME (`CXER3002`) rather than inventing a precision \u2014 here the refusal is caught as a value and only its code is shown. `[$math:div-decimal a b {scale: N mode: :half-up}]` from `cx-stdlib/math` supplies the rounding context \u2014 `scale` digits after the point, or `precision` significant digits \u2014 and answers `0.33`; `[/ 1 3]` on integers takes the float path and answers the nearest double. Three spellings, three different contracts, each visible in the output.",
       tags:  ["attr", "div", "fallback", "lib"],
       section: "data/numbers",
       runnable: true,

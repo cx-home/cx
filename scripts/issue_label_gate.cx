@@ -171,7 +171,7 @@
 [?def self-test scope=public impure ()
   [?let [= $raw [$io:read-file CASES]]
         [= $_r [?match $raw
-                  [case [err $e] [?let [= $_c [$cry [$concat "issue-label-gate --self-test: REFUSED -- cannot read " CASES ": " [$string $e@message]]]] [$env:exit 2]]]
+                  [case [err$e] [?let [= $_c [$cry [$concat "issue-label-gate --self-test: REFUSED -- cannot read " CASES ": " [$string $e@message]]]] [$env:exit 2]]]
                   [else ()]]]
         [= $root [$cx:parse $raw]]
         [= $_n [?if [= [$count [?for [in $c $root/case] [yield 1]]] 0]
@@ -226,7 +226,7 @@
 [?def fetch scope=public impure ($repo)
   [?let [= $r [$process:run [$gh-argv $repo]]]
     [?match $r
-      [case [err $e] [$refuse-read $repo [$concat "gh could not be run: " [$string $e@message]]]]
+      [case [err$e] [$refuse-read $repo [$concat "gh could not be run: " [$string $e@message]]]]
       [else [?if [= [$string $r@exit-code] "0"]
               [then [?let [= $out [$strings:trim [$string $r@stdout]]]
                           [= $d [$json:parse $out]]
@@ -234,7 +234,7 @@
                          else (no output, not JSON, an object) is a read that
                          failed, exit 2, never an empty tracker (REFUTE-1 g02-g04). ]
                       [?match $d
-                        [case [err $e] [$refuse-read $repo [$concat "gh answered no JSON (" [$string $e@message] ")"]]]
+                        [case [err$e] [$refuse-read $repo [$concat "gh answered no JSON (" [$string $e@message] ")"]]]
                         [else [?if [$strings:starts-with $out "[["]
                                 [then [?to-array [$issues-of $d]]]
                                 [else [$refuse-read $repo "gh did not answer an array of pages"]]]]]]]

@@ -511,64 +511,6 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `cxf-8` | [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) | The traps become fixtures — two batch branches for the CXF-8 defects, and the one ruling they need (RULED: TRAP-1, 1527-a) |
 | `cxf-8` | [rulings_2026_09_27_integrator_decisions_l60.md](rulings_2026_09_27_integrator_decisions_l60.md) | 1690's agent; reversible by the owner's word. 1509-a, CXF-8, FIX-1, #1690.** |
 | `cxp-1` | [rulings_2026_08_20_cx_pragma_registry.md](rulings_2026_08_20_cx_pragma_registry.md) | Ruling CXP-1 (2026-08-20) — the [?cx] pragma key set closes (#879, owner "4a") |
-| `d13a` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-16 — the `cx` binary grades a corpus file (owner: D13a) |
-| `d14a` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-13 — `authz` splits along the store-auth design line (owner: D14a) |
-| `d15b` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-14 — did/vc's impure remainder gets modules named for what leaves (owner: D15b) |
-| `d16a` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-15 — the xsp `auth-*` defs become `cx-platform/xsp-auth` (owner: D16a) |
-| `d19a` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-19 — mail claims its smtp/imap pure halves, as `sasl` already is (owner: D19a) |
-| `d20a` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-18 — builtin registration splits per family, before the db extracts (owner: D20a) |
-| `d21a` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-20 — flow's CLI verbs stay in the front door, and the act seam gets a row (owner: D21a) |
-| `d22b` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-21 — a decision's design item may ADD spec text where the edit map is silent (owner: D22b) |
-| `d24a` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-22 — `authz-store` and `vc-revocation` stay in `cx-platform-identity` (owner: D24a) |
-| `d25b` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-23 — the decision half gets a pure `open` over an in-memory trust store (owner: D25b) |
-| `d28a` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-24 — `vcx/platform` splits by product, one V module per V product (owner: D28a) |
-| `d30d` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-25 — the mock adapter is declared by the kit's own CX, and the compile-time gate retires (owner: D30d) |
-| `d3b` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-17 — the `-gc e` per-case growth is fixed at the root (owner: D3b) |
-| `d45a` | [rulings_2026_09_23_x_graduation_d45a.md](rulings_2026_09_23_x_graduation_d45a.md) | The x/ graduation — the eleven experimental-tier rows join the platform namespace (owner, 2026-09-23, D45a) |
-| `d45a` | [rulings_2026_09_23_x_graduation_d45a.md](rulings_2026_09_23_x_graduation_d45a.md) | What D45a authorizes |
-| `d49a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-27 — the afternoon letters of 2026-09-23 (owner: D49a, D50a, D51d, D52a, D53a) |
-| `d50a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-27 — the afternoon letters of 2026-09-23 (owner: D49a, D50a, D51d, D52a, D53a) |
-| `d51d` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-27 — the afternoon letters of 2026-09-23 (owner: D49a, D50a, D51d, D52a, D53a) |
-| `d52a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-27 — the afternoon letters of 2026-09-23 (owner: D49a, D50a, D51d, D52a, D53a) |
-| `d53a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-27 — the afternoon letters of 2026-09-23 (owner: D49a, D50a, D51d, D52a, D53a) |
-| `d54c` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d55c` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d56a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d57a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-28 — one site, thin repositories, and cx created by the recipe (owner: D57a, D58a, D59a) |
-| `d58a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-28 — one site, thin repositories, and cx created by the recipe (owner: D57a, D58a, D59a) |
-| `d59a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-28 — one site, thin repositories, and cx created by the recipe (owner: D57a, D58a, D59a) |
-| `d60a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-29 — CI/CD is cx flow, documentation included (owner: D60a) |
-| `d62a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d63a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d64c` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d65d` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d66a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d67a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d68a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d69b` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d70a1` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d71a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d72a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d73a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d74c` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d75a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d76c` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d77d` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d78a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
-| `d79a` | [rulings_2026_09_24_front_door_letters.md](rulings_2026_09_24_front_door_letters.md) | RS-32 — the front-door letters of 2026-09-24 (owner: D79a, D80a, D81a, D82a, D83a, D84a) |
-| `d80a` | [rulings_2026_09_24_front_door_letters.md](rulings_2026_09_24_front_door_letters.md) | RS-32 — the front-door letters of 2026-09-24 (owner: D79a, D80a, D81a, D82a, D83a, D84a) |
-| `d81a` | [rulings_2026_09_24_front_door_letters.md](rulings_2026_09_24_front_door_letters.md) | RS-32 — the front-door letters of 2026-09-24 (owner: D79a, D80a, D81a, D82a, D83a, D84a) |
-| `d82a` | [rulings_2026_09_24_front_door_letters.md](rulings_2026_09_24_front_door_letters.md) | RS-32 — the front-door letters of 2026-09-24 (owner: D79a, D80a, D81a, D82a, D83a, D84a) |
-| `d83a` | [rulings_2026_09_24_front_door_letters.md](rulings_2026_09_24_front_door_letters.md) | RS-32 — the front-door letters of 2026-09-24 (owner: D79a, D80a, D81a, D82a, D83a, D84a) |
-| `d83a` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | 1690, #1498, #1434, PIVOT-2, SYNC-3, SYNC-6, KIT4-1, KIT4-2, RS-38, D83a, K10.** |
-| `d84a` | [rulings_2026_09_24_front_door_letters.md](rulings_2026_09_24_front_door_letters.md) | RS-32 — the front-door letters of 2026-09-24 (owner: D79a, D80a, D81a, D82a, D83a, D84a) |
-| `d86b` | [rulings_2026_09_24_front_door_letters.md](rulings_2026_09_24_front_door_letters.md) | D86b — cxhome.org may go dark when `cx`'s `main` is replaced; the docs epic brings it back |
-| `d88b` | [rulings_2026_09_24_no_ai_attribution_rs33.md](rulings_2026_09_24_no_ai_attribution_rs33.md) | RS-33 — zero AI attribution anywhere in any repository, ever (owner: D87, D88b) |
-| `d89a` | [rulings_2026_09_25_llm_front_door_k11a.md](rulings_2026_09_25_llm_front_door_k11a.md) | K11a and RS-34 — the LLM front door's home, and the order of work before the cut (owner: K11a, D89a, D90b) |
-| `d89a` | [rulings_2026_09_25_llm_front_door_k11a.md](rulings_2026_09_25_llm_front_door_k11a.md) | RS-34 — the letters of 2026-09-25 (owner: D89a, D90b) |
-| `d90b` | [rulings_2026_09_25_llm_front_door_k11a.md](rulings_2026_09_25_llm_front_door_k11a.md) | K11a and RS-34 — the LLM front door's home, and the order of work before the cut (owner: K11a, D89a, D90b) |
-| `d90b` | [rulings_2026_09_25_llm_front_door_k11a.md](rulings_2026_09_25_llm_front_door_k11a.md) | RS-34 — the letters of 2026-09-25 (owner: D89a, D90b) |
-| `d91a` | [rulings_2026_09_25_version_stamp_d91a.md](rulings_2026_09_25_version_stamp_d91a.md) | D91a — `cx --version` stamps the front door's commit, with a `core` line (owner: Letter 1 = (a), 2026-09-25) |
 | `dblane-1` | [rulings_2026_09_28_owner_decisions_l89_l90.md](rulings_2026_09_28_owner_decisions_l89_l90.md) | DBLANE-1 — DBNUL-1 merges on sqlite's proof; a real-server lane grades every db case on postgres and mysql (L89 = (a)) |
 | `dblane-1` | [rulings_2026_09_29_integrator_decisions_l110.md](rulings_2026_09_29_integrator_decisions_l110.md) | Owner decision 2026-09-29 — Letter 110: DBLANE-1's servers run in containers from a runtime devbox ships |
 | `dbnul-1` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | DBNUL-1 — a kind=db parameter may be absent, and the kit binds NULL for a cursor on page one (L64 = (a)) |
@@ -683,7 +625,9 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `fw-1` | [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) | RULED: FW-1, FW-2 — every named landing of `flow.md` lands in v0.18, end-user automation authoring (#1498) with it, and the v0.18.0 tag waits for them while the repo split lands (owner, 2026-09-24, in session on dev2) |
 | `fw-2` | [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) | RULED: FW-1, FW-2 — every named landing of `flow.md` lands in v0.18, end-user automation authoring (#1498) with it, and the v0.18.0 tag waits for them while the repo split lands (owner, 2026-09-24, in session on dev2) |
 | `ga-1` | [rulings_2026_08_20_guest_attach.md](rulings_2026_08_20_guest_attach.md) | Ruling GA-1 (2026-08-20) — attach-guest: the anonymous-floor transport (#857, owner "857a") |
+| `gaps-1` | [rulings_2026_10_05_owner_direction_gaps_wave_2.md](rulings_2026_10_05_owner_direction_gaps_wave_2.md) | GAPS-2 — wave 2 of the gap letters, GAPS-1's shape, the defects first |
 | `gaps-1` | [rulings_2026_10_05_owner_direction_python_comparison_gaps.md](rulings_2026_10_05_owner_direction_python_comparison_gaps.md) | GAPS-1 — the gap letters are the release's first work; a letter's case file is its fixture and goes green whole; the spec sentence each gap needs moves under this page |
+| `gaps-2` | [rulings_2026_10_05_owner_direction_gaps_wave_2.md](rulings_2026_10_05_owner_direction_gaps_wave_2.md) | GAPS-2 — wave 2 of the gap letters, GAPS-1's shape, the defects first |
 | `gate-1` | [rulings_2026_09_27_owner_decisions_l58.md](rulings_2026_09_27_owner_decisions_l58.md) | Owner decisions 2026-09-27 (evening) — Letter 58: a feature's gate is the feature's (GATE-1), the boot report names each seeded basis (CAPADR-1) |
 | `gate-1` | [rulings_2026_09_27_owner_decisions_l58.md](rulings_2026_09_27_owner_decisions_l58.md) | GATE-1 — the `[requires cap:…]` gate stays on `apply`, one per feature (L58.2 = (a)) |
 | `ge-0` | [rulings_2026_09_05_grammar_expression_env.md](rulings_2026_09_05_grammar_expression_env.md) | Rulings 2026-09-05 — the grammar-expression environment (GE-0..GE-3) |
@@ -1464,29 +1408,6 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `cxf-5` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md), [rulings_2026_09_18_owner_decisions_0155z.md](rulings_2026_09_18_owner_decisions_0155z.md), [rulings_2026_09_18_owner_decisions_0235z.md](rulings_2026_09_18_owner_decisions_0235z.md), [rulings_2026_09_18_owner_decisions_0440z.md](rulings_2026_09_18_owner_decisions_0440z.md), [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md), [rulings_2026_09_30_owner_decision_l122.md](rulings_2026_09_30_owner_decision_l122.md) |
 | `cxf-6` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md), [rulings_2026_09_18_owner_decisions_0235z.md](rulings_2026_09_18_owner_decisions_0235z.md), [rulings_2026_09_18_owner_decisions_0250z.md](rulings_2026_09_18_owner_decisions_0250z.md) |
 | `cxf-7` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md), [rulings_2026_09_18_owner_decisions_0250z.md](rulings_2026_09_18_owner_decisions_0250z.md) |
-| `d10a` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
-| `d11a` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
-| `d12a` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
-| `d17a` | [rulings_2026_09_29_integrator_decisions_l110.md](rulings_2026_09_29_integrator_decisions_l110.md) |
-| `d1a` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
-| `d2a` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
-| `d31a` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
-| `d32a` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
-| `d33b` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
-| `d34a` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
-| `d35a` | [issue_audit_2026_09_30_ship2.md](issue_audit_2026_09_30_ship2.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md), [rulings_2026_09_30_owner_decision_ship2.md](rulings_2026_09_30_owner_decision_ship2.md) |
-| `d39a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
-| `d40a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
-| `d41a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
-| `d42a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
-| `d43a` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md), [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) |
-| `d4a` | [dead_ends_700_test_duration.md](dead_ends_700_test_duration.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
-| `d4b` | [dead_ends_700_test_duration.md](dead_ends_700_test_duration.md) |
-| `d4c` | [dead_ends_700_test_duration.md](dead_ends_700_test_duration.md) |
-| `d5a` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
-| `d6a` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
-| `d90a` | [rulings_2026_09_25_llm_front_door_k11a.md](rulings_2026_09_25_llm_front_door_k11a.md) |
-| `d99z9` | [rulings_2026_10_04_integrator_decisions_l182_l185.md](rulings_2026_10_04_integrator_decisions_l182_l185.md) |
 | `dbvol-1` | [rulings_2026_10_01_owner_decision_l160.md](rulings_2026_10_01_owner_decision_l160.md), [rulings_2026_10_01_owner_decision_overage.md](rulings_2026_10_01_owner_decision_overage.md) |
 | `dist-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) |
 | `dist-2` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md), [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) |
@@ -1689,4 +1610,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*388 ledger pages; 921 ids declared, 425 cited only.*
+*389 ledger pages; 868 ids declared, 402 cited only.*

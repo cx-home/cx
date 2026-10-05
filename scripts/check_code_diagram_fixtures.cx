@@ -224,7 +224,7 @@
                   [?let [= $mr [$re:find ER-REL-RX $s]]
                     [?if [$rx-is-match $mr]
                       [then [?let [= $lbl [?match [$re:group $mr 4]
-                              [case [err $e] ""] [case $v [$strings:trim $v]]]]
+                              [case [err$e] ""] [case $v [$strings:trim $v]]]]
                         [$map:put $g "relationships" [$set-put [$map:get $g "relationships"]
                           [$concat [$re:group $mr 1] SEP [$re:group $mr 3] SEP
                                    [$re:group $mr 2] SEP $lbl]]]]]
@@ -486,7 +486,7 @@
 [?def emitter-budget scope=public impure ()
   [?let [= $raw [$strings:trim [?else [$env:var "CX_DIAGRAM_LANE_TIMEOUT_MS"] ""]]]
         [= $n [?if [= $raw ""] [then 60000] [else [cast $raw :int]]]]
-    [?match $n [case [err $e] 60000] [else [?if [> $n 0] [then $n] [else 60000]]]]]]
+    [?match $n [case [err$e] 60000] [else [?if [> $n 0] [then $n] [else 60000]]]]]]
 
 # emit-once carries `ran` separately from `ok`: `ok` is the emitter's own
 # verdict (exit 0), while `ran` says the emitter REACHED a verdict at all.
@@ -495,7 +495,7 @@
 [?def emit-once scope=public impure ($argv $source $budget)
   [?let [= $r [$process:run $argv stdin=$source timeout-ms=$budget]]
     [?match $r
-      [case [err $e] [inv ran=false ok=false stdout=""
+      [case [err$e] [inv ran=false ok=false stdout=""
                           stderr=[$concat "spawn: " [$string $e@message]]]]
       [else [?if $r@timed-out
         [then [inv ran=false ok=false stdout=""
@@ -535,11 +535,11 @@
   [?let [= $exp [$json:parse [$map:get $fix "expected"]]]
         [= $act [$json:parse $stdout]]
     [?match $exp
-      [case [err $e] [res id=$id status="ERROR"
+      [case [err$e] [res id=$id status="ERROR"
         detail=[$concat "JSON parse: " [$string $e@message]]]]
       [else
         [?match $act
-          [case [err $e] [res id=$id status="ERROR"
+          [case [err$e] [res id=$id status="ERROR"
             detail=[$concat "JSON parse: " [$string $e@message]]]]
           [else
             [?let [= $errs [$validate-tree $act
@@ -715,7 +715,7 @@
     [else
       [?let [= $suite [$cx:parse [$io:read-file $fix-path]]]
         [?match $suite
-          [case [err $e]
+          [case [err$e]
             [?let [= $_e [$cry [$concat "error: malformed fixture file: " [$string $e@message]]]]
               [$env:exit 2]]]
           [else
