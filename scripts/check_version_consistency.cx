@@ -75,7 +75,9 @@
 # spec/02-working scan row RETIRED here (RULED: RS-12, D59a; #1591 item K3):
 # the directory left whole for cx-decisions with the rest of the ledger's
 # working-spec estate; a stray-literal scan of it is that repository's own
-# concern now, not this tree's.
+# concern now, not this tree's. The rows from examples on are the trees the
+# 2026-08-31 sweep found unscanned, as they stand in this repository after the
+# split (#1166 C1).
 [?const STRAY-SCAN (
   [scan root='vcx'              exts='v'],
   [scan root='spec/01-new'      exts='md ebnf'],
@@ -83,8 +85,6 @@
   [scan root='docs-src'         exts='md cx cxd html'],
   [scan root='stdlib'           exts='cx'],
   [scan root='tooling'          exts='md json vim lua bash zsh fish js scm cx cxd'],
-  [; #1166 C1: the trees the 2026-08-31 sweep found unscanned, as they stand
-     in this repository after the split ]
   [scan root='examples'         exts='cx cxd md html'],
   [scan root='conformance'      exts='md cxd'],
   [scan root='corpus'           exts='cx md'],
@@ -104,7 +104,10 @@
 # cross-repository citation it spells. An unprefixed path resolves here or in
 # any pin.
 [?const SPEC-PATH-RX [$re:compile "(?:([a-z][a-z0-9-]*):|github\\.com/cx-home/([a-z0-9-]+)/(?:blob|tree)/[^/ )]+/)?(spec/[A-Za-z0-9_./-]+\\.(?:md|ebnf|txt))"]]
-[?const REPO-ROW-RX [$re:compile "\\[repo name=([a-z0-9-]+)"]]
+# The row's opening bracket is spelled \x5b, not an escaped bracket: the data
+# reader reads a double-quoted run in an element body as prose, where an
+# escaped bracket opens an element it never closes (reader-parity).
+[?const REPO-ROW-RX [$re:compile "\\x5brepo name=([a-z0-9-]+)"]]
 [?const SPEC-MARKER "spec-path-ok"]
 
 # Dirs never scanned (build artifacts / vendored deps / immutable history).
