@@ -49,7 +49,6 @@ a no-step row without an issue.
   [exempt file='cx-core-data/spec/03-approved/core/ast.md' class=step held-by=abi-c-test match='Importers MUST reconstruct the TableData payload from this shape' reason='a C ABI surface no corpus case reaches; cx-core-code tests/abi/c_abi_test.c asserts it (test_code_empty_source_refuses, test_ast_json_table_round_trip, test_events_xml_decl_follows_start_doc; cx-core-data#16)']
   [exempt file='cx-core-data/spec/03-approved/core/ast.md' class=author match='tooling that needs them MUST request them explicitly' reason='an obligation on tooling that consumes the JSON projection']
   [exempt file='cx-core-data/spec/03-approved/core/ast.md' class=author match='AST-bin emitters MUST reject PathNode values with `CXER0290` until the wire-format tag is honoured' reason='obliges a binding that has not implemented the v8 codec (a binding author); the shipped emitter honours tag 0x13 (astb-019)']
-  [exempt file='cx-core-data/spec/03-approved/core/ast.md' class=no-step issue='cx-home/cx-core-code#27' match='When the data reader REFUSES and the program reader accepts' reason='the cx --ast dispatch is a CLI projection no corpus case drives (the document grader parses with the data codec, the program grader evaluates); note the shipped reader reads [$f 1] as an Array with a Hole, so the dispatch never reaches the program tree']
 
   [; ── canonical.md ── ]
 
