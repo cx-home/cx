@@ -624,6 +624,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `fw-1` | [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) | RULED: FW-1, FW-2 — every named landing of `flow.md` lands in v0.18, end-user automation authoring (#1498) with it, and the v0.18.0 tag waits for them while the repo split lands (owner, 2026-09-24, in session on dev2) |
 | `fw-2` | [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) | RULED: FW-1, FW-2 — every named landing of `flow.md` lands in v0.18, end-user automation authoring (#1498) with it, and the v0.18.0 tag waits for them while the repo split lands (owner, 2026-09-24, in session on dev2) |
 | `ga-1` | [rulings_2026_08_20_guest_attach.md](rulings_2026_08_20_guest_attach.md) | Ruling GA-1 (2026-08-20) — attach-guest: the anonymous-floor transport (#857, owner "857a") |
+| `gaps-1` | [rulings_2026_10_05_owner_direction_python_comparison_gaps.md](rulings_2026_10_05_owner_direction_python_comparison_gaps.md) | GAPS-1 — the gap letters are the release's first work; a letter's case file is its fixture and goes green whole; the spec sentence each gap needs moves under this page |
 | `gate-1` | [rulings_2026_09_27_owner_decisions_l58.md](rulings_2026_09_27_owner_decisions_l58.md) | Owner decisions 2026-09-27 (evening) — Letter 58: a feature's gate is the feature's (GATE-1), the boot report names each seeded basis (CAPADR-1) |
 | `gate-1` | [rulings_2026_09_27_owner_decisions_l58.md](rulings_2026_09_27_owner_decisions_l58.md) | GATE-1 — the `[requires cap:…]` gate stays on `apply`, one per feature (L58.2 = (a)) |
 | `ge-0` | [rulings_2026_09_05_grammar_expression_env.md](rulings_2026_09_05_grammar_expression_env.md) | Rulings 2026-09-05 — the grammar-expression environment (GE-0..GE-3) |
@@ -1515,7 +1516,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `prop-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md), [rulings_2026_10_03_owner_decision_l175.md](rulings_2026_10_03_owner_decision_l175.md), [rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md](rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md) |
 | `readr-1` | [rulings_2026_10_01_owner_decision_l160.md](rulings_2026_10_01_owner_decision_l160.md), [rulings_2026_10_01_owner_decision_overage.md](rulings_2026_10_01_owner_decision_overage.md) |
 | `refr-1` | [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md) |
-| `refute-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md), [rulings_2026_10_03_owner_decision_l175.md](rulings_2026_10_03_owner_decision_l175.md), [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md), [rulings_2026_10_04_integrator_decisions_l182_l185.md](rulings_2026_10_04_integrator_decisions_l182_l185.md), [rulings_2026_10_04_integrator_decisions_l186_l190.md](rulings_2026_10_04_integrator_decisions_l186_l190.md) |
+| `refute-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md), [rulings_2026_10_03_owner_decision_l175.md](rulings_2026_10_03_owner_decision_l175.md), [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md), [rulings_2026_10_04_integrator_decisions_l182_l185.md](rulings_2026_10_04_integrator_decisions_l182_l185.md), [rulings_2026_10_04_integrator_decisions_l186_l190.md](rulings_2026_10_04_integrator_decisions_l186_l190.md), [rulings_2026_10_05_owner_direction_python_comparison_gaps.md](rulings_2026_10_05_owner_direction_python_comparison_gaps.md) |
 | `rfc-7540` | [rulings_2026_08_20_h2_surface.md](rulings_2026_08_20_h2_surface.md) |
 | `ring-1` | [batch_796_post_gate_defects.md](batch_796_post_gate_defects.md), [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
 | `ring-2` | [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
@@ -1602,4 +1603,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*385 ledger pages; 861 ids declared, 402 cited only.*
+*386 ledger pages; 862 ids declared, 402 cited only.*

@@ -1,0 +1,11 @@
+# Owner direction 2026-10-04 ~23:5xZ — every cx gap the Python-comparison corpus hit is fixed first, before anything else in v0.18; each letter's case file must go green
+
+**Status: RULED (owner, 2026-10-04 ~23:5xZ and 2026-10-05 ~00:2xZ, in session; recorded by the integrator at the 00:30Z window). SHIP-1, NEWB-1, RSIZE-1, FIX-1, RS-38, CXF-8, REFUTE-1, AGENTS.md rule 1.**
+
+## The owner's words, verbatim
+
+"FIX NOW, before anything else in v0.18 — every cx gap the Python-comparison corpus hit. Letters, each with a case file that must go green: cx-private #1810 (syntax, 19), #1809 (capability, 50), #1812 (diagnostics, 18), #1811 (performance, 2), #1808 (Greek/Cyrillic case mapping). Cases: cx-home/cx-examples letters/2026-10-04-gaps-*.cxd and letters/2026-10-04-strings-case.cxd; `cx corpus <file>`. Two more letters (29 Ring 0/1 + 8 platform) land today; same treatment." — "get them done now within this 5hr window. don't test until they are all written and expected to pass. stop wasting time and tokens. get it done."
+
+## GAPS-1 — the gap letters are the release's first work; a letter's case file is its fixture and goes green whole; the spec sentence each gap needs moves under this page
+
+Taken as said. The five letters (and the two that follow today) outrank every other open item in `v0.18` (NEWB-1's recency order, applied by the owner's word). Each letter's case file in cx-home/cx-examples is the fixture: red whole on the head, green whole at READY, and every case joins the conformance corpus of the module it exercises (RS-38). Where a gap is a missing verb, a second index origin, an option key accepted silently or a verb's documented behaviour not met, the spec sentence that admits the fix moves under this page's authority, with the case ids beside it — the owner's "FIX NOW" is the ruling for each; a gap whose fix would contradict a RULED decision on the ledger is a flag in RESULTS.md, not a cut. The work is written whole before it is graded: an agent fixes every section of its letter, then runs the case file, the component's `make check` and the front door's selected steps once (the owner's "don't test until they are all written"); a red at that point is fixed and the file re-run, never a fix graded one section at a time. Cost: the paused agents' resumes wait behind this wave.
