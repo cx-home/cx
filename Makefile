@@ -2724,7 +2724,8 @@ check-profile-gate-selection:
 # <= 20 min, the union <= 60 min — as a STEP, because "a written bound has to be
 # a step or it is a wish". The bounds live in scripts/verification_budget.cxd,
 # one row each carrying the measurement that set it and the issue that last
-# moved it; the measurements live in deps/cx-core-code/vcx/target/verification_timings.cxd, left
+# moved it; the measurements live in vcx/target/verification_timings.cxd (the
+# checkout's own, which the fixture grader and the post-merge verdict write), left
 # behind by whatever ran. An IDLE measurement over its bound fails the run; a
 # LOADED one is advisory with the load printed beside it; an absent one is
 # reported and fails nothing. A bound moves only in a commit that names why.

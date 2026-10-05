@@ -66,7 +66,11 @@ SELECTION=${FIXTURE_FILES:-}
 # at RUN-START — the idle/loaded rule is about the box the run was taken on.
 # shellcheck source=/dev/null
 . "$ROOT/scripts/verification_timings_lib.sh"
-TIMINGS=$ROOT/deps/cx-core-code/vcx/target/verification_timings.cxd
+# The file check-verification-budget READS and the post-merge verdict writes —
+# the checkout's own vcx/target, not the pin's (#1562: after the split this
+# wrote under deps/cx-core-code/ and the step judged a stale row).
+TIMINGS=$ROOT/vcx/target/verification_timings.cxd
+mkdir -p "$ROOT/vcx/target"
 GRADER_T0=$(date -u '+%s')
 GRADER_LOAD=$(sample_load_1m)
 
