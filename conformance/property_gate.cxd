@@ -29,7 +29,7 @@
 # carries for this suite.
 #]]
 
- [case id=property-gate-001-for-map-duplicate-keys level=core gate=advisory issue='cx-home/cx-core-code#19'
+ [case id=property-gate-001-for-map-duplicate-keys level=core
   [tags property-gate i for-map-duplicate-key]
   [title [# [?for-map] never answers a map holding one key twice -- cxdm.md §2.6 "Duplicate keys: Not permitted"; refusing the repeat (as [?to-map] does) and keeping one binding both hold the invariant #]]
   [in-code [#
@@ -43,7 +43,7 @@ unique
 #]]
  ]
 
- [case id=property-gate-002-to-map-keeps-key-kinds level=core gate=advisory issue='cx-home/cx-core-code#20'
+ [case id=property-gate-002-to-map-keeps-key-kinds level=core
   [tags property-gate i to-map-key-identity-changed]
   [title [# [?to-map] keeps each key's kind -- a key's identity is the pair (kind, image) (canonical.md §2.11.1, stdlib/map.md §2): an int key stays an int, a bool a bool #]]
   [in-code [#
@@ -55,7 +55,7 @@ unique
 #]]
  ]
 
- [case id=property-gate-003-to-map-distinct-identities level=core gate=advisory issue='cx-home/cx-core-code#20'
+ [case id=property-gate-003-to-map-distinct-identities level=core
   [tags property-gate i to-map-refused-distinct-keys]
   [title [# [?to-map] admits the string 'true' and the bool true as two keys -- they share an image, not an identity (canonical.md §2.11.1 "Key identity is the pair") #]]
   [in-code [#
@@ -66,7 +66,7 @@ unique
 #]]
  ]
 
- [case id=property-gate-004-entry-keeps-key-kind level=core gate=advisory issue='cx-home/cx-core-code#20'
+ [case id=property-gate-004-entry-keeps-key-kind level=core
   [tags property-gate i entry-key-identity-changed]
   [title [# a computed [?entry] key keeps its kind -- the string 'true' is not re-read as the bool true (canonical.md §2.11.1; stdlib/map.md §2) #]]
   [in-code [#
@@ -78,7 +78,7 @@ unique
 #]]
  ]
 
- [case id=property-gate-005-entry-distinct-identities level=core gate=advisory issue='cx-home/cx-core-code#20'
+ [case id=property-gate-005-entry-distinct-identities level=core
   [tags property-gate i entry-refused-distinct-keys]
   [title [# two computed [?entry] keys of one image and two kinds are two keys, not a W014 duplicate (canonical.md §2.11.1) #]]
   [in-code [#
@@ -317,7 +317,7 @@ inner
 #]]
  ]
 
- [case id=property-gate-024-inadmissible-key-refused level=core gate=advisory issue='cx-home/cx-core-code#35'
+ [case id=property-gate-024-inadmissible-key-refused level=core
   [tags property-gate i to-map-accepted-inadmissible-key+for-map-accepted-inadmissible-key+entry-accepted-inadmissible-key]
   [title [# a map constructor refuses a key cxdm.md §2.3/§2.6 rules out -- an atom, null, an element -- as $map:put and the literal reader do (stdlib/map.md §4 CXERMAP-BADKEY) #]]
   [in-code [#
@@ -371,9 +371,9 @@ planted
 #]]
  ]
 
- [case id=property-gate-028-sleep-without-clock level=core gate=advisory issue='cx-home/cx-core-code#37' grant='read subprocess'
+ [case id=property-gate-028-sleep-without-clock level=core grant='read subprocess'
   [tags property-gate v effect-point-wall-sleep-without-grant]
-  [title [# a non-mock [?sleep] with no clock grant does not wait on the wall clock -- security.md §2 "clock: wall-clock reads / non-mock [?sleep] -- (else mock-only)"; code.md §10.5.3 makes it the ungated default (a spec conflict, the owner's) #]]
+  [title [# a wall-clock [?sleep] with no clock grant waits on the wall clock -- it reads no clock, so it is an impure effect and not a gated one (security.md §2 clock row, code.md §10.5.3 "No capability"; STREAM-1, cx-home/cx-core-code#37 taken as the exemption) #]]
   [in-code [#
 [?lib 'cx-stdlib/env' as=env]
 [?lib 'cx-stdlib/process' as=process]
@@ -382,13 +382,13 @@ planted
   [?if [= [$string $r@timed-out] 'true'] [then 'waited'] [else 'not-waited']]]
 #]]
   [out-text [#
-not-waited
+waited
 #]]
  ]
 
- [case id=property-gate-029-include-without-read level=core gate=advisory issue='cx-home/cx-core-code#37' grant='read write subprocess'
+ [case id=property-gate-029-include-without-read level=core grant='read write subprocess'
   [tags property-gate v effect-point-include-without-grant]
-  [title [# [?cx include] does not read a file with no read grant -- security.md §2 "read: filesystem reads, [?cx include]"; code.md §13.2 makes --include-root the only switch (a spec conflict, the owner's) #]]
+  [title [# the CLI's --include-root pass reads the included file with no read grant -- the flag is the caller's grant of that one root (security.md §2 read row and §5, code.md §13.2; STREAM-1, cx-home/cx-core-code#37) #]]
   [in-code [#
 [?lib 'cx-stdlib/env' as=env]
 [?lib 'cx-stdlib/io' as=io]
@@ -402,7 +402,7 @@ not-waited
   [?if [$strings:contains [$string $r@stdout] 'included-content'] [then 'read'] [else 'not-read']]]
 #]]
   [out-text [#
-not-read
+read
 #]]
  ]
 
