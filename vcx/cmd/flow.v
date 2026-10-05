@@ -64,7 +64,8 @@ const flow_cli_journal_default = 'file://.cx/flow/'
 
 const flow_cli_usage = [
 	'Usage: cx flow run      FLOW.cx --env ENV.cx [--docs DIR] [--journal URL | --ephemeral]',
-	'                                [--<arg>=VALUE]... [--actor=ID] [--authority=ID] [--stream=NAME] [--allow-*]',
+	'                                [--<arg>=VALUE]... [--actor=ID] [--authority=ID] [--stream=NAME]',
+	'                                [--stay [--for DURATION]] [--allow-*]',
 	'       cx flow validate FLOW.cx --env ENV.cx [--docs DIR]',
 	'       cx flow simulate FLOW.cx RESULTS.cx [--env ENV.cx] [--docs DIR] [--<arg>=VALUE]...',
 	'       cx flow status   --journal URL RUN-ID [--stream=NAME] [--allow-*]',
@@ -111,6 +112,9 @@ const flow_cli_usage = [
 	'  --authority=ID the authority basis (default cli)',
 	'  --stream=NAME  place the run in its subject\'s aggregate stream (default:',
 	'                 the run id itself)',
+	'  --stay         run: hold the process, servicing the timers it armed, until the',
+	'                 run is terminal or paused (or --for elapses) — the local',
+	'                 runner\'s liveness for ONE run (flow.md §4.15); needs --allow-clock',
 	'  --level=RUNG   diagram and watch: the detail rung (min | compact | full;',
 	'                 default compact). min is names and topology, compact adds',
 	'                 the act, the performer badge and the clock marks, full',
@@ -573,6 +577,9 @@ mut:
 	docs      string
 	journal   string
 	ephemeral bool
+	// `run` only: hold the process until the run is terminal or paused,
+	// servicing its due timers (cx-private#1707, flow.md §4.15).
+	stay      bool
 	actor     string
 	authority string
 	stream    string
@@ -608,6 +615,11 @@ fn flow_cli_parse(args []string) FlowCliOpts {
 		}
 		if a == '--ephemeral' {
 			o.ephemeral = true
+			i++
+			continue
+		}
+		if a == '--stay' {
+			o.stay = true
 			i++
 			continue
 		}
@@ -774,10 +786,13 @@ fn run_flow(args []string) {
 	if o.docs != '' && verb !in ['run', 'validate', 'simulate'] {
 		flow_cli_die('--docs is the document source of `run`, `validate` and `simulate`; `${verb}` takes none (`serve` reads its [runner]\'s own [docs url=…] row)')
 	}
+	if o.stay && verb != 'run' {
+		flow_cli_die('--stay holds a `run` until it is terminal; `${verb}` takes none')
+	}
 	mut for_ns := i64(0)
 	if o.for_spec != '' {
-		if verb !in ['serve', 'watch'] {
-			flow_cli_die('--for bounds a `serve` process\'s or a `watch`\'s lifetime; `${verb}` returns when it is done')
+		if verb !in ['serve', 'watch'] && !(verb == 'run' && o.stay) {
+			flow_cli_die('--for bounds a `serve` process\'s, a `watch`\'s or a `run --stay`\'s lifetime; `${verb}` returns when it is done')
 		}
 		for_ns = flow_serve_duration_ns(o.for_spec) or {
 			flow_cli_die('--for ${o.for_spec} is not a duration (30s, 5m, 1d)')
@@ -785,7 +800,7 @@ fn run_flow(args []string) {
 		}
 	}
 	match verb {
-		'run' { flow_cli_run(o) }
+		'run' { flow_cli_run(o, for_ns) }
 		'validate' { flow_cli_validate(o) }
 		'simulate' { flow_cli_simulate(o) }
 		'status' { flow_cli_status(o) }
@@ -863,12 +878,19 @@ fn flow_cli_docs(o FlowCliOpts, flow_src string, acts []FlowCliAct) FlowCliDocs 
 	}
 }
 
-fn flow_cli_run(o FlowCliOpts) {
+fn flow_cli_run(o FlowCliOpts, for_ns i64) {
 	if o.positional.len != 1 {
 		flow_cli_die('run takes exactly one FLOW.cx')
 	}
 	if o.env == '' {
 		flow_cli_die('run needs --env ENV.cx (the program whose module tree the acts resolve through)')
+	}
+	// `--stay` waits on the WALL clock for the run's own timers: without the
+	// clock grant a `[?sleep]` is mock-only (security.md §2), the loop would
+	// spin and no `every=` wait would ever come due — refused here, by name,
+	// rather than a process that holds and never moves.
+	if o.stay && !o.allow_all && 'clock' !in o.allow_caps {
+		flow_cli_die('--stay waits on the wall clock for the run\'s own timers; grant --allow-clock')
 	}
 	flow_cli_install_caps(o)
 	flow_src := flow_cli_read(o.positional[0], 'the flow document')
@@ -954,9 +976,50 @@ fn flow_cli_run(o FlowCliOpts) {
 		'             [then ()]',
 		'             [else [?sleep 1ms]]]]',
 		'[= \$a ${args_src}]',
-		'  [\$cxflow:start \$j \$fl \$a ${flow_cli_at_opts(flow_cli_opts_map(o, flow_cli_nonce(args_src), true))}]]',
+		if o.stay {
+			// `--stay` (cx-private#1707): the started run's record, then the
+			// hold — `[?sleep]` is the SAFEPOINT at which this process's due
+			// timers fire (RULED: 1358-a), so the run moves while it is held,
+			// and each tick re-reads its fold from the journal.
+			'  [= \$r0 [\$cxflow:start \$j \$fl \$a ${flow_cli_at_opts(flow_cli_opts_map(o, flow_cli_nonce(args_src), true))}]]\n' +
+				'  [\$fs--stay \$j \$r0 ${flow_cli_stay_ticks(for_ns)}]]'
+		} else {
+			'  [\$cxflow:start \$j \$fl \$a ${flow_cli_at_opts(flow_cli_opts_map(o, flow_cli_nonce(args_src), true))}]]'
+		},
 	].join('\n')
-	flow_cli_answer(flow_cli_eval(docs.input, program), true)
+	src := if o.stay { flow_cli_stay_defs() + '\n' + program } else { program }
+	flow_cli_answer(flow_cli_eval(docs.input, src), true)
+}
+
+// The hold's cadence: the same tick `watch` polls at.
+const flow_cli_stay_tick_ms = 200
+
+fn flow_cli_stay_ticks(for_ns i64) i64 {
+	return if for_ns <= 0 { i64(-1) } else { for_ns / (i64(flow_cli_stay_tick_ms) * 1_000_000) }
+}
+
+// flow_cli_stay_defs — `run --stay`'s hold (cx-private#1707; flow.md §4.15's
+// fourth guarantee row). It holds while the run can still move ON ITS OWN:
+// not terminal (§2.2's closed set) and not `:paused` (a paused run waits on an
+// operator's `resume`, which no amount of holding brings). Each tick sleeps —
+// the safepoint where the run's due `every=`/`deadline=` timers fire under its
+// recorded basis — and re-reads the run's fold through `status`, on its own
+// home stream. A refusal at `start` is answered as it is. The status is
+// compared with its sigil, as `watch`'s loop compares it.
+fn flow_cli_stay_defs() string {
+	return r"[?def fs--done pure [returns bool] ($s::string)
+  [?let [= $k [?if [$str-starts-with $s ':'] [then $s] [else [$concat ':' $s]]]]
+    [$exists [$first [?for [in $x (':done', ':compensated', ':incomplete', ':conflict', ':failed', ':cancelled', ':paused')]
+      [where [= $x $k]] [yield 1]]]]]]
+[?def fs--stay impure [returns any] ($j $r $ticks::int)
+  [?match $r
+    [case [err] $r]
+    [else [?let [= $rec [?match $r [case [deduped] [$first $r/*]] [else $r]]]
+                [= $s [$string $rec@status]]
+      [?if [or [$fs--done $s] [= $ticks 0]] [then $rec]
+        [else [?let [= $z [?sleep " + flow_cli_stay_tick_ms.str() + r"ms]]
+                    [= $r2 [$cxflow:status $j [$string $rec@id] {stream: [$string $rec@stream]}]]
+          [$fs--stay $j $r2 [- $ticks 1]]]]]]]]]"
 }
 
 fn flow_cli_validate(o FlowCliOpts) {
