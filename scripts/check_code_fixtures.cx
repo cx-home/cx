@@ -13,7 +13,7 @@
 #      out-text / out-err / out-multiset, level ∈ the category set,
 #      id prefix agrees with level.
 #   2. Directive usage — every `[?<name>]` in in-code bodies is in the
-#      spec/core/code.md §4.1 registry, a declared `?test-…` helper, a
+#      spec/03-approved/core/code.md §4.1 registry, a declared `?test-…` helper, a
 #      retired-directive negative, or the sanctioned unknown.
 #   3. Spec coverage — every §4.1 directive used at least once; every
 #      spec-defined CXER code cited by the corpus, verified covered

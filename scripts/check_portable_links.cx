@@ -1,6 +1,6 @@
 [; scripts/check_portable_links.cx -- the macOS artifact portability gate (#1102).
 
-   WHY THIS EXISTS. The shipped v0.17.0 macOS artifacts carried an absolute
+   WHY THIS EXISTS. The shipped v0.17.0 macOS artifacts carried an absolute  (version-literal-ok: incident history)
    load path into the BUILD MACHINE's Nix store:
 
      /nix/store/<hash>-sqlite-3.53.3/lib/libsqlite3.dylib

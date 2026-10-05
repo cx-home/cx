@@ -1,0 +1,23 @@
+# scripts/gen_site/theme_chrome.cx — the site's colour-theme chrome, one copy
+# for every page generator (#1418; RULED: STREAM-1, CXF-1).
+#
+# Three states: system (no stored choice: the reader's prefers-color-scheme
+# decides), light, dark. The choice is stored per browser as cx-theme in
+# localStorage, every access wrapped in try/catch, and the page is correct
+# with nothing stored (or storage refused: the choice then lasts the page).
+# `head` goes in <head> after the stylesheet link: it sets data-theme on
+# <html> before the first paint, so a stored dark choice never flashes white.
+# `toggle` is the sheet-bar button; `script` (before </body>) cycles it
+# system -> light -> dark and announces the change as a cx-theme-change event.
+# No framework, no CDN (the #1007 rule). The palettes are style.css's;
+# scripts/gen_guide/theme_check.cx grades both, and these three pieces on
+# every sheet-bar page.
+
+[?def head scope=public pure [returns string] ()
+  "<meta name=\"color-scheme\" content=\"light dark\">\n<script>(function(){try{var t=localStorage.getItem('cx-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>\n"]
+
+[?def toggle scope=public pure [returns string] ()
+  "<button type=\"button\" class=\"sb-theme\" data-theme-toggle aria-label=\"Colour theme: system (follows your device); click to change\" title=\"Colour theme\">Theme: system</button>"]
+
+[?def script scope=public pure [returns string] ()
+  "<script>(function(){var b=document.querySelector('[data-theme-toggle]');if(!b){return;}var order=['system','light','dark'];var state='system';try{var t=localStorage.getItem('cx-theme');if(t==='light'||t==='dark'){state=t;}}catch(e){}function show(){b.textContent='Theme: '+state;b.setAttribute('aria-label','Colour theme: '+state+(state==='system'?' (follows your device)':'')+'; click to change');}function apply(){var r=document.documentElement;if(state==='system'){r.removeAttribute('data-theme');}else{r.setAttribute('data-theme',state);}try{if(state==='system'){localStorage.removeItem('cx-theme');}else{localStorage.setItem('cx-theme',state);}}catch(e){}show();try{document.dispatchEvent(new CustomEvent('cx-theme-change',{detail:{theme:state}}));}catch(e){}}show();b.addEventListener('click',function(){state=order[(order.indexOf(state)+1)%order.length];apply();});})();</script>\n"]

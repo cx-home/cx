@@ -56,7 +56,7 @@ printf 'seed\n' > ledger/seed.md
 # first cut because the directory did not exist after `git clean -fd`.
 printf '<p>seed</p>\n' > docs/index.html
 printf 'seed\n' > _gate_evidence/seed.log
-printf 'seed\n' > spec/03-approved/thing.md
+printf 'seed\n' > spec/03-approved/thing.md  # spec-path-ok (a planted path)
 printf 'rows\n' > registry/modules.cxd
 printf 'registry prose\n' > registry/README.md
 printf 'code\n' > vcx/tests/thing_test.v
@@ -92,7 +92,7 @@ check A docs "$BASE"
 # B — an approved spec file (non-markdown spelling is impossible here; use the
 #     directory itself, which is what the rule keys on)
 mkdir -p spec/03-approved/process
-printf 'normative\n' > spec/03-approved/process/thing.txt
+printf 'normative\n' > spec/03-approved/process/thing.txt  # spec-path-ok (a planted path)
 git add -A && git commit -qm "B"
 check B full "$BASE"
 
@@ -113,7 +113,7 @@ git add -A && git commit -qm "E"
 check E full ""
 
 # F — a .md UNDER spec/03-approved/
-printf 'a normative clause\n' >> spec/03-approved/thing.md
+printf 'a normative clause\n' >> spec/03-approved/thing.md  # spec-path-ok (a planted path)
 git add -A && git commit -qm "F"
 check F full "$BASE"
 

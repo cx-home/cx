@@ -17,64 +17,35 @@ Two standing rules for reading this document:
 
 ## Stability boundary
 
-**v0.8.0 was the API/format-stability boundary:** from v0.8.0 onward
+**v0.8.0 was the API/format-stability boundary:** from v0.8.0 onward <!-- version-literal-ok: the boundary is a fixed point in history -->
 through 1.0, no breaking changes to the public surface (C ABI, binding
 APIs, wire formats, spec-normative grammar) without a documented
 migration in the release notes.
 
 ---
 
-## Now — the `release/0.16.0` partition line
+## Now — the `release/0.18` line
 
 The release in progress (see the *Unreleased* section of
-[`CHANGELOG.md`](CHANGELOG.md) for the authoritative running list). Its
-headline is architectural rather than a feature list:
+[`CHANGELOG.md`](CHANGELOG.md) for the authoritative running list). The
+four rings that v0.16.0 drew and v0.17.0 settled become separate <!-- version-literal-ok -->
+repositories:
 
-- **The four-ring partition** — CX is separated into four rings with a
-  one-directional import contract: **Ring 0 Data** (the format: values,
-  identity, surfaces, schema), **Ring 1 Code** (execution: programs,
-  capabilities, computation identity), **Ring 2 Platform** (store,
-  history, wire, services, operations) and **Ring 3 Ecosystem**
-  (distribution, registry, marketplace, bindings). A ring may depend
-  only inward. This is what makes "adopt the data format without
-  adopting the runtime" a supported position rather than an accident,
-  and it is enforced by gates (ring-tag, ring-import, per-profile
-  extraction) rather than asserted in prose.
-- **Build profiles** — the partition made buildable: per-ring artifacts
-  with verified installer assets, so a consumer takes only the ring they
-  need.
-- **Seven concept specs graduated** — the semantic value model,
-  computation identity, bitemporal time, commands and effects, the
-  consistency vocabulary, schema and event evolution, and runtime
-  representation moved to approved status, and each becomes a taught
-  guide arc in this release rather than a spec link.
-- **A reference application** — an in-family XAP (`reference/shop`) with
-  a committed cascade, a composed feature, real packaging through the
-  distribution engine, a separate web client, and `cx xap init`
-  scaffolding a project that already composes.
-- **The ux projection capability, specified** — the third projection:
-  the same command/query definitions that serve the wire and the
-  agent-tools face project forms, tables, and live regions through a
-  closed semantic vocabulary with web and terminal faces
-  (`spec/03-approved/xap/ux.md`; the `cx-x/ux` module tier).
-- **Prebuilt downloads** — per-profile darwin-arm64 tarballs
-  (`platform` / `cli` / `embed` / `data`) published per release with a
-  hosted installer (`curl -sSL https://cxhome.org/install | sh`,
-  `CX_PROFILE=` selects the lean builds), checksums, and a Downloads
-  page in the guide. Editor tooling joins the release motion: the
-  Neovim plugin is consumable as a plugin root, and the VS Code
-  extension packages/publishes from the release script.
-- **Streaming throughput** — the data parser and evaluator reworked
-  around lazy record nodes: `[?for]` over a streamed document moved from
-  14.7 MB/s to roughly 200, and `[?map]` from 12.7 to 129 (16 MiB rung,
-  the gate's five-trial configuration). The §11.4.4 gate is not green
-  yet; the remaining criterion is throughput on the `[?map]` shape.
-- **Documentation restructured on the rings — and trued** — the guide
-  reorganized so the architecture is visible to a reader who has never
-  seen the tracker, redesigned as a coherent visual system, and put
-  through a full verification audit: every checkable claim tested
-  against the live binary, with several hundred stale or fictional
-  claims corrected to the engine's real surface.
+- **The approved multi-repository shape** — this repository is the front
+  door; the two frozen core repositories carry Ring 0
+  (`cx-core-data`) and Ring 1 (`cx-core-code`); each platform product is a
+  `cx-platform-*` repository, each language binding a `cx-binding-*`, and the
+  editor surface `cx-tooling`. The front door pins every one of them by sha
+  in `deps.cxd`, and `registry/repos.cxd` says what each owns and why.
+- **CI and CD as cx flow** — the post-merge run, the pre-merge rounds and
+  the release motion are flow documents run by `cx flow`, graded by steps
+  that read their own load table.
+- **The guide redone** — the documentation rewritten on cx's own terms,
+  every example a conformance case, a phone-width pass, and a dark mode
+  graded at WCAG AA in both modes.
+- **The corpus gaps closed** — the language, stdlib and command gaps found
+  porting real programs (the cx-examples letters) fixed whole, each with a
+  failing case first.
 
 ## Next — queued in the tracker
 
@@ -121,8 +92,11 @@ Compact record; each release's full surface is in its notes file, and
 binaries/tags live on the
 [GitHub releases page](https://github.com/cx-home/cx/releases).
 
+<!-- version-literal-ok:begin — the shipped releases, history by design -->
 | Release | Date | Theme |
 |---|---|---|
+| [v0.17.0](RELEASE_NOTES_v0.17.0.md) | 2026-08-27 | Settlement: the path/value model a total, measured, frozen matrix with a conformance pin per cell; a refusal can no longer leave a program as silent data at the effect boundary — [release](https://github.com/cx-home/cx/releases/tag/v0.17.0) |
+| [v0.16.0](RELEASE_NOTES_v0.16.0.md) | 2026-08-20 | Partition: four rings (Data, Code, Platform, Ecosystem) with a one-directional import contract, enforced by gates, buildable per ring, taught by the guide, shown by a reference storefront — [release](https://github.com/cx-home/cx/releases/tag/v0.16.0) |
 | [v0.15.0](RELEASE_NOTES_v0.15.0.md) | 2026-08-03 | Toolchain: vendored V moves to upstream 0.5.2, carrying the fork's memory-management series — deliberately thin — [release](https://github.com/cx-home/cx/releases/tag/v0.15.0) |
 | [v0.14.0](RELEASE_NOTES_v0.14.0.md) | 2026-08-02 | Eventing + endurance: `cx fabric` graduates to a served tier (consumer groups, failover, DLQ, request–reply, backpressure) — [release](https://github.com/cx-home/cx/releases/tag/v0.14.0) |
 | [v0.13.0](RELEASE_NOTES_v0.13.0.md) | 2026-07-16 | Platform + consumption: the store becomes a production component under a service tier; XAP features become a full distribution unit — [release](https://github.com/cx-home/cx/releases/tag/v0.13.0) |
@@ -134,6 +108,7 @@ binaries/tags live on the
 | [v0.8.0](RELEASE_NOTES_v0.8.0.md) | 2026-06-09 | Data+code unification: CXPath value kind, `[?match]` / `[?modify]`, module system, bundled stdlib; API/format-stability boundary |
 | v0.7.x | 2026-05 | Proof-of-concept line (superseded); the cxpath/cxquery surface was retired and replaced by CX code in v0.8.0 — see [`RELEASE_NOTES_v0.7.0.md`](RELEASE_NOTES_v0.7.0.md) |
 | [v0.6.0](RELEASE_NOTES_v0.6.0.md) | 2026-05 | Production-hardening: schema language, namespaces, ID/IDREF, delimited formats, release-hygiene docs — [release](https://github.com/cx-home/cx/releases/tag/v0.6.0) |
+<!-- version-literal-ok:end -->
 
 ---
 

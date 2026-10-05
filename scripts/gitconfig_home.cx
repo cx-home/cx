@@ -1,0 +1,94 @@
+# scripts/gitconfig_home.cx — a copied global gitconfig's paths under another
+# user's home, rewritten to $HOME (#1601, from #1594 D5a; RULED: STREAM-1, CXF-1).
+#
+# A new box set up from another box's ~/.gitconfig carries that user's home in
+# its paths — dev2's named /Users/ep in core.excludesfile (every ignored file
+# then shows as untracked in the run logs), commit.template, and the
+# kdiff3/sourcetree tool paths. `devbox run setup` runs this after the build:
+#
+#   cx --allow-read --allow-write --allow-subprocess --allow-env scripts/gitconfig_home.cx          rewrite
+#   cx --allow-read --allow-write --allow-subprocess --allow-env scripts/gitconfig_home.cx --check  name, exit 1
+#
+# FOREIGN HOME: a path segment /Users/<name> or /home/<name> at the start of
+# a value or after whitespace, a quote, `=` or `:`, that is not $HOME itself
+# and not /Users/Shared (macOS's shared directory). Each one is replaced by
+# $HOME, so /Users/ep/Applications/kdiff3.app becomes $HOME/Applications/…;
+# whether that path exists on this box is the user's business — the copy's
+# path certainly does not.
+#
+# Only the GLOBAL file is read and written (`git config --global`, so
+# GIT_CONFIG_GLOBAL is honoured — the self-test plants one), its own entries
+# only (an include is not followed; an include.path naming another home is
+# itself an entry and is rewritten). Each value is replaced with
+# `git config --global --fixed-value --replace-all <key> <new> <old>`, so a
+# multi-valued key keeps its other values. Exit 0 when nothing is foreign or
+# everything was rewritten; 1 under --check when something is foreign, or when
+# a rewrite failed; 2 when git cannot read the file.
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/re'      as=re]
+
+[?def cat scope=private pure [returns string] ($parts) [$strings:join $parts '']]
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?const HOME-PATH [$re:compile "(^|[\\s\"'=:])(/(?:Users|home)/([^/\\s\"']+))"]]
+
+[?def home scope=private impure [returns string] ()
+  [$strings:trim-end-chars [$env:var-or-default 'HOME' ''] '/']]
+
+# the value with every foreign home replaced by $home.
+[?def rewritten scope=private pure [returns string] ($v $home)
+  [$re:replace-fn HOME-PATH $v
+    [?fn ($m) [?let [= $lead [$re:group $m 1]] [= $path [$re:group $m 2]] [= $who [$re:group $m 3]]
+                [?if [or [= $path $home] [= $who 'Shared']] [then [$re:group $m 0]] [else [$cat ($lead, $home)]]]]]]]
+
+[?def git-global scope=private impure [returns element] ($args)
+  [?fallback [$process:run [?to-sequence [?concat ('git', 'config', '--global') $args]] timeout-ms=30000]
+    [recover-with [proc-result exit-code=-1 stdout='' stderr='git could not be run']]]]
+
+# (key, value, new) for every entry whose value names a foreign home.
+[?def foreign scope=private impure [returns any] ($text $home)
+  [?to-sequence [?for [in $l [$strings:split-lines $text]]
+                  [= $sp [$strings:find $l ' ']]
+                  [where [not [= [$string $sp] '']]]
+                  [= $k [$strings:slice $l 1 [- $sp 1]]]
+                  [= $v [$strings:slice $l [+ $sp 1] [$strings:length $l]]]
+                  [= $n [$rewritten $v $home]]
+                  [where [not [= $n $v]]]
+                  [yield ($k, $v, $n)]]]]
+
+[?let [= $argv [$env:argv]]
+      [= $check [> [$count [?to-sequence [?for [in $a $argv] [where [= $a '--check']] [yield $a]]]] 0]]
+      [= $home [$home]]
+      [= $r [$git-global ('--get-regexp', '.')]]
+      [= $code [$string $r@exit-code]]
+  [?if [= $home '']
+    [then [?do [$cry 'gitconfig-home: FAIL — HOME is not set, so there is no home to rewrite to.'] [$env:exit 2]]]
+    # git config --get-regexp exits 1 when the file has no entry at all (or no file): nothing to rewrite.
+    [else [?if [not [or [= $code '0'] [= $code '1']]]
+      [then [?do [$cry [$cat ('gitconfig-home: FAIL — git config --global could not be read (exit ', $code, '): ',
+                              [$strings:trim [$string [?else $r@stderr '']]])]]
+                 [$env:exit 2]]]
+      [else
+        [?let [= $hits [$foreign [$string [?else $r@stdout '']] $home]]
+          [?if [= [$count $hits] 0]
+            [then [?do [$say [$cat ('gitconfig-home: OK — no path under another user\'s home in the global gitconfig (HOME=', $home, ')')]]
+                       [$env:exit 0]]]
+            [else [?if $check
+              [then [?do [?to-sequence [?for [in $h $hits]
+                           [yield [$cry [$cat ('gitconfig-home: ', [$nth $h 1], ' = ', [$nth $h 2], ' names another user\'s home (would be ', [$nth $h 3], ')')]]]]]
+                         [$cry [$cat ('gitconfig-home: ', [$string [$count $hits]], ' value(s) under another home; `devbox run setup` (or this program without --check) rewrites them to ', $home)]]
+                         [$env:exit 1]]]
+              [else
+                [?let [= $done [?to-sequence [?for [in $h $hits]
+                                 [= $w [$git-global ('--fixed-value', '--replace-all', [$nth $h 1], [$nth $h 3], [$nth $h 2])]]
+                                 [= $ok [= [$string $w@exit-code] '0']]
+                                 [= $_s [?if $ok
+                                          [then [$say [$cat ('gitconfig-home: rewrote ', [$nth $h 1], ': ', [$nth $h 2], ' -> ', [$nth $h 3])]]]
+                                          [else [$cry [$cat ('gitconfig-home: FAIL — could not rewrite ', [$nth $h 1], ': ', [$strings:trim [$string [?else $w@stderr '']]])]]]]]
+                                 [where [not $ok]]
+                                 [yield $h]]]]
+                  [$env:exit [?if [= [$count $done] 0] [then 0] [else 1]]]]]]]]]]]]]]

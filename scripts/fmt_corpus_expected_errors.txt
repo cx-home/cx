@@ -2,7 +2,7 @@
 # EXPECTED to refuse (RULED: 1348-c).
 #
 # WHY A NAMED LIST AND NOT A COUNT. `--max-errors N` has no lower bound: when
-# someone FIXES one of these the count falls below N and the lane stays green
+# someone FIXES one of these the count falls below N and the step stays green
 # with the pin silently loosened, and a genuinely new error is invisible until
 # it is the N+1'th. This roster reds BOTH ways — a file that errors and is not
 # here, and a file here that has stopped erroring. The second half is the one a

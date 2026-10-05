@@ -141,8 +141,40 @@ else
   fails=$((fails + 1))
 fi
 
+# 7 — the WRITERS write where the step READS (#1562). The step reads its
+#     TIMINGS-DEFAULT relative to the checkout; the fixture grader
+#     (run_fixture_shards.sh's TIMINGS=$ROOT/…) and the post-merge verdict
+#     (flows/private-acts.cx's pm-timings, <checkout>/…) must name that same
+#     path, or a measurement lands where nothing judges it (the split moved
+#     the grader's write under deps/cx-core-code/ and the step never saw it).
+want=$(sed -n "s/^\[?const TIMINGS-DEFAULT '\(.*\)'\]$/\1/p" "$ROOT/scripts/check_verification_budget.cx")
+grader=$(sed -n 's/^TIMINGS=\$ROOT\/\(.*\)$/\1/p' "$ROOT/scripts/run_fixture_shards.sh")
+verdict=$(sed -n "s/.*pm-timings scope=private pure.*\[\$concat \$c '\/\(.*\)'\]\]$/\1/p" "$ROOT/flows/private-acts.cx")
+if [ -n "$want" ] && [ "$grader" = "$want" ] && [ "$verdict" = "$want" ]; then
+  echo "  ok   the fixture grader and the post-merge verdict write the file the step reads ($want)"
+else
+  echo "  FAIL the writers and the reader disagree — step reads '$want', the fixture grader writes '$grader', the post-merge verdict writes '$verdict'"
+  fails=$((fails + 1))
+fi
+
+# 8 — the bounds are the owner's sentence (VCOST-1): the fixture grader
+#     <= 20 min, a selected post-merge run <= 20 min, the union <= 60 min.
+#     A row may sit under it; none may sit over it.
+over=""
+for pair in fixture-grader:1200 selected-run:1200 union:3600; do
+  nm=${pair%%:*}; cap=${pair#*:}
+  got=$(sed -n "s/.*\[bound name=$nm seconds=\([0-9][0-9]*\).*/\1/p" "$ROOT/scripts/verification_budget.cxd")
+  if [ -z "$got" ] || [ "$got" -gt "$cap" ]; then over="$over $nm=${got:-missing}>$cap"; fi
+done
+if [ -z "$over" ]; then
+  echo "  ok   every bound is within the owner's sentence (fixture grader and selected run 20 min, union 60 min)"
+else
+  echo "  FAIL bounds over the owner's sentence:$over"
+  fails=$((fails + 1))
+fi
+
 if [ "$fails" -gt 0 ]; then
   echo "verification-budget self-test: $fails failure(s)"
   exit 1
 fi
-echo "verification-budget self-test OK — 7 properties, all planted under $T (never the real timings path)"
+echo "verification-budget self-test OK — 9 properties, all planted under $T (never the real timings path)"

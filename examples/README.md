@@ -41,7 +41,7 @@ build flags, no scaffolding. Two kinds of file live here:
 | [`cxstore/grpc/`](cxstore/grpc/) | Same store surface over gRPC via the `cx store-serve` daemon | `make -C examples/cxstore/grpc run` | passing |
 | [`cxstore/dir-sync/`](cxstore/dir-sync/) | Directory tree ⇄ content-addressed store (ingest / materialize / watch) | `make -C examples/cxstore/dir-sync run` | passing |
 | [`platform/`](platform/) | **Platform and enterprise components, and them working together** — SSO (OpenID Connect login and its refusals, SAML assertion → session, SCIM provisioning), attribute projection, `cx flow`, a XAP instance, and a composed scenario | see [`platform/README.md`](platform/README.md) | passing |
-| [`htmx/`](htmx/) | Server-rendered htmx demos | — | **parked, do not publish** — pre-v0.8.0 syntax; see [`htmx/DO-NOT-PUBLISH.md`](htmx/DO-NOT-PUBLISH.md) |
+| [`htmx/`](htmx/) | Server-rendered htmx demos | — | **parked, do not publish** — pre-v0.8.0 syntax (version-literal-ok: why they are parked); see [`htmx/DO-NOT-PUBLISH.md`](htmx/DO-NOT-PUBLISH.md) |
 
 The four tours ship a `*.input.cx` companion (`code-tour`, `cxpath-tour`,
 `match-multi`, `modify-crud`). The documented

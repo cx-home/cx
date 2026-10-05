@@ -1,0 +1,65 @@
+# scripts/sync_cmd_split_selftest.cx — `make sync-cmd-split` is idempotent
+# (cx-private issue 1616, the front door's half; RULED: STREAM-1, FIX-1).
+#
+# sync-cmd-split links this tree's vcx/cmd/*.v stay-files into the pinned
+# cx-core-code checkout's vcx/cmd/. It deleted every symlink there and made
+# each again on EVERY build, so the directory was always newer than the
+# artifact and every front-door build relinked (batch I-2's measurement).
+# The case: run it once, mark the time, run it again — the second run must
+# leave deps/cx-core-code/vcx/cmd/ untouched (`find -newer` names nothing),
+# and every stay-file must still be linked to this tree's file. A stale
+# link (a stay-file the tree no longer has) must still be removed: the case
+# plants one and the second run must clear it.
+#
+# Run (from the repository root, after deps-sync):
+#   cx --allow-read --allow-write --allow-subprocess --allow-env scripts/sync_cmd_split_selftest.cx
+#   (or: make check-sync-cmd-split)
+# Exit: 0 idempotent and clean; 1 otherwise; 2 when the pin is not there.
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+
+[?const CMD 'deps/cx-core-code/vcx/cmd']
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def run scope=private impure [returns element] ($argv) [$process:run $argv timeout-ms=120000]]
+[?def out scope=private pure [returns string] ($r) [$strings:trim [$string $r@stdout]]]
+
+[?if [not [$io:is-directory CMD]]
+  [then [?let [= $_e [$say [$concat 'check-sync-cmd-split: ' CMD ' is not there — run `make deps-sync`']]] [$env:exit 2]]]
+  [else [?let
+    [= $m1 [$run ('make', '--no-print-directory', 'sync-cmd-split')]]
+    [= $stale [$concat CMD '/zz_stale_stay_file_selftest.v']]
+    [= $_l [$run ('ln', '-sf', '/nonexistent/zz_stale_stay_file_selftest.v', $stale)]]
+    [= $_s [$run ('sleep', '1.1')]]
+    [= $stamp [$concat [$io:temp-dir 'sync-cmd-split'] '/stamp']]
+    [= $_t [$io:write-file $stamp "mark\n"]]
+    [= $_s2 [$run ('sleep', '1.1')]]
+    [= $m2 [$run ('make', '--no-print-directory', 'sync-cmd-split')]]
+    [= $stale-left [$io:exists $stale]]
+    [= $_c [?if $stale-left [then [$run ('rm', '-f', $stale)]] [else null]]]
+    [= $_s3 [$run ('sleep', '1.1')]]
+    [= $stamp2 [$concat [$io:temp-dir 'sync-cmd-split2'] '/stamp']]
+    [= $_t2 [$io:write-file $stamp2 "mark\n"]]
+    [= $_s4 [$run ('sleep', '1.1')]]
+    [= $m3 [$run ('make', '--no-print-directory', 'sync-cmd-split')]]
+    [= $newer [$out [$run ('find', CMD, '-maxdepth', '1', '-newer', $stamp2)]]]
+    [= $stays [?to-sequence [?for [in $f [$io:glob 'vcx/cmd/*.v']] [yield [$string $f]]]]]
+    [= $unlinked [?to-sequence [?for [in $f $stays]
+                   [= $link [$concat CMD '/' [$last [$strings:split $f '/']]]]
+                   [= $to [$out [$run ('readlink', $link)]]]
+                   [where [not [= $to [$concat [$env:cwd] '/' $f]]]]
+                   [yield $f]]]]
+    [= $bad [?to-sequence [?concat
+      [?if [and [= [$string $m1@exit-code] '0'] [= [$string $m2@exit-code] '0'] [= [$string $m3@exit-code] '0']] [then ()]
+        [else ('a run of make sync-cmd-split exited non-zero')]]
+      [?if $stale-left [then ('the planted stale link survived a run: a link to a stay-file the tree does not have must be removed')] [else ()]]
+      [?if [= $newer ''] [then ()]
+        [else ([$concat 'the third run, over links already right, touched ' CMD ' (find -newer: ' [$strings:replace $newer "\n" ' '] ') — every build relinks'])]]
+      [?if [= [$count $unlinked] 0] [then ()]
+        [else ([$concat 'stay-file(s) not linked to this tree: ' [$strings:join $unlinked ' ']])]]]]]
+    [?if [> [$count $bad] 0]
+      [then [?let [= $_o [?to-sequence [?for [in $b $bad] [yield [$say [$concat 'check-sync-cmd-split: ' $b]]]]]] [$env:exit 1]]]
+      [else [?let [= $_o [$say [$concat 'check-sync-cmd-split: ' [$string [$count $stays]] ' stay-file(s) linked; a stale link removed; a run over right links touches nothing']]]
+              [$env:exit 0]]]]]]]

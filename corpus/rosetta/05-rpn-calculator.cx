@@ -2,7 +2,7 @@
    stack as a DOCUMENT ([stack [n …] [n …]]) rather than an opaque list — so the
    intermediate state is inspectable data at every step.
    3 4 + 5 * = 35.
-   Rewritten for the v0.8.0 surface (RULED: VC-28); the original was pre-reshape
+   Rewritten for the current surface (RULED: VC-28); the original was pre-reshape
    (`:using`/`:init`/`:case`/`:yield` colon clauses, `[?fn ($a, $b)]` comma
    params, `nth(x, 1)` call-parens).
 

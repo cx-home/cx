@@ -15,7 +15,7 @@
 #
 # That path exists only on the build machine, and the artifacts carry no
 # LC_RPATH, so on any other machine dyld fails before `main` — every
-# subcommand, not just the sqlite ones. Measured on the shipped v0.17.0
+# subcommand, not just the sqlite ones. Measured on the shipped v0.17.0  (version-literal-ok: incident history)
 # tarball AND on the installed binary; Linux is unaffected because it links
 # by soname.
 #
@@ -42,7 +42,7 @@ esac
 system_provided='libsqlite3.dylib libz.dylib libiconv.2.dylib libc++.1.dylib libcurl.4.dylib'
 
 # A redistributable dylib must not carry an absolute BUILD path as its own
-# install name either. The shipped v0.17.0 libcx.dylib carried
+# install name either. The shipped v0.17.0 libcx.dylib carried  (version-literal-ok: incident history)
 # /Users/<maintainer>/git-repos/cx/cx-private/vcx/target/libcx.dylib, which
 # every consumer linking against it would bake into their own binary.
 # @rpath is the redistributable spelling; the Go binding already passes

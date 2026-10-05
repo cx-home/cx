@@ -1,4 +1,4 @@
-[# cxpath-tour.cx — CXPath tour: every axis, every predicate kind (v0.8.0).
+[# cxpath-tour.cx — CXPath tour: every axis, every predicate kind.
    CXPath is a first-class value kind (§5.5), XPath 3.1 aligned.
 
    A CX module's value is its last expression, so the sections live in
@@ -7,7 +7,7 @@
    Run:
      cx --data=examples/cxpath-tour.input.cx examples/cxpath-tour.cx #]
 
-[cxpath-tour version='0.8.0'
+[cxpath-tour
 
   [# ─── §1. Selection from the document root ─── #]
 

@@ -62,15 +62,15 @@
   [?if [<= $left 0]
     [then $best]
     [else
-      [?let [= $this [timed-run $argv]]
+      [?let [= $this [$timed-run $argv]]
             [= $best-ms [$str:to-int [$string $best@ms]]]
             [= $this-ms [$str:to-int [$string $this@ms]]]
         [?if [< $best-ms 0]
-          [then [best-of $argv [- $left 1] $this]]
+          [then [$best-of $argv [- $left 1] $this]]
           [else
             [?if [< $this-ms $best-ms]
-              [then [best-of $argv [- $left 1] $this]]
-              [else [best-of $argv [- $left 1] $best]]]]]]]]]
+              [then [$best-of $argv [- $left 1] $this]]
+              [else [$best-of $argv [- $left 1] $best]]]]]]]]]
 
 [?let
   [= $argv    [$tail [$env:argv]]]
@@ -86,7 +86,7 @@
                 [$io:write-line [$env:stderr] "measure: MEASURE_RUNS must be a positive integer"]
                 [$env:exit 2]]]
         [else
-          [?let [= $best [best-of $argv $runs [?element 'run' [?attr 'ms' "-1"] [?attr 'stderr' ""]]]]
+          [?let [= $best [$best-of $argv $runs [?element 'run' [?attr 'ms' "-1"] [?attr 'stderr' ""]]]]
             [?do
               [?if [= $errpath ""]
                 [then null]

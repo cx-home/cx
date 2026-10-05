@@ -13,7 +13,7 @@
 # Thresholds:
 #   default  — 30% (loose; absorbs the ±15-20% noise floor of free
 #              GitHub Actions runners).
-#   --strict — 10% (matches the ROADMAP v0.6.1 deferral target; use when both
+#   --strict — 10% (use when both
 #              runs come from a stable bare-metal baseline machine).
 #
 # Lower-is-better is assumed (every key is a millisecond figure).
