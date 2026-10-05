@@ -542,6 +542,10 @@ step_globs() {
     # compiler both the umbrellas and that cx are built with)
     test-xap-umbrella)             echo 'deps.cxd registry/modules.cxd vcx/* third_party/*' ;;
     test-fabric-umbrella)          echo 'deps.cxd registry/modules.cxd vcx/* third_party/*' ;;
+    # #1807, #1753: the pinned mail and net V tests (real sockets), run out of
+    # the pin against this tree's cx-dev — the umbrellas' row.
+    test-mail-real)                echo 'deps.cxd registry/modules.cxd vcx/* third_party/*' ;;
+    test-net-real)                 echo 'deps.cxd registry/modules.cxd vcx/* third_party/*' ;;
     # the db corpus on sqlite, postgres and mysql against real servers in
     # containers, run from the pinned checkout by a cx binary this tree builds
     # with the two engines (RULED: DBLANE-1, DBSRV-1) — a pin bump, the
