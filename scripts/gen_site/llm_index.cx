@@ -20,6 +20,8 @@
 [?lib 'cx-stdlib/fp'      as=fp]
 
 [?lib './scripts/gen_docs/primer_build.cx' as=pb]
+# #1418: the colour-theme chrome, shared with the guide's pages.
+[?lib './scripts/gen_site/theme_chrome.cx' as=theme]
 
 [?const LLM-MANIFEST "docs-src/llm/manifest.cxd"]
 
@@ -80,6 +82,7 @@
       "ul.llm-index li { margin: 0.55rem 0; padding-left: 0.9rem; border-left: 2px solid var(--rule); }",
       "ul.llm-index .llm-file { display: block; font-size: 0.85em; color: var(--faint); }",
       "</style>",
+      [$strings:trim-end-chars [$theme:head] "\n"],
       "</head>",
       "<body class=\"site-home\">",
       "<header class=\"sheet-bar\">",
@@ -87,6 +90,7 @@
       [$strings:join ("  <div class=\"sb-right\"><a href=\"../index.html\">Home</a><a href=\"../guide.html\">Guide</a>",
                       "<a href=\"../llms.txt\">llms.txt</a><a href=\"https://github.com/cx-home/cx\">GitHub</a>",
                       "<span class=\"sb-rev\">v", $ver, "</span></div>") ""],
+      [$strings:join ("  ", [$theme:toggle]) ""],
       "</header>",
       "<main>",
       "<h1>The LLM front door</h1>",
@@ -117,6 +121,7 @@
       "  <div class=\"tb-cell\"><span>Checked by</span><b class=\"tb-accent\">The compiler</b></div>",
       "  <div class=\"tb-cell\"><span>Issued</span><b>cxhome.org</b></div>",
       "</footer>",
+      [$strings:trim-end-chars [$theme:script] "\n"],
       "</body>",
       "</html>",
       "") "\n"]]]
@@ -148,6 +153,7 @@
     "ul.llm-index { list-style: none; padding-left: 0; }",
     "ul.llm-index li { margin: 0.55rem 0; padding-left: 0.9rem; border-left: 2px solid var(--rule); }",
     "</style>",
+    [$strings:trim-end-chars [$theme:head] "\n"],
     "</head>",
     "<body class=\"site-home\">",
     "<header class=\"sheet-bar\">",
@@ -155,6 +161,7 @@
     [$strings:join ("  <div class=\"sb-right\"><a href=\"../index.html\">Home</a><a href=\"../guide.html\">Guide</a>",
                     "<a href=\"https://github.com/cx-home/cx\">GitHub</a>",
                     "<span class=\"sb-rev\">v", $ver, "</span></div>") ""],
+    [$strings:join ("  ", [$theme:toggle]) ""],
     "</header>",
     "<main>",
     "<h1>The developer notes moved into the guide</h1>",
@@ -186,6 +193,7 @@
     "  <div class=\"tb-cell\"><span>Checked by</span><b class=\"tb-accent\">The compiler</b></div>",
     "  <div class=\"tb-cell\"><span>Issued</span><b>cxhome.org</b></div>",
     "</footer>",
+    [$strings:trim-end-chars [$theme:script] "\n"],
     "</body>",
     "</html>",
     "") "\n"]]

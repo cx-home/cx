@@ -54,6 +54,8 @@
    repo-<name>.html with the guide's chrome. ]
 [?lib './scripts/gen_site/repo_page.cx'  as=rp]
 [?lib './scripts/gen_site/plugs_svg.cx'  as=plugs]
+[; #1418: the colour-theme chrome (head script, sheet-bar toggle, its script) — one copy for every page generator ]
+[?lib './scripts/gen_site/theme_chrome.cx' as=theme]
 
 [# ── string helpers ──────────────────────────────────────────────────── #]
 
@@ -727,7 +729,7 @@
     '<link rel="preconnect" href="https://fonts.googleapis.com">\n',
     '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n',
     '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">\n',
-    '<link rel="stylesheet" href="', [$stamp 'style.css' $ver], '">\n</head>\n<body>\n',
+    '<link rel="stylesheet" href="', [$stamp 'style.css' $ver], '">\n', [$theme:head], '</head>\n<body>\n',
     [$nav-html $metas $libfiles $active],
     '<header class="sheet-bar">\n',
     '  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span>',
@@ -736,6 +738,7 @@
     '<a href="downloads.html">Downloads</a>',
     '<a href="about.html">About</a>',
     '<span class="sb-rev">v', $ver, '</span></div>\n',
+    '  ', [$theme:toggle], '\n',
     '</header>\n',
     '<main>\n', [$strings:trim-end-chars $body '\n'], '\n</main>\n',
     '<footer class="title-block">\n',
@@ -748,6 +751,7 @@
     '<script src="', [$stamp 'highlight/highlight.js' $ver], '" defer></script>\n',
     '<script src="', [$stamp 'search-index.js' $ver], '" defer></script>\n',
     '<script src="', [$stamp 'search/search.js' $ver], '" defer></script>\n',
+    [$theme:script],
     '</body>\n</html>\n')]]
 
 [# ── [[anchor]] cross-reference resolution ───────────────────────────────
