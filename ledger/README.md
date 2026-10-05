@@ -958,6 +958,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `spread-2` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | SPREAD-2 — the call spread's three readings (L50 = (a), (a), (a)) |
 | `sse-1` | [rulings_2026_08_20_sse_downstream.md](rulings_2026_08_20_sse_downstream.md) | Ruling SSE-1 (2026-08-20) — the v1 web binding's SSE downstream: negotiated XSP-envelope carriage (owner "1b") |
 | `sshl-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | SSHL-1 — the sftp module's SSH transport is libssh2 behind the V fork, mbedtls its crypto backend (L140 = (a); #1457) |
+| `stream-1` | [rulings_2026_10_05_owner_direction_stream.md](rulings_2026_10_05_owner_direction_stream.md) | STREAM-1 — the continuous stream |
 | `strq-1` | [rulings_2026_09_30_owner_decisions_l115_l116.md](rulings_2026_09_30_owner_decisions_l115_l116.md) | STRQ-1 — a string whose text would read back as another type is quoted when rendered (L116 = (a); #1691) |
 | `sup-1` | [rulings_2026_08_20_supervise.md](rulings_2026_08_20_supervise.md) | SUP-1 — graduate the contract AND implement pre-cut |
 | `sync-1` | [rulings_2026_09_27_owner_decisions_l55.md](rulings_2026_09_27_owner_decisions_l55.md) | Owner decisions 2026-09-27 (afternoon) — Letter 55: the code phase of the sync module, SYNC-1…SYNC-9 |
@@ -1520,7 +1521,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `prop-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md), [rulings_2026_10_03_owner_decision_l175.md](rulings_2026_10_03_owner_decision_l175.md), [rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md](rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md) |
 | `readr-1` | [rulings_2026_10_01_owner_decision_l160.md](rulings_2026_10_01_owner_decision_l160.md), [rulings_2026_10_01_owner_decision_overage.md](rulings_2026_10_01_owner_decision_overage.md) |
 | `refr-1` | [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md) |
-| `refute-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md), [rulings_2026_10_03_owner_decision_l175.md](rulings_2026_10_03_owner_decision_l175.md), [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md), [rulings_2026_10_04_integrator_decisions_l182_l185.md](rulings_2026_10_04_integrator_decisions_l182_l185.md), [rulings_2026_10_04_integrator_decisions_l186_l190.md](rulings_2026_10_04_integrator_decisions_l186_l190.md), [rulings_2026_10_05_owner_direction_python_comparison_gaps.md](rulings_2026_10_05_owner_direction_python_comparison_gaps.md) |
+| `refute-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md), [rulings_2026_10_03_owner_decision_l175.md](rulings_2026_10_03_owner_decision_l175.md), [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md), [rulings_2026_10_04_integrator_decisions_l182_l185.md](rulings_2026_10_04_integrator_decisions_l182_l185.md), [rulings_2026_10_04_integrator_decisions_l186_l190.md](rulings_2026_10_04_integrator_decisions_l186_l190.md), [rulings_2026_10_05_owner_direction_python_comparison_gaps.md](rulings_2026_10_05_owner_direction_python_comparison_gaps.md), [rulings_2026_10_05_owner_direction_stream.md](rulings_2026_10_05_owner_direction_stream.md) |
 | `rfc-7540` | [rulings_2026_08_20_h2_surface.md](rulings_2026_08_20_h2_surface.md) |
 | `ring-1` | [batch_796_post_gate_defects.md](batch_796_post_gate_defects.md), [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
 | `ring-2` | [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
@@ -1607,4 +1608,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*387 ledger pages; 866 ids declared, 402 cited only.*
+*388 ledger pages; 867 ids declared, 402 cited only.*
