@@ -158,10 +158,9 @@
 [?const POS-RX [$re:compile "[0-9]+:[0-9]+"]]
 [?const FORM-RX [$re:compile "\\[[?$]?[a-zA-Z][a-zA-Z0-9:_-]*|`[^`]+`|\\bE_[A-Z0-9_]{3,}"]]
 
-# has-match: re.md §find answers `[match …]` OR `[no-match]` — both are
-# ELEMENTS, so `$present` is true on a miss and the verb applied to the
-# `[no-match]` refuses with a message naming a callable nobody wrote (#1543).
-# Every guard here reads the answer's NAME.
+# has-match: re.md §find answers `[match …]` on a hit and absence `()` on a miss;
+# an older pin answered a `[no-match]` ELEMENT, which `$present` reads as true and
+# the verb applied to it refuses (#1543) -- so every guard here reads the answer's NAME.
 [?def has-match scope=public ($m) [= [?else [$name $m] ""] "match"]]
 
 [?def scan-ranges scope=public ($s)
