@@ -140,11 +140,16 @@
 # A map key: its source text and its identity (kind, value) -- the bare name
 # `a` and the quoted `'a'` are ONE key (cxdm.md §2.6), `7` and `'7'` are two,
 # `1.0` and `1.00` are two (scale is identity), `1.0` and `1.0e0` are two.
+# The last six are CKEY-1's compound keys (cxdm.md §2.6) -- a sequence or an
+# array of key scalars, nested too; identity is the canonical bytes, so (1, 2)
+# and [1, 2] are two keys and (1, '2') is not (1, 2).
 [?const KEYS ([k t='a' id='s:a'], [k t="'a'" id='s:a'], [k t='name' id='s:name'], [k t="'7'" id='s:7'],
               [k t="'a b'" id='s:a b'], [k t="'é'" id='s:é'], [k t="'true'" id='s:true'],
               [k t='7' id='i:7'], [k t='-1' id='i:-1'], [k t='0' id='i:0'],
               [k t='1.0' id='d:1.0'], [k t='1.00' id='d:1.00'], [k t='1.0e0' id='f:1.0e0'],
-              [k t='true' id='b:true'], [k t='false' id='b:false'], [k t='2026-01-01' id='D:2026-01-01'])]
+              [k t='true' id='b:true'], [k t='false' id='b:false'], [k t='2026-01-01' id='D:2026-01-01'],
+              [k t='(1, 2)' id='q:(1, 2)'], [k t='[1, 2]' id='A:[1, 2]'], [k t="(1, '2')" id="q:(1, '2')"],
+              [k t='[(1, 2), 3]' id='A:[(1, 2), 3]'], [k t='[]' id='A:[]'], [k t="('a', 2026-01-01)" id="q:('a', 2026-01-01)"])]
 
 [?def key-text scope=private impure [returns string] ($id::string)
   [$string [$pick [?for [in $k $KEYS] [where [= [$string $k@id] $id]] [yield $k@t]]]]]
@@ -371,7 +376,16 @@
 # one. ident is that pair, observed through the kind patterns, not through
 # the canonical emitter.
 
-[?def ident scope=private pure [returns string] ($k) [$concat [$kind $k] ':' [$string $k]]]
+[?def ident scope=private pure [returns string] ($k)
+  [?if [= [$kind $k] 'other']
+    [then [$concat 'compound:' [$key-bytes $k]]]
+    [else [$concat [$kind $k] ':' [$string $k]]]]]
+
+# key-bytes -- a key's canonical bytes IN KEY POSITION (a top-level string's
+# canonical text drops its quotes, so the single-entry map is what spells the
+# key): CKEY-1, cxdm.md §2.6 -- a map never holds two keys whose canonical
+# bytes are equal.
+[?def key-bytes scope=private pure [returns string] ($k) [$string [$cx:canonical [$map:entry $k 1]]]]
 
 [?def idents scope=private pure ($m) [?to-sequence [?for [in $k [$map:keys $m]] [yield [$ident $k]]]]]
 
@@ -387,9 +401,12 @@
         [else ([$fail 'i' [$concat $ctor '-refused-distinct-keys'] $m $input],)]]]
     [case $got
       [?let [= $ids [$idents $got]]
+            [= $kb [?to-sequence [?for [in $k [$map:keys $got]] [yield [$key-bytes $k]]]]]
         [?to-sequence [?concat
           [$when-not [= [$count $ids] [$count [$distinct $ids]]]
                      [$fail 'i' [$concat $ctor '-duplicate-key'] [$cx:serialize $got] $input]]
+          [$when-not [= [$count $kb] [$count [$distinct $kb]]]
+                     [$fail 'i' [$concat $ctor '-canonical-bytes-collide'] [$cx:serialize $got] $input]]
           [$when-not [= [$count $ids] [$map:size $got]]
                      [$fail 'i' [$concat $ctor '-size-disagrees-with-keys'] [$cx:serialize $got] $input]]
           [$when-not [= [$set-text $ids] [$set-text $want]]
@@ -444,7 +461,10 @@
 # are not valid map keys", §2.6 "null key: Not permitted", key types are
 # scalars; stdlib/map.md §4 CXERMAP-BADKEY "matching the literal reader") -- is
 # refused by every constructor, never stringified, dropped or kept.
-[?const BAD-KEYS ([b kind='atom' t=':k'], [b kind='null' t='null'], [b kind='element' t='[e]'], [b kind='map' t='{}'])]
+# The last four: a compound key holding a non-key member refuses too (CKEY-1).
+[?const BAD-KEYS ([b kind='atom' t=':k'], [b kind='null' t='null'], [b kind='element' t='[e]'], [b kind='map' t='{}'],
+                   [b kind='compound-atom' t='(1, :k)'], [b kind='compound-null' t='[1, null]'],
+                   [b kind='compound-element' t='(1, [e])'], [b kind='compound-map' t='[{}, 1]'])]
 [?const BAD-KEY-CTORS ([c name='to-map' t='[?to-map ((KEY, 1),)]'],
                        [c name='for-map' t='[?for-map [in $x (1,)] [yield-map KEY $x]]'],
                        [c name='entry' t='{[?entry KEY 1]}'],
@@ -470,7 +490,7 @@
       [$judge-badkey-literal 'data' $lit]
       [$judge-badkey-literal 'program' $lit]]]]]
 
-[?const BAD-LITERALS ("{:k: 1}", "{null: 1}")]
+[?const BAD-LITERALS ("{:k: 1}", "{null: 1}", "{(1, :k): 1}", "{[1, null]: 1}")]
 
 [?def chk-maps scope=private impure ($ta::string $tb::string)
   [?match [$cx:parse $ta]
