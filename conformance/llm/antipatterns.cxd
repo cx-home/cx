@@ -983,8 +983,8 @@ error: cx-err:CXER0100: parse: expected ']', got peanuts at line 1:29
   [title [#Indexing with `@` — `[$array@$i]`#]]
   [tags array index nth one-based python antipattern gaps-1 issue-1813]
   [why [#
-`@` is the attribute step of a path (`$row@id`), not a subscript, and a
-call head `[$f …]` carries no path step. There is no `xs[i]`. Positional
+`@` is the attribute step of a path (`$row@id`), not a subscript: `$xs@$i`
+reads the attribute `$i` names, and an int names none. There is no `xs[i]`. Positional
 access is the call `[$nth $xs $i]`, and positions are 1-BASED, as in every
 CX position (strings, `re` matches, `[$range]`): `[$nth $xs 1]` is the first
 item, and `[$nth $xs 0]` is refused out of range.
@@ -996,7 +996,7 @@ item, and `[$nth $xs 0]` is refused out of range.
 [?let [= $xs [10, 20, 30]] [= $i 2] [$xs@$i]]
 #]]
   [out-text [#
-error: cx-err:CXER0100: parse: call head `[$fn …]` may not carry path steps; bind the value first at line 1:38
+error: cx-err:CXER0001: computed step name `$i` resolved to a int — element/attribute names are strings (cx-err:CXER0001)
 #]]
   [exit-code [#1#]]
  ]
