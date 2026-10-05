@@ -86,7 +86,7 @@
   [$re:replace LINK-RX [$re:replace CODE-SPAN-RX $line ""] ""]]
 
 [?def rx-found scope=public ($rx $s)
-  [?match [$re:find $rx $s] [case [no-match] false] [else true]]]
+  [?match [$re:find $rx $s] [case () false] [else true]]]
 
 # set ops over map-sets
 [?def set-put scope=public ($m $k) [$map:put $m $k true]]
@@ -108,7 +108,7 @@
       [then [$map:put $acc "fence" [not [$map:get $acc "fence"]]]]
     [else [?let [= $am [$re:find ANCHOR-RX $raw]]
       [?match $am
-        [case [no-match]
+        [case ()
           [?if [= $trimmed "<!-- informative -->"]
             [then [$map:put $acc "informative" true]]
           [else [?if [$map:get $acc "fence"]
@@ -136,7 +136,7 @@
     # registry rows (§4.1 only)
     [= $a1 [?if [$map:get $acc "registry"]
       [then [?match [$re:find DIR-REG-RX $raw]
-        [case [no-match] $acc]
+        [case () $acc]
         [case $m [$map:put $acc "regdirs" [$set-put [$map:get $acc "regdirs"] [$re:group $m 1]]]]]]
       [else $acc]]]
     # body directives (§§5-10)
@@ -145,7 +145,7 @@
       [else $a1]]]
     # error-code table rows
     [= $a3 [?match [$re:find ERR-TABLE-RX $raw]
-      [case [no-match] $a2]
+      [case () $a2]
       [case $m
         [?let [= $sym [$re:group $m 1]] [= $code [$re:group $m 2]]
               [= $c2s [$map:get $a2 "c2s"]] [= $s2c [$map:get $a2 "s2c"]]
@@ -294,7 +294,7 @@
             [= $defined [$distinct [?for [in $h $doc/*]
               [where [$member ('h2','h3','h4') [?else [$name $h] ""]]]
               [= $m [$re:find PROG-NODE-RX [$text $h]]]
-              [where [?match $m [case [no-match] false] [else true]]]
+              [where [?match $m [case () false] [else true]]]
               [yield [$re:group $m 1]]]]]
             # summary rows: table nodes' rows whose first cell is a node name.
             [= $tables [$strings:join [?for [in $t $doc//table]
@@ -381,11 +381,11 @@
         # pass 1: heading anchors + the BF register (forward refs work).
         [= $anchors [$fp:fold $lines {}
           [?fn ($a $l) [?match [$re:find ANCHOR-RX $l]
-            [case [no-match] $a]
+            [case () $a]
             [case $m [$set-put $a [$re:group $m 1]]]]]]]
         [= $bf-register [$fp:fold $lines {}
           [?fn ($a $l) [?match [$re:find BF-ROW-RX [$strings:trim $l]]
-            [case [no-match] $a]
+            [case () $a]
             [case $m [$set-put $a [$re:group $m 1]]]]]]]
         # pass 2: the line scan.
         [= $st [$fp:fold $lines

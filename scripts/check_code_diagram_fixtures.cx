@@ -156,7 +156,7 @@
 [?const SEP "\t"]
 
 [?def rx-is-match scope=public ($m)
-  [?match $m [case [no-match] false] [else true]]]
+  [?match $m [case () false] [else true]]]
 
 # strip-nodes: collect node ids on a line and reduce each decl to its
 # bare id (pattern-priority global passes; the fixture corpus is

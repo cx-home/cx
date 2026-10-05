@@ -109,7 +109,7 @@
               [else '']]]
     [= $parts [?to-sequence [$strings:split-whitespace $txt]]]
     [?if [> [$count $parts] 0]
-      [then [* [?else [$strings:to-number [$first $parts]] LOAD-UNREADABLE] 1.0e0]]
+      [then [* [?else [$strings:to-float [$first $parts]] LOAD-UNREADABLE] 1.0e0]]
       [else LOAD-UNREADABLE]]]]
 
 [?def max-load scope=public impure () [$env:var-float 'CX_BENCH_MAX_LOAD' 8.0e0]]

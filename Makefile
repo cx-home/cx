@@ -5648,11 +5648,15 @@ db-real-cx: check-gate-lock deps-present
 # THE CONNECTOR'S DB CASES (RULED: 1455-a, #1459). kind=db executes every backend
 # the build has, so the connector kit's walk on postgres and mysql is graded
 # HERE, on the same servers by the same driver: DB_REAL_EXTRA names
-# cx-platform-connector's two real-server files as ENGINE=FILE arguments,
+# cx-platform-connector's two real-server files as ENGINE=FILE arguments, and
+# cx-platform-store's two — the postgres:// and mysql:// store substrates, the
+# journal over SQL (store.md §3.1; cx-private #1814 section 6, RULED: GAPS-1) —
 # paths from the db pin's root. A file the pinned connector does not carry
 # refuses with exit 2 — never a skip.
 DB_REAL_EXTRA := postgres=../cx-platform-connector/conformance/platform/connector_db_postgres.cxd \
-                 mysql=../cx-platform-connector/conformance/platform/connector_db_mysql.cxd
+                 mysql=../cx-platform-connector/conformance/platform/connector_db_mysql.cxd \
+                 postgres=../cx-platform-store/conformance/platform/store_postgres.cxd \
+                 mysql=../cx-platform-store/conformance/platform/store_mysql.cxd
 test-db-real: build-vcx db-real-cx
 	@test -f deps/cx-platform-db/tooling/db_real.cx || { \
 	  echo "test-db-real: deps/cx-platform-db/tooling/db_real.cx is not there — the driver lives in the pinned repository (RULED: DBLANE-1); run \`make deps-sync\`" >&2; \

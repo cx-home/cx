@@ -3695,7 +3695,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
          whole=[$re:group $m 0]]]
 #]]
   [note [#
-**Introduces:** `[$re:find PATTERN SUBJECT]` and the two group readers (re.md §4). `[$re:group M 0]` is the whole match and `1`, `2`, … are the numbered captures; `[$re:group-named M NAME]` reads a `(?P<name>…)` capture, which is what to write when the pattern is long enough that counting parentheses is a bug waiting to happen. A group that does not exist is a refusal — `cx-err:CXER3202` — not an empty string, so a renamed capture fails where you wrote it. A pattern that does not match at all answers `[no-match]`, which `[?match]` or `[?else]` can branch on.
+**Introduces:** `[$re:find PATTERN SUBJECT]` and the two group readers (re.md §4). `[$re:group M 0]` is the whole match and `1`, `2`, … are the numbered captures; `[$re:group-named M NAME]` reads a `(?P<name>…)` capture, which is what to write when the pattern is long enough that counting parentheses is a bug waiting to happen. A group that does not exist is a refusal — `cx-err:CXER3202` — not an empty string, so a renamed capture fails where you wrote it. A pattern that does not match at all answers absence `()` (cx-private#1818 §37), which `[?else]` defaults and `[?match … [case () …]]` branches on.
 #]]
   [wasm-unsupported [#The playground's wasm build links a stub for the RE2 shim (deps/cx-core-code/scripts/wasm/stubs/re2_shim.c): every pattern fails to compile, so `[$re:compile]` refuses with `CXER3201` here (#1701).#]]
   [expect [# level=WARN code='429' msg='rate limited' #]]
