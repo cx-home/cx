@@ -359,7 +359,7 @@ bytes
 #]]
  ]
 
- [case id=property-gate-027-err-in-collection-in-element level=core gate=advisory issue='cx-home/cx-core-code#36'
+ [case id=property-gate-027-err-in-collection-in-element level=core
   [tags property-gate iv map-value-in-element-err-settled+array-item-in-element-err-settled+seq-item-in-element-err-settled]
   [title [# a computed [err] inside a collection literal an element adopts does not come to rest in the document -- code.md §6.4.1 (#853) "a refusal cannot come to rest inside a document at any depth"; primer §6 holds a sequence of errs is a value (the issue asks which reading binds) #]]
   [in-code [#
