@@ -63,7 +63,7 @@
 [?def line-fault scope=public ($line)
   [?let [= $parsed [$json:parse $line]]
     [?match $parsed
-      [case [err $e] [$concat "not valid JSON — " [$string $e@message]]]
+      [case [err$e] [$concat "not valid JSON — " [$string $e@message]]]
       [else
         [?let
           [= $idf [$key-fault $parsed "id"]]
@@ -78,7 +78,7 @@
 [?def fixture-count scope=public impure ($path)
   [?let [= $suite [$cx:parse [$io:read-file $path]]]
     [?match $suite
-      [case [err $e] -1]
+      [case [err$e] -1]
       [else [$count [?for [in $c $suite/*]
               [where [= [?else [$name $c] ""] "case"]]
               [yield 1]]]]]]]

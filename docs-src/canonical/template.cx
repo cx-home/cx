@@ -43,7 +43,7 @@
      (§9.5); a denied or failed read is caught here and rendered as a
      [missing …] stub rather than aborting the whole document. #]
   [?match [$io:read-file [$concat "docs-src/canonical/sections/" $file]]
-    [case [err $e] [missing file=$file reason=$e/@code]]
+    [case [err$e] [missing file=$file reason=$e/@code]]
     [case $v $v]]]
 
 [?def render-child scope=private ($node)

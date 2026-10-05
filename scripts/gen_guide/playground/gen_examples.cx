@@ -81,7 +81,7 @@
   [?let [= $w [$cry $msg]] [$finish 2]]]
 [?def must scope=public impure ($ctx $x)
   [?match $x
-    [case [err $e] [$die [$cat ('gen_examples: INTERNAL — ', $ctx, ': ', $e@message)]]]
+    [case [err$e] [$die [$cat ('gen_examples: INTERNAL — ', $ctx, ': ', $e@message)]]]
     [else $x]]]
 
 # ── Python-parity JSON string escaping (json.dumps, ensure_ascii) ────
