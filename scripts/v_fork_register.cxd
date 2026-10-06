@@ -227,4 +227,5 @@
   [patch sha=768ba7f33fc72f2b54fafbfcdeb2b422162025b9 family=vgc issue='cx-private#1757']
   [patch sha=14019f17b32f52521f2e885c39a9acbf0bb25d7f family=vgc issue='cx-private#1756']
   [patch sha=69f44fa16249d0f1378a305158ec7aaf2bf8d621 family=vgc issue='cx-private#1755']
+  [patch sha=7a603fba596eb67930acc61b8e5252a1b40f6081 family=vgc issue='cx-private#1795']
 ]
