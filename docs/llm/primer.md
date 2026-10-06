@@ -266,18 +266,13 @@ has the image rule.
 Sequences `( , )` and maps `{k: v}` are values. Map equality is
 order-independent — a map is a map, not a list of pairs:
 
-`input.cx`
-```cx
-[ignored]
-```
-
 `prog.cx`
 ```cx
 [?let [= $z 0] ([= {a: 1, b: 2} {b: 2, a: 1}], [= {a: 1, b: 2} {a: 1, b: 3}], [= {a: 1} {a: 1, b: 2}])]
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 (true, false, false)
 ```
 
@@ -624,11 +619,6 @@ $ cx --data=input.cx prog.cx
 
 The full grouped shape, with per-group aggregates over a bound key:
 
-`input.cx`
-```cx
-[ignored]
-```
-
 `prog.cx`
 ```cx
 [?let [= $orders [orders
@@ -642,7 +632,7 @@ The full grouped shape, with per-group aggregates over a bound key:
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 [row region=east revenue=125 n=3]
 [row region=west revenue=12 n=1]
 ```
@@ -794,11 +784,6 @@ Arms are tried in order. `[case PATTERN result]` matches shape,
 `[when PREDICATE result]` matches a condition, `[case _ result]` is the
 wildcard, and `[else]` is the fallback.
 
-`input.cx`
-```cx
-[doc]
-```
-
 `prog.cx`
 ```cx
 [?let [= $n [prose "hello"]] [?match $n
@@ -808,13 +793,8 @@ wildcard, and `[else]` is the fallback.
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 [p hello]
-```
-
-`input.cx`
-```cx
-[doc]
 ```
 
 `prog.cx`
@@ -826,13 +806,8 @@ $ cx --data=input.cx prog.cx
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 :big
-```
-
-`input.cx`
-```cx
-[doc]
 ```
 
 `prog.cx`
@@ -843,7 +818,7 @@ $ cx --data=input.cx prog.cx
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 :other
 ```
 
@@ -869,11 +844,6 @@ the pattern is the whole contract, and a shape that does not fit is a loud
 refusal, never a silent skip. The full pattern grammar applies here, rest
 marker included:
 
-`input.cx`
-```cx
-[doc]
-```
-
 `prog.cx`
 ```cx
 [?def apply-op ($stack $op)
@@ -882,7 +852,7 @@ marker included:
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 7
 ```
 
@@ -902,11 +872,6 @@ $ cx prog.cx
 The refuse half is the point. A stack too short to take apart stops the
 program instead of computing something from absent operands:
 
-`input.cx`
-```cx
-[doc]
-```
-
 `prog.cx`
 ```cx
 [?def apply-op ($stack $op)
@@ -915,7 +880,7 @@ program instead of computing something from absent operands:
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 error: cx-err:CXER0100: [?match] no match for value (single-arm form) at line 2:3
 ```
 
@@ -951,11 +916,6 @@ the one bridge, and it is always explicit.
 **`[?match]` eliminates the set, and `[of TypeName]` tells it which set.**
 Name the schema in scope, then declare what the scrutinee ranges over:
 
-`input.cx`
-```cx
-[doc]
-```
-
 `prog.cx`
 ```cx
 [?cx schema-inline
@@ -968,7 +928,7 @@ Name the schema in scope, then declare what the scrutinee ranges over:
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 done
 ```
 
@@ -985,11 +945,6 @@ That buys three things a hand-rolled dispatch cannot have:
    linter just proved complete.
 3. **No silent fall-through.** A `[of]` match that claims nothing refuses:
 
-`input.cx`
-```cx
-[doc]
-```
-
 `prog.cx`
 ```cx
 [?cx schema-inline
@@ -1001,7 +956,7 @@ That buys three things a hand-rolled dispatch cannot have:
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 error: cx-err:CXER0100: [?match] [of status]: no arm claimed :pending — a match over a declared-closed type has no silent fall-through; add the missing [case …] arm or an explicit [else] (code.md §8.2) at line 4:1
 ```
 
@@ -1063,24 +1018,14 @@ So there is no adapter lambda to write and no second spelling of an operator
 to learn: a `_` hole in an operator form makes that operator the value, and
 the holes show its arity.
 
-`input.cx`
-```cx
-[doc]
-```
-
 `prog.cx`
 ```cx
 [?let [= $f [+ _ 1]] [$f 41]]
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 42
-```
-
-`input.cx`
-```cx
-[doc]
 ```
 
 `prog.cx`
@@ -1089,17 +1034,12 @@ $ cx --data=input.cx prog.cx
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 5
 ```
 
 Which is what makes an **operator table** ordinary data — build the map, look
 the operator up by a runtime token, apply it:
-
-`input.cx`
-```cx
-[doc]
-```
 
 `prog.cx`
 ```cx
@@ -1110,7 +1050,7 @@ the operator up by a runtime token, apply it:
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 42
 ```
 
@@ -1119,18 +1059,13 @@ operator value directly. (A data value in one of those slots is refused for
 *callability* — `cx-err:CXER0106` — and the diagnostic lists all five kinds,
 never one of them.)
 
-`input.cx`
-```cx
-[doc]
-```
-
 `prog.cx`
 ```cx
 [?reduce (1, 2, 3, 4) [using [+ _ _]] [init 0]]
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 10
 ```
 
@@ -1168,24 +1103,14 @@ $ cx prog.cx
 `$m.$k` — the path step with a computed name — reads the same entry and
 **fails loud** on a miss. Take it where an absent key is a bug at that line:
 
-`input.cx`
-```cx
-[ignored]
-```
-
 `prog.cx`
 ```cx
 [?let [= $m {'+': plus}] [= $k 'zz'] $m.$k]
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 error: cx-err:CXER0001: no member (string) "zz"
-```
-
-`input.cx`
-```cx
-[ignored]
 ```
 
 `prog.cx`
@@ -1194,7 +1119,7 @@ error: cx-err:CXER0001: no member (string) "zz"
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 :default
 ```
 
@@ -1244,18 +1169,13 @@ $ cx prog.cx
 In production the argv sequence those two pass explicitly is `[$env:argv]`.
 For a value that did not come from a declared flag, `cast` is the coercion:
 
-`input.cx`
-```cx
-[doc]
-```
-
 `prog.cx`
 ```cx
 [cast "42" :int]
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 42
 ```
 
@@ -1281,11 +1201,6 @@ exports it. `pure`/`impure` is checked, not decorative. `[returns T]` and
 `[effects …]` clause makes the definition a *command* — the unit the
 capability and agent-tool layers understand.
 
-`input.cx`
-```cx
-[doc]
-```
-
 `prog.cx`
 ```cx
 [?def greet
@@ -1297,16 +1212,11 @@ capability and agent-tool layers understand.
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 'hello, world'
 ```
 
 Definitions are module-level, order-independent, and mutually recursive:
-
-`input.cx`
-```cx
-[doc]
-```
 
 `prog.cx`
 ```cx
@@ -1320,7 +1230,7 @@ Definitions are module-level, order-independent, and mutually recursive:
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 true
 ```
 
@@ -1369,11 +1279,6 @@ $ cx prog.cx
 
 ### Thread values with `[?pipe]`
 
-`input.cx`
-```cx
-[ignored]
-```
-
 `prog.cx`
 ```cx
 [?pipe (1, 2, 3, 4) [?fn $xs [?for [in $x $xs] [where [> $x 2]] [yield $x]]]
@@ -1381,16 +1286,11 @@ $ cx prog.cx
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 2
 ```
 
 The infix sugar parses to exactly the same thing:
-
-`input.cx`
-```cx
-[ignored]
-```
 
 `prog.cx`
 ```cx
@@ -1398,7 +1298,7 @@ The infix sugar parses to exactly the same thing:
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 2
 ```
 
@@ -1436,24 +1336,14 @@ because every templating language you have seen splices a list into a slot
 silently. **CX does not.** A non-empty sequence *value* in element-content
 position is refused, and the diagnostic names the idiom you meant:
 
-`input.cx`
-```cx
-[ignored]
-```
-
 `prog.cx`
 ```cx
 [?let [= $vs ([violation kind=a], [violation kind=b])] [violations $vs]]
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 error: cx-err:CXER0100: a sequence value (2 members) cannot be element content — adopt its members with [?splice EXPR] (in [violations …]; first member [violation …]; code.md §6.4.1, #847-1a)
-```
-
-`input.cx`
-```cx
-[ignored]
 ```
 
 `prog.cx`
@@ -1464,7 +1354,7 @@ error: cx-err:CXER0100: a sequence value (2 members) cannot be element content �
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 2
 ```
 
@@ -1513,24 +1403,14 @@ $ cx prog.cx
 `[?map]`, `[?filter]`, `[?take]`, `[?drop]`, `[?zip]`, `[?enumerate]`,
 `[?chunks]` are lazy; a consumer forces them. `[?reduce]` folds.
 
-`input.cx`
-```cx
-[ignored]
-```
-
 `prog.cx`
 ```cx
 [?to-sequence [?take 3 [?map (10, 20, 30, 40, 50) [using [?fn $i [+ $i 1]]]]]]
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 (11, 21, 31)
-```
-
-`input.cx`
-```cx
-[ignored]
 ```
 
 `prog.cx`
@@ -1539,7 +1419,7 @@ $ cx --data=input.cx prog.cx
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 0
 ```
 
@@ -1574,24 +1454,14 @@ null
 `[$position]`, `[$avg]`, `[$abs]`, `[$floor]`, `[$ceiling]` and the
 comparison/arithmetic operators are always available.
 
-`input.cx`
-```cx
-[ignored]
-```
-
 `prog.cx`
 ```cx
 [$concat "hello" " " "world"]
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 'hello world'
-```
-
-`input.cx`
-```cx
-[ignored]
 ```
 
 `prog.cx`
@@ -1600,7 +1470,7 @@ $ cx --data=input.cx prog.cx
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 (1, 2, 3, 4)
 ```
 
@@ -1802,11 +1672,6 @@ that reports success while its output carries the refusals as data.
 `[$eq]` / `[=]` is **value** equality under the atomization policy: a scalar
 compares against the string of its image, so these are `true` by design.
 
-`input.cx`
-```cx
-[ignored]
-```
-
 `prog.cx`
 ```cx
 [probe
@@ -1815,7 +1680,7 @@ compares against the string of its image, so these are `true` by design.
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 [probe dec-str=true atom-str=true]
 ```
 

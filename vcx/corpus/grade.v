@@ -138,6 +138,16 @@ pub:
 	ring            string   // per-case ring override ('' = inherit the suite header's ring=)
 	packs           []string // declared local-effect pack dependencies (fixtures.cxs `packs=`)
 	files           []fixtures.FixtureFile // the [file name='N' [#TEXT#]] inputs the case reads, laid down in a scratch directory the program runs from (gap-129, cx-private#1809, RULED: GAPS-1)
+	// #1636 (RULED: D70 (a)): a case carrying [cli-argv] or [exit-code] is an
+	// INVOCATION of the cx binary, graded by running it — these are its
+	// sections as the loader read them (edge newlines trimmed, never clamped:
+	// a `#` line in a program body is the program's own).
+	cli_argv  string
+	exit_code string
+	cli_in_cx string
+	cli_code  string
+	cli_out   string
+	cli_err   string
 }
 
 pub fn parsed_from(c fixtures.FixtureCase) ParsedFixture {
@@ -160,7 +170,18 @@ pub fn parsed_from(c fixtures.FixtureCase) ParsedFixture {
 		ring:            c.ring
 		packs:           c.packs
 		files:           c.files
+		cli_argv:        c.sections['cli_argv']
+		exit_code:       c.sections['exit_code'].trim_space()
+		cli_in_cx:       c.sections['in_cx']
+		cli_code:        c.sections['in_code']
+		cli_out:         c.sections['out_text']
+		cli_err:         c.sections['out_err']
 	}
+}
+
+// is_cli_case: the case is an invocation of the cx binary (#1636).
+pub fn (f ParsedFixture) is_cli_case() bool {
+	return f.cli_argv != '' || f.exit_code != ''
 }
 
 // clamp_section reproduces the former extract_section end-detection, applied
@@ -516,6 +537,7 @@ pub:
 	file_ms           bool = true // print the per-file `[fixtures] file …` reading (#1448's partition evidence)
 	skip_packs        bool   // skip a case declaring a pack THIS binary packs out
 	record            bool   // record a per-case row (the CLI verb's PASS/FAIL lines)
+	cli_bin           string // the cx binary a [cli-argv]/[exit-code] case runs ('' = $CX_BIN, else this process when it is cx) — #1636
 }
 
 // CaseRecord is one row of the per-case ledger, recorded only under
@@ -635,6 +657,43 @@ pub fn grade_files(opts Options, names []string) Outcome {
 				if opts.identity_bin != '' {
 					println(build_identity_note(opts, opts.where))
 				}
+			}
+			// #1636 (RULED: D70 (a)): an invocation case — [cli-argv] or
+			// [exit-code], with or without [in-code] — is this lane's, graded
+			// by running the binary (cli_case_failure below), not evaluated
+			// in-process (which reads neither section: three antipatterns
+			// cases failed for a reason not theirs and every [exit-code]
+			// passed unchecked).
+			if f.is_cli_case() {
+				cli_gate := if f.gate != '' { f.gate } else { suite_default }
+				if cli_gate == 'skip' || cli_gate == 'pending' {
+					if opts.record {
+						o.records << CaseRecord{
+							file:   fname
+							id:     f.id
+							status: 'skip'
+							gate:   cli_gate
+							note:   'gate=${cli_gate}'
+						}
+					}
+					continue
+				}
+				o.ran++
+				graded_id(fname, f.id)
+				if opts.record {
+					o.records << CaseRecord{
+						file:   fname
+						id:     f.id
+						status: 'graded'
+						gate:   cli_gate
+						note:   'invocation: graded by running the cx binary'
+					}
+				}
+				adv_ids['${fname}/${f.id}'] = cli_gate == 'advisory'
+				if why := cli_case_failure(opts, f, fname) {
+					failures << why
+				}
+				continue
 			}
 			// #1379: a data-only case (no [in-code]) belongs to the document
 			// lane; only the program cases are this lane's.
@@ -987,6 +1046,106 @@ fn case_files_lay_down(files []fixtures.FixtureFile) !string {
 		return error('cannot enter the case\'s scratch directory ${dir}: ${err.msg()}')
 	}
 	return dir
+}
+
+// ── the invocation cases (#1636, RULED: D70 (a)) ────────────────────────────
+//
+// The vocabulary conformance/llm/antipatterns.cxd and llm/cli.cxd declare, and
+// scripts/gen_docs/primer_build.cx's replay has always graded: `[cli-argv]` is
+// one argv token per line — `%DATA%` the [in-cx] file, `%FILE%` the [in-code]
+// file, `%CODE%` the [in-code] body as one token — and absent it is
+// `--allow-<g>…` for the case's grant= then `--data=%DATA% %FILE%`, or
+// `%FILE%` alone when [in-cx] is `[empty]`. The output is stdout when it is
+// not blank, else stderr, trailing newlines dropped; [out-text] matches it
+// byte-exact, a one-line `cx-err:` [out-err] by containment (the corpus pins
+// the code, not the wording), any other [out-err] byte-exact; [exit-code],
+// when declared, is the process's own.
+
+// cli_bin_for: the binary an invocation case runs — the caller's, else
+// $CX_BIN, else this process when it is cx itself (`cx corpus`). '' = none,
+// which the case is refused for by name: an invocation graded by nothing is
+// the unchecked pass this lane exists to end.
+fn cli_bin_for(opts Options) string {
+	if opts.cli_bin != '' {
+		return opts.cli_bin
+	}
+	env_bin := os.getenv('CX_BIN')
+	if env_bin != '' && os.is_executable(env_bin) {
+		return env_bin
+	}
+	me := os.executable()
+	if os.base(me) == 'cx' || os.base(me).starts_with('cx-') {
+		return me
+	}
+	return ''
+}
+
+pub fn cli_argv_tokens(f ParsedFixture) []string {
+	if f.cli_argv.trim_space() != '' {
+		return f.cli_argv.split_into_lines().map(it.trim_space()).filter(it != '')
+	}
+	mut toks := []string{}
+	for g in f.grant.split_any(' \t') {
+		if g != '' && g != 'none' {
+			toks << '--allow-${g}'
+		}
+	}
+	data := if f.cli_in_cx == '' { '[empty]' } else { f.cli_in_cx }
+	if data.trim_space() == '[empty]' {
+		toks << '%FILE%'
+	} else {
+		toks << '--data=%DATA%'
+		toks << '%FILE%'
+	}
+	return toks
+}
+
+fn cli_case_failure(opts Options, f ParsedFixture, fname string) ?string {
+	bin := cli_bin_for(opts)
+	if bin == '' {
+		return '${fname}/${f.id}: REFUSED — an invocation case ([cli-argv]/[exit-code]) is graded by running the cx binary, and this grader names none (Options.cli_bin, \$CX_BIN) (#1636)'
+	}
+	dir := os.join_path(os.temp_dir(), 'cx-corpus-cli-${os.getpid()}-${time.now().unix_nano()}')
+	os.mkdir_all(dir) or { return '${fname}/${f.id}: cannot create a scratch directory: ${err.msg()}' }
+	defer {
+		os.rmdir_all(dir) or {}
+	}
+	data := if f.cli_in_cx == '' { '[empty]' } else { f.cli_in_cx }
+	data_path := os.join_path(dir, '${f.id}.data.cx')
+	prog_path := os.join_path(dir, '${f.id}.prog.cx')
+	os.write_file(data_path, data + '\n') or { return '${fname}/${f.id}: cannot write the document: ${err.msg()}' }
+	os.write_file(prog_path, f.cli_code + '\n') or { return '${fname}/${f.id}: cannot write the program: ${err.msg()}' }
+	argv := cli_argv_tokens(f).map(it.replace('%DATA%', data_path).replace('%FILE%', prog_path).replace('%CODE%', f.cli_code))
+	// Each stream to a file of its own (no pipe to fill), the exit read
+	// directly — the shape every child of the corpus tooling has.
+	out_path := os.join_path(dir, 'stdout')
+	err_path := os.join_path(dir, 'stderr')
+	mut words := [os.quoted_path(bin)]
+	words << argv.map(os.quoted_path(it))
+	cmd := words.join(' ') + ' < /dev/null > ' + os.quoted_path(out_path) + ' 2> ' + os.quoted_path(err_path)
+	rc := os.system(cmd)
+	mut so := os.read_file(out_path) or { '' }
+	mut se := os.read_file(err_path) or { '' }
+	so = so.trim_right('\n')
+	se = se.trim_right('\n')
+	got := if so.trim_space() == '' { se } else { so }
+	shown := 'cx ' + cli_argv_tokens(f).map(it.replace('%DATA%', 'input.cx').replace('%FILE%', 'prog.cx').replace('%CODE%', "'" + f.cli_code + "'")).join(' ')
+	if f.cli_out != '' {
+		if got != f.cli_out {
+			return '${fname}/${f.id}: invocation output mismatch (`${shown}`)\n  got:      ${got}\n  expected: ${f.cli_out}'
+		}
+	} else if f.cli_err != '' {
+		contains := !f.cli_err.contains('\n') && f.cli_err.starts_with('cx-err:')
+		if (contains && !got.contains(f.cli_err)) || (!contains && got != f.cli_err) {
+			return '${fname}/${f.id}: invocation refusal mismatch (`${shown}`)\n  got:      ${got}\n  expected: ${f.cli_err}'
+		}
+	} else {
+		return '${fname}/${f.id}: an invocation case records no [out-text] or [out-err] — nothing to grade its output against (#1636)'
+	}
+	if f.exit_code != '' && f.exit_code != rc.str() {
+		return '${fname}/${f.id}: invocation exit code ${rc}, expected ${f.exit_code} (`${shown}`)'
+	}
+	return none
 }
 
 // case_files_teardown restores the working directory and removes the scratch

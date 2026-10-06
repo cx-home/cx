@@ -91,11 +91,6 @@ on
 `[?match VALUE [case PATTERN result] … [else result]]`. Arms are tried in
 order. `[when …]` adds a predicate arm, `[where …]` guards a case.
 
-`input.cx`
-```cx
-[doc]
-```
-
 `prog.cx`
 ```cx
 [?let [= $u [user age=20 [name Alice]]] [?match $u
@@ -104,7 +99,7 @@ order. `[when …]` adds a predicate arm, `[where …]` guards a case.
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 :adult
 ```
 
@@ -112,29 +107,19 @@ A match with one `[case]` arm and no `[else]` that does not match RAISES
 rather than returning empty — matching is a claim, and a failed claim is an
 error:
 
-`input.cx`
-```cx
-[doc]
-```
-
 `prog.cx`
 ```cx
 [?match [foo "x"] [bar $b] [yield $b]]
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 error: cx-err:CXER0100: [?match] no match for value (single-arm form) at line 1:1
 ```
 
 Dropping the arm keywords entirely gives the **single-arm** form —
 `[?match SUBJECT PATTERN BODY]` — which takes the full pattern grammar and is
 the destructure-or-refuse bind:
-
-`input.cx`
-```cx
-[doc]
-```
 
 `prog.cx`
 ```cx
@@ -144,7 +129,7 @@ the destructure-or-refuse bind:
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 7
 ```
 
@@ -156,18 +141,13 @@ one nests), `[where]` filters, `[group-by]` partitions and binds `$count` and
 **full pattern grammar** — sequence, array, map, element, typed binds, rest
 `*$name` — so key/value iteration needs no index arithmetic:
 
-`input.cx`
-```cx
-[doc]
-```
-
 `prog.cx`
 ```cx
 [?for-map [in ($k, $v) (("a", 1), ("b", 2))] [yield-map $k [* $v 10]]]
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 {a: 10, b: 20}
 ```
 
@@ -176,18 +156,13 @@ ordinal — it is never a silent skip, because a skip is silent data loss.
 (Element patterns keep their search semantics and still skip: they are a
 claim about which nodes to visit, not about every item's shape.)
 
-`input.cx`
-```cx
-[doc]
-```
-
 `prog.cx`
 ```cx
 [?for [in ($k, $v) (("a", 1), ("b"))] [yield $k]]
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 error: cx-err:CXER0100: [?for] generator pattern does not match item 2 (NO_MATCH): the item `(b)` does not fit the pattern of the [in …] clause at line 1:7. `[in PATTERN SRC]` is a destructuring BIND — every item of SRC must fit the pattern. To keep only the items that fit, filter by shape with [where] or a [?match] in the yield body (code.md §7.5)
 ```
 
@@ -210,11 +185,6 @@ $ cx --data=input.cx prog.cx
 'c@x.com'
 ```
 
-`input.cx`
-```cx
-[ignored]
-```
-
 `prog.cx`
 ```cx
 [?let [= $orders [orders
@@ -228,7 +198,7 @@ $ cx --data=input.cx prog.cx
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 [row region=east revenue=125 n=3]
 [row region=west revenue=12 n=1]
 ```
@@ -301,11 +271,6 @@ anonymous form. Definitions are order-independent and mutually recursive.
 `scope=public` exports. `pure`/`impure` is checked. `[returns T]` and `::T`
 annotations document by default and are enforced under `--strict`.
 
-`input.cx`
-```cx
-[doc]
-```
-
 `prog.cx`
 ```cx
 [?def greet
@@ -317,13 +282,8 @@ annotations document by default and are enforced under `--strict`.
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 'hello, world'
-```
-
-`input.cx`
-```cx
-[doc]
 ```
 
 `prog.cx`
@@ -338,7 +298,7 @@ $ cx --data=input.cx prog.cx
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 true
 ```
 
@@ -358,18 +318,13 @@ $ cx prog.cx
 Nesting a `[?def]` inside another is refused (`cx-err:CXER0204`) — definitions
 are module-level:
 
-`input.cx`
-```cx
-[doc]
-```
-
 `prog.cx`
 ```cx
 [?let [= $f [?fn () [?def inner ($x) [* $x 2]]]] [$f]]
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 error: cx-err:CXER0204: cx-err:CXER0204 E_NESTED_DEF: `[?def inner]` is not permitted inside a function body (definitions are top/module-level only)
 ```
 
@@ -378,11 +333,6 @@ error: cx-err:CXER0204: cx-err:CXER0204 E_NESTED_DEF: `[?def inner]` is not perm
 `[?pipe]` threads a value through stages. There is a canonical form and infix
 sugar; both parse to the same thing.
 
-`input.cx`
-```cx
-[ignored]
-```
-
 `prog.cx`
 ```cx
 [?pipe (1, 2, 3, 4) [?fn $xs [?for [in $x $xs] [where [> $x 2]] [yield $x]]]
@@ -390,13 +340,8 @@ sugar; both parse to the same thing.
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 2
-```
-
-`input.cx`
-```cx
-[ignored]
 ```
 
 `prog.cx`
@@ -405,7 +350,7 @@ $ cx --data=input.cx prog.cx
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 2
 ```
 
@@ -415,24 +360,14 @@ The iterator family is lazy: `[?map]`, `[?filter]`, `[?take]`, `[?drop]`,
 `[?zip]`, `[?enumerate]`, `[?chunks]` build a pipeline, and a consumer forces
 it. `[?reduce]` folds; `[par]` marks an associative fold as parallelisable.
 
-`input.cx`
-```cx
-[ignored]
-```
-
 `prog.cx`
 ```cx
 [?to-sequence [?take 3 [?map (10, 20, 30, 40, 50) [using [?fn $i [+ $i 1]]]]]]
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 (11, 21, 31)
-```
-
-`input.cx`
-```cx
-[ignored]
 ```
 
 `prog.cx`
@@ -441,17 +376,12 @@ $ cx --data=input.cx prog.cx
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 0
 ```
 
 An `[?reduce]` declared `ordered` where the operation is not is refused
 rather than silently reordered:
-
-`input.cx`
-```cx
-[ignored]
-```
 
 `prog.cx`
 ```cx
@@ -459,7 +389,7 @@ rather than silently reordered:
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 error: cx-err:CXER0100: [?reduce] takes a single positional source slot at line 1:1
 ```
 
@@ -491,28 +421,18 @@ CX does not. **A non-empty sequence value never becomes element content.**
 Writing `[violations $vs]` where `$vs` is a sequence is refused loudly, and
 the diagnostic names the idiom you wanted:
 
-`input.cx`
-```cx
-[ignored]
-```
-
 `prog.cx`
 ```cx
 [?let [= $vs ([violation kind=a], [violation kind=b])] [violations $vs]]
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 error: cx-err:CXER0100: a sequence value (2 members) cannot be element content — adopt its members with [?splice EXPR] (in [violations …]; first member [violation …]; code.md §6.4.1, #847-1a)
 ```
 
 `[?splice]` is that idiom. It grafts the members in as siblings, and the
 child axis then sees them:
-
-`input.cx`
-```cx
-[ignored]
-```
 
 `prog.cx`
 ```cx
@@ -522,7 +442,7 @@ child axis then sees them:
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 2
 ```
 
@@ -537,18 +457,13 @@ early refusal is the answer instead.
 contributes one sibling per `[yield]`, which is its defined contribution, not
 a value being auto-spliced:
 
-`input.cx`
-```cx
-[ignored]
-```
-
 `prog.cx`
 ```cx
 [?let [= $t [c [?for [in $x ('A', 'B')] [yield [x $x]]]]] [$count $t/x]]
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 2
 ```
 
@@ -557,18 +472,13 @@ Everything else — a binding read, a call result, an `[?if]` / `[?let]` /
 a non-empty sequence refuses the same way. Conditional multi-contribution is
 spelled `[?splice [?if …]]`:
 
-`input.cx`
-```cx
-[ignored]
-```
-
 `prog.cx`
 ```cx
 [?let [= $vs ([v k=1], [v k=2])] [c [?if [= 1 1] [then $vs]]]]
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 error: cx-err:CXER0100: a sequence value (2 members) cannot be element content — adopt its members with [?splice EXPR] (in [c …]; first member [v …]; code.md §6.4.1, #847-1a)
 ```
 
@@ -601,18 +511,13 @@ bare data head, a bare named-builtin head (named builtins are reached only as
 sequence — an absent optional read, an empty comprehension — contributes no
 child at all. It is not adopted as a visible empty child:
 
-`input.cx`
-```cx
-[ignored]
-```
-
 `prog.cx`
 ```cx
 [?let [= $u [user [tag 'a']]] [$count [c $u/nothing]/*]]
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 0
 ```
 
@@ -622,11 +527,6 @@ expression there contributes exactly one value: an absence rides as the empty
 sequence and a sequence rides whole — because the loop rebinds its declared
 bindings positionally, and a dropped or spliced value would silently shift
 every binding after it.
-
-`input.cx`
-```cx
-[ignored]
-```
 
 `prog.cx`
 ```cx
@@ -638,7 +538,7 @@ every binding after it.
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 [list 0 2 1]
 ```
 
@@ -649,11 +549,6 @@ same principle as the literal-`[err]` rule below. A **source-literal** paren
 sequence in element content is data, and keeps the data reading's navigation
 (`/name` opaque, `//` through, `/*` sees the sequence node):
 
-`input.cx`
-```cx
-[ignored]
-```
-
 `prog.cx`
 ```cx
 [?let [= $t [pair ([v k=1], [v k=2])]]
@@ -661,7 +556,7 @@ sequence in element content is data, and keeps the data reading's navigation
 ```
 
 ```console
-$ cx --data=input.cx prog.cx
+$ cx prog.cx
 [list 0 2 1]
 ```
 
