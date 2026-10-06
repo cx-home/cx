@@ -95,6 +95,9 @@
 [?lib 'cx-stdlib/math'    as=math]
 [?lib 'cx-stdlib/strings' as=strings]
 [?lib 'cx-stdlib/re'      as=re]
+# reading.cx's stub rule (#1716): one empty element beside a program that
+# reads no document is the grader's scaffolding, not the example's input.
+[?lib './scripts/gen_guide/playground/reading.cx' as=rd]
 [; The per-repository documentation fragments (RULED: RS-9) and the pin
    document that says which repositories to look in (RULED: RS-7). Both are
    spelled from the CHECKOUT ROOT — see #1604. ]
@@ -168,11 +171,27 @@
 
 # sections-of: one [case] element → map of section-name → normalized payload.
 [?def sections-of scope=public ($c)
-  [$fp:fold [?for [in $k $c/*]
+  [$unstub [$fp:fold [?for [in $k $c/*]
       [where [not [= [?else [$name $k] ""] "tags"]]]
       [yield $k]] {}
     [?fn ($acc $k)
-      [$map:put $acc [?else [$name $k] ""] [$normalize [$raw-of $k]]]]]]
+      [$map:put $acc [?else [$name $k] ""] [$normalize [$raw-of $k]]]]]]]
+
+# unstub (#1716): a case whose [in-cx] is one empty element (`[doc]`,
+# `[ignored]`) beside a program that reads no document — no `$doc`/`$input`,
+# no bare CXPath, no element-pattern `[?for]` (reading.cx's rule, the one the
+# playground files by) — carries that stub only to satisfy the grader's
+# shape. Read as `[empty]`: the example is shown as the program alone and
+# replayed as `cx prog.cx`, so no reader is taught `[doc]` as the input of a
+# `[?match]` over a literal. The answer cannot move — the program never read
+# the stub — and a program that does read it keeps it.
+[?def unstub scope=public ($sec)
+  [?let [= $data [?else [$map:get $sec "in-cx"] ""]]
+        [= $code [?else [$map:get $sec "in-code"] ""]]
+    [?if [and [not [= $code ""]] [not [= [$strings:trim $data] "[empty]"]]
+              [$rd:is-stub-doc $data] [= [$rd:reads-doc-why $code] ""]]
+      [then [$map:put $sec "in-cx" "[empty]"]]
+      [else $sec]]]]
 
 # load-suite: one conformance suite path → map of case-id → section map.
 # Each entry carries `suite` (provenance, printed under every rendered
@@ -1010,10 +1029,14 @@
   # every cited fixture, replayed ONCE and verified against its fixture
   [= $refs [$distinct [$fp:flat-map [?for [in $d $docs]
       [yield [$refs-in [$map:get $sources [$string $d@id]]]]] [?fn ($x) $x]]]]
-  [= $tmpdir [$path:join [$env:var-or-default "TMPDIR" "/tmp"] "cx-primer-build"]]
-  [= $_md [$io:make-dirs $tmpdir]]
+  # A scratch directory of this run's own: a fixed $TMPDIR/cx-primer-build
+  # was shared by every concurrent run on the box (two streams' gates, or a
+  # gate's docs-check beside the post-merge run's), each overwriting and
+  # reading the other's prog.cx.
+  [= $tmpdir [$io:temp-dir "cx-primer-build-"]]
   [= $replays [$fp:fold $refs {}
     [?fn ($acc $id) [$add-replay $acc $id $index $cxbin $tmpdir]]]]
+  [= $_rmt [$io:remove-tree $tmpdir]]
 
   # render + write (or diff)
   [= $_mo [?if $check [then 0] [else [$io:make-dirs OUT-DIR]]]]
