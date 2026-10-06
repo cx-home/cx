@@ -223,6 +223,7 @@ lib-bytes.html
 lib-connector.html
 lib-crypto.html
 lib-csv.html
+lib-decision.html
 lib-diagram.html
 lib-did-web.html
 lib-did.html
@@ -260,6 +261,7 @@ lib-mime.html
 lib-net.html
 lib-oidc.html
 lib-path.html
+lib-pdf.html
 lib-process.html
 lib-prof.html
 lib-random.html
