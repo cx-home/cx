@@ -632,4 +632,40 @@ cx vX.Y.Z-dev+3ed9ade5
          ADFS deployments still emit (RULED 1410-a). The ACS POST
          binding and `RelayState` are owed to #1394 and #1402b. Until
          each lands, the matrix has no column for it."""]]
+  [child id=ops-mail-compat n=17.12 title='Mail-provider compatibility'
+    [body
+      """An agent that reads and sends mail reads it from the provider
+         the organization already runs, so the question is the one
+         17.11 answers for identity: what was run, against which
+         provider, and when. Our client -- `cx-platform/imap` and
+         `cx-platform/smtp` -- authenticates to a real provider with
+         an OAuth 2 bearer token (OAUTHBEARER, RFC 7628, or XOAUTH2
+         where the provider still asks for it); a browserless agent
+         holds that token through the device-code grant (RFC 8628)
+         that `cx-stdlib/oidc` carries. IMAP with OAuth 2 is also the
+         path that survives Microsoft's EWS retirement."""]
+    [body
+      """`tools/mail_interop_real.sh PROVIDER`, in the
+         cx-platform-mail repository (`deps/cx-platform-mail/tools/`
+         after `make deps-sync`), drives six rows against an account:
+         connect (greeting, CAPABILITY, AUTHENTICATE, ENABLE), list,
+         select INBOX, a baseline sync, noop, and one submission to the
+         account's own address. VERIFIED means all six passed; a row the
+         driver could not reach counts as failed, never as passed. What
+         it does not drive: IDLE, flag changes and DSN against a live
+         mailbox, which change or wait on the account's own state."""]
+    [table
+      [tr [th 'provider'] [th 'auth'] [th 'rows'] [th 'verdict'] [th 'verified how'] [th 'verified at']]
+      [tr [td 'Gmail'] [td 'XOAUTH2 (imap.gmail.com:993, smtp.gmail.com:465)'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/mail_interop_real.sh gmail -- pending an account'] [td '--']]
+      [tr [td 'Microsoft 365'] [td 'XOAUTH2 (outlook.office365.com:993, smtp.office365.com:587 STARTTLS)'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/mail_interop_real.sh m365 -- pending an account'] [td '--']]
+      [tr [td 'Fastmail'] [td 'OAUTHBEARER (imap.fastmail.com:993, smtp.fastmail.com:465)'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/mail_interop_real.sh fastmail -- pending an account'] [td '--']]]
+    [note
+      """A `--` is "not measured", never "not supported".
+         `tools/release-verify.sh` refuses a release while any of Gmail,
+         Microsoft 365 or Fastmail still reads NOT YET VERIFIED
+         (`deps/cx-platform-mail/tools/mail_matrix_check.sh`). Serving
+         a mailbox from a CX process -- the in-tree IMAP server core --
+         is outside v0.18 (owner letter (b), 2026-09-13) and has no
+         row here; it is graded again when a deployment needs CX to
+         host mailboxes."""]]
 ]
