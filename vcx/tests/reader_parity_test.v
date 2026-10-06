@@ -582,7 +582,8 @@ const accepted_by_one_table = [
 	// check_portable_links.cx above (`[$array:flatten (…)]`) -- the release
 	// staging directory scan reuses its glob-then-flatten idiom verbatim.
 	AcceptedByOne{'scripts/release_asset_links_gate.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/release_asset_links_selftest.cx', .program, reason_1536},
+	// release_asset_links_selftest.cx (93d4a0825) is not here: the two readers agree on
+	// it on cx-core-data 7bf68e720 (the DATA stream's reader-parity fixes) (RULED: STREAM-1).
 	AcceptedByOne{'scripts/run_bench_json.cx', .program, reason_1536},
 	// 21 -> 23: RS-33's K12 branch, scripts/check_no_ai_attribution.cx and
 	// scripts/strip_attribution.cx -- the class's own shape,
