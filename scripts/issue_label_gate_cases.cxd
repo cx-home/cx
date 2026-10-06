@@ -10,7 +10,8 @@ the cutoff its cutoff=.
 
 want= is every refusal the gate must make, space-separated, in order:
   a:<repo>#N         an open cx-private issue created after the cutoff without
-                     the release label, not excluded
+                     the release label, not excluded, not on a [parking]
+                     milestone (the owner parked it out of the release)
   b:<repo>#N         an open cx-private issue on a milestone no [parking] row names
   c:<repo>#N         an open component issue whose title lacks `<release> `
   register:<repo>#N  an exclusion row without a why= (it excludes nothing)
@@ -42,6 +43,15 @@ want='' is a case the gate passes.
     [private '[{"number": 1790, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [], "milestone": null}]']]
   [case id=a-pull-request-skipped want=''
     [private '[{"number": 1792, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [], "milestone": null, "pull_request": {"url": "u"}}]']]
+  [case id=a-new-on-parking-milestone want=''
+    [register [parking milestone='v7.8' why='parked by word']]
+    [private '[{"number": 1836, "created_at": "2026-10-06T00:05:19Z", "title": "v7.8 x", "labels": [{"name": "perf"}], "milestone": {"title": "v7.8"}}]']]
+  [case id=a-new-on-parking-milestone-without-why want='register:milestone#v7.8 a:cx-private#1836 b:cx-private#1836'
+    [register [parking milestone='v7.8']]
+    [private '[{"number": 1836, "created_at": "2026-10-06T00:05:19Z", "title": "v7.8 x", "labels": [{"name": "perf"}], "milestone": {"title": "v7.8"}}]']]
+  [case id=a-new-on-release-milestone want='a:cx-private#1841 b:cx-private#1841'
+    [register [parking milestone='v7.8' why='parked by word']]
+    [private '[{"number": 1841, "created_at": "2026-10-06T00:09:52Z", "title": "v7.7 x", "labels": [{"name": "bug"}], "milestone": {"title": "v7.7"}}]']]
   [case id=b-release-milestone want='b:cx-private#1793'
     [register [parking milestone='v7.8' why='parked by word']]
     [private '[{"number": 1793, "created_at": "2026-09-01T00:00:00Z", "title": "x", "labels": [{"name": "v7.7"}], "milestone": {"title": "v7.7"}}]']]
