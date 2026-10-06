@@ -158,7 +158,7 @@ true
 #]]
  ]
 
- [case id=property-gate-011-string-value-hash level=core gate=advisory issue='cx-home/cx-core-code#22'
+ [case id=property-gate-011-string-value-hash level=core gate=enforced
   [tags property-gate ii string-hash-collision]
   [title [# [$cx:hash] of the string '7' is not the address of the int 7 -- an address is a pure function of the strict canonical bytes, and the two values have different bytes (canonical.md §1.2, §1.4, §2.6a; stdlib/cx.md §2.1 takes ($value::any)) #]]
   [in-code [#
@@ -430,7 +430,7 @@ reads-back
 #]]
  ]
 
- [case id=property-gate-032-string-value-canonical level=core gate=advisory issue='cx-home/cx-core-code#22'
+ [case id=property-gate-032-string-value-canonical level=core gate=enforced
   [tags property-gate ii kind-lost-on-canonical:string@top+kind-canonical-refused:string@top+kind-reparse-refused:string@top]
   [title [# [$cx:canonical] of a string value is the string's canonical image, not the string read as CX source -- canonical.md §2.6a (a string whose bare image re-parses as another kind quotes, the document top included), §1.2; stdlib/cx.md §2.1 ($value::any) #]]
   [in-code [#
