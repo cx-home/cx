@@ -842,10 +842,14 @@ const flow_serve_helpers = "
     [\$fs--start \$j \$e \$o \$fs \$b [\$string \$occ] \$none]]]
 
 [; file — the nonce is the FILE CONTENT ADDRESS, so the same bytes reappearing
-   start nothing and changed bytes are a new event. ]
+   start nothing and changed bytes are a new event. The address is of the
+   RECORD the bytes spell — [\$cx:hash [\$cx:parse \$t]], as `cx flow run`'s
+   cx_text_hash is — never of the text as a string: cx:hash takes a string as
+   the string (cx-core-code #22), so hashing the bytes gave every served run a
+   different id from the CLI's (cx-platform-flow#18). ]
 [?def fs--tick-file-one scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$o \$fs \$b \$path::string)
   [?let [= \$t [\$cxio:read-file \$path]]
-    [\$fs--start \$j \$e \$o \$fs \$b [\$cx:hash \$t] [\$fs--args-of \$t]]]]
+    [\$fs--start \$j \$e \$o \$fs \$b [\$cx:hash [\$cx:parse \$t]] [\$fs--args-of \$t]]]]
 
 [; the count is READ, into the answer this returns, and that is what FORCES the
    comprehension: a bound-but-unread sequence is never walked, so a tick whose
@@ -1080,7 +1084,7 @@ const flow_serve_helpers = "
         [?if [\$empty \$hits]
           [then [\$fs--refuse 404 \"CXER4965\"
                   \"E_COORD_ARG_INVALID: this runner declares no binding at that path, and the reserved act path is the only other input its ingress takes\"]]
-          [else [?let [= \$r [\$fs--start \$j \$e \$o \$fs [\$first \$hits] [\$cx:hash \$text] [\$fs--args-of \$text]]]
+          [else [?let [= \$r [\$fs--start \$j \$e \$o \$fs [\$first \$hits] [\$cx:hash [\$cx:parse \$text]] [\$fs--args-of \$text]]]
             [?match \$r
               [case [err @code=\$c @message=\$m] [\$fs--reply 400 [\$fs--err-text \$c \$m]]]
               [else [\$fs--reply 200 [\$cx:emit \$r]]]]]]]]]]]]
