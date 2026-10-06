@@ -187,12 +187,14 @@ Subcommands (`cx <subcommand> --help` for details):
   eq                   Exit 0 iff strict-canonical(A) == strict-canonical(B).
   diff                 Semantic diff (walks the strict-canonical forms).
   lint                 Style + correctness warnings.
+  imports              List a file's imports against its calls; --fix adds, removes and sorts its [?lib] lines.
   validate             Validate a document against a CX schema (.cxs).
   eval                 Evaluate a CX program (alias of the default run action; prefer `cx FILE`).
   primer               Print the LLM onboarding primer for THIS binary (#938).
   version              Version / build info (same output as -v / --version).
   select               CXPath query over a document (matches in canonical CX).
   diagram              Render a CX program as a diagram (mermaid/svg/png).
+  test                 Run the test-* functions of *_test.cx files (test.md §2.3).
   code-diagram         Mermaid diagram of a CX source (flowchart / erDiagram).
   code-tree            Tree View JSON of a CX source.
   table                Table API over [table[...]] blocks (info / dump / load).
@@ -231,12 +233,13 @@ by intent.
 | Command | Use it for |
 |---|---|
 | `cx fmt FILE` | lossless format (keeps comments and anchors) |
+| `cx fmt --code FILE.cx` | format a program keeping its layout — your line breaks, indentation by form, closers glued, lines past 80 broken |
 | `cx canonical FILE` | strict canonical text — what identity is defined over |
 | `cx hash FILE` | SHA-256 of the strict-canonical bytes |
 | `cx eq A B` / `cx diff A B` | semantic equality / semantic diff |
 | `cx lint FILE` | style and correctness findings |
 | `cx validate FILE --schema=S.cxs` | schema check |
-| `cx corpus FILE.cxd` | grade a module conformance corpus with this binary — the grader a repository runs with no toolchain |
+| `cx corpus FILE.cxd` | grade a module conformance corpus with this binary — the grader a repository runs with no toolchain; `--times` adds each case's in-process time |
 | `cx schema infer` / `export` / … | derive a `.cxs`, project it to JSON Schema, classify compatibility |
 | `cx select 'PATH' FILE` | one CXPath query, no program |
 | `cx --from=json --to=cx f.json` | the convert surface |
@@ -260,6 +263,7 @@ by intent.
 | `cx xap init NAME` | scaffold a feature |
 | `cx xap check-surface DIR` | the surface derivation check |
 | `cx lock` | generate / verify `cx.lock` from `[?lib]` imports |
+| `cx imports FILE.cx` | list the modules a file imports and calls (used / unused / missing); `--fix -w` adds the missing `[?lib]` lines, removes the unused and sorts them |
 | `cx flow run FLOW.cx --env ENV.cx` | run a flow document over a journal — build, release and authoring flows from a checkout, no engine to start |
 | `cx flow validate` / `simulate` / `status` | check a flow document, run the runner law over a supplied result table, read a run record back |
 
