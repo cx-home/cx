@@ -31,7 +31,8 @@
     "curl": {
       "version": "8.17.0",
       "outputs": ["out"]
-    }
+    },
+    "github:NixOS/nixpkgs/c27cdad491a991b11ed731760aa2ef8db0cb0410#openssl.dev": ""
   },
   "env": {
     "CPATH":        "$PWD/.devbox/nix/profile/default/include",
