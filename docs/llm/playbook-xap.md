@@ -1439,7 +1439,7 @@ then the notice tones:
 
 ```console
 $ cx prog.cx
-[list 'ux:region' 'ux:card' 'ux:heading' 'ux:text' 'ux:field' 'ux:badge' 'ux:list' 'ux:item' 'ux:table' 'ux:columns' 'ux:column' 'ux:rows' 'ux:row' 'ux:cell' 'ux:nav' 'ux:nav-item' 'ux:link' 'ux:action' 'ux:form' 'ux:input' 'ux:hidden' 'ux:submit' 'ux:error' 'ux:notice' 'ux:filter' 'ux:select' 'ux:option' 'ux:group' 'ux:media' 'ux:grid' 'ux:param' 'ux:steps' 'ux:step' 'ux:quantity' 'ux:breadcrumb' 'ux:crumb' 'ux:pager' 'ux:page-link' 'ux:facet' 'ux:facet-value' 'ux:sort' 'ux:sort-option' 'ux:aside' 'ux:status' 'ux:panel' 'oob' 'target' 'swap' 'ext' 'subscribe' 'on' 'include' 'ok' 'warn' 'danger' 'info' 'neutral']
+[list 'ux:region' 'ux:card' 'ux:heading' 'ux:text' 'ux:field' 'ux:badge' 'ux:list' 'ux:item' 'ux:table' 'ux:columns' 'ux:column' 'ux:rows' 'ux:row' 'ux:cell' 'ux:nav' 'ux:nav-item' 'ux:nav-group' 'ux:link' 'ux:action' 'ux:form' 'ux:input' 'ux:hidden' 'ux:submit' 'ux:error' 'ux:notice' 'ux:filter' 'ux:select' 'ux:option' 'ux:group' 'ux:media' 'ux:grid' 'ux:param' 'ux:steps' 'ux:step' 'ux:quantity' 'ux:breadcrumb' 'ux:crumb' 'ux:pager' 'ux:page-link' 'ux:facet' 'ux:facet-value' 'ux:sort' 'ux:sort-option' 'ux:aside' 'ux:status' 'ux:panel' 'oob' 'target' 'swap' 'ext' 'subscribe' 'on' 'include' 'ok' 'warn' 'danger' 'info' 'neutral']
 ```
 
 An element outside the vocabulary is refused, and so is an attribute outside

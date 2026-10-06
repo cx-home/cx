@@ -67,6 +67,705 @@ called "CX" is not this one. Read these twelve before writing anything.
     Everything after the file belongs to the program. Getting this backwards
     does not produce a usage error — see the anti-patterns in §9.
 
+## 0a. Coming from Python: what does not exist, and the cx form
+
+A model that learned to program mostly from Python writes these forms first.
+None of them is CX. About half are refused, most at parse with the line and
+column named; the rest are worse — a habit that parses runs to exit 0 and
+answers the wrong value. The table is the summary. Under it each row is a
+fixture pair — the habit, then the CX form — both run when this document was
+generated, the habit's answer printed exactly as `cx` gave it.
+
+| You write | What it is in CX | Write instead |
+|---|---|---|
+| `($a % 3)`, `[$a + 1]` | no infix arithmetic — a parse refusal | `[% $a 3]`, `[+ $a 1]` |
+| `[?and A B]`, `[?not A]` | not directives — a parse refusal | `[and A B]`, `[or A B]`, `[not A]` |
+| `… ; remark` | not a comment — each word one more result | `# remark` or `[; remark ]` |
+| `[= $count [+ $count $x]]` in a loop | a fresh binding each pass, never an update | `[?reduce]`, or `[?loop … [continue …]]` |
+| two forms after a `[?let]`'s bindings | one body only — refused | one value; effects in order in `[?do A B]` |
+| `['eggs' 'peanuts']` | no commas — a parse refusal | `['eggs', 'peanuts']` |
+| `[$xs@$i]` | `@` is an attribute step — refused | `[$nth $xs $i]`, counting from 1 |
+| `[?fn $a $b body]` | parameters are one list — refused | `[?fn ($a $b) body]` |
+| `[double 21]` | an element named `double`, not a call | `[$double 21]` |
+| `[?for [in $ch 'abc'] …]` | a string is one item — one pass | `[in $ch [$strings:split 'abc' '']]` |
+| `(1, $n)` | a two-item sequence, not a range | `[$range 1 $n]`, both ends included |
+| `[$strings:replace $s '[0-9]+' '#']` | a literal-text replace — unchanged | `[$re:replace [$re:compile '[0-9]+'] $s '#']` |
+| `[$re:find-all '[0-9]+' $s]` | a string where a compiled pattern goes — refused | `[$re:find-all [$re:compile '[0-9]+'] $s]` |
+| `[?if C [then true] [else false]]` | `C` with a branch around it | `C` |
+| `[$strings:count $s 'a']`, `[$count $s]` for a length | a needle count; an item count (1) | `[$strings:length $s]` |
+| `[/ 7 2]` for an integer | true division — `3.5e0` | `[$idiv 7 2]`, remainder `[% 7 2]` |
+| one `]` too many or too few | refused at parse, naming line and column | `cx fmt FILE` lays it out; `cx lint FILE` checks |
+
+#### Infix arithmetic in parentheses — `($a % 3)`
+
+There is no infix arithmetic in CX, and no operator precedence to learn.
+Every operator is a head: `[% $a 3]`, `[+ $a 1]`, `[* [+ $a 1] 2]`. A
+parenthesised `(…)` is a SEQUENCE literal — comma-separated items — so the
+parser reads `($a` as the start of one and refuses at the `%` it finds where
+a comma or `)` must be.
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?let [= $a 7] ($a % 3)]
+```
+
+```console
+$ cx prog.cx
+error: cx-err:CXER0100: parse: expected ')', got % at line 1:20
+```
+
+**Write this:** The operator is the head — `[% $a 3]`
+
+`prog.cx`
+```cx
+[?let [= $a 7] [% $a 3]]
+```
+
+```console
+$ cx prog.cx
+1
+```
+
+<sub>Fixtures: `ap-py-infix-paren-wrong` / `ap-py-infix-paren-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### Infix arithmetic in brackets — `[$a + 1]`
+
+Moving the infix expression inside brackets does not make it a call. The
+head of `[$a + 1]` is the value `$a`, and `+` is not an expression in
+argument position; the parse refuses. The operator always comes first.
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?let [= $a 7] [$a + 1]]
+```
+
+```console
+$ cx prog.cx
+error: cx-err:CXER0100: parse: unexpected token '+' in expression position at line 1:20
+```
+
+**Write this:** Prefix, operator first — `[+ $a 1]`
+
+`prog.cx`
+```cx
+[?let [= $a 7] [+ $a 1]]
+```
+
+```console
+$ cx prog.cx
+8
+```
+
+<sub>Fixtures: `ap-py-infix-bracket-wrong` / `ap-py-infix-bracket-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### `[?and …]` — `and` is not a directive
+
+`?` marks a control-flow DIRECTIVE from a closed registry (§4): `[?if]`,
+`[?let]`, `[?for]`, `[?match]` and the rest. `and`, `or` and `not` are not in
+it — they are reserved operator heads, written bare like `+` and `=`:
+`[and A B]`, `[or A B]`, `[not A]`. `and`/`or` short-circuit left to right.
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?and true false]
+```
+
+```console
+$ cx prog.cx
+error: cx-err:CXER0100: parse: unknown directive '[?and]' — not in §4.1 registry at line 1:1
+```
+
+**Write this:** `[and …]` and `[or …]` are operator calls
+
+`prog.cx`
+```cx
+[r both=[and true false] either=[or false true]]
+```
+
+```console
+$ cx prog.cx
+[r both=false either=true]
+```
+
+<sub>Fixtures: `ap-py-and-directive-wrong` / `ap-py-and-directive-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### `[?not …]` — `not` is not a directive either
+
+The same rule for negation: `not` is a one-operand operator head, not a
+directive. `[not P]` negates; `[not P Q]` is refused for its arity. Absence
+is spelled `[not [$present $v]]` (§6).
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?not true]
+```
+
+```console
+$ cx prog.cx
+error: cx-err:CXER0100: parse: unknown directive '[?not]' — not in §4.1 registry at line 1:1
+```
+
+**Write this:** `[not …]` is an operator call
+
+`prog.cx`
+```cx
+[not true]
+```
+
+```console
+$ cx prog.cx
+false
+```
+
+<sub>Fixtures: `ap-py-not-directive-wrong` / `ap-py-not-directive-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### A `;` remark after code
+
+`;` does not start a comment. Outside a bracket each bare word is a
+top-level form of the program, so the "remark" runs as three more results —
+`;` itself (printed `';'`), then `the`, then `sum` — after the one you meant. CX has a
+line comment `# …` to the end of the line and a block comment `[; … ]`;
+the raw-text block is TEXT, not a comment.
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[r total=[+ 1 2]] ; the sum
+```
+
+```console
+$ cx prog.cx
+[r total=3]
+';'
+the
+sum
+```
+
+**Write this:** A block comment `[; … ]`, or a line comment `# …`
+
+`prog.cx`
+```cx
+[r total=[+ 1 2]] [; the sum ]  # or a line comment
+```
+
+```console
+$ cx prog.cx
+[r total=3]
+```
+
+<sub>Fixtures: `ap-py-remark-wrong` / `ap-py-remark-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### `[= $count …]` read as reassignment
+
+`[= $x V]` is a BINDING CLAUSE, never an assignment: bindings are immutable,
+and a clause inside `[?for]` binds a fresh `$count` for that one iteration,
+shadowing the outer `0`. So the running total Python's `count += x` builds
+(1, 3, 6) never accumulates — each pass answers `0 + x`. Carried state is a
+fold: `[?reduce]` with an accumulator, or `[?loop]`, whose `[continue …]`
+rebinds its declared bindings positionally for the next pass.
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?let [= $count 0]
+  [?for [in $x (1, 2, 3)]
+    [= $count [+ $count $x]]
+    [yield $count]]]
+```
+
+```console
+$ cx prog.cx
+1
+2
+3
+```
+
+**Write this:** Fold with `[?reduce]`, or carry state through `[?loop]`
+
+`prog.cx`
+```cx
+[total
+  fold=[?reduce (1, 2, 3) [using [?fn ($acc $x) [+ $acc $x]]] [init 0]]
+  loop=[?loop [= $i 1] [= $count 0]
+         [?if [> $i 3] [then [break $count]]
+           [else [continue [+ $i 1] [+ $count $i]]]]]]
+```
+
+```console
+$ cx prog.cx
+[total fold=6 loop=6]
+```
+
+<sub>Fixtures: `ap-py-reassign-wrong` / `ap-py-reassign-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### Two body forms in one `[?let]`
+
+A `[?let]` is bindings, then exactly ONE body — the value it answers.
+There is no statement list: a second form is not "the next line", so the
+clause before the last is read as a malformed binding and refused. Build one
+value that holds both results; to run effects in order, put them in one
+`[?do A B]` (it answers `null`, and the first `[err]` stops the sequence).
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?let [= $a 2]
+  [first [* $a 10]]
+  [second [+ $a 1]]]
+```
+
+```console
+$ cx prog.cx
+error: cx-err:CXER0112: [?let] expected [= $x V] binding clause before the body at line 1:1
+```
+
+**Write this:** One body — one value holding both results
+
+`prog.cx`
+```cx
+[?let [= $a 2]
+  [pair
+    [first [* $a 10]]
+    [second [+ $a 1]]]]
+```
+
+```console
+$ cx prog.cx
+[pair [first 20] [second 3]]
+```
+
+<sub>Fixtures: `ap-py-let-two-bodies-wrong` / `ap-py-let-two-bodies-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### Array items without commas — `['eggs' 'peanuts']`
+
+Array `[a, b]` and sequence `(a, b)` literals separate their items with
+commas. Without them `['eggs' 'peanuts']` is not a two-item array; the parse
+refuses at the second item.
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?let [= $allergens ['eggs' 'peanuts']] [$count $allergens]]
+```
+
+```console
+$ cx prog.cx
+error: cx-err:CXER0100: parse: expected ']', got peanuts at line 1:29
+```
+
+**Write this:** Commas between the items — `['eggs', 'peanuts']`
+
+`prog.cx`
+```cx
+[?let [= $allergens ['eggs', 'peanuts']] [$count $allergens]]
+```
+
+```console
+$ cx prog.cx
+2
+```
+
+<sub>Fixtures: `ap-py-array-commas-wrong` / `ap-py-array-commas-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### Indexing with `@` — `[$array@$i]`
+
+`@` is the attribute step of a path (`$row@id`), not a subscript, and a
+call head `[$f …]` carries no path step. There is no `xs[i]`. Positional
+access is the call `[$nth $xs $i]`, and positions are 1-BASED, as in every
+CX position (strings, `re` matches, `[$range]`): `[$nth $xs 1]` is the first
+item, and `[$nth $xs 0]` is refused out of range.
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?let [= $xs [10, 20, 30]] [= $i 2] [$xs@$i]]
+```
+
+```console
+$ cx prog.cx
+error: cx-err:CXER0100: parse: call head `[$fn …]` may not carry path steps; bind the value first at line 1:38
+```
+
+**Write this:** `[$nth $xs $i]`, counting from 1
+
+`prog.cx`
+```cx
+[?let [= $xs [10, 20, 30]] [= $i 2] [r first=[$nth $xs 1] at-i=[$nth $xs $i]]]
+```
+
+```console
+$ cx prog.cx
+[r first=10 at-i=20]
+```
+
+<sub>Fixtures: `ap-py-index-at-wrong` / `ap-py-index-at-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### `[?fn $a $b …]` — parameters without parentheses
+
+A function's parameters are ONE parenthesised list, then exactly one
+body: `[?fn ($a $b) body]`, as in `[?def name ($a $b) body]`. Written bare,
+`$b` is read as the body and the real body as a second one, and the form is
+refused.
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?let [= $add [?fn $a $b [+ $a $b]]] [$add 2 3]]
+```
+
+```console
+$ cx prog.cx
+[err code=cx-err:CXER0100 message='[?fn]/[?def] takes exactly one body: the form is [?fn (params) body] (code.md §8.6), and a third positional is a second body — a `:body` here is the ATOM :body in body position, not a slot (1558-b, #1558)' at='1:1']
+```
+
+**Write this:** Parameters in one list — `[?fn ($a $b) …]`
+
+`prog.cx`
+```cx
+[?let [= $add [?fn ($a $b) [+ $a $b]]] [$add 2 3]]
+```
+
+```console
+$ cx prog.cx
+5
+```
+
+<sub>Fixtures: `ap-py-fn-params-wrong` / `ap-py-fn-params-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### A call without `$` — `[double 21]`
+
+A call is `[$f args…]`. Without the `$`, `[double 21]` is not a call of the
+function you just defined — it is an ELEMENT named `double`, legal data, so
+the program succeeds and answers the element. Every call of a function,
+builtin or module verb carries `$`; only operator heads (`+`, `=`, `and`)
+and directives (`?`) are written without it.
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?def double ($c) [* $c 2]]
+[double 21]
+```
+
+```console
+$ cx prog.cx
+[double 21]
+```
+
+**Write this:** `[$double 21]` — the `$` makes it a call
+
+`prog.cx`
+```cx
+[?def double ($c) [* $c 2]]
+[$double 21]
+```
+
+```console
+$ cx prog.cx
+42
+```
+
+<sub>Fixtures: `ap-py-call-sigil-wrong` / `ap-py-call-sigil-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### A `[?for]` over a string
+
+A string is one scalar, not a sequence of characters. A generator over it
+walks one item — the whole string — so the loop runs once. Split it first:
+`[$strings:split $s '']` answers its code points (and `strings:graphemes`
+its user-perceived characters).
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/strings' as=strings]
+[?for [in $ch 'abc'] [yield [$strings:upper $ch]]]
+```
+
+```console
+$ cx prog.cx
+ABC
+```
+
+**Write this:** Over `[$strings:split $s '']`
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/strings' as=strings]
+[?for [in $ch [$strings:split 'abc' '']] [yield [$strings:upper $ch]]]
+```
+
+```console
+$ cx prog.cx
+A
+B
+C
+```
+
+<sub>Fixtures: `ap-py-for-string-wrong` / `ap-py-for-string-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### `(1, $n)` as a range
+
+`(1, $n)` is a two-item SEQUENCE — the items `1` and `$n` — not a range, so
+the loop runs twice. A range is the call `[$range lo hi]`, and both ends are
+INCLUSIVE (`[$range 1 4]` is 1, 2, 3, 4; Python's `range(1, n)` stops before
+`n`).
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?let [= $n 4] [?for [in $i (1, $n)] [yield [* $i $i]]]]
+```
+
+```console
+$ cx prog.cx
+1
+16
+```
+
+**Write this:** `[$range 1 $n]`, both ends included
+
+`prog.cx`
+```cx
+[?let [= $n 4] [?for [in $i [$range 1 $n]] [yield [* $i $i]]]]
+```
+
+```console
+$ cx prog.cx
+1
+4
+9
+16
+```
+
+<sub>Fixtures: `ap-py-range-wrong` / `ap-py-range-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### `strings:replace` with a regular expression
+
+`strings:replace` replaces a LITERAL substring. Handed a pattern it looks
+for the characters `[0-9]+` themselves, finds none, and answers the string
+unchanged — no error. Pattern replacement is `re:replace` over a compiled
+pattern from `[$re:compile]`.
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/strings' as=strings]
+[$strings:replace 'a1b22c333' '[0-9]+' '#']
+```
+
+```console
+$ cx prog.cx
+a1b22c333
+```
+
+**Write this:** `re:replace` with `[$re:compile …]`
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/re' as=re]
+[$re:replace [$re:compile '[0-9]+'] 'a1b22c333' '#']
+```
+
+```console
+$ cx prog.cx
+'a#b#c#'
+```
+
+<sub>Fixtures: `ap-py-replace-regex-wrong` / `ap-py-replace-regex-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### `re:find-all` with a pattern string
+
+Every `re` verb that matches takes a COMPILED pattern, never a pattern
+string: compile once with `[$re:compile]` and pass the value (bind it with
+`[?const]` to reuse it). A string there is refused, naming the verb and
+`re:compile`. `re:find-all` answers `[match …]` elements; `re:find-all-text`
+answers just the matched texts, Python's `re.findall`.
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/re' as=re]
+[$re:find-all '[0-9]+' 'a1b22c333']
+```
+
+```console
+$ cx prog.cx
+[err code=cx-err:CXER0100 message='re:find-all: argument 1 expects a compiled regex from [$re:compile] (compile the pattern string first), got string — operand-kind fault (E_ARG)' at='2:1']
+```
+
+**Write this:** Compile the pattern first
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/re' as=re]
+[?let [= $digits [$re:compile '[0-9]+']]
+  [?for [in $m [$re:find-all $digits 'a1b22c333']] [yield [r start=$m@start end=$m@end]]]]
+```
+
+```console
+$ cx prog.cx
+[r start=2 end=2]
+[r start=4 end=5]
+[r start=7 end=9]
+```
+
+<sub>Fixtures: `ap-py-find-all-string-wrong` / `ap-py-find-all-string-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### `[?if C [then true] [else false]]`
+
+A comparison already answers a boolean. Wrapping it in an `[?if]` that maps
+`true` to `true` and `false` to `false` adds a branch and changes nothing —
+both halves below answer the same value. Write the condition itself.
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?let [= $n 7] [?if [> $n 5] [then true] [else false]]]
+```
+
+```console
+$ cx prog.cx
+true
+```
+
+**Write this:** The condition is the value — `C`
+
+`prog.cx`
+```cx
+[?let [= $n 7] [> $n 5]]
+```
+
+```console
+$ cx prog.cx
+true
+```
+
+<sub>Fixtures: `ap-py-if-true-false-wrong` / `ap-py-if-true-false-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### `strings:count` (or `$count`) for a string's length
+
+`strings:count` counts the occurrences of a NEEDLE (`'a'` in `'banana'` is
+3), and `$count` counts the items of a sequence — a string is one item, so it
+answers 1. Neither is Python's `len(s)`. The length in code points is
+`strings:length`.
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/strings' as=strings]
+[r count=[$count 'banana'] needle=[$strings:count 'banana' 'a']]
+```
+
+```console
+$ cx prog.cx
+[r count=1 needle=3]
+```
+
+**Write this:** `strings:length`
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/strings' as=strings]
+[r length=[$strings:length 'banana']]
+```
+
+```console
+$ cx prog.cx
+[r length=6]
+```
+
+<sub>Fixtures: `ap-py-string-length-wrong` / `ap-py-string-length-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### `/` for an integer result
+
+`/` is true division. Over two ints it answers an int only when the
+quotient is whole; otherwise a float (`[/ 7 2]` is `3.5e0`) — never Python
+2's floor. Integer division is `[$idiv a b]` (truncating toward zero) and the
+remainder is `[% a b]`.
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[r half=[/ 7 2] even=[/ 6 2]]
+```
+
+```console
+$ cx prog.cx
+[r half=3.5e0 even=3]
+```
+
+**Write this:** `[$idiv a b]` for the quotient, `[% a b]` for the remainder
+
+`prog.cx`
+```cx
+[r quot=[$idiv 7 2] rem=[% 7 2]]
+```
+
+```console
+$ cx prog.cx
+[r quot=3 rem=1]
+```
+
+<sub>Fixtures: `ap-py-int-division-wrong` / `ap-py-int-division-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### Miscounted closing brackets
+
+Every form closes with its own `]`, and a long one-line program is where a
+count goes wrong. CX refuses a stray `]` or an unclosed `[` at parse, naming
+the line and column, before anything runs. Do not count by eye: `cx fmt FILE`
+prints the program in canonical layout (indent 2, width 80, a form too wide
+broken across lines) so each closer sits at the end of its form, and refuses
+the same miscount at the same column; `cx lint FILE` checks without printing.
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?let [= $xs (1, 2, 3)] [report total=[?reduce $xs [using [?fn ($acc $x) [+ $acc $x]]] [init 0]]]]]
+```
+
+```console
+$ cx prog.cx
+error: cx-err:CXER0100: parse: unmatched `]` — no open `[` for this closer (a stray `]`, or one `]` too many on a construct that already closed) at line 1:99
+```
+
+**Write this:** Let `cx fmt` lay the program out
+
+`prog.cx`
+```cx
+[?let [= $xs (1, 2, 3)] [report total=[?reduce $xs [using [?fn ($acc $x) [+ $acc $x]]] [init 0]]]]
+```
+
+```console
+$ cx fmt prog.cx
+[?let [= $xs (1, 2, 3)]
+  [report total=[?reduce $xs [using [?fn ($acc $x) [+ $acc $x]]] [init 0]]]]
+```
+
+<sub>Fixtures: `ap-py-brackets-wrong` / `ap-py-brackets-right` in `conformance/llm/antipatterns.cxd`</sub>
+
 ## 1. Running CX
 
 You can check every claim in this document. Do that rather than trusting it.
@@ -194,8 +893,8 @@ fraction as a binary float and CX does not.
 
 | Kind | How you get one |
 |---|---|
-| **decimal** | a plain fraction literal: `1.5`, `2.50`, `0.1`. Exact, base-10, arbitrary precision |
-| **float** | an `e`-exponent literal (`1.5e0`), a `::float` annotation, `[cast x :float]`, a division of ints whose quotient is not whole (`[/ 7 2]`), a float operand, `[$avg …]`, and the float-returning `math` functions |
+| **decimal** | a plain fraction literal: `1.5`, `2.50`, `0.1`. Exact, base-10, arbitrary precision. Arithmetic over decimals stays decimal, and so does `[$avg …]` of decimals: `[$avg [0.5, 1.5]]` is `1.00` |
+| **float** | an `e`-exponent literal (`1.5e0`), a `::float` annotation, `[cast x :float]`, a division of ints whose quotient is not whole (`[/ 7 2]`), a float operand, `[$avg …]` of ints or floats (`[$avg [2, 4, 6]]` is `4.0e0`), and the float-returning `math` functions |
 
 `[price 19.99]` is a decimal and stays exact. Division follows its operands: `[/ 6 2]` is the
 int `3` and `[/ 7 2]` the float `3.5` (an int result only when every operand is an int
@@ -211,7 +910,8 @@ freely — but the two kinds never mix with each other:
 Almost every language reads a bare fraction as a binary float. CX does not:
 `1.5` is a **decimal** — exact, base-10, arbitrary precision — and only an
 `e`-exponent literal (`1.5e0`), a `::float` annotation, a `[cast … :float]`,
-a division, `[$avg]`, or a float-returning `math` function produces a float.
+a division, `[$avg]` of ints or floats (of decimals it stays an exact
+decimal), or a float-returning `math` function produces a float.
 
 The two kinds do not silently mix. Adding them is a loud refusal naming the
 only bridge, rather than a quiet promotion that would put binary rounding
@@ -467,6 +1167,8 @@ and do not carry one over from another Lisp.
 | `[?filter]` | Iterator stdlib — filter by predicate |
 | `[?take]` | Iterator stdlib — prefix of `count` items |
 | `[?drop]` | Iterator stdlib — suffix after `count` items |
+| `[?take-while]` | Iterator stdlib — the leading items a `[using PRED]` passes, stopping at the first it fails (GAPS-1; case program-gap-259-take-while-lazy-and-stops, gap-259) |
+| `[?drop-while]` | Iterator stdlib — every item after the leading run a `[using PRED]` passes, the predicate no longer consulted once one item fails; with `[?take-while]` the predicate prefix pair beside the count pair `[?take]` / `[?drop]` (Python's `itertools.takewhile` / `dropwhile`), lazy as `[?filter]` is, so `[?take-while [$range 1 *] [using …]]` is finite (GAPS-1; case program-gap-259-drop-while, program-gap-259-take-while-lazy-and-stops, gap-259) |
 | `[?zip]` | Iterator stdlib — per-position tuples |
 | `[?enumerate]` | Iterator stdlib — emit `(position, item)` pairs, the position 1-based (D4) |
 | `[?chunks]` | Iterator stdlib — group by `count` |
@@ -475,7 +1177,7 @@ and do not carry one over from another Lisp.
 | `[?scan]` | Iterator stdlib — running-fold prefixes |
 | `[?flatten]` | Iterator stdlib — flatten one level of nesting |
 | `[?partition]` | Iterator stdlib — split by predicate |
-| `[?group-by]` | Iterator stdlib — group by key |
+| `[?group-by]` | Iterator stdlib — group by key: `(KEY, (ITEMS…))` pairs in first-seen key order, keys partitioned by value equality and each KEY the value the key function returned, its kind kept (an int stays an int, an atom an atom) *(RULED: GAPS-2, GAPS-1; #1819 §7, `program-gap-207-group-by-key-kind`, `program-gap-207b-group-by-atom-and-mixed-keys`)* |
 | `[?to-sequence]` | Force-materialise — Iterator → Sequence |
 | `[?to-array]` | Force-materialise — Iterator → Array |
 | `[?to-map]` | Force-materialise — Iterator-of-pairs → Map |
@@ -3227,13 +3929,15 @@ A bare fraction is a **decimal**: exact, base-10, arbitrary precision. A
 float arises only from an `e`-exponent literal (`1.5e0`), a `::float`
 annotation, `[cast … :float]`, a division of ints whose quotient is not
 whole (`[/ 7 2]` — `[/ 6 2]` is the int `3`, and a decimal or bigint operand
-divides exactly into a decimal, code.md §6.5, CO-17), `[$avg …]`, and the
-float-returning `math` functions.
+divides exactly into a decimal, code.md §6.5, CO-17), `[$avg …]` of ints or
+floats, and the float-returning `math` functions; `[$avg …]` of decimals
+keeps the exact decimal (`[$avg [0.5, 1.5]]` is `1.00`).
 
 ```
 1.5        decimal        1.5e0      float
 19.99      decimal        [/ 7 2]    float
-[* 2 1.5]  decimal        [$avg …]   float
+[* 2 1.5]  decimal        [$avg [2, 4]]  float
+[$avg [0.5, 1.5]]  decimal
 ```
 
 They do not mix in arithmetic — `[cast]` is the only bridge — and they are
@@ -4704,12 +5408,14 @@ Subcommands (`cx <subcommand> --help` for details):
   eq                   Exit 0 iff strict-canonical(A) == strict-canonical(B).
   diff                 Semantic diff (walks the strict-canonical forms).
   lint                 Style + correctness warnings.
+  imports              List a file's imports against its calls; --fix adds, removes and sorts its [?lib] lines.
   validate             Validate a document against a CX schema (.cxs).
   eval                 Evaluate a CX program (alias of the default run action; prefer `cx FILE`).
   primer               Print the LLM onboarding primer for THIS binary (#938).
   version              Version / build info (same output as -v / --version).
   select               CXPath query over a document (matches in canonical CX).
   diagram              Render a CX program as a diagram (mermaid/svg/png).
+  test                 Run the test-* functions of *_test.cx files (test.md §2.3).
   code-diagram         Mermaid diagram of a CX source (flowchart / erDiagram).
   code-tree            Tree View JSON of a CX source.
   table                Table API over [table[...]] blocks (info / dump / load).
@@ -4748,12 +5454,13 @@ by intent.
 | Command | Use it for |
 |---|---|
 | `cx fmt FILE` | lossless format (keeps comments and anchors) |
+| `cx fmt --code FILE.cx` | format a program keeping its layout — your line breaks, indentation by form, closers glued, lines past 80 broken |
 | `cx canonical FILE` | strict canonical text — what identity is defined over |
 | `cx hash FILE` | SHA-256 of the strict-canonical bytes |
 | `cx eq A B` / `cx diff A B` | semantic equality / semantic diff |
 | `cx lint FILE` | style and correctness findings |
 | `cx validate FILE --schema=S.cxs` | schema check |
-| `cx corpus FILE.cxd` | grade a module conformance corpus with this binary — the grader a repository runs with no toolchain |
+| `cx corpus FILE.cxd` | grade a module conformance corpus with this binary — the grader a repository runs with no toolchain; `--times` adds each case's in-process time |
 | `cx schema infer` / `export` / … | derive a `.cxs`, project it to JSON Schema, classify compatibility |
 | `cx select 'PATH' FILE` | one CXPath query, no program |
 | `cx --from=json --to=cx f.json` | the convert surface |
@@ -4777,6 +5484,7 @@ by intent.
 | `cx xap init NAME` | scaffold a feature |
 | `cx xap check-surface DIR` | the surface derivation check |
 | `cx lock` | generate / verify `cx.lock` from `[?lib]` imports |
+| `cx imports FILE.cx` | list the modules a file imports and calls (used / unused / missing); `--fix -w` adds the missing `[?lib]` lines, removes the unused and sorts them |
 | `cx flow run FLOW.cx --env ENV.cx` | run a flow document over a journal — build, release and authoring flows from a checkout, no engine to start |
 | `cx flow validate` / `simulate` / `status` | check a flow document, run the runner law over a supplied result table, read a run record back |
 
@@ -6356,7 +7064,7 @@ then the notice tones:
 
 ```console
 $ cx prog.cx
-[list 'ux:region' 'ux:card' 'ux:heading' 'ux:text' 'ux:field' 'ux:badge' 'ux:list' 'ux:item' 'ux:table' 'ux:columns' 'ux:column' 'ux:rows' 'ux:row' 'ux:cell' 'ux:nav' 'ux:nav-item' 'ux:link' 'ux:action' 'ux:form' 'ux:input' 'ux:hidden' 'ux:submit' 'ux:error' 'ux:notice' 'ux:filter' 'ux:select' 'ux:option' 'ux:group' 'ux:media' 'ux:grid' 'ux:param' 'ux:steps' 'ux:step' 'ux:quantity' 'ux:breadcrumb' 'ux:crumb' 'ux:pager' 'ux:page-link' 'ux:facet' 'ux:facet-value' 'ux:sort' 'ux:sort-option' 'ux:aside' 'ux:status' 'ux:panel' 'oob' 'target' 'swap' 'ext' 'subscribe' 'on' 'include' 'ok' 'warn' 'danger' 'info' 'neutral']
+[list 'ux:region' 'ux:card' 'ux:heading' 'ux:text' 'ux:field' 'ux:badge' 'ux:list' 'ux:item' 'ux:table' 'ux:columns' 'ux:column' 'ux:rows' 'ux:row' 'ux:cell' 'ux:nav' 'ux:nav-item' 'ux:nav-group' 'ux:link' 'ux:action' 'ux:form' 'ux:input' 'ux:hidden' 'ux:submit' 'ux:error' 'ux:notice' 'ux:filter' 'ux:select' 'ux:option' 'ux:group' 'ux:media' 'ux:grid' 'ux:param' 'ux:steps' 'ux:step' 'ux:quantity' 'ux:breadcrumb' 'ux:crumb' 'ux:pager' 'ux:page-link' 'ux:facet' 'ux:facet-value' 'ux:sort' 'ux:sort-option' 'ux:aside' 'ux:status' 'ux:panel' 'oob' 'target' 'swap' 'ext' 'subscribe' 'on' 'include' 'ok' 'warn' 'danger' 'info' 'neutral']
 ```
 
 An element outside the vocabulary is refused, and so is an attribute outside
@@ -8366,7 +9074,7 @@ the product compiles from (RULED: RS-24).
 | `cx-platform-sso` | 1 | no | `cx-platform/sso` |
 | `cx-platform-flow` | 1 | no | `cx-platform/flow` |
 | `cx-core-data` | 1 | yes | `cx-core-data` |
-| `cx-core-code` | 56 | yes | `cx-stdlib/array` `cx-stdlib/authz` `cx-stdlib/bus` `cx-stdlib/bytes` `cx-stdlib/crypto` `cx-stdlib/csv` `cx-stdlib/cx` `cx-stdlib/decision` `cx-stdlib/did` `cx-stdlib/email` `cx-stdlib/env` `cx-stdlib/format` `cx-stdlib/fp` `cx-stdlib/geo` `cx-stdlib/graphql` `cx-stdlib/hash` `cx-stdlib/heap` `cx-stdlib/html` `cx-stdlib/http-client` `cx-stdlib/i18n` `cx-stdlib/io` `cx-stdlib/json` `cx-stdlib/jsonrpc` `cx-stdlib/jsonschema` `cx-stdlib/locale` `cx-stdlib/log` `cx-stdlib/map` `cx-stdlib/math` `cx-stdlib/mime` `cx-stdlib/oidc` `cx-stdlib/path` `cx-stdlib/pdf` `cx-stdlib/process` `cx-stdlib/prof` `cx-stdlib/random` `cx-stdlib/re` `cx-stdlib/saml` `cx-stdlib/sched` `cx-stdlib/scim` `cx-stdlib/set` `cx-stdlib/similar` `cx-stdlib/soap` `cx-stdlib/strings` `cx-stdlib/supervise` `cx-stdlib/tar` `cx-stdlib/term` `cx-stdlib/test` `cx-stdlib/time` `cx-stdlib/url` `cx-stdlib/uuid` `cx-stdlib/validate` `cx-stdlib/vc` `cx-stdlib/ws` `cx-stdlib/xml` `cx-stdlib/zip` `term` |
+| `cx-core-code` | 53 | yes | `cx-stdlib/array` `cx-stdlib/authz` `cx-stdlib/bus` `cx-stdlib/bytes` `cx-stdlib/crypto` `cx-stdlib/csv` `cx-stdlib/cx` `cx-stdlib/did` `cx-stdlib/email` `cx-stdlib/env` `cx-stdlib/format` `cx-stdlib/fp` `cx-stdlib/geo` `cx-stdlib/graphql` `cx-stdlib/hash` `cx-stdlib/html` `cx-stdlib/http-client` `cx-stdlib/i18n` `cx-stdlib/io` `cx-stdlib/json` `cx-stdlib/jsonrpc` `cx-stdlib/jsonschema` `cx-stdlib/locale` `cx-stdlib/log` `cx-stdlib/map` `cx-stdlib/math` `cx-stdlib/mime` `cx-stdlib/oidc` `cx-stdlib/path` `cx-stdlib/process` `cx-stdlib/prof` `cx-stdlib/random` `cx-stdlib/re` `cx-stdlib/saml` `cx-stdlib/sched` `cx-stdlib/scim` `cx-stdlib/set` `cx-stdlib/similar` `cx-stdlib/soap` `cx-stdlib/strings` `cx-stdlib/supervise` `cx-stdlib/tar` `cx-stdlib/term` `cx-stdlib/test` `cx-stdlib/time` `cx-stdlib/url` `cx-stdlib/uuid` `cx-stdlib/validate` `cx-stdlib/vc` `cx-stdlib/ws` `cx-stdlib/xml` `cx-stdlib/zip` `term` |
 | `cx-platform-db` | 3 | yes | `db` `sql` `redis` |
 | `cx-platform-net` | 4 | yes | `cx-platform/net` `cx-platform/http` `cx-platform/ftp` `cx-platform/sftp` |
 | `cx-platform-mail` | 3 | yes | `cx-platform/imap` `cx-platform/smtp` `cx-stdlib/sasl` |
@@ -8498,17 +9206,17 @@ row is refused by name (RULED: RS-1).
 
 | column | rows carrying it | its values (six or fewer), or how many |
 |---|---|---|
-| `name=` | 99 | 98 distinct values |
-| `ring=` | 99 | `1` `0` |
-| `ns=` | 99 | `cx-stdlib` `cx-platform` `none` |
-| `kind=` | 99 | `module` `natives` `backend` `design` `suite` `codec` |
-| `repo=` | 99 | 16 distinct values |
-| `spec=` | 99 | 97 distinct values |
-| `corpus=` | 99 | 95 distinct values |
-| `source=` | 99 | 88 distinct values |
-| `code=` | 99 | 74 distinct values |
-| `half=` | 99 | `none` `deps/cx-core-code/vcx/code/stdlib_time.v deps/cx-core-code/vcx/code/datetime_core.v` |
-| `status=` | 99 | `current` |
+| `name=` | 100 | 99 distinct values |
+| `ring=` | 100 | `1` `0` |
+| `ns=` | 100 | `cx-stdlib` `cx-platform` `none` |
+| `kind=` | 100 | `module` `natives` `backend` `design` `suite` `codec` |
+| `repo=` | 100 | 16 distinct values |
+| `spec=` | 100 | 98 distinct values |
+| `corpus=` | 100 | 96 distinct values |
+| `source=` | 100 | 89 distinct values |
+| `code=` | 100 | 75 distinct values |
+| `half=` | 100 | `none` `deps/cx-core-code/vcx/code/stdlib_time.v deps/cx-core-code/vcx/code/datetime_core.v` |
+| `status=` | 100 | `current` |
 | `group=` | 42 | `platform` |
 | `suite-ring=` | 5 | `1` |
 
@@ -8530,11 +9238,11 @@ What the columns mean (the file's own `[doc]` block is the full text):
 
 ## 4. Where the rows live today
 
-<sub>Generated by `scripts/gen_docs/contributor_facts.cx` from `registry/modules.cxd`'s `[module]` rows, grouped by `repo=` (99 rows) — do not edit here: change the source, run `make docs`.</sub>
+<sub>Generated by `scripts/gen_docs/contributor_facts.cx` from `registry/modules.cxd`'s `[module]` rows, grouped by `repo=` (100 rows) — do not edit here: change the source, run `make docs`.</sub>
 
 | repository | rows | ring 0 | ring 1 | `group=platform` | `status=planned` | the rows (`name=`) |
 |---|---|---|---|---|---|---|
-| `cx-core-code` | 53 | 1 | 52 | 0 | 0 | authz, array, bus, bytes, crypto, csv, cx, did, email, env, format, fp, geo, graphql, hash, html, http-client, i18n, io, json, jsonrpc, jsonschema, locale, log, map, math, mime, oidc, path, process, prof, random, re, saml, sched, scim, set, similar, soap, strings, supervise, tar, term, test, time, url, uuid, validate, vc, ws, zip, term, xml |
+| `cx-core-code` | 54 | 1 | 53 | 0 | 0 | authz, array, bus, bytes, crypto, csv, cx, did, email, env, format, fp, geo, graphql, hash, heap, html, http-client, i18n, io, json, jsonrpc, jsonschema, locale, log, map, math, mime, oidc, path, process, prof, random, re, saml, sched, scim, set, similar, soap, strings, supervise, tar, term, test, time, url, uuid, validate, vc, ws, zip, term, xml |
 | `cx-tooling` | 1 | 0 | 1 | 0 | 0 | diagram |
 | `cx-platform-store` | 7 | 0 | 1 | 6 | 0 | ft, audit, journal, live, store, distributed_store, erasure_compliance |
 | `cx-platform-mail` | 3 | 0 | 1 | 2 | 0 | sasl, imap, smtp |
@@ -9194,7 +9902,7 @@ separate error channel:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/http-client' as=http]
+[?lib 'cx-stdlib/http-client' :as http]
 [$http:status [response status=404]]
 ```
 
@@ -9205,7 +9913,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/http-client' as=http]
+[?lib 'cx-stdlib/http-client' :as http]
 [$http:ok [response status=404]]
 ```
 

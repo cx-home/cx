@@ -506,6 +506,14 @@ const reason_prog = 'RECORDED EXCEPTION (1548-c) — a program document whose BR
 // 2026-09-18 morning, seventy-five after, and every departure forced by this
 // judgement rather than asserted by a commit message.
 const accepted_by_one_table = [
+	// ── the DATA stream (RULED: STREAM-1; cx-private reader-parity red) ──
+	// 32 -> 17: the data reader reads [?lib]/[?const] as EvalDirectives and a
+	// module-qualified `$prefix:local` as a hole (lexicon [L78]), so the
+	// fifteen call-shaped files whose only divergence was `[$mod:verb (…)]`
+	// read alike and left the table; the two below are the program forms the
+	// data grammar states its own rule about.
+	AcceptedByOne{'scripts/gitconfig_home_selftest.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/repr_guard_selftest.cx', .program, reason_1536},
 	// ── #1559's split-out tail (#1576, #1578, #1579) — 5 -> 0 ──
 	// 6 -> 4 -> 5 -> 0: conformance/code.cxd and conformance/stdlib/array.cxd left
 	// with cx-core-code's extraction (RULED: RS-12, D68a); lockfile.cxd and
@@ -518,13 +526,15 @@ const accepted_by_one_table = [
 	//    and deps/cx-core-data/conformance/ only (pinned_conformance_dir(), RS-7),
 	//    so the entry cannot be repointed at the pin the way a corpus grader's
 	//    would be; it is simply gone from the population this step scans) ──
-	AcceptedByOne{'examples/doc.cx', .data, reason_l25c_residue},
+	// 1 -> 0: examples/doc.cx left with the DATA stream's reader-parity fixes
+	// (cx-core-data#5, #29, #32, #38; RULED: STREAM-1) -- both readers read it;
+	// the judgement below forced the removal.
 	// ── recorded exception — an `&Name;` entity reference (2) ──
 	AcceptedByOne{'examples/cx-tour.cx', .data, reason_entity},
 	AcceptedByOne{'examples/env.cx', .data, reason_entity},
 	// ── recorded exception — a token-initial operator head (1) ──
 	AcceptedByOne{'examples/logs.cx', .data, reason_ophead},
-	// ── recorded exception — a DATA-only lane the program grammar has no form for (5) ──
+	// ── recorded exception — a DATA-only lane the program grammar has no form for (3) ──
 	// 4 -> 6: the front door's two corpora (#1589 item 23, RULED: RS-7, RS-9) -- a
 	// [title] of bare prose carrying a word the program reader takes as a keyword
 	// (`module`, `shape`). The three data-language suites are read at cx-core-data's
@@ -540,8 +550,9 @@ const accepted_by_one_table = [
 	// reader too, so both readers answer one tree; the judgement below forced
 	// the removal.
 	AcceptedByOne{'deps/cx-core-data/conformance/conversions.cxd', .data, reason_datalane},
-	AcceptedByOne{'conformance/docs_fragment.cxd', .data, reason_datalane},
-	AcceptedByOne{'conformance/gates_register.cxd', .data, reason_datalane},
+	// 5 -> 3: conformance/docs_fragment.cxd and conformance/gates_register.cxd
+	// left with the same DATA stream fixes (RULED: STREAM-1) -- the judgement
+	// below forced the removal.
 	AcceptedByOne{'deps/cx-core-data/conformance/fmt.cxd', .data, reason_datalane},
 	AcceptedByOne{'deps/cx-core-data/conformance/xml.cxd', .data, reason_datalane},
 	// ── #1536 — a call-shaped head beside a ws-delimited literal (22) ──
@@ -553,36 +564,26 @@ const accepted_by_one_table = [
 	// owns those files judges its own reader parity, or nothing does, and
 	// RESULTS.md says which. `examples/platform/together/sso-flow-xap/actor.cx`
 	// stays -- it is cx's composition, not sso's.
-	AcceptedByOne{'examples/platform/together/sso-flow-xap/actor.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/check_code_diagram_fixtures.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/check_code_fixtures.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/check_code_spec_consistency.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/check_completions_drift.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/check_no_adr_citations.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/check_no_cxl_token.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/check_null_absence_conflation.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/check_portable_links.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/check_xpath_parity_fixtures.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/compare_bench.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/compile_binding_api_fixtures.cx', .program, reason_1536},
 	// 22 -> 23: scripts/deps_cx_selftest.cx, #1643's bootstrap self-test -- the
 	// class's own shape, `[$process:run ("sh", "-c", $script)]` (RULED: RS-7).
 	AcceptedByOne{'scripts/deps_cx_selftest.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/fmt_corpus_sweep.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/gate_lock_selftest.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/gen_docs/primer_build.cx', .program, reason_1536},
 	// 21 -> 22: scripts/gen_site/site_build.cx, the cxhome.org landing-page
 	// generator (RULED: RS-28, RS-30) -- the class's own shape,
 	// `[$pb:cat-seqs ($acc, ($item,))]`, the same fold primer_build.cx above
 	// folds with, whose functions it imports.
-	AcceptedByOne{'scripts/gen_site/site_build.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/gen_guide/snippet_check.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/lang_stats.cx', .program, reason_1536},
 	// 23 -> 24: #1670's scripts/release_asset_links_gate.cx, the same shape as
 	// check_portable_links.cx above (`[$array:flatten (…)]`) -- the release
 	// staging directory scan reuses its glob-then-flatten idiom verbatim.
 	AcceptedByOne{'scripts/release_asset_links_gate.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/release_asset_links_selftest.cx', .program, reason_1536},
+	// release_asset_links_selftest.cx (93d4a0825) is not here: the two readers agree on
+	// it on cx-core-data 7bf68e720 (the DATA stream's reader-parity fixes) (RULED: STREAM-1).
 	AcceptedByOne{'scripts/run_bench_json.cx', .program, reason_1536},
 	// 21 -> 23: RS-33's K12 branch, scripts/check_no_ai_attribution.cx and
 	// scripts/strip_attribution.cx -- the class's own shape,
@@ -595,11 +596,6 @@ const accepted_by_one_table = [
 	// follow deps/.
 	AcceptedByOne{'scripts/check_no_ai_attribution.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/strip_attribution.cx', .program, reason_1536},
-	// STREAM-1 (the CORE stream's landing, 2026-10-06): a PRIV selftest and the
-	// guide's theme check written since — call-shaped heads beside a ws-delimited
-	// `(…)`/`{…}` literal, the 1536-a property.
-	AcceptedByOne{'scripts/gen_guide/theme_check.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/repr_guard_selftest.cx', .program, reason_1536},
 	// DOCS-4 wave 1 (RULED: DOCS-42, DOCS-44, DOCS-45, DOCS-46): four new
 	// generators under scripts/gen_site/ and the site assembler's new link walk
 	// -- the class's own shape again, `[$fp:fold … {} [?fn …]]` (ring_svg.cx),
@@ -607,9 +603,7 @@ const accepted_by_one_table = [
 	// (check_external_links.cx) and `[$pb:cat-seqs ($acc, ($p,))]`
 	// (site_assemble.cx, the same fold site_build.cx above folds with).
 	AcceptedByOne{'scripts/gen_site/ring_svg.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/gen_site/llm_index.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/gen_site/check_external_links.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/gen_site/site_assemble.cx', .program, reason_1536},
 	// DOCS-4 wave 2 (RULED: DOCS-41, DOCS-49): the repository pages' facts
 	// generator, scripts/gen_site/repo_page.cx -- the class's own shape once
 	// more, `[$fp:flat-map ($ordered, $stray) [?fn ($g) $g]]` (its
@@ -657,8 +651,10 @@ const accepted_by_one_table = [
 	// `[$math:max ($x, $y)]`) and #1775/#1822's scripts/repr_guard_selftest.cx
 	// (`[$process:run ('chmod', '755', $p) …]` planting its drivers) -- the class's
 	// own shape (RULED: STREAM-1, CXF-1).
-	AcceptedByOne{'scripts/gen_guide/theme_check.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/repr_guard_selftest.cx', .program, reason_1536},
+	// 88 -> 86: theme_check.cx leaves — the two readers agree on it since the
+	// DATA stream's reader-parity fixes (cx-core-data 7bf68e720) — and
+	// repr_guard_selftest.cx is named once, with the program forms above
+	// (RULED: STREAM-1).
 	// ── recorded exception — a computed attribute `name=[EXPR]` (25) ──
 	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
 	// 21 -> 22: scripts/check_migrate_namespace_fixtures.cx, RS-4's sweep grader.
@@ -721,9 +717,7 @@ const accepted_by_one_table = [
 	// (RULED: RS-12, RS-8, RS-27; #1591 item K3).
 	AcceptedByOne{'scripts/bisect_batch.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/check_editor_surface_parity.cx', .program, reason_prog},
-	AcceptedByOne{'scripts/diagnostics_census.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/docs_fragment.cx', .program, reason_prog},
-	AcceptedByOne{'scripts/fuzz_cx.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/gate_on_suite_migrate.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/gen_docs/primer_platform.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/repos_allocation_gate.cx', .program, reason_prog},
@@ -771,7 +765,7 @@ fn test_accepted_by_one_is_named() {
 		msg := refusals[path] or { '' }
 		assert false, '${first}\n  the refusing reader said: ${msg.all_before('\n')}\n  ${unexplained.len} unexplained of ${observed.len} observed.'
 	}
-	assert stale.len == 0, '${stale[0]}\n  ${stale.len} stale of ${accepted_by_one_table.len} declared.'
+	assert stale.len == 0, stale.join('\n') + '\n  ${stale.len} stale of ${accepted_by_one_table.len} declared.'
 }
 
 // The column's RED-PROOF (1548-c's fixture-first clause): a planted entry the
