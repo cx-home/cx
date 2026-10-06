@@ -40,12 +40,12 @@
 #
 # Its cwd is the tree whose flows/ it reads (the acts', the checkout on the
 # box); every make and test_changed.sh runs in the checkout.
-[?lib 'cx-stdlib/io'      :as io]
-[?lib 'cx-stdlib/env'     :as env]
-[?lib 'cx-stdlib/strings' :as strings]
-[?lib 'cx-stdlib/process' :as process]
-[?lib './flows/ci-acts.cx' :as c]
-[?lib './flows/private-acts.cx' :as ci]
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+[?lib './flows/ci-acts.cx' as=c]
+[?lib './flows/private-acts.cx' as=ci]
 
 [?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
 

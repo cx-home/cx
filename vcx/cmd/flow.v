@@ -7,7 +7,7 @@
 // where the acts live, and §4.1 already says where: the module tree of a
 // program. `--env ENV.cx` names that program.
 //
-// ENV.cx is an ORDINARY CX program. Its `[?lib … :as alias]` imports and its
+// ENV.cx is an ORDINARY CX program. Its `[?lib … as=alias]` imports and its
 // own `[effects]`-bearing `[?def]`s ARE the module tree, and this subcommand
 // splices those verbatim directive spans into the driver program it evaluates —
 // so resolution, capability narrowing, `[idempotent]` dedup, `[compensates]`
@@ -94,7 +94,7 @@ const flow_cli_usage = [
 	'                 kind=<kind> …] binding rows. A malformed one refuses CXER4965.',
 	'',
 	'  --env ENV.cx   the PROGRAM whose module tree the acts resolve through',
-	'                 (§4.1). Its [?lib … :as alias] imports and its own',
+	'                 (§4.1). Its [?lib … as=alias] imports and its own',
 	'                 [effects]-bearing [?def]s are that tree: an imported member',
 	'                 is named `alias/def`, its own def is named `def`. Relative',
 	'                 [?lib] paths resolve against the working directory, exactly',
@@ -817,14 +817,14 @@ fn run_flow(args []string) {
 // flow_cli_prelude is the driver's own module set, aliased so it can never
 // clash with anything ENV.cx imports under a name of its own.
 fn flow_cli_prelude(with_journal bool) string {
-	mut b := ["[?lib 'cx-platform/flow' :as cxflow]"]
+	mut b := ["[?lib 'cx-platform/flow' as=cxflow]"]
 	if with_journal {
-		b << "[?lib 'cx-platform/store' :as cxstore]"
-		b << "[?lib 'cx-platform/journal' :as cxjournal]"
+		b << "[?lib 'cx-platform/store' as=cxstore]"
+		b << "[?lib 'cx-platform/journal' as=cxjournal]"
 		// the boot re-arm's report goes to the LOG SINK, not to stdout: a
 		// run's answer is its record (§4.11), and `cx flow serve` already
 		// reports its own boot re-arm exactly this way.
-		b << "[?lib 'cx-stdlib/log' :as cxlog]"
+		b << "[?lib 'cx-stdlib/log' as=cxlog]"
 	}
 	return b.join('\n')
 }
@@ -1059,7 +1059,7 @@ fn flow_cli_diagram(o FlowCliOpts) {
 	}
 	flow_src := flow_cli_read(o.positional[0], 'the flow document')
 	program := [
-		"[?lib 'cx-stdlib/diagram' :as cxdg]",
+		"[?lib 'cx-stdlib/diagram' as=cxdg]",
 		'[?let [= \$fl [\$first [\$cx:select \$doc "//flow"]]]',
 		'  [\$cxdg:flow-diagram \$fl "${level}"]]',
 	].join('\n')
@@ -1145,12 +1145,12 @@ fn flow_cli_watch(o FlowCliOpts, for_ns i64) {
 	ticks := if for_ns <= 0 { i64(-1) } else { for_ns / (i64(flow_cli_watch_tick_ms) * 1_000_000) }
 	program := [
 		flow_cli_prelude(true),
-		"[?lib 'cx-stdlib/diagram' :as cxdg]",
+		"[?lib 'cx-stdlib/diagram' as=cxdg]",
 		// the fd-1 line-out the paint feed rides (RULED: 1316-c2, item 3). It
 		// is in THIS program's directives rather than in `flow_cli_prelude`
 		// because `watch` is the only verb that streams: `run` and `serve`
 		// answer once, and `serve`'s progress lines already go to the log sink.
-		"[?lib 'cx-stdlib/env' :as cxenv]",
+		"[?lib 'cx-stdlib/env' as=cxenv]",
 		flow_cli_watch_defs(),
 		'[?let [= \$j [\$cxjournal:open "${flow_cli_quote(o.journal)}" "${flow_cli_tenant}"]]',
 		'  [= \$fl [\$first [\$cx:select \$doc "//flow"]]]',

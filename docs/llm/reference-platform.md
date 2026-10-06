@@ -220,7 +220,7 @@ separate error channel:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/http-client' :as http]
+[?lib 'cx-stdlib/http-client' as=http]
 [$http:status [response status=404]]
 ```
 
@@ -231,7 +231,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/http-client' :as http]
+[?lib 'cx-stdlib/http-client' as=http]
 [$http:ok [response status=404]]
 ```
 
@@ -421,8 +421,8 @@ to their wire form. Nothing here is a bespoke serializer:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/mcp' :as mcp]
-[?lib 'cx-stdlib/json' :as json]
+[?lib 'cx-platform/mcp' as=mcp]
+[?lib 'cx-stdlib/json' as=json]
 [$json:emit [$mcp:list-tools-request 2]]
 ```
 
@@ -433,8 +433,8 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/mcp' :as mcp]
-[?lib 'cx-stdlib/json' :as json]
+[?lib 'cx-platform/mcp' as=mcp]
+[?lib 'cx-stdlib/json' as=json]
 [$mcp:validate-args
   [$json:parse "{\"name\":\"w\",\"inputSchema\":{\"type\":\"object\",\"required\":[\"location\"],\"properties\":{\"location\":{\"type\":\"string\"}}}}"]
   [$json:parse "{\"location\":\"NYC\"}"]]
@@ -450,9 +450,9 @@ fails at the boundary:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/mcp' :as mcp]
-[?lib 'cx-stdlib/jsonschema' :as js]
-[?lib 'cx-stdlib/json' :as json]
+[?lib 'cx-platform/mcp' as=mcp]
+[?lib 'cx-stdlib/jsonschema' as=js]
+[?lib 'cx-stdlib/json' as=json]
 [$js:violation-paths
   [$mcp:validate-args
     [$json:parse "{\"name\":\"w\",\"inputSchema\":{\"type\":\"object\",\"required\":[\"location\"]}}"]
@@ -468,8 +468,8 @@ The A2A shapes are the same story on the agent-to-agent side:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/a2a' :as a2a]
-[?lib 'cx-stdlib/json' :as json]
+[?lib 'cx-platform/a2a' as=a2a]
+[?lib 'cx-stdlib/json' as=json]
 [$json:emit [$a2a:agent-card "greeter" "says hi" "http://x/" "0.1" ()]]
 ```
 
@@ -506,7 +506,7 @@ oracle:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -531,7 +531,7 @@ without collision:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [frames [use frame=geo via=center]]
@@ -555,7 +555,7 @@ gate worse than no gate:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [$xap:compose]
 ```
 
@@ -570,8 +570,8 @@ tree is content-addressed, so entry order cannot change its identity:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-platform/store' :as store]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-platform/store' as=store]
 [?let [= $s [$store:open "mem://"]]
  [= $t1 [$xap:pkg-tree ([entry path='b.cx' 'bee'], [entry path='a.cx' 'ay'])]]
  [= $t2 [$xap:pkg-tree ([entry path='a.cx' 'ay'], [entry path='b.cx' 'bee'])]]
@@ -587,7 +587,7 @@ true
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [$xap:pkg-tree ([entry path='../evil.cx' 'x'])]
 ```
 
@@ -598,7 +598,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [$xap:pkg-tree ([entry path='a.cx' 'one'], [entry path='a.cx' 'two'])]
 ```
 
