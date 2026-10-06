@@ -595,11 +595,10 @@ const accepted_by_one_table = [
 	// follow deps/.
 	AcceptedByOne{'scripts/check_no_ai_attribution.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/strip_attribution.cx', .program, reason_1536},
-	// STREAM-1 (the CORE stream's landing, 2026-10-06): four PRIV selftests and the
+	// STREAM-1 (the CORE stream's landing, 2026-10-06): a PRIV selftest and the
 	// guide's theme check written since — call-shaped heads beside a ws-delimited
 	// `(…)`/`{…}` literal, the 1536-a property.
 	AcceptedByOne{'scripts/gen_guide/theme_check.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/release_asset_links_selftest.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/repr_guard_selftest.cx', .program, reason_1536},
 	// DOCS-4 wave 1 (RULED: DOCS-42, DOCS-44, DOCS-45, DOCS-46): four new
 	// generators under scripts/gen_site/ and the site assembler's new link walk
