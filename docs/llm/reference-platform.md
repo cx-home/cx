@@ -220,7 +220,7 @@ separate error channel:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/http-client' :as http]
+[?lib 'cx-stdlib/http-client' as=http]
 [$http:status [response status=404]]
 ```
 
@@ -231,7 +231,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/http-client' :as http]
+[?lib 'cx-stdlib/http-client' as=http]
 [$http:ok [response status=404]]
 ```
 
