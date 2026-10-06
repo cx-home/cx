@@ -160,17 +160,17 @@
     [?let
       [= $cxbin [$env:executable-path]]
       [= $good [$synthetic
-          "[s [case id=t-good kind=cx [in-text [#\n[?lib 'cx-xap' :as xap]\n[$xap:boot]\n#]] [out-text [#\n[?lib 'cx-platform/xap' :as xap]\n[$xap:boot]\n#]] [out-report [#\n<file>:1: [?lib] cx-xap -> cx-platform/xap\n1/1 file(s) changed, 1 retired-name site(s)\n#]]]]"]]
+          "[s [case id=t-good kind=cx [in-text [#\n[?lib 'cx-xap' as=xap]\n[$xap:boot]\n#]] [out-text [#\n[?lib 'cx-platform/xap' as=xap]\n[$xap:boot]\n#]] [out-report [#\n<file>:1: [?lib] cx-xap -> cx-platform/xap\n1/1 file(s) changed, 1 retired-name site(s)\n#]]]]"]]
       [; the rewrite this tool must never make: a retired name written as a
          WORD inside a string. An expectation that asks for it must FAIL. ]
       [= $word [$synthetic
-          "[s [case id=t-word kind=cx [in-text [#\n[?lib 'cx-xap' :as xap]\n[done \"cx-xap: ready\"]\n#]] [out-text [#\n[?lib 'cx-platform/xap' :as xap]\n[done \"cx-platform/xap: ready\"]\n#]] [out-report [#\n<file>:1: [?lib] cx-xap -> cx-platform/xap\n1/1 file(s) changed, 1 retired-name site(s)\n#]]]]"]]
+          "[s [case id=t-word kind=cx [in-text [#\n[?lib 'cx-xap' as=xap]\n[done \"cx-xap: ready\"]\n#]] [out-text [#\n[?lib 'cx-platform/xap' as=xap]\n[done \"cx-platform/xap: ready\"]\n#]] [out-report [#\n<file>:1: [?lib] cx-xap -> cx-platform/xap\n1/1 file(s) changed, 1 retired-name site(s)\n#]]]]"]]
       [; …and the rewrite it must always make: a raw block's import. An
          expectation that leaves it alone must FAIL. ]
       [= $raw [$synthetic
-          "[s [case id=t-raw kind=cxd [in-text [#\n[case [in-code [%#\n[?lib 'cx-fabric' :as fabric]\n#%]]]\n#]] [out-text [#\n[case [in-code [%#\n[?lib 'cx-fabric' :as fabric]\n#%]]]\n#]] [out-report [#\n0/1 file(s) changed -- nothing to migrate\n#]]]]"]]
+          "[s [case id=t-raw kind=cxd [in-text [#\n[case [in-code [%#\n[?lib 'cx-fabric' as=fabric]\n#%]]]\n#]] [out-text [#\n[case [in-code [%#\n[?lib 'cx-fabric' as=fabric]\n#%]]]\n#]] [out-report [#\n0/1 file(s) changed -- nothing to migrate\n#]]]]"]]
       [= $bad-report [$synthetic
-          "[s [case id=t-bad-report kind=cx [in-text [#\n[?lib 'cx-xap' :as xap]\n#]] [out-text [#\n[?lib 'cx-platform/xap' :as xap]\n#]] [out-report [#\n1/1 file(s) changed\n#]]]]"]]
+          "[s [case id=t-bad-report kind=cx [in-text [#\n[?lib 'cx-xap' as=xap]\n#]] [out-text [#\n[?lib 'cx-platform/xap' as=xap]\n#]] [out-report [#\n1/1 file(s) changed\n#]]]]"]]
       [= $no-expect [$synthetic
           "[s [case id=t-no-expect kind=cx [in-text [#\n[done]\n#]]]]"]]
       [= $got ([$string [$grade $good $cxbin]@status],

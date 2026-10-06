@@ -19,7 +19,7 @@
 # deps.cxd pins. The import says so in full rather than through a copy:
 # a composition whose component moved to another repository composes the
 # PINNED component or it is not the same composition.
-[?lib '../../../../deps/cx-platform-sso/examples/platform/sso/mock-idp/idp.cx' :as idp]
+[?lib '../../../../deps/cx-platform-sso/examples/platform/sso/mock-idp/idp.cx' as=idp]
 
 [?let
   [= $config [$oidc:config [$idp:provider]
