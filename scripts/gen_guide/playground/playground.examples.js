@@ -2079,7 +2079,6 @@
       tags:  ["eq", "for", "let", "lib"],
       section: "everyday/text",
       runnable: true,
-      wasmUnsupported: "The playground's wasm build links a stub for the RE2 shim (deps/cx-core-code/scripts/wasm/stubs/re2_shim.c): every pattern fails to compile, so `[$re:compile]` refuses with `CXER3201` here (#1701).",
     },
     "255-capture-groups-by-name": {
       label: "[255] capture groups, read by name",
@@ -2088,7 +2087,6 @@
       tags:  ["eq", "let", "lib"],
       section: "everyday/text",
       runnable: true,
-      wasmUnsupported: "The playground's wasm build links a stub for the RE2 shim (deps/cx-core-code/scripts/wasm/stubs/re2_shim.c): every pattern fails to compile, so `[$re:compile]` refuses with `CXER3201` here (#1701).",
     },
     "256-replace-with-a-capture": {
       label: "[256] replace, reusing the captures",
@@ -2097,7 +2095,6 @@
       tags:  ["cxpath", "eq", "let", "lib"],
       section: "everyday/text",
       runnable: true,
-      wasmUnsupported: "The playground's wasm build links a stub for the RE2 shim (deps/cx-core-code/scripts/wasm/stubs/re2_shim.c): every pattern fails to compile, so `[$re:compile]` refuses with `CXER3201` here (#1701).",
     },
     "257-split-and-join": {
       label: "[257] split a line, join it back",
