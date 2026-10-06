@@ -122,14 +122,20 @@ const SHARD_SIZE = 1;
 // may be a program that does not PARSE — `($a % 3)`, `[$a + 1]`, a stray `]`
 // — and its recorded answer is that parse refusal: the refusal is the lesson
 // (primer_build grades it against the fixture). Its SOURCE has no tree to
-// draw, so those diagrams are a NAMED, COUNTED skip — only when the emitter's
-// refusal is the parse error (CXER0100) the fixture itself records; any other
+// draw, so those diagrams are a NAMED, COUNTED skip — only when the fixture's
+// recorded answer IS a parse refusal (`CXER0100: parse: <why>`) and the
+// emitter's throw carries CXER0100 and that same <why>, verbatim (#1854: a
+// bare CXER0100 match also let through the wrong halves whose answer is a
+// RUNTIME CXER0100 err value and whose source parses, and the emitter's own
+// CXER0100 failures — `unknown view`, `format not recognised`). Any other
 // throw on a wrong half, and every throw on any other example, still fails.
 const WRONG_SRC_REASON = "the source is an anti-pattern's wrong half whose recorded answer is its parse refusal (CXER0100)";
 function refusedWrongHalf(ex, e) {
+  if (!(ex && ex.primer && ex.role === 'wrong')) return false;
+  const m = /CXER0100: parse: (.+?)\s*$/.exec(String(ex.expected || ''));
+  if (!m) return false;
   const msg = String((e && e.message) || e);
-  return !!(ex && ex.primer && ex.role === 'wrong'
-    && /CXER0100/.test(msg) && /CXER0100/.test(String(ex.expected || '')));
+  return /CXER0100/.test(msg) && msg.includes(m[1]);
 }
 
 // pageExamples — every example the page can put on screen, in one list:
