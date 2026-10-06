@@ -116,7 +116,7 @@ once
 #]]
  ]
 
- [case id=property-gate-008-datetime-key-canonical level=core gate=advisory issue='cx-home/cx-core-data#3'
+ [case id=property-gate-008-datetime-key-canonical level=core
   [tags property-gate ii canonical-refused:datetime-key]
   [title [# a map with a datetime key (an admissible key kind, cxdm.md §2.6) has a canonical form the data reader reads back (canonical.md §2.11.1, §2.6a) #]]
   [in-code [#
@@ -132,7 +132,7 @@ reads-back
 #]]
  ]
 
- [case id=property-gate-009-array-item-string-quotes level=core gate=advisory issue='cx-home/cx-core-data#4'
+ [case id=property-gate-009-array-item-string-quotes level=core
   [tags property-gate ii canonical-refused+canonical-refused-on-reparse+canonical-not-a-fixpoint+canonical-refused-second-time+kind-lost-on-canonical:string@attr+kind-lost-on-canonical:string@body+kind-lost-on-canonical:string@seq+kind-lost-on-canonical:string@array+kind-lost-on-canonical:string@array-head+kind-lost-on-canonical:string@nested-array+kind-lost-on-canonical:string@array-in-map+kind-lost-on-canonical:string@mapval+kind-lost-on-canonical:string@mapkey+kind-canonical-refused:string@attr+kind-canonical-refused:string@body+kind-canonical-refused:string@seq+kind-canonical-refused:string@array+kind-canonical-refused:string@array-head+kind-canonical-refused:string@nested-array+kind-canonical-refused:string@array-in-map+kind-canonical-refused:string@mapval+kind-canonical-refused:string@mapkey+kind-reparse-refused:string@attr+kind-reparse-refused:string@body+kind-reparse-refused:string@seq+kind-reparse-refused:string@array+kind-reparse-refused:string@array-head+kind-reparse-refused:string@nested-array+kind-reparse-refused:string@array-in-map+kind-reparse-refused:string@mapval+kind-reparse-refused:string@mapkey string-emit]
   [title [# a string array item quotes where its bare image would not re-read as that string in both readings -- code.md §11.1a R6, canonical.md §2.3 (the collection-item bare set) #]]
   [in-code [#
@@ -144,7 +144,7 @@ reads-back
 #]]
  ]
 
- [case id=property-gate-010-attr-trailing-backslashes level=core gate=advisory issue='cx-home/cx-core-data#4'
+ [case id=property-gate-010-attr-trailing-backslashes level=core
   [tags property-gate ii canonical-refused+canonical-refused-on-reparse+kind-canonical-refused:string@attr string-emit]
   [title [# the canonical form of a quoted attribute string ending in two backslashes is a fixpoint -- canonical.md §2.4 minimal re-escape (a final backslash is doubled), §11.4 canonicalize(canonicalize(x)) == canonicalize(x) #]]
   [in-code [#
@@ -294,7 +294,7 @@ answered
 #]]
  ]
 
- [case id=property-gate-022-null-before-a-sequence level=core gate=advisory issue='cx-home/cx-core-data#5'
+ [case id=property-gate-022-null-before-a-sequence grant='eval' level=core
   [tags property-gate vi program-reader-refused]
   [title [# the program reader reads `null (1, 2)` in an element body as the data reader does -- a null and a sequence, not a retired paren-call (code.md §1.3, RULED: CXF-5) #]]
   [in-code [#
@@ -335,7 +335,7 @@ inner
 #]]
  ]
 
- [case id=property-gate-025-null-key-literal level=core gate=advisory issue='cx-home/cx-core-data#19' grant='eval'
+ [case id=property-gate-025-null-key-literal level=core grant='eval'
   [tags property-gate i literal-accepted-inadmissible-key:program]
   [title [# the program reader refuses the map literal {null: 1} as the data reader does -- cxdm.md §2.6 "null key: Not permitted (parse error)"; code.md §1.3 (RULED: CXF-5) #]]
   [in-code [#
@@ -347,7 +347,7 @@ refused
 #]]
  ]
 
- [case id=property-gate-026-bytes-at-the-top level=core gate=advisory issue='cx-home/cx-core-data#20'
+ [case id=property-gate-026-bytes-at-the-top level=core
   [tags property-gate ii kind-lost-on-canonical:bytes@top]
   [title [# a bytes value at the document top keeps its ascription in canonical form -- canonical.md §2.6a "the ascription is always load-bearing" in an unnamed slot; §1.4 #]]
   [in-code [#
@@ -406,7 +406,7 @@ not-read
 #]]
  ]
 
- [case id=property-gate-030-array-item-string-kind level=core gate=advisory issue='cx-home/cx-core-data#4'
+ [case id=property-gate-030-array-item-string-kind level=core
   [tags property-gate ii kind-lost-on-canonical:string@array string-emit]
   [title [# a string array item whose bare image is a hole, an operator or a name with a colon re-reads as a string after canonical emit -- code.md §11.1a R6 (the collection-item bare set), canonical.md §2.3 ("$name" spells '$name'; a leading = quotes), §2.6a #]]
   [in-code [#
@@ -418,7 +418,7 @@ string
 #]]
  ]
 
- [case id=property-gate-031-body-string-hash level=core gate=advisory issue='cx-home/cx-core-data#4'
+ [case id=property-gate-031-body-string-hash level=core
   [tags property-gate ii canonical-refused string-emit]
   [title [# a body string holding ' #' quotes in canonical form, so the canonical text reads back -- canonical.md §2.3 (bare only when the bare image re-reads as that same string), §11.4 #]]
   [in-code [#
@@ -442,15 +442,30 @@ string
 #]]
  ]
 
- [case id=property-gate-033-keyword-headed-array level=core gate=advisory issue='cx-home/cx-core-data#25'
+ [case id=property-gate-033-keyword-headed-array level=core gate=enforced
   [tags property-gate ii canonical-refused:keyword-array+canonical-refused-on-reparse:keyword-array]
-  [title [# an array value headed by true, false or null has a canonical form the data reader reads back -- canonical.md §1.2, §2.6a (bool and null bare as a collection item) #]]
+  [title [# an array value headed by true, false or null has a canonical form the data reader reads back -- canonical.md §1.2, §2.6a (bool and null bare as a collection item); lexicon [L83] rule 2b (RULED: KWARR-1, cx-core-data#25) reads [true, 0] as the array, and the one-item [null,] keeps its comma (§2.11.2): each image below is the one spelling, and it reads back (core.cxd 067–069 pin what it reads as) #]]
   [in-code [#
 [?lib 'cx-stdlib/cx' as=cx]
-[?match [$cx:canonical [?to-array (true, 0)]] [case [err] 'no-canonical-form'] [case $c [?match [$cx:parse $c] [case [err] 'unreadable'] [else 'reads-back']]]]
+[?lib 'cx-stdlib/strings' as=strings]
+[?def back ($v) [?match [$cx:canonical $v] [case [err] 'no-canonical-form'] [case $c [?match [$cx:parse $c] [case [err] 'unreadable'] [else [$strings:trim $c]]]]]]
+([$back [?to-array (true, 0)]], [$back [?to-array (null,)]], [$back {k: [?to-array (false, 1)]}])
 #]]
   [out-text [#
-reads-back
+('[true, 0]', '[null,]', '{k: [false, 1]}')
+#]]
+ ]
+
+ [case id=property-gate-034-readers-agree-on-a-name-value-after-body-text level=core gate=enforced grant='eval'
+  [tags property-gate vi readers-disagree:name-value-after-body]
+  [title [# the data reader and the program reader agree on a name=value after body text (invariant vi; code.md §1.3) -- grammar [50] puts every attribute before the body, and code.md §6.4.1's interleave governs only a bracket carrying a $ value (RULED: ATTRB-1, cx-core-data#26 shape 1) #]]
+  [in-code [#
+[?lib 'cx-stdlib/cx' as=cx]
+[?def agree impure ($t) [?match [$cx:eval $t {}] [case [err] 'program-refused'] [case $p [?if [= [$cx:canonical [$cx:parse $t]] [$cx:canonical $p]] [then 'agree'] [else 'disagree']]]]]
+([$agree '[x 1 2 3 a=4, 5]'], [$agree '[x 1 2 3 a=4]'], [$agree '[x [y] a=4]'], [$agree "[x 'q' a=4]"], [$agree '[x a=1 2 b=3, 4]'])
+#]]
+  [out-text [#
+(agree, agree, agree, agree, agree)
 #]]
  ]
 ]
