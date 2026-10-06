@@ -118,6 +118,20 @@ function setupFail(msg, hint) {
 // size under which a red here can only mean a bad diagram.
 const SHARD_SIZE = 1;
 
+// The wrong half of an anti-pattern pair (a primer row with role 'wrong')
+// may be a program that does not PARSE — `($a % 3)`, `[$a + 1]`, a stray `]`
+// — and its recorded answer is that parse refusal: the refusal is the lesson
+// (primer_build grades it against the fixture). Its SOURCE has no tree to
+// draw, so those diagrams are a NAMED, COUNTED skip — only when the emitter's
+// refusal is the parse error (CXER0100) the fixture itself records; any other
+// throw on a wrong half, and every throw on any other example, still fails.
+const WRONG_SRC_REASON = "the source is an anti-pattern's wrong half whose recorded answer is its parse refusal (CXER0100)";
+function refusedWrongHalf(ex, e) {
+  const msg = String((e && e.message) || e);
+  return !!(ex && ex.primer && ex.role === 'wrong'
+    && /CXER0100/.test(msg) && /CXER0100/.test(String(ex.expected || '')));
+}
+
 // pageExamples — every example the page can put on screen, in one list:
 // the primer's fixtures (playground.primer.js, the picker since PLAY-1)
 // first, then the playground corpus (playground.examples.js, reachable by
@@ -130,6 +144,7 @@ function pageExamples(win) {
       input: p.reading === 'data' ? p.doc : p.src,
       reading: p.reading, doc: p.doc, runnable: p.runnable,
       match: p.match, wasmUnsupported: p.wasmUnsupported, primer: true,
+      role: p.role, expected: p.expected,
     }]);
   }
   for (const [key, ex] of Object.entries((win.cxPlaygroundExamples || {}).program || {})) {
@@ -154,7 +169,7 @@ function countExamples() {
 if (!SLICE) {
   const total = Math.min(countExamples(), LIMIT);
   if (total === 0) setupFail('playground.examples.js yielded no examples.');
-  const totals = { pass: 0, empty: 0, skipped: 0, cximage: 0, fail: 0 };
+  const totals = { pass: 0, empty: 0, skipped: 0, cximage: 0, wrongsrc: 0, fail: 0 };
   let sawSetupFailure = false;
   for (let from = 0; from < total; from += SHARD_SIZE) {
     const to = Math.min(from + SHARD_SIZE, total);
@@ -174,6 +189,7 @@ if (!SLICE) {
       totals.pass += s.pass; totals.empty += s.empty;
       totals.skipped += s.skipped; totals.fail += s.fail;
       totals.cximage += s.cximage || 0;
+      totals.wrongsrc += s.wrongsrc || 0;
     } else {
       // A child that died without reporting is itself a failure — never
       // let a crashed shard read as a clean slice.
@@ -190,6 +206,7 @@ if (!SLICE) {
   console.log(`  empty (no shape)  ${totals.empty}`);
   console.log(`  no subject        ${totals.skipped}`);
   console.log(`  cx: image (1170-d) ${totals.cximage}   named skip — ${CX_IMAGE_REASON}`);
+  console.log(`  refused wrong half ${totals.wrongsrc}   named skip — ${WRONG_SRC_REASON}`);
   console.log(`  FAILURES          ${totals.fail}`);
   console.log('══════════════════════════════════════════════════════════');
   if (totals.fail > 0) process.exit(1);
@@ -380,7 +397,7 @@ function normalise(src) {
   return body.replace(/^```mermaid\s*/, '').replace(/```\s*$/, '').trim();
 }
 
-let pass = 0, fail = 0, empty = 0, skipped = 0, cximage = 0;
+let pass = 0, fail = 0, empty = 0, skipped = 0, cximage = 0, wrongsrc = 0;
 const failures = [];
 
 
@@ -452,6 +469,11 @@ for (const key of keys) {
             ? (parsedTree == null ? '' : internals.buildInstanceGraph(parsedTree, level))
             : (cxlib.diagram(text, `mermaid:${level}`, view) || '');
         } catch (e) {
+          if (subject === 'source' && refusedWrongHalf(ex, e)) {
+            wrongsrc++;
+            if (VERBOSE) console.log(`SKIP  ${label} — ${WRONG_SRC_REASON}`);
+            continue;
+          }
           if (view !== 'auto' && view !== 'instance' && /CXER0282/.test(String((e && e.message) || e))) {
             skipped++;
             if (VERBOSE) console.log(`SKIP  ${label} — ${String(e.message).split('\n')[0].slice(0, 100)}`);
@@ -515,5 +537,5 @@ if (fail > 0) {
     + `(vendored mermaid, ${MERMAID_BYTES} bytes, sha256 ${MERMAID_SHA.slice(0, 12)}…)`);
 }
 // The line the dispatcher reads. Kept last and kept unique.
-console.log(`__SHARD__ ${JSON.stringify({ pass, empty, skipped, cximage, fail })}`);
+console.log(`__SHARD__ ${JSON.stringify({ pass, empty, skipped, cximage, wrongsrc, fail })}`);
 process.exit(fail === 0 ? 0 : 1);
