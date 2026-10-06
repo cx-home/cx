@@ -4135,7 +4135,7 @@ test-vcx-code: build-vcx-dev check-serial-retry-rosters
 # roster is a variable and `check-inmodule-test-roster` now fails on any
 # vcx/cx/*_test.v that is in neither list, so the next addition cannot be
 # forgotten silently. Delete both lists and glob the directory when #737 closes.
-CX_INMODULE_TESTS := $(CXD)/vcx/cx/program_interior_comments_test.v $(CXD)/vcx/cx/program_layout_test.v $(CXD)/vcx/cx/program_fmt_guard_test.v $(CXD)/vcx/cx/program_emit_head_ascription_test.v $(CXD)/vcx/cx/directive_emit_surface_test.v $(CXD)/vcx/cx/anchor_resolve_test.v $(CXD)/vcx/cx/numeric_exact_fast_test.v $(CXD)/vcx/cx/atom_test.v $(CXD)/vcx/cx/token_golden_test.v $(CXD)/vcx/cx/version_stamp_test.v $(CXD)/vcx/cx/html_url_codec_test.v $(CXD)/vcx/cx/span_jump_test.v $(CXD)/vcx/cx/feature_compat_test.v $(CXD)/vcx/cx/name_pool_contract_test.v $(CXD)/vcx/cx/schema_extensions_test.v $(CXD)/vcx/cx/node_api_test.v
+CX_INMODULE_TESTS := $(CXD)/vcx/cx/program_interior_comments_test.v $(CXD)/vcx/cx/program_layout_test.v $(CXD)/vcx/cx/program_fmt_guard_test.v $(CXD)/vcx/cx/program_emit_head_ascription_test.v $(CXD)/vcx/cx/directive_emit_surface_test.v $(CXD)/vcx/cx/anchor_resolve_test.v $(CXD)/vcx/cx/numeric_exact_fast_test.v $(CXD)/vcx/cx/atom_test.v $(CXD)/vcx/cx/token_golden_test.v $(CXD)/vcx/cx/version_stamp_test.v $(CXD)/vcx/cx/html_url_codec_test.v $(CXD)/vcx/cx/span_jump_test.v $(CXD)/vcx/cx/feature_compat_test.v $(CXD)/vcx/cx/name_pool_contract_test.v $(CXD)/vcx/cx/schema_extensions_test.v $(CXD)/vcx/cx/node_api_test.v $(CXD)/vcx/cx/compound_key_decode_test.v
 CX_INMODULE_TESTS_EXCLUDED := $(CXD)/vcx/cx/parser_multidoc_test.v
 
 # check-build-input-roster (#1065) — forwards to vcx/, where the per-artifact

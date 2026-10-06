@@ -408,8 +408,8 @@ wire form — there is no bespoke serializer anywhere in the path:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/mcp' :as mcp]
-[?lib 'cx-stdlib/json' :as json]
+[?lib 'cx-platform/mcp' as=mcp]
+[?lib 'cx-stdlib/json' as=json]
 [$json:emit [$mcp:call-tool-request 1 "get_weather" {location: "NYC"}]]
 ```
 

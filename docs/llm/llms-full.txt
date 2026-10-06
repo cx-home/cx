@@ -410,8 +410,8 @@ wire form — there is no bespoke serializer anywhere in the path:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/mcp' :as mcp]
-[?lib 'cx-stdlib/json' :as json]
+[?lib 'cx-platform/mcp' as=mcp]
+[?lib 'cx-stdlib/json' as=json]
 [$json:emit [$mcp:call-tool-request 1 "get_weather" {location: "NYC"}]]
 ```
 
@@ -4125,7 +4125,7 @@ Two import prefixes:
 * **`cx-stdlib/…`** — the frozen standard set. Stable surface.
 * **`cx-platform/…`** — the platform modules: the ones that serve, or reach
   a store or a protocol (`reference-platform.md`). The XAP orchestrator is one
-  of them (`[?lib 'cx-platform/xap' :as xap]`), and so is fabric
+  of them (`[?lib 'cx-platform/xap' as=xap]`), and so is fabric
   (`[?lib 'cx-platform/fabric']`); both had names of their own, `cx-xap` and
   `cx-fabric`, which are retired and refuse naming the new spelling. So are the
   eleven modules that were the `cx-x/<name>` experimental tier (`run`, `llm`,
@@ -4960,7 +4960,7 @@ its `effect` class, the `[intent]` that reaches it, and what it `[reads]` or
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [frames [use frame=geo via=center]]
@@ -5002,7 +5002,7 @@ composed grammar's Tier-1 hash is the equality oracle that proves it:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -5026,7 +5026,7 @@ true
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $a
   [feature name=a
    [nouns [noun name=an [field name=x type=int]]]
@@ -5055,7 +5055,7 @@ true
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -5075,7 +5075,7 @@ name, because qualification already separated them:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -5106,7 +5106,7 @@ the gate reports **all** of them rather than stopping at the first:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -5127,7 +5127,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -5149,7 +5149,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -5181,7 +5181,7 @@ only if compose-report says `ok=false`**:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -5209,7 +5209,7 @@ reports a pass:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [$xap:compose]
 ```
 
@@ -5223,7 +5223,7 @@ diverge into "the check passes but the build fails":
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [$xap:compose-report]
 ```
 
@@ -5242,7 +5242,7 @@ one owner it resolves:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -5268,7 +5268,7 @@ A qualified term bypasses resolution entirely:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -5292,7 +5292,7 @@ And ambiguity is **a value listing the candidates — never a guess**:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -5314,7 +5314,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -5340,7 +5340,7 @@ A **composite** feature `[uses]` other features and declares nouns that are
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $own-ship
   [feature name=own-ship
    [types [type 'deg::decimal' [range 0 360]] [type 'knots::decimal' [min 0]]]
@@ -5380,7 +5380,7 @@ refuses:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -5405,7 +5405,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -5429,7 +5429,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -5456,7 +5456,7 @@ the only producer is the declared deriver:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -5485,7 +5485,7 @@ weaker than what it composes:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -5517,7 +5517,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -5653,7 +5653,7 @@ derived verb requires the grants of every **leaf constituent**, transitively:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $door
   [feature name=door
    [nouns [noun name=door singular=true [field name=locked type=int]]]
@@ -5689,7 +5689,7 @@ never consulted:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $door
   [feature name=door
    [nouns [noun name=door singular=true [field name=locked type=int]]]
@@ -5724,7 +5724,7 @@ Dial every leaf and the same emit is admitted:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $door
   [feature name=door
    [nouns [noun name=door singular=true [field name=locked type=int]]]
@@ -5760,7 +5760,7 @@ Nesting does not dilute it — an *intermediate* grant is still insufficient:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $door
   [feature name=door
    [nouns [noun name=door singular=true [field name=locked type=int]]]
@@ -5803,7 +5803,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $door
   [feature name=door
    [nouns [noun name=door singular=true [field name=locked type=int]]]
@@ -5852,7 +5852,7 @@ used, so the explanation cannot drift from the decision:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $door
   [feature name=door
    [nouns [noun name=door singular=true [field name=locked type=int]]]
@@ -5886,7 +5886,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $door
   [feature name=door
    [nouns [noun name=door singular=true [field name=locked type=int]]]
@@ -6271,7 +6271,7 @@ verb no route offers is a refusal, not a lint warning:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [= $f [feature name=shop version="1"
           [nouns [noun name=order [field name=id type=text]]]
@@ -6300,7 +6300,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [= $ctx {route: "/orders", feature: "orders", path: "/"}]
   [= $ok  [ux:region feature=orders path="/live"
@@ -6342,7 +6342,7 @@ then the notice tones:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [; R-A1 migration: envelope → spliced children (2026-08-25) ]
 [list [?splice [$ux:vocabulary]] [?splice [$ux:renderer-private-attrs]] [?splice [$ux:tones]]]
 ```
@@ -6358,7 +6358,7 @@ both the element and the attribute:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [= $bad ([ux:action verb=v label=x disabled=true reason="out"],
            [ux:aside label=Basket name=basket],
@@ -6385,7 +6385,7 @@ code:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [= $r [$ux:refusals-of [ux:action verb=v target="#x"]]]
   [= $f [$first $r]]
@@ -6407,7 +6407,7 @@ clause — *projects* onto one:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [= $src """
 [?def place-order scope=public impure [effects [write]] [returns element]
@@ -6430,7 +6430,7 @@ between the XAP layer and the UX layer:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [= $f [feature name=commerce
              [types [type 'did::text'] [type 'money::decimal' [min 0]]]
@@ -6451,7 +6451,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [= $f [feature name=commerce
              [types [type 'did::text'] [type 'money::decimal' [min 0]]]
@@ -6479,7 +6479,7 @@ projects a group, and a refusal keeps what the user typed:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [= $feature [$cx:parse "[feature name=shop [nouns [noun name=product [field name=sku type=text] [field name=name type=text]] [noun name=line [field name=sku type=product label='Product' doc='chosen, never typed'] [field name=qty type=int label='Qty']] [noun name=order [field name=customer type=text label='Customer'] [field name=lines type=line repeats=true add-label='Add a line']]] [verbs [verb name=place-order [summary 'Place an order.'] [intent [do :place-order [customer] [lines]]] [writes order]]]]"]]
   [= $opts {options: ([options for=product [option value=ESC-18 label="Escapement"] [option value=BAL-9 label="Balance wheel"]]),
@@ -6495,7 +6495,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [= $feature [$cx:parse "[feature name=shop [nouns [noun name=product [field name=sku type=text] [field name=name type=text]] [noun name=line [field name=sku type=product label='Product' doc='chosen, never typed'] [field name=qty type=int label='Qty']] [noun name=order [field name=customer type=text label='Customer'] [field name=lines type=line repeats=true add-label='Add a line']]] [verbs [verb name=place-order [summary 'Place an order.'] [intent [do :place-order [customer] [lines]]] [writes order]]]]"]]
   [= $opts {options: ([options for=product [option value=ESC-18 label="Escapement"] [option value=BAL-9 label="Balance wheel"]]),
@@ -6511,7 +6511,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [= $feature [$cx:parse "[feature name=shop [nouns [noun name=product [field name=sku type=text] [field name=name type=text]] [noun name=line [field name=sku type=product label='Product' doc='chosen, never typed'] [field name=qty type=int label='Qty']] [noun name=order [field name=customer type=text label='Customer'] [field name=lines type=line repeats=true add-label='Add a line']]] [verbs [verb name=place-order [summary 'Place an order.'] [intent [do :place-order [customer] [lines]]] [writes order]]]]"]]
   [= $opts {options: ([options for=product [option value=ESC-18 label="Escapement"] [option value=BAL-9 label="Balance wheel"]]),
@@ -6534,7 +6534,7 @@ theme, locale, actor, session and data are *content*, never identity:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let [= $f [$ux:frag "/orders/o-1041" "orders" "/open-orders/status"]]
   [list [$ux:frag-address $f] [$ux:frag-id $f]]]
 ```
@@ -6546,7 +6546,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let [= $a [$ux:frag "/orders" "orders" "/open"]]
       [= $b [$ux:frag "/orders" "orders" "/open"]]
       [= $c [$ux:frag "/orders" "orders-b" "/open"]]
@@ -6563,7 +6563,7 @@ and a reused address is a refusal rather than a silent disambiguation:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [= $t [ux:region feature=orders path="/live"
           [ux:card id=open [ux:heading level=2 "Open"]]
@@ -6581,7 +6581,7 @@ cx-25ff65bbcc985af2
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [= $ctx {route: "/o", feature: "f", path: "/"}]
   [= $dup [ux:region feature=f path="/r" [ux:card id=same [ux:text "a"]] [ux:card id=same [ux:text "b"]]]]
@@ -6600,7 +6600,7 @@ identity is never minted:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [= $rows ([order id=o-1 customer="Ada"], [order id=o-2 customer="Lin"])]
   [$ux:table $rows {id: "open"}]]
@@ -6618,8 +6618,8 @@ It is the sole author of those attributes, and the list is closed:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
-[?lib 'cx-platform/ux-web' :as web]
+[?lib 'cx-platform/ux' as=ux]
+[?lib 'cx-platform/ux-web' as=web]
 [; R-A1 migration: envelope → spliced children (2026-08-25) ]
 [list [?splice [$web:htmx-subset]] [$web:htmx-allowed "hx-post"] [$web:htmx-allowed "hx-on"] [$web:htmx-allowed "hx-boost"]]
 ```
@@ -6636,8 +6636,8 @@ still fails:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
-[?lib 'cx-platform/ux-web' :as web]
+[?lib 'cx-platform/ux' as=ux]
+[?lib 'cx-platform/ux-web' as=web]
 [; R-A1 migration: envelope → spliced children (2026-08-25) ]
 [list [?splice [$web:off-subset-attrs "<div hx-post=\"/x\" hx-target=\"#y\"></div>"]]
       [?splice [$web:off-subset-attrs "<div hx-on=\"click: x\" hx-boost=\"true\"></div>"]]]
@@ -6653,8 +6653,8 @@ there is no interpolation surface to inject into:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
-[?lib 'cx-platform/ux-web' :as web]
+[?lib 'cx-platform/ux' as=ux]
+[?lib 'cx-platform/ux-web' as=web]
 [$web:render
   [ux:card [ux:text "R & D <team> \"quoted\""] [ux:field label="A & B" "<script>alert(1)</script>"]]
   {route: "/o", feature: "f", path: "/"}]
@@ -6667,8 +6667,8 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
-[?lib 'cx-platform/ux-web' :as web]
+[?lib 'cx-platform/ux' as=ux]
+[?lib 'cx-platform/ux-web' as=web]
 [; R-A1 migration: envelope → spliced children (2026-08-25) ]
 [list [?splice [$web:csp-violations "<div style=\"x\"></div>"]]
       [?splice [$web:csp-violations "<script>alert(1)</script>"]]
@@ -6689,8 +6689,8 @@ semantic tree named a selector:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
-[?lib 'cx-platform/ux-web' :as web]
+[?lib 'cx-platform/ux' as=ux]
+[?lib 'cx-platform/ux-web' as=web]
 [?let
   [= $ctx {route: "/orders", feature: "orders", path: "/", bind: [ux:render-ctx [swap default=outerHTML]]}]
   [$web:render
@@ -6708,8 +6708,8 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
-[?lib 'cx-platform/ux-web' :as web]
+[?lib 'cx-platform/ux' as=ux]
+[?lib 'cx-platform/ux-web' as=web]
 [$web:render
   [ux:table id=grid
     [ux:rows [ux:row key=r1 [ux:cell "a"]] [ux:row [ux:cell "b"]]]]
@@ -6726,8 +6726,8 @@ never from the tree:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
-[?lib 'cx-platform/ux-web' :as web]
+[?lib 'cx-platform/ux' as=ux]
+[?lib 'cx-platform/ux-web' as=web]
 [?let
   [= $rctx [ux:render-ctx
              [feed name=orders endpoint="/stream" event="orders-changed"]
@@ -6745,8 +6745,8 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
-[?lib 'cx-platform/ux-web' :as web]
+[?lib 'cx-platform/ux' as=ux]
+[?lib 'cx-platform/ux-web' as=web]
 [?let
   [= $rctx [ux:render-ctx
              [feed name=layout endpoint="/stream" event="layout-changed" region-refetch="/home/body"]
@@ -6769,8 +6769,8 @@ A projection failure never reaches a browser as content:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
-[?lib 'cx-platform/ux-web' :as web]
+[?lib 'cx-platform/ux' as=ux]
+[?lib 'cx-platform/ux-web' as=web]
 [; R-A1 migration: envelope → spliced children (2026-08-25) ]
 ([$web:render [ux:action verb=v target="#x"] {route: "/o", feature: "f", path: "/"}],
  [$web:render [ux:region feature=f path="/r" [ux:card id=d] [ux:card id=d]] {route: "/o", feature: "f", path: "/"}])
@@ -6786,8 +6786,8 @@ and both reaching a screen reader:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
-[?lib 'cx-platform/ux-web' :as web]
+[?lib 'cx-platform/ux' as=ux]
+[?lib 'cx-platform/ux-web' as=web]
 [?let
   [= $t [ux:form verb=place-order
           [ux:input name=customer label="Customer" error="who is this order for?"]
@@ -6805,8 +6805,8 @@ script involved anywhere:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
-[?lib 'cx-platform/ux-web' :as web]
+[?lib 'cx-platform/ux' as=ux]
+[?lib 'cx-platform/ux-web' as=web]
 [?let
   [= $rctx [ux:render-ctx
              [feed name=orders endpoint="/stream" event="orders-changed"]
@@ -6845,7 +6845,7 @@ it:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let [= $t [ux:card
                 [ux:heading level=2 "Open orders"]
                 [ux:field label="Customer" "Ada"]
@@ -6862,8 +6862,8 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
-[?lib 'cx-platform/ux-web' :as web]
+[?lib 'cx-platform/ux' as=ux]
+[?lib 'cx-platform/ux-web' as=web]
 [?let
   [= $t [ux:card [ux:heading level=2 "Open"] [ux:field label="Customer" "Ada"]
                  [ux:badge tone=warn "late"] [ux:action verb=place-order label="Go"]]]
@@ -7105,7 +7105,7 @@ element that is not there refuses rather than guessing:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [= $comps ([component name=hero], [component name=departments], [component name=promo], [component name=group container=true])]
   [= $l0 [ux:layout [placed id=hero component=hero] [placed id=promo component=promo] [placed id=depts component=departments]]]
@@ -7120,7 +7120,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [; R-A1 migration: envelope → spliced children (2026-08-25) ]
   [= $comps ([component name=hero])]
@@ -7139,7 +7139,7 @@ what makes an edit stream auditable and reversible rather than a diff:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [= $comps ([component name=hero], [component name=featured], [component name=promo], [component name=group container=true])]
   [= $l0 [ux:layout [placed id=hero component=hero] [placed id=featured component=featured]]]
@@ -7163,7 +7163,7 @@ A batch is atomic, so a tenant never lands half an edit:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [= $comps ([component name=hero])]
   [= $l0 [ux:layout [placed id=hero component=hero]]]
@@ -7182,7 +7182,7 @@ name refuses:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux' as=ux]
 [?let
   [; R-A1 migration: envelope → spliced children (2026-08-25) ]
   [= $comps ([component name=hero [param name=heading default="Everyday things." carrier=ux-heading]],
@@ -7210,8 +7210,8 @@ unsafe value refuses **the whole sheet** rather than emitting a partial one:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/ux' :as ux]
-[?lib 'cx-platform/ux-web' :as web]
+[?lib 'cx-platform/ux' as=ux]
+[?lib 'cx-platform/ux-web' as=web]
 [?let
   [; R-A1 migration: envelope → spliced children (2026-08-25) ]
   [= $ok  [ux:theme [token name=bg value="#111"] [token name=fg value="white"]]]
@@ -7253,9 +7253,9 @@ demonstration that `of=` is derivable rather than magic:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $arch
   [feature name=stamp version="1"
    [nouns [noun name=mark [field name=id type=text] [field name=note type=text label='Note']]]
@@ -7290,9 +7290,9 @@ An instance may also add views onto a noun it inherited:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $arch
   [feature name=stamp version="1"
    [nouns [noun name=mark [field name=id type=text] [field name=note type=text]]]
@@ -7324,9 +7324,9 @@ Repurposing an inherited name:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $arch
   [feature name=stamp version="1"
    [nouns [noun name=mark [field name=id type=text]]]
@@ -7349,9 +7349,9 @@ valve is authoring your own feature."*
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $arch
   [feature name=stamp version="1"
    [nouns [noun name=mark [field name=id type=text]]]
@@ -7373,9 +7373,9 @@ caught at instantiation rather than at first render:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $arch
   [feature name=stamp version="1"
    [nouns [noun name=mark [field name=id type=text]]]
@@ -7397,9 +7397,9 @@ its own code:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $arch
   [feature name=stamp version="1"
    [nouns [noun name=mark [field name=id type=text]]]
@@ -7429,9 +7429,9 @@ through another feature that offers one:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $arch
   [feature name=stamp version="1"
    [nouns [noun name=mark [field name=id type=text]]]
@@ -7504,9 +7504,9 @@ it the new archetype **refuses**, naming both addresses:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $v1
   [feature name=thing version="1"
    [nouns [noun name=thing [field name=id type=text] [field name=label type=text]]]
@@ -7539,9 +7539,9 @@ vendor's additions:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $v2
   [feature name=thing version="2"
    [nouns [noun name=thing [field name=id type=text] [field name=label type=text]
@@ -7573,9 +7573,9 @@ refuses rather than lowering the vendor's new floor for one tenant:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $v2
   [feature name=thing version="2"
    [nouns [noun name=thing [field name=id type=text] [field name=label type=text]]]
@@ -7597,9 +7597,9 @@ refinement against v1 is fine:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $v1
   [feature name=thing version="1"
    [nouns [noun name=thing [field name=id type=text] [field name=label type=text]]]
@@ -7712,7 +7712,7 @@ W2 is the one an adopter meets first, because the shared key is the join:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $ais
   [feature name=ais
    [types [type 'mmsi::text' [pattern '^[0-9]{9}$']]]
@@ -7740,7 +7740,7 @@ oracle rather than a checksum:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -7762,7 +7762,7 @@ true
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -7792,7 +7792,7 @@ and `ok=` is untouched:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let
  [= $alpha [feature name=alpha version='1' [summary 'A.']
    [keys [key name=order-id via=oid]]
@@ -7817,7 +7817,7 @@ carries information rather than noise:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let
  [= $alpha [feature name=alpha version='1' [summary 'A.']
    [keys [key name=order-id via=oid]]
@@ -7858,7 +7858,7 @@ report-first — a healthy feature is one component:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $f
   [feature name=till version="1"
    [nouns [noun name=sale [field name=id type=text]]
@@ -7879,7 +7879,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $f
   [feature name=till-and-piano version="1"
    [nouns [noun name=sale [field name=id type=text]]
@@ -7910,9 +7910,9 @@ field and tightens `create` to irreversible; `borough` renames and withdraws
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $thing
   [feature name=thing version="1"
    [summary 'The things this XAP is about. Rename it to your own noun.']
@@ -7989,9 +7989,9 @@ per tenant:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $v1
   [feature name=thing version="1"
    [nouns [noun name=thing [field name=id type=text] [field name=label type=text]]]
@@ -8026,9 +8026,9 @@ vendor made the floor) and `135` (clean, both faces agreeing):
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-stdlib/hash' :as hash]
-[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-stdlib/hash' as=hash]
+[?lib 'cx-stdlib/bytes' as=bytes]
 [?let [= $v1
   [feature name=thing version="1"
    [nouns [noun name=thing [field name=id type=text] [field name=label type=text]]]
@@ -9187,7 +9187,7 @@ separate error channel:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/http-client' :as http]
+[?lib 'cx-stdlib/http-client' as=http]
 [$http:status [response status=404]]
 ```
 
@@ -9198,7 +9198,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/http-client' :as http]
+[?lib 'cx-stdlib/http-client' as=http]
 [$http:ok [response status=404]]
 ```
 
@@ -9388,8 +9388,8 @@ to their wire form. Nothing here is a bespoke serializer:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/mcp' :as mcp]
-[?lib 'cx-stdlib/json' :as json]
+[?lib 'cx-platform/mcp' as=mcp]
+[?lib 'cx-stdlib/json' as=json]
 [$json:emit [$mcp:list-tools-request 2]]
 ```
 
@@ -9400,8 +9400,8 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/mcp' :as mcp]
-[?lib 'cx-stdlib/json' :as json]
+[?lib 'cx-platform/mcp' as=mcp]
+[?lib 'cx-stdlib/json' as=json]
 [$mcp:validate-args
   [$json:parse "{\"name\":\"w\",\"inputSchema\":{\"type\":\"object\",\"required\":[\"location\"],\"properties\":{\"location\":{\"type\":\"string\"}}}}"]
   [$json:parse "{\"location\":\"NYC\"}"]]
@@ -9417,9 +9417,9 @@ fails at the boundary:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/mcp' :as mcp]
-[?lib 'cx-stdlib/jsonschema' :as js]
-[?lib 'cx-stdlib/json' :as json]
+[?lib 'cx-platform/mcp' as=mcp]
+[?lib 'cx-stdlib/jsonschema' as=js]
+[?lib 'cx-stdlib/json' as=json]
 [$js:violation-paths
   [$mcp:validate-args
     [$json:parse "{\"name\":\"w\",\"inputSchema\":{\"type\":\"object\",\"required\":[\"location\"]}}"]
@@ -9435,8 +9435,8 @@ The A2A shapes are the same story on the agent-to-agent side:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/a2a' :as a2a]
-[?lib 'cx-stdlib/json' :as json]
+[?lib 'cx-platform/a2a' as=a2a]
+[?lib 'cx-stdlib/json' as=json]
 [$json:emit [$a2a:agent-card "greeter" "says hi" "http://x/" "0.1" ()]]
 ```
 
@@ -9473,7 +9473,7 @@ oracle:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -9498,7 +9498,7 @@ without collision:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [?let [= $chart
   [feature name=chart
    [frames [use frame=geo via=center]]
@@ -9522,7 +9522,7 @@ gate worse than no gate:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [$xap:compose]
 ```
 
@@ -9537,8 +9537,8 @@ tree is content-addressed, so entry order cannot change its identity:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
-[?lib 'cx-platform/store' :as store]
+[?lib 'cx-platform/xap' as=xap]
+[?lib 'cx-platform/store' as=store]
 [?let [= $s [$store:open "mem://"]]
  [= $t1 [$xap:pkg-tree ([entry path='b.cx' 'bee'], [entry path='a.cx' 'ay'])]]
  [= $t2 [$xap:pkg-tree ([entry path='a.cx' 'ay'], [entry path='b.cx' 'bee'])]]
@@ -9554,7 +9554,7 @@ true
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [$xap:pkg-tree ([entry path='../evil.cx' 'x'])]
 ```
 
@@ -9565,7 +9565,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/xap' :as xap]
+[?lib 'cx-platform/xap' as=xap]
 [$xap:pkg-tree ([entry path='a.cx' 'one'], [entry path='a.cx' 'two'])]
 ```
 

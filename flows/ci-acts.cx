@@ -27,17 +27,17 @@
 # FIELDS ARE NEVER EMPTY. An empty field is the one a performer supplies
 # (flow.md §4.6, RULED: #1260 CA-2), and the runner refuses to invoke it. So
 # every value an act needs is either a non-empty argument or derived.
-[?lib 'cx-stdlib/process' :as process]
-[?lib 'cx-stdlib/io'      :as io]
-[?lib 'cx-stdlib/strings' :as strings]
-[?lib 'cx-stdlib/env'     :as env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/env'     as=env]
 # NO [?lib 'cx-stdlib/cx']: an acts module importing it, directly or through a
 # module it imports, gives `cx flow --env` no resolver rows at all (#1709), so
 # documents are read and written through the codec's own native primitives,
 # [$cx-parse] and [$cx-serialize], which need no import.
-[?lib 'cx-stdlib/re'      :as re]
-[?lib 'cx-stdlib/path'    :as path]
-[?lib 'cx-stdlib/time'    :as time]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/time'    as=time]
 
 # ══ shared ═══════════════════════════════════════════════════════════════════
 
