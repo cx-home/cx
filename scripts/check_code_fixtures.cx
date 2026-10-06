@@ -135,7 +135,8 @@ cxast- ev-let- img- ev-park- cxtape-
 program-ascription- program-attr-ascription- program-attr-bare-
 program-body-bare- program-computed-step- program-body-ascription-
 program-body-block- program-body-prose-
-program-gap- program-gap1809- program-gapsdiag- program-md- program-is-err-
+program-gap- program-gap1809- program-gap1818- program-gap2 program-gapsdiag- program-md- program-is-err-
+program-distinct- program-lazy- program-construct- program-doc-
 program-tail-call- program-equality- program-directive-refusal-
 program-bytes-ascription- program-int-ascription- program-float-ascription-
 program-call- program-caps- program-collection-kind-
@@ -146,6 +147,7 @@ program-mapnode-nav- program-match- program-planar- program-purity-
 program-pvmatrix- program-reserved-ns- program-slot-singleton- program-table-
 program-tree-eval- program-ophead-
 program-shadow- program-ophole-
+program-grant-default- program-prose-join- program-emit-
 program-gap program-lazy- program-distinct- program-construct- program-doc-
 #]],
   [prefixes level=resilience [#

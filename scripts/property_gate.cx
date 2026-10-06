@@ -561,6 +561,14 @@
 [?def g-datetime-value scope=private impure ()
   [?match [$cx:parse [$concat "[x " [$g-datetime] "]"]] [x $q] [yield $q]]]
 
+# the datetime a constructed KEY carries: the instant at its strict canonical
+# image -- cx:canonical is the strict form, which normalizes every datetime to
+# UTC (canonical.md §2.6 "Datetime (strict)"), keys as values; the key identity
+# the round trip must keep is that instant's (cx-core-data issue 3: a datetime
+# key renders quoted with ::datetime, canonical.md §2.11.1)
+[?def g-datetime-key-value scope=private impure ()
+  [?match [$cx:parse [$cx:canonical [$cx:parse [$concat "[x " [$g-datetime] "]"]]]] [x $q] [yield $q]]]
+
 # -- (iii) decimal arithmetic is exact, and never mixes with a float (code.md
 #          §6.3 "Operand kind", "Exact division", RULED: CO-14, CO-17;
 #          cxdm.md §2.3 "decimal and bigint are SEMANTIC KINDS") ---------------
@@ -1239,7 +1247,7 @@
       [$with-subject [$chk-kind $kk $pos [$g-scalar $kk]] [?if [= $kk 'string'] [then 'string-emit'] [else 'other']]]
       [$chk-maps $ma $mb]
       [?match [$cx:parse $ma] [case [err] ()] [case $m [$chk-constructed-roundtrip 'merge' [$map:merge ($m, $NOCTX)]]]]
-      [$chk-constructed-roundtrip 'datetime-key' [$map:entry [$g-datetime-value] 1]]
+      [$chk-constructed-roundtrip 'datetime-key' [$map:entry [$g-datetime-key-value] 1]]
       [$chk-keyword-array]
       [$chk-attrs]
       [$chk-literal]
