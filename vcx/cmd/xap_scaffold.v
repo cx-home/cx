@@ -214,7 +214,7 @@ fn xap_scaffold_filled_readme(s XapScaffoldSkeleton, names []string, principal s
 fn xap_scaffold_fill(s XapScaffoldSkeleton, answers_src string, principal string) !(string, string) {
 	input := [s.source, '[scaffold-answers', answers_src, ']', "[scaffold-as '${principal}']"].join('\n')
 	program := [
-		"[?lib 'cx-platform/flow' :as cxflow]",
+		"[?lib 'cx-platform/flow' as=cxflow]",
 		'[?let [= \$r [\$cxflow:fill [\$first [\$cx:select \$doc "/skeleton"]] [\$first [\$cx:select \$doc "/scaffold-answers/*"]] {as: [\$string [\$first [\$cx:select \$doc "/scaffold-as"]]]}]]',
 		'  [?match \$r [case [err] \$r] [else [scaffold-filled [flow [\$cx:serialize [\$first \$r]]] [on [\$cx:serialize [\$first [\$tail \$r]]]]]]]]',
 	].join('\n')

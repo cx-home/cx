@@ -15,7 +15,7 @@ Two import prefixes:
 * **`cx-stdlib/…`** — the frozen standard set. Stable surface.
 * **`cx-platform/…`** — the platform modules: the ones that serve, or reach
   a store or a protocol (`reference-platform.md`). The XAP orchestrator is one
-  of them (`[?lib 'cx-platform/xap' :as xap]`), and so is fabric
+  of them (`[?lib 'cx-platform/xap' as=xap]`), and so is fabric
   (`[?lib 'cx-platform/fabric']`); both had names of their own, `cx-xap` and
   `cx-fabric`, which are retired and refuse naming the new spelling. So are the
   eleven modules that were the `cx-x/<name>` experimental tier (`run`, `llm`,

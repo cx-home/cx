@@ -300,7 +300,7 @@ window.cxPlaygroundPrimer = {
       "title": "",
       "reading": "code",
       "doc": "",
-      "src": "[?lib 'cx-platform/mcp' :as mcp]\n[?lib 'cx-stdlib/json' :as json]\n[$json:emit [$mcp:call-tool-request 1 \"get_weather\" {location: \"NYC\"}]]",
+      "src": "[?lib 'cx-platform/mcp' as=mcp]\n[?lib 'cx-stdlib/json' as=json]\n[$json:emit [$mcp:call-tool-request 1 \"get_weather\" {location: \"NYC\"}]]",
       "cmd": "cx prog.cx",
       "expected": "'{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"tools/call\",\"params\":{\"arguments\":{\"location\":\"NYC\"},\"name\":\"get_weather\"}}'",
       "match": "exact",

@@ -42,8 +42,8 @@
    immediately after staging and before the per-profile install verification:
    the cut does not proceed on a refusal. Also `make check-release-asset-links`
    (TEST_TARGETS), which runs it against whatever is currently staged, and the
-   self-test (scripts/release_asset_links_selftest.sh, #1672 files the shell
-   gap for the download half) which proves it RED on the real v0.17.0 darwin  (version-literal-ok: incident history)
+   self-test (scripts/release_asset_links_selftest.cx -- cx since #1672: the
+   download half is http-client + hash) which proves it RED on the real v0.17.0 darwin  (version-literal-ok: incident history)
    asset and GREEN on this tree's own build. ]
 
 [?lib 'cx-stdlib/io']
