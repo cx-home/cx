@@ -792,13 +792,13 @@ d
 y
 #]]
  ]
- [ex key=128-flatten-one-level chars=39
+ [ex key=128-flatten-one-level chars=37
   [out-text [#
 [item a]
 [item b]
 c
 [item d]
-[item 'e']
+[item e]
 #]]
  ]
  [ex key=129-name-via-builtin chars=67
@@ -983,19 +983,19 @@ C
 (a, b, c)
 #]]
  ]
- [ex key=157-slice-last-three chars=11
+ [ex key=157-slice-last-three chars=9
   [out-text [#
-(c, d, 'e')
+(c, d, e)
 #]]
  ]
- [ex key=158-slice-reverse chars=17
+ [ex key=158-slice-reverse chars=15
   [out-text [#
-('e', d, c, b, a)
+(e, d, c, b, a)
 #]]
  ]
- [ex key=159-slice-every-other chars=11
+ [ex key=159-slice-every-other chars=9
   [out-text [#
-(a, c, 'e')
+(a, c, e)
 #]]
  ]
  [ex key=160-slice-trim-ends chars=9
