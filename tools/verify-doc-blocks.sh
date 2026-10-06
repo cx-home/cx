@@ -20,6 +20,15 @@
 # A block whose first line is `# verify-skip` is exempt (for deliberately
 # partial / illustrative fragments that are not standalone CX).
 #
+# A block in the WRONG half of an anti-pattern pair is exempt too: the
+# primer's pairs (scripts/gen_docs/primer_build.cx render-pair) print
+# "**Do not write this:**", the wrong program and the refusal it earns, then
+# "**Write this:** ...". A wrong program that does not parse is the lesson,
+# not a broken block, and primer_build already grades its refusal against the
+# fixture (EXAMPLE FRESHNESS): such a block that fails to parse is counted as
+# a refused wrong half, never a failure; one that parses passes as usual. The
+# right half after "**Write this:**" is verified like any other block.
+#
 # Exit codes: 0 all blocks pass; 1 at least one block fails to parse;
 # 2 usage error or no ```cx blocks found in any target (a fence verifier
 # that verifies nothing must be loud, not green).
@@ -86,6 +95,7 @@ PASS=0
 FAIL=0
 SKIP=0
 UNFMT=0
+WRONG=0
 FAIL_DETAILS=()
 UNFMT_DETAILS=()
 
@@ -99,9 +109,13 @@ extract_cx_blocks() {
   # format string), and \b in awk EREs is a literal backspace, not a word
   # boundary — both broke earlier stream-based versions of this script.
   awk -v dir="$TMPDIR_BLOCKS" '
+    /^\*\*Do not write this:\*\*/ { if (!inblock) wrong=1 }
+    /^\*\*Write this:\*\*/        { if (!inblock) wrong=0 }
+    /^#+ /          { if (!inblock) wrong=0 }
     /^```cx[ \t]*$/ { inblock=1; block=""; next }
     /^```[ \t]*$/   { if (inblock) { n++; out=dir "/" n ".cx"
                                      printf "%s", block > out; close(out)
+                                     if (wrong) { printf "" > (out ".wrong"); close(out ".wrong") }
                                      inblock=0 }
                       next }
     inblock         { block = block $0 "\n" }
@@ -110,7 +124,7 @@ extract_cx_blocks() {
 }
 
 for file in "${TARGETS[@]}"; do
-  rm -f "$TMPDIR_BLOCKS"/*.cx
+  rm -f "$TMPDIR_BLOCKS"/*.cx "$TMPDIR_BLOCKS"/*.wrong
   nblocks="$(extract_cx_blocks "$file")"
   idx=0
   while [ "$idx" -lt "$nblocks" ]; do
@@ -131,6 +145,8 @@ for file in "${TARGETS[@]}"; do
     elif grep -qE 'cx-err:CXER030[01]' <<< "$FMT_ERR"; then
       UNFMT=$((UNFMT + 1))
       UNFMT_DETAILS+=("$file: block #$idx — ${FMT_ERR%%;*}")
+    elif [ -e "$BLOCK_FILE.wrong" ]; then
+      WRONG=$((WRONG + 1))
     else
       FAIL=$((FAIL + 1))
       FAIL_DETAILS+=("$file: block #$idx — ${FMT_ERR%%$'\n'*}")
@@ -138,8 +154,8 @@ for file in "${TARGETS[@]}"; do
   done
 done
 
-TOTAL=$((PASS + FAIL + SKIP + UNFMT))
-echo "verify-doc-blocks: $PASS passed, $FAIL failed, $UNFMT parsed but not formattable, $SKIP skipped (${#TARGETS[@]} files scanned)"
+TOTAL=$((PASS + FAIL + SKIP + UNFMT + WRONG))
+echo "verify-doc-blocks: $PASS passed, $FAIL failed, $UNFMT parsed but not formattable, $WRONG refused as an anti-pattern's wrong half, $SKIP skipped (${#TARGETS[@]} files scanned)"
 if [ "$UNFMT" -ne 0 ]; then
   echo "Parsed, not formattable (the formatter's own census — #1436 and the TREE-REFUSED column; not this step's failures):"
   for d in "${UNFMT_DETAILS[@]}"; do echo "  $d"; done
