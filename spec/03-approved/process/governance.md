@@ -441,7 +441,7 @@ and is not duplicated here.
 | `CXER1200–CXER1205` | `cx-stdlib/ft` (full-text) | `spec/03-approved/stdlib/ft.md` |
 | `CXER1300–CXER1306` | `cx-stdlib/email` | `spec/03-approved/stdlib/email.md` |
 | `CXER1400–CXER1403` | `cx-stdlib/url` | `spec/03-approved/stdlib/url.md` |
-| `CXER1500, 1502–1504` | `cx-stdlib/csv` (1501 reserved) | `spec/03-approved/stdlib/csv.md` §5 |
+| `CXER1500, 1502–1505` | `cx-stdlib/csv` (1501 reserved; 1505 `E_CSV_SCHEMA_INVALID`) | `spec/03-approved/stdlib/csv.md` §5 |
 | `CXER1600–CXER1609` | `cx-stdlib/validate` (1600–1605 shipped earlier; 1606 `E_VALIDATE_NOT_AN_ENUM` added 2026-09-01 with `enum-values`, RULED: EN-3 #1156 — a resolved type carrying no `[enum …]` is a CATEGORY error, distinct from a malformed schema (1603, which would blame a well-formed one) and from an unknown `type=` (1601); the block was extended from 1605 to 1609 rather than reusing a code, since jsonschema starts at 1610 and the four spare numbers sit in validate's own neighborhood; 1607–1609 reserved) | `spec/03-approved/stdlib/validate.md` §6 |
 | `CXER1610–CXER1619` | `cx-stdlib/jsonschema` (1610 shipped; rest reserved) | `spec/03-approved/stdlib/jsonschema.md` |
 | `CXER1700–CXER1710`, `CXER1720–CXER1721` | **Reserved, never reissued — the band a deleted surface used.** Nothing in this range is emitted and nothing is reissued to another subsystem; the store wire is the XSP store profile (`CXER5000–CXER5049`) with the gRPC edge, and every meaning the range carried has a row there. `CXER1704` was already a TOMBSTONE (I1 row 15 / audit M21): ref-conflict unifies on `CXER1114 E_STORE_REF_CONFLICT` | — |
