@@ -653,6 +653,12 @@ const accepted_by_one_table = [
 	// `[$process:run ([$env:executable-path], '--allow-read', …) …]` running the
 	// census and the registry report (RULED: STREAM-1, CXF-1).
 	AcceptedByOne{'scripts/diagnostics_census_check.cx', .program, reason_1536},
+	// 86 -> 88: #1418's scripts/gen_guide/theme_check.cx (the contrast ratio's
+	// `[$math:max ($x, $y)]`) and #1775/#1822's scripts/repr_guard_selftest.cx
+	// (`[$process:run ('chmod', '755', $p) …]` planting its drivers) -- the class's
+	// own shape (RULED: STREAM-1, CXF-1).
+	AcceptedByOne{'scripts/gen_guide/theme_check.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/repr_guard_selftest.cx', .program, reason_1536},
 	// ── recorded exception — a computed attribute `name=[EXPR]` (25) ──
 	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
 	// 21 -> 22: scripts/check_migrate_namespace_fixtures.cx, RS-4's sweep grader.
@@ -703,6 +709,9 @@ const accepted_by_one_table = [
 	// both computed attributes on a constructed row.
 	AcceptedByOne{'scripts/gen_site/plugs_svg.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/gen_site/docs_voice_check.cx', .program, reason_attr},
+	// #1601's scripts/gitconfig_home_selftest.cx: a verdict row's
+	// `what=[$cat ($what, ' — ', $detail)]`, a computed attribute (RULED: STREAM-1).
+	AcceptedByOne{'scripts/gitconfig_home_selftest.cx', .program, reason_attr},
 	// ── recorded exception — a program document the data balancer cannot read (9) ──
 	// 8 -> 9: scripts/docs_fragment.cx, the RS-9 fragment contract (a `"#]"` literal).
 	// 9 -> 8: scripts/flow_vocabulary_gate.cx left with the flow extraction (RS-12).

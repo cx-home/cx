@@ -17,7 +17,16 @@
 //       fixtures first in primer order, the corpus's after; Data shows the
 //       document alone, Code the program (and, when the loaded example
 //       actually reads one, the document too — never a separate query tab,
-//       #1741).
+//       #1741);
+//   (f) the line-number gutters (#1744): for five examples of each reading,
+//       every shown editor's gutter holds one numbered row per line of its
+//       text (1..n, a wrapped line keeping one number — the rows are the
+//       page's own, not a recount here), and each output pane's gutter one
+//       row per line of the projected output; a gutter is aria-hidden, sits
+//       beside its <pre>/<textarea> and never inside it, and the stylesheet
+//       makes it unselectable, so a copied pane carries no number; the page's
+//       errPosition reads the source line a refusal names in each spelling the
+//       engine gives (at='L:C', "at line L:C").
 // RED-PROOF: at 1fe8528a3 (a) and (b) both fail — the label strip and the
 // handler's early return for every <select>.
 //
@@ -188,4 +197,63 @@ for (const ed of [input, doc]) {
   if (pick.value !== before) fail(`ArrowRight inside the ${ed.id} textarea changed the selected example`);
 }
 
-console.log(`test-playground-nav: OK — ${primer.length} primer fixtures + ${Object.keys(programExamples).length} corpus examples across the two reading tabs (#1743), each tab showing its editors (#1741); numbered primer options naming their fixture ids; arrows step examples and sections from the picker, never from an editor; crumb names the number.`);
+// (f) the line-number gutters (#1744).
+const gutterRows = (g) => [...g.querySelectorAll('.cxp-gutter-row')].map((r) => r.textContent);
+const want = (text) => (text || '').split('\n').map((_, i) => String(i + 1));
+const gutterOf = { 'cxp-input': 'cxp-input-gutter', 'cxp-doc': 'cxp-doc-gutter' };
+let gutterChecked = 0;
+for (const r of ['data', 'code']) {
+  tab(r).click();
+  const vals = [...pick.querySelectorAll('option')].filter((o) => !o.disabled).map((o) => o.value);
+  const five = vals.filter((_, i) => i % Math.max(1, Math.floor(vals.length / 5)) === 0).slice(0, 5);
+  if (five.length < 5) setupFail(`the ${r} reading offers ${vals.length} example(s), fewer than five`);
+  for (const v of five) {
+    pick.value = v;
+    pick.dispatchEvent(new win.Event('change', { bubbles: true }));
+    for (const ed of [input, doc]) {
+      const block = ed.closest('.cxp-edit-block');
+      if (block && block.hidden) continue;
+      const g = win.document.getElementById(gutterOf[ed.id]);
+      if (!g) fail(`${v} (${r}): the ${ed.id} editor has no gutter`);
+      const got = gutterRows(g), exp = want(ed.value);
+      if (JSON.stringify(got) !== JSON.stringify(exp)) {
+        fail(`${v} (${r}): the ${ed.id} gutter numbers ${got.length} row(s) [${got.slice(0, 4).join(',')}…], its text has ${exp.length} line(s) (#1744)`);
+      }
+      gutterChecked++;
+    }
+  }
+}
+const fmt = win.document.getElementById('cxp-format');
+for (const lang of ['cx', 'json', 'xml']) {
+  const pane = win.document.getElementById(`cxp-out-${lang}`);
+  const code = pane && pane.querySelector('pre code');
+  const g = pane && pane.querySelector('.cxp-gutter');
+  if (!code || !g) fail(`the ${lang} output pane has no <pre><code> or no gutter`);
+  code.dataset.raw = lang === 'json' ? '{"a":[1,2],"b":{"c":3}}'
+                   : lang === 'xml' ? '<r><a>1</a><b><c>3</c></b></r>' : '[r\n  [a 1]\n  [b [c 3]]]';
+}
+fmt.click(); fmt.click();   // two toggles: back to the page's mode, projected and gutted each time
+for (const lang of ['cx', 'json', 'xml']) {
+  const pane = win.document.getElementById(`cxp-out-${lang}`);
+  const g = pane.querySelector('.cxp-gutter');
+  const got = gutterRows(g), exp = want(pane.querySelector('pre code').textContent);
+  if (JSON.stringify(got) !== JSON.stringify(exp)) fail(`the ${lang} output gutter numbers ${got.length} row(s), the output shows ${exp.length} line(s) (#1744)`);
+  gutterChecked++;
+}
+for (const g of win.document.querySelectorAll('.cxp-gutter')) {
+  if (g.getAttribute('aria-hidden') !== 'true') fail(`a gutter (${g.id || g.parentElement.id}) is not aria-hidden`);
+  if (g.closest('pre, textarea')) fail(`a gutter (${g.id || g.parentElement.id}) sits inside the text it numbers — a copy would carry the numbers`);
+}
+const css = readFileSync(resolve(PLAYGROUND, 'playground.css'), 'utf8');
+const gutterRule = /\.cxp-gutter\s*\{([^}]*)\}/.exec(css);
+if (!gutterRule || !/user-select:\s*none/.test(gutterRule[1])) fail('playground.css: .cxp-gutter is selectable — a copied pane would carry its numbers (#1744)');
+const errPosition = (win.cxPlaygroundInternals || {}).errPosition;
+if (typeof errPosition !== 'function') fail('playground.js exposes no errPosition — the source line a refusal names is unread (#1744)');
+for (const [text, line] of [[`[err code=cx-err:CXER4934 message='E_X' at='9:19']`, 9],
+                            ["[err code=CXER0100 message=\"parse: ... opened at line 3:1\"]", 3],
+                            ['[total 25.00]', 0]]) {
+  const p = errPosition(text);
+  if ((p ? p.line : 0) !== line) fail(`errPosition(${JSON.stringify(text)}) answered line ${p ? p.line : 'none'}, expected ${line || 'none'} (#1744)`);
+}
+
+console.log(`test-playground-nav: OK — ${primer.length} primer fixtures + ${Object.keys(programExamples).length} corpus examples across the two reading tabs (#1743), each tab showing its editors (#1741); numbered primer options naming their fixture ids; arrows step examples and sections from the picker, never from an editor; crumb names the number; ${gutterChecked} gutters number every line of their pane, none copyable, and a refusal's source line is read (#1744).`);

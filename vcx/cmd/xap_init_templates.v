@@ -565,8 +565,12 @@ stays strictly per-package: bundling bypasses no gate and no consent.
 ## Next
 
 - Rename the nouns and verbs to your domain; the shapes carry over.
-- Add a component per feature (`bind`, `emits`, and a view) to run the
-  cascade — PEP → journal → ordered bus, with state as the fold.
+- Add a component per feature (`bind` and `emits`) to run the cascade —
+  PEP → journal → ordered bus, with state as the fold. `[\$xap:serve]` then
+  answers `GET /surface` (the surface as `application/cx`, the route a client
+  reads), `GET /events` (the same surface, pushed) and `POST /intent/<verb>`.
+  A component's `view:` (HTML panes at `GET /`) is xap.md §16.1's
+  single-medium appliance exception — leave it out; the client renders.
 - A client is a SEPARATE project (`cx xap init ${name} --client` scaffolds
   a RUNNABLE one — generic tables derived from the surface's `shows`, a
   floor for your own views): a XAP never embeds its renderer.
