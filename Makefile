@@ -460,19 +460,23 @@ sync-cmd-split: sync-cmd-links
 	  for d in deps/*/; do \
 	    r=$$(basename "$$d"); \
 	    [ "$$r" = cx-core-code ] && continue; \
-	    [ -e "deps/cx-core-code/deps/$$r" ] || ln -s "$(CURDIR)/deps/$$r" "deps/cx-core-code/deps/$$r"; \
+	    [ -e "deps/cx-core-code/deps/$$r" ] || ln -sfn "$(CURDIR)/deps/$$r" "deps/cx-core-code/deps/$$r"; \
 	  done; \
 	fi
 	@# extraction_gate_probe (and CX_CORPUS_MERGED below) walk ONE directory
 	@# recursively, no -path-style search list -- a MERGED view, symlinks only,
 	@# never the real conformance/ (other steps' `git ls-files`-based counts
 	@# must not see it): cx-core-code's moved corpus PLUS whatever conformance/
-	@# still carries directly.
+	@# still carries directly. `ln -sfn`, never `-sf`: two builds at once (a
+	@# parallel gate) can both pass the -delete, and the second `ln -sf` over the
+	@# first's link to a DIRECTORY follows it and writes the link inside the
+	@# pin's own tree — deps/cx-core-code/conformance/stdlib/stdlib, a loop that
+	@# made the next deps-sync refuse the pin as drifted (2026-10-06 01:1xZ).
 	@mkdir -p deps/cx-core-code/vcx/target/conformance-merged
 	@find deps/cx-core-code/vcx/target/conformance-merged -maxdepth 1 -type l -delete
 	@for e in conformance/*.cxd conformance/*.md conformance/llm deps/cx-core-code/conformance/*; do \
 	  [ -e "$$e" ] || continue; \
-	  ln -sf "$(CURDIR)/$$e" "deps/cx-core-code/vcx/target/conformance-merged/$$(basename $$e)"; \
+	  ln -sfn "$(CURDIR)/$$e" "deps/cx-core-code/vcx/target/conformance-merged/$$(basename $$e)"; \
 	done
 .PHONY: deps-present
 deps-present: sync-cmd-split
