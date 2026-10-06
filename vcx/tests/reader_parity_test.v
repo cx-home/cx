@@ -581,7 +581,6 @@ const accepted_by_one_table = [
 	// 23 -> 24: #1670's scripts/release_asset_links_gate.cx, the same shape as
 	// check_portable_links.cx above (`[$array:flatten (…)]`) -- the release
 	// staging directory scan reuses its glob-then-flatten idiom verbatim.
-	AcceptedByOne{'scripts/release_asset_links_gate.cx', .program, reason_1536},
 	// release_asset_links_selftest.cx (93d4a0825) is not here: the two readers agree on
 	// it on cx-core-data 7bf68e720 (the DATA stream's reader-parity fixes) (RULED: STREAM-1).
 	AcceptedByOne{'scripts/run_bench_json.cx', .program, reason_1536},
@@ -634,7 +633,6 @@ const accepted_by_one_table = [
 	// the class's own shape, `[$strings:join ($f, ':', …) '']` building each
 	// refusal line and `[$strings:join ($l, $next) " "]` joining a listen call
 	// left open to its continuation line (RULED: CXF-1, FIX-1).
-	AcceptedByOne{'scripts/listener_bind_gate.cx', .program, reason_1536},
 	// 83 -> 84: #1817's scripts/postmerge_steps.cx, the post-merge run's steps -- the
 	// class's own shape, `[$process:run ('sysctl', '-n', 'hw.ncpu') …]` and the
 	// plan's `('bash', 'scripts/test_changed.sh', …)` (RULED: STREAM-1, CXF-1).
@@ -708,18 +706,20 @@ const accepted_by_one_table = [
 	// #1601's scripts/gitconfig_home_selftest.cx: a verdict row's
 	// `what=[$cat ($what, ' — ', $detail)]`, a computed attribute (RULED: STREAM-1).
 	AcceptedByOne{'scripts/gitconfig_home_selftest.cx', .program, reason_attr},
-	// ── recorded exception — a program document the data balancer cannot read (9) ──
+	// ── recorded exception — a program document the data balancer cannot read (3) ──
 	// 8 -> 9: scripts/docs_fragment.cx, the RS-9 fragment contract (a `"#]"` literal).
 	// 9 -> 8: scripts/flow_vocabulary_gate.cx left with the flow extraction (RS-12).
 	// 8 -> 10: scripts/gate_on_suite_migrate.cx, D49a's migration (a `"]"` literal;
 	// the heading read 8 over nine rows before it).
 	// 10 -> 9: stdlib/connector.cx left with cx-platform-connector's extraction
 	// (RULED: RS-12, RS-8, RS-27; #1591 item K3).
-	AcceptedByOne{'scripts/bisect_batch.cx', .program, reason_prog},
-	AcceptedByOne{'scripts/check_editor_surface_parity.cx', .program, reason_prog},
+	// 7 -> 3: cx-core-data#57 (a top-level `#` comment after an eval directive is a
+	// comment in mixed mode, not the head of a text run whose `[`/`]` the balancer
+	// counted) — bisect_batch.cx, check_editor_surface_parity.cx,
+	// gate_on_suite_migrate.cx and gen_docs/primer_platform.cx read alike now, as do
+	// the reason_1536 rows release_asset_links_gate.cx and listener_bind_gate.cx
+	// above, which left with them (RULED: STREAM-1).
 	AcceptedByOne{'scripts/docs_fragment.cx', .program, reason_prog},
-	AcceptedByOne{'scripts/gate_on_suite_migrate.cx', .program, reason_prog},
-	AcceptedByOne{'scripts/gen_docs/primer_platform.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/repos_allocation_gate.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/store_session_dep_gate.cx', .program, reason_prog},
 ]
