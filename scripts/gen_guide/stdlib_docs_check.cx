@@ -138,8 +138,11 @@
 # RE2 over the raw module text: every public [?def] with its purity word.
 # Anchored at a line start ((?m)^): a module's [?def]s are top-level forms in
 # column 0, while the text of a def INSIDE a string literal is not one -- the
-# connector kit's code-entry template ("[?def apply scope=public ...") was read
-# as two more public defs owing [fn-doc]s (cx-platform-connector e3a1cc3).
+# connector kit's code-entry template (a string holding the text of a public
+# def named apply) was read as two more public defs owing fn-docs
+# (cx-platform-connector e3a1cc3). Every bracket in this comment stays
+# balanced: the data reader opened a form at the bracket inside the quoted
+# text this comment used to carry (reader-parity red on 82c94106b).
 [?def def-rx () [$re:compile "(?m)^\\[\\?def\\s+([a-z0-9-]+)\\s+scope=public(\\s+(pure|impure))?"]]
 
 [?let [= $rx [$def-rx]]
