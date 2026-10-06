@@ -596,11 +596,6 @@ const accepted_by_one_table = [
 	// follow deps/.
 	AcceptedByOne{'scripts/check_no_ai_attribution.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/strip_attribution.cx', .program, reason_1536},
-	// STREAM-1 (the CORE stream's landing, 2026-10-06): a PRIV selftest and the
-	// guide's theme check written since — call-shaped heads beside a ws-delimited
-	// `(…)`/`{…}` literal, the 1536-a property.
-	AcceptedByOne{'scripts/gen_guide/theme_check.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/repr_guard_selftest.cx', .program, reason_1536},
 	// DOCS-4 wave 1 (RULED: DOCS-42, DOCS-44, DOCS-45, DOCS-46): four new
 	// generators under scripts/gen_site/ and the site assembler's new link walk
 	// -- the class's own shape again, `[$fp:fold … {} [?fn …]]` (ring_svg.cx),
@@ -656,9 +651,10 @@ const accepted_by_one_table = [
 	// `[$math:max ($x, $y)]`) and #1775/#1822's scripts/repr_guard_selftest.cx
 	// (`[$process:run ('chmod', '755', $p) …]` planting its drivers) -- the class's
 	// own shape (RULED: STREAM-1, CXF-1).
-	// 88 -> 87: theme_check.cx leaves — the two readers agree on it since the
-	// DATA stream's reader-parity fixes (cx-core-data 7bf68e720) (RULED: STREAM-1).
-	AcceptedByOne{'scripts/repr_guard_selftest.cx', .program, reason_1536},
+	// 88 -> 86: theme_check.cx leaves — the two readers agree on it since the
+	// DATA stream's reader-parity fixes (cx-core-data 7bf68e720) — and
+	// repr_guard_selftest.cx is named once, with the program forms above
+	// (RULED: STREAM-1).
 	// ── recorded exception — a computed attribute `name=[EXPR]` (25) ──
 	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
 	// 21 -> 22: scripts/check_migrate_namespace_fixtures.cx, RS-4's sweep grader.
