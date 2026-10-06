@@ -1,0 +1,173 @@
+[; scripts/release_asset_links_selftest.cx -- the fixture-before-fix proof for
+   scripts/release_asset_links_gate.cx (#1670).
+
+   It was POSIX sh while cx-private#1672 stood: the RED half downloads a real
+   historical GitHub release asset and verifies its SHA-256 before the gate
+   sees it, and no cx primitive was trusted for a redirect-following binary
+   download. cx-stdlib/http-client follows the release download's redirect
+   and answers the body as bytes, cx-stdlib/hash checks it against the
+   release's own SHA256SUMS.txt, and cx-stdlib/io writes it -- so the whole
+   self-test is cx (#1672 closed by this file). The one shell left is the
+   staging library the release flow itself sources
+   (scripts/lib/r22_profile_gate.sh), reached through process:run exactly as
+   the flow reaches it.
+
+   What this proves, run against THIS tree:
+     RED   -- the gate FAILS on the real historical darwin-arm64 asset, naming
+              the /nix/store sqlite load path #1670 measured.
+     MEASURED -- the same release's linux-arm64 asset passes (measured, not
+              assumed clean).
+     GREEN -- this tree's own staged build passes.
+
+   Usage:
+     cx --allow-all scripts/release_asset_links_selftest.cx [--stage-dir DIR] [--tag TAG]
+       --stage-dir DIR  a dist/public-shaped staging directory built by this
+                        tree (default: `make build-vcx build-profiles` and the
+                        release flow's staging into dist/_selftest_public/,
+                        never dist/public/)
+       --tag TAG        the historical release (default: the #1670 incident's)
+     CX_BIN           the cx that runs the gate (default: this cx)
+
+   Exit 0 only when RED, MEASURED and GREEN all land as expected; anything
+   else is news and exits 1 naming the half that broke. ]
+[?lib 'cx-stdlib/io']
+[?lib 'cx-stdlib/env']
+[?lib 'cx-stdlib/process']
+[?lib 'cx-stdlib/strings']
+[?lib 'cx-stdlib/hash']
+[?lib 'cx-stdlib/bytes']
+[?lib 'cx-stdlib/http-client' as=http]
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def die scope=private impure ($s) [?let [= $_
+      [$cry [$concat 'release_asset_links_selftest: ' $s]]]
+    [$env:exit 1]]]
+# flag-value: the argument after --<name>, or $d when it is not given.
+[?def flag-value scope=private pure [returns string] ($argv $name::string $d::string) [?let [= $n [$count $argv]] [= $hits [?for [in $i [$range 1 $n]] [where [= [$nth $argv $i] [$concat '--' $name]]] [where [< $i $n]] [yield [$nth $argv [+ $i 1]]]]] [?if [= [$count $hits] 0] [then $d] [else [$first $hits]]]]]
+# sum-for: the hex digest SHA256SUMS.txt records for $asset, or "".
+[?def sum-for scope=private pure [returns string] ($sums::string $asset::string) [?let [= $hits [?for [in $l [$strings:split-lines $sums]] [= $f [$strings:split-whitespace $l]] [where [= [$count $f] 2]] [where [= [$nth $f 2] $asset]] [yield [$nth $f 1]]]] [?if [= [$count $hits] 0] [then ''] [else [$first $hits]]]]]
+# fetch: GET $url (redirects followed) and answer the body bytes; any
+# non-200 refuses by name.
+[?def fetch scope=private impure ($url::string) [?let [= $r [$http:get $url {}]]
+    [= $st [$http:status $r]]
+    [?if [= $st 200]
+      [then [$http:body-bytes $r]]
+      [else [$die [$concat 'GET ' $url ' answered ' [$string $st]]]]]]]
+# gate: run the gate over --check-file $path or --dir $path.
+[?def gate scope=private impure ($cx::string $mode::string $path::string) [$process:run ($cx, '--allow-all', 'scripts/release_asset_links_gate.cx', $mode, $path)]]
+[?def first-nix-line scope=private pure [returns string] ($text::string) [?let [= $hits [?for [in $l [$strings:split-lines $text]] [where [$strings:contains $l '/nix/store/']] [yield [$strings:trim $l]]]]
+    [?if [= [$count $hits] 0] [then ''] [else [$first $hits]]]]]
+[?let [= $argv [$env:argv]]
+  [= $tag [$flag-value $argv 'tag' 'v0.17.0']]  [; version-literal-ok: incident history ]
+  [= $stage-arg [$flag-value $argv 'stage-dir' '']]
+  [= $cx [$env:var-or-default 'CX_BIN' [$env:executable-path]]]
+  [= $base [$concat 'https://github.com/cx-home/cx/releases/download/' $tag]]
+  [= $tmp [$io:temp-dir 'cx-release-asset-selftest-']]
+  [= $_
+    [$say [$concat '== #1670 self-test: fetching the historical '
+        $tag
+        " assets (docs/install's own resolution, pinned to this tag) =="]]]
+  [= $sums [$bytes:to-string-utf8 [$fetch [$concat $base '/SHA256SUMS.txt']]]]
+  [= $_
+    [?for [in $asset ('cx-darwin-arm64.tar.gz', 'cx-linux-arm64.tar.gz')]
+      [= $want [$sum-for $sums $asset]]
+      [= $_ [$say [$concat '   downloading ' $asset]]]
+      [= $body [$fetch [$concat $base '/' $asset]]]
+      [= $got [$hash:sha256-hex $body]]
+      [= $_ [?if [$or [= $want ''] [$not [= $want $got]]]
+          [then [$die [$concat $asset
+                ' failed SHA-256 verification against '
+                $tag
+                "'s published sums (want '"
+                $want
+                "', got '"
+                $got
+                "')"]]]
+          [else [$io:write-file-bytes [$concat $tmp '/' $asset] $body]]]]
+      [yield $asset]]]
+  [= $_
+    [$say [$concat '== RED proof: the gate must FAIL on the real '
+        $tag
+        ' darwin asset ==']]]
+  [= $red [$gate $cx '--check-file' [$concat $tmp '/cx-darwin-arm64.tar.gz']]]
+  [= $_
+    [?if [= $red@exit-code 0]
+      [then [$die [$concat 'FAILED -- the gate passed '
+            $tag
+            "'s darwin asset, which is known-broken (#1670). The class regressed, or the gate does."]]]
+      [else [?if [= [$first-nix-line [$string $red@stderr]] '']
+          [then [$die [$concat 'the gate failed for the wrong reason (no /nix/store line in its output):\n'
+                [$string $red@stderr]]]]
+          [else [$say [$concat '   RED confirmed -- '
+                [$first-nix-line [$string $red@stderr]]]]]]]]]
+  [= $_
+    [$say [$concat '== measurement: the real '
+        $tag
+        ' LINUX asset, checked (not assumed) clean ==']]]
+  [= $lin [$gate $cx '--check-file' [$concat $tmp '/cx-linux-arm64.tar.gz']]]
+  [= $_
+    [?if [= $lin@exit-code 0]
+      [then [$say '   confirmed clean (no /nix/store dependency on the linux asset)']]
+      [else [$die [$concat 'NEWS -- '
+            $tag
+            "'s linux asset now fails the gate too (previously measured clean; see _gate_evidence/pipeline_1670/RESULTS.md):\n"
+            [$string $lin@stderr]]]]]]
+  [= $_ [$say "== GREEN proof: this tree's OWN staged build must PASS =="]]
+  [= $stage
+    [?if [$not [= $stage-arg '']]
+      [then $stage-arg]
+      [else [?let [= $dir 'dist/_selftest_public']
+          [= $_
+            [$say "   building this tree's release artifacts (build-vcx + build-profiles)"]]
+          [= $b [$process:run ('make', 'build-vcx', 'build-profiles')]]
+          [= $_
+            [?if [$not [= $b@exit-code 0]]
+              [then [$die [$concat 'build failed:\n'
+                    [$string $b@stdout]
+                    [$string $b@stderr]]]]
+              [else null]]]
+          [; the release flow's own staging, as scripts/lib/r22_profile_gate.sh writes it ]
+          [= $s
+            [$process:run ('sh',
+                '-c',
+                [$concat 'set -eu; rm -rf '
+                  $dir
+                  '; mkdir -p '
+                  $dir
+                  '/_plat; . scripts/lib/r22_profile_gate.sh; '
+                  'r22_collect_platform_files '
+                  $dir
+                  '/_plat; '
+                  'r22_tar_platform '
+                  $dir
+                  '/_plat '
+                  [$env:cwd]
+                  '/'
+                  $dir
+                  ' darwin-arm64; '
+                  'rm -rf '
+                  $dir
+                  '/_plat; r22_stage_profiles '
+                  $dir
+                  ' darwin-arm64'])]]
+          [= $_
+            [?if [$not [= $s@exit-code 0]]
+              [then [$die [$concat 'staging failed:\n'
+                    [$string $s@stdout]
+                    [$string $s@stderr]]]]
+              [else null]]]
+          $dir]]]]
+  [= $green [$gate $cx '--dir' $stage]]
+  [= $_
+    [?if [= $green@exit-code 0]
+      [then [$say [$concat '   GREEN confirmed -- '
+            $stage
+            "'s staged assets carry no /nix/store dependency"]]]
+      [else [$die [$concat "FAILED -- this tree's own staged build did not pass its own gate:\n"
+            [$string $green@stderr]]]]]]
+  [= $_ [$io:remove-tree $tmp]]
+  [= $_
+    [$say [$concat '\nrelease_asset_links_selftest: PASSED -- red on '
+        $tag
+        "'s darwin asset, measured-clean on its linux asset, green on this tree's own build."]]]
+  [$env:exit 0]]

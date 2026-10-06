@@ -1492,7 +1492,7 @@
     },
     "182-fp-traverse-http": {
       label: "[182] fp \u2014 `[$fp:traverse]` over HTTP calls (http mode)",
-      input: "[?lib 'cx-stdlib/fp']\n[?lib 'cx-stdlib/http-client' :as http]\n\n[$fp:traverse (\"https://example.com/a\", \"https://example.com/b\")\n  [?fn ($u) [$http:get $u]]]",
+      input: "[?lib 'cx-stdlib/fp']\n[?lib 'cx-stdlib/http-client' as=http]\n\n[$fp:traverse (\"https://example.com/a\", \"https://example.com/b\")\n  [?fn ($u) [$http:get $u]]]",
       note:  "**Pattern:** the real-world `traverse` \u2014 fan a fallible effect across a list and collect results on the railway (all `[ok]` \u2192 one `[ok (\u2026)]`; first `[err]` short-circuits). **http mode only:** this makes live network calls \u2014 run it under `make guide-http` (or `cx --allow-net` in your terminal). The file:// wasm playground has no network/capabilities, so it returns a capability-denied `[err cx-err:CXER0271]`.",
       tags:  ["descendant", "fn", "lib"],
       section: "code/functions",
@@ -1676,7 +1676,7 @@
     },
     "205-hole-as-a-callable-value": {
       label: "[205] a hole makes a callable you can bind and call",
-      input: "[?lib 'cx-stdlib/strings' :as strings]\n[?let [= $shout [$strings:upper _]] [names [?splice [?for [in $n (\"ada\", \"bo\")] [yield [$shout $n]]]]]]",
+      input: "[?lib 'cx-stdlib/strings' as=strings]\n[?let [= $shout [$strings:upper _]] [names [?splice [?for [in $n (\"ada\", \"bo\")] [yield [$shout $n]]]]]]",
       note:  "**Introduces:** binding the result of a hole (\u00a76.3a/\u00a76.3b). `[$strings:upper _]` is a function value; bound to `$shout` it is called like any callable \u2014 `[$shout $n]` \u2014 inside the comprehension. Compare `[?fn ($n) [$strings:upper $n]]`: the hole says the same thing without naming the parameter. Stdlib verbs are reached through `[?lib \u2026]` here as everywhere; a hole can only be applied to a FUNCTION (a bare data head refuses `CXER0001`).",
       tags:  ["eq", "for", "let", "lib", "splice"],
       section: "code/functions",
@@ -1788,7 +1788,7 @@
     },
     "219-non-terminating-division-refuses-by-name": {
       label: "[219] `[$div 1.0 3.0]` refuses \u2014 an exact result does not exist",
-      input: "[?lib 'cx-stdlib/math' :as math]\n[divisions\n  [exact [?fallback recover-with=[refused code=$err@code] body=[$div 1.0 3.0]]]\n  [rounded [$math:div-decimal 1.0 3.0 {scale: 2 mode: :half-up}]]\n  [float [/ 1 3]]]",
+      input: "[?lib 'cx-stdlib/math' as=math]\n[divisions\n  [exact [?fallback recover-with=[refused code=$err@code] body=[$div 1.0 3.0]]]\n  [rounded [$math:div-decimal 1.0 3.0 {scale: 2 mode: :half-up}]]\n  [float [/ 1 3]]]",
       note:  "**Introduces:** the refusal side of exact arithmetic, and the two ways to ask properly. `1.0 / 3.0` has no terminating decimal, so `$div` REFUSES BY NAME (`CXER3002`) rather than inventing a precision \u2014 here the refusal is caught as a value and only its code is shown. `[$math:div-decimal a b {scale: N mode: :half-up}]` from `cx-stdlib/math` supplies the rounding context \u2014 `scale` digits after the point, or `precision` significant digits \u2014 and answers `0.33`; `[/ 1 3]` on integers takes the float path and answers the nearest double. Three spellings, three different contracts, each visible in the output.",
       tags:  ["attr", "div", "fallback", "lib"],
       section: "data/numbers",
@@ -1804,7 +1804,7 @@
     },
     "221-wrapping-arithmetic-on-request": {
       label: "[221] `[$math:wrapping-mul \u2026]` \u2014 modular arithmetic, asked for by name",
-      input: "[?lib 'cx-stdlib/math' :as math]\n[$math:wrapping-mul 9223372036854775807 2]",
+      input: "[?lib 'cx-stdlib/math' as=math]\n[$math:wrapping-mul 9223372036854775807 2]",
       note:  "**Introduces:** the wrapping family in `cx-stdlib/math`. The same multiplication the previous example refused answers `-2` here \u2014 the two's-complement wrap \u2014 because you asked for modular arithmetic by name. Hashing and ring arithmetic want this; a total or a price never does, which is why it is not the default.",
       tags:  ["lib"],
       section: "data/numbers",
@@ -1868,7 +1868,7 @@
     },
     "229-declaration-only-map-entry": {
       label: "[229] `{name: \"Ada\" age: ::int}` \u2014 a declared kind with NO value is absent, not null",
-      input: "[?lib 'cx-stdlib/map' :as map]\n[?let [= $m {name: \"Ada\" age: ::int}] [entry name=[$map:get $m \"name\"] has-age=[$present [$map:get $m \"age\"]]]]",
+      input: "[?lib 'cx-stdlib/map' as=map]\n[?let [= $m {name: \"Ada\" age: ::int}] [entry name=[$map:get $m \"name\"] has-age=[$present [$map:get $m \"age\"]]]]",
       note:  "**Introduces:** the map-syntax settlement (data.md \u00a74). Entries separate by whitespace or comma; `age: ::int` DECLARES the kind and supplies no value \u2014 `[$map:get $m \"age\"]` answers absence, so `$present` is `false`. Absence is not `null`: `null` is a value you would have to write. Ascriptions on entries are CHECKED when a value is present.",
       tags:  ["eq", "in", "let", "lib"],
       section: "data/collections",
@@ -1932,7 +1932,7 @@
     },
     "237-xml-refuses-a-duplicate-attribute": {
       label: "[237] `[$xml:parse]` refuses a duplicate attribute by position",
-      input: "[?lib 'cx-stdlib/xml' :as xml]\n[$xml:parse \"<r x='1' x='2'/>\"]",
+      input: "[?lib 'cx-stdlib/xml' as=xml]\n[$xml:parse \"<r x='1' x='2'/>\"]",
       note:  "**Introduces:** the XML codec enforces the 1.0 well-formedness constraint \"Unique Att Spec\": `x` appears twice on `<r>`, so parsing refuses `CXER0100 PARSE_ERROR` at `1:10` and cites the constraint. No last-writer-wins, no silent merge. (The attribute values are single-quoted here only because a `\\\"` inside a string literal trips the diagram emitter's label escaping \u2014 a known defect being fixed; the refusal is the same either way.)",
       tags:  ["lib", "par"],
       section: "data/formats",
@@ -1964,7 +1964,7 @@
     },
     "241-json-in-and-out": {
       label: "[241] JSON in, CX out \u2014 and back again",
-      input: "[?lib 'cx-stdlib/json' :as json]\n[?let [= $doc [$json:parse '{\"order\": {\"id\": 7, \"items\": [\"pen\", \"ink\"], \"paid\": true}}']]\n  [round-trip [as-cx $doc] [items [?splice $doc.order.items]] [back [$json:emit {order: {id: 7, items: [\"pen\", \"ink\"], paid: true}}]]]]",
+      input: "[?lib 'cx-stdlib/json' as=json]\n[?let [= $doc [$json:parse '{\"order\": {\"id\": 7, \"items\": [\"pen\", \"ink\"], \"paid\": true}}']]\n  [round-trip [as-cx $doc] [items [?splice $doc.order.items]] [back [$json:emit {order: {id: 7, items: [\"pen\", \"ink\"], paid: true}}]]]]",
       note:  "**Introduces:** the codec surface every format shares (codec.md \u00a73): `[$json:parse s]` reads text into a CX VALUE \u2014 a JSON object becomes a map, an array becomes an array, `true` stays a bool \u2014 and `[$json:emit v]` writes a value back as compact JSON. Because the parse is a value, the program reads it with ordinary paths (`$doc.order.items`) and splices it into an element like any other data. Codecs charge no capability: parsing text is pure.",
       tags:  ["eq", "let", "lib", "par", "splice"],
       section: "data/formats",
@@ -1972,7 +1972,7 @@
     },
     "242-xml-in-and-out": {
       label: "[242] XML in, CX out \u2014 attributes and text",
-      input: "[?lib 'cx-stdlib/xml' :as xml]\n[?let [= $doc [$xml:parse '<order id=\"7\"><item sku=\"pen\">2</item><item sku=\"ink\">1</item></order>']]\n  [round-trip [as-cx $doc] [skus [?splice [?for [in $i $doc//item] [yield [$string $i@sku]]]]] [back [$xml:emit [order id=7 [item sku=pen 2]]]]]]",
+      input: "[?lib 'cx-stdlib/xml' as=xml]\n[?let [= $doc [$xml:parse '<order id=\"7\"><item sku=\"pen\">2</item><item sku=\"ink\">1</item></order>']]\n  [round-trip [as-cx $doc] [skus [?splice [?for [in $i $doc//item] [yield [$string $i@sku]]]]] [back [$xml:emit [order id=7 [item sku=pen 2]]]]]]",
       note:  "**Introduces:** XML is the format closest to CX's own element shape, so `[$xml:parse]` answers an ELEMENT: attributes stay attributes, text content stays text (`'2'`, a string \u2014 XML carries no numbers), and the descendant path `$doc//item` reads it exactly like a native document. `[$xml:emit]` renders an element back, one tag per line. The same document hashed as CX and as XML are two different byte streams over one value.",
       tags:  ["attr", "cxpath", "descendant", "eq", "for", "let", "lib", "par", "splice"],
       section: "data/formats",
@@ -1980,7 +1980,7 @@
     },
     "243-yaml-in-and-out": {
       label: "[243] YAML in, CX out \u2014 a config as a map",
-      input: "[?lib 'cx-stdlib/yaml' :as yaml]\n[?let [= $cfg [$yaml:parse \"service: api\\nreplicas: 3\\nports:\\n  - 8080\\n  - 8443\\n\"]]\n  [round-trip [as-cx $cfg] [replicas $cfg.replicas] [back [$yaml:emit {service: \"api\", replicas: 3, ports: [8080, 8443]}]]]]",
+      input: "[?lib 'cx-stdlib/yaml' as=yaml]\n[?let [= $cfg [$yaml:parse \"service: api\\nreplicas: 3\\nports:\\n  - 8080\\n  - 8443\\n\"]]\n  [round-trip [as-cx $cfg] [replicas $cfg.replicas] [back [$yaml:emit {service: \"api\", replicas: 3, ports: [8080, 8443]}]]]]",
       note:  "**Introduces:** YAML follows the same two verbs. A mapping parses to a map, a sequence to an array, scalars keep their kinds (`3` is an int), and `[$yaml:emit]` writes a map back in block style. Nothing here is YAML-specific in the program: swap the module name and `[$toml:parse]` or `[$json:parse]` read the same `$cfg.replicas`.",
       tags:  ["eq", "let", "lib", "par"],
       section: "data/formats",
@@ -1988,7 +1988,7 @@
     },
     "244-toml-in-and-out": {
       label: "[244] TOML in, CX out \u2014 tables are nested maps",
-      input: "[?lib 'cx-stdlib/toml' :as toml]\n[?let [= $cfg [$toml:parse 'title = \"cx\"\\n[owner]\\nname = \"Ada\"\\nyear = 2026\\n']]\n  [round-trip [as-cx $cfg] [owner $cfg.owner.name] [back [$toml:emit {title: \"cx\", owner: {name: \"Ada\", year: 2026}}]]]]",
+      input: "[?lib 'cx-stdlib/toml' as=toml]\n[?let [= $cfg [$toml:parse 'title = \"cx\"\\n[owner]\\nname = \"Ada\"\\nyear = 2026\\n']]\n  [round-trip [as-cx $cfg] [owner $cfg.owner.name] [back [$toml:emit {title: \"cx\", owner: {name: \"Ada\", year: 2026}}]]]]",
       note:  "**Introduces:** a TOML `[owner]` table is a nested map after `[$toml:parse]`, so `$cfg.owner.name` walks it like any map, and `[$toml:emit]` turns a nested map back into a table with its header. Top-level keys come first, tables after \u2014 the emitter orders the document the way TOML requires.",
       tags:  ["eq", "let", "lib", "par"],
       section: "data/formats",
@@ -1996,7 +1996,7 @@
     },
     "245-csv-in-and-out": {
       label: "[245] CSV in, CX out \u2014 rows as maps keyed by the header",
-      input: "[?lib 'cx-stdlib/csv' :as csv]\n[?let [= $rows [$csv:parse \"sku,qty,price\\npen,2,1.50\\nink,1,4.25\"]]\n  [round-trip [rows [$count $rows]] [head-row [$first $rows]] [back [$csv:emit $rows]]]]",
+      input: "[?lib 'cx-stdlib/csv' as=csv]\n[?let [= $rows [$csv:parse \"sku,qty,price\\npen,2,1.50\\nink,1,4.25\"]]\n  [round-trip [rows [$count $rows]] [head-row [$first $rows]] [back [$csv:emit $rows]]]]",
       note:  "**Introduces:** `[$csv:parse]` reads the header row as the keys and answers one map per data row, so `[$count $rows]` is `2` and `[$first $rows]` is the first record (the output heads `rows` and `head-row` are plain data names \u2014 a bare `count` head would read as data, not a call). Cells stay STRINGS (`'2'`, `'1.50'`) \u2014 CSV carries no types; ascribe or convert when you need numbers, or parse with a schema. `[$csv:emit]` writes the rows back, header first.",
       tags:  ["eq", "let", "lib", "par"],
       section: "data/formats",
@@ -2385,7 +2385,7 @@
     },
     "291-http-get-with-a-header-and-json": {
       label: "[291] HTTP GET with a header \u2014 and the JSON decoded",
-      input: "[?lib 'cx-platform/http']\n[?lib 'cx-stdlib/http-client' :as hc]\n[?lib 'cx-stdlib/json']\n[?def api ($req::element)\n  [?let [= $caller [$hc:header $req 'x-caller']/@value]\n        [= $answer {plan: 'pro', seats: 12, caller: $caller}]\n    [response status=200\n      [headers [header name='Content-Type' value='application/json']]\n      [body [$json:emit $answer]]]]]\n[?let [= $srv [$http:serve 'tcp://127.0.0.1:27421' $api]]\n      [= $ask {headers: {'X-Caller': 'nightly-report', 'Accept': 'application/json'}}]\n      [= $r [$hc:get 'http://127.0.0.1:27421/account' $ask]]\n      [= $body [$json:parse [$hc:body-text $r]]]\n      [= $stop [$http:stop $srv]]\n      [= $status [$hc:status $r]]\n      [= $ok [$hc:ok $r]]\n  [account status=$status ok=$ok plan=$body.plan seats=$body.seats saw-header=$body.caller]]",
+      input: "[?lib 'cx-platform/http']\n[?lib 'cx-stdlib/http-client' as=hc]\n[?lib 'cx-stdlib/json']\n[?def api ($req::element)\n  [?let [= $caller [$hc:header $req 'x-caller']/@value]\n        [= $answer {plan: 'pro', seats: 12, caller: $caller}]\n    [response status=200\n      [headers [header name='Content-Type' value='application/json']]\n      [body [$json:emit $answer]]]]]\n[?let [= $srv [$http:serve 'tcp://127.0.0.1:27421' $api]]\n      [= $ask {headers: {'X-Caller': 'nightly-report', 'Accept': 'application/json'}}]\n      [= $r [$hc:get 'http://127.0.0.1:27421/account' $ask]]\n      [= $body [$json:parse [$hc:body-text $r]]]\n      [= $stop [$http:stop $srv]]\n      [= $status [$hc:status $r]]\n      [= $ok [$hc:ok $r]]\n  [account status=$status ok=$ok plan=$body.plan seats=$body.seats saw-header=$body.caller]]",
       note:  "**Introduces:** the `requests.get(url, headers=\u2026).json()` line, in CX, with both ends in one file. `[$http-client:get URL OPTS]` (http.md \u00a73.2) opens an ephemeral client, issues one request and drops it; `opts.headers` is an ordinary map, `[$hc:status]` / `[$hc:ok]` / `[$hc:body-text]` are PURE readers (\u00a73.4) needing no capability, and `[$json:parse]` gives a value read with `$body.plan`. The server half is `[$http:serve BIND HANDLER]` from `cx-platform/http` (\u00a73.5) \u2014 a real loopback socket, a handler that is an ordinary `[?def]` over `[request]` answering `[response]`, and `[$http:stop]` at the end \u2014 so the example depends on no service in the world and answers the same thing every run. **The bind port is a literal** because `[$net:listen 'tcp://127.0.0.1:0']` is refused today even though net.md \u00a74.5 specifies the ephemeral bind with the selected port in `local-addr`: that is #1551. A bare `--allow-net` would NOT admit this call \u2014 loopback sits inside a denied range and needs the literal-IP grant (net.md \u00a74.5), which is why the grant names a host.",
       tags:  ["body", "cxpath", "def", "descendant", "eq", "let", "lib", "par"],
       section: "everyday/world",
@@ -2394,7 +2394,7 @@
     },
     "292-http-post-a-json-body": {
       label: "[292] POST a JSON body \u2014 and read what came back",
-      input: "[?lib 'cx-platform/http']\n[?lib 'cx-stdlib/http-client' :as hc]\n[?lib 'cx-stdlib/json']\n[?def api ($req::element)\n  [?let [= $in [$json:parse [$hc:body-text $req]]]\n        [= $out {id: 4821, name: $in.name, tags: [$count $in.tags]}]\n    [response status=201\n      [headers [header name='Content-Type' value='application/json']]\n      [body [$json:emit $out]]]]]\n[?let [= $srv [$http:serve 'tcp://127.0.0.1:27422' $api]]\n      [= $order {name: 'desk lamp', tags: ('lighting', 'office')}]\n      [= $opts {content-type: 'application/json'}]\n      [= $sent [$hc:post 'http://127.0.0.1:27422/orders' [$json:emit $order] $opts]]\n      [= $body [$json:parse [$hc:body-text $sent]]]\n      [= $stop [$http:stop $srv]]\n      [= $status [$hc:status $sent]]\n  [created status=$status id=$body.id name=$body.name tags=$body.tags]]",
+      input: "[?lib 'cx-platform/http']\n[?lib 'cx-stdlib/http-client' as=hc]\n[?lib 'cx-stdlib/json']\n[?def api ($req::element)\n  [?let [= $in [$json:parse [$hc:body-text $req]]]\n        [= $out {id: 4821, name: $in.name, tags: [$count $in.tags]}]\n    [response status=201\n      [headers [header name='Content-Type' value='application/json']]\n      [body [$json:emit $out]]]]]\n[?let [= $srv [$http:serve 'tcp://127.0.0.1:27422' $api]]\n      [= $order {name: 'desk lamp', tags: ('lighting', 'office')}]\n      [= $opts {content-type: 'application/json'}]\n      [= $sent [$hc:post 'http://127.0.0.1:27422/orders' [$json:emit $order] $opts]]\n      [= $body [$json:parse [$hc:body-text $sent]]]\n      [= $stop [$http:stop $srv]]\n      [= $status [$hc:status $sent]]\n  [created status=$status id=$body.id name=$body.name tags=$body.tags]]",
       note:  "**Introduces:** `[$http-client:post URL BODY OPTS]` (http.md \u00a73.2) \u2014 the body is the second POSITIONAL argument, a string or `bytes`, and the content type rides in `opts` rather than being guessed from it. `[$json:emit MAP]` turns an ordinary CX map into the request body and `[$json:parse]` turns the answer back, so the round trip is two verbs and no serializer configuration; the handler reads the request with exactly the same `[$hc:body-text]` the client uses on the response, because \u00a73.4's message readers are defined over `[request]` and `[response]` alike. The 201 is the handler's own \u2014 a `[response status=\u2026]` is a value the handler RETURNS, not a status set on a side channel \u2014 and the trailing `opts` argument is defaulted, which is why the server's `serve` call passes only two.",
       tags:  ["body", "def", "descendant", "eq", "let", "lib", "par"],
       section: "everyday/world",
@@ -2403,7 +2403,7 @@
     },
     "293-when-the-service-says-no": {
       label: "[293] when the service says no \u2014 a 404 is a VALUE, not a refusal",
-      input: "[?lib 'cx-platform/http']\n[?lib 'cx-stdlib/http-client' :as hc]\n[?def api ($req::element)\n  [?if [= [$string $req@path] '/orders/4821']\n    [then [response status=200 [body 'desk lamp']]]\n    [else [response status=404 [body 'no such order']]]]]\n[?let [= $srv [$http:serve 'tcp://127.0.0.1:27423' $api]]\n      [= $hit [$hc:get 'http://127.0.0.1:27423/orders/4821']]\n      [= $miss [$hc:get 'http://127.0.0.1:27423/orders/9999']]\n      [= $stop [$http:stop $srv]]\n      [= $found [$hc:ok $hit]]\n      [= $item [$hc:body-text $hit]]\n      [= $miss-ok [$hc:ok $miss]]\n      [= $miss-status [$hc:status $miss]]\n      [= $shape [$name $miss]]\n  [lookup found=$found item=$item missing-ok=$miss-ok missing-status=$miss-status answer-name=$shape]]",
+      input: "[?lib 'cx-platform/http']\n[?lib 'cx-stdlib/http-client' as=hc]\n[?def api ($req::element)\n  [?if [= [$string $req@path] '/orders/4821']\n    [then [response status=200 [body 'desk lamp']]]\n    [else [response status=404 [body 'no such order']]]]]\n[?let [= $srv [$http:serve 'tcp://127.0.0.1:27423' $api]]\n      [= $hit [$hc:get 'http://127.0.0.1:27423/orders/4821']]\n      [= $miss [$hc:get 'http://127.0.0.1:27423/orders/9999']]\n      [= $stop [$http:stop $srv]]\n      [= $found [$hc:ok $hit]]\n      [= $item [$hc:body-text $hit]]\n      [= $miss-ok [$hc:ok $miss]]\n      [= $miss-status [$hc:status $miss]]\n      [= $shape [$name $miss]]\n  [lookup found=$found item=$item missing-ok=$miss-ok missing-status=$miss-status answer-name=$shape]]",
       note:  "**Introduces:** the distinction a `try:`/`except:` reflex gets wrong here. A 404 from a reachable server is a successful HTTP exchange: the answer is a `[response status=404 \u2026]` \u2014 `[$name $miss]` says `response`, not `err` \u2014 so nothing propagates, and the one-line test is `[$hc:ok RESPONSE]` (http.md \u00a73.4, true for 2xx). What DOES come back as an `[err \u2026]` is the exchange never happening: a refused connection, a DNS failure, a TLS handshake, a denied `net` capability. So the two questions are asked separately \u2014 `[?match]` or `[?else]` for \"did I reach it\", `[$hc:ok]` / `[$hc:status]` for \"what did it say\" \u2014 and a script that asks only one of them is the script that writes `no such order` into its report as though it were data.",
       tags:  ["attr", "body", "def", "descendant", "eq", "if", "let", "lib"],
       section: "everyday/world",
