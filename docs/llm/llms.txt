@@ -6,7 +6,7 @@ Generated from the CX conformance corpus at the v0.18.0-pre.1 cut by scripts/gen
 
 ## Start here
 
-- [CX primer for LLM assistants](https://cxhome.org/llm/primer.md): The one file to load before writing CX. The surface taught through runnable examples, a ring decision table, the core idioms, and the anti-patterns that Lisp/Clojure/shell priors produce — each with its real diagnostic.
+- [CX primer for LLM assistants](https://cxhome.org/llm/primer.md): The one file to load before writing CX. The surface taught through runnable examples, a ring decision table, the core idioms, and the anti-patterns that Lisp/Clojure/shell priors produce — each with its real diagnostic — and, near the top, the forms a model arriving from another language reaches for that do not exist, each beside the cx form.
 
 ## Building something
 

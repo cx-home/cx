@@ -209,6 +209,18 @@ B"""] [expect """50"""]]
   [example [code """[?drop 2 (10, 20, 30, 40, 50)]"""] [expect """(30, 40, 50)"""]]
 ]
 
+[directive-doc name='?take-while' category="Iterator stdlib — the leading run a predicate passes" spec="§8"
+  [sig """[?take-while SRC [using PRED]] -> iterator"""]
+  [summary """Iterator combinator: the leading items PRED passes, stopping at the first it fails. Lazy, so an unbounded source is fine."""]
+  [example [code """[?to-sequence [?take-while [$range 1 *] [using [< _ 4]]]]"""] [expect """(1, 2, 3)"""]]
+]
+
+[directive-doc name='?drop-while' category="Iterator stdlib — everything after the leading run a predicate passes" spec="§8"
+  [sig """[?drop-while SRC [using PRED]] -> iterator"""]
+  [summary """Iterator combinator: every item after the leading run PRED passes; once one item fails, PRED is no longer consulted."""]
+  [example [code """[?to-array [?drop-while [1, 5, 2] [using [< _ 3]]]]"""] [expect """[5, 2]"""]]
+]
+
 [directive-doc name='?zip' category="Iterator stdlib — per-position tuples" spec="§8"
   [sig """[?zip SRC-A SRC-B…] -> iterator of tuples"""]
   [summary """Iterator combinator: per-position tuples across two or more sources, stopping at the shortest."""]
@@ -260,7 +272,7 @@ B"""] [expect """50"""]]
 [directive-doc name='?group-by' category="Iterator stdlib — group by key" spec="§8"
   [sig """[?group-by SRC [using KEY-FN]] -> grouped pairs"""]
   [summary """Iterator combinator: group elements by a computed key, preserving first-seen key order."""]
-  [example [code """[?group-by (1, 2, 3, 4, 5, 6) [using [?fn $x [$mod $x 2]]]]"""] [expect """(('1', (1, 3, 5)), ('0', (2, 4, 6)))"""]]
+  [example [code """[?group-by (1, 2, 3, 4, 5, 6) [using [?fn $x [$mod $x 2]]]]"""] [expect """((1, (1, 3, 5)), (0, (2, 4, 6)))"""]]
 ]
 
 [directive-doc name='?to-sequence' category="Force-materialise — Iterator → Sequence" spec="§8"
