@@ -430,12 +430,12 @@ reads-back
 #]]
  ]
 
- [case id=property-gate-032-string-value-canonical level=core gate=enforced
+ [case id=property-gate-032-string-value-canonical level=core gate=advisory issue='cx-home/cx-core-data#55'
   [tags property-gate ii kind-lost-on-canonical:string@top+kind-canonical-refused:string@top+kind-reparse-refused:string@top]
-  [title [# [$cx:canonical] of a string value is the string's canonical image, not the string read as CX source -- canonical.md §2.6a (a string whose bare image re-parses as another kind quotes, the document top included), §1.2; stdlib/cx.md §2.1 ($value::any) #]]
+  [title [# [$cx:canonical] of a string value is the string's canonical image, which re-reads as that string -- canonical.md §2.3 (bare only when the bare image re-reads as that same string; a bare run at the document top reads as text), §2.6a, §1.2; stdlib/cx.md §2.1 ($value::any). The '7' half (a string read as CX source) closed with cx-core-code#22; the bare-at-the-top half is cx-core-data#55 #]]
   [in-code [#
 [?lib 'cx-stdlib/cx' as=cx]
-[?match [$cx:parse [$cx:canonical [$cx:parse "'7'"]]] [case $s::string 'string'] [else 'other']]
+[?match [$cx:parse [$cx:canonical [$cx:parse "'é'"]]] [case $s::string 'string'] [else 'other']]
 #]]
   [out-text [#
 string
