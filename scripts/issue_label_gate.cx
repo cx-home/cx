@@ -9,7 +9,8 @@
 # milestone when that was ruled. This step refuses, on the live tracker:
 #
 #   a  an open cx-private issue created after CUTOFF (2026-10-02, the owner's
-#      rule of that day) without the release label;
+#      rule of that day) without the release label, unless it is on a
+#      [parking] milestone (parked out of the release by the owner's word);
 #   b  an open cx-private issue on a milestone, unless a [parking] row of the
 #      register names it (v0.19 stays a parking milestone, LBL-1);
 #   c  an open issue of a status=extracted repository of registry/repos.cxd
@@ -121,6 +122,10 @@
                 [where [> [$stamp [$string [?else [$map:get $i "created_at"] ""]]] [$stamp $cutoff]]]
                 [where [not [$member [$labels $i] $release]]]
                 [where [not [$member $excluded [$concat HOME "#" [$num $i]]]]]
+                # an issue the owner files on a [parking] milestone is parked
+                # out of the release by that word (#1836-#1840, parked on
+                # 2026-10-06): it owes no release label.
+                [where [not [$member $parked [$milestone $i]]]]
                 [yield [$concat "a:" HOME "#" [$num $i]]]]]
         [= $b [?for [in $i $private]
                 [= $m [$milestone $i]]

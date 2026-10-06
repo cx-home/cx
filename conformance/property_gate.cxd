@@ -89,7 +89,7 @@ unique
 #]]
  ]
 
- [case id=property-gate-006-element-literal-duplicate-attribute level=core gate=advisory issue='cx-home/cx-core-code#21'
+ [case id=property-gate-006-element-literal-duplicate-attribute level=core
   [tags property-gate i element-literal-duplicate-attribute]
   [title [# a constructed element carries each attribute name once -- code.md §6.4.1 ("duplicate keys n/a -- cxdm.md forbids duplicate Map keys / attr names"), the data reader's E214; refusing the repeat and keeping one value both hold #]]
   [in-code [#
@@ -102,7 +102,7 @@ once
 #]]
  ]
 
- [case id=property-gate-007-attr-directive-duplicate-attribute level=core gate=advisory issue='cx-home/cx-core-code#21'
+ [case id=property-gate-007-attr-directive-duplicate-attribute level=core
   [tags property-gate i attr-duplicate-attribute]
   [title [# two [?attr] holes naming one attribute do not build an element carrying it twice (code.md §6.4.1, the data reader's E214) #]]
   [in-code [#
@@ -170,7 +170,7 @@ false
 #]]
  ]
 
- [case id=property-gate-012-modify-set-attr-err level=core gate=advisory issue='cx-home/cx-core-code#23'
+ [case id=property-gate-012-modify-set-attr-err level=core
   [tags property-gate iv modify-set-attr-err-settled]
   [title [# a computed [err] handed to [?modify]'s [set-attr] propagates -- it is never stringified into the attribute (code.md §6.4.1 "does not stringify it into an attribute", §9.2) #]]
   [in-code [#
@@ -182,7 +182,7 @@ planted
 #]]
  ]
 
- [case id=property-gate-013-modify-append-err level=core gate=advisory issue='cx-home/cx-core-code#23'
+ [case id=property-gate-013-modify-append-err level=core
   [tags property-gate iv modify-append-err-settled]
   [title [# a computed [err] handed to [?modify]'s [append] propagates -- a refusal cannot come to rest inside a document at any depth (code.md §6.4.1, §9.2) #]]
   [in-code [#
@@ -194,7 +194,7 @@ planted
 #]]
  ]
 
- [case id=property-gate-014-modify-prepend-err level=core gate=advisory issue='cx-home/cx-core-code#23'
+ [case id=property-gate-014-modify-prepend-err level=core
   [tags property-gate iv modify-prepend-err-settled]
   [title [# a computed [err] handed to [?modify]'s [prepend] propagates (code.md §6.4.1, §9.2) #]]
   [in-code [#
@@ -206,7 +206,7 @@ planted
 #]]
  ]
 
- [case id=property-gate-015-modify-insert-before-err level=core gate=advisory issue='cx-home/cx-core-code#23'
+ [case id=property-gate-015-modify-insert-before-err level=core
   [tags property-gate iv modify-insert-before-err-settled]
   [title [# a computed [err] handed to [?modify]'s [insert-before] propagates (code.md §6.4.1, §9.2) #]]
   [in-code [#
@@ -218,7 +218,7 @@ planted
 #]]
  ]
 
- [case id=property-gate-016-modify-insert-after-err level=core gate=advisory issue='cx-home/cx-core-code#23'
+ [case id=property-gate-016-modify-insert-after-err level=core
   [tags property-gate iv modify-insert-after-err-settled]
   [title [# a computed [err] handed to [?modify]'s [insert-after] propagates (code.md §6.4.1, §9.2) #]]
   [in-code [#
@@ -230,7 +230,7 @@ planted
 #]]
  ]
 
- [case id=property-gate-017-modify-replace-err level=core gate=advisory issue='cx-home/cx-core-code#23'
+ [case id=property-gate-017-modify-replace-err level=core
   [tags property-gate iv modify-replace-err-settled]
   [title [# a computed [err] handed to [?modify]'s [replace] propagates (code.md §6.4.1, §9.2) #]]
   [in-code [#
@@ -242,7 +242,7 @@ planted
 #]]
  ]
 
- [case id=property-gate-018-modify-set-err level=core gate=advisory issue='cx-home/cx-core-code#23'
+ [case id=property-gate-018-modify-set-err level=core
   [tags property-gate iv modify-set-err-settled]
   [title [# a computed [err] handed to [?modify]'s [set] propagates (code.md §6.4.1, §9.2) #]]
   [in-code [#
@@ -254,31 +254,31 @@ planted
 #]]
  ]
 
- [case id=property-gate-019-splice-err level=core gate=advisory issue='cx-home/cx-core-code#24'
+ [case id=property-gate-019-splice-err level=core
   [tags property-gate iv splice-err-settled]
-  [title [# an [err] member of a sequence [?splice] adopts into an element propagates out of the construction (code.md §6.4.1 "a refusal cannot come to rest inside a document at any depth", §9.2) #]]
+  [title [# a computed [err] a multi-sibling contributor grafts ([?splice]) RESTS as data — the deliberate exception to construction's propagation, owner-ruled (RULED: CO-2, #975; code.md §6.4.1 "Directives contribute"; cx-core-code#24): the guard is the effect boundary's CXER0275 #]]
   [in-code [#
 [?let [= $e [err code='cx-err:CXER0100' message='planted']]
   [?match [w [?splice ($e, 1)]] [case [err @message=$m] $m] [else 'settled']]]
 #]]
   [out-text [#
-planted
+settled
 #]]
  ]
 
- [case id=property-gate-020-for-yield-err level=core gate=advisory issue='cx-home/cx-core-code#24'
+ [case id=property-gate-020-for-yield-err level=core
   [tags property-gate iv for-yield-err-settled]
-  [title [# an [err] a [?for] yields into an element's content propagates out of the construction (code.md §6.4.1, §9.2) #]]
+  [title [# a computed [err] a multi-sibling contributor grafts (a [?for] yield) RESTS as data — the deliberate exception to construction's propagation, owner-ruled (RULED: CO-2, #975; code.md §6.4.1 "Directives contribute"; cx-core-code#24): the guard is the effect boundary's CXER0275 #]]
   [in-code [#
 [?let [= $e [err code='cx-err:CXER0100' message='planted']]
   [?match [w [?for [in $i (1, 2)] [yield $e]]] [case [err @message=$m] $m] [else 'settled']]]
 #]]
   [out-text [#
-planted
+settled
 #]]
  ]
 
- [case id=property-gate-021-effect-point-missing-argument level=core gate=advisory issue='cx-home/cx-core-code#25' grant='read subprocess'
+ [case id=property-gate-021-effect-point-missing-argument level=core grant='read subprocess'
   [tags property-gate v effect-point-crash i18n-load-catalog store-open store-open-opts crypto-jwks-fetch http-get http-post http-put http-del http-patch http-head http-options http-request http-send http-sse-connect http-sse-events http-ws-connect http-ws-send http-ws-messages http-ws-ping http-ws-close http-ws-accept http-listen http-respond]
   [title [# an effect point called with too few arguments answers an [err] value -- the evaluator raises no out-of-band failure (code.md §9.2 "Errors are values, uniformly"); the ungranted child must not die in a V panic #]]
   [in-code [#

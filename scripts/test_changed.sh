@@ -944,9 +944,10 @@ shard_test_for() {
     rel=${c#conformance/}
     if [ "$rel" = code.cxd ]; then
       # the DRIVER's own corpus: the driver grades it, and two more files pin the
-      # parser census and the parse fixtures against it (INT-15's page).
+      # parser census and the parse fixtures against it (INT-15's page; the parse
+      # fixtures ride parser_units_umbrella_test.v since cx-core-code#71).
       echo "$SUITE_DIR/code_eval_fixtures_test.v"
-      echo "$SUITE_DIR/code_parse_fixtures_test.v"
+      echo "$SUITE_DIR/parser_units_umbrella_test.v"
       echo "$SUITE_DIR/cxparse_full_corpus_diff_test.v"
       continue
     fi

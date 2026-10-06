@@ -820,15 +820,12 @@ pub fn grade_files(opts Options, names []string) Outcome {
 			}
 			code.register_conformance_test_modules(mut env.state.module_table) // #701
 			if f.in_cx != '' && f.in_cx != '[empty]' {
-				if doc := cx.parse(f.in_cx) {
-					for i in 0 .. doc.elements.len {
-						n := doc.elements[i]
-						if n.is_element() {
-							env.bind_set('doc', n)
-							env.bind_set('input', n)
-							break
-						}
-					}
+				// cx-private#1718 item 2: the one [in-cx] binding every grader
+				// shares — the input's SEMANTIC reading, anchors and merges
+				// resolved, as the CLI's --data binding is (ANC-1).
+				if n := code.fixture_doc_node(f.in_cx) {
+					env.bind_set('doc', n)
+					env.bind_set('input', n)
 				}
 			}
 			// Capability-set injection (security.md §3, Effort A/B). The
