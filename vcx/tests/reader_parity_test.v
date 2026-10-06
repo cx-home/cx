@@ -649,7 +649,8 @@ const accepted_by_one_table = [
 	// `[$math:max ($x, $y)]`) and #1775/#1822's scripts/repr_guard_selftest.cx
 	// (`[$process:run ('chmod', '755', $p) …]` planting its drivers) -- the class's
 	// own shape (RULED: STREAM-1, CXF-1).
-	AcceptedByOne{'scripts/gen_guide/theme_check.cx', .program, reason_1536},
+	// 88 -> 87: theme_check.cx leaves — the two readers agree on it since the
+	// DATA stream's reader-parity fixes (cx-core-data 7bf68e720) (RULED: STREAM-1).
 	AcceptedByOne{'scripts/repr_guard_selftest.cx', .program, reason_1536},
 	// ── recorded exception — a computed attribute `name=[EXPR]` (25) ──
 	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
