@@ -102,7 +102,17 @@ section "Identity-provider interop (#1403)"
 check "make -s test-sso-interop" \
  "make -s test-sso-interop"
 check "every named identity provider carries a verdict" \
- "bash tools/sso_matrix_check.sh"
+ "bash deps/cx-platform-sso/tools/sso_matrix_check.sh"
+
+section "Mail-provider interop (cx-platform-mail#1)"
+# The provider rows are the release's mail compatibility claim (RULED:
+# 1085-a, 1085-e addendum): OUR client against Gmail, Microsoft 365 and
+# Fastmail over OAuth 2 bearer auth. Like the identity-provider matrix it
+# BLOCKS while a row reads NOT YET VERIFIED — drive each with
+# deps/cx-platform-mail/tools/mail_interop_real.sh <provider> and record the
+# verdict in the ops-mail-compat row.
+check "every named mail provider carries a verdict" \
+ "bash deps/cx-platform-mail/tools/mail_matrix_check.sh"
 
 section "Guide generator (#989)"
 # THE OTHER DOC GENERATOR. `make docs-check` below covers docs/llm/; NOTHING
