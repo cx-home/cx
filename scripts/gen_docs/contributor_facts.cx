@@ -273,6 +273,21 @@
                 [yield $p]]]
     [?if [= [$count $picks] 0] [then "—"] [else [$string [$first $picks]@text]]]]]
 
+# step-program: the first program the recipe names; a recipe that names none
+# and hands its body to another target through `$(MAKE) [-opts] <target>` (a
+# step run under scripts/docs_tree_lock.sh: `guide-render-gate` runs
+# `guide-render-gate-locked`) is read through that target's recipe, one hop.
+[?const RX-DELEGATE "\\$\\(MAKE\\)(?:\\s+-[-a-z]+)*\\s+([a-z][a-z0-9-]*)"]
+
+[?def step-program scope=private pure [returns string] ($all $recipe::string $vars)
+  [?let
+    [= $own [$program-of $recipe $vars]]
+    [= $m [$re:find [$re:compile RX-DELEGATE] $recipe]]
+    [= $to [?if [$matched $m] [then [$rule-lines $all [$re:group $m 1]]] [else ()]]]
+    [?if [or [not [= $own "—"]] [= [$count $to] 0]]
+      [then $own]
+      [else [$program-of [$recipe-of $all [$first $to]] $vars]]]]]
+
 # flow-targets: every make target the documentation flow's document names —
 # the `[target …]` and `[targets '…']` fields of its `[do …]` acts (RULED:
 # CICD-1). The doc pipeline runs those through `docs-flow`, so a step the flow
@@ -297,7 +312,7 @@
     [= $body [?for [in $i [$range 1 [$count $steps]]]
       [= $s [$nth $steps $i]]
       [= $at [$rule-lines $all $s]]
-      [= $prog [?if [= [$count $at] 0] [then "—"] [else [$program-of [$recipe-of $all [$first $at]] $vars]]]]
+      [= $prog [?if [= [$count $at] 0] [then "—"] [else [$step-program $all [$recipe-of $all [$first $at]] $vars]]]]
       [yield [$concat "| " [$string $i] " | `" $s "` | "
                       [?if [$member $s $docs] [then "yes"]
                         [else [?if [$member $s $viaflow] [then "yes, in the docs flow"] [else ""]]]]
