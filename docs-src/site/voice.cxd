@@ -40,6 +40,10 @@ Two ratchets, each read by a step:
     [page path='docs-src/canonical/sections/00-quickstart.cxd' allow=8 why='the host-language step (first-binding) shows the four bindings; wave 5 narrows the rest to that step']
     [; the hand-authored about page: the owner writes it, nobody regenerates it ]
     [page path='docs-src/canonical/about.html' allow=3 why='hand-authored by the owner; the page names what CX was measured against']
+    [; the primer's §0a, the coming-from-Python bridge (GAPS-1, cx-private#1813
+       §27): the heading and its one-line intro name the host language; every
+       row below them is a fixture pair that names none ]
+    [page path='docs-src/llm/primer.md.tmpl' allow=2 why='the primer §0a coming-from-Python bridge: its heading and intro (cx-private 1813 §27)']
     [; the PyPI binding's repository page (DOCS-49 wave 4): the word is the
        repository's own NAME — the [repo name=] root the generator requires and
        the file comment that names the page — and the prose names no host

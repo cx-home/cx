@@ -608,7 +608,7 @@ build-profiles: build-vcx
 # to system V at the cost of broken Option payloads — see
 # the patched-V README at third_party/v/README.md (P1).
 build-wasm:
-	CX_VERSION_FILE=$(CURDIR)/VERSION DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
+	DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
 
 # Gate 17 — stage the playground bundle under dist/playground-preview/
 # so scripts/test_playground_smoke.sh has a docroot to boot Python's
@@ -657,9 +657,9 @@ build-playground:
 	@# selects this one when WebAssembly.Suspending is absent — full
 	@# recursion window, wall-clock [?sleep] raises catchable CXER0270
 	@# (mock sleeps work). No pthreads.
-	@SINGLE_FILE=1 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=0 OUT_NAME=libcx-async    CX_VERSION_FILE=$(CURDIR)/VERSION DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
-	@SINGLE_FILE=0 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=1 OUT_NAME=libcx-pthreads CX_VERSION_FILE=$(CURDIR)/VERSION DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
-	@SINGLE_FILE=1 ASYNCIFY=0                 PTHREADS=0 OUT_NAME=libcx-sync     CX_VERSION_FILE=$(CURDIR)/VERSION DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
+	@SINGLE_FILE=1 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=0 OUT_NAME=libcx-async    DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
+	@SINGLE_FILE=0 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=1 OUT_NAME=libcx-pthreads DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
+	@SINGLE_FILE=1 ASYNCIFY=0                 PTHREADS=0 OUT_NAME=libcx-sync     DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
 	@echo "[build-playground] staging dist/playground-preview/"
 	@rm -rf dist/playground-preview
 	@mkdir -p dist/playground-preview/playground
@@ -716,7 +716,7 @@ build-playground:
 # existing bundle by design, but must never do so silently).
 .PHONY: wasm-fresh-gate
 wasm-fresh-gate:
-	@CX_VERSION_FILE=$(CURDIR)/VERSION OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/check_wasm_fresh.sh
+	@OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/check_wasm_fresh.sh
 
 # One shared prerequisite for every step that RUNS the playground bundle: build
 # it when stale, prove it fresh, once. Two steps each doing "check || build"
@@ -725,8 +725,8 @@ wasm-fresh-gate:
 # input". A prerequisite serializes the build ahead of both.
 .PHONY: wasm-bundle-fresh
 wasm-bundle-fresh:
-	@CX_VERSION_FILE=$(CURDIR)/VERSION OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/check_wasm_fresh.sh >/dev/null 2>&1 || $(MAKE) build-playground
-	@CX_VERSION_FILE=$(CURDIR)/VERSION OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/check_wasm_fresh.sh
+	@OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/check_wasm_fresh.sh >/dev/null 2>&1 || $(MAKE) build-playground
+	@OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/check_wasm_fresh.sh
 
 # Optional Apache Arrow C-Data interop library (libcx_arrow per ADR
 # 0015 D9 / spec/03-approved/core/abi.md §2.11). Separate from libcx; a binding dlopens
@@ -4113,7 +4113,7 @@ test-vcx-code: build-vcx-dev check-serial-retry-rosters
 # roster is a variable and `check-inmodule-test-roster` now fails on any
 # vcx/cx/*_test.v that is in neither list, so the next addition cannot be
 # forgotten silently. Delete both lists and glob the directory when #737 closes.
-CX_INMODULE_TESTS := $(CXD)/vcx/cx/program_interior_comments_test.v $(CXD)/vcx/cx/program_layout_test.v $(CXD)/vcx/cx/program_fmt_guard_test.v $(CXD)/vcx/cx/program_emit_head_ascription_test.v $(CXD)/vcx/cx/directive_emit_surface_test.v $(CXD)/vcx/cx/anchor_resolve_test.v $(CXD)/vcx/cx/numeric_exact_fast_test.v $(CXD)/vcx/cx/atom_test.v $(CXD)/vcx/cx/token_golden_test.v $(CXD)/vcx/cx/version_stamp_test.v $(CXD)/vcx/cx/html_url_codec_test.v $(CXD)/vcx/cx/span_jump_test.v $(CXD)/vcx/cx/feature_compat_test.v $(CXD)/vcx/cx/name_pool_contract_test.v $(CXD)/vcx/cx/schema_extensions_test.v $(CXD)/vcx/cx/node_api_test.v $(CXD)/vcx/cx/compound_key_decode_test.v
+CX_INMODULE_TESTS := $(CXD)/vcx/cx/program_interior_comments_test.v $(CXD)/vcx/cx/program_layout_test.v $(CXD)/vcx/cx/program_fmt_guard_test.v $(CXD)/vcx/cx/program_emit_head_ascription_test.v $(CXD)/vcx/cx/directive_emit_surface_test.v $(CXD)/vcx/cx/anchor_resolve_test.v $(CXD)/vcx/cx/numeric_exact_fast_test.v $(CXD)/vcx/cx/numeric_exact_big_test.v $(CXD)/vcx/cx/compound_key_decode_test.v $(CXD)/vcx/cx/atom_test.v $(CXD)/vcx/cx/token_golden_test.v $(CXD)/vcx/cx/version_stamp_test.v $(CXD)/vcx/cx/html_url_codec_test.v $(CXD)/vcx/cx/span_jump_test.v $(CXD)/vcx/cx/feature_compat_test.v $(CXD)/vcx/cx/name_pool_contract_test.v $(CXD)/vcx/cx/schema_extensions_test.v $(CXD)/vcx/cx/node_api_test.v
 CX_INMODULE_TESTS_EXCLUDED := $(CXD)/vcx/cx/parser_multidoc_test.v
 
 # check-build-input-roster (#1065) — forwards to vcx/, where the per-artifact
@@ -5627,11 +5627,15 @@ db-real-cx: check-gate-lock deps-present
 # THE CONNECTOR'S DB CASES (RULED: 1455-a, #1459). kind=db executes every backend
 # the build has, so the connector kit's walk on postgres and mysql is graded
 # HERE, on the same servers by the same driver: DB_REAL_EXTRA names
-# cx-platform-connector's two real-server files as ENGINE=FILE arguments,
+# cx-platform-connector's two real-server files as ENGINE=FILE arguments, and
+# cx-platform-store's two — the postgres:// and mysql:// store substrates, the
+# journal over SQL (store.md §3.1; cx-private #1814 section 6, RULED: GAPS-1) —
 # paths from the db pin's root. A file the pinned connector does not carry
 # refuses with exit 2 — never a skip.
 DB_REAL_EXTRA := postgres=../cx-platform-connector/conformance/platform/connector_db_postgres.cxd \
-                 mysql=../cx-platform-connector/conformance/platform/connector_db_mysql.cxd
+                 mysql=../cx-platform-connector/conformance/platform/connector_db_mysql.cxd \
+                 postgres=../cx-platform-store/conformance/platform/store_postgres.cxd \
+                 mysql=../cx-platform-store/conformance/platform/store_mysql.cxd
 test-db-real: build-vcx db-real-cx
 	@test -f deps/cx-platform-db/tooling/db_real.cx || { \
 	  echo "test-db-real: deps/cx-platform-db/tooling/db_real.cx is not there — the driver lives in the pinned repository (RULED: DBLANE-1); run \`make deps-sync\`" >&2; \

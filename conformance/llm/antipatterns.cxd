@@ -6,7 +6,8 @@ The executable backing for the ANTI-PATTERNS section of the generated LLM
 primer (`docs/llm/primer.md`, emitted by `scripts/gen_docs/primer_build.cx`).
 
 Each entry in that section is a PAIR: a `…-wrong` case carrying the form an
-assistant reaches for out of Lisp/Clojure/shell habit, and a `…-right` case
+assistant reaches for out of Lisp/Clojure/shell habit — or, in the `ap-py-*`
+pairs (#1813 §27), out of Python habit — and a `…-right` case
 carrying the CX form beside it. Both halves execute. The primer never states
 what the wrong form does — it shows the recorded output, and the drift gate
 (`make docs-check`) fails if the shipped binary stops producing it.
@@ -332,7 +333,8 @@ cx eval: error reading program "[+ 1 2]": failed to open file "[+ 1 2]"; code: 2
 Almost every language reads a bare fraction as a binary float. CX does not:
 `1.5` is a **decimal** — exact, base-10, arbitrary precision — and only an
 `e`-exponent literal (`1.5e0`), a `::float` annotation, a `[cast … :float]`,
-a division, `[$avg]`, or a float-returning `math` function produces a float.
+a division, `[$avg]` of ints or floats (of decimals it stays an exact
+decimal), or a float-returning `math` function produces a float.
 
 The two kinds do not silently mix. Adding them is a loud refusal naming the
 only bridge, rather than a quiet promotion that would put binary rounding
@@ -648,6 +650,775 @@ input answers in linear time.
 #]]
   [out-text [#
 [matched value=false]
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── P1. coming from Python: infix-paren (issue 1813 §27) ── ]
+
+ [case id=ap-py-infix-paren-wrong level=core
+  [title [#Infix arithmetic in parentheses — `($a % 3)`#]]
+  [tags arithmetic infix prefix python antipattern gaps-1 issue-1813]
+  [why [#
+There is no infix arithmetic in CX, and no operator precedence to learn.
+Every operator is a head: `[% $a 3]`, `[+ $a 1]`, `[* [+ $a 1] 2]`. A
+parenthesised `(…)` is a SEQUENCE literal — comma-separated items — so the
+parser reads `($a` as the start of one and refuses at the `%` it finds where
+a comma or `)` must be.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $a 7] ($a % 3)]
+#]]
+  [out-text [#
+error: cx-err:CXER0100: parse: expected ')', got % at line 1:20
+#]]
+  [exit-code [#1#]]
+ ]
+
+ [case id=ap-py-infix-paren-right level=core
+  [title [#The operator is the head — `[% $a 3]`#]]
+  [tags arithmetic infix prefix python gaps-1 issue-1813]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $a 7] [% $a 3]]
+#]]
+  [out-text [#
+1
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── P2. coming from Python: infix-bracket (issue 1813 §27) ── ]
+
+ [case id=ap-py-infix-bracket-wrong level=core
+  [title [#Infix arithmetic in brackets — `[$a + 1]`#]]
+  [tags arithmetic infix prefix python antipattern gaps-1 issue-1813]
+  [why [#
+Moving the infix expression inside brackets does not make it a call. The
+head of `[$a + 1]` is the value `$a`, and `+` is not an expression in
+argument position; the parse refuses. The operator always comes first.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $a 7] [$a + 1]]
+#]]
+  [out-text [#
+error: cx-err:CXER0100: parse: unexpected token '+' in expression position at line 1:20
+#]]
+  [exit-code [#1#]]
+ ]
+
+ [case id=ap-py-infix-bracket-right level=core
+  [title [#Prefix, operator first — `[+ $a 1]`#]]
+  [tags arithmetic infix prefix python gaps-1 issue-1813]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $a 7] [+ $a 1]]
+#]]
+  [out-text [#
+8
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── P3. coming from Python: and-directive (issue 1813 §27) ── ]
+
+ [case id=ap-py-and-directive-wrong level=core
+  [title [#`[?and …]` — `and` is not a directive#]]
+  [tags boolean and directive call python antipattern gaps-1 issue-1813]
+  [why [#
+`?` marks a control-flow DIRECTIVE from a closed registry (§4): `[?if]`,
+`[?let]`, `[?for]`, `[?match]` and the rest. `and`, `or` and `not` are not in
+it — they are reserved operator heads, written bare like `+` and `=`:
+`[and A B]`, `[or A B]`, `[not A]`. `and`/`or` short-circuit left to right.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?and true false]
+#]]
+  [out-text [#
+error: cx-err:CXER0100: parse: unknown directive '[?and]' — not in §4.1 registry at line 1:1
+#]]
+  [exit-code [#1#]]
+ ]
+
+ [case id=ap-py-and-directive-right level=core
+  [title [#`[and …]` and `[or …]` are operator calls#]]
+  [tags boolean and directive call python gaps-1 issue-1813]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[r both=[and true false] either=[or false true]]
+#]]
+  [out-text [#
+[r both=false either=true]
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── P4. coming from Python: not-directive (issue 1813 §27) ── ]
+
+ [case id=ap-py-not-directive-wrong level=core
+  [title [#`[?not …]` — `not` is not a directive either#]]
+  [tags boolean not directive call python antipattern gaps-1 issue-1813]
+  [why [#
+The same rule for negation: `not` is a one-operand operator head, not a
+directive. `[not P]` negates; `[not P Q]` is refused for its arity. Absence
+is spelled `[not [$present $v]]` (§6).
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?not true]
+#]]
+  [out-text [#
+error: cx-err:CXER0100: parse: unknown directive '[?not]' — not in §4.1 registry at line 1:1
+#]]
+  [exit-code [#1#]]
+ ]
+
+ [case id=ap-py-not-directive-right level=core
+  [title [#`[not …]` is an operator call#]]
+  [tags boolean not directive call python gaps-1 issue-1813]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[not true]
+#]]
+  [out-text [#
+false
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── P5. coming from Python: remark (issue 1813 §27) ── ]
+
+ [case id=ap-py-remark-wrong level=core
+  [title [#A `;` remark after code#]]
+  [tags comment remark python antipattern gaps-1 issue-1813]
+  [why [#
+`;` does not start a comment. Outside a bracket each bare word is a
+top-level form of the program, so the "remark" runs as three more results —
+`;` itself (printed `';'`), then `the`, then `sum` — after the one you meant. CX has a
+line comment `# …` to the end of the line and a block comment `[; … ]`;
+the raw-text block is TEXT, not a comment.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[r total=[+ 1 2]] ; the sum
+#]]
+  [out-text [#
+[r total=3]
+';'
+the
+sum
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [case id=ap-py-remark-right level=core
+  [title [#A block comment `[; … ]`, or a line comment `# …`#]]
+  [tags comment remark python gaps-1 issue-1813]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[r total=[+ 1 2]] [; the sum ]  # or a line comment
+#]]
+  [out-text [#
+[r total=3]
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── P6. coming from Python: reassign (issue 1813 §27) ── ]
+
+ [case id=ap-py-reassign-wrong level=core
+  [title [#`[= $count …]` read as reassignment#]]
+  [tags binding immutable fold loop reduce python antipattern gaps-1 issue-1813]
+  [why [#
+`[= $x V]` is a BINDING CLAUSE, never an assignment: bindings are immutable,
+and a clause inside `[?for]` binds a fresh `$count` for that one iteration,
+shadowing the outer `0`. So the running total Python's `count += x` builds
+(1, 3, 6) never accumulates — each pass answers `0 + x`. Carried state is a
+fold: `[?reduce]` with an accumulator, or `[?loop]`, whose `[continue …]`
+rebinds its declared bindings positionally for the next pass.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $count 0]
+  [?for [in $x (1, 2, 3)]
+    [= $count [+ $count $x]]
+    [yield $count]]]
+#]]
+  [out-text [#
+1
+2
+3
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [case id=ap-py-reassign-right level=core
+  [title [#Fold with `[?reduce]`, or carry state through `[?loop]`#]]
+  [tags binding immutable fold loop reduce python gaps-1 issue-1813]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[total
+  fold=[?reduce (1, 2, 3) [using [?fn ($acc $x) [+ $acc $x]]] [init 0]]
+  loop=[?loop [= $i 1] [= $count 0]
+         [?if [> $i 3] [then [break $count]]
+           [else [continue [+ $i 1] [+ $count $i]]]]]]
+#]]
+  [out-text [#
+[total fold=6 loop=6]
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── P7. coming from Python: let-two-bodies (issue 1813 §27) ── ]
+
+ [case id=ap-py-let-two-bodies-wrong level=core
+  [title [#Two body forms in one `[?let]`#]]
+  [tags let body sequence do python antipattern gaps-1 issue-1813]
+  [why [#
+A `[?let]` is bindings, then exactly ONE body — the value it answers.
+There is no statement list: a second form is not "the next line", so the
+clause before the last is read as a malformed binding and refused. Build one
+value that holds both results; to run effects in order, put them in one
+`[?do A B]` (it answers `null`, and the first `[err]` stops the sequence).
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $a 2]
+  [first [* $a 10]]
+  [second [+ $a 1]]]
+#]]
+  [out-text [#
+error: cx-err:CXER0112: [?let] expected [= $x V] binding clause before the body at line 1:1
+#]]
+  [exit-code [#1#]]
+ ]
+
+ [case id=ap-py-let-two-bodies-right level=core
+  [title [#One body — one value holding both results#]]
+  [tags let body sequence do python gaps-1 issue-1813]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $a 2]
+  [pair
+    [first [* $a 10]]
+    [second [+ $a 1]]]]
+#]]
+  [out-text [#
+[pair [first 20] [second 3]]
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── P8. coming from Python: array-commas (issue 1813 §27) ── ]
+
+ [case id=ap-py-array-commas-wrong level=core
+  [title [#Array items without commas — `['eggs' 'peanuts']`#]]
+  [tags array sequence literal comma python antipattern gaps-1 issue-1813]
+  [why [#
+Array `[a, b]` and sequence `(a, b)` literals separate their items with
+commas. Without them `['eggs' 'peanuts']` is not a two-item array; the parse
+refuses at the second item.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $allergens ['eggs' 'peanuts']] [$count $allergens]]
+#]]
+  [out-text [#
+error: cx-err:CXER0100: parse: expected ']', got peanuts at line 1:29
+#]]
+  [exit-code [#1#]]
+ ]
+
+ [case id=ap-py-array-commas-right level=core
+  [title [#Commas between the items — `['eggs', 'peanuts']`#]]
+  [tags array sequence literal comma python gaps-1 issue-1813]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $allergens ['eggs', 'peanuts']] [$count $allergens]]
+#]]
+  [out-text [#
+2
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── P9. coming from Python: index-at (issue 1813 §27) ── ]
+
+ [case id=ap-py-index-at-wrong level=core
+  [title [#Indexing with `@` — `[$array@$i]`#]]
+  [tags array index nth one-based python antipattern gaps-1 issue-1813]
+  [why [#
+`@` is the attribute step of a path (`$row@id`), not a subscript, and a
+call head `[$f …]` carries no path step. There is no `xs[i]`. Positional
+access is the call `[$nth $xs $i]`, and positions are 1-BASED, as in every
+CX position (strings, `re` matches, `[$range]`): `[$nth $xs 1]` is the first
+item, and `[$nth $xs 0]` is refused out of range.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $xs [10, 20, 30]] [= $i 2] [$xs@$i]]
+#]]
+  [out-text [#
+error: cx-err:CXER0100: parse: call head `[$fn …]` may not carry path steps; bind the value first at line 1:38
+#]]
+  [exit-code [#1#]]
+ ]
+
+ [case id=ap-py-index-at-right level=core
+  [title [#`[$nth $xs $i]`, counting from 1#]]
+  [tags array index nth one-based python gaps-1 issue-1813]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $xs [10, 20, 30]] [= $i 2] [r first=[$nth $xs 1] at-i=[$nth $xs $i]]]
+#]]
+  [out-text [#
+[r first=10 at-i=20]
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── P10. coming from Python: fn-params (issue 1813 §27) ── ]
+
+ [case id=ap-py-fn-params-wrong level=core
+  [title [#`[?fn $a $b …]` — parameters without parentheses#]]
+  [tags fn lambda parameters python antipattern gaps-1 issue-1813]
+  [why [#
+A function's parameters are ONE parenthesised list, then exactly one
+body: `[?fn ($a $b) body]`, as in `[?def name ($a $b) body]`. Written bare,
+`$b` is read as the body and the real body as a second one, and the form is
+refused.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $add [?fn $a $b [+ $a $b]]] [$add 2 3]]
+#]]
+  [out-text [#
+[err code=cx-err:CXER0100 message='[?fn]/[?def] takes exactly one body: the form is [?fn (params) body] (code.md §8.6), and a third positional is a second body — a `:body` here is the ATOM :body in body position, not a slot (1558-b, #1558)' at='1:1']
+#]]
+  [exit-code [#1#]]
+ ]
+
+ [case id=ap-py-fn-params-right level=core
+  [title [#Parameters in one list — `[?fn ($a $b) …]`#]]
+  [tags fn lambda parameters python gaps-1 issue-1813]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $add [?fn ($a $b) [+ $a $b]]] [$add 2 3]]
+#]]
+  [out-text [#
+5
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── P11. coming from Python: call-sigil (issue 1813 §27) ── ]
+
+ [case id=ap-py-call-sigil-wrong level=core
+  [title [#A call without `$` — `[double 21]`#]]
+  [tags call sigil construction python antipattern gaps-1 issue-1813]
+  [why [#
+A call is `[$f args…]`. Without the `$`, `[double 21]` is not a call of the
+function you just defined — it is an ELEMENT named `double`, legal data, so
+the program succeeds and answers the element. Every call of a function,
+builtin or module verb carries `$`; only operator heads (`+`, `=`, `and`)
+and directives (`?`) are written without it.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?def double ($c) [* $c 2]]
+[double 21]
+#]]
+  [out-text [#
+[double 21]
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [case id=ap-py-call-sigil-right level=core
+  [title [#`[$double 21]` — the `$` makes it a call#]]
+  [tags call sigil construction python gaps-1 issue-1813]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?def double ($c) [* $c 2]]
+[$double 21]
+#]]
+  [out-text [#
+42
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── P12. coming from Python: for-string (issue 1813 §27) ── ]
+
+ [case id=ap-py-for-string-wrong level=core
+  [title [#A `[?for]` over a string#]]
+  [tags for string characters split python antipattern gaps-1 issue-1813]
+  [why [#
+A string is one scalar, not a sequence of characters. A generator over it
+walks one item — the whole string — so the loop runs once. Split it first:
+`[$strings:split $s '']` answers its code points (and `strings:graphemes`
+its user-perceived characters).
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?lib 'cx-stdlib/strings' as=strings]
+[?for [in $ch 'abc'] [yield [$strings:upper $ch]]]
+#]]
+  [out-text [#
+ABC
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [case id=ap-py-for-string-right level=core
+  [title [#Over `[$strings:split $s '']`#]]
+  [tags for string characters split python gaps-1 issue-1813]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?lib 'cx-stdlib/strings' as=strings]
+[?for [in $ch [$strings:split 'abc' '']] [yield [$strings:upper $ch]]]
+#]]
+  [out-text [#
+A
+B
+C
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── P13. coming from Python: range (issue 1813 §27) ── ]
+
+ [case id=ap-py-range-wrong level=core
+  [title [#`(1, $n)` as a range#]]
+  [tags range sequence for python antipattern gaps-1 issue-1813]
+  [why [#
+`(1, $n)` is a two-item SEQUENCE — the items `1` and `$n` — not a range, so
+the loop runs twice. A range is the call `[$range lo hi]`, and both ends are
+INCLUSIVE (`[$range 1 4]` is 1, 2, 3, 4; Python's `range(1, n)` stops before
+`n`).
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $n 4] [?for [in $i (1, $n)] [yield [* $i $i]]]]
+#]]
+  [out-text [#
+1
+16
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [case id=ap-py-range-right level=core
+  [title [#`[$range 1 $n]`, both ends included#]]
+  [tags range sequence for python gaps-1 issue-1813]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $n 4] [?for [in $i [$range 1 $n]] [yield [* $i $i]]]]
+#]]
+  [out-text [#
+1
+4
+9
+16
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── P14. coming from Python: replace-regex (issue 1813 §27) ── ]
+
+ [case id=ap-py-replace-regex-wrong level=core
+  [title [#`strings:replace` with a regular expression#]]
+  [tags strings replace regex re python antipattern gaps-1 issue-1813]
+  [why [#
+`strings:replace` replaces a LITERAL substring. Handed a pattern it looks
+for the characters `[0-9]+` themselves, finds none, and answers the string
+unchanged — no error. Pattern replacement is `re:replace` over a compiled
+pattern from `[$re:compile]`.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?lib 'cx-stdlib/strings' as=strings]
+[$strings:replace 'a1b22c333' '[0-9]+' '#']
+#]]
+  [out-text [#
+a1b22c333
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [case id=ap-py-replace-regex-right level=core
+  [title [#`re:replace` with `[$re:compile …]`#]]
+  [tags strings replace regex re python gaps-1 issue-1813]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?lib 'cx-stdlib/re' as=re]
+[$re:replace [$re:compile '[0-9]+'] 'a1b22c333' '#']
+#]]
+  [out-text [#
+'a#b#c#'
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── P15. coming from Python: find-all-string (issue 1813 §27) ── ]
+
+ [case id=ap-py-find-all-string-wrong level=core
+  [title [#`re:find-all` with a pattern string#]]
+  [tags re find-all compile python antipattern gaps-1 issue-1813]
+  [why [#
+Every `re` verb that matches takes a COMPILED pattern, never a pattern
+string: compile once with `[$re:compile]` and pass the value (bind it with
+`[?const]` to reuse it). A string there is refused, naming the verb and
+`re:compile`. `re:find-all` answers `[match …]` elements; `re:find-all-text`
+answers just the matched texts, Python's `re.findall`.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?lib 'cx-stdlib/re' as=re]
+[$re:find-all '[0-9]+' 'a1b22c333']
+#]]
+  [out-text [#
+[err code=cx-err:CXER0100 message='re:find-all: argument 1 expects a compiled regex from [$re:compile] (compile the pattern string first), got string — operand-kind fault (E_ARG)' at='2:1']
+#]]
+  [exit-code [#1#]]
+ ]
+
+ [case id=ap-py-find-all-string-right level=core
+  [title [#Compile the pattern first#]]
+  [tags re find-all compile python gaps-1 issue-1813]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?lib 'cx-stdlib/re' as=re]
+[?let [= $digits [$re:compile '[0-9]+']]
+  [?for [in $m [$re:find-all $digits 'a1b22c333']] [yield [r start=$m@start end=$m@end]]]]
+#]]
+  [out-text [#
+[r start=2 end=2]
+[r start=4 end=5]
+[r start=7 end=9]
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── P16. coming from Python: if-true-false (issue 1813 §27) ── ]
+
+ [case id=ap-py-if-true-false-wrong level=core
+  [title [#`[?if C [then true] [else false]]`#]]
+  [tags if boolean redundant python antipattern gaps-1 issue-1813]
+  [why [#
+A comparison already answers a boolean. Wrapping it in an `[?if]` that maps
+`true` to `true` and `false` to `false` adds a branch and changes nothing —
+both halves below answer the same value. Write the condition itself.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $n 7] [?if [> $n 5] [then true] [else false]]]
+#]]
+  [out-text [#
+true
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [case id=ap-py-if-true-false-right level=core
+  [title [#The condition is the value — `C`#]]
+  [tags if boolean redundant python gaps-1 issue-1813]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $n 7] [> $n 5]]
+#]]
+  [out-text [#
+true
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── P17. coming from Python: string-length (issue 1813 §27) ── ]
+
+ [case id=ap-py-string-length-wrong level=core
+  [title [#`strings:count` (or `$count`) for a string's length#]]
+  [tags strings length count python antipattern gaps-1 issue-1813]
+  [why [#
+`strings:count` counts the occurrences of a NEEDLE (`'a'` in `'banana'` is
+3), and `$count` counts the items of a sequence — a string is one item, so it
+answers 1. Neither is Python's `len(s)`. The length in code points is
+`strings:length`.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?lib 'cx-stdlib/strings' as=strings]
+[r count=[$count 'banana'] needle=[$strings:count 'banana' 'a']]
+#]]
+  [out-text [#
+[r count=1 needle=3]
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [case id=ap-py-string-length-right level=core
+  [title [#`strings:length`#]]
+  [tags strings length count python gaps-1 issue-1813]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?lib 'cx-stdlib/strings' as=strings]
+[r length=[$strings:length 'banana']]
+#]]
+  [out-text [#
+[r length=6]
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── P18. coming from Python: int-division (issue 1813 §27) ── ]
+
+ [case id=ap-py-int-division-wrong level=core
+  [title [#`/` for an integer result#]]
+  [tags arithmetic division idiv int float python antipattern gaps-1 issue-1813]
+  [why [#
+`/` is true division. Over two ints it answers an int only when the
+quotient is whole; otherwise a float (`[/ 7 2]` is `3.5e0`) — never Python
+2's floor. Integer division is `[$idiv a b]` (truncating toward zero) and the
+remainder is `[% a b]`.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[r half=[/ 7 2] even=[/ 6 2]]
+#]]
+  [out-text [#
+[r half=3.5e0 even=3]
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [case id=ap-py-int-division-right level=core
+  [title [#`[$idiv a b]` for the quotient, `[% a b]` for the remainder#]]
+  [tags arithmetic division idiv int float python gaps-1 issue-1813]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[r quot=[$idiv 7 2] rem=[% 7 2]]
+#]]
+  [out-text [#
+[r quot=3 rem=1]
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── P19. coming from Python: brackets (issue 1813 §27) ── ]
+
+ [case id=ap-py-brackets-wrong level=core
+  [title [#Miscounted closing brackets#]]
+  [tags brackets fmt lint parse python antipattern gaps-1 issue-1813]
+  [why [#
+Every form closes with its own `]`, and a long one-line program is where a
+count goes wrong. CX refuses a stray `]` or an unclosed `[` at parse, naming
+the line and column, before anything runs. Do not count by eye: `cx fmt FILE`
+prints the program in canonical layout (indent 2, width 80, a form too wide
+broken across lines) so each closer sits at the end of its form, and refuses
+the same miscount at the same column; `cx lint FILE` checks without printing.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $xs (1, 2, 3)] [report total=[?reduce $xs [using [?fn ($acc $x) [+ $acc $x]]] [init 0]]]]]
+#]]
+  [out-text [#
+error: cx-err:CXER0100: parse: unmatched `]` — no open `[` for this closer (a stray `]`, or one `]` too many on a construct that already closed) at line 1:99
+#]]
+  [exit-code [#1#]]
+ ]
+
+ [case id=ap-py-brackets-right level=core
+  [title [#Let `cx fmt` lay the program out#]]
+  [tags brackets fmt lint parse python gaps-1 issue-1813]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $xs (1, 2, 3)] [report total=[?reduce $xs [using [?fn ($acc $x) [+ $acc $x]]] [init 0]]]]
+#]]
+  [cli-argv [#
+fmt
+%FILE%
+#]]
+  [out-text [#
+[?let [= $xs (1, 2, 3)]
+  [report total=[?reduce $xs [using [?fn ($acc $x) [+ $acc $x]]] [init 0]]]]
 #]]
   [exit-code [#0#]]
  ]
