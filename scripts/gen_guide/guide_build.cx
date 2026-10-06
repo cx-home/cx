@@ -1425,7 +1425,11 @@
     [$io:copy [$cat ($gen, '/highlight/highlight.js')] [$cat ($out, '/highlight/highlight.js')]],
     [$io:copy [$cat ($gen, '/search/search.js')]       [$cat ($out, '/search/search.js')]],
     [; #1853 — the cx mark (owner-supplied rasters, 2026-10-06; no SVG master):
-       the header marks in both schemes and the favicon set. ]
+       the header marks in both schemes and the favicon set. The retired
+       bracket-and-X SVG is removed from an output tree a build before it
+       wrote (assets/ is not swept like the pages, and site-check reads a
+       leftover as EXTRA). ]
+    [?if [$io:exists [$cat ($out, '/assets/cx-logo.svg')]] [then [$io:remove [$cat ($out, '/assets/cx-logo.svg')]]] [else ()]],
     [$io:copy [$cat ($src, '/../assets/cx-mark-blue.png')]  [$cat ($out, '/assets/cx-mark-blue.png')]],
     [$io:copy [$cat ($src, '/../assets/cx-mark-white.png')]  [$cat ($out, '/assets/cx-mark-white.png')]],
     [$io:copy [$cat ($src, '/../assets/favicon-16.png')]  [$cat ($out, '/assets/favicon-16.png')]],
