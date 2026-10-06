@@ -440,6 +440,26 @@ version, library version).
   never a verb. `show=disabled` stays authorization; `[hidden]` and the
   `view`/`order` hints are presentation; the two never share a word.
 
+- **Durable view preferences and saved views are journal streams (#1286,
+  RULED: VG-2a; ux.md §11.6 P0-131–P0-136).** The sort, narrowing, page and
+  column choice of *this page* stay in the URL. A viewer's own defaults live
+  in `prefs:<principal>` and a shared named view in `view:<entity>` — the
+  stream of the owning aggregate (P0-100). `ux:set-pref` / `ux:clear-pref`
+  and `ux:save-view` / `ux:drop-view` (the `ux:save-view` claim) are
+  ordinary commands: `[$ux:pref-entry]` / `[$ux:view-entry]` gate them and
+  build the entry the caller appends, actor-stamped. The stream key is the
+  server's: a `principal=` / `entity=` / `scope=` / `stream=` / `visitor=` /
+  `session=` in the payload is refused `ux-view-scope-supplied`, a
+  preference at the anonymous floor `ux-pref-unattributed` (P0-75), and a
+  pref or view names only what the noun's `[views]` declares
+  (`ux-view-undeclared`, VG-1). `[$ux:prefs]` / `[$ux:pref-for]` /
+  `[$ux:saved-views]` fold the streams; `[$ux:view-params pref url]` lays the
+  URL over the preference (a key the URL carries wins; `sort` and `dir`
+  travel together); `[$ux:view-noun]` / `[$ux:view-rows]` read a saved view
+  as the derived noun it is. **Adopter note — additive.** A feature that kept
+  "remember my sort" in a session field or in the client moves it to a
+  `prefs:` stream through these commands; nothing else changes.
+
 - **`cx-stdlib/saml` — the SAML 2.0 service-provider verify core (#1091,
   RULED: S-0…S-9).** `verify` takes the raw XML octets and the IdP's public
   keys and returns **the verified subtree** — never a boolean beside a
