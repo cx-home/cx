@@ -5645,10 +5645,10 @@ test-net-real: build-vcx-dev
 ##                  commit under test as the db pin, and runs its `make real`
 ##                  with it (its .github/workflows/gate.yml).
 DB_REAL_CX := $(CURDIR)/deps/cx-core-code/vcx/target/cx-db-real
-# THE OPENSSL THE LANE LINKS (cx-platform-db#5; RULED: STREAM-1, DBSRV-1). libpq's
+# THE OPENSSL cx-db-real LINKS (cx-platform-db#5; RULED: STREAM-1, DBSRV-1). libpq's
 # .pc requires libssl/libcrypto, and V's pkg-config reads its BUILT-IN default
 # paths — Homebrew's /opt/homebrew/lib/pkgconfig among them — BEFORE
-# PKG_CONFIG_PATH, so the lane binary linked Homebrew's openssl@3 on a box that
+# PKG_CONFIG_PATH, so the cx-db-real binary linked Homebrew's openssl@3 on a box that
 # had one and could not be built the same on a box that did not. devbox.json pins
 # openssl's dev output from the SAME nixpkgs commit as libpq and mysql84 (the
 # openssl both libraries already load), and the profile goes FIRST through

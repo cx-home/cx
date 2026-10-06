@@ -23,6 +23,12 @@
 # naming 'example/fixture#1' and cases that name nothing ON PURPOSE, to prove
 # the runner refuses them). They are not corpora, and an audit that reported
 # them would cry wolf on the fixtures of the rule it enforces.
+# `_gate_evidence/` — a round's frozen records (a step roster, a snapshot of
+# registry/repos.cxd as the round's head had it). Nothing grades them, they
+# are never edited after the round, and a snapshot taken under an older reader
+# stops parsing when the reader tightens: pipeline_batchh3/head-repos.cxd's
+# unescaped quote refused as ADVISORY-UNPARSED once cx-core-data 7bf68e7 read
+# `'` inside a single-quoted value as the close (head fcfc3f33a).
 #
 # The release is 'v' + VERSION's major.minor, derived (AGENTS.md rule 5).
 #
@@ -116,6 +122,7 @@
   [?for [in $f [$strings:split-lines $listing]]
     [where [not [= [$strings:trim $f] ""]]]
     [where [not [$strings:contains [$concat "/" $f] "/testdata/"]]]
+    [where [not [$strings:starts-with $f "_gate_evidence/"]]]
     [yield $f]]]]
 
 # One [issue …] row per reference, read from GitHub. A lookup that fails is

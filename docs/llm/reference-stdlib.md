@@ -57,6 +57,7 @@ $ cx prog.cx
 | `geo` | Coordinate primitives without a new scalar kind — geometries are ordinary CXDM elements. |
 | `graphql` | The GraphQL client codec: text and values in, text and values out. |
 | `hash` | Content-addressable hashing — fixed-length digests of arbitrary byte payloads. |
+| `pdf` | Text extraction from a PDF byte string, pure and with no I/O. |
 | `html` | HTML as a first-class document format: parse, sanitize, serialize, and extract text. |
 | `http-client` | HTTP/1.1 request/response semantics from the CLIENT side, plus the message codec both halves of HTTP share: method verbs, headers, materialized bodies, redirects, content decoding, connection pooling, and the Server-Sent Events read side. |
 | `i18n` | The message and translation layer of CX's internationalization surface. |
