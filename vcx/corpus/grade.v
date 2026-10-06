@@ -847,10 +847,14 @@ pub fn grade_files(opts Options, names []string) Outcome {
 				code.caps_apply_spec(f.grant) or {
 					panic('fixture [grant …] refused (#713 loud unknown-cap): ${err.msg()}')
 				}
-			} else if f.out_err.contains('CXER0271') {
-				code.caps_set_empty()
 			} else {
-				code.caps_set_all()
+				// cx-private#1831: a case with no grant= runs with NO
+				// capability, as the CLI and the ABI do (security.md,
+				// deny-by-default). The expected answer no longer picks the
+				// set — the full grant for a behaviour case let an effectful
+				// case pass with nothing declared, and a capability check
+				// that regressed to always-allowed stayed green.
+				code.caps_set_empty()
 			}
 			// Program argv (#926, PYE-2): fixture-declared vector, argv[0]
 			// included; cleared otherwise so no cross-case leak.

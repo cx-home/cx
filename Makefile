@@ -4139,7 +4139,7 @@ test-vcx-code: build-vcx-dev check-serial-retry-rosters
 # roster is a variable and `check-inmodule-test-roster` now fails on any
 # vcx/cx/*_test.v that is in neither list, so the next addition cannot be
 # forgotten silently. Delete both lists and glob the directory when #737 closes.
-CX_INMODULE_TESTS := $(CXD)/vcx/cx/program_interior_comments_test.v $(CXD)/vcx/cx/program_layout_test.v $(CXD)/vcx/cx/program_fmt_guard_test.v $(CXD)/vcx/cx/program_emit_head_ascription_test.v $(CXD)/vcx/cx/directive_emit_surface_test.v $(CXD)/vcx/cx/anchor_resolve_test.v $(CXD)/vcx/cx/numeric_exact_fast_test.v $(CXD)/vcx/cx/numeric_exact_big_test.v $(CXD)/vcx/cx/compound_key_decode_test.v $(CXD)/vcx/cx/atom_test.v $(CXD)/vcx/cx/token_golden_test.v $(CXD)/vcx/cx/version_stamp_test.v $(CXD)/vcx/cx/html_url_codec_test.v $(CXD)/vcx/cx/span_jump_test.v $(CXD)/vcx/cx/feature_compat_test.v $(CXD)/vcx/cx/name_pool_contract_test.v $(CXD)/vcx/cx/schema_extensions_test.v $(CXD)/vcx/cx/node_api_test.v
+CX_INMODULE_TESTS := $(CXD)/vcx/cx/program_interior_comments_test.v $(CXD)/vcx/cx/program_layout_test.v $(CXD)/vcx/cx/program_fmt_guard_test.v $(CXD)/vcx/cx/program_emit_head_ascription_test.v $(CXD)/vcx/cx/directive_emit_surface_test.v $(CXD)/vcx/cx/anchor_resolve_test.v $(CXD)/vcx/cx/numeric_exact_fast_test.v $(CXD)/vcx/cx/atom_test.v $(CXD)/vcx/cx/token_golden_test.v $(CXD)/vcx/cx/version_stamp_test.v $(CXD)/vcx/cx/html_url_codec_test.v $(CXD)/vcx/cx/span_jump_test.v $(CXD)/vcx/cx/feature_compat_test.v $(CXD)/vcx/cx/name_pool_contract_test.v $(CXD)/vcx/cx/schema_extensions_test.v $(CXD)/vcx/cx/node_api_test.v $(CXD)/vcx/cx/compound_key_decode_test.v $(CXD)/vcx/cx/numeric_exact_big_test.v
 CX_INMODULE_TESTS_EXCLUDED := $(CXD)/vcx/cx/parser_multidoc_test.v
 
 # check-build-input-roster (#1065) — forwards to vcx/, where the per-artifact
@@ -5645,9 +5645,21 @@ test-net-real: build-vcx-dev
 ##                  commit under test as the db pin, and runs its `make real`
 ##                  with it (its .github/workflows/gate.yml).
 DB_REAL_CX := $(CURDIR)/deps/cx-core-code/vcx/target/cx-db-real
+# THE OPENSSL THE LANE LINKS (cx-platform-db#5; RULED: STREAM-1, DBSRV-1). libpq's
+# .pc requires libssl/libcrypto, and V's pkg-config reads its BUILT-IN default
+# paths — Homebrew's /opt/homebrew/lib/pkgconfig among them — BEFORE
+# PKG_CONFIG_PATH, so the lane binary linked Homebrew's openssl@3 on a box that
+# had one and could not be built the same on a box that did not. devbox.json pins
+# openssl's dev output from the SAME nixpkgs commit as libpq and mysql84 (the
+# openssl both libraries already load), and the profile goes FIRST through
+# PKG_CONFIG_PATH_DEFAULTS, followed by the V pin's own default list read from
+# it (so libcurl.pc, which libpq also requires, still resolves to the system's).
+DB_REAL_PC := $(CURDIR)/.devbox/nix/profile/default/lib/pkgconfig
+DB_REAL_PC_DEFAULTS = $(DB_REAL_PC):$(shell sed -n '/^const default_paths = \[/,/^]/p' third_party/v/vlib/v/pkgconfig/pkgconfig.v | grep -o "'[^']*'" | tr -d "'" | paste -sd: -)
 .PHONY: db-real-cx test-db-real
 db-real-cx: check-gate-lock deps-present
-	@PKG_CONFIG_PATH="$(CURDIR)/.devbox/nix/profile/default/lib/pkgconfig$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
+	@PKG_CONFIG_PATH="$(DB_REAL_PC)$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
+	  PKG_CONFIG_PATH_DEFAULTS="$(DB_REAL_PC_DEFAULTS)" \
 	  $(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx cli-dev CLI_DEV=$(DB_REAL_CX) CX_DFLAGS='-d cx_db_pg -d cx_db_mysql' PORTABLE=true
 
 # THE CONNECTOR'S DB CASES (RULED: 1455-a, #1459). kind=db executes every backend

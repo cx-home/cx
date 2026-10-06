@@ -385,6 +385,10 @@
         }
       }
     },
+    "github:NixOS/nixpkgs/c27cdad491a991b11ed731760aa2ef8db0cb0410#openssl.dev": {
+      "last_modified": "1970-01-01T00:00:00Z",
+      "resolved": "github:NixOS/nixpkgs/c27cdad491a991b11ed731760aa2ef8db0cb0410#openssl.dev"
+    },
     "github:NixOS/nixpkgs/nixpkgs-unstable": {
       "last_modified": "2026-04-10T03:55:24Z",
       "resolved": "github:NixOS/nixpkgs/9d29d5f667d7467f98efc31881e824fa586c927e?lastModified=1775793324"

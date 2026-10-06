@@ -97,7 +97,7 @@
 [?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
 [?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
 
-# re:matches is a whole-string match and re:find answers a [no-match] element,
+# re:matches is a whole-string match and re:find answers absence on a miss,
 # so "does the text carry the pattern anywhere" is a count of find-all.
 [?def hit scope=private pure [returns bool] ($re $s) [> [$count [$re:find-all $re $s]] 0]]
 [?def block scope=private pure [returns string] ($re $css)

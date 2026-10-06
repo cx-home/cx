@@ -291,7 +291,7 @@
       [= $target [?if [= $file-part ""] [then $p] [else [$resolve $p $file-part]]]]
       [= $dir-index [?if [or [= $target ""] [$strings:ends-with $target "/"]] [then [$concat $target "index.html"]] [else $target]]]
       [= $present-file [or [$member $have $dir-index] [$member $optional $dir-index]]]
-      [= $frag-ok [?if [or [= $frag ""] [not [$present-file]]] [then true]
+      [= $frag-ok [?if [or [= $frag ""] [not $present-file]] [then true]
                     [else [?if [$member $have $dir-index]
                             [then [$has-fragment $dir-index [$io:read-file [$path:join $out $dir-index]] $frag]]
                             [else true]]]]]
