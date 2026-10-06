@@ -136,7 +136,11 @@
   [$cx-run ([$env:executable-path], 'stdlib', 'source', $m)]]
 
 # RE2 over the raw module text: every public [?def] with its purity word.
-[?def def-rx () [$re:compile "\\[\\?def\\s+([a-z0-9-]+)\\s+scope=public(\\s+(pure|impure))?"]]
+# Anchored at a line start ((?m)^): a module's [?def]s are top-level forms in
+# column 0, while the text of a def INSIDE a string literal is not one -- the
+# connector kit's code-entry template ("[?def apply scope=public ...") was read
+# as two more public defs owing [fn-doc]s (cx-platform-connector e3a1cc3).
+[?def def-rx () [$re:compile "(?m)^\\[\\?def\\s+([a-z0-9-]+)\\s+scope=public(\\s+(pure|impure))?"]]
 
 [?let [= $rx [$def-rx]]
   # The bundled sources, wherever the build reads them from. `deps/*/stdlib/*.cx`
