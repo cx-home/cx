@@ -26,8 +26,9 @@
 |---|---|---|---|
 | Ring 0 — the reader, writer, canonical form, codecs | `vcx/cx/` (`cx-core-data`) | `cx` | vlib only |
 | Ring 1 — the evaluator, the stdlib natives, a platform module's declared pure half | `vcx/code/` (`cx-core-code`) | `code` | `cx`, vlib |
+| the program half of the corpus grading core (`cx corpus`, the fixture shards) | `vcx/corpus/` (`cx-core-code`) | `corpus` | `cx`, `code`, `fixtures`, vlib |
 | a V product (store, net, mail, identity, db, fabric, xsp, xap) | `vcx/<vmodule>/` (its product repository) | `<vmodule>` | `cx`, `code`, vlib, and the V modules of the repositories its row pins |
-| the front door's own verbs and grader | `vcx/cmd/`, `vcx/corpus/` (`cx`) | per directory | whatever the assembled build provides |
+| the front door's own verbs | `vcx/cmd/` (`cx`) | `main` | whatever the assembled build provides |
 
 The `vmodule=` and `pins=` of each product are in the repository map
 (`contributor-architecture.md` §2). `product-import-gate` refuses an import a
