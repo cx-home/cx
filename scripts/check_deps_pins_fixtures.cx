@@ -86,7 +86,7 @@
 # -- the two comparisons, pure ------------------------------------------
 
 [?def canonical-of scope=private pure [returns string] ($in::string)
-  [$strings:trim-end-chars [$cx:canonical $in] "\n"]]
+  [$strings:trim-end-chars [$cx:canonical [$cx:parse $in]] "\n"]]
 
 [?def verdict-text-of scope=private pure [returns string] ($in::string)
   [$strings:join [$pins:render [$pins:validate [$pins:read $in]]] "\n"]]

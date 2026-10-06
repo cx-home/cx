@@ -116,6 +116,8 @@
 # program-attr-bare-/program-body-bare-/program-computed-step- @#923,
 # program-body-block- @#1577, program-body-prose- @#1576/#1579).
 # One whitespace-separated token per prefix; level= is authoritative.
+# `program-gap` (no dash) is the gap family — program-gap-, program-gap1818-,
+# program-gap277- … — one category for the letters' gap cases (GAPS-1, STREAM-1).
 [?const PREFIX-MAP (
   [prefixes level=core [#
 program-for- program-let- program-fn- program-err- program-pipe- program-par-
@@ -146,6 +148,7 @@ program-pvmatrix- program-reserved-ns- program-slot-singleton- program-table-
 program-tree-eval- program-ophead-
 program-shadow- program-ophole-
 program-grant-default- program-prose-join- program-emit-
+program-gap program-lazy- program-distinct- program-construct- program-doc-
 #]],
   [prefixes level=resilience [#
 program-retry- program-timeout- program-cb- program-fallback-

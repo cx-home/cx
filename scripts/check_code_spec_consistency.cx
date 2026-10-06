@@ -11,7 +11,7 @@
 #     are excluded.
 #   Gate 2 (consistency)   — bare §N.N refs resolve to an in-file
 #     heading anchor (cross-file refs like `cxdm.md §4.6` excluded, and an
-#     issue's own sections, `#1819 §17`, which name the issue's text);
+#     issue's own section, `cx-private#1819 §17` — GAPS-1, STREAM-1);
 #     CXER codes map 1:1 to symbolic names; the §4.1 registry equals
 #     the [?name] set used in §§5-10 (modulo the documented tombstone /
 #     clause-keyword / non-program / external-body exclusions).
@@ -59,7 +59,7 @@
 [?const DIR-USE-RX [$re:compile "\\[\\?([a-z][a-z0-9-]*)"]]
 [?const DIR-REG-RX [$re:compile "^\\|\\s*`\\[\\?([a-z][a-z0-9-]*)\\]`"]]
 [?const TOKEN-RX   [$re:compile "(?i)\\b(?:TBD|TODO|FIXME|XXX|subject to change|implementation\\-defined|to be specified|future work|coming soon|placeholder)\\b"]]
-[?const CROSS-FILE-RX [$re:compile "(?:#[0-9]+|[A-Za-z][A-Za-z0-9_./-]*\\.(?:md|ebnf)|\\blexicon\\b|XQuery\\s+[0-9]+(?:\\.[0-9]+)*|XPath\\s+[0-9]+(?:\\.[0-9]+)*|XSLT\\s+[0-9]+(?:\\.[0-9]+)*|XQDM|RFC\\s*[0-9]+)[`'\")\\s,]*§[0-9]+(?:\\.[0-9]+)*(?:[`'\")\\s,]*/[`'\")\\s,]*§[0-9]+(?:\\.[0-9]+)*)*"]]
+[?const CROSS-FILE-RX [$re:compile "(?:[A-Za-z][A-Za-z0-9_./-]*\\.(?:md|ebnf)|\\blexicon\\b|\\bcxdm\\b|#[0-9]+|XQuery\\s+[0-9]+(?:\\.[0-9]+)*|XPath\\s+[0-9]+(?:\\.[0-9]+)*|XSLT\\s+[0-9]+(?:\\.[0-9]+)*|XQDM|RFC\\s*[0-9]+)[`'\")\\s,]*§[0-9]+(?:\\.[0-9]+)*(?:[`'\")\\s,]*/[`'\")\\s,]*§[0-9]+(?:\\.[0-9]+)*)*"]]
 [?const CODE-SPAN-RX [$re:compile "`[^`]*`"]]
 [?const LINK-RX      [$re:compile "\\[[^\\]]*\\]\\([^)]*\\)"]]
 [?const IMPL-RX      [$re:compile "(?:vcx/[A-Za-z0-9_./-]+|__cx_[a-z_]+__)"]]

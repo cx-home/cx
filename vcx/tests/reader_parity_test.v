@@ -596,6 +596,11 @@ const accepted_by_one_table = [
 	// follow deps/.
 	AcceptedByOne{'scripts/check_no_ai_attribution.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/strip_attribution.cx', .program, reason_1536},
+	// STREAM-1 (the CORE stream's landing, 2026-10-06): a PRIV selftest and the
+	// guide's theme check written since — call-shaped heads beside a ws-delimited
+	// `(…)`/`{…}` literal, the 1536-a property.
+	AcceptedByOne{'scripts/gen_guide/theme_check.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/repr_guard_selftest.cx', .program, reason_1536},
 	// DOCS-4 wave 1 (RULED: DOCS-42, DOCS-44, DOCS-45, DOCS-46): four new
 	// generators under scripts/gen_site/ and the site assembler's new link walk
 	// -- the class's own shape again, `[$fp:fold … {} [?fn …]]` (ring_svg.cx),
@@ -695,6 +700,7 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/gen_guide/guide_build.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/gen_guide/playground/gen_examples.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/product_import_gate.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/gitconfig_home_selftest.cx', .program, reason_attr}, // STREAM-1, 2026-10-06
 	AcceptedByOne{'scripts/repo_paths.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/ring_query.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/secrets_scan.cx', .program, reason_attr},

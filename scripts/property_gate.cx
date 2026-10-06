@@ -207,19 +207,10 @@
             [case 5 [$concat "[b::bytes " [$g-hex] "]"]]
             [else [$g-scalar [$g-kind]]]]]]]
 
-# A name=value after body content is body text to both readers (grammar [50];
-# RULED: ATTRB-1), so one element in four with a body carries one there, and
-# (vi) checks the readers agree on it. Its value is any scalar kind, a quoted
-# string included: lexicon §9 [L25b] opens a quoted region after the `=`, so a
-# close bracket inside the value is content (cx-core-data issue 36, core.cxd
-# 071 and 074; RULED: STREAM-1).
-[?const LATE-KINDS ("int", "float", "decimal", "bool", "null", "date", "datetime", "atom", "string")]
 [?def g-elem scope=private impure [returns string] ($d::int)
-  [?let [= $n [$rn 0 3]]
-    [$concat "[" [$pick $NAMES] [$g-attrs]
-      [$strings:join [?for [in $i [$range 1 $n]] [yield [$concat " " [$g-body-item $d]]]] ""]
-      [?if [and [> $n 0] [= [$rn 0 3] 0]] [then [$concat " " [$pick $ATTRS] "=" [$g-scalar [$pick $LATE-KINDS]]]] [else ""]]
-      "]"]]]
+  [$concat "[" [$pick $NAMES] [$g-attrs]
+    [$strings:join [?for [in $i [$range 1 [$rn 0 3]]] [yield [$concat " " [$g-body-item $d]]]] ""]
+    "]"]]
 
 
 # -- observations --------------------------------------------------------
@@ -303,6 +294,8 @@
 # scalar of kind K read in position P is K after the data reader, and K again
 # after canonical emit and a second read.
 [?const POSITIONS ("top", "attr", "body", "seq", "array", "array-head", "nested-array", "array-in-map", "mapval", "mapkey")]
+[?const HEAD-POSITIONS ("array-head", "array-in-map")]
+[?const KEYWORD-KINDS ("bool", "null")]
 # the key kinds cxdm.md §2.6 admits that a bare literal can spell (a datetime
 # key is exercised through the constructors, chk-constructed-roundtrip)
 [?const KEY-KINDS ("int", "decimal", "float", "bool", "date", "string", "bytes")]
@@ -544,16 +537,15 @@
           [case $m2 [$when-not [= [$set-text [$idents $m2]] $want]
                       [$fail 'ii' [$concat 'canonical-changed-keys:' $what] [$concat 'want ' $want ' got ' [$set-text [$idents $m2]]] $s]]]]]]]]
 
-# A CONSTRUCTED array headed by a keyword (true, false, null), one item or two:
-# a program builds it, and its canonical form must read back (canonical.md
-# §1.2, §2.6a, §2.11.2). Since KWARR-1 a document spells one too (lexicon
-# [L83] rule 2b), so the kind check above draws bool and null in the
-# array-head positions like every other kind.
-[?const P-KW-ARRAYS ("[?to-array (KW, 0)]", "[?to-array (KW,)]")]
+# A CONSTRUCTED array headed by a keyword (true, false, null): no document
+# text can spell one (the reader refuses the ambiguous bare array, so the kind
+# check gives those text positions another kind), but a program builds it,
+# and its canonical form must read back (canonical.md §1.2, §2.6a).
+[?const P-KW-ARRAY "[?to-array (KW, 0)]"]
 [?const KW-WRAP ("ARR", "{k: ARR}", "[?to-array (0, ARR)]")]
 
 [?def chk-keyword-array scope=private impure ()
-  [?let [= $kw [$pick $KEYWORD-TEXTS]] [= $arr [$strings:replace [$pick $P-KW-ARRAYS] "KW" $kw]]
+  [?let [= $kw [$pick $KEYWORD-TEXTS]] [= $arr [$strings:replace $P-KW-ARRAY "KW" $kw]]
         [= $src [$strings:replace [$pick $KW-WRAP] "ARR" $arr]]
     [?match [$cx:eval $src $NOCTX]
       [case [err @message=$m] ([$fail 'ii' 'keyword-array-unbuilt' $m $src],)]
@@ -569,16 +561,7 @@
 [?def g-datetime-value scope=private impure ()
   [?match [$cx:parse [$concat "[x " [$g-datetime] "]"]] [x $q] [yield $q]]]
 
-# the datetime a constructed KEY carries: the instant at its strict canonical
-# image -- cx:canonical is the strict form, which normalizes every datetime to
-# UTC (canonical.md §2.6 "Datetime (strict)"), keys as values; the key identity
-# the round trip must keep is that instant's (cx-core-data issue 3: a datetime
-# key renders quoted with ::datetime, canonical.md §2.11.1)
-[?def g-datetime-key-value scope=private impure ()
-  [?match [$cx:parse [$cx:canonical [$cx:parse [$concat "[x " [$g-datetime] "]"]]]] [x $q] [yield $q]]]
-
-# -- (iii) decimal arithmetic is exact, and never mixes with a float -- a
-#          bigint does, as an int does (gap-240) (code.md
+# -- (iii) decimal arithmetic is exact, and never mixes with a float (code.md
 #          §6.3 "Operand kind", "Exact division", RULED: CO-14, CO-17;
 #          cxdm.md §2.3 "decimal and bigint are SEMANTIC KINDS") ---------------
 #
@@ -688,24 +671,11 @@
       [$judge-refusal 'mix-avg' [$concat "[$avg (" $a ", " $f ")]"] 'cx-err:CXER0100']
       [$judge-refusal 'mix-max' [$concat "[$max (" $f ", " $a ")]"] 'cx-err:CXER0100']
       [$judge-refusal 'mix-div' [$concat "[$div " $a " " $f "]"] 'cx-err:CXER0100']
-      [; a bigint beside a float widens as an int of the same value does
-         (gap-240, cx-private#1818 §21; code.cxd program-gap1818-240b): the
-         answer is the float the bigint's nearest float makes with it ]
-      [?let [= $big [$g-bigint]]
-            [= $src [$concat "[+ " $big " " $f "]"]]
-            [= $want [$concat "[+ [cast " $big " :float] " $f "]"]]
-        [?match [$eval-src $src]
-          [case [err @message=$m] ([$fail 'iii' 'mix-bigint-refused' $m $src],)]
-          [case $got
-            [?match [$eval-src $want]
-              [case [err @message=$m] ([$fail 'iii' 'reference-unreadable' $m $want],)]
-              [case $ref
-                [; the sum may round once where the reference rounds twice
-                   (cast, then add), so the two agree to a relative 1e-12 ]
-                [?to-sequence [?concat
-                  [$when-not [= [$kind $got] 'float'] [$fail 'iii' 'mix-bigint-wrong-kind' [$concat 'answered ' [$kind $got] ' ' [$string $got]] $src]]
-                  [$when-not [?match [<= [$abs [- $got $ref]] [* 1.0e-12 [$abs $ref]]] [case [err] false] [case $b $b]]
-                             [$fail 'iii' 'mix-bigint-widens-inexact' [$concat 'answered ' [$string $got] ' want ' $want] $src]]]]]]]]]]]]]
+      # gap-240 (cx-private#1818 §21, RULED: STREAM-1): a bigint meets a float
+      # as an int of the same value does -- it widens to its nearest float.
+      [?let [= $bg [$g-bigint]]
+        [$judge-exact-kind 'bigint-meets-float' 'float' [$concat "[+ " $bg " " $f "]"]
+                           [$concat "[+ [cast " $bg " :float] " $f "]"]]]]]]]
 
 # -- (iv) an [err] built into any element propagates out (code.md §9.2
 #         "Implicit operand propagation", §6.4.1 "Construction is
@@ -723,10 +693,12 @@
 # collection literal INSIDE an element is listed too: a paren sequence is not
 # element construction (primer §6), but §6.4.1 says a refusal cannot come to
 # rest inside a document at any depth, and the element adopts the collection.
+# The two multi-sibling contributors are NOT contexts: a member [?splice] or a
+# [?for] yield grafts RESTS as data by ruling (RULED: CO-2, #975; code.md
+# §6.4.1 "Directives contribute"; cx-core-code#24), the guard being the effect
+# boundary's CXER0275 — conformance/property_gate.cxd 019/020 pin that.
 [?const CTX ([c name='child' t='HOLE'],
              [c name='attr' t='[w k=HOLE]'],
-             [c name='splice' t='[w [?splice (HOLE, 1)]]'],
-             [c name='for-yield' t='[w [?for [in $i (1, 2)] [yield HOLE]]]'],
              [c name='if' t='[w [?if true [then HOLE]]]'],
              [c name='let' t='[w [?let [= $q 1] HOLE]]'],
              [c name='match' t='[w [?match 1 [case 1 HOLE]]]'],
@@ -1258,7 +1230,8 @@
 
 [?def run-unit scope=private impure ()
   [?let [= $t [$g-elem 3]] [= $k [$pick $KIND-CHECK-KINDS]] [= $pos [$pick $POSITIONS]]
-        [= $kk [?if [and [= $pos "mapkey"] [not [$member $k $KEY-KINDS]]] [then "string"] [else $k]]]
+        [= $kk [?if [and [= $pos "mapkey"] [not [$member $k $KEY-KINDS]]] [then "string"]
+                [else [?if [and [$member $pos $HEAD-POSITIONS] [$member $k $KEYWORD-KINDS]] [then "int"] [else $k]]]]]
         [= $ma [$g-map 1]] [= $mb [$g-map 1]]
     [?to-sequence [?concat
       [$chk-roundtrip-s $t]
@@ -1266,7 +1239,7 @@
       [$with-subject [$chk-kind $kk $pos [$g-scalar $kk]] [?if [= $kk 'string'] [then 'string-emit'] [else 'other']]]
       [$chk-maps $ma $mb]
       [?match [$cx:parse $ma] [case [err] ()] [case $m [$chk-constructed-roundtrip 'merge' [$map:merge ($m, $NOCTX)]]]]
-      [$chk-constructed-roundtrip 'datetime-key' [$map:entry [$g-datetime-key-value] 1]]
+      [$chk-constructed-roundtrip 'datetime-key' [$map:entry [$g-datetime-value] 1]]
       [$chk-keyword-array]
       [$chk-attrs]
       [$chk-literal]
