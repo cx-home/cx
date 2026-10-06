@@ -633,7 +633,7 @@
   [$cat (
     '<aside class="sidebar">\n',
     '  <a class="brand" href="index.html" aria-label="CX — home">\n',
-    '    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>\n',
+    '    <img class="brand-mark mark-on-light" src="assets/cx-mark-blue.png" width="52" height="52" alt="CX"><img class="brand-mark mark-on-dark" src="assets/cx-mark-white.png" width="52" height="52" alt="CX">\n',
     '  </a>\n',
     '  <details class="side-nav" open>\n',
     '  <summary class="side-nav-toggle" aria-label="The guide: its pages and its search">Guide</summary>\n',
@@ -729,7 +729,10 @@
     '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n',
     '<meta name="viewport" content="width=device-width, initial-scale=1">\n',
     '<title>', $title, ' — CX Guide</title>\n',
-    '<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">\n',
+    '<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">\n',
+    '<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">\n',
+    '<link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192.png">\n',
+    '<link rel="apple-touch-icon" sizes="180x180" href="assets/favicon-180.png">\n',
     '<link rel="preconnect" href="https://fonts.googleapis.com">\n',
     '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n',
     '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">\n',
@@ -831,7 +834,7 @@
     '<div class="hero-text">\n',
     '<div class="hero-eyebrow">Sheet 01 · Why reach for CX</div>\n',
     '<div class="hero-head">\n',
-    '  <svg class="hero-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>\n',
+    '  <img class="hero-mark mark-on-light" src="assets/cx-mark-blue.png" alt="CX"><img class="hero-mark mark-on-dark" src="assets/cx-mark-white.png" alt="CX">\n',
     '  <h1>One syntax.<br>Data to platform.<br><span class="accent">Agentic ready.</span></h1>\n',
     '</div>\n',
     [; the one lead, from docs-src/site/tldr.cxd (RULED: DOCS-49): the same
@@ -1421,7 +1424,15 @@
     [$io:copy [$cat ($gen, '/style.css')]              [$cat ($out, '/style.css')]],
     [$io:copy [$cat ($gen, '/highlight/highlight.js')] [$cat ($out, '/highlight/highlight.js')]],
     [$io:copy [$cat ($gen, '/search/search.js')]       [$cat ($out, '/search/search.js')]],
-    [$io:copy [$cat ($src, '/../assets/cx-logo.svg')]  [$cat ($out, '/assets/cx-logo.svg')]],
+    [; #1853 — the cx mark (owner-supplied rasters, 2026-10-06; no SVG master):
+       the header marks in both schemes and the favicon set. ]
+    [$io:copy [$cat ($src, '/../assets/cx-mark-blue.png')]  [$cat ($out, '/assets/cx-mark-blue.png')]],
+    [$io:copy [$cat ($src, '/../assets/cx-mark-white.png')]  [$cat ($out, '/assets/cx-mark-white.png')]],
+    [$io:copy [$cat ($src, '/../assets/favicon-16.png')]  [$cat ($out, '/assets/favicon-16.png')]],
+    [$io:copy [$cat ($src, '/../assets/favicon-32.png')]  [$cat ($out, '/assets/favicon-32.png')]],
+    [$io:copy [$cat ($src, '/../assets/favicon-180.png')]  [$cat ($out, '/assets/favicon-180.png')]],
+    [$io:copy [$cat ($src, '/../assets/favicon-192.png')]  [$cat ($out, '/assets/favicon-192.png')]],
+    [$io:copy [$cat ($src, '/../assets/favicon-512.png')]  [$cat ($out, '/assets/favicon-512.png')]],
     [; DOCS-42: the ring figure as a file, untracked, from the registries ]
     [$io:write-file [$cat ($out, '/assets/rings.svg')] [$rs:ring-svg]],
     [$copy-if [$cat ($src, '/../assets/cx-logo.png')]  [$cat ($out, '/assets/cx-logo.png')]],

@@ -415,7 +415,6 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='CODE_OF_CONDUCT.md' repo=cx]
   [path exact='SECURITY.md' repo=cx]
   [path exact='cx-logo.png' repo=cx]
-  [path exact='cx-logo.svg' repo=cx]
   [path exact='bench_report.cx' repo=cx]
   [path exact='devbox.json' repo=cx]
   [path exact='devbox.lock' repo=cx]
