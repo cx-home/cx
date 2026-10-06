@@ -43,9 +43,12 @@
 #   CX_REPR_LANE_DEADLINE_S  the per-reading (and per-generation) deadline, s (default 300)
 #   CX_REPR_BUILD_DEADLINE_S the driver build's deadline, s (default 1800)
 #   CX_ALLOW_PATH_V=1        accept a PATH-resolved `v` when third_party/v/v is absent
-#   CX_V_SEARCH              the V -path for the build (default
+#   CX_REPR_V_SEARCH         the V -path for the build (default
 #                            @vlib|@vmodules|<repo>/deps/cx-core-data/vcx, the pinned
-#                            module `cx`'s root — #1822)
+#                            module `cx`'s root — #1822). Not CX_V_SEARCH: the
+#                            Makefile exports that one to every recipe with this
+#                            tree's vcx/ first, so the driver read the front door's
+#                            search under make and selftest case K went red.
 #   CX_REPR_BIN, CX_REPR_CORPUS_DIR — a planted format driver and a corpus
 #     directory of its own, for scripts/repr_guard_selftest.cx (the build is
 #     skipped for a planted driver).
@@ -261,7 +264,7 @@
               # shim in cx-core-code's target, the vendored libre2 under the front
               # door's third_party (deps/cx-core-code/vcx/Makefile, CX_NATIVE_DEFINES;
               # repr-guard depends on build-vcx, which builds both) (#1822).
-              [= $search [$env:var-or-default 'CX_V_SEARCH' [$cat ('@vlib|@vmodules|', [$repo], '/deps/cx-core-data/vcx')]]]
+              [= $search [$env:var-or-default 'CX_REPR_V_SEARCH' [$cat ('@vlib|@vmodules|', [$repo], '/deps/cx-core-data/vcx')]]]
               [= $limit [$build-deadline-s]]
               [= $argv ($v, '-path', $search,
                         '-d', [$cat ('cx_re2_lib_dir=', [$repo], '/deps/cx-core-code/vcx/target')],
@@ -319,11 +322,11 @@
                     [where [= [$count $w] 3]]
                     [yield $w]]]]]
 
+# lsof exits 1 when any named file is open nowhere (the usual case for one of
+# the two), so its stdout is read whatever its exit.
 [?def holders scope=private impure [returns any] ($files)
   [?let [= $here-ones [?to-sequence [?for [in $x $files] [where [$io:is-file $x]] [yield $x]]]]
     [?if [= [$count $here-ones] 0] [then ()]
-      # lsof exits 1 when any named file is open nowhere (the usual case for
-      # one of the two), so its stdout is read whatever its exit.
       [else [?let [= $f [$scratch 'lsof.out']]
                   [= $_r [?fallback [$process:run [?to-sequence [?concat ('lsof', '-t', '--') $here-ones]]
                                                   capture={stdout: $f, stderr: :discard} timeout-ms=30000 new-process-group=true]

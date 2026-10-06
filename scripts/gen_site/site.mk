@@ -48,7 +48,14 @@ endif
 site: guide
 	@$(SITE_CX_BIN) --allow-read --allow-write --allow-subprocess $(SITE_GEN)/site_assemble.cx
 
-site-check: guide-render-gate
+# site-check and site-index-check render docs/guide/ and read it under
+# scripts/docs_tree_lock.sh (the Makefile's guide-render-gate note): the
+# post-merge flow runs them beside guide-render-gate as separate makes.
+.PHONY: site-check-locked site-index-check-locked
+site-check: build-vcx
+	@$(DOCS_TREE_LOCK) $(MAKE) --no-print-directory site-check-locked
+
+site-check-locked: guide-render-gate-locked
 	@$(SITE_CX_BIN) --allow-read --allow-write --allow-subprocess $(SITE_GEN)/site_assemble.cx
 	@$(SITE_CX_BIN) --allow-read --allow-write --allow-env $(SITE_GEN)/site_assemble.cx --check
 	@# #1418: the assembled site's own pages (the landing, the LLM and
@@ -64,5 +71,8 @@ site-check: guide-render-gate
 site-index: $(SITE_CX_DEP) guide
 	@CX_BIN="$(SITE_CX_BIN)" $(SITE_CX_BIN) $(SITE_CAPS) $(SITE_GEN)/site_build.cx
 
-site-index-check: $(SITE_CX_DEP) guide-render-gate
+site-index-check: $(SITE_CX_DEP) build-vcx
+	@$(DOCS_TREE_LOCK) $(MAKE) --no-print-directory site-index-check-locked
+
+site-index-check-locked: guide-render-gate-locked
 	@CX_BIN="$(SITE_CX_BIN)" $(SITE_CX_BIN) $(SITE_CAPS) $(SITE_GEN)/site_build.cx --check

@@ -396,18 +396,29 @@ check-gate-lock:
 # link to anywhere else) is removed — deleting and re-making every link on
 # every build left the pin's cmd/ newer than the artifact, so every build
 # relinked (check-sync-cmd-split holds it).
-.PHONY: sync-cmd-split
-sync-cmd-split:
-	@[ -d deps/cx-core-code/vcx/cmd ] || exit 0; \
-	for l in deps/cx-core-code/vcx/cmd/*.v; do \
+#
+# sync-cmd-links is the link half alone, over SYNC_CMD_DIR (the pin's vcx/cmd/
+# by default): check-sync-cmd-split points it at a scratch directory, so the
+# self-test never plants a stale link in, or touches, the cmd/ that the steps
+# running beside it build from (two landing-gate reds 2026-10-05, 18:44Z and
+# 23:08Z: a parallel build's sync and relink touched the pin's cmd/ between the
+# check's stamp and its third run, and the check's own planted link made every
+# build running beside it relink).
+.PHONY: sync-cmd-split sync-cmd-links
+SYNC_CMD_DIR ?= deps/cx-core-code/vcx/cmd
+sync-cmd-links:
+	@[ -d "$(SYNC_CMD_DIR)" ] || exit 0; \
+	for l in "$(SYNC_CMD_DIR)"/*.v; do \
 	  [ -L "$$l" ] || continue; \
 	  b=$$(basename "$$l"); \
 	  [ -f "vcx/cmd/$$b" ] && [ "$$(readlink "$$l")" = "$(CURDIR)/vcx/cmd/$$b" ] || rm -f "$$l"; \
 	done; \
 	for f in vcx/cmd/*.v; do \
-	  l="deps/cx-core-code/vcx/cmd/$$(basename $$f)"; \
+	  l="$(SYNC_CMD_DIR)/$$(basename $$f)"; \
 	  [ -L "$$l" ] && [ "$$(readlink "$$l")" = "$(CURDIR)/$$f" ] || ln -sfn "$(CURDIR)/$$f" "$$l"; \
 	done
+
+sync-cmd-split: sync-cmd-links
 	@# Every artifact this recipe (or an ordinary build) leaves untracked in the
 	@# pin checkout -- the stay-file symlinks just made, this repository's own
 	@# nested deps/ mirror (already covered by the pin's OWN tracked .gitignore,
@@ -449,19 +460,23 @@ sync-cmd-split:
 	  for d in deps/*/; do \
 	    r=$$(basename "$$d"); \
 	    [ "$$r" = cx-core-code ] && continue; \
-	    [ -e "deps/cx-core-code/deps/$$r" ] || ln -s "$(CURDIR)/deps/$$r" "deps/cx-core-code/deps/$$r"; \
+	    [ -e "deps/cx-core-code/deps/$$r" ] || ln -sfn "$(CURDIR)/deps/$$r" "deps/cx-core-code/deps/$$r"; \
 	  done; \
 	fi
 	@# extraction_gate_probe (and CX_CORPUS_MERGED below) walk ONE directory
 	@# recursively, no -path-style search list -- a MERGED view, symlinks only,
 	@# never the real conformance/ (other steps' `git ls-files`-based counts
 	@# must not see it): cx-core-code's moved corpus PLUS whatever conformance/
-	@# still carries directly.
+	@# still carries directly. `ln -sfn`, never `-sf`: two builds at once (a
+	@# parallel gate) can both pass the -delete, and the second `ln -sf` over the
+	@# first's link to a DIRECTORY follows it and writes the link inside the
+	@# pin's own tree — deps/cx-core-code/conformance/stdlib/stdlib, a loop that
+	@# made the next deps-sync refuse the pin as drifted (2026-10-06 01:1xZ).
 	@mkdir -p deps/cx-core-code/vcx/target/conformance-merged
 	@find deps/cx-core-code/vcx/target/conformance-merged -maxdepth 1 -type l -delete
 	@for e in conformance/*.cxd conformance/*.md conformance/llm deps/cx-core-code/conformance/*; do \
 	  [ -e "$$e" ] || continue; \
-	  ln -sf "$(CURDIR)/$$e" "deps/cx-core-code/vcx/target/conformance-merged/$$(basename $$e)"; \
+	  ln -sfn "$(CURDIR)/$$e" "deps/cx-core-code/vcx/target/conformance-merged/$$(basename $$e)"; \
 	done
 .PHONY: deps-present
 deps-present: sync-cmd-split
@@ -974,8 +989,19 @@ guide-check: build-vcx
 ## literal outside a token; every sheet-bar page carries the theme toggle, the
 ## head script that applies a stored choice before paint, and the color-scheme
 ## meta. Its self-test runs first.
-guide-render-gate: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+## The post-merge flow runs guide-render-gate, site-check and docs-check (via
+## site-index-check) each as its own make (#1817), and each renders docs/guide/
+## before it reads it: on 73a02bbd4 site-check's render removed index.html under
+## this one. scripts/docs_tree_lock.sh holds one render-and-read per checkout;
+## the *-locked target is the body, run under the lock (re-entrant for the
+## nested site-check -> guide-render-gate-locked path). The prerequisites stay on
+## the outer target so the lock is never held across a build.
+DOCS_TREE_LOCK = sh $(CURDIR)/scripts/docs_tree_lock.sh
 guide-render-gate: build-vcx
+	@$(DOCS_TREE_LOCK) $(MAKE) --no-print-directory guide-render-gate-locked
+.PHONY: guide-render-gate-locked
+guide-render-gate-locked: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+guide-render-gate-locked:
 	@rm -f docs/guide/index.html docs/guide/codec-xml.html
 	@$(MAKE) --no-print-directory guide GUIDE_SKIP_CX_BUILD=1
 	@for p in docs/guide/index.html docs/guide/codec-xml.html; do \
