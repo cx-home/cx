@@ -10,7 +10,8 @@
 #     bounded-freedom id. Tokens inside code spans / fences / links
 #     are excluded.
 #   Gate 2 (consistency)   — bare §N.N refs resolve to an in-file
-#     heading anchor (cross-file refs like `cxdm.md §4.6` excluded);
+#     heading anchor (cross-file refs like `cxdm.md §4.6` excluded, and an
+#     issue's own section, `cx-private#1819 §17` — GAPS-1, STREAM-1);
 #     CXER codes map 1:1 to symbolic names; the §4.1 registry equals
 #     the [?name] set used in §§5-10 (modulo the documented tombstone /
 #     clause-keyword / non-program / external-body exclusions).
@@ -58,7 +59,7 @@
 [?const DIR-USE-RX [$re:compile "\\[\\?([a-z][a-z0-9-]*)"]]
 [?const DIR-REG-RX [$re:compile "^\\|\\s*`\\[\\?([a-z][a-z0-9-]*)\\]`"]]
 [?const TOKEN-RX   [$re:compile "(?i)\\b(?:TBD|TODO|FIXME|XXX|subject to change|implementation\\-defined|to be specified|future work|coming soon|placeholder)\\b"]]
-[?const CROSS-FILE-RX [$re:compile "(?:[A-Za-z][A-Za-z0-9_./-]*\\.(?:md|ebnf)|\\blexicon\\b|XQuery\\s+[0-9]+(?:\\.[0-9]+)*|XPath\\s+[0-9]+(?:\\.[0-9]+)*|XSLT\\s+[0-9]+(?:\\.[0-9]+)*|XQDM|RFC\\s*[0-9]+)[`'\")\\s,]*§[0-9]+(?:\\.[0-9]+)*(?:[`'\")\\s,]*/[`'\")\\s,]*§[0-9]+(?:\\.[0-9]+)*)*"]]
+[?const CROSS-FILE-RX [$re:compile "(?:[A-Za-z][A-Za-z0-9_./-]*\\.(?:md|ebnf)|\\blexicon\\b|\\bcxdm\\b|#[0-9]+|XQuery\\s+[0-9]+(?:\\.[0-9]+)*|XPath\\s+[0-9]+(?:\\.[0-9]+)*|XSLT\\s+[0-9]+(?:\\.[0-9]+)*|XQDM|RFC\\s*[0-9]+)[`'\")\\s,]*§[0-9]+(?:\\.[0-9]+)*(?:[`'\")\\s,]*/[`'\")\\s,]*§[0-9]+(?:\\.[0-9]+)*)*"]]
 [?const CODE-SPAN-RX [$re:compile "`[^`]*`"]]
 [?const LINK-RX      [$re:compile "\\[[^\\]]*\\]\\([^)]*\\)"]]
 [?const IMPL-RX      [$re:compile "(?:vcx/[A-Za-z0-9_./-]+|__cx_[a-z_]+__)"]]
@@ -86,7 +87,7 @@
   [$re:replace LINK-RX [$re:replace CODE-SPAN-RX $line ""] ""]]
 
 [?def rx-found scope=public ($rx $s)
-  [?match [$re:find $rx $s] [case [no-match] false] [else true]]]
+  [?match [$re:find $rx $s] [case () false] [else true]]]
 
 # set ops over map-sets
 [?def set-put scope=public ($m $k) [$map:put $m $k true]]
@@ -108,7 +109,7 @@
       [then [$map:put $acc "fence" [not [$map:get $acc "fence"]]]]
     [else [?let [= $am [$re:find ANCHOR-RX $raw]]
       [?match $am
-        [case [no-match]
+        [case ()
           [?if [= $trimmed "<!-- informative -->"]
             [then [$map:put $acc "informative" true]]
           [else [?if [$map:get $acc "fence"]
@@ -136,7 +137,7 @@
     # registry rows (§4.1 only)
     [= $a1 [?if [$map:get $acc "registry"]
       [then [?match [$re:find DIR-REG-RX $raw]
-        [case [no-match] $acc]
+        [case () $acc]
         [case $m [$map:put $acc "regdirs" [$set-put [$map:get $acc "regdirs"] [$re:group $m 1]]]]]]
       [else $acc]]]
     # body directives (§§5-10)
@@ -145,7 +146,7 @@
       [else $a1]]]
     # error-code table rows
     [= $a3 [?match [$re:find ERR-TABLE-RX $raw]
-      [case [no-match] $a2]
+      [case () $a2]
       [case $m
         [?let [= $sym [$re:group $m 1]] [= $code [$re:group $m 2]]
               [= $c2s [$map:get $a2 "c2s"]] [= $s2c [$map:get $a2 "s2c"]]
@@ -294,7 +295,7 @@
             [= $defined [$distinct [?for [in $h $doc/*]
               [where [$member ('h2','h3','h4') [?else [$name $h] ""]]]
               [= $m [$re:find PROG-NODE-RX [$text $h]]]
-              [where [?match $m [case [no-match] false] [else true]]]
+              [where [?match $m [case () false] [else true]]]
               [yield [$re:group $m 1]]]]]
             # summary rows: table nodes' rows whose first cell is a node name.
             [= $tables [$strings:join [?for [in $t $doc//table]
@@ -381,11 +382,11 @@
         # pass 1: heading anchors + the BF register (forward refs work).
         [= $anchors [$fp:fold $lines {}
           [?fn ($a $l) [?match [$re:find ANCHOR-RX $l]
-            [case [no-match] $a]
+            [case () $a]
             [case $m [$set-put $a [$re:group $m 1]]]]]]]
         [= $bf-register [$fp:fold $lines {}
           [?fn ($a $l) [?match [$re:find BF-ROW-RX [$strings:trim $l]]
-            [case [no-match] $a]
+            [case () $a]
             [case $m [$set-put $a [$re:group $m 1]]]]]]]
         # pass 2: the line scan.
         [= $st [$fp:fold $lines

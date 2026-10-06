@@ -671,7 +671,11 @@
       [$judge-refusal 'mix-avg' [$concat "[$avg (" $a ", " $f ")]"] 'cx-err:CXER0100']
       [$judge-refusal 'mix-max' [$concat "[$max (" $f ", " $a ")]"] 'cx-err:CXER0100']
       [$judge-refusal 'mix-div' [$concat "[$div " $a " " $f "]"] 'cx-err:CXER0100']
-      [$judge-refusal 'mix-bigint' [$concat "[+ " [$g-bigint] " " $f "]"] 'cx-err:CXER0100']]]]]
+      # gap-240 (cx-private#1818 §21, RULED: STREAM-1): a bigint meets a float
+      # as an int of the same value does -- it widens to its nearest float.
+      [?let [= $bg [$g-bigint]]
+        [$judge-exact-kind 'bigint-meets-float' 'float' [$concat "[+ " $bg " " $f "]"]
+                           [$concat "[+ [cast " $bg " :float] " $f "]"]]]]]]]
 
 # -- (iv) an [err] built into any element propagates out (code.md §9.2
 #         "Implicit operand propagation", §6.4.1 "Construction is
@@ -689,10 +693,12 @@
 # collection literal INSIDE an element is listed too: a paren sequence is not
 # element construction (primer §6), but §6.4.1 says a refusal cannot come to
 # rest inside a document at any depth, and the element adopts the collection.
+# The two multi-sibling contributors are NOT contexts: a member [?splice] or a
+# [?for] yield grafts RESTS as data by ruling (RULED: CO-2, #975; code.md
+# §6.4.1 "Directives contribute"; cx-core-code#24), the guard being the effect
+# boundary's CXER0275 — conformance/property_gate.cxd 019/020 pin that.
 [?const CTX ([c name='child' t='HOLE'],
              [c name='attr' t='[w k=HOLE]'],
-             [c name='splice' t='[w [?splice (HOLE, 1)]]'],
-             [c name='for-yield' t='[w [?for [in $i (1, 2)] [yield HOLE]]]'],
              [c name='if' t='[w [?if true [then HOLE]]]'],
              [c name='let' t='[w [?let [= $q 1] HOLE]]'],
              [c name='match' t='[w [?match 1 [case 1 HOLE]]]'],

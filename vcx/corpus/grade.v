@@ -550,6 +550,11 @@ pub:
 	status string // 'graded' | 'skip' | 'other-lane' | 'skip-pack'
 	gate   string // the effective gate for a graded row
 	note   string // the reason a skipped row carries
+pub mut:
+	// us is a graded row's wall time in microseconds — the #1515 per-case
+	// stopwatch, read when the case's grading ends (start-up excluded) — which
+	// `cx corpus --times` prints (GAPS-1, cx-private#1813 §24); -1 otherwise.
+	us i64 = -1
 }
 
 pub struct Outcome {
@@ -624,6 +629,9 @@ pub fn grade_files(opts Options, names []string) Outcome {
 		// each of the body's exits — the body `continue`s from a dozen places
 		// and V has no block-scoped defer.
 		mut pend_id := ''
+		// GAPS-1, cx-private#1813 §24: the record the pending reading belongs
+		// to, so `cx corpus --times` reads the same stopwatch #1515 prints.
+		mut pend_rec := -1
 		mut csw := time.new_stopwatch()
 		// #1597 (RULED: RS-17): one env per case, and the finished one is TORN
 		// DOWN before the next is built — `env.close()` empties its shell and
@@ -758,6 +766,10 @@ pub fn grade_files(opts Options, names []string) Outcome {
 				continue
 			}
 			case_ms_line(fname, pend_id, csw)
+			if pend_rec >= 0 {
+				o.records[pend_rec].us = csw.elapsed().microseconds()
+				pend_rec = -1
+			}
 			pend_id = f.id
 			csw = time.new_stopwatch()
 			o.ran++
@@ -769,6 +781,7 @@ pub fn grade_files(opts Options, names []string) Outcome {
 					status: 'graded'
 					gate:   eff_gate
 				}
+				pend_rec = o.records.len - 1
 			}
 			if f.out_err != '' {
 				o.out_err_ran++
@@ -807,15 +820,12 @@ pub fn grade_files(opts Options, names []string) Outcome {
 			}
 			code.register_conformance_test_modules(mut env.state.module_table) // #701
 			if f.in_cx != '' && f.in_cx != '[empty]' {
-				if doc := cx.parse(f.in_cx) {
-					for i in 0 .. doc.elements.len {
-						n := doc.elements[i]
-						if n.is_element() {
-							env.bind_set('doc', n)
-							env.bind_set('input', n)
-							break
-						}
-					}
+				// cx-private#1718 item 2: the one [in-cx] binding every grader
+				// shares — the input's SEMANTIC reading, anchors and merges
+				// resolved, as the CLI's --data binding is (ANC-1).
+				if n := code.fixture_doc_node(f.in_cx) {
+					env.bind_set('doc', n)
+					env.bind_set('input', n)
 				}
 			}
 			// Capability-set injection (security.md §3, Effort A/B). The
@@ -926,6 +936,9 @@ pub fn grade_files(opts Options, names []string) Outcome {
 					}
 				}
 			}
+		}
+		if pend_rec >= 0 {
+			o.records[pend_rec].us = csw.elapsed().microseconds()
 		}
 		env.close()
 		case_dir = case_files_teardown(case_dir, orig_cwd)

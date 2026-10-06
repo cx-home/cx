@@ -55,6 +55,73 @@ called "CX" is not this one. Read these twelve before writing anything.
     Everything after the file belongs to the program. Getting this backwards
     does not produce a usage error — see the anti-patterns in §9.
 
+## 0a. Coming from Python: what does not exist, and the cx form
+
+A model that learned to program mostly from Python writes these forms first.
+None of them is CX. About half are refused, most at parse with the line and
+column named; the rest are worse — a habit that parses runs to exit 0 and
+answers the wrong value. The table is the summary. Under it each row is a
+fixture pair — the habit, then the CX form — both run when this document was
+generated, the habit's answer printed exactly as `cx` gave it.
+
+| You write | What it is in CX | Write instead |
+|---|---|---|
+| `($a % 3)`, `[$a + 1]` | no infix arithmetic — a parse refusal | `[% $a 3]`, `[+ $a 1]` |
+| `[?and A B]`, `[?not A]` | not directives — a parse refusal | `[and A B]`, `[or A B]`, `[not A]` |
+| `… ; remark` | not a comment — each word one more result | `# remark` or `[; remark ]` |
+| `[= $count [+ $count $x]]` in a loop | a fresh binding each pass, never an update | `[?reduce]`, or `[?loop … [continue …]]` |
+| two forms after a `[?let]`'s bindings | one body only — refused | one value; effects in order in `[?do A B]` |
+| `['eggs' 'peanuts']` | no commas — a parse refusal | `['eggs', 'peanuts']` |
+| `[$xs@$i]` | `@` is an attribute step — refused | `[$nth $xs $i]`, counting from 1 |
+| `[?fn $a $b body]` | parameters are one list — refused | `[?fn ($a $b) body]` |
+| `[double 21]` | an element named `double`, not a call | `[$double 21]` |
+| `[?for [in $ch 'abc'] …]` | a string is one item — one pass | `[in $ch [$strings:split 'abc' '']]` |
+| `(1, $n)` | a two-item sequence, not a range | `[$range 1 $n]`, both ends included |
+| `[$strings:replace $s '[0-9]+' '#']` | a literal-text replace — unchanged | `[$re:replace [$re:compile '[0-9]+'] $s '#']` |
+| `[$re:find-all '[0-9]+' $s]` | a string where a compiled pattern goes — refused | `[$re:find-all [$re:compile '[0-9]+'] $s]` |
+| `[?if C [then true] [else false]]` | `C` with a branch around it | `C` |
+| `[$strings:count $s 'a']`, `[$count $s]` for a length | a needle count; an item count (1) | `[$strings:length $s]` |
+| `[/ 7 2]` for an integer | true division — `3.5e0` | `[$idiv 7 2]`, remainder `[% 7 2]` |
+| one `]` too many or too few | refused at parse, naming line and column | `cx fmt FILE` lays it out; `cx lint FILE` checks |
+
+{{PAIR:ap-py-infix-paren-wrong ap-py-infix-paren-right}}
+
+{{PAIR:ap-py-infix-bracket-wrong ap-py-infix-bracket-right}}
+
+{{PAIR:ap-py-and-directive-wrong ap-py-and-directive-right}}
+
+{{PAIR:ap-py-not-directive-wrong ap-py-not-directive-right}}
+
+{{PAIR:ap-py-remark-wrong ap-py-remark-right}}
+
+{{PAIR:ap-py-reassign-wrong ap-py-reassign-right}}
+
+{{PAIR:ap-py-let-two-bodies-wrong ap-py-let-two-bodies-right}}
+
+{{PAIR:ap-py-array-commas-wrong ap-py-array-commas-right}}
+
+{{PAIR:ap-py-index-at-wrong ap-py-index-at-right}}
+
+{{PAIR:ap-py-fn-params-wrong ap-py-fn-params-right}}
+
+{{PAIR:ap-py-call-sigil-wrong ap-py-call-sigil-right}}
+
+{{PAIR:ap-py-for-string-wrong ap-py-for-string-right}}
+
+{{PAIR:ap-py-range-wrong ap-py-range-right}}
+
+{{PAIR:ap-py-replace-regex-wrong ap-py-replace-regex-right}}
+
+{{PAIR:ap-py-find-all-string-wrong ap-py-find-all-string-right}}
+
+{{PAIR:ap-py-if-true-false-wrong ap-py-if-true-false-right}}
+
+{{PAIR:ap-py-string-length-wrong ap-py-string-length-right}}
+
+{{PAIR:ap-py-int-division-wrong ap-py-int-division-right}}
+
+{{PAIR:ap-py-brackets-wrong ap-py-brackets-right}}
+
 ## 1. Running CX
 
 You can check every claim in this document. Do that rather than trusting it.
@@ -117,10 +184,15 @@ fraction as a binary float and CX does not.
 
 | Kind | How you get one |
 |---|---|
-| **decimal** | a plain fraction literal: `1.5`, `2.50`, `0.1`. Exact, base-10, arbitrary precision |
-| **float** | an `e`-exponent literal (`1.5e0`), a `::float` annotation, `[cast x :float]`, division `[/ …]`, `[$avg …]`, and the float-returning `math` functions |
+| **decimal** | a plain fraction literal: `1.5`, `2.50`, `0.1`. Exact, base-10, arbitrary precision. Arithmetic over decimals stays decimal, and so does `[$avg …]` of decimals: `[$avg [0.5, 1.5]]` is `1.00` |
+| **float** | an `e`-exponent literal (`1.5e0`), a `::float` annotation, `[cast x :float]`, a division of ints whose quotient is not whole (`[/ 7 2]`), a float operand, `[$avg …]` of ints or floats (`[$avg [2, 4, 6]]` is `4.0e0`), and the float-returning `math` functions |
 
-`[price 19.99]` is a decimal and stays exact; `[/ 7 2]` is a float.
+`[price 19.99]` is a decimal and stays exact. Division follows its operands: `[/ 6 2]` is the
+int `3` and `[/ 7 2]` the float `3.5` (an int result only when every operand is an int
+and the quotient is whole — write `[/ [cast $a :float] $b]` when a function must always
+answer a float), and a decimal or bigint operand divides exactly into a decimal
+(`[/ 1 [cast 4 :bigint]]` is `0.25`) or refuses a quotient that does not terminate,
+naming `$math:div-decimal` (code.md §6.5, CO-17).
 Arithmetic keeps a decimal a decimal — `[* 2 1.5]` is `3.0`, and ints mix in
 freely — but the two kinds never mix with each other:
 

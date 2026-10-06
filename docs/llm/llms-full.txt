@@ -195,9 +195,14 @@ fraction as a binary float and CX does not.
 | Kind | How you get one |
 |---|---|
 | **decimal** | a plain fraction literal: `1.5`, `2.50`, `0.1`. Exact, base-10, arbitrary precision |
-| **float** | an `e`-exponent literal (`1.5e0`), a `::float` annotation, `[cast x :float]`, division `[/ …]`, `[$avg …]`, and the float-returning `math` functions |
+| **float** | an `e`-exponent literal (`1.5e0`), a `::float` annotation, `[cast x :float]`, a division of ints whose quotient is not whole (`[/ 7 2]`), a float operand, `[$avg …]`, and the float-returning `math` functions |
 
-`[price 19.99]` is a decimal and stays exact; `[/ 7 2]` is a float.
+`[price 19.99]` is a decimal and stays exact. Division follows its operands: `[/ 6 2]` is the
+int `3` and `[/ 7 2]` the float `3.5` (an int result only when every operand is an int
+and the quotient is whole — write `[/ [cast $a :float] $b]` when a function must always
+answer a float), and a decimal or bigint operand divides exactly into a decimal
+(`[/ 1 [cast 4 :bigint]]` is `0.25`) or refuses a quotient that does not terminate,
+naming `$math:div-decimal` (code.md §6.5, CO-17).
 Arithmetic keeps a decimal a decimal — `[* 2 1.5]` is `3.0`, and ints mix in
 freely — but the two kinds never mix with each other:
 
@@ -3220,7 +3225,9 @@ $ cx --from=cx --to=cx input.cx
 
 A bare fraction is a **decimal**: exact, base-10, arbitrary precision. A
 float arises only from an `e`-exponent literal (`1.5e0`), a `::float`
-annotation, `[cast … :float]`, division (`[/ …]`), `[$avg …]`, and the
+annotation, `[cast … :float]`, a division of ints whose quotient is not
+whole (`[/ 7 2]` — `[/ 6 2]` is the int `3`, and a decimal or bigint operand
+divides exactly into a decimal, code.md §6.5, CO-17), `[$avg …]`, and the
 float-returning `math` functions.
 
 ```
@@ -8359,7 +8366,7 @@ the product compiles from (RULED: RS-24).
 | `cx-platform-sso` | 1 | no | `cx-platform/sso` |
 | `cx-platform-flow` | 1 | no | `cx-platform/flow` |
 | `cx-core-data` | 1 | yes | `cx-core-data` |
-| `cx-core-code` | 53 | yes | `cx-stdlib/array` `cx-stdlib/authz` `cx-stdlib/bus` `cx-stdlib/bytes` `cx-stdlib/crypto` `cx-stdlib/csv` `cx-stdlib/cx` `cx-stdlib/did` `cx-stdlib/email` `cx-stdlib/env` `cx-stdlib/format` `cx-stdlib/fp` `cx-stdlib/geo` `cx-stdlib/graphql` `cx-stdlib/hash` `cx-stdlib/html` `cx-stdlib/http-client` `cx-stdlib/i18n` `cx-stdlib/io` `cx-stdlib/json` `cx-stdlib/jsonrpc` `cx-stdlib/jsonschema` `cx-stdlib/locale` `cx-stdlib/log` `cx-stdlib/map` `cx-stdlib/math` `cx-stdlib/mime` `cx-stdlib/oidc` `cx-stdlib/path` `cx-stdlib/process` `cx-stdlib/prof` `cx-stdlib/random` `cx-stdlib/re` `cx-stdlib/saml` `cx-stdlib/sched` `cx-stdlib/scim` `cx-stdlib/set` `cx-stdlib/similar` `cx-stdlib/soap` `cx-stdlib/strings` `cx-stdlib/supervise` `cx-stdlib/tar` `cx-stdlib/term` `cx-stdlib/test` `cx-stdlib/time` `cx-stdlib/url` `cx-stdlib/uuid` `cx-stdlib/validate` `cx-stdlib/vc` `cx-stdlib/ws` `cx-stdlib/xml` `cx-stdlib/zip` `term` |
+| `cx-core-code` | 54 | yes | `cx-stdlib/array` `cx-stdlib/authz` `cx-stdlib/bus` `cx-stdlib/bytes` `cx-stdlib/crypto` `cx-stdlib/csv` `cx-stdlib/cx` `cx-stdlib/did` `cx-stdlib/email` `cx-stdlib/env` `cx-stdlib/format` `cx-stdlib/fp` `cx-stdlib/geo` `cx-stdlib/graphql` `cx-stdlib/hash` `cx-stdlib/heap` `cx-stdlib/html` `cx-stdlib/http-client` `cx-stdlib/i18n` `cx-stdlib/io` `cx-stdlib/json` `cx-stdlib/jsonrpc` `cx-stdlib/jsonschema` `cx-stdlib/locale` `cx-stdlib/log` `cx-stdlib/map` `cx-stdlib/math` `cx-stdlib/mime` `cx-stdlib/oidc` `cx-stdlib/path` `cx-stdlib/process` `cx-stdlib/prof` `cx-stdlib/random` `cx-stdlib/re` `cx-stdlib/saml` `cx-stdlib/sched` `cx-stdlib/scim` `cx-stdlib/set` `cx-stdlib/similar` `cx-stdlib/soap` `cx-stdlib/strings` `cx-stdlib/supervise` `cx-stdlib/tar` `cx-stdlib/term` `cx-stdlib/test` `cx-stdlib/time` `cx-stdlib/url` `cx-stdlib/uuid` `cx-stdlib/validate` `cx-stdlib/vc` `cx-stdlib/ws` `cx-stdlib/xml` `cx-stdlib/zip` `term` |
 | `cx-platform-db` | 3 | yes | `db` `sql` `redis` |
 | `cx-platform-net` | 4 | yes | `cx-platform/net` `cx-platform/http` `cx-platform/ftp` `cx-platform/sftp` |
 | `cx-platform-mail` | 3 | yes | `cx-platform/imap` `cx-platform/smtp` `cx-stdlib/sasl` |

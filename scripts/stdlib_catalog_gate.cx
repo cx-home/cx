@@ -134,7 +134,7 @@
   [?let [= $spec-set
     [?for [in $f [$catalog-spec-files]]
       [= $m [$re:find $meta-rx [$io:read-file $f]]]
-      [where [not [?match $m [case [no-match] true] [else false]]]]
+      [where [not [?match $m [case () true] [else false]]]]
       [where [= [$re:group $m 2] "current"]]
       [yield [$re:group $m 1]]]]
 
