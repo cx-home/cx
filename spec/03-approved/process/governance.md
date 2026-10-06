@@ -441,7 +441,7 @@ and is not duplicated here.
 | `CXER1200–CXER1205` | `cx-stdlib/ft` (full-text) | `spec/03-approved/stdlib/ft.md` |
 | `CXER1300–CXER1306` | `cx-stdlib/email` | `spec/03-approved/stdlib/email.md` |
 | `CXER1400–CXER1403` | `cx-stdlib/url` | `spec/03-approved/stdlib/url.md` |
-| `CXER1500, 1502–1504` | `cx-stdlib/csv` (1501 reserved) | `spec/03-approved/stdlib/csv.md` §5 |
+| `CXER1500, 1502–1505` | `cx-stdlib/csv` (1501 reserved) | `spec/03-approved/stdlib/csv.md` §5 |
 | `CXER1600–CXER1609` | `cx-stdlib/validate` (1600–1605 shipped earlier; 1606 `E_VALIDATE_NOT_AN_ENUM` added 2026-09-01 with `enum-values`, RULED: EN-3 #1156 — a resolved type carrying no `[enum …]` is a CATEGORY error, distinct from a malformed schema (1603, which would blame a well-formed one) and from an unknown `type=` (1601); the block was extended from 1605 to 1609 rather than reusing a code, since jsonschema starts at 1610 and the four spare numbers sit in validate's own neighborhood; 1607–1609 reserved) | `spec/03-approved/stdlib/validate.md` §6 |
 | `CXER1610–CXER1619` | `cx-stdlib/jsonschema` (1610 shipped; rest reserved) | `spec/03-approved/stdlib/jsonschema.md` |
 | `CXER1700–CXER1710`, `CXER1720–CXER1721` | **Reserved, never reissued — the band a deleted surface used.** Nothing in this range is emitted and nothing is reissued to another subsystem; the store wire is the XSP store profile (`CXER5000–CXER5049`) with the gRPC edge, and every meaning the range carried has a row there. `CXER1704` was already a TOMBSTONE (I1 row 15 / audit M21): ref-conflict unifies on `CXER1114 E_STORE_REF_CONFLICT` | — |
@@ -457,7 +457,7 @@ and is not duplicated here.
 | `CXER2600–CXER2603` | `cx-stdlib/path` | `spec/03-approved/stdlib/path.md` |
 | `CXER2700–CXER2702` | `cx-stdlib/format` | `spec/03-approved/stdlib/format.md` |
 | `CXER2800–CXER2804` | `cx-stdlib/mime` | `spec/03-approved/stdlib/mime.md` |
-| `CXER2900–CXER2905` | `cx-stdlib/strings` (2905 `E_STRINGS_NUMERAL_OUT_OF_RANGE`, cx-private#1786) | `spec/03-approved/stdlib/strings.md` |
+| `CXER2900–CXER2908` | `cx-stdlib/strings` (2905 `E_STRINGS_NUMERAL_OUT_OF_RANGE`, cx-private#1786; 2906–2908 code-point / from-code-point / translate, GAPS-1 cx-private#1813 §4 §7) | `spec/03-approved/stdlib/strings.md` |
 | `CXER3000–CXER3003` | `cx-stdlib/math` | `spec/03-approved/stdlib/math.md` |
 | `CXER3100–CXER3106` | `cx-stdlib/json` | `spec/03-approved/stdlib/json.md` |
 | `CXER3200–CXER3203` | `cx-stdlib/re` | `spec/03-approved/stdlib/re.md` |

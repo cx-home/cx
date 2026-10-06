@@ -132,7 +132,7 @@
 # stray-hits-in: one "path:line: text" entry per stray literal in one file
 # (already prefiltered to files whose whole text matches).
 [?def stray-line scope=public ($line)
-  [?match [$re:find STRAY-RX $line] [case [no-match] false] [else true]]]
+  [?match [$re:find STRAY-RX $line] [case () false] [else true]]]
 # A history block — a released-versions table, say — is exempt whole between
 # a line carrying `version-literal-ok:begin` and one carrying
 # `version-literal-ok:end` (in Markdown, inside an HTML comment, so a reader
@@ -283,7 +283,7 @@
       [case [missing] [$concat $path ": missing (expected a stamped manifest)"]]
       [else
         [?match [$re:find [$re:compile $pattern] $t]
-          [case [no-match] [$concat $path ": no version field matched '" $pattern "'"]]
+          [case () [$concat $path ": no version field matched '" $pattern "'"]]
           [case $m
             [?if [= [$re:group $m 1] $version] [then ()]
               [else [$concat $path ": version '" [$re:group $m 1]
@@ -349,7 +349,7 @@
             [case $t
               [?if [$strings:contains $t $badge] [then ()]
                 [else [?match [$re:find $badge-rx $t]
-                  [case [no-match] [$concat $p ": version badge 'no version badge' != VERSION '" $version "'"]]
+                  [case () [$concat $p ": version badge 'no version badge' != VERSION '" $version "'"]]
                   [case $m [$concat $p ": version badge '" [$re:group $m 1] "' != VERSION '" $version "'"]]]]]]]]
           [where [not [$empty $f]]]
           [yield $f]]]
@@ -361,7 +361,7 @@
           [case [missing] ("SECURITY.md: missing (expected the supported-series text)")]
           [case $t
             [?match [$re:find [$re:compile "\\*\\*([0-9]+\\.[0-9]+\\.x)\\*\\*"] $t]
-              [case [no-match] ("SECURITY.md: no bolded supported-series token (**X.Y.x**) found")]
+              [case () ("SECURITY.md: no bolded supported-series token (**X.Y.x**) found")]
               [case $m
                 [?if [= [$re:group $m 1] $series] [then ()]
                   [else ([$concat "SECURITY.md: supported series '" [$re:group $m 1]

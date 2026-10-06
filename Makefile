@@ -4139,7 +4139,7 @@ test-vcx-code: build-vcx-dev check-serial-retry-rosters
 # roster is a variable and `check-inmodule-test-roster` now fails on any
 # vcx/cx/*_test.v that is in neither list, so the next addition cannot be
 # forgotten silently. Delete both lists and glob the directory when #737 closes.
-CX_INMODULE_TESTS := $(CXD)/vcx/cx/program_interior_comments_test.v $(CXD)/vcx/cx/program_layout_test.v $(CXD)/vcx/cx/program_fmt_guard_test.v $(CXD)/vcx/cx/program_emit_head_ascription_test.v $(CXD)/vcx/cx/directive_emit_surface_test.v $(CXD)/vcx/cx/anchor_resolve_test.v $(CXD)/vcx/cx/numeric_exact_fast_test.v $(CXD)/vcx/cx/atom_test.v $(CXD)/vcx/cx/token_golden_test.v $(CXD)/vcx/cx/version_stamp_test.v $(CXD)/vcx/cx/html_url_codec_test.v $(CXD)/vcx/cx/span_jump_test.v $(CXD)/vcx/cx/feature_compat_test.v $(CXD)/vcx/cx/name_pool_contract_test.v $(CXD)/vcx/cx/schema_extensions_test.v $(CXD)/vcx/cx/node_api_test.v $(CXD)/vcx/cx/compound_key_decode_test.v
+CX_INMODULE_TESTS := $(CXD)/vcx/cx/program_interior_comments_test.v $(CXD)/vcx/cx/program_layout_test.v $(CXD)/vcx/cx/program_fmt_guard_test.v $(CXD)/vcx/cx/program_emit_head_ascription_test.v $(CXD)/vcx/cx/directive_emit_surface_test.v $(CXD)/vcx/cx/anchor_resolve_test.v $(CXD)/vcx/cx/numeric_exact_fast_test.v $(CXD)/vcx/cx/numeric_exact_big_test.v $(CXD)/vcx/cx/compound_key_decode_test.v $(CXD)/vcx/cx/atom_test.v $(CXD)/vcx/cx/token_golden_test.v $(CXD)/vcx/cx/version_stamp_test.v $(CXD)/vcx/cx/html_url_codec_test.v $(CXD)/vcx/cx/span_jump_test.v $(CXD)/vcx/cx/feature_compat_test.v $(CXD)/vcx/cx/name_pool_contract_test.v $(CXD)/vcx/cx/schema_extensions_test.v $(CXD)/vcx/cx/node_api_test.v
 CX_INMODULE_TESTS_EXCLUDED := $(CXD)/vcx/cx/parser_multidoc_test.v
 
 # check-build-input-roster (#1065) — forwards to vcx/, where the per-artifact
@@ -5653,11 +5653,15 @@ db-real-cx: check-gate-lock deps-present
 # THE CONNECTOR'S DB CASES (RULED: 1455-a, #1459). kind=db executes every backend
 # the build has, so the connector kit's walk on postgres and mysql is graded
 # HERE, on the same servers by the same driver: DB_REAL_EXTRA names
-# cx-platform-connector's two real-server files as ENGINE=FILE arguments,
+# cx-platform-connector's two real-server files as ENGINE=FILE arguments, and
+# cx-platform-store's two — the postgres:// and mysql:// store substrates, the
+# journal over SQL (store.md §3.1; cx-private #1814 section 6, RULED: GAPS-1) —
 # paths from the db pin's root. A file the pinned connector does not carry
 # refuses with exit 2 — never a skip.
 DB_REAL_EXTRA := postgres=../cx-platform-connector/conformance/platform/connector_db_postgres.cxd \
-                 mysql=../cx-platform-connector/conformance/platform/connector_db_mysql.cxd
+                 mysql=../cx-platform-connector/conformance/platform/connector_db_mysql.cxd \
+                 postgres=../cx-platform-store/conformance/platform/store_postgres.cxd \
+                 mysql=../cx-platform-store/conformance/platform/store_mysql.cxd
 test-db-real: build-vcx db-real-cx
 	@test -f deps/cx-platform-db/tooling/db_real.cx || { \
 	  echo "test-db-real: deps/cx-platform-db/tooling/db_real.cx is not there — the driver lives in the pinned repository (RULED: DBLANE-1); run \`make deps-sync\`" >&2; \

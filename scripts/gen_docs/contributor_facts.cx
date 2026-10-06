@@ -35,7 +35,7 @@
   [?let [= $hits [?for [in $a [$attrs $e]] [where [= [$string $a@name] $k]] [yield [$string $a]]]]
     [?if [= [$count $hits] 0] [then $d] [else [$first $hits]]]]]
 
-[?def matched scope=private pure [returns bool] ($m) [= [$name $m] "match"]]
+[?def matched scope=private pure [returns bool] ($m) [and [$exists $m] [= [$name $m] "match"]]]
 
 # num: a run of digits the regex already vouched for, as an int.
 [?def num scope=private pure [returns int] ($s::string) [?else [$strings:to-number $s] 0]]

@@ -160,7 +160,7 @@
       [= $files   [$ledger-files]]
       [= $check   [> [$count [?for [in $x [$env:argv]] [where [= $x "--check"]] [yield $x]]] 0]]
       [= $is-id   [?fn ($t::string)
-                    [?match [$re:find $date-rx $t] [case [no-match] true] [else false]]]]
+                    [?match [$re:find $date-rx $t] [case () true] [else false]]]]
       [= $decls
         [?to-array [?for [in $f $files]
           [in $l [$strings:split-lines [$io:read-file $f]]]
@@ -242,7 +242,7 @@
             [= $rows [?to-array [?for [in $l [$nth $sl 2]]
               [= $dm [$re:find $dated-rx $l]]
               [yield [?match $dm
-                       [case [no-match] [subj text=$l new=true]]
+                       [case () [subj text=$l new=true]]
                        [else [subj text=[$re:group $dm 2]
                                    new=[>= [$strings:to-int [$re:group $dm 1]] IDSH-CUTOFF]]]]]]]]
             [= $src [$nth $sl 3]]

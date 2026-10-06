@@ -100,7 +100,7 @@
   [> [$count [?for [in $s $seq] [where [= $s $x]] [yield $s]]] 0]]
 
 [?def rx-is-match scope=public ($m)
-  [?match $m [case [no-match] false] [else true]]]
+  [?match $m [case () false] [else true]]]
 
 [?def one-line scope=public ($s)
   [?let [= $t [$strings:trim $s]]

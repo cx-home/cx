@@ -671,7 +671,11 @@
       [$judge-refusal 'mix-avg' [$concat "[$avg (" $a ", " $f ")]"] 'cx-err:CXER0100']
       [$judge-refusal 'mix-max' [$concat "[$max (" $f ", " $a ")]"] 'cx-err:CXER0100']
       [$judge-refusal 'mix-div' [$concat "[$div " $a " " $f "]"] 'cx-err:CXER0100']
-      [$judge-refusal 'mix-bigint' [$concat "[+ " [$g-bigint] " " $f "]"] 'cx-err:CXER0100']]]]]
+      # gap-240 (cx-private#1818 §21, RULED: STREAM-1): a bigint meets a float
+      # as an int of the same value does -- it widens to its nearest float.
+      [?let [= $bg [$g-bigint]]
+        [$judge-exact-kind 'bigint-meets-float' 'float' [$concat "[+ " $bg " " $f "]"]
+                           [$concat "[+ [cast " $bg " :float] " $f "]"]]]]]]]
 
 # -- (iv) an [err] built into any element propagates out (code.md §9.2
 #         "Implicit operand propagation", §6.4.1 "Construction is
