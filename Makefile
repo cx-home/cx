@@ -5662,6 +5662,63 @@ db-real-cx: check-gate-lock deps-present
 	  PKG_CONFIG_PATH_DEFAULTS="$(DB_REAL_PC_DEFAULTS)" \
 	  $(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx cli-dev CLI_DEV=$(DB_REAL_CX) CX_DFLAGS='-d cx_db_pg -d cx_db_mysql' PORTABLE=true
 
+# THE COLUMNAR cx (cx-platform-store#12; RULED: STREAM-1). store.md §8's
+# document+file://…?encoding=parquet / arrow-ipc substrate is compiled in only
+# under `-d cxstore_columnar -d cx_arrow_files`, and until this target no make
+# target built a `cx` that carried it — test-vcx-columnar grades the backend in a
+# V test, so no CX program and no reference application could land data
+# columnar. `make columnar-cx` builds that dev binary, cx-columnar, the
+# db-real-cx shape: the same cli-dev recipe with the two flags. Apache Arrow
+# (with Parquet) is PINNED from the nixpkgs commit devbox.json pins openssl
+# from, realised by nix into a gc root under the core target dir, so every box
+# links the same Arrow and a box without one fetches it (the binary cache
+# carries it: arrow-cpp 24.0.0, ~12 MB download) rather than skipping. Its
+# headers reach the C++ shim through ARROW_CXXFLAGS and its .pc files reach
+# V's built-in pkg-config through PKG_CONFIG_PATH, so no pkg-config binary is
+# needed on PATH. A box without nix refuses with exit 2 naming it, never a skip.
+#
+# THE RELEASE DECISION: the released `cx` stays Arrow-free (Arrow is a ~60 MB
+# C++ runtime the default tiers never load; audit AF-7's gated-substrate
+# posture). A program that lands data columnar runs under cx-columnar, and
+# store.md §8 says so. `make test-columnar-cx` grades the built binary with
+# cx-platform-store's tooling/columnar_check.cx (the db-real driver shape:
+# the program lives in the pinned repository): a parquet and an arrow-ipc store
+# put, reopen and read back, each file the standard format.
+COLUMNAR_CX := $(CURDIR)/deps/cx-core-code/vcx/target/cx-columnar
+COLUMNAR_NIXPKGS := github:NixOS/nixpkgs/c27cdad491a991b11ed731760aa2ef8db0cb0410
+COLUMNAR_ARROW := $(CURDIR)/deps/cx-core-code/vcx/target/arrow-cpp
+.PHONY: columnar-arrow columnar-cx test-columnar-cx
+columnar-arrow: deps-present
+	@command -v nix >/dev/null 2>&1 || { echo "columnar-arrow: nix is not on PATH — Apache Arrow is pinned from $(COLUMNAR_NIXPKGS)#arrow-cpp (devbox installs nix); never a skip" >&2; exit 2; }
+	@nix --extra-experimental-features 'nix-command flakes' build --out-link '$(COLUMNAR_ARROW)' '$(COLUMNAR_NIXPKGS)#arrow-cpp'
+	@test -f '$(COLUMNAR_ARROW)/lib/pkgconfig/parquet.pc' || { echo "columnar-arrow: $(COLUMNAR_ARROW) carries no parquet.pc — the pinned arrow-cpp lost Parquet" >&2; exit 2; }
+columnar-cx: check-gate-lock deps-present columnar-arrow
+	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx arrow-shim ARROW_CXXFLAGS='-I$(COLUMNAR_ARROW)/include'
+	@PKG_CONFIG_PATH="$(COLUMNAR_ARROW)/lib/pkgconfig$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
+	  $(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx cli-dev CLI_DEV=$(COLUMNAR_CX) CX_DFLAGS='-enable-globals -d cxstore_columnar -d cx_arrow_files' PORTABLE=true
+test-columnar-cx: columnar-cx
+	@test -f deps/cx-platform-store/tooling/columnar_check.cx || { \
+	  echo "test-columnar-cx: deps/cx-platform-store/tooling/columnar_check.cx is not there — the check lives in the pinned repository; run \`make deps-sync\`" >&2; \
+	  exit 2; }
+	@'$(COLUMNAR_CX)' --allow-all deps/cx-platform-store/tooling/columnar_check.cx
+
+# THE CI/CD DOGFOOD (cx-private#734's exit; cx-platform-flow flow.md §4.26).
+# The conformance corpus as a CX pipeline: scripts/ci_dogfood.cx makes every
+# hermetic corpus file a [flow] stage whose act is $flow:hermetic-run over a
+# [corpus path=] step, graded by `cx corpus --ceiling=` inside the step's work
+# directory and cached by identity in $(CI_DOGFOOD_CACHE) — the second run
+# serves every unchanged file from the cache (measured on the 30 hermetic files
+# of cx-core-code's conformance/stdlib: 106 s graded, then 30 of 30 cached).
+# A file whose cases are granted the world or load a module by a relative path
+# is listed as effectful and left to the gate's own corpus run. Not a
+# TEST_TARGETS step: it is the profile's proof, run on demand.
+CI_DOGFOOD_CACHE ?= $(CURDIR)/deps/cx-core-code/vcx/target/ci-cache
+CI_DOGFOOD_FILES ?= $(patsubst deps/cx-core-code/%,%,$(wildcard deps/cx-core-code/conformance/stdlib/*.cxd))
+.PHONY: ci-dogfood
+ci-dogfood: build-vcx
+	@cd deps/cx-core-code && '$(CURDIR)/deps/cx-core-code/vcx/target/cx' --allow-read --allow-write --allow-subprocess \
+	  '$(CURDIR)/scripts/ci_dogfood.cx' --root=. --cache='$(CI_DOGFOOD_CACHE)' $(CI_DOGFOOD_FILES)
+
 # THE CONNECTOR'S DB CASES (RULED: 1455-a, #1459). kind=db executes every backend
 # the build has, so the connector kit's walk on postgres and mysql is graded
 # HERE, on the same servers by the same driver: DB_REAL_EXTRA names
