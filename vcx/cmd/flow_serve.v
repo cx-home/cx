@@ -841,7 +841,11 @@ const flow_serve_helpers = "
       [then [\$fs--no-doc [\$string \$b@addr]]]
       [else [?let [= \$fl [\$first \$ds]]
         [; a bad delivery arrives here as an [err …] \$args and short-circuits
-           this call to itself — the refusal surfaces without a guard. ]
+           this call to itself — the refusal surfaces without a guard. The
+           start stays in TAIL position: an act runs under the process grant
+           narrowed by its own [effects] only from here (measured — wrapping
+           it in a [?match] narrowed it to this def's, and a granted env act
+           was denied). ]
         [\$cxflow:start \$j \$fl \$args
           [\$fs--at-opts \$fl [\$fs--with \$o {env: \$e flow: \$fl actor: [\$string \$b@as] authority: [\$string \$b@authority] nonce: \$nonce}]]]]]]]]
 
@@ -850,8 +854,10 @@ const flow_serve_helpers = "
 [; schedule — the nonce is the OCCURRENCE INSTANT, so a new period is a new
    event and a re-fire of one occurrence is not. at= is the phase inside the
    period. A schedule event carries no payload beyond its occurrence, so its
-   [args …] is empty; a flow bound to a schedule that declares required args
-   refuses CXER4965 at `start`, which is the honest answer. ]
+   [args …] is that occurrence when the flow declares an `occurrence` argument
+   and empty otherwise (cx-platform-flow#25, fs--occ-args below); a flow that
+   declares any other required arg refuses CXER4965 at `start`, and the
+   runner logs the refusal. ]
 [; MILLISECONDS, not nanoseconds. `\$mod` reduces through f64, and an epoch
    instant in ns (~1.8e18) is far past 2^53, so the low ~8 bits of a ns bucket
    are noise: measured, two ticks 150ms apart inside one 300ms period computed
@@ -867,11 +873,51 @@ const flow_serve_helpers = "
     [?if [> [\$count \$os] 0] [then [\$last \$os]]
       [else [?if [> \$w 34560000] [then ()] [else [\$fs--cron-occ \$rule \$now [* \$w 2]]]]]]]]
 
+[; THE PAYLOAD (flow.md §4.24, cx-platform-flow#25): a schedule event carries
+   one fact, its occurrence instant, and it is DELIVERED — never mapped (§4.25)
+   — as the run's `occurrence` argument, RFC 3339 text in UTC, when the flow's
+   own [args …] declaration names one; a flow that declares none starts with
+   the empty [args] as before. Milliseconds are written only when non-zero. ]
+[?def fs--ms-iso scope=private pure [returns string] (\$ms::int)
+  [?let [= \$d [\$time-add-seconds [\$time-datetime 1970 1 1 0 0 0] [\$idiv \$ms 1000]]]
+    [= \$r [\$mod \$ms 1000]]
+    [?if [= \$r 0] [then [\$time-format-iso8601 \$d]]
+      [else [\$str-replace [\$time-format-iso8601 \$d] \"Z\" [\$concat \".\" [\$str-slice [\$string [+ 1000 \$r]] 2 4] \"Z\"]]]]]]
+
+[?def fs--declares-occ scope=private pure [returns bool] (\$ds)
+  [?if [\$empty \$ds] [then false]
+    [else [> [\$count [?to-sequence [?for [in \$c [\$first \$ds]/args/*] [where [= [\$name \$c] \"occurrence\"]] [yield \$c]]]] 0]]]]
+
+[?def fs--occ-args scope=private pure [returns element] (\$fs \$b \$ms::int)
+  [?if [\$fs--declares-occ [\$fs--doc-by \$fs [\$string \$b@addr]]]
+    [then [?element \"args\" [?element \"occurrence\" [\$fs--ms-iso \$ms]]]]
+    [else [args]]]]
+
+[; a schedule payload a flow's declaration cannot take — it requires an
+   argument the occurrence is not — starts nothing (`start` refuses CXER4965),
+   so the runner SAYS so on its log sink before the start, naming the binding,
+   the arguments the flow requires and what the payload carries: a binding
+   that starts nothing is never silent (cx-platform-flow#25). ]
+[?def fs--arg-names scope=private pure [returns any] (\$ds)
+  [?if [\$empty \$ds] [then ()]
+    [else [?to-sequence [?for [in \$c [\$first \$ds]/args/*] [yield [\$name \$c]]]]]]]
+
+[?def fs--warn-unfit scope=private impure [returns any] (\$fs \$b \$pay)
+  [?let [= \$want [\$fs--arg-names [\$fs--doc-by \$fs [\$string \$b@addr]]]]
+    [= \$have [?to-sequence [?for [in \$c \$pay/*] [yield [\$name \$c]]]]]
+    [= \$miss [?to-sequence [?for [in \$w \$want] [where [not [\$exists [?to-sequence [?for [in \$h \$have] [where [= \$h \$w]] [yield \$h]]]]]] [yield \$w]]]]
+    [?if [\$empty \$miss] [then ()]
+      [else [\$cxlog:warn [\$concat \"runner: the schedule binding start=\" [\$string \$b@addr]
+              \" starts no run: the flow requires [args\" [\$str-join [?for [in \$w \$miss] [yield [\$concat \" \" \$w]]] \"\"]
+              \"] and a schedule's payload is its occurrence alone — declare [args [occurrence::string]] to read it (CXER4965, flow.md §4.24)\"]]]]]]
+
 [?def fs--tick-cron scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$o \$fs \$b)
   [?let [= \$occ [\$fs--cron-occ [\$time-parse-cron [\$string \$b@cron] \"UTC\" {}] [\$time-now] 3600]]
-    [= \$none [args]]
     [?if [\$exists \$occ]
-      [then [\$fs--start \$j \$e \$o \$fs \$b [\$string [\$time-to-unix-ms \$occ]] \$none]]
+      [then [?let [= \$ms [\$time-to-unix-ms \$occ]]
+        [= \$pay [\$fs--occ-args \$fs \$b \$ms]]
+        [= \$lg [\$fs--warn-unfit \$fs \$b \$pay]]
+        [\$fs--start \$j \$e \$o \$fs \$b [\$string \$ms] \$pay]]]
       [else [ticked kind=schedule n=0]]]]]
 
 [?def fs--tick-schedule scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$o \$fs \$b)
@@ -887,8 +933,9 @@ const flow_serve_helpers = "
        CONSTRUCTION, not a call, so `[fs--start … [args]]` would build an
        [fs--start …] element rather than start a run (measured). A bound name
        is unambiguous. ]
-    [= \$none [args]]
-    [\$fs--start \$j \$e \$o \$fs \$b [\$string \$occ] \$none]]]
+    [= \$pay [\$fs--occ-args \$fs \$b \$occ]]
+    [= \$lg [\$fs--warn-unfit \$fs \$b \$pay]]
+    [\$fs--start \$j \$e \$o \$fs \$b [\$string \$occ] \$pay]]]
 
 [; file — the nonce is the FILE CONTENT ADDRESS, so the same bytes reappearing
    start nothing and changed bytes are a new event. The address is of the
@@ -1375,6 +1422,28 @@ fn flow_cli_serve(o FlowCliOpts, for_ns i64) {
 	tick_ms := r.courier_ns / 1_000_000
 	ticks := if for_ns <= 0 { i64(-1) } else { for_ns / r.courier_ns }
 	program := flow_serve_program(r, directives, acts, ticks, if tick_ms < 1 { i64(1) } else { tick_ms })
-	println(flow_cli_eval(data.join('\n'), program).trim_space())
+	out := flow_cli_eval(data.join('\n'), program).trim_space()
+	// A runner that answers a refusal has not run: an ingress that cannot be
+	// bound (CXER4539), a boot that refuses. It exits 1 with the [err …] on
+	// stderr, as every other `cx flow` refusal does, so a supervisor or a
+	// scenario sees the failure rather than a successful run that served
+	// nothing (cx-platform-flow#28; cli.md's exit-code matrix).
+	if flow_serve_is_refusal(out) {
+		eprintln(out)
+		exit(1)
+	}
+	println(out)
 	exit(0)
+}
+
+// flow_serve_is_refusal answers whether the driver's rendered answer is an
+// `[err …]` value rather than the `[runner-stopped …]` report.
+fn flow_serve_is_refusal(out string) bool {
+	doc := cx.parse(out) or { return false }
+	for n in doc.elements {
+		if n.is_element() {
+			return n.element().name == 'err'
+		}
+	}
+	return false
 }
