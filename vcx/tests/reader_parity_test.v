@@ -555,6 +555,10 @@ const accepted_by_one_table = [
 	// below forced the removal.
 	AcceptedByOne{'deps/cx-core-data/conformance/fmt.cxd', .data, reason_datalane},
 	AcceptedByOne{'deps/cx-core-data/conformance/xml.cxd', .data, reason_datalane},
+	// cx-private#697 (cx-core-data c38d08c, the schema inference/from-xsd cases):
+	// a schema TYPE expression `name::[record …]` in a case body is the data
+	// grammar's type lane; the program reader reads `::[` as a slice and refuses.
+	AcceptedByOne{'deps/cx-core-data/conformance/schema_validate.cxd', .data, reason_datalane},
 	// ── #1536 — a call-shaped head beside a ws-delimited literal (22) ──
 	// 33 -> 22: eleven of these were cx-platform-sso's and left with the
 	// extraction (RULED: RS-12, #1591 item 11) -- the module, the four interop
