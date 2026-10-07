@@ -118,6 +118,7 @@ module main
 
 import os
 import cx
+import code { time_stdlib_builtin }
 
 // the RESERVED ingress path: correlated acts, never a binding's delivery. An
 // `[on kind=webhook path=…]` row claiming it refuses CXER4965 (§8, WF-35).
@@ -149,6 +150,7 @@ mut:
 	intent   string // intent — the committed intent's journal stream
 	act      string // intent — `act=`, the qualified intent name the row selects (RULED: AA-2); '' selects every entry
 	every_ns i64    // schedule
+	cron     string // schedule — the calendar form, cron= (flow.md §4.24; cx-platform-flow#19)
 	at_ns    i64    // schedule — the phase offset inside the period
 	doc_src  string // the resolved document's verbatim bytes
 }
@@ -381,25 +383,38 @@ fn flow_serve_row(e cx.Element) FlowBinding {
 	}
 	match kind {
 		'schedule' {
-			every := e.attr('every')
-			if every == '' {
-				flow_serve_refuse('kind `schedule` requires every= (flow.md §4.24)')
-			}
-			b.every_ns = flow_serve_duration_ns(every) or {
-				flow_serve_refuse('kind `schedule` carries every=`${every}`, which is not a duration (30s, 5m, 1d)')
-				i64(0)
-			}
-			if b.every_ns < flow_serve_min_tick_ns {
-				flow_serve_refuse('kind `schedule` carries every=`${every}`; the floor is 1ms, because an occurrence instant is bucketed in MILLISECONDS — an epoch instant in nanoseconds is past f64\'s exact range and two ticks inside one period would compute two different occurrences and start two runs')
-			}
-			at := e.attr('at')
-			if at != '' {
-				b.at_ns = flow_serve_clock_ns(at) or {
-					flow_serve_refuse('kind `schedule` carries at=`${at}`, which is not an HH:MM time of day')
+			cron := e.attr('cron')
+			if cron != '' {
+				if e.attr('every') != '' || e.attr('at') != '' {
+					flow_serve_refuse('kind `schedule` carries cron= AND every=/at= — the calendar form or the cadence, not both (flow.md §4.24)')
+				}
+				parsed := time_stdlib_builtin('time-parse-cron', [cx.mk_string(cron), cx.mk_string('UTC'),
+					cx.mk_map([])]) or { cx.mk_element(cx.Element{ name: 'err' }) }
+				if !parsed.is_element() || parsed.element().name == 'err' {
+					flow_serve_refuse('kind `schedule` carries cron=`${cron}`, which time.md\'s cron grammar does not read (five fields: minute hour day-of-month month day-of-week)')
+				}
+				b.cron = cron
+			} else {
+				every := e.attr('every')
+				if every == '' {
+					flow_serve_refuse('kind `schedule` requires every= (flow.md §4.24)')
+				}
+				b.every_ns = flow_serve_duration_ns(every) or {
+					flow_serve_refuse('kind `schedule` carries every=`${every}`, which is not a duration (30s, 5m, 1d)')
 					i64(0)
 				}
-				if b.at_ns >= b.every_ns {
-					flow_serve_refuse('kind `schedule` carries at=`${at}` with every=`${every}` — the phase must fall INSIDE the period, and this one does not')
+				if b.every_ns < flow_serve_min_tick_ns {
+					flow_serve_refuse('kind `schedule` carries every=`${every}`; the floor is 1ms, because an occurrence instant is bucketed in MILLISECONDS — an epoch instant in nanoseconds is past f64\'s exact range and two ticks inside one period would compute two different occurrences and start two runs')
+				}
+				at := e.attr('at')
+				if at != '' {
+					b.at_ns = flow_serve_clock_ns(at) or {
+						flow_serve_refuse('kind `schedule` carries at=`${at}`, which is not an HH:MM time of day')
+						i64(0)
+					}
+					if b.at_ns >= b.every_ns {
+						flow_serve_refuse('kind `schedule` carries at=`${at}` with every=`${every}` — the phase must fall INSIDE the period, and this one does not')
+					}
 				}
 			}
 		}
@@ -695,7 +710,13 @@ fn flow_serve_bindings_element(r FlowRunner) string {
 		match x.kind {
 			// MILLISECONDS: `$mod` reduces through f64 and an ns epoch instant is
 			// past 2^53, so a ns bucket is not exact — see fs--tick-schedule.
-			'schedule' { row += ' every="${x.every_ns / 1_000_000}" at="${x.at_ns / 1_000_000}"' }
+			'schedule' {
+				row += if x.cron != '' {
+					' cron="${flow_cli_quote(x.cron)}"'
+				} else {
+					' every="${x.every_ns / 1_000_000}" at="${x.at_ns / 1_000_000}"'
+				}
+			}
 			'intent' { row += ' stream="${flow_cli_quote(x.intent)}"' + if x.act != '' { ' act="${flow_cli_quote(x.act)}"' } else { '' } }
 			'webhook' { row += ' path="${flow_cli_quote(x.path)}"' }
 			'file' { row += ' dir="${flow_cli_quote(x.dir)}" pat="${flow_cli_quote(x.pat)}"' }
@@ -828,7 +849,26 @@ const flow_serve_helpers = "
    two DIFFERENT occurrence instants and started two runs. In ms (~1.8e12) the
    arithmetic is exact, which is what makes one occurrence one run. A schedule
    `every=` below 1ms is refused by the [runner] reader for the same reason. ]
+[; cron= (flow.md §4.24, cx-platform-flow#19): the occurrence is the LATEST
+   cron instant at or before the tick, found in a window that doubles from an
+   hour (a minutely cron answers at once, a weekly one in nine probes) up to
+   400 days; a rule with no occurrence in that span starts nothing. ]
+[?def fs--cron-occ scope=private pure [returns any] (\$rule \$now \$w::int)
+  [?let [= \$os [\$time-occurrences-in \$rule [\$time-add-seconds \$now [- 0 \$w]] [\$time-add-seconds \$now 1]]]
+    [?if [> [\$count \$os] 0] [then [\$last \$os]]
+      [else [?if [> \$w 34560000] [then ()] [else [\$fs--cron-occ \$rule \$now [* \$w 2]]]]]]]]
+
+[?def fs--tick-cron scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$o \$fs \$b)
+  [?let [= \$occ [\$fs--cron-occ [\$time-parse-cron [\$string \$b@cron] \"UTC\" {}] [\$time-now] 3600]]
+    [= \$none [args]]
+    [?if [\$exists \$occ]
+      [then [\$fs--start \$j \$e \$o \$fs \$b [\$string [\$time-to-unix-ms \$occ]] \$none]]
+      [else [ticked kind=schedule n=0]]]]]
+
 [?def fs--tick-schedule scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$o \$fs \$b)
+  [?if [\$exists \$b@cron] [then [\$fs--tick-cron \$j \$e \$o \$fs \$b]] [else [\$fs--tick-every \$j \$e \$o \$fs \$b]]]]
+
+[?def fs--tick-every scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$o \$fs \$b)
   [?let [= \$ev [\$str-to-int [\$string \$b@every]]]
     [= \$at [\$str-to-int [\$string \$b@at]]]
     [= \$now [\$time-to-unix-ms [\$time-now]]]
