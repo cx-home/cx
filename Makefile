@@ -5702,6 +5702,23 @@ test-columnar-cx: columnar-cx
 	  exit 2; }
 	@'$(COLUMNAR_CX)' --allow-all deps/cx-platform-store/tooling/columnar_check.cx
 
+# THE CI/CD DOGFOOD (cx-private#734's exit; cx-platform-flow flow.md §4.26).
+# The conformance corpus as a CX pipeline: scripts/ci_dogfood.cx makes every
+# hermetic corpus file a [flow] stage whose act is $flow:hermetic-run over a
+# [corpus path=] step, graded by `cx corpus --ceiling=` inside the step's work
+# directory and cached by identity in $(CI_DOGFOOD_CACHE) — the second run
+# serves every unchanged file from the cache (measured on the 30 hermetic files
+# of cx-core-code's conformance/stdlib: 106 s graded, then 30 of 30 cached).
+# A file whose cases are granted the world or load a module by a relative path
+# is listed as effectful and left to the gate's own corpus run. Not a
+# TEST_TARGETS step: it is the profile's proof, run on demand.
+CI_DOGFOOD_CACHE ?= $(CURDIR)/deps/cx-core-code/vcx/target/ci-cache
+CI_DOGFOOD_FILES ?= $(patsubst deps/cx-core-code/%,%,$(wildcard deps/cx-core-code/conformance/stdlib/*.cxd))
+.PHONY: ci-dogfood
+ci-dogfood: build-vcx
+	@cd deps/cx-core-code && '$(CURDIR)/deps/cx-core-code/vcx/target/cx' --allow-read --allow-write --allow-subprocess \
+	  '$(CURDIR)/scripts/ci_dogfood.cx' --root=. --cache='$(CI_DOGFOOD_CACHE)' $(CI_DOGFOOD_FILES)
+
 # THE CONNECTOR'S DB CASES (RULED: 1455-a, #1459). kind=db executes every backend
 # the build has, so the connector kit's walk on postgres and mysql is graded
 # HERE, on the same servers by the same driver: DB_REAL_EXTRA names
