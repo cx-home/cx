@@ -44,9 +44,12 @@
   --hl-attr: #a9cc9e;
   --hl-fn: #a8c3e8;
 
-  /* the brand mark (assets/cx-logo.svg, #0039BA) as an <img>: drawn as it
-     is on paper; lifted on the dark sheet, where the blue reads at 1.6:1 */
-  --mark-filter: none;
+  /* the cx mark (#1853, the owner's rasters of 2026-10-06): the darker blue
+     (assets/cx-mark-blue.png, #0044ea sampled from cx-logo-blue-2.png) on the
+     paper sheet, the white mark (assets/cx-mark-white.png) on the dark one —
+     each <img> pair shows the one its scheme names */
+  --mark-light: block;
+  --mark-dark: none;
 
   --font-display: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
   --font-body: 'Newsreader', Georgia, 'Times New Roman', serif;
@@ -97,7 +100,8 @@
     --hl-type: #b3bce6;
     --hl-attr: #a9cc9e;
     --hl-fn: #a8c3e8;
-    --mark-filter: brightness(2.4);
+    --mark-light: none;
+    --mark-dark: block;
   }
 }
 :root[data-theme="dark"] {
@@ -132,7 +136,8 @@
   --hl-type: #b3bce6;
   --hl-attr: #a9cc9e;
   --hl-fn: #a8c3e8;
-  --mark-filter: brightness(2.4);
+  --mark-light: none;
+  --mark-dark: block;
 }
 :root { color-scheme: light; }
 :root[data-theme="dark"] { color-scheme: dark; }
@@ -233,6 +238,8 @@ aside.sidebar .brand {
 }
 aside.sidebar .brand:hover { text-decoration: none; color: var(--accent); }
 aside.sidebar .brand-mark { display: block; width: 52px; height: 52px; }
+.mark-on-light { display: var(--mark-light) !important; }
+.mark-on-dark { display: var(--mark-dark) !important; }
 
 aside.sidebar .brand-sub {
   display: block;
@@ -849,7 +856,7 @@ ul.tldr li { margin: 0.25rem 0; }
 }
 .home-hero-text { flex: 1.05; min-width: 0; }
 .home-hero .hero-head { margin: 0 0 0.9rem; }
-.home-hero img.hero-mark { width: 96px; height: 96px; flex-shrink: 0; filter: var(--mark-filter); }
+.home-hero img.hero-mark { width: 96px; height: 96px; flex-shrink: 0; }
 .home-hero h1 { font-size: 2.35rem; line-height: 1.02; margin: 0; white-space: nowrap; }
 .home-hero h1 .accent { color: var(--accent); }
 .home-hero p.lede { font-size: 1.08rem; margin: 0 0 0.6rem; }

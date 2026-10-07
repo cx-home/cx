@@ -4365,9 +4365,9 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [checks assertions=3]]
 #]]
   [note [#
-**Introduces:** what running your tests LOOKS like today. A failing assertion raises `cx-err:CXER2200` with both sides in the message — here `expected two_words, got two-words` — the run prints the err value, and `cx slug-tests.cx` exits **non-zero**, so `cx slug-tests.cx && deploy` and a CI step both read the verdict correctly with no runner involved (cli.md §1.2's exit codes). Two consequences to plan around: the first failure ABORTS, because the raise propagates out of the `[?let]` and the third assertion never runs — `[$test:configure {on-fail: 'collect'}]` is the specified way to accumulate instead and has no effect until the runner of #1552 exists; and passing assertions leave no trace, so a program that should report what it checked ends with a summary of its own, as 286 and 287 do.
+**Introduces:** what running your tests LOOKS like today. A failing assertion raises `cx-err:CXER2200` with both sides in the message — here `expected 'two_words', got 'two-words'` — the run prints the err value, and `cx slug-tests.cx` exits **non-zero**, so `cx slug-tests.cx && deploy` and a CI step both read the verdict correctly with no runner involved (cli.md §1.2's exit codes). Two consequences to plan around: the first failure ABORTS, because the raise propagates out of the `[?let]` and the third assertion never runs — `[$test:configure {on-fail: 'collect'}]` is the specified way to accumulate instead and has no effect until the runner of #1552 exists; and passing assertions leave no trace, so a program that should report what it checked ends with a summary of its own, as 286 and 287 do.
 #]]
-  [expect [# expected two_words, got two-words #]]
+  [expect [# expected 'two_words', got 'two-words' #]]
  ]
 
  [ex key=290-a-snapshot-inside-one-run

@@ -1707,9 +1707,9 @@ summarized 3 rows
 [shape fields=3 accepted=true drift-caught=true]
 #]]
  ]
- [ex key=289-a-failing-assertion-is-the-exit-status chars=105 err-chars=67
+ [ex key=289-a-failing-assertion-is-the-exit-status chars=109 err-chars=67
   [out-text [#
-[err code=cx-err:CXER2200 message='E_TEST_ASSERTION_FAILED: expected two_words, got two-words' at='5:13']
+[err code=cx-err:CXER2200 message="E_TEST_ASSERTION_FAILED: expected 'two_words', got 'two-words'" at='5:13']
 #]]
   [err-text [#
 error: the result carries an error value — cx-err:CXER2200 at /err

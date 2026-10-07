@@ -97,6 +97,7 @@ deps/cx-platform-secrets/conformance/platform/secrets
 deps/cx-platform-sso/conformance/platform/sso
 deps/cx-platform-ux/conformance/xap/ux
 deps/cx-platform-ux/conformance/xap/ux-web
+deps/cx-platform-workbench/conformance/workbench
 deps/cx-platform-xap/conformance/xap/xap-dist
 deps/cx-platform-xap/conformance/xap/xap-serve
 deps/cx-platform-agent/conformance/x/tools
@@ -151,6 +152,7 @@ repo-cx-platform-xsp.html
 repo-cx-platform-secrets.html
 repo-cx-platform-sso.html
 repo-cx-platform-ux.html
+repo-cx-platform-workbench.html
 repo-cx-platform-agent.html
 repo-cx-binding-python.html
 repo-cx-binding-go.html
@@ -184,7 +186,13 @@ repo-cx-tooling.html
 about.html
 analytics.html
 assets/cx-logo.png
-assets/cx-logo.svg
+assets/cx-mark-blue.png
+assets/cx-mark-white.png
+assets/favicon-16.png
+assets/favicon-180.png
+assets/favicon-192.png
+assets/favicon-32.png
+assets/favicon-512.png
 assets/rings.svg
 bindings.html
 capabilities.html

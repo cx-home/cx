@@ -1,0 +1,112 @@
+name: ftps (#107)
+
+# cx-private#107 — the ftps:// byte-source backend's end-to-end round trip
+# against a stock Linux FTPS server (RULED: 107-a; the owner's (c) of
+# 2026-10-07: run once on a GitHub-hosted Linux runner, fix what it finds,
+# close on a green run). The dev box is arm64 macOS, where every FTPS server
+# image tried crashed under Rosetta or segfaulted under TLS (#107's history),
+# so this is the one place the round trip is graded.
+#
+# THE JOB. A GitHub-hosted ubuntu-22.04 runner: the vendored V fork built, the
+# pinned repositories fetched with no cx (scripts/deps_bootstrap.sh, #1670 —
+# the token is the site workflow's CX_DEPS_TOKEN, read-only over the private
+# pins), cx built, then vsftpd from the distribution twice on loopback — plain
+# ftp:// on 2121 (the CONTROL: it has round-tripped since #91) and explicit
+# FTPS (AUTH TLS, TLS 1.2, a self-signed certificate made in the job) on 2990,
+# both forcing the same user and passive ports. cx-platform-store's remote
+# umbrella (vcx/tests/store_remote_umbrella_test.v) runs against each URL,
+# through this front door's build exactly as the store's own test-v does
+# (deps/cx-platform-store/tooling/test_v.mk), restricted to that one file.
+# vsftpd's debug log is printed on the way out, green or red, so a failure
+# carries the server's side of the exchange.
+#
+# Manual by design (workflow_dispatch): it is a one-shot verification, not a
+# gate; nothing waits on it.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  ftps:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build the vendored V toolchain
+        run: make -C third_party/v
+
+      - name: Bootstrap deps/ with no cx (#1670)
+        env:
+          CX_DEPS_TOKEN: ${{ secrets.CX_DEPS_TOKEN }}
+        run: sh scripts/deps_bootstrap.sh
+
+      - name: Build cx
+        run: make build-vcx
+
+      - name: Sync + verify the pins with the cx just built
+        run: make deps-sync CX_BIN=deps/cx-core-code/vcx/target/cx
+
+      - name: vsftpd — plain on 2121, explicit FTPS (TLS 1.2) on 2990
+        run: |
+          set -eu
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq vsftpd openssl
+          sudo systemctl stop vsftpd || true
+          sudo useradd -m -s /bin/bash cxftp
+          echo 'cxftp:cxftppass' | sudo chpasswd
+          sudo mkdir -p /var/run/vsftpd/empty
+          sudo openssl req -x509 -nodes -newkey rsa:2048 -days 2 -subj /CN=127.0.0.1 \
+            -keyout /etc/ssl/private/cxftp.key -out /etc/ssl/certs/cxftp.pem
+          common='listen=YES
+          listen_ipv6=NO
+          anonymous_enable=NO
+          local_enable=YES
+          write_enable=YES
+          local_umask=022
+          pasv_enable=YES
+          pasv_address=127.0.0.1
+          secure_chroot_dir=/var/run/vsftpd/empty
+          pam_service_name=vsftpd
+          seccomp_sandbox=NO
+          background=YES
+          log_ftp_protocol=YES
+          debug_ssl=YES
+          xferlog_enable=YES'
+          printf '%s\n' "$common" 'listen_port=2121' 'pasv_min_port=30000' 'pasv_max_port=30009' \
+            'vsftpd_log_file=/tmp/vsftpd-plain.log' | sed 's/^ *//' | sudo tee /etc/vsftpd-plain.conf >/dev/null
+          printf '%s\n' "$common" 'listen_port=2990' 'pasv_min_port=30010' 'pasv_max_port=30019' \
+            'vsftpd_log_file=/tmp/vsftpd-tls.log' 'ssl_enable=YES' 'allow_anon_ssl=NO' \
+            'force_local_data_ssl=YES' 'force_local_logins_ssl=YES' 'ssl_tlsv1=NO' 'ssl_sslv2=NO' 'ssl_sslv3=NO' \
+            'require_ssl_reuse=NO' 'ssl_ciphers=HIGH' \
+            'rsa_cert_file=/etc/ssl/certs/cxftp.pem' 'rsa_private_key_file=/etc/ssl/private/cxftp.key' \
+            | sed 's/^ *//' | sudo tee /etc/vsftpd-tls.conf >/dev/null
+          sudo vsftpd /etc/vsftpd-plain.conf
+          sudo vsftpd /etc/vsftpd-tls.conf
+          sleep 2
+          curl -sS --max-time 20 -u cxftp:cxftppass ftp://127.0.0.1:2121/ >/dev/null && echo 'plain: curl lists the home'
+          curl -sS --max-time 20 --ssl-reqd -k -u cxftp:cxftppass ftp://127.0.0.1:2990/ >/dev/null && echo 'tls: curl (openssl) lists the home'
+
+      - name: The remote umbrella — the store's test through this front door
+        run: |
+          set -eu
+          cat > /tmp/ftps.mk <<'MK'
+          VFLAGS := -path "$(STORE_DIR)/vcx|$(CX_V_SEARCH)" $(CX_NATIVE_DEFINES)
+          export VFLAGS
+          .PHONY: ftps-remote-test
+          ftps-remote-test: build-vcx-dev
+          	$(V) -cc cc $(CX_GC) $(CX_ENGINES) test $(STORE_DIR)/vcx/tests/store_remote_umbrella_test.v
+          MK
+          echo '== ftp:// (the control)'
+          CX_TEST_FTP_URL='ftp://cxftp:cxftppass@127.0.0.1:2121/' \
+            make -f Makefile -f /tmp/ftps.mk ftps-remote-test STORE_DIR="$PWD/deps/cx-platform-store"
+          echo '== ftps:// (#107)'
+          CX_TEST_FTP_URL='ftps://cxftp:cxftppass@127.0.0.1:2990/' \
+            make -f Makefile -f /tmp/ftps.mk ftps-remote-test STORE_DIR="$PWD/deps/cx-platform-store"
+
+      - name: vsftpd's side of the exchange
+        if: always()
+        run: |
+          for f in /tmp/vsftpd-plain.log /tmp/vsftpd-tls.log; do echo "== $f"; sudo tail -n 200 "$f" || true; done
+          sudo dmesg | grep -i vsftpd | tail -n 20 || true
