@@ -26,16 +26,17 @@
 // construction. Moving the pin is therefore a repo change this gate sees,
 // not a CDN change it can't.
 //
-// WHY BOTH SUBJECTS. `auto` comes from the CX diagram module inside the
-// wasm engine; `instance` is built in playground.js in the browser. They
-// are different emitters with different failure modes, and both draw
-// into the same pane. `source` and `output` are different DOCUMENTS —
+// WHY EVERY VIEW. `auto` (and the forced erd / cfg / seq / effects)
+// comes from the CX diagram module inside the wasm engine; `instance` is
+// the engine's occurrence-graph view (#987 — it was built in playground.js
+// until the engine gained it, and the page now asks the engine for it the
+// same way). They are different emitters with different failure modes, and
+// all draw into the same pane. `source` and `output` are different DOCUMENTS —
 // an example's value routinely has a shape its program does not — so a
 // diagram that is valid for one can be invalid for the other.
 //
-// WHY IT DRIVES THE REAL FILES. The instance graphs come from
-// playground.js's own builder, reached through the `cxPlaygroundInternals`
-// seam, and the auto graphs come from the built wasm bundle. Nothing
+// WHY IT DRIVES THE REAL FILES. Every graph comes from the built wasm
+// bundle, through the same `cxlib.diagram` call the page makes. Nothing
 // here reimplements either; a reimplementation would go green while the
 // shipped code rotted.
 //
@@ -319,11 +320,6 @@ win.eval(readFileSync(resolve(PLAYGROUND, 'playground.primer.js'), 'utf8'));
 win.eval(readFileSync(resolve(PLAYGROUND, 'playground.examples.js'), 'utf8'));
 win.eval(readFileSync(resolve(PLAYGROUND, 'playground.js'), 'utf8'));
 
-const internals = win.cxPlaygroundInternals;
-if (!internals || typeof internals.buildInstanceGraph !== 'function') {
-  setupFail('playground.js did not expose cxPlaygroundInternals.buildInstanceGraph.',
-            'the verification seam at the end of playground.js was removed or renamed');
-}
 
 const ALL_ROWS = pageExamples(win);
 const examples = Object.fromEntries(ALL_ROWS);
@@ -458,22 +454,12 @@ for (const key of keys) {
       console.log(`SKIP  ${key} · output — ${CX_IMAGE_REASON}`);
       continue;
     }
-    // The tree is what the instance view graphs; one call feeds every
-    // rung, exactly as refreshView() does it.
-    let parsedTree = null;
-    try {
-      const t = cxlib.tree(text);
-      parsedTree = typeof t === 'string' ? JSON.parse(t) : t;
-    } catch (_) { parsedTree = null; }
-
     for (const view of VIEWS) {
       for (const level of LEVELS) {
         const label = `${key} · ${view} · ${subject} · ${level}`;
         let diagram = '';
         try {
-          diagram = (view === 'instance')
-            ? (parsedTree == null ? '' : internals.buildInstanceGraph(parsedTree, level))
-            : (cxlib.diagram(text, `mermaid:${level}`, view) || '');
+          diagram = cxlib.diagram(text, `mermaid:${level}`, view) || '';
         } catch (e) {
           if (subject === 'source' && refusedWrongHalf(ex, e)) {
             wrongsrc++;
