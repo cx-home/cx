@@ -234,4 +234,5 @@
   [patch sha=5a7f05ffd17212f1a3431c2aeb25bbd125dd58a5 family=checker issue='cx-private#1852']
   [patch sha=20e88dd8380971e2d5e17091d762b248f22512f1 family=vgc issue='cx-core-code#63']
   [patch sha=e2a10849a62cb789eb8c3ea1f520743896d7e576 family=ssh issue='cx-private#1746']
+  [patch sha=00db2798c6dc17c470f32154d81edc2e684ea098 family=cgen issue='cx-private#1864']
 ]
