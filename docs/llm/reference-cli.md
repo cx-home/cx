@@ -179,7 +179,7 @@ Subcommands (`cx <subcommand> --help` for details):
   fmt                  Lossless canonical formatter (preserves comments/anchors).
   canonical            Strict canonical text (strips presentation; data-equivalent).
   corpus               Grade module corpus files (.cxd `[case …]` with [in-code …]) with this binary.
-  schema               Schema verb family — infer a .cxs from a corpus; export to JSON Schema; classify compatibility.
+  schema               Schema verb family — infer a .cxs from a corpus; convert an XSD; export to JSON Schema; classify compatibility.
   stdlib               Standard-library inventory — enumerate registered modules and print a module's registered source.
   tools                Agent-tool verb family — project command defs to MCP tool descriptors.
   address              Content-address stability drill — re-derive stored pins against a tree.
