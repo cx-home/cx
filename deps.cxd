@@ -31,6 +31,18 @@ repository's own `origin` with the final path segment replaced by `repo`, which
 is exactly where cx-platform-sso is. A `url=` here would be a second answer to
 a question the default already answers correctly, and it would rot the day the
 organisation moves.
+
+NON-BUILD ROWS (cx-private#1858, owner ruling (c) then (a)). The last six rows
+-- cx-registry, cx-decisions and the four bindings -- are no build input: no
+module word of theirs reaches the bundle and none carries a v-fork. They are
+pinned so `make deps-sync` fetches their deps.cxd and repos-allocation-gate's
+[front-door pins] join reads it, as it reads every pinned repository's; each
+row's module= is the repository's own name (spec §2: it provides no module
+namespace to this consumer). None of the six pins the front door any more:
+(c) moved the artifacts they pinned it for to their homes -- the ABI vectors
+conformance/abi.cxd to cx-core-code beside libcx and the test that proves them,
+the ledger indexer into cx-decisions -- so the composition allow-list is
+unchanged.
 #]]
 
   [dep repo=cx-platform-agent sha=9027f2e41c4332ccfa0e2659f57754bee4709000 module='cx-platform/tools cx-platform/mcp cx-platform/mcp-server cx-platform/a2a cx-platform/a2a-xap cx-platform/llm cx-platform/run cx-platform/adjudicate']
@@ -38,8 +50,8 @@ organisation moves.
   [dep repo=cx-platform-workbench sha=d8d29e493722da079f451c6c778e74134be62014 module='cx-platform/workbench']
   [dep repo=cx-platform-sso sha=ef39a373a65b357cee89c9d12a3c9dea004f83ed module='cx-platform/sso']
   [dep repo=cx-platform-flow sha=39e601db0b0f3b8596d52761127ebc386f50fb54 module='cx-platform/flow']
-  [dep repo=cx-core-data sha=87407a178fa236b9ca8d41ebb4df902e7961c6ee module=cx-core-data v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
-  [dep repo=cx-core-code sha=60f7469da336b9291977603c1c7f42ea26a8ac49 module='cx-stdlib/array cx-stdlib/authz cx-stdlib/bus cx-stdlib/bytes cx-stdlib/crypto cx-stdlib/csv cx-stdlib/cx cx-stdlib/did cx-stdlib/email cx-stdlib/env cx-stdlib/format cx-stdlib/fp cx-stdlib/geo cx-stdlib/graphql cx-stdlib/hash cx-stdlib/html cx-stdlib/http-client cx-stdlib/i18n cx-stdlib/io cx-stdlib/json cx-stdlib/jsonrpc cx-stdlib/jsonschema cx-stdlib/locale cx-stdlib/log cx-stdlib/map cx-stdlib/math cx-stdlib/mime cx-stdlib/oidc cx-stdlib/path cx-stdlib/process cx-stdlib/prof cx-stdlib/random cx-stdlib/re cx-stdlib/saml cx-stdlib/sched cx-stdlib/scim cx-stdlib/set cx-stdlib/similar cx-stdlib/soap cx-stdlib/strings cx-stdlib/supervise cx-stdlib/tar cx-stdlib/term cx-stdlib/test cx-stdlib/time cx-stdlib/url cx-stdlib/uuid cx-stdlib/validate cx-stdlib/vc cx-stdlib/ws cx-stdlib/xml cx-stdlib/zip term' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
+  [dep repo=cx-core-data sha=0b14b420291dadbdd0d81c90f11704bbe4ad2d6e module=cx-core-data v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
+  [dep repo=cx-core-code sha=9799b1269b47912a4dca399e7adb0b23d07549e6 module='cx-stdlib/array cx-stdlib/authz cx-stdlib/bus cx-stdlib/bytes cx-stdlib/crypto cx-stdlib/csv cx-stdlib/cx cx-stdlib/did cx-stdlib/email cx-stdlib/env cx-stdlib/format cx-stdlib/fp cx-stdlib/geo cx-stdlib/graphql cx-stdlib/hash cx-stdlib/html cx-stdlib/http-client cx-stdlib/i18n cx-stdlib/io cx-stdlib/json cx-stdlib/jsonrpc cx-stdlib/jsonschema cx-stdlib/locale cx-stdlib/log cx-stdlib/map cx-stdlib/math cx-stdlib/mime cx-stdlib/oidc cx-stdlib/path cx-stdlib/process cx-stdlib/prof cx-stdlib/random cx-stdlib/re cx-stdlib/saml cx-stdlib/sched cx-stdlib/scim cx-stdlib/set cx-stdlib/similar cx-stdlib/soap cx-stdlib/strings cx-stdlib/supervise cx-stdlib/tar cx-stdlib/term cx-stdlib/test cx-stdlib/time cx-stdlib/url cx-stdlib/uuid cx-stdlib/validate cx-stdlib/vc cx-stdlib/ws cx-stdlib/xml cx-stdlib/zip term' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-db sha=36ab41f4f63768cb5bc97000d370efdbf399dc15 module='db sql redis' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-net sha=5424d6aa1d3d425ec5285e0c6aa6524731fb4e92 module='cx-platform/net cx-platform/http cx-platform/ftp cx-platform/sftp' v-fork=4660968c34e3609368f309ebd92e1d68c86fef66]
   [dep repo=cx-platform-mail sha=20821f500c38c431cada5323febc8181d6d05b28 module='cx-platform/imap cx-platform/smtp cx-stdlib/sasl' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
@@ -51,4 +63,10 @@ organisation moves.
   [dep repo=cx-platform-xsp sha=7e220ade81f48f552580b3627be747ca0765d737 module='cx-stdlib/xsp cx-platform/xsp-auth' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-tooling sha=dfe21f206b179bcaa851813326160fedee0a4b2e module='cx-stdlib/diagram']
   [dep repo=cx-platform-xap sha=830e191a51a8c0526ef0b79795fbaa24ab6bdf93 module='cx-platform/xap' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
+  [dep repo=cx-registry sha=a70cbe92722f18c9dee52a947431ece6e58a01be module=cx-registry]
+  [dep repo=cx-decisions sha=ee9038cfe0ab2cc871ed1c40c36cb6b49c901c78 module=cx-decisions]
+  [dep repo=cx-binding-python sha=c3367a7f1326029b8ab8b569eec0598e091e1ebe module=cx-binding-python]
+  [dep repo=cx-binding-go sha=f3d15b8bfd025b69a25dd96e4a769fa32ccd80ea module=cx-binding-go]
+  [dep repo=cx-binding-rust sha=bffcaea9905f957a0466dd129b9175aa41975817 module=cx-binding-rust]
+  [dep repo=cx-binding-v sha=ed008caa33bc9adcd6f3d0185eeb831a845aad3d module=cx-binding-v]
 ]

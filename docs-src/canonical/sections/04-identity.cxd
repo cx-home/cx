@@ -127,8 +127,8 @@
       """One document, one address. `[$cx:hash]` in a program, `cx hash` at
          the command line and the `hash` method of every binding's `Doc`
          answer the same tagged digest for the same canonical bytes — each
-         binding grades itself against the front door's ABI vectors
-         (`conformance/abi.cxd`), `abi-003-hash-single` among them:"""]
+         binding grades itself against the ABI vectors cx-core-code
+         publishes (`conformance/abi.cxd`), `abi-003-hash-single` among them:"""]
 
     [fixture id=cx-024-hash-pins-cli-digest]
 
