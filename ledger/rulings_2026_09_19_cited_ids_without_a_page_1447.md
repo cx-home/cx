@@ -100,6 +100,22 @@ tokens are recorded as never ruled. **For the owner:** if those two decisions
 should carry ids, they are `1352-c` and `1352-d`'s obvious home, and `1352-e`
 has no candidate at all.
 
+## WF-37a — the SHORT FORM of `789-WF-37a` (cited by `2398447f5`), a pointer
+
+Recorded 2026-10-07 (#1861). The loop's `ledger-index-check` on `4bde11464`
+named one token in a subject's `RULED:` clause that resolved to no page:
+`wf-37a`, cited by `2398447f5` (`fix(cx-platform-flow#18): cx flow serve's file
+and webhook nonce is the content address of the RECORD the delivery spells …
+(RULED: WF-37a, STREAM-1)`). The decision exists and is not revisited here: it
+is **`789-WF-37a`**, letter (a) of WF-37 in
+[rulings_2026_09_06_flow_binding_row_shape_789.md](rulings_2026_09_06_flow_binding_row_shape_789.md)
+(`flow_cli_nonce` becomes the content address over the `[args …]` record, so
+the one-law gate is reachable). The subject wrote the id without its `789-`
+issue prefix — the same shape as `CK-4b` for `728-CK-4b` in the table above —
+and the commit is exactly that decision's landing on the serve side (the nonce
+hashes the parsed record, not the delivery text). This section is a POINTER so
+the short form resolves; the 789 page stays the decision's home.
+
 ## The 333 cited-only ids behind these, by age
 
 `ledger-index` separates DECLARED ids (a heading carries the decision) from

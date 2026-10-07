@@ -213,7 +213,13 @@ struct FlowCliAct {
 	// rejected), so a hand-written def has no feature behind it and its row
 	// carries none — an act, which §4.7 makes owe a compensator before the
 	// pivot. The row's fourth projected property, for §4.7's pre-pivot read.
-	effect   string
+	effect string
+	// pure — the def is a Ring-1 PURE def (pure, declaring no `[effects]`),
+	// so the row answers `pure=true` and a `[compute …]` head may name it
+	// (flow.md §4.4a: absent means NOT pure). A command def's row never
+	// carries it. Without this row the CLI faces gave a transform step
+	// nothing to resolve, CXER4953 (cx-platform-flow#26).
+	pure     bool
 	callable string
 }
 
@@ -225,13 +231,23 @@ fn flow_cli_tier1(raw string) string {
 	return cx.cx_tag_address(cx.cx_default_hash_algo, sha256.sum256(raw.bytes()).hex())
 }
 
-// flow_cli_local_act answers the resolver row for one of ENV.cx's OWN defs, or
-// none when the def is not a command (no `[effects]` clause — the §12.2.7
-// discriminator).
+// flow_cli_local_act answers the resolver row for one of ENV.cx's OWN defs: a
+// command (an `[effects]` clause — the §12.2.7 discriminator) answers an act
+// row, a Ring-1 pure def a `pure=true` row a `[compute …]` head resolves to
+// (flow.md §4.4a, cx-platform-flow#26), and an impure def with no `[effects]`
+// none.
 fn flow_cli_local_act(span string) ?FlowCliAct {
 	d := cx.parse_def(span) or { return none }
 	if !d.has_effects {
-		return none
+		if d.purity != .pure_ {
+			return none
+		}
+		return FlowCliAct{
+			name:     d.name
+			resolved: flow_cli_tier1(span)
+			pure:     true
+			callable: '\$${d.name}'
+		}
 	}
 	return FlowCliAct{
 		name:        d.name
@@ -268,6 +284,17 @@ fn flow_cli_module_acts(span string, mut table code.ModuleTable) []FlowCliAct {
 		}
 		d := m.lookup_def(name, '') or { continue }
 		if !d.has_effects {
+			// a public Ring-1 pure def answers a `pure=true` row, so a
+			// `[compute 'alias/def' …]` head resolves on every CLI face as it
+			// does in-process (flow.md §4.4a, cx-platform-flow#26).
+			if d.purity == .pure_ {
+				out << FlowCliAct{
+					name:     '${prefix}/${name}'
+					resolved: flow_cli_tier1(d.source or { span })
+					pure:     true
+					callable: '\$${prefix}:${name}'
+				}
+			}
 			continue
 		}
 		mut comp := ''
@@ -412,6 +439,9 @@ fn flow_cli_resolver(acts []FlowCliAct) string {
 		}
 		if a.effect != '' {
 			row += " effect='${a.effect}'"
+		}
+		if a.pure {
+			row += ' pure=true'
 		}
 		row += ' [fn ${a.callable}]]'
 		b << row
