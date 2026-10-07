@@ -1331,7 +1331,7 @@
     // observable effect on the Tree at any rung.
     //
     // The rungs mean here exactly what they mean in the graph:
-    //   min      — NAMES and NESTING only. `instanceRows` returns no
+    //   min      — NAMES and NESTING only. The instance view shows no
     //              rows at that rung for the same reason: what the
     //              rung is for is the shape, not the values.
     //   compact  — the first COMPACT_ATTR_CAP attributes as chips plus
@@ -1349,7 +1349,7 @@
       const parts = splitElementChildren(node);
       const skipKeys = new Set(['kind', 'name', 'children', 'loc']);
       // A LONE scalar / text body rides its element's row — the same
-      // rule, on the same predicate, that `instanceRows` applies when
+      // rule, on the same predicate, that the instance view's rows apply when
       // it gives such a body a row of its own: one body is content,
       // several are a LIST, and an element with element children of
       // its own is not a leaf.
@@ -1520,67 +1520,20 @@
     markSelected(best ? best.el : null);
   }
 
-  // ── Instance graph (Graph: instance) — #960 ─────────────
+  // ── Graph: instance (#987) ──────────────────────────────
   //
-  // Emits a Mermaid `flowchart TD` in which ONE node is drawn per
-  // element / directive OCCURRENCE, labelled with that occurrence's own
-  // attribute VALUES, with one edge per parent → child containment
-  // step. So
-  //
-  //   [node name=a id=4 [node name=b id=23] [node name=b1 id=35]]
-  //
-  // draws three boxes — `node @name='a' @id=4`, `node @name='b' @id=23`,
-  // `node @name='b1' @id=35` — where the `auto` view draws a SINGLE
-  // `node` ERD entity carrying attribute names and kinds and no value at
-  // any rung, because an ERD has one entity per element NAME.
-  //
-  // Source of truth is the `cxlib.tree()` contract (vcx/cx/code_tree.v):
-  // every node is `{kind, name?, value?, loc, children?}` and attributes
-  // are `{kind:'attribute', name, value}` entries INSIDE `children`,
-  // siblings of nested elements and of scalar / text bodies. Values
-  // arrive JSON-typed — ints and floats as numbers, booleans as
-  // booleans, atoms as strings keeping their leading `:`.
-  //
-  // (Measured 2026-08-25, FIXED at #1001: the Tree pane's element branch
-  // above used to read `node.attrs` / `node.items`, which this contract
-  // does not carry, so its attr chips were inert. It reads `children`
-  // through `splitElementChildren` now — the same partition this view
-  // takes, one projection for both.)
-  // ── Why this view draws an HTML TABLE, not ER rows (#992) ────
-  //
-  // An occurrence box has to show `name │ value` per attribute. The
-  // three mermaid forms that could carry that were measured against the
-  // bundled mermaid 10.9.8 rather than argued from the docs:
-  //
-  //   erDiagram entity rows — the shape that LOOKS right, and the one
-  //     the auto view already uses. Both of its unquoted columns are
-  //     ATTRIBUTE_WORDs, `[A-Za-z_][A-Za-z0-9_\-\[\]()]*`, so `42`,
-  //     `-5`, `99.5`, `:ok` and `can't` — the values of playground
-  //     examples [3], [4] and [5] — CANNOT be spelled in either column.
-  //     Putting them there means mangling `min=-5` into `min __5`,
-  //     which is the same class of defect as the `"@"` comment this
-  //     issue is fixing. Disqualified on the values, not on taste.
-  //
-  //   classDiagram members — permissive (every probe value survived
-  //     except `{`/`}`), but mermaid routes any member containing `(`
-  //     into the METHODS compartment, so a paren-carrying value jumps
-  //     out of document order into a different half of the box.
-  //
-  //   flowchart node + HTML label — mermaid renders the label inside a
-  //     foreignObject when `htmlLabels` is on, so a real <table> gives
-  //     genuinely aligned columns, a header row for the element name,
-  //     and CSS control from playground.css. Values are HTML-escaped,
-  //     so nothing about a value can break the diagram.
-  //
-  // The third is what this emits. `htmlLabels` and `securityLevel` are
-  // both set explicitly at mermaid.initialize() so the form the labels
-  // are written for is the form that renders.
-  const INSTANCE_NODE_CAP  = 200;  // bound: a 1,000-box diagram is unreadable
-  const INSTANCE_VALUE_CAP = 48;   // per-value cell clip, in characters
-  const INSTANCE_ROW_CAP   = 10;   // compact rung: attribute rows per box
+  // The INSTANCE view — one box per element occurrence, its attribute
+  // values in a name│value table, an operator-headed element as
+  // `head arg arg` — is drawn by the engine: `cxlib.diagram(text,
+  // 'mermaid:LEVEL', 'instance')`, the same code_diagram view
+  // `cx code-diagram --view=instance` prints (cx-core-code's
+  // vcx/code/code_diagram_instance.v, a byte-for-byte port of the builder
+  // this file carried, and graded against it). One implementation, so the
+  // CLI and the page cannot drift; the labels keep this file's cxp-itbl
+  // classes, which playground.css styles.
 
   // splitElementChildren partitions one element's / directive's
-  // `children` into the three roles the label and the walk each need.
+  // `children` into the three roles the Tree pane's rows each need.
   function splitElementChildren(node) {
     const attrs = [], elems = [], bodies = [];
     const kids = Array.isArray(node.children) ? node.children : [];
@@ -1591,233 +1544,6 @@
       else bodies.push(c);
     }
     return { attrs, elems, bodies };
-  }
-
-  // instanceValueText renders one JSON-typed value for a graph label.
-  // Strings quote; numbers and booleans stay bare; an atom keeps its
-  // `:name` spelling rather than being dressed as a string.
-  function instanceValueText(v) {
-    if (v === null || v === undefined) return 'null';
-    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
-    const s = String(v);
-    if (/^:[A-Za-z_][A-Za-z0-9_-]*$/.test(s)) return s;
-    const clipped = (s.length > INSTANCE_VALUE_CAP)
-      ? s.slice(0, INSTANCE_VALUE_CAP - 1) + '…'
-      : s;
-    return `'${clipped}'`;
-  }
-
-  // ── Operator-headed elements (#992, owner feedback) ─────
-  //
-  // `[= $score 87]` and `[>= $score 80]` are ELEMENTS whose head is an
-  // operator and whose children are POSITIONAL ARGUMENTS — not
-  // attributes. A name│value table is the wrong shape for them: there
-  // are no names, only an order. They render as `head arg arg` on the
-  // box's caption instead, which is how they are written and how they
-  // read.
-  //
-  // Detecting one is DERIVED, not enumerated. Twelve of the ruled 18
-  // heads (#976) are glyphs — `+ * - / % = != < <= > >= ~` — and a glyph
-  // is precisely a name the identifier production cannot spell, so the
-  // test below covers any glyph head the evaluator ever gains without
-  // this file being told. Only the six WORD heads need listing, and
-  // those are the stable half. The alphabet's single home is
-  // `cx.operator_head_len` (vcx/cx/lexical.v); this is a presentation
-  // test, not a second copy of the rule.
-  const WORD_OPERATOR_HEADS = new Set(
-    ['and', 'or', 'not', 'union', 'intersect', 'except']);
-  const IDENTIFIER_NAME = /^[A-Za-z_][A-Za-z0-9_:.-]*$/;
-  function isOperatorHead(name) {
-    const n = String(name || '');
-    if (n === '' || n === '_') return false;
-    return WORD_OPERATOR_HEADS.has(n) || !IDENTIFIER_NAME.test(n);
-  }
-
-  const INSTANCE_ARG_CAP = 4;   // compact rung: args shown on a caption
-
-  // instanceArgText renders ONE positional argument. A `$ref` stays bare
-  // — it is a reference to a binding, and quoting it would dress it as
-  // the literal string `'$score'`, which is a different program.
-  function instanceArgText(v) {
-    if (typeof v === 'string' && /^\$[A-Za-z_][A-Za-z0-9_-]*$/.test(v)) return v;
-    return instanceValueText(v);
-  }
-
-  // instanceOperatorCaption composes `head arg arg …` for an
-  // operator-headed element, honouring the detail rung: `min` keeps the
-  // bare head, `compact` shows the first few args and counts the rest,
-  // `full` shows every one.
-  //
-  // An ELEMENT child (a nested sub-expression, `[>= [+ $a 1] 80]`) is
-  // rendered in place as `[name]` AND still drawn as its own box below.
-  // The placeholder is not redundant: without it the caption would read
-  // `>= 80`, quietly losing an operand and misreporting the arity.
-  function instanceOperatorCaption(node, level) {
-    const head = String(node.name || '_');
-    if (level === 'min') return head;
-    const kids = Array.isArray(node.children) ? node.children : [];
-    const args = [];
-    for (const c of kids) {
-      if (!c || typeof c !== 'object') continue;
-      if (c.kind === 'element' || c.kind === 'directive') {
-        args.push(`[${(c.kind === 'directive' ? '?' : '') + String(c.name || '_')}]`);
-      } else if (c.kind === 'attribute') {
-        args.push(`${c.name}=${instanceValueText(c.value)}`);
-      } else {
-        args.push(instanceArgText(c.value));
-      }
-    }
-    if (args.length === 0) return head;
-    const cap = (level === 'full') ? args.length : INSTANCE_ARG_CAP;
-    const shown = args.slice(0, cap);
-    const hidden = args.length - shown.length;
-    if (hidden > 0) shown.push(`(+${hidden})`);
-    return head + ' ' + shown.join(' ');
-  }
-
-  // instanceRows applies the detail rung to one node's table body.
-  // `min` shows no rows at all (the occurrence NAMES and their nesting
-  // are the whole point at that rung); `compact` caps the rows and says
-  // how many it withheld; `full` shows every one. A lone scalar / text
-  // body earns a row of its own, labelled by its kind, so a
-  // `[greeting "hello"]` occurrence still shows its value.
-  function instanceRows(node, level) {
-    if (level === 'min') return [];
-    // An operator-headed ELEMENT's children are positional args, and
-    // they ride its caption (above) rather than becoming table rows.
-    // Gated on the kind for the same reason the caption branch is: a
-    // DIRECTIVE spelled `[?not …]` is a directive, not the `not`
-    // operator, and keeps its own `?`-prefixed rendering.
-    if (node.kind === 'element' && isOperatorHead(node.name)) return [];
-    const parts = splitElementChildren(node);
-    const rows = [];
-    for (const a of parts.attrs) {
-      rows.push({ k: String(a.name), v: instanceValueText(a.value) });
-    }
-    // A LONE scalar / text body earns a row — the same rule the Tree
-    // pane applies when it rides a single scalar up onto its element's
-    // own line. It is deliberately not generalised to "every body":
-    // one body is content, many are a LIST, and a list of values is not
-    // what a two-column name/value table is for — a five-item sequence
-    // would draw a five-row box whose left column says `scalar` five
-    // times. (This guard was first written to bound #1000, which had
-    // `cxlib.tree()` reporting a sequence literal's PUNCTUATION as
-    // scalar children — `(1, 2, 3)` arrived as seven scalars, `(`, 1,
-    // `,`, 2, `,`, 3, `)`. That is fixed at the emitter now; the rule
-    // stands on its own ground, not on the defect.)
-    const usable = parts.bodies.filter(b =>
-      (b.kind === 'scalar' || b.kind === 'text')
-      && b.value !== '' && b.value !== null && b.value !== undefined);
-    if (usable.length === 1 && parts.elems.length === 0) {
-      const only = usable[0];
-      rows.push({ k: only.kind, v: instanceValueText(only.value), synthetic: true });
-    }
-    if (level === 'full' || rows.length <= INSTANCE_ROW_CAP) return rows;
-    const shown = rows.slice(0, INSTANCE_ROW_CAP);
-    const hidden = rows.length - shown.length;
-    shown.push({ k: `+${hidden} more`, v: '', overflow: true });
-    return shown;
-  }
-
-  // htmlText escapes one run of value text for an HTML label, then
-  // neutralises `#` — mermaid's own entity introducer, which would
-  // otherwise eat a `#35;`-looking tail out of the middle of a value.
-  // The HTML escapes are NAMED for exactly that reason: a numeric
-  // `&#40;` carries a `#` that mermaid would rewrite before the browser
-  // ever saw it. Order matters — `&` first, `#` last.
-  function htmlText(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/[\r\n\t]+/g, ' ')
-      .replace(/#/g, '#35;');
-  }
-
-  // instanceNodeHtml composes one occurrence box. With no rows to show
-  // it stays a plain bold caption rather than a one-cell table, so the
-  // `min` rung reads as a clean shape diagram instead of a grid of
-  // stubs.
-  function instanceNodeHtml(node, level) {
-    if (node.kind === 'element' && isOperatorHead(node.name)) {
-      const c = instanceOperatorCaption(node, level);
-      return `<span class='cxp-itbl-op'>${htmlText(c)}</span>`;
-    }
-    const title = (node.kind === 'directive' ? '?' : '') + String(node.name || '_');
-    const rows = instanceRows(node, level);
-    const cap = `<span class='cxp-itbl-name'>${htmlText(title)}</span>`;
-    if (rows.length === 0) return cap;
-    const body = rows.map(r => {
-      const cls = r.overflow ? 'cxp-itbl-more' : (r.synthetic ? 'cxp-itbl-syn' : '');
-      return `<tr class='${cls}'>`
-        + `<td class='cxp-itbl-k'>${htmlText(r.k)}</td>`
-        + `<td class='cxp-itbl-v'>${htmlText(r.v)}</td>`
-        + `</tr>`;
-    }).join('');
-    return `<table class='cxp-itbl'>`
-      + `<tr><th colspan='2'>${htmlText(title)}</th></tr>`
-      + body
-      + `</table>`;
-  }
-
-  // mermaidLabel escapes one PLAIN-TEXT label for a quoted Mermaid node
-  // body (the cap note, and any caller that is not composing HTML).
-  // `#` goes first — the entity form is itself `#`-introduced.
-  // Brackets and braces matter in particular because a bracket-valued
-  // attribute (`k=[a b]`) is captured VERBATIM by the tree emitter, so
-  // real values do carry them.
-  function mermaidLabel(s) {
-    return String(s)
-      .replace(/#/g,  '#35;')
-      .replace(/"/g,  '#quot;')
-      .replace(/</g,  '#lt;')
-      .replace(/>/g,  '#gt;')
-      .replace(/\[/g, '#91;')
-      .replace(/\]/g, '#93;')
-      .replace(/\(/g, '#40;')
-      .replace(/\)/g, '#41;')
-      .replace(/\{/g, '#123;')
-      .replace(/\}/g, '#125;')
-      .replace(/[\r\n]+/g, ' ');
-  }
-
-  // buildInstanceGraph walks the tree in document order. The cap bounds
-  // what is DRAWN, never what is COUNTED — the "showing N of M" note has
-  // to be true, so the walk continues past the cap to finish counting.
-  function buildInstanceGraph(treeJson, level) {
-    if (!treeJson || typeof treeJson !== 'object') return '';
-    const lines = ['flowchart TD'];
-    let total = 0, drawn = 0, idSeq = 0;
-    const walk = (node, parentId) => {
-      if (!node || typeof node !== 'object') return;
-      let childParent = parentId;
-      if (node.kind === 'element' || node.kind === 'directive') {
-        total++;
-        if (drawn < INSTANCE_NODE_CAP) {
-          const myId = `i${idSeq++}`;
-          drawn++;
-          lines.push(`  ${myId}["${instanceNodeHtml(node, level)}"]`);
-          if (parentId) lines.push(`  ${parentId} --> ${myId}`);
-          childParent = myId;
-        } else {
-          childParent = null;   // nothing under an undrawn node is drawn
-        }
-      }
-      const kids = Array.isArray(node.children) ? node.children : [];
-      for (const c of kids) walk(c, childParent);
-    };
-    walk(treeJson, null);
-    if (total === 0) {
-      // Reachable: a document that is a bare scalar has no occurrence to
-      // graph. Say so rather than emit an empty flowchart.
-      return 'flowchart TD\n  i0["(no element occurrences to graph)"]';
-    }
-    if (total > drawn) {
-      lines.push(`  cap["${mermaidLabel(
-        `showing ${drawn} of ${total} element occurrences (node cap ${INSTANCE_NODE_CAP})`)}"]`);
-    }
-    return lines.join('\n');
   }
 
   // ── Graph rendering ─────────────────────────────────────
@@ -2104,8 +1830,8 @@
         if (graphHost) graphHost.innerHTML = `<p class="cxp-viz-placeholder">${escapeHtml(part.empty)}</p>`;
         continue;
       }
-      // Tree. The parsed tree is hoisted because `Graph: instance`
-      // graphs THIS SAME tree — one cxlib.tree() call feeds both panes.
+      // Tree. (The instance graph is the engine's own view now, #987;
+      // this tree feeds the Tree pane only.)
       let parsedTree = null;
       try {
         const treeJson = (typeof cxlib.tree === 'function') ? cxlib.tree(part.text) : null;
@@ -2118,19 +1844,13 @@
       // Graph — the subject is graphView (#960), the rung is detailLevel.
       try {
         let d;
-        if (graphView === 'instance') {
-          // INSTANCE: one box per element occurrence, labelled with its
-          // own attribute values. Built here from the tree contract.
-          if (parsedTree == null) {
-            throw new Error('the tree this view graphs is unavailable');
-          }
-          d = buildInstanceGraph(parsedTree, detailLevel);
-        } else {
+        {
           // AUTO: the inferred shape (ERD / CFG / SEQ), rendered by the
           // CX diagram module; a FORCED view (erd / cfg / seq / effects,
           // #1377) asks the engine for that subject and shows its refusal
-          // when the source cannot carry it. The View pane's detail level
-          // rides in the format suffix (`mermaid:LEVEL`).
+          // when the source cannot carry it; INSTANCE (#987) is the
+          // occurrence graph, from the same engine export. The View pane's
+          // detail level rides in the format suffix (`mermaid:LEVEL`).
           const fmtWithDetail = `mermaid:${detailLevel}`;
           d = (typeof cxlib.diagram === 'function') ? cxlib.diagram(part.text, fmtWithDetail, graphView) : '';
         }
@@ -2455,5 +2175,5 @@
   // seam: one function, read-only, named for what it is.
   // errPosition joins it (#1744): test-playground-nav reads the source line a
   // refusal names through the page's own reader, not a copy of its regexes.
-  window.cxPlaygroundInternals = { buildInstanceGraph, errPosition };
+  window.cxPlaygroundInternals = { errPosition };
 })();

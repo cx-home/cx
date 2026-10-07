@@ -3,7 +3,7 @@
 <div class="home-hero-text">
 <div class="hero-eyebrow">Sheet 00 · cxhome.org</div>
 <div class="hero-head">
-  <img class="hero-mark" src="assets/cx-logo.svg" alt="CX">
+  <img class="hero-mark mark-on-light" src="assets/cx-mark-blue.png" alt="CX"><img class="hero-mark mark-on-dark" src="assets/cx-mark-white.png" alt="CX">
   <h1>One syntax.<br>Data to platform.<br><span class="accent">Agentic ready.</span></h1>
 </div>
 ```

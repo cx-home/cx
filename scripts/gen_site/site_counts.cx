@@ -29,7 +29,7 @@
 
 [?def shown-repos scope=public impure ($self)
   [?for [in $r [$cx:parse [$io:read-file "registry/repos.cxd"]]//repo]
-    [where [or [= [$string $r@name] $self] [= [$string [?else $r@status ""]] "extracted"]]]
+    [where [or [= [$string $r@name] $self] [or [= [$string [?else $r@status ""]] "extracted"] [= [$string [?else $r@status ""]] "created"]]]]
     [yield $r]]]
 
 [?def count-of scope=public impure ($what $self $nrefs)

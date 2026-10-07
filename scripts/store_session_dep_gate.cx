@@ -24,14 +24,8 @@
 # name that looks like the session surface and is not one is either a fresh
 # edge or a coincidence nobody should have to adjudicate at review time.
 #
-# WHAT IS NOT A VIOLATION. A plain string literal ('…' or "…" on one line,
-# with no `$` interpolation) is data, not an edge, and is dropped before
-# tokenizing: store_pgwire.v answers the SQL function `session_user` by
-# name, a map key and not a call (the loop's store-session-dep-gate red on
-# 4ec3fe348). A literal that interpolates is kept whole, so a session call
-# inside `${…}` is still seen. Comment text (everything from `//` to end of
-# line, read after the literals are gone, so a `//` inside a URL literal
-# hides nothing) and C FFI names, which are libssh2's and not the
+# WHAT IS NOT A VIOLATION. Comment text (everything from `//` to end of line is
+# dropped before tokenizing) and C FFI names, which are libssh2's and not the
 # identity module's: `C.libssh2_session_init_ex` tokenizes to `C` +
 # `libssh2_session_init_ex`, and neither is a session symbol. Tokenization is
 # exact -- a token matches a symbol only when it IS that symbol, never when it
@@ -63,8 +57,19 @@
 # session symbol is prose, not an edge -- this file's own header says
 # `session_kv` and must not fail its own rule. An empty line splits into no
 # segment at all (strings:split-limit of '' answers ()), so its code is ''.
+# STRING LITERALS ARE DATA, NOT EDGES (2026-10-06: cx-platform-store's
+# store_pgwire.v answers the PostgreSQL startup parameter 'session_user', the
+# wire protocol's own word, and the deny-by-default rule read it as a fresh
+# session edge). A V literal, '…' or "…", is blanked before tokenizing -- but
+# only one with no `$` in it: an interpolation (`${session_kv(x)}`) is code
+# inside a string, so a literal carrying `$` is kept whole and still read.
+# Literals go first, so a `//` inside one ('http://…') no longer cuts the
+# line short; the comment is dropped after.
+[?const SQ-LIT [$re:compile "'(?:[^'\\\\$]|\\\\.)*'"]]
+[?const DQ-LIT [$re:compile "\"(?:[^\"\\\\$]|\\\\.)*\""]]
 [?def code-of scope=private pure [returns string] ($line::string)
-  [?else [$first [$strings:split-limit $line "//" 2]] ""]]
+  [?let [= $bare [$re:replace DQ-LIT [$re:replace SQ-LIT $line "''"] "''"]]
+    [?else [$first [$strings:split-limit $bare "//" 2]] ""]]]
 
 # blank-seps: every character that can bound a V identifier, turned into a
 # space. `_` and the digits stay -- they are identifier characters. `.` goes,
@@ -87,18 +92,6 @@
         [= $a2 [$strings:replace $z "@" " "]] [= $b2 [$strings:replace $a2 "$" " "]]
     $b2]]
 
-# drop-plain-strings: every one-line string literal of a V source text that
-# interpolates nothing, replaced by ''. The pattern reads a literal of either
-# quote, a backslash escaping the next character, and never crosses a line --
-# an apostrophe in a comment pairs with nothing on the next line.
-[?def lit-re scope=private pure [returns element] ()
-  [$re:compile [$concat "'(?:[^'\\\n]|\\.)*'" "|" '"(?:[^"\\\n]|\\.)*"']]]
-
-[?def drop-plain-strings scope=private pure [returns string] ($text::string)
-  [$re:replace-fn [$lit-re] $text
-    [?fn ($m) [?let [= $lit [$re:group $m 0]]
-                [?if [$strings:contains $lit "$"] [then $lit] [else "''"]]]]]]
-
 # tokens: the identifier tokens of a V source text, comments dropped. Each
 # line is stripped and blanked FIRST, then the whole text is split once -- a
 # sequence is never element content in CX and nothing auto-splices, so the
@@ -106,7 +99,7 @@
 [?def tokens scope=private pure ($text::string)
   [?for [in $t [$strings:split-whitespace
                  [$strings:join
-                   [?for [in $line [$strings:split-lines [$drop-plain-strings $text]]]
+                   [?for [in $line [$strings:split-lines $text]]
                      [yield [$blank-seps [$code-of $line]]]]
                    " "]]]
     [where [not [= $t ""]]]
@@ -158,9 +151,9 @@
                  [file path="store_unknown.v"
                    text="module platform\nfn sx_odd() int { return session_never_defined_anywhere(1) }\n"],
                  [file path="store_literal.v"
-                   text="module platform\nfn sx_sql() map[string]string { return {'session_user': 'u', 'url': 'http://h/x'} }\n"],
+                   text="module platform\nfn sx_wire() map[string]string { return {'session_user': 'u', 'url': 'http://h/x'} }\n"],
                  [file path="store_interp.v"
-                   text="module platform\nfn sx_msg() string { return 'kv ${session_kv('x')}' }\n"])]
+                   text="module platform\nfn sx_say() string { return 'kv=${session_kv(1)}' }\n"])]
       [= $v [$check $sess $files]]
       [= $hits [?for [in $f $v/failures/row]
                  [order-by $f@path]
@@ -174,7 +167,7 @@
       [?if [?if [= [$count $missing] 0]
              [then [?if [= [$count $extra] 0] [then $derived-ok] [else false]]]
              [else false]]
-        [then [?let [= $_ [$say "store-session-dep self-test OK -- a synthetic store file calling session_kv is RED; an undeclared session_-shaped name is RED (deny-by-default); a session call inside a string interpolation is RED; a comment naming session_kv, a libssh2 C FFI selector and a plain string literal 'session_user' are CLEAN; 3 symbols derived."]]
+        [then [?let [= $_ [$say "store-session-dep self-test OK -- a synthetic store file calling session_kv is RED; an undeclared session_-shaped name is RED (deny-by-default); a comment naming session_kv and a libssh2 C FFI selector are CLEAN; 3 symbols derived."]]
                 [$env:exit 0]]]
         [else [?let [= $_ [$cry [$concat "store-session-dep self-test FAILED -- missing: "
                                           [$strings:join $missing "; "]
