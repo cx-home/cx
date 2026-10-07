@@ -1,0 +1,98 @@
+# scripts/ci_dogfood.cx — the CI/CD profile's proof: this repository's
+# conformance corpus as a CX PIPELINE of hermetic, identity-cached steps
+# (cx-private#734, the dogfood exit; cx-platform-flow's flow.md §4.26).
+#
+# Every corpus file named on the command line (relative to --root) becomes a
+# [flow] stage whose act runs `$flow:hermetic-run` over
+# [hermetic-step [corpus path=FILE]]: the file is copied into a fresh work
+# directory and graded by `cx corpus --ceiling=read=<work> write=<work>`, so no
+# case reaches past what the step declared, and a step whose identity (the
+# file's content address, the step, the cx build) is already in --cache is
+# served from it without grading. Run it twice: the first run grades, the
+# second answers every unchanged file from the cache.
+#
+# A file is a HERMETIC stage only when the pipeline can declare everything it
+# reads: every case's grant= is absent or 'none' (a case granted the world is
+# not a cached workload) and no case loads a module by a relative path (an
+# input this program does not discover). The rest are listed as EFFECTFUL and
+# left to the gate's own `cx corpus` run — named, never silently dropped.
+#
+#   cx --allow-read --allow-write --allow-subprocess scripts/ci_dogfood.cx \
+#      --root=deps/cx-core-code --cache=target/ci-cache conformance/stdlib/*.cxd
+#
+# Exit 0 when every hermetic stage is :done; 1 when any stage failed (its
+# grader report is printed); 2 on a usage error. The run's attestations are
+# journalled on the pipeline's stream (mem:// — the ledger shape, not a
+# store this program keeps).
+
+[?lib 'cx-platform/flow'    as=flow]
+[?lib 'cx-platform/journal' as=journal]
+[?lib 'cx-stdlib/io'        as=io]
+[?lib 'cx-stdlib/env'       as=env]
+[?lib 'cx-stdlib/strings'   as=strings]
+[?lib 'cx-stdlib/cx'        as=cx]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def flag scope=private pure [returns string] ($argv $name::string $default::string)
+  [?let [= $hits [?to-sequence [?for [in $a $argv] [where [$strings:starts-with $a [$concat "--" $name "="]]]
+                                 [yield [$strings:replace-first $a [$concat "--" $name "="] ""]]]]]
+    [?if [$exists $hits] [then [$first $hits]] [else $default]]]]
+
+# hermetic? — every case's grant= absent or 'none', and no relative [?lib].
+[?def hermetic-file scope=private impure [returns bool] ($path::string)
+  [?let [= $text [$io:read-file $path]]
+        [= $doc [$cx:parse $text]]
+        [= $granted [?to-sequence [?for [in $c [$cx:select $doc "//case"]]
+                                    [where [not [or [= [$string $c@grant] ""] [= [$string $c@grant] "none"]]]]
+                                    [yield $c]]]]
+    [and [not [$exists $granted]]
+         [and [not [$strings:contains $text "[?lib './"]]
+              [not [$strings:contains $text "[?lib '../"]]]]]]
+
+# the stage act: one corpus file, one hermetic step.
+[?def grade impure [effects [read] [write] [subprocess]] ($file='' $root='' $cache='')
+  [$flow:hermetic-run [hermetic-step name=$file [corpus path=$file]] {root: $root, cache: $cache}]]
+
+[?let
+  [= $argv  [?to-sequence [?for [in $a [$env:argv]] [yield $a]]]]
+  [= $root  [$flag $argv "root" "."]]
+  [= $cache [$flag $argv "cache" "target/ci-cache"]]
+  [= $files [?to-sequence [?for [in $a $argv] [where [and [not [$strings:starts-with $a "--"]] [$strings:ends-with $a ".cxd"]]] [yield $a]]]]
+  [?if [not [$exists $files]]
+    [then [?let [= $_ [$cry "ci-dogfood: name the corpus files (relative to --root)"]] [$env:exit 2]]]
+    [else
+      [?let
+        [= $abs-cache [?if [$strings:starts-with $cache "/"] [then $cache] [else [$concat [$env:cwd] "/" $cache]]]]
+        [= $abs-root  [?if [$strings:starts-with $root "/"] [then $root] [else [$concat [$env:cwd] "/" $root]]]]
+        [= $_mk [$io:make-dirs $abs-cache]]
+        [= $herm [?to-sequence [?for [in $f $files] [where [$hermetic-file [$concat $abs-root "/" $f]]] [yield $f]]]]
+        [= $eff  [?to-sequence [?for [in $f $files] [where [not [$hermetic-file [$concat $abs-root "/" $f]]]] [yield $f]]]]
+        [= $doc  [$cx:parse [$concat "[flow name=\"conformance\" [args [root::string] [cache::string]] "
+                   [$strings:join [?to-sequence [?for [in $f $herm]
+                      [yield [$concat "[step name=\"" $f "\"" [?if [= $f [$first $herm]] [then " pivot=true"] [else ""]] " [do 'ci/corpus' [file \"" $f "\"] [root $args/root] [cache $args/cache]]]"]]]] " "]
+                   "]"]]]
+        [= $env  [resolver [act name='ci/corpus' resolved='sha2-256:ci-corpus' [fn $grade]]]]
+        [= $j    [$journal:open "mem://ci-dogfood" "cx-private"]]
+        [= $run  [$flow:start $j $doc [args [root $abs-root] [cache $abs-cache]]
+                   {env: $env flow: $doc actor: "principal:ci" authority: "cap:ci" nonce: "dogfood" stream: "ci:dogfood"}]]
+        [= $res  [?to-sequence [?for [in $s [$cx:select $run "step"]]
+                   [yield [?let [= $hs [$cx:select $s "result//hermetic-result"]]
+                            [?if [$exists $hs]
+                              [then [?let [= $h [$first $hs]]
+                                      [row file=[$string $s@name] status=[$string $h@status] cached=[$string $h@cached]
+                                           report=[$string [$first [$cx:select $h "//stdout"]]]]]]
+                              [else [row file=[$string $s@name] status=[$string $s@status] cached="false"
+                                         report=[$cx:serialize [$first [$cx:select $s "result"]]]]]]]]]]]
+        [= $failed [?to-sequence [?for [in $r $res] [where [not [= [$string $r@status] "done"]]] [yield $r]]]]
+        [= $hits   [?to-sequence [?for [in $r $res] [where [= [$string $r@cached] "true"]] [yield $r]]]]
+        [= $_rows [?to-sequence [?for [in $r $res]
+                    [yield [$say [$concat [?if [= [$string $r@status] "done"] [then "  ok    "] [else "  FAIL  "]]
+                                          [?if [= [$string $r@cached] "true"] [then "cached  "] [else "graded  "]] [$string $r@file]]]]]]]
+        [= $_effs [?to-sequence [?for [in $f $eff] [yield [$say [$concat "  effectful (not a hermetic stage) " $f]]]]]]
+        [= $_reps [?to-sequence [?for [in $r $failed] [yield [$cry [$concat "ci-dogfood: " [$string $r@file] " failed:\n" [$string $r@report]]]]]]]
+        [= $_sum [$say [$concat "ci-dogfood: pipeline " [$string $run@status] " — " [$string [$count $res]] " hermetic stage(s), "
+                         [$string [$count $hits]] " served from the cache, " [$string [$count $failed]] " failed; "
+                         [$string [$count $eff]] " effectful file(s) left to the gate"]]]
+        [$env:exit [?if [$exists $failed] [then 1] [else 0]]]]]]]

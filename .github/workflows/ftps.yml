@@ -20,10 +20,23 @@ name: ftps (#107)
 # vsftpd's debug log is printed on the way out, green or red, so a failure
 # carries the server's side of the exchange.
 #
-# Manual by design (workflow_dispatch): it is a one-shot verification, not a
-# gate; nothing waits on it.
+# Manual by design (workflow_dispatch, or a push to the one branch
+# ci/107-ftps — dispatch needs the file on the default branch, which is not
+# this one): a one-shot verification, not a gate; nothing waits on it.
+#
+# THE PINS WITHOUT A TOKEN. cx-private carries no CX_DEPS_TOKEN (the secret
+# lives on the public cx-home/cx only). When it is absent, deps/ is seeded
+# from the asset of the DRAFT release ci-107-deps on this repository (a
+# deps_bootstrap.sh seed at the head's pins), fetched with the job's own
+# GITHUB_TOKEN; deps_bootstrap.sh then finds every row already at its sha and
+# fetches nothing, and `make deps-sync` below verifies the pins either way.
 on:
   workflow_dispatch: {}
+  push:
+    branches: [ci/107-ftps]
+
+permissions:
+  contents: write   # a draft release's assets are visible to writers only
 
 jobs:
   ftps:
@@ -36,6 +49,21 @@ jobs:
 
       - name: Build the vendored V toolchain
         run: make -C third_party/v
+
+      - name: Seed deps/ from the ci-107-deps draft when there is no CX_DEPS_TOKEN
+        env:
+          HAS_TOKEN: ${{ secrets.CX_DEPS_TOKEN != '' }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          if [ "$HAS_TOKEN" = true ]; then echo 'CX_DEPS_TOKEN present: deps_bootstrap.sh fetches'; exit 0; fi
+          id=$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate \
+                 --jq '.[] | select(.tag_name == "ci-107-deps") | .assets[] | select(.name == "deps107.tgz") | .id' | head -n 1)
+          [ -n "$id" ] || { echo 'no CX_DEPS_TOKEN and no ci-107-deps draft asset' >&2; exit 2; }
+          gh api -H 'Accept: application/octet-stream' "repos/$GITHUB_REPOSITORY/releases/assets/$id" > /tmp/deps107.tgz
+          sha256sum /tmp/deps107.tgz
+          mkdir -p deps && tar xzf /tmp/deps107.tgz -C deps
+          for d in deps/*/; do printf '%s %s\n' "$(basename "$d")" "$(git -C "$d" rev-parse HEAD)"; done
 
       - name: Bootstrap deps/ with no cx (#1670)
         env:
