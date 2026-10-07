@@ -343,6 +343,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `192-gcm` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) | RULED: 1400-a, 1401-a — XML Encryption comes IN: `saml:verify` decrypts `EncryptedAssertion` / `EncryptedID` / `EncryptedAttribute` with `opts.decryption-keys`; `crypto` gains RSA key transport (OAEP, SHA-1 inside OAEP allowed; PKCS#1 v1.5 behind a loud opt-in with implicit rejection) and AES-CBC + AES-128/192-GCM; encryption is detected BEFORE the signature search |
 | `728-ck-4b` | [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) | RULED: 728-CK-4b — ingestion NEVER infers `idempotent=` — RULED: (a) under the standing letter-acceptance rule (owner veto open) |
 | `787-poc` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) | Ledger — #787 integration: the ONE rebase of impl/787-poc onto release/0.16.0 |
+| `789-wf-37a` | [rulings_2026_09_19_cited_ids_without_a_page_1447.md](rulings_2026_09_19_cited_ids_without_a_page_1447.md) | WF-37a — the SHORT FORM of `789-WF-37a` (cited by `2398447f5`), a pointer |
 | `aa-1` | [rulings_2026_09_26_automation_authoring_l40.md](rulings_2026_09_26_automation_authoring_l40.md) | Owner decisions 2026-09-26 — Letter 40, end-user automation authoring (#1498): AA-1…AA-6 |
 | `aa-1` | [rulings_2026_09_26_automation_authoring_l40.md](rulings_2026_09_26_automation_authoring_l40.md) | AA-1 — a skeleton is a CX document shipped as data (L40.1 = (a)) |
 | `aa-10` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | AA-10 — the #1498 spec branch is approved (owner, 2026-09-27 ~04:0xZ: "specs approved") |
@@ -1234,6 +1235,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `wf-36` | [rulings_2026_09_06_flow_binding_row_shape_789.md](rulings_2026_09_06_flow_binding_row_shape_789.md) | WF-36 — the `fold` kind in the standalone runner — RULED: (a) |
 | `wf-37` | [rulings_2026_09_06_flow_binding_row_shape_789.md](rulings_2026_09_06_flow_binding_row_shape_789.md) | Rulings 2026-09-06 — #789, the binding row's spelling, the `fold` kind, and the one-law nonce (WF-35 … WF-37) |
 | `wf-37` | [rulings_2026_09_06_flow_binding_row_shape_789.md](rulings_2026_09_06_flow_binding_row_shape_789.md) | WF-37 — which side moves so the one-law gate is reachable — RULED: (a) |
+| `wf-37a` | [rulings_2026_09_19_cited_ids_without_a_page_1447.md](rulings_2026_09_19_cited_ids_without_a_page_1447.md) | WF-37a — the SHORT FORM of `789-WF-37a` (cited by `2398447f5`), a pointer |
 | `wf-38` | [rulings_2026_09_06_flow_resolver_idempotent_789.md](rulings_2026_09_06_flow_resolver_idempotent_789.md) | Ruling 2026-09-06 — #789, the resolver row carries `idempotent=` (WF-38) |
 | `wf-38` | [rulings_2026_09_06_flow_resolver_idempotent_789.md](rulings_2026_09_06_flow_resolver_idempotent_789.md) | WF-38 — how the `[idempotent]` disposition reaches `validate` — RULED: (a) |
 | `wf-4` | [rulings_2026_09_03_workflow_789.md](rulings_2026_09_03_workflow_789.md) | WF-4 — the performer axis: principal, agent and peer steps; deadlines; escalation (items 1+2) — RECOMMENDED: (a) |
@@ -1423,7 +1425,6 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `789-wf-34a` | [rulings_2026_09_06_flow_binding_start_contract_789.md](rulings_2026_09_06_flow_binding_start_contract_789.md) |
 | `789-wf-35a` | [rulings_2026_09_06_flow_binding_row_shape_789.md](rulings_2026_09_06_flow_binding_row_shape_789.md) |
 | `789-wf-36a` | [rulings_2026_09_06_flow_binding_row_shape_789.md](rulings_2026_09_06_flow_binding_row_shape_789.md) |
-| `789-wf-37a` | [rulings_2026_09_06_flow_binding_row_shape_789.md](rulings_2026_09_06_flow_binding_row_shape_789.md) |
 | `789-wf-38` | [rulings_2026_09_08_flow_connector_seam_1334.md](rulings_2026_09_08_flow_connector_seam_1334.md) |
 | `789-wf-38a` | [rulings_2026_09_06_flow_resolver_idempotent_789.md](rulings_2026_09_06_flow_resolver_idempotent_789.md) |
 | `abi-14` | [partition_I1_rebless.md](partition_I1_rebless.md) |
@@ -1691,4 +1692,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*389 ledger pages; 922 ids declared, 425 cited only.*
+*389 ledger pages; 924 ids declared, 424 cited only.*

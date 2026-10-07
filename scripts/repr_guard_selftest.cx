@@ -13,11 +13,13 @@
 # stub named by CX_REPR_BIN — the build is skipped for a planted driver), its
 # corpora in a temp directory (CX_REPR_CORPUS_DIR, so a `make test -j` running
 # `repr-guard` beside this step keeps its own), a tiny record count, and a
-# 2 s per-reading deadline (CX_REPR_LANE_DEADLINE_S). Each case is itself
+# per-reading deadline (CX_REPR_LANE_DEADLINE_S): STALL-S where a reading is
+# planted to stall (A, H), GOOD-S where every reading is planted to answer.
+# Each case is itself
 # bounded at CASE-MS; a driver still running at that bound is the hang this
 # step exists to catch and reads FAILED, never waited for:
 #   A  every format's reading sleeps past the deadline   red, exit 1, each format
-#      named "format <x> exceeded its 2 s deadline", the bound-exceedance text
+#      named "format <x> exceeded its 20 s deadline", the bound-exceedance text
 #      the Makefile's GAUGE retry greps NOT printed (a stall is no load reading)
 #   B  a format prints a good reading and exits while a grandchild holds its
 #      stdout open (the 8b63de0c7 shape: the driver gone, its pipe held)
@@ -59,10 +61,25 @@
 
 [?def cat scope=private pure [returns string] ($parts) [$strings:join $parts '']]
 
-# A case's own bound. Four formats at a 2 s deadline are 8 s of stall; the bound
-# leaves the driver's start-up and four load reads ample room, and is far under
-# the stub's 90 s sleep, so a driver with no deadline reads FAILED here.
-[?const CASE-MS 60000]
+# A case's own bound. Four stalled formats at STALL-S (below) are 80 s; the bound
+# is the room the driver's start-up and four load reads get, and under the
+# union's -j storm that start-up alone ran past the 60 s this bound once was
+# (A, J and K "HUNG" on 4bde11464, 11/11 in 34 s alone; #1862). What makes a
+# case a real deadline test is not the bound's size but that every planted
+# stall outlasts it: each one sleeps 900 s (A's and H's stalled reading, B's
+# held pipe, J's escaped sleepers), so a driver with no deadline, or one that
+# waits on a held pipe or leaves J's sleepers alive, still reads FAILED here --
+# the stall cannot end inside the bound and pass the case for the driver.
+[?const CASE-MS 300000]
+
+# The per-reading deadlines. A stall case's deadline is what the planted stall
+# must outlast and what the driver must enforce: four stalled formats at 20 s
+# are 80 s, inside CASE-MS. A good-reading case's deadline only has to let a
+# planted stub (an `echo`, a `: >` for the corpus) answer under the union's
+# load, which took longer than the 2 s both kinds once shared ("format json
+# corpus generation exceeded its 2 s deadline", B and C, load 19; #1862).
+[?const STALL-S '20']
+[?const GOOD-S '60']
 
 # The driver under test: the program `make repr-guard` runs, under the cx
 # running this self-test and the grants the Makefile gives it.
@@ -88,7 +105,7 @@
 
 # one run of the driver: the planted format driver, a corpus dir of its own.
 [?def drive scope=private impure [returns element] ($stub $corpus $keep)
-  [$drive-at $stub $corpus $keep '2' '1800']]
+  [$drive-at $stub $corpus $keep GOOD-S '1800']]
 [?def drive-at scope=private impure [returns element] ($stub $corpus $keep $format-s $build-s)
   [$process:run [$driver-argv]
                 env={CX_REPR_BIN: $stub, CX_REPR_CORPUS_DIR: $corpus, CX_REPR_LANE_DEADLINE_S: $format-s,
@@ -113,7 +130,7 @@
 # under a subshell of the group with every stream on /dev/null), waits until
 # both are recorded, then prints a good reading and exits.
 [?def leaver-body scope=private pure [returns string] ($dir)
-  [?let [= $perl [$cat ("perl -MPOSIX -e 'POSIX::setsid(); open(my $f, \">>\", \"", $dir, "/\" . $ARGV[0] . \".pids\"); print $f \"$$\\n\"; close $f; sleep 90' \"$1\"")]]
+  [?let [= $perl [$cat ("perl -MPOSIX -e 'POSIX::setsid(); open(my $f, \">>\", \"", $dir, "/\" . $ARGV[0] . \".pids\"); print $f \"$$\\n\"; close $f; sleep 900' \"$1\"")]]
     [$cat ($perl, ' </dev/null 2>/dev/null &\n',
            '( ', $perl, ' </dev/null >/dev/null 2>&1 & wait ) </dev/null >/dev/null 2>&1 &\n',
            'n=0; while [ "$(cat "', $dir, '/$1.pids" 2>/dev/null | wc -l | tr -d " ")" -lt 2 ] && [ $n -lt 200 ]; do sleep 0.05; n=$((n+1)); done\n',
@@ -157,15 +174,15 @@
 
 [?let [= $root [$io:temp-dir 'repr-guard-selftest-']]
       # A — every reading stalls past the deadline
-      [= $sa [$plant $root 'stall' 'sleep 90']]
-      [= $ra [$drive $sa [$cat ($root, '/corpus-a')] '0']]
+      [= $sa [$plant $root 'stall' 'sleep 900']]
+      [= $ra [$drive-at $sa [$cat ($root, '/corpus-a')] '0' STALL-S '1800']]
       [= $a [$judge 'A' [and [not [$hung $ra]] [= [$exit-of $ra] '1']
-                             [$every-format $ra 'bench/repr: FAIL — format ' ' exceeded its 2 s deadline']
+                             [$every-format $ra 'bench/repr: FAIL — format ' [$cat (' exceeded its ', STALL-S, ' s deadline')]]
                              [not [$has $ra 'exceeds the pinned bound']]]
                     'a reading past its deadline reds the step by name, each format, inside the bound — never a hung run' $ra]]
 
       # B — the reading is printed, the driver exits, a grandchild holds stdout
-      [= $sb [$plant $root 'holder' [$cat ('sleep 90 </dev/null 2>/dev/null &\n', [$good-line '7.000'])]]]
+      [= $sb [$plant $root 'holder' [$cat ('sleep 900 </dev/null 2>/dev/null &\n', [$good-line '7.000'])]]]
       [= $rb [$drive $sb [$cat ($root, '/corpus-b')] '0']]
       [= $b [$judge 'B' [and [not [$hung $rb]] [= [$exit-of $rb] '0'] [$has $rb 'bench/repr: GREEN']]
                     "a grandchild holding the format driver's stdout cannot hold the step: the reading is a file, read once the driver exits" $rb]]
@@ -206,17 +223,17 @@
                     'CX_REPR_KEEP=1 leaves the generated corpora on disk' $rg]]
 
       # H — one format over its bound, another stalled: never the retry class
-      [= $sh [$plant $root 'mixed' [$cat ('if [ "$1" = json ]; then\n', [$good-line '9.500'], '\nelif [ "$1" = xml ]; then\nsleep 90\nelse\n',
+      [= $sh [$plant $root 'mixed' [$cat ('if [ "$1" = json ]; then\n', [$good-line '9.500'], '\nelif [ "$1" = xml ]; then\nsleep 900\nelse\n',
                                           [$good-line '7.000'], '\nfi')]]]
-      [= $rh [$drive $sh [$cat ($root, '/corpus-h')] '0']]
+      [= $rh [$drive-at $sh [$cat ($root, '/corpus-h')] '0' STALL-S '1800']]
       [= $h [$judge 'H' [and [not [$hung $rh]] [= [$exit-of $rh] '1']
-                             [$has $rh 'bench/repr: FAIL — format xml exceeded its 2 s deadline']
+                             [$has $rh [$cat ('bench/repr: FAIL — format xml exceeded its ', STALL-S, ' s deadline')]]
                              [$has $rh 'exceeds the pinned bound 7.95x']]
                     'a stall beside a bound exceedance reds with exit 1, outside the retry class, so no re-measurement absorbs the stall' $rh]]
 
       # I — a zero deadline is no deadline: refused by name, never run
       [= $ri [$drive-at $sh [$cat ($root, '/corpus-i')] '0' '0' '1800']]
-      [= $rj [$drive-at $sh [$cat ($root, '/corpus-j')] '0' '2' '0']]
+      [= $rj [$drive-at $sh [$cat ($root, '/corpus-j')] '0' STALL-S '0']]
       [= $i [$judge 'I' [and [not [$hung $ri]] [= [$exit-of $ri] '2'] [$has $ri 'CX_REPR_LANE_DEADLINE_S']
                              [not [$hung $rj]] [= [$exit-of $rj] '2'] [$has $rj 'CX_REPR_BUILD_DEADLINE_S']]
                     'a deadline of 0 s (a reading or the build) is refused by name, never run without one' [?if [$hung $ri] [then $ri] [else $rj]]]]
