@@ -1,0 +1,35 @@
+[# docs-src/repos/cx-platform-workbench.cxd — the workbench's page,
+   repo-cx-platform-workbench.html (cx-private#1855, from #750; RULED:
+   DOCS-41, DOCS-49). Facts from the registries; the one example from its own
+   corpus (the workbench smoke case). #]
+
+[repo name=cx-platform-workbench
+  [intro
+    """One place to open a CX document, read it, talk about it and change it
+       without breaking it. `cx-platform-workbench` is the document
+       workbench: it browses a document by path or CXPath, keeps comments on
+       its nodes beside it, and makes every edit a previewed change whose
+       result is checked — it re-reads to its own address and passes its
+       declared schema — before a byte of the file is written."""]
+  [body
+    """The workbench is a consumer of verbs cx already ships: the strict
+       canonical form and its hash give every node and every version an
+       identity, CXPath selects, the semantic diff shows what an edit does,
+       schema validation decides whether it may land, and the lossless
+       formatter keeps the bytes a person wrote. A comment is itself a CX
+       element, addressed by the hashes of the document and of the node it is
+       about, so it survives a reformat and is refused when its node is gone."""]
+  [gives
+    """One package of the platform group, born as its own repository rather
+       than extracted from the front door. Today it carries its design and
+       its first conformance case; the module and its `cx` subcommand land
+       with the implementation."""]
+  [try
+    """The comment shape, frozen by the design: a comment on node /2/1 of a
+       document, read back as its head, its attribute names in order and its
+       one body."""]
+  [fixture id=wb-000-the-comment-shape]
+  [status
+    """A design with its error band registered (CXER7300–7349) and one smoke
+       case graded by the repository's own check; the module, its reference
+       page and its place in the build arrive with the implementation."""]]
