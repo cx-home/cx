@@ -132,7 +132,7 @@ program-with- program-order-by- program-string- program-str- program-arith-
 program-logic- program-cmp- program-pfa- program-fizzbuzz- program-sleep-
 program-secret- program-reveal- program-with-error-hook- program-with-caps-
 program-dc- program-gen- program-sap- program-meta- program-stack-
-cmd- eff-trace- ev-budget- ev-pull- ev-trim- ev-select-fair- program-callstep-
+cmd- eff-trace- ev-budget- ev-pull- ev-trim- ev-select-fair- program-callstep- program-1836-
 cxast- ev-let- img- ev-park- cxtape-
 program-ascription- program-attr-ascription- program-attr-bare-
 program-body-bare- program-computed-step- program-body-ascription-
