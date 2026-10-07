@@ -737,9 +737,18 @@ wasm-fresh-gate:
 # it when stale, prove it fresh, once. Two steps each doing "check || build"
 # under -j raced on 2026-09-14 (run on 226a4ae27): one built, the other read
 # dist/wasm/cxlib.js mid-write and its shard died on "Unexpected end of
-# input". A prerequisite serializes the build ahead of both.
-.PHONY: wasm-bundle-fresh
+# input". A prerequisite serializes the build ahead of both — inside ONE make.
+# The post-merge flow runs each step as its own make (#1817), so on a645cd136
+# test-playground-mermaid and test-playground-wasm-traps each found the bundle
+# stale and each ran build-playground; the other's build_libcx_wasm.sh removed
+# libcx-sync.js before it relinked it, and mermaid, its own build and freshness
+# proof done, read "no node-loadable wasm bundle under dist/wasm/". The check and
+# the build now run under scripts/tree_lock.sh (vcx/target/wasm-bundle.lock): the
+# second step waits, finds the first one's bundle fresh, and does not rebuild.
+.PHONY: wasm-bundle-fresh wasm-bundle-fresh-locked
 wasm-bundle-fresh:
+	@sh $(CURDIR)/scripts/tree_lock.sh wasm-bundle dist/wasm/ $(MAKE) --no-print-directory wasm-bundle-fresh-locked
+wasm-bundle-fresh-locked:
 	@OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/check_wasm_fresh.sh >/dev/null 2>&1 || $(MAKE) build-playground
 	@OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/check_wasm_fresh.sh
 
