@@ -24,8 +24,14 @@
 # name that looks like the session surface and is not one is either a fresh
 # edge or a coincidence nobody should have to adjudicate at review time.
 #
-# WHAT IS NOT A VIOLATION. Comment text (everything from `//` to end of line is
-# dropped before tokenizing) and C FFI names, which are libssh2's and not the
+# WHAT IS NOT A VIOLATION. A plain string literal ('…' or "…" on one line,
+# with no `$` interpolation) is data, not an edge, and is dropped before
+# tokenizing: store_pgwire.v answers the SQL function `session_user` by
+# name, a map key and not a call (the loop's store-session-dep-gate red on
+# 4ec3fe348). A literal that interpolates is kept whole, so a session call
+# inside `${…}` is still seen. Comment text (everything from `//` to end of
+# line, read after the literals are gone, so a `//` inside a URL literal
+# hides nothing) and C FFI names, which are libssh2's and not the
 # identity module's: `C.libssh2_session_init_ex` tokenizes to `C` +
 # `libssh2_session_init_ex`, and neither is a session symbol. Tokenization is
 # exact -- a token matches a symbol only when it IS that symbol, never when it
@@ -43,6 +49,7 @@
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
 [?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/re'      as=re]
 
 # -- helpers ------------------------------------------------------------
 
@@ -80,6 +87,18 @@
         [= $a2 [$strings:replace $z "@" " "]] [= $b2 [$strings:replace $a2 "$" " "]]
     $b2]]
 
+# drop-plain-strings: every one-line string literal of a V source text that
+# interpolates nothing, replaced by ''. The pattern reads a literal of either
+# quote, a backslash escaping the next character, and never crosses a line --
+# an apostrophe in a comment pairs with nothing on the next line.
+[?def lit-re scope=private pure [returns element] ()
+  [$re:compile [$concat "'(?:[^'\\\n]|\\.)*'" "|" '"(?:[^"\\\n]|\\.)*"']]]
+
+[?def drop-plain-strings scope=private pure [returns string] ($text::string)
+  [$re:replace-fn [$lit-re] $text
+    [?fn ($m) [?let [= $lit [$re:group $m 0]]
+                [?if [$strings:contains $lit "$"] [then $lit] [else "''"]]]]]]
+
 # tokens: the identifier tokens of a V source text, comments dropped. Each
 # line is stripped and blanked FIRST, then the whole text is split once -- a
 # sequence is never element content in CX and nothing auto-splices, so the
@@ -87,7 +106,7 @@
 [?def tokens scope=private pure ($text::string)
   [?for [in $t [$strings:split-whitespace
                  [$strings:join
-                   [?for [in $line [$strings:split-lines $text]]
+                   [?for [in $line [$strings:split-lines [$drop-plain-strings $text]]]
                      [yield [$blank-seps [$code-of $line]]]]
                    " "]]]
     [where [not [= $t ""]]]
@@ -137,12 +156,17 @@
                  [file path="store_violation.v"
                    text="module platform\nfn sx_bad() int { return session_kv('x') }\n"],
                  [file path="store_unknown.v"
-                   text="module platform\nfn sx_odd() int { return session_never_defined_anywhere(1) }\n"])]
+                   text="module platform\nfn sx_odd() int { return session_never_defined_anywhere(1) }\n"],
+                 [file path="store_literal.v"
+                   text="module platform\nfn sx_sql() map[string]string { return {'session_user': 'u', 'url': 'http://h/x'} }\n"],
+                 [file path="store_interp.v"
+                   text="module platform\nfn sx_msg() string { return 'kv ${session_kv('x')}' }\n"])]
       [= $v [$check $sess $files]]
       [= $hits [?for [in $f $v/failures/row]
                  [order-by $f@path]
                  [yield [$concat [$string $f@path] ":" [$string $f@symbols] ":" [$string $f@undeclared]]]]]
-      [= $want ("store_unknown.v:session_never_defined_anywhere:session_never_defined_anywhere",
+      [= $want ("store_interp.v:session_kv:",
+                "store_unknown.v:session_never_defined_anywhere:session_never_defined_anywhere",
                 "store_violation.v:session_kv:")]
       [= $missing [?for [in $w $want] [where [not [$member $w $hits]]] [yield $w]]]
       [= $extra   [?for [in $h $hits] [where [not [$member $h $want]]] [yield $h]]]
@@ -150,7 +174,7 @@
       [?if [?if [= [$count $missing] 0]
              [then [?if [= [$count $extra] 0] [then $derived-ok] [else false]]]
              [else false]]
-        [then [?let [= $_ [$say "store-session-dep self-test OK -- a synthetic store file calling session_kv is RED; an undeclared session_-shaped name is RED (deny-by-default); a comment naming session_kv and a libssh2 C FFI selector are CLEAN; 3 symbols derived."]]
+        [then [?let [= $_ [$say "store-session-dep self-test OK -- a synthetic store file calling session_kv is RED; an undeclared session_-shaped name is RED (deny-by-default); a session call inside a string interpolation is RED; a comment naming session_kv, a libssh2 C FFI selector and a plain string literal 'session_user' are CLEAN; 3 symbols derived."]]
                 [$env:exit 0]]]
         [else [?let [= $_ [$cry [$concat "store-session-dep self-test FAILED -- missing: "
                                           [$strings:join $missing "; "]
