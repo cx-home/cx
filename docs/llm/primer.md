@@ -983,6 +983,11 @@ expansion, no escaping, no reinterpretation. Raw text is how CX carries a
 payload in another language — SQL, a shell script, a regex, prose full of
 brackets — without the reader touching a byte.
 
+In **code**, `[# … #]` stays a node — raw text the program carries as data —
+so a verb that wants a string refuses it. The code spelling of an unescaped
+string, a regex above all, is the raw string `r'''…'''`:
+`[$re:compile r'''a+\d''']`.
+
 `input.cx`
 ```cx
 [;a comment]
