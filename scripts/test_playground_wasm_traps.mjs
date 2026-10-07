@@ -155,10 +155,34 @@ for (const [key, source, input, reading] of cases) {
   if (mustAnswer.has(key) && verdict !== 'OK') unbound.push(`${key}: ${verdict} ${detail.split('\n')[0].slice(0, 120)}`);
   if (VERBOSE || verdict === 'TRAP') console.log(`  ${verdict.padEnd(8)} ${key}${detail ? ' — ' + detail.split('\n')[0].slice(0, 100) : ''}`);
   // A trap can leave the engine inconsistent; start the next example clean.
-  if (verdict === 'TRAP' || verdict === 'ABORT') { try { cxlib.reset(); } catch (_) { /* older bundle */ } }
+  // reset() resolves once the fresh instance is in place (cxlib.js): not
+  // awaiting it ran every later example on the trapped instance, so one
+  // engine defect read as hundreds of traps (#1873: 370 of 443).
+  if (verdict === 'TRAP' || verdict === 'ABORT') { try { await cxlib.reset(); } catch (_) { /* older bundle */ } }
 }
 
-console.log(`test-playground-wasm-traps: ${cases.length} examples+probes — ok ${counts.ok}, refused ${counts.refused}, aborted ${counts.abort} (single-threaded bundle), TRAPS ${counts.trap}`);
+// ── repetition probe (#1873) ─────────────────────────────────────────────
+// The page evaluates program after program in ONE engine instance, and the
+// sweep above resets only after a failure, so an engine that answers a
+// program once but traps on a later run of it (a cache keyed by an address
+// the wasm heap reuses, #1873's compiled lambdas) is caught here by name:
+// one [?fn] program, REPEAT_N times, on a fresh instance, no reset between.
+const REPEAT_N = 24;
+const REPEAT_SRC = '[?map (1, 2) [using [?fn ($n) [* $n $n]]]]';
+try { await cxlib.reset(); } catch (_) { /* older bundle */ }
+for (let i = 1; i <= REPEAT_N; i++) {
+  let verdict = 'OK', detail = '';
+  try { cxlib.evalCode(REPEAT_SRC, 'cx', ''); } catch (e) { [verdict, detail] = classify(e); }
+  if (verdict === 'TRAP') {
+    counts.trap++;
+    traps.push(`probe:1873:repeat-lambda (run ${i} of ${REPEAT_N}): ${detail.split('\n')[0].slice(0, 120)}`);
+    console.log(`  TRAP     probe:1873:repeat-lambda run ${i} of ${REPEAT_N} — ${detail.split('\n')[0].slice(0, 100)}`);
+    try { await cxlib.reset(); } catch (_) { /* older bundle */ }
+    break;
+  }
+}
+
+console.log(`test-playground-wasm-traps: ${cases.length} examples+probes + ${REPEAT_N} repeated runs — ok ${counts.ok}, refused ${counts.refused}, aborted ${counts.abort} (single-threaded bundle), TRAPS ${counts.trap}`);
 if (aborts.length && VERBOSE) console.log(`  aborted: ${aborts.join(', ')}`);
 console.log(`test-playground-wasm-traps: ${mustAnswer.size} code fixtures that read a document evaluated over it — ${mustAnswer.size - unbound.length} answered, ${unbound.length} did not`);
 if (traps.length || unbound.length) {
