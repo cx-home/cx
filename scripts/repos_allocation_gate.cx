@@ -29,6 +29,10 @@
 #                   that are cx-core-code's are the exception: the ring decides
 #                   where a module's code lives, wherever its other artifacts
 #                   travel (RULED: D76c)
+#   [front-door pin] a pinned repository's own deps.cxd pins cx-private for a
+#                   module, repository or builtin an EXTRACTED repository ships,
+#                   or for no module (#1768) -- the [front-door pins] join below;
+#                   the same for a `cx` row, and a [dep] naming no registry repo
 #
 # A file belongs to the FIRST rule, in document order, whose exact= equals the
 # path or whose prefix= leads it. Nothing else is inferred.
@@ -155,7 +159,7 @@
     # path that left is a [dead rule] on the same run, so the two refusals
     # together mean an extraction is finished in this file or not started.
     [= $empty [?for [in $x $repos] [where [not [$member [$string $x@name] $filled]]]
-                [where [not [= [$string [?else $x@status ""]] "extracted"]]]
+                [where [not [or [= [$string [?else $x@status ""]] "extracted"] [= [$string [?else $x@status ""]] "created"]]]]
                 [where [?if $front-door [then [= [$string $x@name] "cx"]] [else true]]]
                 [yield [failure kind="empty repo" what=[$string $x@name]]]]]
     # …and the converse: an extracted repository that still claims a tracked
@@ -164,7 +168,7 @@
     # only when NO file matches.
     [= $extracted-claims
       [?for [in $x $repos]
-        [where [= [$string [?else $x@status ""]] "extracted"]]
+        [where [or [= [$string [?else $x@status ""]] "extracted"] [= [$string [?else $x@status ""]] "created"]]]
         [where [$member [$string $x@name] $filled]]
         [yield [failure kind="extracted repo still claims files"
                  what=[$string $x@name]]]]]
@@ -278,7 +282,7 @@
 
 [?def package-pins scope=private pure ($repos $readings)
   [?for [in $x $repos]
-    [where [= [$string [?else $x@status ""]] "extracted"]]
+    [where [or [= [$string [?else $x@status ""]] "extracted"] [= [$string [?else $x@status ""]] "created"]]]
     [where [= [$string [?else $x@ships ""]] "package"]]
     [= $name [$string $x@name]]
     [= $declared [$pin-list [$strings:split-whitespace [$string [?else $x@pins ""]]]]]
@@ -294,6 +298,94 @@
                      what=[$concat $name " -- the row says pins='" $declared "', deps/" $name "/deps.cxd pins '"
                                 [$pin-list [$strings:split-whitespace [$first $read]]] "'"]]]]]]]
 
+# front-door-pins: the [front-door pins] join (#1768; RULED: RS-7, RS-12,
+# RS-36). Every repository the front door pins carries its own deps.cxd, and
+# the pinned checkout has it at deps/<repo>/deps.cxd. A `[dep repo=cx-private]`
+# row there says the component builds on the pre-split front door for the
+# modules its module= names. Since the split, registry/modules.cxd's repo= says
+# which repository ships each module, so a word naming a module -- or a
+# repository -- that an EXTRACTED repository ships is a pin to the wrong place:
+# the component reads the front door's stale copy of a module whose home has
+# moved, and the site draws the private front door as what it builds on. It is
+# refused word by word. A row whose module= names nothing pins the front door
+# for nothing and is refused too. A word naming the front door itself
+# (`cx-private`, `cx` -- spec §2's "the repository's own name where it provides
+# no module namespace") is the composition only the front door declares, and a
+# module with no repo= is the front door's own: both pass. A word the registry
+# does not know is refused (fail closed: an unknown word is not a front-door
+# module). `$readings` is one `[fdrow repo= found= words= why=]` per cx-private
+# row -- found=false when the file cannot be read. Pure; the caller reads the
+# files. Every [dep] row is read, not only cx-private's (REFUTE-1, PINS1 c1/c2): a
+# row pinning `cx` -- the public front door -- is held to the same module
+# homes, and a row naming a repository the registry has no row for (a renamed
+# front door, a typo) is refused, since nothing else checks a component's
+# repo= names against the registry.
+[?def module-key scope=private pure ($m)
+  [?let [= $ns [$string [?else $m@ns "none"]]]
+    [?if [or [= $ns "cx-stdlib"] [= $ns "cx-platform"]]
+      [then [$concat $ns "/" [$string $m@name]]]
+      [else [$string $m@name]]]]]
+
+[?def word-owners scope=private pure ($modules $repos $w)
+  [?for [in $part ([?for [in $m $modules] [where [= [$module-key $m] $w]] [yield [$string [?else $m@repo "cx"]]]],
+                   [?for [in $r $repos] [where [= [$string $r@name] $w]] [yield $w]])]
+    [in $o $part] [yield $o]]]
+
+[?def front-door-readings scope=private pure ($repo $is-file $text)
+  [?let [= $doc [?if $is-file [then [?else [$cx:parse $text] [unreadable]]] [else [unreadable]]]]
+        [= $root [$string [$name $doc]]]
+    [?if [not [= $root "deps"]]
+      [then ([fdrow repo=$repo found="false" pin="" words=""
+                    why=[?if $is-file [then "it does not read as a [deps] document"]
+                          [else "it is not a file in the pinned checkout (run make deps-sync)"]]])]
+      [else [?for [in $d $doc/dep]
+              [yield [fdrow repo=$repo found="true" pin=[$string [?else $d@repo ""]] words=[$string [?else $d@module ""]] why=""]]]]]]]
+
+# THE COMPOSITION ALLOW-LIST (#1802, ruled (a) 2026-10-06). The front door's
+# own name as a module word -- `module='cx-private'` -- is the composition only
+# the front door declares, and only the repositories named here may pin it:
+# cx-platform-xsp (its build compiles `code` in the front door's composition,
+# the cycle #1801), cx-platform-db (`make real-cx` builds the real-server cx
+# through the front door's `db-lane-cx`), and cx-core-data, whose row is the
+# V-fork declaration the front door's build is made against (the ruling named
+# the first two; the third is a declaration, not a build input, and is named
+# here so a FOURTH composition pin cannot pass silently). Any other repository
+# pinning the front door for its composition is refused by name.
+[?const FRONT-DOOR-COMPOSITION ("cx-platform-xsp", "cx-platform-db", "cx-core-data")]
+
+[?def front-door-pins scope=private pure ($repos $modules $readings $allowed=$FRONT-DOOR-COMPOSITION)
+  [?let [= $extracted [?for [in $r $repos] [where [or [= [$string [?else $r@status ""]] "extracted"] [= [$string [?else $r@status ""]] "created"]]] [yield [$string $r@name]]]]
+        [= $known [?for [in $r $repos] [yield [$string $r@name]]]]
+    [?for [in $d $readings]
+      [= $name [$string $d@repo]]
+      [= $pin [$string [?else $d@pin ""]]]
+      [= $words [$strings:split-whitespace [$string [?else $d@words ""]]]]
+      [= $fails [?if [not [= [$string $d@found] "true"]]
+                  [then ([failure kind="front-door pins unreadable"
+                           what=[$concat $name " -- deps/" $name "/deps.cxd cannot be read: " [$string $d@why]]])]
+                  [else [?if [not [$member $pin $known]]
+                    [then ([failure kind="front-door pin"
+                             what=[$concat $name " -- deps/" $name "/deps.cxd pins '" $pin "', which names no repository in the registry"]])]
+                  [else [?if [not [$member $pin ("cx-private", "cx")]] [then ()]
+                  [else [?if [= [$count $words] 0]
+                    [then ([failure kind="front-door pin"
+                             what=[$concat $name " -- deps/" $name "/deps.cxd pins " $pin " for no module (module='')"]])]
+                    [else [?for [in $part ([?for [in $w $words]
+                            [where [and [$member $w ("cx-private", "cx")] [not [$member $name $allowed]]]]
+                            [yield [failure kind="front-door pin"
+                                     what=[$concat $name " -- deps/" $name "/deps.cxd pins " $pin " for '" $w "', the front door's composition, which only "
+                                                   [$strings:join $allowed ", "] " may pin (#1802)"]]]],
+                    [?for [in $w $words]
+                            [where [not [$member $w ("cx-private", "cx")]]]
+                            [= $owners [$word-owners $modules $repos $w]]
+                            [= $moved [?for [in $o $owners] [where [$member $o $extracted]] [yield $o]]]
+                            [where [or [= [$count $owners] 0] [> [$count $moved] 0]]]
+                            [yield [failure kind="front-door pin"
+                                     what=[?if [= [$count $owners] 0]
+                                            [then [$concat $name " -- deps/" $name "/deps.cxd pins " $pin " for '" $w "', which names no module or repository in the registry"]]
+                                            [else [$concat $name " -- deps/" $name "/deps.cxd pins " $pin " for '" $w "', which " [$first $moved] " ships (status=extracted)"]]]]]])] [in $cf $part] [yield $cf]]]]]]]]]]]
+      [in $f $fails] [yield $f]]]]
+
 # registry-values: a row whose ships= or status= is not one of the values the
 # header declares leaves every join keyed on them silently (the refutation
 # round: `ships=Package` skipped the package-pins join), so it is refused.
@@ -302,10 +394,10 @@
     [= $s [$string [?else $x@ships ""]]]
     [= $st [$string [?else $x@status ""]]]
     [where [or [not [$member $s ("binary", "package", "pypi", "crate", "go-module", "v-module", "editor", "none", "archived")]]
-               [not [$member $st ("", "extracted")]]]]
+               [not [$member $st ("", "extracted", "created")]]]]
     [yield [failure kind="registry value"
              what=[$concat [$string $x@name] " -- ships=" $s " status=" $st
-                           " (ships is binary|package|pypi|crate|go-module|v-module|editor|none|archived; status is absent or extracted)"]]]]]
+                           " (ships is binary|package|pypi|crate|go-module|v-module|editor|none|archived; status is absent, extracted or created)"]]]]]
 
 # -- the self-test: synthetic rules over a synthetic file list ---------------
 
@@ -476,10 +568,61 @@
       [= $dup-ok [= [$strings:join $dup-kinds " | "] "package pins drift:pkg-dup | registry value:typo | registry value:half"]]
       [= $pp-ok [and $pp-ok [and $dr-ok $dup-ok]]]
 
+      # -- the [front-door pins] join (#1768): a pinned repository's own deps.cxd
+      # pinning cx-private for a module an extracted repository ships. Red on the
+      # head before this case existed: fifteen pinned repositories' deps.cxd named
+      # cx-stdlib/cx-platform modules, cx-core-code or their own builtins under
+      # cx-private, and nothing read them. A module word, a repository-name word,
+      # an empty module= and an unknown word are each refused; the front door's
+      # own name and a module with no repo= (the front door's own) pass; an
+      # unreadable file is refused; only CHILD [dep repo=cx-private] rows are read.
+      [= $fp-reg [$cx:parse "[r
+        [repo name=cx-private] [repo name=cx] [repo name=moved status=extracted] [repo name=planned]
+        [module name=json ns=cx-stdlib repo=moved]
+        [module name=own ns=cx-stdlib]
+        [module name=db ns=none repo=moved]
+        [module name=later ns=cx-platform repo=planned]
+      ]"]]
+      [= $fp-readings [?for [in $d [$cx:parse "[r
+        [fdrow repo=r-module found=true pin=cx-private words='cx-stdlib/json']
+        [fdrow repo=r-bare found=true pin=cx-private words='db']
+        [fdrow repo=r-repo found=true pin=cx-private words='moved']
+        [fdrow repo=r-empty found=true pin=cx-private words='']
+        [fdrow repo=r-self found=true pin=cx-private words='cx-private cx']
+        [fdrow repo=r-intruder found=true pin=cx-private words='cx-private']
+        [fdrow repo=r-own found=true pin=cx-private words='cx-stdlib/own cx-platform/later']
+        [fdrow repo=r-unknown found=true pin=cx-private words='cx-stdlib/nope']
+        [fdrow repo=r-unread found=false pin='' words='' why='it is not a file in the pinned checkout (run make deps-sync)']
+        [fdrow repo=r-public found=true pin=cx words='cx-stdlib/json']
+        [fdrow repo=r-stranger found=true pin=cx-front words='cx-stdlib/json']
+        [fdrow repo=r-fine found=true pin=moved words='cx-stdlib/json']
+      ]"]//fdrow] [yield $d]]]
+      [= $fp-kinds [?for [in $f [$front-door-pins [?for [in $r $fp-reg//repo] [yield $r]] [?for [in $m $fp-reg//module] [yield $m]] $fp-readings allowed=[$strings:split-whitespace "r-self"]]]
+                     [yield [$concat [$string $f@kind] ":" [$string $f@what]]]]]
+      [= $fp-want ("front-door pin:r-module -- deps/r-module/deps.cxd pins cx-private for 'cx-stdlib/json', which moved ships (status=extracted)",
+                    "front-door pin:r-bare -- deps/r-bare/deps.cxd pins cx-private for 'db', which moved ships (status=extracted)",
+                    "front-door pin:r-repo -- deps/r-repo/deps.cxd pins cx-private for 'moved', which moved ships (status=extracted)",
+                    "front-door pin:r-empty -- deps/r-empty/deps.cxd pins cx-private for no module (module='')",
+                    "front-door pin:r-unknown -- deps/r-unknown/deps.cxd pins cx-private for 'cx-stdlib/nope', which names no module or repository in the registry",
+                    "front-door pins unreadable:r-unread -- deps/r-unread/deps.cxd cannot be read: it is not a file in the pinned checkout (run make deps-sync)",
+                    "front-door pin:r-public -- deps/r-public/deps.cxd pins cx for 'cx-stdlib/json', which moved ships (status=extracted)",
+                    "front-door pin:r-stranger -- deps/r-stranger/deps.cxd pins 'cx-front', which names no repository in the registry",
+                    "front-door pin:r-intruder -- deps/r-intruder/deps.cxd pins cx-private for 'cx-private', the front door's composition, which only r-self may pin (#1802)")]
+      [= $fp-missing [?for [in $w $fp-want] [where [not [$member $w $fp-kinds]]] [yield $w]]]
+      [= $fp-extra [?for [in $k $fp-kinds] [where [not [$member $k $fp-want]]] [yield $k]]]
+      [= $fr ([$front-door-readings "f1" false ""],
+               [$front-door-readings "f2" true "[x [dep repo=cx-private module=a]]"],
+               [$front-door-readings "f3" true "[deps [dep repo=cx-private module='a b'] [dep repo=other module=c] [doc [x [dep repo=cx-private module=d]]]]"],
+               [$front-door-readings "f4" true "[deps [dep repo=other module=c]]"],
+               [$front-door-readings "f5" true "[deps [dep repo=cx module=cx-stdlib/json]]"])]
+      [= $fr-got [$strings:join [?for [in $part $fr] [in $d $part] [yield [$concat [$string $d@repo] "=" [$string $d@found] ":" [$string [?else $d@pin ""]] ":" [$string $d@words]]]] " "]]
+      [= $fr-ok [= $fr-got "f1=false:: f2=false:: f3=true:cx-private:a b f3=true:other:c f4=true:other:c f5=true:cx:cx-stdlib/json"]]
+      [= $pp-ok [and $pp-ok [and $fr-ok [and [= [$count $fp-missing] 0] [= [$count $fp-extra] 0]]]]]
+
       [?if [?if [= [$count $missing] 0]
              [then [?if [= [$count $extra] 0] [then [and $census-ok [and $mode-ok [and $fd-ok [and $lw-ok $pp-ok]]]]] [else false]]]
              [else false]]
-        [then [?let [= $_ [$say "repos-allocation self-test OK -- unallocated, dead rule, duplicate, undeclared, empty repo, split module each caught once, and the split twice: a torn code= and a torn half= (#1609); an EXTRACTED repo that owns nothing is exempt and one that still claims a file is caught (RS-12); an unpinnable pin and a self-pin caught on the deps.cxd join (#1589 item 23); a whole module passes; census a=1 b=1 (y/ counted under the undeclared rule's repo, as it must); the v/six.md fixture forces cx-private mode so this whole-tree case is unchanged; the front-door case (repo=cx files only) passes clean with the other row's dead-rule/empty-repo checks skipped, and the same tree plus one lang/_archived/ file is refused by name (RS-8, D59a); a 1,200-byte why= row is read and its pinned neighbours are not unpinnable (#1668); a package row whose pins= disagrees with its deps.cxd either way, or whose deps.cxd is unread, is refused and the same set in another order agrees (#1714)."]]
+        [then [?let [= $_ [$say "repos-allocation self-test OK -- unallocated, dead rule, duplicate, undeclared, empty repo, split module each caught once, and the split twice: a torn code= and a torn half= (#1609); an EXTRACTED repo that owns nothing is exempt and one that still claims a file is caught (RS-12); an unpinnable pin and a self-pin caught on the deps.cxd join (#1589 item 23); a whole module passes; census a=1 b=1 (y/ counted under the undeclared rule's repo, as it must); the v/six.md fixture forces cx-private mode so this whole-tree case is unchanged; the front-door case (repo=cx files only) passes clean with the other row's dead-rule/empty-repo checks skipped, and the same tree plus one lang/_archived/ file is refused by name (RS-8, D59a); a 1,200-byte why= row is read and its pinned neighbours are not unpinnable (#1668); a package row whose pins= disagrees with its deps.cxd either way, or whose deps.cxd is unread, is refused and the same set in another order agrees (#1714); a pinned repository's deps.cxd pinning cx-private for a module, a repository or a builtin an extracted repository ships, for no module, or for a word the registry does not know is refused, the front door's own name and its own modules pass, and an unread file is refused (#1768); a cx row is held the same way and a [dep] naming no registry repository is refused (PINS1 c1, c2)."]]
                 [$env:exit 0]]]
         [else [?let [= $_ [$cry [$concat "repos-allocation self-test FAILED -- missing: "
                                           [$strings:join $missing "; "]
@@ -493,7 +636,9 @@
                                           " | long-why rows=" [$string [$count $lw-repos]] " failures=" [$strings:join $lw-fails "; "]
                                           " | package-pins missing=" [$strings:join $pp-missing "; "]
                                           " unexpected=" [$strings:join $pp-extra "; "]
-                                          " | readings=" $dr-got " | duplicates/values=" [$strings:join $dup-kinds " | "]]]]
+                                          " | readings=" $dr-got " | duplicates/values=" [$strings:join $dup-kinds " | "]
+                                          " | front-door-pins missing=" [$strings:join $fp-missing "; "]
+                                          " unexpected=" [$strings:join $fp-extra "; "] " readings=" $fr-got]]]
                 [$env:exit 1]]]]]]
   [else ""]]
 
@@ -530,11 +675,18 @@
   # deps/, so the join runs in both modes.
   [= $pkg-readings [?for [in $x $repos]
                       [where [= [$string [?else $x@ships ""]] "package"]]
-                      [where [= [$string [?else $x@status ""]] "extracted"]]
+                      [where [or [= [$string [?else $x@status ""]] "extracted"] [= [$string [?else $x@status ""]] "created"]]]
                       [= $dp [$concat "deps/" [$string $x@name] "/deps.cxd"]]
                       [= $is-file [$io:is-file $dp]]
                       [yield [$deps-reading [$string $x@name] $is-file [?if $is-file [then [?else [$io:read-file $dp] ""]] [else ""]]]]]]
-  [= $failures [?for [in $part ([?for [in $f $v/failures/failure] [yield $f]], [$package-pins $repos $pkg-readings], [$registry-values $repos])]
+  # the [front-door pins] join (#1768): every pinned repository's own deps.cxd,
+  # read from the same checkout, its cx-private rows held to the module homes.
+  [= $fd-readings [?for [in $p $pins]
+                     [= $dp [$concat "deps/" $p "/deps.cxd"]]
+                     [= $is-file [$io:is-file $dp]]
+                     [in $x [$front-door-readings $p $is-file [?if $is-file [then [?else [$io:read-file $dp] ""]] [else ""]]]]
+                     [yield $x]]]
+  [= $failures [?for [in $part ([?for [in $f $v/failures/failure] [yield $f]], [$package-pins $repos $pkg-readings], [$front-door-pins $repos $modules $fd-readings], [$registry-values $repos])]
                   [in $f $part] [yield $f]]]
   [= $_census [?for [in $c $v/census/row]
                 [yield [$say [$concat [$strings:pad-start [$string $c@n] 6 " "] "  " [$string $c@repo]]]]]]

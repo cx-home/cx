@@ -255,7 +255,7 @@
   [= $release [$release-of [$io:read-file "VERSION"]]]
   [= $reg [$cx:parse [$io:read-file REGISTER]]]
   [= $names [?for [in $r [$cx:parse [$io:read-file REPOS]]//repo]
-              [where [= [$attr $r "status" ""] "extracted"]]
+              [where [or [= [$attr $r "status" ""] "extracted"] [= [$attr $r "status" ""] "created"]]]
               [yield [$attr $r "name" ""]]]]
   [= $private [$fetch HOME]]
   [= $components [?for [in $n $names] [yield {repo: $n, issues: [$fetch $n]}]]]
