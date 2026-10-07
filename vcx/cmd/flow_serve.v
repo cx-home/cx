@@ -118,7 +118,7 @@ module main
 
 import os
 import cx
-import code { time_stdlib_builtin }
+import code
 
 // the RESERVED ingress path: correlated acts, never a binding's delivery. An
 // `[on kind=webhook path=…]` row claiming it refuses CXER4965 (§8, WF-35).
@@ -388,10 +388,19 @@ fn flow_serve_row(e cx.Element) FlowBinding {
 				if e.attr('every') != '' || e.attr('at') != '' {
 					flow_serve_refuse('kind `schedule` carries cron= AND every=/at= — the calendar form or the cadence, not both (flow.md §4.24)')
 				}
-				parsed := time_stdlib_builtin('time-parse-cron', [cx.mk_string(cron), cx.mk_string('UTC'),
-					cx.mk_map([])]) or { cx.mk_element(cx.Element{ name: 'err' }) }
-				if !parsed.is_element() || parsed.element().name == 'err' {
-					flow_serve_refuse('kind `schedule` carries cron=`${cron}`, which time.md\'s cron grammar does not read (five fields: minute hour day-of-month month day-of-week)')
+				// The cron grammar is the time pack's (time.md): a profile built
+				// without it (the embed profile, `-d cx_no_pack_time`) refuses
+				// the calendar form by name rather than failing to build.
+				$if cx_no_pack_time ? {
+					flow_serve_refuse('kind `schedule` carries cron=`${cron}`, and this build has no time pack to read it (time.md) — use every=/at= or the platform build')
+				} $else {
+					parsed := code.time_stdlib_builtin('time-parse-cron', [cx.mk_string(cron),
+						cx.mk_string('UTC'), cx.mk_map([])]) or {
+						cx.mk_element(cx.Element{ name: 'err' })
+					}
+					if !parsed.is_element() || parsed.element().name == 'err' {
+						flow_serve_refuse('kind `schedule` carries cron=`${cron}`, which time.md\'s cron grammar does not read (five fields: minute hour day-of-month month day-of-week)')
+					}
 				}
 				b.cron = cron
 			} else {
