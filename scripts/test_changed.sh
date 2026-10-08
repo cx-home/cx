@@ -509,6 +509,10 @@ step_globs() {
     # #1450: the isolation guard reads the two bench scripts and its own source;
     # it plants its artifacts, so nothing else in the tree is an input.
     check-bench-isolation)         echo 'scripts/run_bench_json.cx scripts/compare_bench.cx scripts/bench_isolation_selftest.sh' ;;
+    # #1884: the paired perf record — the runtime it measures (pin rows, front-door
+    # modules, the V fork), the two bench scripts and the recipe; the same set
+    # the landing gate calls a runtime diff.
+    perf-pair)                     echo 'deps.cxd registry/modules.cxd vcx/* third_party/* scripts/run_bench_json.cx scripts/compare_bench.cx Makefile' ;;
     # RULED: 1170-d — the step now also carries the SEQ-4 page-sync guard, so a
     # playground-page edit and a golden-sidecar edit are both inputs to it. The
     # whole point of that guard is that a page edit to 171/172 reds something;
