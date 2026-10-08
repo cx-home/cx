@@ -11,6 +11,10 @@
 #   cx … scripts/run_bench_json.cx --include-eval # add the T1 evaluator bench
 #   cx … scripts/run_bench_json.cx --harness-cx   # print the cx the rows time (#1751)
 #   cx … scripts/run_bench_json.cx --rss-selftest # grade the peak-RSS reader offline (#1884)
+#   cx … scripts/run_bench_json.cx --memory-under-load  # measure over the load bound (#1884):
+#        the artifact records the load, so compare_bench judges only its
+#        peak-RSS and arena rows (the load cannot move them) and refuses its
+#        time rows — the paired step a busy box can still run (make perf-pair)
 #   (or: make bench-json)
 #
 # Output schema:
@@ -65,7 +69,8 @@
   [flag name="output"       short="o" type=string]
   [flag name="include-eval"           type=bool]
   [flag name="harness-cx"             type=bool]
-  [flag name="rss-selftest"           type=bool]]]
+  [flag name="rss-selftest"           type=bool]
+  [flag name="memory-under-load"      type=bool]]]
 
 # #1751 — the cx the fmt and convert rows time is the cx RUNNING this script
 # (`make perf-ratchet` runs it with the release front door,
@@ -332,8 +337,11 @@
       [then ([$cry [$string $r@stdout]],
              [$die 'could not parse bench-code-streaming output (no `shape … :` + `mean input throughput` pairs); see stdout above'])]
       [else ()]]]
+    [; its peak moves with the box: an allocation-heavy run whose collector
+       works beside it read 817-989 MB at one load, run to run (#1884), so the
+       row says so and compare_bench judges it on a quiet box only. ]
     [$map:put $out 'code_streaming.peak_rss_mb'
-      [$rss-row 'make bench-code-streaming' ([$peak-rss-mb [$string $r@stderr]])]]]]
+      [$map:put [$rss-row 'make bench-code-streaming' ([$peak-rss-mb [$string $r@stderr]])] 'load_sensitive' true]]]]
 
 [; #1281 — `cx fmt` on a generated 8,000-record document (~1.4 MB): the
    standalone formatter was a 26 s / 3.3 GB outlier against ~1 s for
@@ -456,6 +464,66 @@
       [else {'workload.csv_bulk_200k_ms': {median: [$math:median [?for [in $x $runs] [yield $x.ms]]], unit: 'ms'},
              'workload.csv_bulk_200k_peak_rss_mb': [$rss-row 'the csv bulk-load program' [?for [in $x $runs] [yield $x.rss]]]}]]]]
 
+[; #1884 (4) — a SERVED-LOOP workload row, the webhook-saga shape that
+   cx-private#1882 caught: 300 orders, each STARTED (charge runs, the run
+   parks at the courier's pickup) and then answered by the courier's
+   correlated act, whose advance drives ship and notify to rest (flow.md
+   §4.19). One process, one in-memory journal — the door's request loop
+   without its HTTP — so the row sees both what #1882 saw move: time per
+   order and the process's peak resident set. Median of three. ]
+[?const FLOW-SAGA-PROGRAM [#
+[?lib 'cx-platform/flow']
+[?lib 'cx-platform/journal']
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?def unpay impure [effects] ($o='') [unpaid o=$o]]
+[?def pay impure [effects] [compensates unpay] ($o='') [paid o=$o]]
+[?def unpick impure [effects] ($o='') [unpicked o=$o]]
+[?def pick impure [effects] [compensates unpick] ($o='') [picked o=$o]]
+[?def ship impure [effects] ($o='') [shipped o=$o]]
+[?def notify impure [effects] ($o='') [notified o=$o]]
+[?def doc pure [returns element] ()
+  [$cx:parse """[flow name="saga" [args [o::string]]
+  [step name="charge" [do 's/pay' [o $args/o]]]
+  [step name="pickup" needs="charge" by=:peer to=peer:courier [do 's/pick' [o $args/o]]]
+  [step name="ship" needs="pickup" pivot=true [do 's/ship' [o $args/o]]]
+  [step name="notify" needs="ship" [do 's/notify' [o $args/o]]]]"""]]
+[?def env pure [returns element] ()
+  [resolver [act name='s/pay' resolved='sha2-256:61' compensates='s/unpay' [fn $pay]]
+            [act name='s/unpay' resolved='sha2-256:62' [fn $unpay]]
+            [act name='s/pick' resolved='sha2-256:63' compensates='s/unpick' [fn $pick]]
+            [act name='s/unpick' resolved='sha2-256:64' [fn $unpick]]
+            [act name='s/ship' resolved='sha2-256:65' [fn $ship]]
+            [act name='s/notify' resolved='sha2-256:66' [fn $notify]]]]
+[?def one impure ($j $f $i::int)
+  [?let [= $o {env: [$env] flow: $f actor: "did:key:z6Mk" authority: "cap:sha2-256:c1" nonce: [$concat "n" [$string $i]]}]
+    [= $r1 [$flow:start $j $f [args [o [$string $i]]] $o]]
+    [= $id [$string $r1@id]]
+    [= $r2 [$flow:advance $j $id [act run=$id step="pickup" actor="peer:courier" authority="cap:courier" status=:done [result [picked]]] $o]]
+    [?if [= [$string $r2@status] "done"] [then 1] [else 0]]]]
+[?def loop impure ($j $f $i::int $n::int $done::int)
+  [?if [> $i $n] [then $done] [else [$loop $j $f [+ $i 1] $n [+ $done [$one $j $f $i]]]]]]
+[?let [= $n [$strings:to-int [$nth [$env:argv] 2] 10]]
+  [$loop [$journal:open "mem://bench-flow-saga" "acme"] [$doc] 1 $n 0]]
+#]]
+
+[?def run-flow-saga-bench scope=public impure ()
+  [?let
+    [= $dir [$io:temp-dir 'cx-bench-flow-saga']]
+    [= $prog [$cat ($dir, '/saga.cx')]]
+    [= $_w [$io:write-file $prog [$text FLOW-SAGA-PROGRAM]]]
+    [= $runs [?for [in $i [$range 1 3]]
+      [= $t0 [$time:monotonic-now]]
+      [= $r [$process:run [$timed-argv ([$bench-cx], '--allow-read', '--allow-clock', $prog, '300')]]]
+      [= $t1 [$time:monotonic-now]]
+      [where [and [= $r@exit-code 0] [= [$strings:trim [$string $r@stdout]] '300']]]
+      [yield {ms: [/ [- $t1 $t0] 1000000.0e0], rss: [$peak-rss-mb [$string $r@stderr]]}]]]
+    [= $_rm ([$io:remove $prog], [$io:remove-dir $dir])]
+    [?if [< [$count $runs] 3]
+      [then [$die 'the flow saga program failed or did not bring all 300 orders to done — the workload.flow_saga_300 rows cannot be measured']]
+      [else {'workload.flow_saga_300_ms': {median: [$math:median [?for [in $x $runs] [yield $x.ms]]], unit: 'ms'},
+             'workload.flow_saga_300_peak_rss_mb': [$rss-row 'the flow saga program' [?for [in $x $runs] [yield $x.rss]]]}]]]]
+
 [?let
   [= $args [?fallback [$env:parse-args ARG_SPEC]
              [recover-with ([$cry 'usage: run_bench_json.cx [-o FILE] [--include-eval] [--harness-cx] [--rss-selftest]'],
@@ -473,9 +541,11 @@
      costs seconds rather than the whole bench suite. ]
   [= $bound [$max-load]]
   [= $load-start [$load-1m]]
-  [= $_guard [$refuse-if-loaded $load-start $bound]]
+  [= $_guard [?if [?else [$env:flag $args 'memory-under-load'] false]
+               [then null]
+               [else [$refuse-if-loaded $load-start $bound]]]]
 
-  [= $streaming [$map:merge ([$run-streaming-bench], [$run-code-streaming-bench], [$run-fmt-bench], [$run-convert-bench], [$run-csv-bulk-bench])]]
+  [= $streaming [$map:merge ([$run-streaming-bench], [$run-code-streaming-bench], [$run-fmt-bench], [$run-convert-bench], [$run-csv-bulk-bench], [$run-flow-saga-bench])]]
   [= $benchmarks [?if $include-eval
     [then [$map:merge ($streaming, [$run-eval-features-bench])]]
     [else $streaming]]]

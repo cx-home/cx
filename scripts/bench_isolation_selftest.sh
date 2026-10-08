@@ -29,6 +29,11 @@
 #   H  the paired judgement (#1884): time 17 % faster with peak RSS 17 %
 #      higher (webhook-saga's trade, cx-private#1882) is a regression at the
 #      strict 10 % — each twin is judged on its own, whatever the other did
+#   I  under load the memory half is still judged (#1884): a loaded reading
+#      with a clean peak-RSS row exits 3 (time unjudged), one whose peak-RSS
+#      row grew 17 % exits 1, and a head recorded over the bound has its time
+#      rows left unjudged even when the current reading is quiet, as is a
+#      peak the runner marks load_sensitive
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -189,8 +194,49 @@ else
   bad H "a time win hid a memory loss — exit $rc: $out"
 fi
 
+# ── I — the memory half is judged on a loaded box (#1884) ───────────────────
+pairl() { # pairl <file> <load> <ms> <rss-mb>
+  cat > "$1" <<JSON
+{
+  "schema_version": 1,
+  "run_id": "2026-10-08T04:00:00Z",
+  "cx_commit": "deadbee",
+  "uname": "Darwin 25.6.0 arm64",
+  "load_1m_start": $2,
+  "load_1m_end": $2,
+  "load_1m_bound": 8.0,
+  "benchmarks": {
+    "workload.saga_ms":          { "median": $3, "unit": "ms" },
+    "workload.saga_peak_rss_mb": { "median": $4, "unit": "MB" }
+  }
+}
+JSON
+}
+cmp2() { "$CX" --allow-read --allow-write --allow-env scripts/compare_bench.cx "$1" "$2" --strict 2>&1; }
+pairl "$T/i_base.json" 0.9 550.0 359.0
+pairl "$T/i_slow_clean.json" 40.0 900.0 360.0
+pairl "$T/i_grown.json" 40.0 540.0 421.0
+pairl "$T/i_head_loaded.json" 40.0 550.0 359.0
+pairl "$T/i_quiet_slow.json" 0.9 900.0 359.0
+o1=$(cmp2 "$T/i_base.json" "$T/i_slow_clean.json"); r1=$?
+o2=$(cmp2 "$T/i_base.json" "$T/i_grown.json"); r2=$?
+o3=$(cmp2 "$T/i_head_loaded.json" "$T/i_quiet_slow.json"); r3=$?
+# a row the runner marks load_sensitive (bench-code-streaming's peak) is not
+# judged on a loaded box: 817 -> 989 MB at one load was run-to-run noise
+sed -e 's/"workload.saga_peak_rss_mb": { "median": 421.0, "unit": "MB" }/"workload.saga_peak_rss_mb": { "median": 421.0, "unit": "MB", "load_sensitive": true }/' \
+  "$T/i_grown.json" > "$T/i_grown_sensitive.json"
+o4=$(cmp2 "$T/i_base.json" "$T/i_grown_sensitive.json"); r4=$?
+if [ "$r1" -eq 3 ] && case "$o1" in *"peak-RSS and arena rows are judged"*) true ;; *) false ;; esac \
+   && [ "$r2" -eq 1 ] && case "$o2" in *"workload.saga_peak_rss_mb: baseline="*) true ;; *) false ;; esac \
+   && [ "$r3" -eq 3 ] && [ "$r4" -eq 3 ] \
+   && grep -q '"load_sensitive": true' "$T/i_grown_sensitive.json"; then
+  ok I "under load the peak-RSS row is still judged (clean -> 3, +17 % -> 1); a loaded head's time rows and a load_sensitive peak are not (#1884)"
+else
+  bad I "loaded memory judgement — clean exit $r1, grown exit $r2, loaded-head exit $r3, load_sensitive exit $r4: $o1 / $o2 / $o3"
+fi
+
 if [ "$fails" -ne 0 ]; then
   echo "bench-isolation self-test: $fails case(s) FAILED" >&2
   exit 1
 fi
-echo "bench-isolation self-test: 9/9 (measure-side refusal; judge-side refusal; judged under the bound; a pre-#1450 artifact unchanged; a loaded regression refused and the same number on a quiet box still failing; the harness rows time the running cx, #1751; the peak-RSS reader and the paired judgement, #1884)"
+echo "bench-isolation self-test: 10/10 (measure-side refusal; judge-side refusal; judged under the bound; a pre-#1450 artifact unchanged; a loaded regression refused and the same number on a quiet box still failing; the harness rows time the running cx, #1751; the peak-RSS reader, the paired judgement and the memory half under load, #1884)"

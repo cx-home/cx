@@ -299,6 +299,16 @@
       [?for [in $r $runs] [in $f $r/fail]
         [where [not [$map:contains $known-set [$key-of $r@name $f@case]]]]
         [yield [$concat "suite " $r@name ": " $f@case " fails (" $f@why ") and no [known] row names it — file an issue and record it"]]]]
+    # a known case whose failure changed class (unsupported -> rejected, say)
+    # is refused: the row's why= is the answer the register vouches for, and a
+    # suite/case match alone let EHF6 turn from a declined `unsupported` into
+    # a `malformed` refusal unseen (cx-private#1891)
+    [= $why-changed
+      [?for [in $r $runs] [in $f $r/fail] [in $k $known]
+        [where [= [$key-of $k@suite $k@case] [$key-of $r@name $f@case]]]
+        [where [not [= [$string $k@why] [$string $f@why]]]]
+        [yield [$concat "suite " $r@name ": " $f@case " fails (" $f@why ") but its [known] row records why=" [$string $k@why]
+                        " — the failure changed class: fix the regression, or update the row's why= and its reason"]]]]
     [= $stale
       [?for [in $k $known]
         [where [not [$map:contains $fail-set [$key-of $k@suite $k@case]]]]
@@ -307,7 +317,7 @@
       [?for [in $k $known]
         [where [not [= [$reason-of $k] 1]]]
         [yield [$concat "suite " $k@suite ": [known] " $k@case " needs exactly one of issue= / ruled= / upstream="]]]]
-    ([?splice $suite-lines], [?splice $unrecorded], [?splice $stale], [?splice $no-reason])]]
+    ([?splice $suite-lines], [?splice $unrecorded], [?splice $why-changed], [?splice $stale], [?splice $no-reason])]]
 
 # --record: the register this run implies, existing reasons kept.
 [?def record scope=private pure ($runs $reg)
