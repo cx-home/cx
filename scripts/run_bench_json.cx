@@ -10,6 +10,7 @@
 #   cx … scripts/run_bench_json.cx -o bench.json  # write to file
 #   cx … scripts/run_bench_json.cx --include-eval # add the T1 evaluator bench
 #   cx … scripts/run_bench_json.cx --harness-cx   # print the cx the rows time (#1751)
+#   cx … scripts/run_bench_json.cx --rss-selftest # grade the peak-RSS reader offline (#1884)
 #   (or: make bench-json)
 #
 # Output schema:
@@ -27,6 +28,19 @@
 #       ...
 #     }
 #   }
+#
+# PEAK MEMORY BESIDE EVERY TIME (#1884, the owner's rule of 2026-10-08:
+# performance never improves at the cost of memory). Every row that times a
+# process has a `<row>_peak_rss_mb` (or `<family>.peak_rss_mb`) twin: the
+# measured process's peak resident set, read OUT of process from
+# /usr/bin/time (`-l` on BSD/macOS, `-v` on GNU), unit `MB`, lower is better.
+# scripts/compare_bench.cx judges each key on its own, so a landing that buys
+# time with memory regresses the memory row whatever its time row did. A V
+# bench is compiled first and only its binary runs under the timer
+# (BENCH_WRAP in the Makefile): `v run` would charge the C compiler's peak to
+# the bench. A row whose peak cannot be read refuses the run, as a lost T1 row
+# does (#759): a memory column that silently goes missing is the failure this
+# exists to stop.
 #
 # Designed so adding more bench harnesses (FLWOR, ?fn, partial app) is a
 # matter of appending entries to the `benchmarks` map under stable keys.
@@ -50,7 +64,8 @@
 [?const ARG_SPEC [argspec
   [flag name="output"       short="o" type=string]
   [flag name="include-eval"           type=bool]
-  [flag name="harness-cx"             type=bool]]]
+  [flag name="harness-cx"             type=bool]
+  [flag name="rss-selftest"           type=bool]]]
 
 # #1751 — the cx the fmt and convert rows time is the cx RUNNING this script
 # (`make perf-ratchet` runs it with the release front door,
@@ -78,6 +93,61 @@
                           'op.to_range_10k')]
 
 [?def die scope=public impure ($msg) ([$cry $msg], [$env:exit 1], null)]
+
+# ── peak resident memory (#1884) ─────────────────────────────────────────────
+
+[?def bsd-time scope=public impure ()
+  [?let [= $u [?fallback [$process:run ('uname', '-s')]
+                [recover-with [proc-result exit-code=1 stdout='']]]]
+    [not [= [$strings:trim [$string $u@stdout]] 'Linux']]]]
+
+# The argv that runs $argv under /usr/bin/time, its rusage on stderr.
+[?def timed-argv scope=public impure ($argv)
+  [?if [$bsd-time]
+    [then ('/usr/bin/time', '-l', [?splice $argv])]
+    [else ('/usr/bin/time', '-v', [?splice $argv])]]]
+
+# The make variable that wraps a compiled V bench in the same timer.
+[?def bench-wrap scope=public impure ()
+  [?if [$bsd-time] [then 'BENCH_WRAP=/usr/bin/time -l'] [else 'BENCH_WRAP=/usr/bin/time -v']]]
+
+# Peak RSS in MB from a /usr/bin/time report: BSD prints
+# `N  maximum resident set size` in BYTES, GNU
+# `Maximum resident set size (kbytes): N`. -1 when neither is present. When a
+# report holds several (a make that ran more than one timed command), the
+# largest is the row's peak.
+[?def peak-rss-mb scope=public ($stderr::string)
+  [?let [= $bsd [?for [in $m [$re:find-all [$re:compile '(\\d+)\\s+maximum resident set size'] $stderr]]
+                  [yield [/ [?else [$strings:to-float [$re:group $m 1]] 0.0e0] 1048576.0e0]]]]
+        [= $gnu [?for [in $m [$re:find-all [$re:compile 'Maximum resident set size \\(kbytes\\):\\s*(\\d+)'] $stderr]]
+                  [yield [/ [?else [$strings:to-float [$re:group $m 1]] 0.0e0] 1024.0e0]]]]
+        [= $all ([?splice $bsd], [?splice $gnu])]
+    [?if [> [$count $all] 0] [then [$math:max $all]] [else -1.0e0]]]]
+
+# A row's {median, unit: 'MB'} from its runs' peaks; a run with no readable
+# peak refuses the whole run (#1884, the #759 rule for a lost row).
+[?def rss-row scope=public impure ($what::string $peaks)
+  [?if [or [= [$count $peaks] 0] [> [$count [?for [in $p $peaks] [where [< $p 0.0e0]] [yield $p]]] 0]]
+    [then [$die [$cat ('no peak resident set could be read for ', $what,
+                       ' — /usr/bin/time printed no maximum resident set size (#1884: a memory row is never dropped)')]]]
+    [else {median: [$math:median $peaks], unit: 'MB'}]]]
+
+# --rss-selftest: the reader graded on planted reports, offline.
+[?const RSS-CASES (
+  [rss-case want=1.0e0 text='        0.00 real         0.00 user         0.00 sys\n             1048576  maximum resident set size\n                   0  average shared memory size\n'],
+  [rss-case want=2.0e0 text='\tCommand being timed: "x"\n\tMaximum resident set size (kbytes): 2048\n\tAverage resident set size (kbytes): 0\n'],
+  [rss-case want=3.0e0 text='             1048576  maximum resident set size\nmake[1]: Nothing\n             3145728  maximum resident set size\n'],
+  [rss-case want=-1.0e0 text='make: *** [bench-streaming] Error 1\n'])]
+
+[?def rss-selftest scope=public impure ()
+  [?let [= $bad [?for [in $c RSS-CASES]
+                  [= $got [$peak-rss-mb [$string $c@text]]]
+                  [where [not [= $got [* $c@want 1.0e0]]]]
+                  [yield [$cat ('  want ', [$string $c@want], ' got ', [$string $got], ' for: ', [$string $c@text])]]]]
+    [?if [= [$count $bad] 0]
+      [then ([$say [$cat ('run_bench_json --rss-selftest OK — ', [$string [$count RSS-CASES]], ' planted /usr/bin/time reports read (#1884)')]], [$env:exit 0])]
+      [else ([$cry 'run_bench_json --rss-selftest FAILED — the peak-RSS reader misread:'],
+             [$cry [$strings:join $bad '\n']], [$env:exit 1])]]]]
 
 # ── the ISOLATION guard (#1450) ──────────────────────────────────────────────
 #
@@ -153,7 +223,7 @@
 [; Run `make bench-streaming`, parse `buffered : N ms` / `streaming : N ms`. ]
 [?def run-streaming-bench scope=public impure ()
   [?let
-    [= $r [$process:run ('make', 'bench-streaming')]]
+    [= $r [$process:run ('make', 'bench-streaming', [$bench-wrap])]]
     [= $_fail [?if [not [= $r@exit-code 0]]
       [then ([$cry [$string $r@stderr]],
              [$die [$cat ('bench-streaming exited ', [$string $r@exit-code])]])]
@@ -176,13 +246,14 @@
                    [$map:contains $out 'streaming.streaming_ms']]]
       [then ([$cry [$string $r@stdout]],
              [$die 'could not parse streaming bench output; see stdout above'])]
-      [else $out]]]]
+      [else [$map:put $out 'streaming.peak_rss_mb'
+              [$rss-row 'make bench-streaming' ([$peak-rss-mb [$string $r@stderr]])]]]]]]
 
 [; Run `make bench-eval`, parse the T1 evaluator-feature lines, enforce the
    closed key set in both directions. ]
 [?def run-eval-features-bench scope=public impure ()
   [?let
-    [= $r [$process:run ('make', 'bench-eval')]]
+    [= $r [$process:run ('make', 'bench-eval', [$bench-wrap])]]
     [= $_fail [?if [not [= $r@exit-code 0]]
       [then ([$cry [$string $r@stderr]],
              [$die [$cat ('bench-eval exited ', [$string $r@exit-code])]])]
@@ -221,7 +292,7 @@
                          [$strings:join $unexpected ', '],
                          ' — add them to T1_EXPECTED_KEYS deliberately so the set stays closed')]]]
       [else ()]]]
-    $out]]
+    [$map:put $out 'eval.peak_rss_mb' [$rss-row 'make bench-eval' ([$peak-rss-mb [$string $r@stderr]])]]]]
 
 [; Run `make bench-code-streaming` (gate 15, #804) and parse each shape's
    `mean input throughput : N MB/s` under its `shape NAME : …` header into
@@ -230,7 +301,7 @@
    I5 audit found unmeasured for eight releases. ]
 [?def run-code-streaming-bench scope=public impure ()
   [?let
-    [= $r [$process:run ('make', 'bench-code-streaming')]]
+    [= $r [$process:run ('make', 'bench-code-streaming', [$bench-wrap])]]
     [; The bench exits 2 when ITS OWN gate-15 verdict is red (the ≥ 200 MB/s
        floor — #804's open map shape). That verdict is data here: the ratchet
        compares against the previous cut, so the numbers are read regardless
@@ -261,7 +332,8 @@
       [then ([$cry [$string $r@stdout]],
              [$die 'could not parse bench-code-streaming output (no `shape … :` + `mean input throughput` pairs); see stdout above'])]
       [else ()]]]
-    $out]]
+    [$map:put $out 'code_streaming.peak_rss_mb'
+      [$rss-row 'make bench-code-streaming' ([$peak-rss-mb [$string $r@stderr]])]]]]
 
 [; #1281 — `cx fmt` on a generated 8,000-record document (~1.4 MB): the
    standalone formatter was a 26 s / 3.3 GB outlier against ~1 s for
@@ -283,16 +355,17 @@
     [= $dir [$io:temp-dir 'cx-bench-fmt']]
     [= $path [$cat ($dir, '/records-8k.cx')]]
     [= $_w [$io:write-file $path [$fmt-bench-doc]]]
-    [= $samples [?for [in $i [$range 1 5]]
+    [= $runs [?for [in $i [$range 1 5]]
       [= $t0 [$time:monotonic-now]]
-      [= $r [$process:run ([$bench-cx], 'fmt', $path)]]
+      [= $r [$process:run [$timed-argv ([$bench-cx], 'fmt', $path)]]]
       [= $t1 [$time:monotonic-now]]
       [where [= $r@exit-code 0]]
-      [yield [/ [- $t1 $t0] 1000000.0e0]]]]
+      [yield {ms: [/ [- $t1 $t0] 1000000.0e0], rss: [$peak-rss-mb [$string $r@stderr]]}]]]
     [= $_rm ([$io:remove $path], [$io:remove-dir $dir])]
-    [?if [< [$count $samples] 5]
+    [?if [< [$count $runs] 5]
       [then [$die 'cx fmt failed on the 8k-record bench document — the tooling.fmt_8k_ms row cannot be measured']]
-      [else {'tooling.fmt_8k_ms': {median: [$math:median $samples], unit: 'ms'}}]]]]
+      [else {'tooling.fmt_8k_ms': {median: [$math:median [?for [in $x $runs] [yield $x.ms]]], unit: 'ms'},
+             'tooling.fmt_8k_peak_rss_mb': [$rss-row 'cx fmt' [?for [in $x $runs] [yield $x.rss]]]}]]]]
 
 [; #1226 — `--from=json --to=json` on the bench/repr JSON corpus shape at
    300,000 records (19 MB): the parse-side passes used to hold up to three
@@ -324,20 +397,70 @@
     [= $_w [$io:write-file $path [$convert-bench-doc]]]
     [= $runs [?for [in $i [$range 1 3]]
       [= $t0 [$time:monotonic-now]]
-      [= $r [$process:run ([$bench-cx], '--from=json', '--to=json', $path) env=[map VGC_GCTRACE="1"] capture=:stderr]]
+      [= $r [$process:run [$timed-argv ([$bench-cx], '--from=json', '--to=json', $path)] env=[map VGC_GCTRACE="1"]]]
       [= $t1 [$time:monotonic-now]]
       [where [= $r@exit-code 0]]
-      [yield {ms: [/ [- $t1 $t0] 1000000.0e0], arenas: [$trace-peak-arenas [$string $r@stderr]]}]]]
+      [yield {ms: [/ [- $t1 $t0] 1000000.0e0], arenas: [$trace-peak-arenas [$string $r@stderr]],
+              rss: [$peak-rss-mb [$string $r@stderr]]}]]]
     [= $_rm ([$io:remove $path], [$io:remove-dir $dir])]
     [?if [< [$count $runs] 3]
       [then [$die 'cx --from=json --to=json failed on the 300k-record bench document — the convert.json_300k rows cannot be measured']]
       [else {'convert.json_300k_ms': {median: [$math:median [?for [in $x $runs] [yield $x.ms]]], unit: 'ms'},
-             'convert.json_300k_arenas': {median: [$math:median [?for [in $x $runs] [yield $x.arenas]]], unit: 'arenas'}}]]]]
+             'convert.json_300k_arenas': {median: [$math:median [?for [in $x $runs] [yield $x.arenas]]], unit: 'arenas'},
+             'convert.json_300k_peak_rss_mb': [$rss-row 'cx --from=json --to=json' [?for [in $x $runs] [yield $x.rss]]]}]]]]
+
+[; #1884 (4) — a WORKLOAD row, not a microbench: a bulk load the way a
+   program does it. 200,000 CSV records (id, name, region, amount) read a
+   record at a time with csv:rows off an io handle and folded into per-region
+   totals by a cx program — the CSV shape the cx-examples workload table
+   measures. Wall time and peak RSS of the program's process, median of three.
+   The corpus and the program are written under a temp dir and removed. ]
+[?def csv-bulk-doc scope=public ()
+  [$cat ('id,name,region,amount\n',
+         [$strings:join [?for [in $i [$range 0 199999]]
+           [yield [$cat ([$string $i], ',customer-', [$string $i], ',r', [$string [% $i 7]], ',',
+                         [$string [% [* $i 37] 1000]], '.', [$string [+ 10 [% $i 90]]])]]] '\n'],
+         '\n')]]
+
+[?const CSV-BULK-PROGRAM [#
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/csv'     as=csv]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/strings' as=strings]
+[?let [= $h [$io:open [$nth [$env:argv] 2] "r"]]
+      [= $totals [?reduce [$csv:rows $h]
+                   [using [?fn ($acc $row)
+                     [$map:put $acc [$map:get $row "region"]
+                       [+ [?else [$map:get $acc [$map:get $row "region"]] 0]
+                          [$strings:to-int [$map:get $row "id"] 10]]]]]
+                   [init {}]]]
+  [$map:size $totals]]
+#]]
+
+[?def run-csv-bulk-bench scope=public impure ()
+  [?let
+    [= $dir [$io:temp-dir 'cx-bench-csv-bulk']]
+    [= $data [$cat ($dir, '/records-200k.csv')]]
+    [= $prog [$cat ($dir, '/bulk.cx')]]
+    [= $_w ([$io:write-file $data [$csv-bulk-doc]], [$io:write-file $prog [$text CSV-BULK-PROGRAM]])]
+    [= $runs [?for [in $i [$range 1 3]]
+      [= $t0 [$time:monotonic-now]]
+      [= $r [$process:run [$timed-argv ([$bench-cx], '--allow-read', $prog, $data)]]]
+      [= $t1 [$time:monotonic-now]]
+      [where [and [= $r@exit-code 0] [= [$strings:trim [$string $r@stdout]] '7']]]
+      [yield {ms: [/ [- $t1 $t0] 1000000.0e0], rss: [$peak-rss-mb [$string $r@stderr]]}]]]
+    [= $_rm ([$io:remove $data], [$io:remove $prog], [$io:remove-dir $dir])]
+    [?if [< [$count $runs] 3]
+      [then [$die 'the csv bulk-load program failed or misanswered on the 200k-record corpus — the workload.csv_bulk_200k rows cannot be measured']]
+      [else {'workload.csv_bulk_200k_ms': {median: [$math:median [?for [in $x $runs] [yield $x.ms]]], unit: 'ms'},
+             'workload.csv_bulk_200k_peak_rss_mb': [$rss-row 'the csv bulk-load program' [?for [in $x $runs] [yield $x.rss]]]}]]]]
 
 [?let
   [= $args [?fallback [$env:parse-args ARG_SPEC]
-             [recover-with ([$cry 'usage: run_bench_json.cx [-o FILE] [--include-eval] [--harness-cx]'],
+             [recover-with ([$cry 'usage: run_bench_json.cx [-o FILE] [--include-eval] [--harness-cx] [--rss-selftest]'],
                             [$env:exit 2], null)]]]
+  [= $_rss [?if [?else [$env:flag $args 'rss-selftest'] false] [then [$rss-selftest]] [else null]]]
   [= $_probe [?if [?else [$env:flag $args 'harness-cx'] false]
                [then [?let [= $_p [$say [$bench-cx]]] [$env:exit 0]]]
                [else null]]]
@@ -352,7 +475,7 @@
   [= $load-start [$load-1m]]
   [= $_guard [$refuse-if-loaded $load-start $bound]]
 
-  [= $streaming [$map:merge ([$run-streaming-bench], [$run-code-streaming-bench], [$run-fmt-bench], [$run-convert-bench])]]
+  [= $streaming [$map:merge ([$run-streaming-bench], [$run-code-streaming-bench], [$run-fmt-bench], [$run-convert-bench], [$run-csv-bulk-bench])]]
   [= $benchmarks [?if $include-eval
     [then [$map:merge ($streaming, [$run-eval-features-bench])]]
     [else $streaming]]]
