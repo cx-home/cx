@@ -49,12 +49,12 @@ the product compiles from (RULED: RS-24).
 | `cx-core-data` | core | 0 | binary | — | — | extracted | the data format: reader, writer, canonical form, schema, codecs, libcx-core, the data-only cx |
 | `cx-core-code` | core | 1 | binary | — | `cx-core-data` | extracted | the language: evaluator, stdlib, LSP, libcx, the cli and embed builds |
 | `cx-platform-net` | platform | none | binary | `cxnet` | `cx-core-code` | extracted | sockets, TLS, the HTTP server, the XSP transport bindings, ftp, sftp, file_surface |
-| `cx-platform-mail` | platform | none | binary | `mail` | `cx-platform-net` | extracted | SMTP and IMAP, server and client cores, sasl |
+| `cx-platform-mail` | platform | none | binary | `mail` | `cx-platform-net` | extracted | SMTP and IMAP, server and client cores |
 | `cx-platform-identity` | platform | none | binary | `identity` | `cx-platform-store` `cx-platform-net` `cx-platform-xsp` | extracted | sessions, did:web, authz-store, vc-revocation |
-| `cx-platform-store` | platform | none | binary | `store` | `cx-core-code` `cx-platform-net` `cx-platform-xsp` | extracted | the storage engine, its substrates, journal/live/audit, ft, and the store server |
+| `cx-platform-store` | platform | none | binary | `store` | `cx-core-code` `cx-platform-net` `cx-platform-xsp` | extracted | the storage engine, its substrates, journal/live/audit, and the store server |
 | `cx-platform-db` | platform | none | binary | `cxdb` | `cx-core-code` | extracted | external database access: $sql-*, $redis-*, the drivers |
 | `cx-platform-fabric` | platform | none | binary | `fabric` | `cx-platform-store` `cx-platform-identity` `cx-platform-net` `cx-platform-xsp` | extracted | messaging and fabric-serve |
-| `cx-platform-xsp` | platform | none | binary | `xsp` | `cx-core-code` | extracted | the XAP Stream Protocol: the frame codec, the XSP-AUTH handshake, the protocol pages |
+| `cx-platform-xsp` | platform | none | binary | `xsp` | `cx-core-code` | extracted | the XAP Stream Protocol: the XSP-AUTH handshake, the protocol pages |
 | `cx-platform-xap` | platform | none | binary | `xap` | `cx-platform-net` `cx-platform-mail` `cx-platform-identity` `cx-platform-store` `cx-platform-db` `cx-platform-fabric` `cx-platform-xsp` | extracted | the application host, compose, dist, schema, market, the reference deployments |
 | `cx-platform-flow` | platform | none | package | — | `cx-core-code` `cx-platform-store` | extracted | workflow; its CLI verbs stay in the binary |
 | `cx-platform-connector` | platform | none | package | — | `cx-core-code` `cx-platform-mail` `cx-platform-store` | extracted | the connector kit and sync |
@@ -75,7 +75,7 @@ the product compiles from (RULED: RS-24).
 | `cx-binding-ruby` | binding | none | archived | — | — | — | archived at the ABI it was frozen with; lang/_archived/README.md names the version |
 | `cx-registry` | ecosystem | none | none | — | — | extracted | the package index: the store, publisher keys, the publish program |
 | `cx-decisions` | ecosystem | none | none | — | — | extracted | the ledger, the process specs, the standing rules, design texts |
-| `cx-tooling` | ecosystem | none | editor | — | — | extracted | vscode, neovim, tree-sitter, completions, syntax, the installer, diagram |
+| `cx-tooling` | ecosystem | none | editor | — | — | extracted | vscode, neovim, tree-sitter, completions, syntax, the installer |
 
 ## 3. The pins — how the front door is assembled
 
@@ -89,17 +89,17 @@ the product compiles from (RULED: RS-24).
 | `cx-platform-sso` | 1 | no | `cx-platform/sso` |
 | `cx-platform-flow` | 1 | no | `cx-platform/flow` |
 | `cx-core-data` | 1 | yes | `cx-core-data` |
-| `cx-core-code` | 53 | yes | `cx-stdlib/array` `cx-stdlib/authz` `cx-stdlib/bus` `cx-stdlib/bytes` `cx-stdlib/crypto` `cx-stdlib/csv` `cx-stdlib/cx` `cx-stdlib/did` `cx-stdlib/email` `cx-stdlib/env` `cx-stdlib/format` `cx-stdlib/fp` `cx-stdlib/geo` `cx-stdlib/graphql` `cx-stdlib/hash` `cx-stdlib/html` `cx-stdlib/http-client` `cx-stdlib/i18n` `cx-stdlib/io` `cx-stdlib/json` `cx-stdlib/jsonrpc` `cx-stdlib/jsonschema` `cx-stdlib/locale` `cx-stdlib/log` `cx-stdlib/map` `cx-stdlib/math` `cx-stdlib/mime` `cx-stdlib/oidc` `cx-stdlib/path` `cx-stdlib/process` `cx-stdlib/prof` `cx-stdlib/random` `cx-stdlib/re` `cx-stdlib/saml` `cx-stdlib/sched` `cx-stdlib/scim` `cx-stdlib/set` `cx-stdlib/similar` `cx-stdlib/soap` `cx-stdlib/strings` `cx-stdlib/supervise` `cx-stdlib/tar` `cx-stdlib/term` `cx-stdlib/test` `cx-stdlib/time` `cx-stdlib/url` `cx-stdlib/uuid` `cx-stdlib/validate` `cx-stdlib/vc` `cx-stdlib/ws` `cx-stdlib/xml` `cx-stdlib/zip` `term` |
+| `cx-core-code` | 57 | yes | `cx-stdlib/array` `cx-stdlib/authz` `cx-stdlib/bus` `cx-stdlib/bytes` `cx-stdlib/crypto` `cx-stdlib/csv` `cx-stdlib/cx` `cx-stdlib/diagram` `cx-stdlib/did` `cx-stdlib/email` `cx-stdlib/env` `cx-stdlib/format` `cx-stdlib/fp` `cx-stdlib/ft` `cx-stdlib/geo` `cx-stdlib/graphql` `cx-stdlib/hash` `cx-stdlib/html` `cx-stdlib/http-client` `cx-stdlib/i18n` `cx-stdlib/io` `cx-stdlib/json` `cx-stdlib/jsonrpc` `cx-stdlib/jsonschema` `cx-stdlib/locale` `cx-stdlib/log` `cx-stdlib/map` `cx-stdlib/math` `cx-stdlib/mime` `cx-stdlib/oidc` `cx-stdlib/path` `cx-stdlib/process` `cx-stdlib/prof` `cx-stdlib/random` `cx-stdlib/re` `cx-stdlib/saml` `cx-stdlib/sasl` `cx-stdlib/sched` `cx-stdlib/scim` `cx-stdlib/set` `cx-stdlib/similar` `cx-stdlib/soap` `cx-stdlib/strings` `cx-stdlib/supervise` `cx-stdlib/tar` `cx-stdlib/term` `cx-stdlib/test` `cx-stdlib/time` `cx-stdlib/url` `cx-stdlib/uuid` `cx-stdlib/validate` `cx-stdlib/vc` `cx-stdlib/ws` `cx-stdlib/xml` `cx-stdlib/xsp` `cx-stdlib/zip` `term` |
 | `cx-platform-db` | 3 | yes | `db` `sql` `redis` |
 | `cx-platform-net` | 4 | yes | `cx-platform/net` `cx-platform/http` `cx-platform/ftp` `cx-platform/sftp` |
-| `cx-platform-mail` | 3 | yes | `cx-platform/imap` `cx-platform/smtp` `cx-stdlib/sasl` |
-| `cx-platform-store` | 5 | yes | `cx-platform/store` `cx-platform/journal` `cx-platform/live` `cx-platform/audit` `cx-stdlib/ft` |
+| `cx-platform-mail` | 2 | yes | `cx-platform/imap` `cx-platform/smtp` |
+| `cx-platform-store` | 4 | yes | `cx-platform/store` `cx-platform/journal` `cx-platform/live` `cx-platform/audit` |
 | `cx-platform-identity` | 4 | yes | `cx-platform/session` `cx-platform/authz-store` `cx-platform/did-web` `cx-platform/vc-revocation` |
 | `cx-platform-connector` | 2 | no | `cx-platform/connector` `cx-platform/sync` |
 | `cx-platform-secrets` | 1 | no | `cx-platform/secrets` |
 | `cx-platform-fabric` | 1 | yes | `cx-platform/fabric` |
-| `cx-platform-xsp` | 2 | yes | `cx-stdlib/xsp` `cx-platform/xsp-auth` |
-| `cx-tooling` | 1 | no | `cx-stdlib/diagram` |
+| `cx-platform-xsp` | 1 | yes | `cx-platform/xsp-auth` |
+| `cx-tooling` | 1 | no | `cx-tooling` |
 | `cx-platform-xap` | 1 | yes | `cx-platform/xap` |
 | `cx-registry` | 1 | no | `cx-registry` |
 | `cx-decisions` | 1 | no | `cx-decisions` |
