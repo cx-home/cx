@@ -540,19 +540,30 @@ check-gitconfig-home: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 check-gitconfig-home:
 	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-env scripts/gitconfig_home_selftest.cx
 
+# The pinned V compiler binary is rebuilt when its sources moved (#1899). The
+# third_party/v gitlink moves with a fork bump; the binary beside it is an untracked
+# artifact nothing rebuilt, so the loop's checkout compiled under the 2c38b21acf pin
+# with a 2026-09-24 compiler and cx-home/v#9's cgen fix never reached its wasm bundle.
+# Every recipe that compiles with $(V) through the builds below now proves the binary
+# no older than cmd/v + vlib/v first (scripts/v_pin_fresh.sh: the fork's `v self` into a
+# side file, atomic rename), once per checkout under the v-pin tree lock.
+.PHONY: v-pin-fresh
+v-pin-fresh:
+	@sh $(CURDIR)/scripts/tree_lock.sh v-pin third_party/v/v sh $(CURDIR)/scripts/v_pin_fresh.sh $(CURDIR)/third_party/v
+
 # CX_STAMP_ROOT=$(CURDIR) (D91a, #1591 item K14, on every recursive call into
 # the cx-core-code pin below): `commit` in `cx --version` names the tree the
 # binary was BUILT FROM, which is this front door — the tag CO-4/#979's
 # invariant reads (tag == VERSION == artifact commit) lives here, not in the
 # pin. cx-core-code's own HEAD stays visible as the `core` line beside
 # `V fork` (its vcx/Makefile's CX_CORE_COMMIT, unconditional on this).
-build-vcx: check-gate-lock deps-present
+build-vcx: check-gate-lock deps-present v-pin-fresh
 	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx build
 
 # Unoptimised dev build of libcx + cx (no -prod/-Os). Functionally
 # identical for tests but compiles far faster; the test path depends on
 # this instead of the -prod `build-vcx`. Shipped artifacts use `build-vcx`.
-build-vcx-dev: check-gate-lock deps-present
+build-vcx-dev: check-gate-lock deps-present v-pin-fresh
 	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx build-dev CX_DFLAGS='$(CX_DFLAGS)'
 
 # ── The §4 PROFILE MATRIX as ordinary build steps (#1449, RULED: 1449-a) ─────
@@ -622,7 +633,7 @@ build-profiles: build-vcx
 # third_party/v/v (carries the wasm32-emcc vmemcpy fix); falls back
 # to system V at the cost of broken Option payloads — see
 # the patched-V README at third_party/v/README.md (P1).
-build-wasm:
+build-wasm: v-pin-fresh
 	DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
 
 # Gate 17 — stage the playground bundle under dist/playground-preview/
@@ -637,7 +648,7 @@ build-wasm:
 # build-wasm fails noisily upstream and this target is never reached;
 # scripts/test_playground_smoke.sh then reports its documented
 # "playground-preview not built" failure.
-build-playground:
+build-playground: v-pin-fresh
 	@echo "[build-playground] (re)building libcx-async + libcx-pthreads variants"
 	@# Two wasm variants — cxlib.js dynamically loads one or the other
 	@# at runtime based on crossOriginIsolated + SharedArrayBuffer
@@ -748,7 +759,14 @@ wasm-fresh-gate:
 .PHONY: wasm-bundle-fresh wasm-bundle-fresh-locked
 wasm-bundle-fresh:
 	@sh $(CURDIR)/scripts/tree_lock.sh wasm-bundle dist/wasm/ $(MAKE) --no-print-directory wasm-bundle-fresh-locked
-wasm-bundle-fresh-locked:
+# check_wasm_fresh.sh compares the bundle with vcx/ + stdlib/ + VERSION, not with the
+# compiler: a V binary newer than the bundle (v-pin-fresh rebuilt it after a fork bump,
+# #1899) means the bundle was compiled by the previous compiler and is rebuilt too.
+wasm-bundle-fresh-locked: v-pin-fresh
+	@if [ -x "$(CURDIR)/third_party/v/v" ] && [ -f dist/wasm/libcx-sync.js ] && [ "$(CURDIR)/third_party/v/v" -nt dist/wasm/libcx-sync.js ]; then \
+	  echo "[wasm-bundle-fresh] third_party/v/v is newer than dist/wasm/libcx-sync.js — rebuilding the bundle with the current compiler (#1899)"; \
+	  $(MAKE) build-playground || exit $$?; \
+	fi
 	@OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/check_wasm_fresh.sh >/dev/null 2>&1 || $(MAKE) build-playground
 	@OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/check_wasm_fresh.sh
 
