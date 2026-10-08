@@ -4295,6 +4295,19 @@ issue-label-gate:
 	@"$(CX_BIN)" --allow-read --allow-write --allow-env scripts/issue_label_gate.cx --self-test
 	@"$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/issue_label_gate.cx
 
+# ── conformance-suites (#1840; RULED: STREAM-1) — the published corpora ──────
+# JSONTestSuite, toml-test (TOML 1.0.0), the YAML test suite, UCD 16.0.0's case
+# mappings, RE2's search tests and the CSV spectrum, pinned verbatim with their
+# licenses under third_party/suites/, run through this build's stdlib and
+# graded against scripts/conformance_suites.cxd: each suite's recorded
+# cases= / pass=, and a [known] row (an open issue, a ruling, or an upstream
+# defect) for every case that does not pass — none silent, none stale.
+# `--record` prints the register a run implies.
+.PHONY: conformance-suites
+conformance-suites: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+conformance-suites:
+	@"$(CX_BIN)" --allow-read --allow-write scripts/conformance_suites.cx
+
 .PHONY: site-live-check
 site-live-check: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 site-live-check:
