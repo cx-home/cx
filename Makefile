@@ -1878,15 +1878,23 @@ perf-ratchet: build-vcx
 # still judged; compare_bench's exit 3 (time unjudged, memory clean) passes,
 # exit 1 (a row regressed) fails. Wall-clock and machine-bound, so NOT a
 # TEST_TARGETS member: the landing gate and the loop call it (patch on #1884).
-PERF_HEAD ?= bench/head.json
+# The head's record lives in the checkout's vcx/target: the loop promotes its
+# tick's rows after a GREEN verdict (`make perf-promote`), so the next tick —
+# or a landing gate pointed at the loop checkout's file — judges against the
+# last green head. With no record yet, perf-pair records and judges nothing.
+PERF_HEAD ?= vcx/target/bench-head.json
 PERF_OUT  ?= vcx/target/bench-pair.json
-.PHONY: perf-record perf-pair
+.PHONY: perf-record perf-pair perf-promote
 perf-record: build-vcx
 	@mkdir -p $(dir $(PERF_OUT))
 	@"$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-read --allow-write --allow-subprocess --allow-clock --allow-env scripts/run_bench_json.cx --memory-under-load -o $(PERF_OUT)
 perf-pair: perf-record
-	@"$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-read --allow-write --allow-env scripts/compare_bench.cx $(PERF_HEAD) $(PERF_OUT) --strict; \
+	@if [ ! -f "$(PERF_HEAD)" ]; then echo "perf-pair: no head record at $(PERF_HEAD) — this tree's rows recorded in $(PERF_OUT), nothing judged (make perf-promote seeds it)"; exit 0; fi; \
+	  "$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-read --allow-write --allow-env scripts/compare_bench.cx $(PERF_HEAD) $(PERF_OUT) --strict; \
 	  rc=$$?; if [ $$rc -eq 3 ]; then echo "perf-pair: memory rows judged clean; time rows unjudged on a loaded box (#1450)"; exit 0; fi; exit $$rc
+perf-promote:
+	@[ -f "$(PERF_OUT)" ] || { echo "perf-promote: no $(PERF_OUT) (run make perf-pair first)"; exit 1; }
+	@cp "$(PERF_OUT)" "$(PERF_HEAD)" && echo "perf-promote: $(PERF_OUT) is the head record $(PERF_HEAD)"
 
 # Documentation hygiene — every relative markdown link resolves.
 # Source markdown lives in docs-src/ (docs/ is the GENERATED HTML guide /
