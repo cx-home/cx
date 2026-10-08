@@ -84,7 +84,6 @@
   [known suite=yaml case='SM9W/01' why=unsupported ruled='conversions.md §5.0 — outside the CX YAML subset, refused as unsupported (RULED: TF-2, #1111)']
   [known suite=yaml case='U3C3' why=unsupported ruled='conversions.md §5.0 — outside the CX YAML subset, refused as unsupported (RULED: TF-2, #1111)']
   [known suite=yaml case='U3XV' why=unsupported ruled='conversions.md §5.0 — outside the CX YAML subset, refused as unsupported (RULED: TF-2, #1111)']
-  [known suite=yaml case='U9NS' why=value ruled='conversions.md §5.1 — a plain hh:mm:ss is a CX time, not a string (cx-private#1876, ruling (a) of #1875 §13); the suite reads it as text']
   [known suite=yaml case='UGM3' why=unsupported ruled='conversions.md §5.0 — outside the CX YAML subset, refused as unsupported (RULED: TF-2, #1111)']
   [known suite=yaml case='UKK6/00' why=unsupported ruled='conversions.md §5.0 — outside the CX YAML subset, refused as unsupported (RULED: TF-2, #1111)']
   [known suite=yaml case='V55R' why=unsupported ruled='conversions.md §5.0 — outside the CX YAML subset, refused as unsupported (RULED: TF-2, #1111)']
