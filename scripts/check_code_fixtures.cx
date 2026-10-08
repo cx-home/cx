@@ -121,7 +121,10 @@
 # `program-core` (no dash) is the cx-core-code issue family — program-core80-,
 # program-core85- … — one category for its numbered issues' cases (STREAM-1).
 # `program-62-` is cx-core-data#62's case (a bigint holds its limbs), named by
-# that issue's bare number in the core corpus (STREAM-1).
+# that issue's bare number in the core corpus (STREAM-1). `program-1836-` is
+# cx-private#1836's performance program (the compiled and native tiers agree
+# with the walker) and `ev-trim-` its lazy-chain trim (a chain read once holds
+# no per-stage memo, #1866), both landed with core 16a78b10 (STREAM-1).
 [?const PREFIX-MAP (
   [prefixes level=core [#
 program-for- program-let- program-fn- program-err- program-pipe- program-par-
@@ -153,7 +156,7 @@ program-tree-eval- program-ophead-
 program-shadow- program-ophole-
 program-grant-default- program-prose-join- program-emit-
 program-gap program-lazy- program-distinct- program-construct- program-doc-
-program-core program-62-
+program-core program-62- program-1836- ev-trim-
 #]],
   [prefixes level=resilience [#
 program-retry- program-timeout- program-cb- program-fallback-
