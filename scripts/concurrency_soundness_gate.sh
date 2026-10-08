@@ -40,7 +40,12 @@ set -u
 ROUNDS=${SOUNDNESS_ROUNDS:-15}
 NREACT=${SOUNDNESS_N:-16}
 ROOT=${0:A:h:h}
-FIX=$ROOT/vcx/tests/soundness
+# Since the repository split the collector's stressor fixtures and the cx sources live in
+# cx-core-code's pinned checkout (cx-private#1893: the gate still read $ROOT/vcx and built
+# `v cmd/` with no deps paths, so it could not build, and its workers stressor counted a
+# missing fixture as 30 "crashes").
+CORE=$ROOT/deps/cx-core-code/vcx
+FIX=$CORE/tests/soundness
 GCMODE=${CX_GC:-"-gc e"}
 PORT=9031
 # VFORK_ROOT: the patched-V fork tree the gate builds with and checks the oracle
@@ -75,21 +80,34 @@ fi
 # round as a "crash" — a deterministic false red that (2026-08-14, found at
 # the #743 battery re-run) had silently disarmed the http/churn stressors.
 PLATFORM_DEFINES="-d cx_platform -d cx_db_sqlite -d cx_db_redis"
+# core_cli OUT DFLAGS: the cx cli built the way `make build-vcx` builds it (cx-core-code's `cli`
+# recipe over this tree's deps.cxd — the platform profile and engines above come with it), to OUT,
+# with the gate's collector mode and extra defines.
+core_cli() {
+  make -s -C $CORE DEPS_CXD_PATH=$ROOT/deps.cxd DEPS_ROOT_PATH=$ROOT/deps CX_V_PIN=$VFORK_ROOT/v \
+    DEPS_THIRD_PARTY_PATH=$ROOT CX_STAMP_ROOT=$ROOT DEPS_EXTRA_VPATH=$ROOT/vcx \
+    cli CLI="$1" CX_GC="$GCMODE" CX_DFLAGS="$2"
+}
+# http_load: the HTTP stressors' load — wrk, or ApacheBench where wrk is absent (dev2 has no
+# wrk; without a fallback every HTTP stressor was skipped and reported 0 of 0).
+if command -v wrk >/dev/null 2>&1; then
+  http_load() { wrk -t12 -c200 -d3s http://127.0.0.1:$PORT/ >/dev/null 2>&1; }
+elif command -v ab >/dev/null 2>&1; then
+  http_load() { ab -q -k -c 200 -t 3 -n 100000000 http://127.0.0.1:$PORT/ >/dev/null 2>&1; }
+fi
 BIN=${CX_SOUNDNESS_BIN:-}
 if [ -z "$BIN" ]; then
-  BIN=$ROOT/vcx/target/cx_soundness_gate
+  BIN=$CORE/target/cx_soundness_gate
   echo "[gate] building bf1 detector: $GCMODE -d vgc_passive -d vgc_nosweep"
-  ( cd $ROOT/vcx && $VFORK_ROOT/v -n -w -cc cc ${=GCMODE} ${=PLATFORM_DEFINES} -d vgc_passive -d vgc_nosweep \
-      -o target/cx_soundness_gate cmd/ ) || { echo "[gate] BUILD FAIL (detector)"; exit 2; }
+  core_cli $BIN "-d vgc_passive -d vgc_nosweep" || { echo "[gate] BUILD FAIL (detector)"; exit 2; }
 fi
 [ -x "$BIN" ] || { echo "[gate] no detector binary: $BIN"; exit 2; }
 
 CRASHBIN=${CX_CRASH_BIN:-}
 if [ -z "$CRASHBIN" ]; then
-  CRASHBIN=$ROOT/vcx/target/cx_crash_gate
+  CRASHBIN=$CORE/target/cx_crash_gate
   echo "[gate] building real-sweep crash binary: $GCMODE (no nosweep)"
-  ( cd $ROOT/vcx && $VFORK_ROOT/v -n -w -cc cc ${=GCMODE} ${=PLATFORM_DEFINES} \
-      -o target/cx_crash_gate cmd/ ) || { echo "[gate] BUILD FAIL (crash bin)"; exit 2; }
+  core_cli $CRASHBIN "" || { echo "[gate] BUILD FAIL (crash bin)"; exit 2; }
 fi
 [ -x "$CRASHBIN" ] || { echo "[gate] no crash binary: $CRASHBIN"; exit 2; }
 
@@ -112,7 +130,7 @@ trap cleanup EXIT
 # as SETUP, never as a verdict — exactly this rot (no callable "http-serve"
 # after the I3 ring split dropped -d cx_platform from the gate builds) read
 # as deterministic "real-sweep crashes" through the kill-0 probe.
-if command -v wrk >/dev/null 2>&1; then
+if typeset -f http_load >/dev/null; then
   for fixf in serve57.cx serve_churn_heavy.cx serve_mainloop.cx; do
     cleanup; sleep 0.2
     bootlog=$(mktemp)
@@ -130,10 +148,10 @@ fi
 crash_http=0; crash_churn=0; crash_workers=0; crash_mainloop=0
 
 # --- multi-reactor HTTP (the #63 reactor stressor) ---
-# Needs `wrk` for load. If absent, skip the HTTP stressor (the worker stressor below
+# Needs `wrk` or `ab` for load (http_load). If both are absent, skip the HTTP stressor (the worker stressor below
 # still exercises the multi-mutator UAF) rather than false-fail.
-if ! command -v wrk >/dev/null 2>&1; then
-  echo "[gate] WARNING: wrk not found — skipping HTTP stressor, running worker stressor only"
+if ! typeset -f http_load >/dev/null; then
+  echo "[gate] WARNING: neither wrk nor ab found — skipping HTTP stressor, running worker stressor only"
   ROUNDS_HTTP=0
 else
   ROUNDS_HTTP=$ROUNDS
@@ -143,7 +161,7 @@ for r in $(seq 1 $ROUNDS_HTTP); do
   CX_HTTP_N=8 "$BIN" --allow-all $FIX/serve57.cx >/dev/null 2>>$log_http &
   SRV=$!; bound=0
   for i in $(seq 1 20); do nc -z 127.0.0.1 $PORT 2>/dev/null && { bound=1; break; }; sleep 0.5; done
-  if [ $bound -eq 1 ]; then wrk -t12 -c200 -d3s http://127.0.0.1:$PORT/ >/dev/null 2>&1; fi
+  if [ $bound -eq 1 ]; then http_load; fi
   sleep 0.3
   kill -9 $SRV 2>/dev/null # crash NOT counted on the nosweep detector (OOM artifact) — see crash pass
 done
@@ -154,13 +172,13 @@ done
 # sweep-while-live. bf1 is the arbiter here; under -d vgc_nosweep this handler's big
 # per-request strings are never reclaimed, so RSS balloons and it may OOM mid-round — that
 # OOM is NOT counted (crash detection is the separate real-sweep pass below).
-if command -v wrk >/dev/null 2>&1; then
+if typeset -f http_load >/dev/null; then
   for r in $(seq 1 $ROUNDS); do
     cleanup; sleep 0.3
     CX_HTTP_N=$NREACT CX_HTTP_GC_KB=4 "$BIN" --allow-all $FIX/serve_churn_heavy.cx >/dev/null 2>>$log_churn &
     SRV=$!; bound=0
     for i in $(seq 1 30); do nc -z 127.0.0.1 $PORT 2>/dev/null && { bound=1; break; }; sleep 0.5; done
-    if [ $bound -eq 1 ]; then wrk -t12 -c200 -d3s http://127.0.0.1:$PORT/ >/dev/null 2>&1; fi
+    if [ $bound -eq 1 ]; then http_load; fi
     sleep 0.3
     kill -9 $SRV 2>/dev/null # crash NOT counted (nosweep-OOM) — see crash pass
   done
@@ -181,13 +199,13 @@ done
 # No CX_HTTP_N / CX_WORKER_THREADS overrides: this is the stock posture the field
 # workload (the external reference instance) runs — reactors at the default fan-out plus the main thread
 # evaluating an allocation-heavy loop. Multi-mutator by default; previously uncovered.
-if command -v wrk >/dev/null 2>&1; then
+if typeset -f http_load >/dev/null; then
   for r in $(seq 1 $ROUNDS); do
     cleanup; sleep 0.3
     VGC_NEXT_GC_MB=4 VGC_PACE_MB=0 "$BIN" --allow-all $FIX/serve_mainloop.cx >/dev/null 2>>$log_mainloop &
     SRV=$!; bound=0
     for i in $(seq 1 20); do nc -z 127.0.0.1 $PORT 2>/dev/null && { bound=1; break; }; sleep 0.5; done
-    if [ $bound -eq 1 ]; then wrk -t12 -c200 -d3s http://127.0.0.1:$PORT/ >/dev/null 2>&1; fi
+    if [ $bound -eq 1 ]; then http_load; fi
     sleep 0.3
     kill -9 $SRV 2>/dev/null # crash NOT counted on the nosweep detector — see crash pass
   done
@@ -207,14 +225,14 @@ run_serve_crash_rounds() { # fixf, n (empty = default fan-out), env_extra, crash
     env ${n:+CX_HTTP_N=$n} ${env_extra:+${=env_extra}} "$CRASHBIN" --allow-all $FIX/$fixf >/dev/null 2>>$clog &
     local SRV=$! bound=0
     for i in $(seq 1 30); do nc -z 127.0.0.1 $PORT 2>/dev/null && { bound=1; break; }; sleep 0.5; done
-    [ $bound -eq 1 ] && wrk -t12 -c200 -d3s http://127.0.0.1:$PORT/ >/dev/null 2>&1
+    [ $bound -eq 1 ] && http_load
     sleep 0.3
     kill -0 $SRV 2>/dev/null || cnt=$((cnt+1))
     kill -9 $SRV 2>/dev/null
   done
   echo $cnt
 }
-if command -v wrk >/dev/null 2>&1; then
+if typeset -f http_load >/dev/null; then
   crash_http=$(run_serve_crash_rounds serve57.cx 8 "" $crashlog_http)
   crash_churn=$(run_serve_crash_rounds serve_churn_heavy.cx $NREACT "CX_HTTP_GC_KB=4" $crashlog_churn)
   crash_mainloop=$(run_serve_crash_rounds serve_mainloop.cx "" "" $crashlog_mainloop)
