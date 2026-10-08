@@ -514,6 +514,9 @@ const accepted_by_one_table = [
 	// data grammar states its own rule about.
 	AcceptedByOne{'scripts/gitconfig_home_selftest.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/repr_guard_selftest.cx', .program, reason_1536},
+	// #1840: the conformance-suites runner builds its [run]/[fail] records with
+	// computed attributes (cases=[$count …]).
+	AcceptedByOne{'scripts/conformance_suites.cx', .program, reason_attr},
 	// ── #1559's split-out tail (#1576, #1578, #1579) — 5 -> 0 ──
 	// 6 -> 4 -> 5 -> 0: conformance/code.cxd and conformance/stdlib/array.cxd left
 	// with cx-core-code's extraction (RULED: RS-12, D68a); lockfile.cxd and
