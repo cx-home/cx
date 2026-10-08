@@ -27,6 +27,9 @@
 #   1 — at least one benchmark regressed past threshold.
 #   2 — baseline / current JSON malformed or missing keys.
 #   3 — REFUSED TO JUDGE: the current reading was taken on a loaded box (#1450).
+#       Since #1884 a loaded reading that carries peak-RSS / arena rows has
+#       THOSE judged (load does not move them): a regression there is exit 1,
+#       none is exit 3 (the time rows stay unjudged).
 #
 # Exit 3 is deliberately not 1. A reading taken while six pipelines compiled
 # beside the runner read tooling.fmt_8k_ms at 1902 ms against a hot 1304 and
@@ -107,6 +110,16 @@
   [?let [= $v [$map:get $doc $key]]
     [?if [$present $v] [then [* $v 1.0e0]] [else $fallback]]]]
 
+[; #1884 — the rows a box's load cannot move: a process's peak resident set
+   and the convert row's arena count — unless the CURRENT artifact marks the
+   row `load_sensitive` (bench-code-streaming: an allocation-heavy process
+   whose collector runs beside it reads 817-989 MB at the same load, run to
+   run, so its peak is judged on a quiet box only). ]
+[?def load-independent scope=public ($bm $key)
+  [and [or [$strings:ends-with $key '_peak_rss_mb'] [$strings:ends-with $key '.peak_rss_mb']
+           [$strings:ends-with $key '_arenas']]
+       [not [= [?else [$map:get [?else [$map:get $bm $key] {}] 'load_sensitive'] false] true]]]]
+
 [?let
   [= $args [?fallback [$env:parse-args ARG_SPEC]
              [recover-with ([$cry 'usage: compare_bench.cx BASELINE.json CURRENT.json [--strict]'],
@@ -132,7 +145,22 @@
      the fallbacks. ]
   [= $curr-load [$num-or $curr 'load_1m_start' -1.0e0]]
   [= $load-bound [$num-or $curr 'load_1m_bound' [$env:var-float 'CX_BENCH_MAX_LOAD' 8.0e0]]]
-  [= $_iso [?if [and [> $curr-load -1.0e0] [> $curr-load $load-bound]]
+  [= $base-load [$num-or $base 'load_1m_start' -1.0e0]]
+  [= $base-bound [$num-or $base 'load_1m_bound' $load-bound]]
+  [; a head artifact recorded on a loaded box (#1884's paired step records
+     the head as it lands) has inflated TIME rows: judging a quiet reading
+     against them would pass a real slowdown, so they are not judged either. ]
+  [= $loaded [or [and [> $curr-load -1.0e0] [> $curr-load $load-bound]]
+                 [and [> $base-load -1.0e0] [> $base-load $base-bound]
+                      [> [$count [?for [in $k [$map:keys [?else [$map:get $curr 'benchmarks'] {}]]]
+                                   [where [$load-independent [?else [$map:get $curr 'benchmarks'] {}] $k]] [yield $k]]] 0]]]]
+  [; #1884 — a peak resident set and an arena count do not move with the
+     box's load (one process, its own heap), so a loaded reading still JUDGES
+     those rows; only the time rows are refused. A loaded artifact with no
+     such row is refused whole, exactly as #1450 had it. ]
+  [= $mem-only [and $loaded [> [$count [?for [in $k [$map:keys [?else [$map:get $curr 'benchmarks'] {}]]]
+                                          [where [$load-independent [?else [$map:get $curr 'benchmarks'] {}] $k]] [yield $k]]] 0]]]
+  [= $_iso [?if [and $loaded [not $mem-only]]
     [then ([$cry [$cat ('bench-compare: REFUSING TO JUDGE — ', $current-path,
                         ' was measured at a one-minute load of ', [$fixed1 $curr-load],
                         ', over the bound of ', [$fixed1 $load-bound], ' (#1450).')]],
@@ -140,6 +168,11 @@
            [$cry '  regression aborts a good cut, and a false PASS re-pins bench/baseline.json to'],
            [$cry '  an inflated floor — the ratchet running backwards. Re-measure on a quiet box.'],
            [$env:exit 3])]
+    [else ()]]]
+  [= $_iso2 [?if $mem-only
+    [then [$cry [$cat ('bench-compare: ', $current-path, ' was measured at a one-minute load of ',
+                       [$fixed1 $curr-load], ', over the bound of ', [$fixed1 $load-bound],
+                       ' (or the baseline was taken over its bound) — the TIME rows are refused (#1450); the peak-RSS and arena rows are judged (#1884).')]]]
     [else ()]]]
 
   [= $threshold [?if $strict [then 1.10e0] [else 1.30e0]]]
@@ -163,7 +196,8 @@
                                          [else 'not recorded (a pre-#1450 artifact)']])]]]
   [= $_h4 [$say '']]
 
-  [= $all-keys [$sort [$map:keys [$map:merge ($base-bm, $curr-bm)]]]]
+  [= $all-keys [?to-sequence [?for [in $k [$sort [$map:keys [$map:merge ($base-bm, $curr-bm)]]]]
+                  [where [or [not $mem-only] [$load-independent $curr-bm $k]]] [yield $k]]]]
 
   [; one row per key; yields the regression message for REGRES rows, () otherwise. ]
   [= $regressions
@@ -210,5 +244,8 @@
         [= $_l [?for [in $r $regressions] [yield [$say [$cat ('  - ', $r)]]]]]
         [$env:exit 1]]]
     [else
-      [?let [= $_ok [$say 'OK: no benchmarks regressed past threshold']]
-        [$env:exit 0]]]]]
+      [?if $mem-only
+        [then [?let [= $_ok [$say 'OK: no peak-RSS or arena row regressed past threshold; the time rows were not judged (loaded box, exit 3)']]
+          [$env:exit 3]]]
+        [else [?let [= $_ok [$say 'OK: no benchmarks regressed past threshold']]
+          [$env:exit 0]]]]]]]
