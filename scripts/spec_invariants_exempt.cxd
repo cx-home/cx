@@ -127,6 +127,7 @@ a no-step row without an issue.
   [exempt file='cx-core-code/spec/03-approved/stdlib/oidc.md' class=step held-by=test-sso-interop
     match="the response's `sub` MUST equal the ID token's"
     reason='the UserInfo sub check runs only inside userinfo, which needs a live userinfo endpoint; test-sso-interop grades both halves: rp_drive.cx row userinfo (the matching sub) and row userinfo-sub-mismatch (the hostile tenant\'s userinfo answers about another subject: CXER5308) (cx-home/cx-platform-sso#1)']
+  [exempt file='cx-core-code/spec/03-approved/stdlib/ft.md' class=author match='The function MUST be pure (same text → same tokens)' reason='an obligation on the author of a custom tokenizer (ft.md §4.4); the module cannot observe purity, and the refusals it can observe (a tokenizer that raises or returns a non-sequence) carry CXER1204 beside the sentence; came home with cx-core-code#103']
   [exempt file='cx-core-code/spec/03-approved/stdlib/supervise.md' class=step held-by=test-profile-gate
     match='`start` MUST refuse rather than return one that silently never backs off'
     reason='a no-sched build is a profile build; the profile gate probes supervise:start in the cx_no_pack_sched build and requires CXER5095 (profile_gate.v dependent_module_probe)']

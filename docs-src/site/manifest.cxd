@@ -89,10 +89,10 @@ deps/cx-platform-connector/conformance/platform/connector
 deps/cx-platform-store/conformance/platform/journal
 deps/cx-platform-identity/conformance/platform/session
 deps/cx-platform-net/conformance/platform/net
-deps/cx-platform-mail/conformance/stdlib/sasl
+deps/cx-core-code/conformance/stdlib/sasl
 deps/cx-platform-db/conformance/platform/db
 deps/cx-platform-fabric/conformance/platform/fabric
-deps/cx-platform-xsp/conformance/stdlib/xsp
+deps/cx-core-code/conformance/stdlib/xsp
 deps/cx-platform-secrets/conformance/platform/secrets
 deps/cx-platform-sso/conformance/platform/sso
 deps/cx-platform-ux/conformance/xap/ux
@@ -102,7 +102,7 @@ deps/cx-platform-xap/conformance/xap/xap-dist
 deps/cx-platform-xap/conformance/xap/xap-serve
 deps/cx-platform-agent/conformance/x/tools
 deps/cx-core-code/conformance/abi
-deps/cx-tooling/conformance/stdlib/diagram
+deps/cx-core-code/conformance/stdlib/diagram
 deps/cx-platform-store/conformance/platform/live
 deps/cx-core-code/conformance/stdlib/bus
 deps/cx-platform-connector/conformance/platform/sync
