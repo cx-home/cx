@@ -685,6 +685,11 @@ step_globs() {
     # #1781 (RULED: LBL-1): the live tracker through gh; a selected run picks it
     # only when its program, case table, register, the registry or VERSION move.
     issue-label-gate)              echo 'scripts/issue_label_gate* scripts/issue_label_exclusions.cxd registry/repos.cxd VERSION' ;;
+    # #1840: the published conformance corpora (third_party/suites/) run
+    # through the built cx's stdlib (json, toml, yaml, strings, re, csv), graded
+    # against its register: the program, the register, the corpora and every
+    # input of the binary it drives.
+    conformance-suites)            echo "scripts/conformance_suites* third_party/suites/* $RING0 $RING1 $RING_CLI $RING_SUP $RING_EMBED" ;;
     # test-binding-api-parity row RETIRED (RULED: RS-12, RS-8; #1591 item K3):
     # the four drivers under lang/<lang>/binding_api_driver/ left with their
     # binding repositories, and the target itself is gone from the Makefile.

@@ -122,9 +122,8 @@
 # program-core85- … — one category for its numbered issues' cases (STREAM-1).
 # `program-62-` is cx-core-data#62's case (a bigint holds its limbs), named by
 # that issue's bare number in the core corpus (STREAM-1).
-# `program-1836-` and `program-1839-` are cx-private#1836's (the compiled
-# evaluator: its tiers agree with the walker) and #1839's (tail positions, the
-# recursion refusal) cases, named by the issue numbers (STREAM-1).
+# `program-1839-` is cx-private#1839's cases (tail positions, the recursion
+# refusal), named by the issue number as `program-1836-` is (STREAM-1).
 [?const PREFIX-MAP (
   [prefixes level=core [#
 program-for- program-let- program-fn- program-err- program-pipe- program-par-
@@ -156,7 +155,7 @@ program-tree-eval- program-ophead-
 program-shadow- program-ophole-
 program-grant-default- program-prose-join- program-emit-
 program-gap program-lazy- program-distinct- program-construct- program-doc-
-program-core program-62- program-1836- program-1839-
+program-core program-62- program-1839-
 #]],
   [prefixes level=resilience [#
 program-retry- program-timeout- program-cb- program-fallback-

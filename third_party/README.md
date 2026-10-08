@@ -121,3 +121,11 @@ no system re2 package on any platform, full source determinism. The shim
 which is identical across this pin and later releases; moving the pin is a
 build-system change, not an API change. BSD-3 license — `LICENSE-re2.txt`
 ships in every release tarball.
+
+## `third_party/suites` — the published conformance corpora
+
+Plain files, not submodules: the corpora `make conformance-suites` runs
+(cx-private#1840), each copied verbatim from its upstream at a pinned commit,
+with its license beside it. [`suites/README.md`](suites/README.md) names every
+source, commit and license; `scripts/conformance_suites.cxd` records each
+suite's pass count and owns every case that does not pass.
