@@ -16,28 +16,25 @@ import code
 // cx (vcx/cmd/platform_verbs_d_cx_platform.v) and by vcx/composed, the entry
 // libcx and the wasm playground bundle build from; a cx built without -d
 // cx_platform imports neither, and every cx-platform/* name refuses there as
-// a platform module (the §4 profile-by-construction rule).
+// a platform module (the §4 profile-by-construction rule). Registered
+// without copying the embedded bytes (code.register_bundled_embed).
 fn init() {
-	register('cx-platform/connector', $embed_file('../../deps/cx-platform-connector/stdlib/connector.cx').to_string())
-	register('cx-platform/sync', $embed_file('../../deps/cx-platform-connector/stdlib/sync.cx').to_string())
-	register('cx-platform/sso', $embed_file('../../deps/cx-platform-sso/stdlib/sso.cx').to_string())
-	register('cx-platform/flow', $embed_file('../../deps/cx-platform-flow/stdlib/flow.cx').to_string())
-	register('cx-platform/secrets', $embed_file('../../deps/cx-platform-secrets/stdlib/secrets.cx').to_string())
-	register('cx-platform/ux', $embed_file('../../deps/cx-platform-ux/x/ux.cx').to_string())
-	register('cx-platform/ux-web', $embed_file('../../deps/cx-platform-ux/x/ux-web.cx').to_string())
-	register('cx-platform/ux-tui', $embed_file('../../deps/cx-platform-ux/x/ux-tui.cx').to_string())
-	register('cx-platform/run', $embed_file('../../deps/cx-platform-agent/x/run.cx').to_string())
-	register('cx-platform/llm', $embed_file('../../deps/cx-platform-agent/x/llm.cx').to_string())
-	register('cx-platform/mcp', $embed_file('../../deps/cx-platform-agent/x/mcp.cx').to_string())
-	register('cx-platform/mcp-server', $embed_file('../../deps/cx-platform-agent/x/mcp-server.cx').to_string())
-	register('cx-platform/a2a', $embed_file('../../deps/cx-platform-agent/x/a2a.cx').to_string())
-	register('cx-platform/a2a-xap', $embed_file('../../deps/cx-platform-agent/x/a2a-xap.cx').to_string())
-	register('cx-platform/adjudicate', $embed_file('../../deps/cx-platform-agent/x/adjudicate.cx').to_string())
-	register('cx-platform/tools', $embed_file('../../deps/cx-platform-agent/x/tools.cx').to_string())
-}
-
-fn register(name string, src string) {
-	code.register_bundled_source(name, src) or { panic(err) }
+	code.register_bundled_embed('cx-platform/connector', $embed_file('../../deps/cx-platform-connector/stdlib/connector.cx')) or { panic(err) }
+	code.register_bundled_embed('cx-platform/sync', $embed_file('../../deps/cx-platform-connector/stdlib/sync.cx')) or { panic(err) }
+	code.register_bundled_embed('cx-platform/sso', $embed_file('../../deps/cx-platform-sso/stdlib/sso.cx')) or { panic(err) }
+	code.register_bundled_embed('cx-platform/flow', $embed_file('../../deps/cx-platform-flow/stdlib/flow.cx')) or { panic(err) }
+	code.register_bundled_embed('cx-platform/secrets', $embed_file('../../deps/cx-platform-secrets/stdlib/secrets.cx')) or { panic(err) }
+	code.register_bundled_embed('cx-platform/ux', $embed_file('../../deps/cx-platform-ux/x/ux.cx')) or { panic(err) }
+	code.register_bundled_embed('cx-platform/ux-web', $embed_file('../../deps/cx-platform-ux/x/ux-web.cx')) or { panic(err) }
+	code.register_bundled_embed('cx-platform/ux-tui', $embed_file('../../deps/cx-platform-ux/x/ux-tui.cx')) or { panic(err) }
+	code.register_bundled_embed('cx-platform/run', $embed_file('../../deps/cx-platform-agent/x/run.cx')) or { panic(err) }
+	code.register_bundled_embed('cx-platform/llm', $embed_file('../../deps/cx-platform-agent/x/llm.cx')) or { panic(err) }
+	code.register_bundled_embed('cx-platform/mcp', $embed_file('../../deps/cx-platform-agent/x/mcp.cx')) or { panic(err) }
+	code.register_bundled_embed('cx-platform/mcp-server', $embed_file('../../deps/cx-platform-agent/x/mcp-server.cx')) or { panic(err) }
+	code.register_bundled_embed('cx-platform/a2a', $embed_file('../../deps/cx-platform-agent/x/a2a.cx')) or { panic(err) }
+	code.register_bundled_embed('cx-platform/a2a-xap', $embed_file('../../deps/cx-platform-agent/x/a2a-xap.cx')) or { panic(err) }
+	code.register_bundled_embed('cx-platform/adjudicate', $embed_file('../../deps/cx-platform-agent/x/adjudicate.cx')) or { panic(err) }
+	code.register_bundled_embed('cx-platform/tools', $embed_file('../../deps/cx-platform-agent/x/tools.cx')) or { panic(err) }
 }
 
 // names answers every resolver name this module registers, in table order —
