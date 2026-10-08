@@ -21,6 +21,11 @@ import code
 // no product's function.
 import xap as _
 
+// The package repositories' bundled stdlib sources (connector, sync, sso,
+// flow, secrets, ux, agent's) register from the front door's own module,
+// platform-profile only (cx-core-code#72 step 3, RULED: STREAM-1).
+import platform_sources as _
+
 // platform_subcommands returns the platform-only SubcommandSpec entries,
 // appended to the shared registry by build_subcommands (cmd/main.v), in the
 // order of absent_platform_verbs — the one list of platform verb words, which

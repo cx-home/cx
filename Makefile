@@ -1621,6 +1621,14 @@ export CX_V_SEARCH := $(CURDIR)/vcx|$(or $(CX_DEPS_VPATH),@vmodules|@vlib)
 export CX_NATIVE_DEFINES := -d cx_re2_lib_dir=$(CURDIR)/deps/cx-core-code/vcx/target -d cx_re2_static=$(CURDIR)/third_party/re2/obj/libre2.a -d cx_arrow_shim_lib=$(CURDIR)/deps/cx-core-code/vcx/target/libcx_arrow_shim.a
 export VFLAGS := -path "$(CX_V_SEARCH)" $(CX_NATIVE_DEFINES)
 
+# CX_LIB_ENTRY (cx-core-code#72 step 3, RULED: STREAM-1) — the entry libcx and
+# the wasm playground bundle build FROM: vcx/composed, which imports xap (the
+# platform's V products) AND vcx/platform_sources (the package repositories'
+# bundled stdlib sources, which this front door registers and `code` no longer
+# embeds). Exported, so every `make -C deps/cx-core-code/vcx` (LIB_ENTRY) and
+# every build_libcx_wasm.sh run below reads it.
+export CX_LIB_ENTRY := $(CURDIR)/vcx/composed
+
 # CX_GATES_CXD / CX_FRONT_DOOR_ROOT (K7a crossing 2a, RULED: D68a) —
 # conformance/gates.cxd, scripts/*.cx, examples/, tooling/ and VERSION are all
 # repo=cx; none of them travel with cx-core-code's pin. grader.v's
@@ -1665,6 +1673,9 @@ test-bundle-sources: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 test-bundle-sources: build-vcx
 	@"$(CX_BIN)" --allow-read --allow-write scripts/check_bundle_sources_fixtures.cx --self-test
 	@"$(CX_BIN)" --allow-read --allow-write scripts/check_bundle_sources_fixtures.cx
+	@# cx-core-code#72 step 3: every cx-platform/* source answers from a
+	@# registration (a product's init() or vcx/platform_sources), byte-for-byte.
+	@$(V) -cc cc $(CX_GC) test vcx/tests/platform_sources_test.v
 
 # ── test-docs-fragment — the per-repository documentation fragment ────────
 # conformance/docs_fragment.cxd pins the contract a component repository's
