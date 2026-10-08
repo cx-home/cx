@@ -117,12 +117,13 @@
     [yield $m]]]
 
 # is-pinned: does the front door consume $name — the self row, or a row
-# deps.cxd pins (a deps/<name>/ checkout to read from). A shown row cx does
-# not consume — the four bindings, which pin the front door rather than the
-# reverse, and the two ecosystem rows nothing is compiled from (the package
-# index, the decisions record; wave 4) — has no checkout here: its page
-# links the repository and its README as the registry names them and
-# verifies nothing against a tree, saying so.
+# deps.cxd pins for its build (a deps/<name>/ checkout to read from). A shown
+# row cx does not consume — the four bindings and the two ecosystem rows
+# nothing is compiled from (the package index, the decisions record; wave 4),
+# deps.cxd's non-build rows since cx-private#1858 (a), which plugs' pins-of
+# leaves out — is read as unbuilt: its page links the repository and its
+# README as the registry names them and verifies nothing against a tree,
+# saying so.
 [?def is-pinned scope=public impure ($name)
   [or [$is-self $name] [$member [$plugs:pins-of [$rs:site-self]] $name]]]
 
