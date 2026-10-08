@@ -16,7 +16,11 @@
 #   --strict — 10% (use when both
 #              runs come from a stable bare-metal baseline machine).
 #
-# Lower-is-better is assumed (every key is a millisecond figure).
+# Lower-is-better is assumed (a millisecond figure, an arena count, or — #1884 —
+# a `…peak_rss_mb` peak resident set in MB); a `_mbps` key is a throughput and
+# inverts. Every key is judged on its own, so a landing that buys time with
+# memory (or memory with time) regresses the row it worsened whatever its twin
+# did: the owner's rule of 2026-10-08, performance never at the cost of memory.
 #
 # Exit codes:
 #   0 — no regressions past threshold.

@@ -4699,8 +4699,16 @@ bench: build-vcx
 # #27178/#27179 fixes) so -prod can be safely enabled on macOS.
 # Falls back to system V if the submodule isn't present.
 PATCHED_V := $(if $(wildcard $(CURDIR)/third_party/v/v),$(CURDIR)/third_party/v/v,v)
+# #1884: a V bench is COMPILED, then its binary runs under $(BENCH_WRAP) —
+# empty by default; scripts/run_bench_json.cx passes `/usr/bin/time -l` (or
+# `-v`) so each row's peak resident set is the bench's own, not the C
+# compiler's that `v run` would have charged to it.
+BENCH_BIN_DIR := $(CURDIR)/vcx/target/bench
+BENCH_WRAP ?=
 bench-streaming: build-vcx
-	$(PATCHED_V) -prod run deps/cx-core-code/vcx/tests/runners/streaming_bench.v
+	@mkdir -p $(BENCH_BIN_DIR)
+	$(PATCHED_V) -prod -o $(BENCH_BIN_DIR)/streaming_bench deps/cx-core-code/vcx/tests/runners/streaming_bench.v
+	$(BENCH_WRAP) $(BENCH_BIN_DIR)/streaming_bench
 
 # cxparse unification — parser perf baseline / per-phase N3 gate
 # (the cxparse unification plan's §6 — removed as spent in abd068d4d; read it
@@ -4716,8 +4724,15 @@ bench-cxparse: build-vcx
 # pipeline/arrow operators, ?match, regex via RE2, range).
 # Output is parsed by scripts/run_bench_json.cx into the
 # T1.* benchmark keys for the V7 perf regression gate.
+#
+# Compiled by the patched V with -enable-globals -prod like the other bench
+# runners (#1884): the bare `v run` this recipe had named a V that no longer
+# exists outside devbox (`make: v: No such file or directory`), and an
+# unoptimised build is not the engine cx ships (#804, #835).
 bench-eval: build-vcx
-	v run deps/cx-core-code/vcx/tests/runners/eval_features_bench.v
+	@mkdir -p $(BENCH_BIN_DIR)
+	$(PATCHED_V) -enable-globals -prod -o $(BENCH_BIN_DIR)/eval_features_bench deps/cx-core-code/vcx/tests/runners/eval_features_bench.v
+	$(BENCH_WRAP) $(BENCH_BIN_DIR)/eval_features_bench
 
 # ── v0.8.0 §11.6 release-gate harnesses ────────────────────────────────────────
 #
@@ -4758,7 +4773,9 @@ bench-code-pattern-compile: build-vcx
 # under test; this is a measurement repair, and the §11.4.4 floor is
 # untouched by it.
 bench-code-streaming: build-vcx
-	$(PATCHED_V) -enable-globals -prod run deps/cx-core-code/vcx/tests/runners/code_streaming_throughput_bench.v
+	@mkdir -p $(BENCH_BIN_DIR)
+	$(PATCHED_V) -enable-globals -prod -o $(BENCH_BIN_DIR)/code_streaming_throughput_bench deps/cx-core-code/vcx/tests/runners/code_streaming_throughput_bench.v
+	$(BENCH_WRAP) $(BENCH_BIN_DIR)/code_streaming_throughput_bench
 
 # #804 leg-2 CEILING probe — not a gate, a decision instrument. Walks the
 # gate-15 corpus doing only what a never-forced lazy record would do
