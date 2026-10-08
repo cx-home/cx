@@ -1868,6 +1868,34 @@ perf-ratchet: build-vcx
 	@"$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-read --allow-write --allow-subprocess --allow-clock --allow-env scripts/run_bench_json.cx -o bench/current.json
 	@$(MAKE) bench-compare STRICT=1 CX_BIN=$(CURDIR)/deps/cx-core-code/vcx/target/cx
 
+# #1884 (the owner's rule of 2026-10-08: performance never at the cost of
+# memory) — the PAIRED step. This tree's bench rows against a recorded
+# artifact of the head it lands on (PERF_HEAD=, written by `make perf-record`
+# on the head), every key judged on its own at the strict 10 %, so a time row
+# that improved never excuses its peak-RSS twin that grew. It measures with
+# --memory-under-load: on a box over the #1450 load bound the time rows are
+# refused and the peak-RSS / arena rows — which the load cannot move — are
+# still judged; compare_bench's exit 3 (time unjudged, memory clean) passes,
+# exit 1 (a row regressed) fails. Wall-clock and machine-bound, so NOT a
+# TEST_TARGETS member: the landing gate and the loop call it (patch on #1884).
+# The head's record lives in the checkout's vcx/target: the loop promotes its
+# tick's rows after a GREEN verdict (`make perf-promote`), so the next tick —
+# or a landing gate pointed at the loop checkout's file — judges against the
+# last green head. With no record yet, perf-pair records and judges nothing.
+PERF_HEAD ?= vcx/target/bench-head.json
+PERF_OUT  ?= vcx/target/bench-pair.json
+.PHONY: perf-record perf-pair perf-promote
+perf-record: build-vcx
+	@mkdir -p $(dir $(PERF_OUT))
+	@"$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-read --allow-write --allow-subprocess --allow-clock --allow-env scripts/run_bench_json.cx --memory-under-load -o $(PERF_OUT)
+perf-pair: perf-record
+	@if [ ! -f "$(PERF_HEAD)" ]; then echo "perf-pair: no head record at $(PERF_HEAD) — this tree's rows recorded in $(PERF_OUT), nothing judged (make perf-promote seeds it)"; exit 0; fi; \
+	  "$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-read --allow-write --allow-env scripts/compare_bench.cx $(PERF_HEAD) $(PERF_OUT) --strict; \
+	  rc=$$?; if [ $$rc -eq 3 ]; then echo "perf-pair: memory rows judged clean; time rows unjudged on a loaded box (#1450)"; exit 0; fi; exit $$rc
+perf-promote:
+	@[ -f "$(PERF_OUT)" ] || { echo "perf-promote: no $(PERF_OUT) (run make perf-pair first)"; exit 1; }
+	@cp "$(PERF_OUT)" "$(PERF_HEAD)" && echo "perf-promote: $(PERF_OUT) is the head record $(PERF_HEAD)"
+
 # Documentation hygiene — every relative markdown link resolves.
 # Source markdown lives in docs-src/ (docs/ is the GENERATED HTML guide /
 # Pages site, which has no .md files — pointing the check there made the
@@ -1944,7 +1972,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests check-bare-head-calls test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-build-slot check-bench-isolation check-no-infix-range check-no-cxl-token listener-bind-gate check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-snippets-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate advisory-audit property-gate spec-invariant-gate ring-tag-gate cxer-registry-gate diagnostics-census-check spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-search test-playground-readings test-oriel test-agent-real test-connector-real test-xap-umbrella test-fabric-umbrella test-mail-real test-net-real test-web-component-offline bench-code-pattern-compile test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard repr-guard-selftest check-inmodule-test-roster check-build-input-roster check-sync-cmd-split check-gitconfig-home check-selection-manifest fmt-sweep-gate test-playground-wasm-traps test-site-phone-width test-playground-primer site-live-check site-links-selftest issue-label-gate ledger-index-check ledger-edit-map-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings check-bench-runners-compile check-flow-doc-lines
+TEST_TARGETS := docs-voice-check docs-vocabulary-check nav-shape-check ring-svg-check check-no-ai-attribution check-public-history-replace check-vcache-soundness check-vcache-soundness-selftest check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-release-asset-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests check-bare-head-calls test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-build-slot check-bench-isolation check-no-infix-range check-no-cxl-token listener-bind-gate check-no-consumer-terms secrets-scan check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-snippets-check guide-render-gate site-check directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate advisory-audit property-gate spec-invariant-gate ring-tag-gate cxer-registry-gate diagnostics-census-check spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins check-deps-bootstrap-token test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate docs-flow-gate release-flow-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-playground-search test-playground-readings test-oriel test-agent-real test-connector-real test-xap-umbrella test-fabric-umbrella test-mail-real test-net-real test-web-component-offline bench-code-pattern-compile test-db-real test-sso-interop test-xpath-parity-cx corpus-audit repr-guard repr-guard-selftest check-inmodule-test-roster check-build-input-roster check-sync-cmd-split check-gitconfig-home check-selection-manifest fmt-sweep-gate test-playground-wasm-traps test-site-phone-width test-playground-primer site-live-check site-links-selftest issue-label-gate ledger-index-check ledger-edit-map-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings check-bench-runners-compile check-flow-doc-lines perf-pair
 
 # PRIVMK-1: the private flow targets add themselves to TEST_TARGETS from
 # flows/private.mk. That file is absent from the public tree, and `-include`
