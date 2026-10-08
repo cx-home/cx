@@ -37,3 +37,9 @@ lang/_archived/** linguist-vendored
 *.cx  linguist-language=CX linguist-detectable
 *.cxd linguist-language=CX linguist-detectable
 *.cxs linguist-language=CX linguist-detectable
+
+# The published conformance corpora (#1840) are byte-exact upstream copies:
+# CRLF cases (csv-spectrum's *_crlf.csv, toml-test's crlf files) and invalid
+# UTF-8 (JSONTestSuite's n_/i_ files) must reach the gate unchanged, so no
+# end-of-line or text conversion ever applies to them.
+third_party/suites/** -text

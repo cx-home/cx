@@ -1,0 +1,356 @@
+# scripts/conformance_suites.cx — the published conformance corpora as a gate
+# step (cx-private#1840; RULED: STREAM-1).
+#
+# The stdlib's own fixtures test the happy path its authors thought of: case
+# mapping was tested on "HeLLo", so Greek and Cyrillic stayed unmapped
+# (#1808). This step runs the corpora other implementations are held to,
+# pinned verbatim with their licenses under third_party/suites/ (README.md
+# there names each upstream and commit):
+#
+#   json     JSONTestSuite test_parsing  — json:parse-bytes accepts every y_,
+#            refuses every n_; an i_ (implementation-defined) answer is
+#            recorded as a count, so a change in it is seen, not graded
+#   toml     toml-test, the TOML 1.0.0 list — a valid file parses to the
+#            value its tagged JSON names, an invalid one is refused
+#   yaml     the YAML test suite (data branch) — an error case is refused,
+#            any other parses ([$yaml:parse-many]) to its in.json's values
+#   unicode  UCD 16.0.0 — strings:upper / lower / title / case-fold of every
+#            assigned code point against UnicodeData's simple mappings,
+#            SpecialCasing's unconditional lines and CaseFolding's C + F
+#   re2      re2-search.txt (RE2's `make log`, as Go's regexp tests carry
+#            it) — every regexp on every string in all four modes: full and
+#            partial match, leftmost-first and leftmost-longest, the
+#            submatch byte offsets ([g start-bytes end-bytes]) exact
+#   csv      the CSV spectrum — csv:parse of each file equals its JSON rows
+#
+# A case that does not pass is a refusal unless a [known] row of
+# scripts/conformance_suites.cxd names it with its reason: issue= (an open
+# issue owns it), ruled= (a spec sentence declines it), or upstream= (the
+# corpus itself is wrong). A [known] row whose case now passes is refused too
+# (drop it), and so is a [suite] row whose recorded cases= / pass= no longer
+# match the run: the pass counts are recorded, every known failure has an
+# owner, none is silent.
+#
+# Run (from the repository root):
+#   cx --allow-read --allow-write scripts/conformance_suites.cx [--record]
+# --record prints a register from this run (existing reasons kept, a new
+# failure as issue='TODO') instead of grading.
+# Exit: 0 the run agrees with the register; 1 a refusal (each on stdout);
+#       2 the register or a corpus directory is missing.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/json'    as=json]
+[?lib 'cx-stdlib/toml'    as=toml]
+[?lib 'cx-stdlib/yaml'    as=yaml]
+[?lib 'cx-stdlib/csv'     as=csv]
+
+[?def root scope=private pure () 'third_party/suites/']
+
+# ── json: JSONTestSuite ─────────────────────────────────────────────────────
+
+[?def run-json scope=private impure ()
+  [?let
+    [= $files [$io:glob [$concat [$root] 'jsontestsuite/test_parsing/*.json']]]
+    [= $res [?for [in $f $files]
+              [yield [?let [= $n [$path:basename $f]]
+                           [= $r [$json:parse-bytes [$io:read-file-bytes $f]]]
+                           [= $acc [?match $r [case [err] false] [else true]]]
+                [?if [$strings:starts-with $n "y_"]
+                  [then [?if $acc [then [ok]] [else [fail case=$n why='rejected']]]]
+                  [else [?if [$strings:starts-with $n "n_"]
+                    [then [?if $acc [then [fail case=$n why='accepted']] [else [ok]]]]
+                    [else [?if $acc [then [i-accepted]] [else [i-rejected]]]]]]]]]]]
+    [run name=json
+         cases=[$count [?for [in $x $res] [where [or [= [$name $x] "ok"] [= [$name $x] "fail"]]] [yield $x]]]
+         i-accepted=[$count [?for [in $x $res] [where [= [$name $x] "i-accepted"]] [yield $x]]]
+         [?splice [?for [in $x $res] [where [= [$name $x] "fail"]] [yield $x]]]]]]
+
+# ── toml: toml-test, TOML 1.0.0 ─────────────────────────────────────────────
+
+[?def norm-dt scope=private pure ($s::string)
+  [?let [= $a [$strings:replace [$strings:replace [$strings:replace $s " " "T"] "t" "T"] "z" "Z"]]
+        [= $b [$re:replace [$re:compile '[.]([0-9]*?)0*([Z+-]|$)'] $a '.${1}${2}']]
+    [$re:replace [$re:compile '[.]([Z+-]|$)'] $b '${1}']]]
+
+# toml-test's tagged JSON against a parsed value: a {type, value} pair is a
+# scalar, an array is elementwise, any other map a table with the same keys.
+[?def tagged-eq scope=private pure ($want $got)
+  [?if [= [$kind-of $want] :array]
+    [then [and [= [$kind-of $got] :array] [= [$count $want] [$count $got]]
+               [= [$count [?for [in $i [$range 1 [$count $want]]]
+                             [where [not [$tagged-eq [$nth $want $i] [$nth $got $i]]]] [yield $i]]] 0]]]
+    [else [?if [and [= [$map:size $want] 2] [$map:contains $want "type"] [$map:contains $want "value"]
+                    [= [$kind-of [$map:get $want "type"]] :string]]
+      [then [$scalar-eq [$map:get $want "type"] [$map:get $want "value"] $got]]
+      [else [and [= [$kind-of $got] :map] [= [$map:size $want] [$map:size $got]]
+                 [= [$count [?for [in $k [$map:keys $want]]
+                               [where [or [not [$map:contains $got $k]]
+                                          [not [$tagged-eq [$map:get $want $k] [$map:get $got $k]]]]] [yield $k]]] 0]]]]]]]
+
+[?def scalar-eq scope=private pure ($type::string $value::string $got)
+  [?match $type
+    [case "string"         [and [= [$kind-of $got] :string] [= $got $value]]]
+    [case "integer"        [and [or [= [$kind-of $got] :int] [= [$kind-of $got] :bigint]] [= [$string $got] $value]]]
+    [case "float"          [and [= [$kind-of $got] :float] [= $got [$strings:to-float $value]]]]
+    [case "bool"           [and [= [$kind-of $got] :bool] [= [$string $got] $value]]]
+    [case "datetime"       [and [= [$kind-of $got] :datetime] [= [$norm-dt [$string $got]] [$norm-dt $value]]]]
+    [case "datetime-local" [and [= [$kind-of $got] :datetime] [= [$norm-dt [$string $got]] [$norm-dt $value]]]]
+    [case "date-local"     [and [= [$kind-of $got] :date] [= [$string $got] $value]]]
+    [case "time-local"     [= [$norm-dt [$string $got]] [$norm-dt $value]]]
+    [else false]]]
+
+[?def run-toml scope=private impure ()
+  [?let
+    [= $dir [$concat [$root] 'toml-test/']]
+    [= $list [?for [in $l [$strings:split-lines [$io:read-file [$concat $dir 'files-toml-1.0.0']]]]
+               [where [$strings:ends-with $l ".toml"]] [yield $l]]]
+    [= $res [?for [in $f $list]
+              [yield [?let [= $valid [$strings:starts-with $f "valid/"]]
+                           [= $got [$toml:parse [$io:read-file [$concat $dir $f]]]]
+                [?match $got
+                  [case [err] [?if $valid [then [fail case=$f why='rejected']] [else [ok]]]]
+                  [else [?if $valid
+                    [then [?let [= $want [$json:parse [$io:read-file [$concat $dir [$strings:replace $f ".toml" ".json"]]]]]
+                            [?if [$tagged-eq $want $got] [then [ok]] [else [fail case=$f why='value']]]]]
+                    [else [fail case=$f why='accepted']]]]]]]]]
+    [run name=toml cases=[$count $list]
+         [?splice [?for [in $x $res] [where [= [$name $x] "fail"]] [yield $x]]]]]]
+
+# ── yaml: the YAML test suite ───────────────────────────────────────────────
+
+[?def run-yaml scope=private impure ()
+  [?let
+    [= $dir [$concat [$root] 'yaml-test-suite/']]
+    [= $cases [?for [in $f [$io:glob [$concat $dir '**/in.yaml']]] [yield [$path:dirname $f]]]]
+    [= $res [?for [in $d $cases]
+              [yield [?let [= $id [$strings:replace $d $dir '']]
+                           [= $bad [$io:exists [$concat $d '/error']]]
+                           [= $got [$yaml:parse-many [$io:read-file [$concat $d '/in.yaml']]]]
+                [?match $got
+                  [case [err] [?if $bad [then [ok]]
+                                [else [fail case=$id why=[?if [$strings:contains $got@message "unsupported:"]
+                                                            [then 'unsupported'] [else 'rejected']]]]]]
+                  [else [?if $bad [then [fail case=$id why='accepted']]
+                    [else [?if [not [$io:exists [$concat $d '/in.json']]] [then [ok]]
+                      [else [?let [= $want [$json:parse-many [$io:read-file [$concat $d '/in.json']]]]
+                        [?if [= $want $got] [then [ok]] [else [fail case=$id why='value']]]]]]]]]]]]]]
+    [run name=yaml cases=[$count $cases]
+         [?splice [?for [in $x $res] [where [= [$name $x] "fail"]] [yield $x]]]]]]
+
+# ── unicode: UCD 16.0.0 case mappings ───────────────────────────────────────
+
+[?def cps scope=private pure ($hexes::string)
+  [$strings:join [?for [in $h [$strings:split-whitespace $hexes]]
+                   [yield [$strings:from-code-point [$strings:to-int $h 16]]]] ""]]
+
+# The ;-fields of a UCD data file's lines, comments and blank lines dropped.
+[?def ucd-rows scope=private impure ($file::string)
+  [?for [in $l [$strings:split-lines [$io:read-file $file]]]
+    [= $body [$strings:trim [$first [$strings:split $l "#"]]]]
+    [where [> [$strings:length $body] 0]]
+    [yield [?for [in $x [$strings:split $body ";"]] [yield [$strings:trim $x]]]]]]
+
+[?def run-unicode scope=private impure ()
+  [?let
+    [= $dir [$concat [$root] 'unicode-16.0.0/']]
+    [= $ud [?for [in $f [$ucd-rows [$concat $dir 'UnicodeData.txt']]]
+             [where [not [$strings:ends-with [$nth $f 2] "First>"]]]
+             [where [not [$strings:ends-with [$nth $f 2] "Last>"]]]
+             [= $cp [$strings:to-int [$nth $f 1] 16]]
+             [where [or [< $cp 55296] [> $cp 57343]]]
+             [yield $f]]]
+    # SpecialCasing: the unconditional lines (no condition list); the
+    # language- and context-conditioned ones are the locale verbs' ground.
+    [= $sc [?for [in $f [$ucd-rows [$concat $dir 'SpecialCasing.txt']]]
+             [where [or [= [$count $f] 4] [and [= [$count $f] 5] [= [$nth $f 5] ""]]]]
+             [yield $f]]]
+    [= $sc-keys [?for [in $f $sc] [yield [$nth $f 1]]]]
+    [= $sc-lower [?to-map [?zip $sc-keys [?for [in $f $sc] [yield [$cps [$nth $f 2]]]]]]]
+    [= $sc-title [?to-map [?zip $sc-keys [?for [in $f $sc] [yield [$cps [$nth $f 3]]]]]]]
+    [= $sc-upper [?to-map [?zip $sc-keys [?for [in $f $sc] [yield [$cps [$nth $f 4]]]]]]]
+    [= $cf [?for [in $f [$ucd-rows [$concat $dir 'CaseFolding.txt']]]
+             [where [or [= [$nth $f 2] "C"] [= [$nth $f 2] "F"]]]
+             [yield $f]]]
+    [= $cf-map [?to-map [?zip [?for [in $f $cf] [yield [$nth $f 1]]] [?for [in $f $cf] [yield [$cps [$nth $f 3]]]]]]]
+    [= $exp [?for [in $f $ud]
+              [= $k [$nth $f 1]]
+              [= $c [$cps $k]]
+              [yield [m k=$k c=$c
+                 u=[?else [$map:get $sc-upper $k] [?if [= [$nth $f 13] ""] [then $c] [else [$cps [$nth $f 13]]]]]
+                 l=[?else [$map:get $sc-lower $k] [?if [= [$nth $f 14] ""] [then $c] [else [$cps [$nth $f 14]]]]]
+                 t=[?else [$map:get $sc-title $k] [?if [= [$nth $f 15] ""] [then $c] [else [$cps [$nth $f 15]]]]]
+                 f=[?else [$map:get $cf-map $k] $c]]]]]
+    [= $fails [?for [in $verb ("upper", "lower", "title", "case-fold")] [in $m $exp]
+                [= $got [?match $verb [case "upper" [$strings:upper $m@c]] [case "lower" [$strings:lower $m@c]]
+                                      [case "title" [$strings:title $m@c]] [else [$strings:case-fold $m@c]]]]
+                [= $want [?match $verb [case "upper" $m@u] [case "lower" $m@l] [case "title" $m@t] [else $m@f]]]
+                [where [not [= $got $want]]]
+                [yield [fail case=[$concat $verb " U+" $m@k] why='value']]]]
+    [run name=unicode cases=[* 4 [$count $exp]] [?splice $fails]]]]
+
+# ── re2: re2-search.txt ─────────────────────────────────────────────────────
+
+# A Go-quoted line ("…" with \n \t \r \" \\) to its string.
+[?def unquote scope=private pure ($q::string)
+  [$re:replace-fn [$re:compile '\\\\(.)']
+    [$strings:slice $q 2 [- [$strings:length $q] 1]]
+    [?fn ($m) [?let [= $c [$re:group $m 1]]
+      [?match $c [case "n" "\n"] [case "t" "\t"] [case "r" "\r"] [else $c]]]]]]
+
+# A find's submatch byte offsets in re2-search.txt's spelling ("-" for none).
+[?def spell scope=private pure ($m)
+  [?match $m
+    [case [match] [$strings:join [?for [in $g $m/groups/g]
+                                   [yield [?if [= $g@start-bytes -1] [then "-"]
+                                           [else [$concat [$string $g@start-bytes] "-" [$string $g@end-bytes]]]]]] " "]]
+    [else "-"]]]
+
+# One regexp on one string against the line's four fields: full and partial,
+# leftmost-first then leftmost-longest. RE2's full match is an anchored
+# search, so its offsets are the partial search's over ^(?:re)$ — the file
+# carries those anchored forms as regexps of their own; here full is matches.
+[?def re2-case scope=private pure ($pat::string $s::string $fields)
+  [?let [= $first [$re:compile $pat]]
+        [= $long [$re:compile-with-flags $pat {longest-match: true}]]
+    [?match $first
+      [case [err] 'compile']
+      [else [?if [not [= [$re:matches $first $s] [not [= [$nth $fields 1] "-"]]]] [then 'full']
+        [else [?if [not [= [$spell [$re:find $first $s]] [$nth $fields 2]]] [then 'partial']
+          [else [?if [not [= [$re:matches $long $s] [not [= [$nth $fields 3] "-"]]]] [then 'longest-full']
+            [else [?if [not [= [$spell [$re:find $long $s]] [$nth $fields 4]]] [then 'longest-partial']
+              [else 'ok']]]]]]]]]]]]
+
+[?def run-re2 scope=private impure ()
+  [?let
+    [= $blocks [$strings:split [$io:read-file [$concat [$root] 're2-search/re2-search.txt']] "\nstrings\n"]]
+    [= $res [?for [in $b [?for [in $i [$range 2 [$count $blocks]]] [yield [$nth $blocks $i]]]]
+              [= $parts [$strings:split $b "\nregexps\n"]]
+              [= $strs [?for [in $l [$strings:split-lines [$nth $parts 1]]] [yield [$unquote $l]]]]
+              [= $n [$count $strs]]
+              [= $rl [$strings:split-lines [$nth $parts 2]]]
+              [in $ri [$range 0 [- [$idiv [$count $rl] [+ $n 1]] 1]]]
+              [= $base [+ [* $ri [+ $n 1]] 1]]
+              [= $pat [$unquote [$nth $rl $base]]]
+              [in $si [$range 1 $n]]
+              [= $s [$nth $strs $si]]
+              [= $v [$re2-case $pat $s [$strings:split [$nth $rl [+ $base $si]] ";"]]]
+              [yield [?if [= $v 'ok'] [then [ok]]
+                       [else [fail case=[$concat [$nth $rl $base] " on " [$nth $strs $si]] why=$v]]]]]]
+    [run name=re2 cases=[$count $res]
+         [?splice [?for [in $x $res] [where [= [$name $x] "fail"]] [yield $x]]]]]]
+
+# ── csv: the CSV spectrum ───────────────────────────────────────────────────
+
+[?def run-csv scope=private impure ()
+  [?let
+    [= $dir [$concat [$root] 'csv-spectrum/']]
+    [= $files [$io:glob [$concat $dir 'csvs/*.csv']]]
+    [= $res [?for [in $f $files]
+              [yield [?let [= $id [$path:stem $f]]
+                           [= $got [$csv:parse [$io:read-file $f]]]
+                           [= $want [$json:parse [$io:read-file [$concat $dir 'json/' $id '.json']]]]
+                [?match $got
+                  [case [err] [fail case=$id why='rejected']]
+                  [else [?if [= $got [?for [in $x $want] [yield $x]]] [then [ok]] [else [fail case=$id why='value']]]]]]]]]
+    [run name=csv cases=[$count $files]
+         [?splice [?for [in $x $res] [where [= [$name $x] "fail"]] [yield $x]]]]]]
+
+# ── the register ────────────────────────────────────────────────────────────
+
+# A run's [fail] children as a sequence ($r/fail of a single child is that
+# element, whose $count is its own child count).
+[?def fails-of scope=private pure ($r) [?for [in $f $r/fail] [yield $f]]]
+
+[?def key-of scope=private pure ($suite $case) [$concat [$string $suite] "|" [$string $case]]]
+
+[?def reason-of scope=private pure ($k)
+  [$count [?for [in $p ([$present [?else $k@issue ()]], [$present [?else $k@ruled ()]], [$present [?else $k@upstream ()]])]
+            [where $p] [yield $p]]]]
+
+# The refusals of the run $runs against the register $reg, one line each.
+[?def check scope=private pure ($runs $reg)
+  [?let
+    [= $known [?for [in $k $reg//known] [yield $k]]]
+    [= $fail-keys [?for [in $r $runs] [in $f $r/fail] [yield [$key-of $r@name $f@case]]]]
+    [= $fail-set [?to-map [?zip $fail-keys $fail-keys]]]
+    [= $known-keys [?for [in $k $known] [yield [$key-of $k@suite $k@case]]]]
+    [= $known-set [?to-map [?zip $known-keys $known-keys]]]
+    [= $suite-lines
+      [?for [in $r $runs]
+        [= $rows [?for [in $s $reg//suite] [where [= [$string $s@name] [$string $r@name]]] [yield $s]]]
+        [= $pass [- $r@cases [$count [$fails-of $r]]]]
+        [yield [?if [= [$count $rows] 0]
+          [then [$concat "suite " $r@name ": no [suite name=" $r@name "] row in the register"]]
+          [else [?let [= $s [$first $rows]]
+            [?if [and [= [$string $s@cases] [$string $r@cases]] [= [$string $s@pass] [$string $pass]]
+                      [= [$string [?else $s@i-accepted ""]] [$string [?else $r@i-accepted ""]]]]
+              [then ()]
+              [else [$concat "suite " $r@name ": the register records cases=" [$string $s@cases] " pass=" [$string $s@pass]
+                             " but the run is cases=" [$string $r@cases] " pass=" [$string $pass]
+                             [?if [$present [?else $r@i-accepted ()]] [then [$concat " i-accepted=" [$string $r@i-accepted]]] [else ""]]
+                             " — rerun with --record and update the [suite] row"]]]]]]]]]
+    [= $unrecorded
+      [?for [in $r $runs] [in $f $r/fail]
+        [where [not [$map:contains $known-set [$key-of $r@name $f@case]]]]
+        [yield [$concat "suite " $r@name ": " $f@case " fails (" $f@why ") and no [known] row names it — file an issue and record it"]]]]
+    [= $stale
+      [?for [in $k $known]
+        [where [not [$map:contains $fail-set [$key-of $k@suite $k@case]]]]
+        [yield [$concat "suite " $k@suite ": " $k@case " is a [known] row but now passes — drop the row (and close its issue)"]]]]
+    [= $no-reason
+      [?for [in $k $known]
+        [where [not [= [$reason-of $k] 1]]]
+        [yield [$concat "suite " $k@suite ": [known] " $k@case " needs exactly one of issue= / ruled= / upstream="]]]]
+    ([?splice $suite-lines], [?splice $unrecorded], [?splice $stale], [?splice $no-reason])]]
+
+# --record: the register this run implies, existing reasons kept.
+[?def record scope=private pure ($runs $reg)
+  [?let
+    [= $known [?for [in $k $reg//known] [yield $k]]]
+    [= $lines
+      [?for [in $r $runs]
+        [yield [$concat
+          "  [suite name=" $r@name " cases=" [$string $r@cases] " pass=" [$string [- $r@cases [$count [$fails-of $r]]]]
+          [?if [$present [?else $r@i-accepted ()]] [then [$concat " i-accepted=" [$string $r@i-accepted]]] [else ""]] "]\n"
+          [$strings:join [?for [in $f $r/fail]
+            [= $old [?for [in $k $known] [where [= [$key-of $k@suite $k@case] [$key-of $r@name $f@case]]] [yield $k]]]
+            [yield [$concat "  [known suite=" $r@name " case='" [$strings:replace $f@case "'" "\\'"] "' why=" $f@why " "
+                     [?if [= [$count $old] 0] [then "issue='TODO'"]
+                       [else [?let [= $o [$first $old]]
+                         [?if [$present [?else $o@issue ()]] [then [$concat "issue='" $o@issue "'"]]
+                           [else [?if [$present [?else $o@ruled ()]] [then [$concat "ruled='" $o@ruled "'"]]
+                             [else [$concat "upstream='" [?else $o@upstream ""] "'"]]]]]]]]
+                     "]"]]] "\n"]]]]]
+    [$strings:join $lines "\n"]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $mode-record [> [$count [?for [in $a $argv] [where [= $a "--record"]] [yield $a]]] 0]]
+  [= $reg-file 'scripts/conformance_suites.cxd']
+  [?if [not [and [$io:is-file $reg-file] [$io:is-directory [$root]]]]
+    [then [?let [= $_e [$io:write-line [$env:stderr]
+                         "conformance_suites: run from the checkout root: scripts/conformance_suites.cxd or third_party/suites/ is missing"]]
+            [$env:exit 2]]]
+    [else
+      [?let
+        [= $reg [$cx:parse [$io:read-file $reg-file]]]
+        [= $runs ([$run-json], [$run-toml], [$run-yaml], [$run-unicode], [$run-re2], [$run-csv])]
+        [= $summary [$strings:join [?for [in $r $runs]
+                      [yield [$concat $r@name " " [$string [- $r@cases [$count [$fails-of $r]]]] "/" [$string $r@cases]]]] ", "]]
+        [?if $mode-record
+          [then [?let [= $_w [$io:write-line [$env:stdout] [$record $runs $reg]]] [$env:exit 0]]]
+          [else
+            [?let [= $refusals [$check $runs $reg]]
+                  [= $_s [$io:write-line [$env:stdout] [$concat "conformance-suites: " $summary]]]
+              [?if [= [$count $refusals] 0]
+                [then [?let [= $_o [$io:write-line [$env:stdout] "conformance-suites: ok — every failure is a recorded [known] row"]]
+                        [$env:exit 0]]]
+                [else [?let [= $_o [$io:write-line [$env:stdout] [$strings:join $refusals "\n"]]]
+                            [= $_c [$io:write-line [$env:stderr] [$concat "conformance-suites: " [$string [$count $refusals]] " refusal(s)"]]]
+                        [$env:exit 1]]]]]]]]]]]
