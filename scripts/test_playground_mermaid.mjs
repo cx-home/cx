@@ -159,7 +159,7 @@ function pageExamples(win) {
   }
   return rows;
 }
-function countExamples() {
+function exampleKeys() {
   // Cheap: the examples files are self-contained scripts that assign to
   // window. No jsdom, no wasm — the dispatcher must not pay for either.
   const fakeWindow = {};
@@ -170,11 +170,26 @@ function countExamples() {
       setupFail(`could not evaluate ${f}: ${e.message}`);
     }
   }
-  return pageExamples(fakeWindow).length;
+  return pageExamples(fakeWindow).map(([key]) => key);
 }
 
+// A shard is one example (SHARD_SIZE above) and answers in seconds — 2-3 s
+// idle, the slowest well under a minute at load 30. A shard that does not
+// answer in SHARD_TIMEOUT_S is killed and counted as a FAILURE naming its
+// example (#1879): on 6581a4588 the shard for primer:ap-py-index-at-right
+// spun at 96 % CPU for 5 h inside the wasm engine (its heap corrupted by
+// cx-home/v#9's map[voidptr] overflow), the step's process group never went
+// quiet, so the runner's liveness watch (no output AND no CPU) never fired
+// and the post-merge run held its slot until a person killed it.
+// PLAYGROUND_MERMAID_SHARD_TIMEOUT_S overrides the bound (seconds).
+const SHARD_TIMEOUT_S = (() => {
+  const v = parseInt(process.env.PLAYGROUND_MERMAID_SHARD_TIMEOUT_S || '', 10);
+  return Number.isFinite(v) && v > 0 ? v : 300;
+})();
+
 if (!SLICE) {
-  const total = Math.min(countExamples(), LIMIT);
+  const keysAll = exampleKeys();
+  const total = Math.min(keysAll.length, LIMIT);
   if (total === 0) setupFail('playground.examples.js yielded no examples.');
   const totals = { pass: 0, empty: 0, skipped: 0, cximage: 0, wrongsrc: 0, fail: 0 };
   let sawSetupFailure = false;
@@ -184,8 +199,16 @@ if (!SLICE) {
     if (VERBOSE) args.push('--verbose');
     const r = spawnSync(process.execPath, args, {
       cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: SHARD_TIMEOUT_S * 1000, killSignal: 'SIGKILL',
     });
     const out = r.stdout || '';
+    if (r.error && r.error.code === 'ETIMEDOUT') {
+      totals.fail += 1;
+      process.stdout.write(out);
+      console.log(`FAIL  shard ${from}:${to} (${keysAll.slice(from, to).join(', ')}) — no answer in ${SHARD_TIMEOUT_S} s; killed (#1879)`);
+      process.stderr.write(r.stderr || '');
+      continue;
+    }
     // Children speak one machine-readable line; everything else they
     // print is human text that belongs on this console verbatim.
     const m = /^__SHARD__ (\{.*\})$/m.exec(out);
