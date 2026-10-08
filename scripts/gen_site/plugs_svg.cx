@@ -58,10 +58,16 @@
       [else [$first $hits]]]]]
 
 # pins-of: the repositories $name builds on. The front door's are deps.cxd's
-# rows; every other row's are its pins= column.
+# rows -- less its NON-BUILD rows (cx-private#1858 (a)): a row whose module= is
+# the pinned repository's own name and that carries no v-fork (the package
+# index, the decisions record, the four bindings) is pinned so the
+# [front-door pins] join reads its deps.cxd; nothing is built from it. Every
+# other row's are its pins= column.
 [?def pins-of scope=public impure ($name)
   [?if [= $name [$rs:site-self]]
-    [then [?for [in $d [$cx:parse [$io:read-file DEPS]]//dep] [yield [$string $d@repo]]]]
+    [then [?for [in $d [$cx:parse [$io:read-file DEPS]]//dep]
+            [where [not [and [= [$string [?else $d@module ""]] [$string $d@repo]] [= [$string [?else $d@v-fork ""]] ""]]]]
+            [yield [$string $d@repo]]]]
     [else [$strings:split-whitespace [$rs:attr [$repo-row $name] "pins" ""]]]]]
 
 # pinned-by: the repositories whose pins= names $name, in registry order.
