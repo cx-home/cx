@@ -9043,12 +9043,12 @@ the product compiles from (RULED: RS-24).
 | `cx-core-data` | core | 0 | binary | — | — | extracted | the data format: reader, writer, canonical form, schema, codecs, libcx-core, the data-only cx |
 | `cx-core-code` | core | 1 | binary | — | `cx-core-data` | extracted | the language: evaluator, stdlib, LSP, libcx, the cli and embed builds |
 | `cx-platform-net` | platform | none | binary | `cxnet` | `cx-core-code` | extracted | sockets, TLS, the HTTP server, the XSP transport bindings, ftp, sftp, file_surface |
-| `cx-platform-mail` | platform | none | binary | `mail` | `cx-platform-net` | extracted | SMTP and IMAP, server and client cores, sasl |
+| `cx-platform-mail` | platform | none | binary | `mail` | `cx-platform-net` | extracted | SMTP and IMAP, server and client cores |
 | `cx-platform-identity` | platform | none | binary | `identity` | `cx-platform-store` `cx-platform-net` `cx-platform-xsp` | extracted | sessions, did:web, authz-store, vc-revocation |
-| `cx-platform-store` | platform | none | binary | `store` | `cx-core-code` `cx-platform-net` `cx-platform-xsp` | extracted | the storage engine, its substrates, journal/live/audit, ft, and the store server |
+| `cx-platform-store` | platform | none | binary | `store` | `cx-core-code` `cx-platform-net` `cx-platform-xsp` | extracted | the storage engine, its substrates, journal/live/audit, and the store server |
 | `cx-platform-db` | platform | none | binary | `cxdb` | `cx-core-code` | extracted | external database access: $sql-*, $redis-*, the drivers |
 | `cx-platform-fabric` | platform | none | binary | `fabric` | `cx-platform-store` `cx-platform-identity` `cx-platform-net` `cx-platform-xsp` | extracted | messaging and fabric-serve |
-| `cx-platform-xsp` | platform | none | binary | `xsp` | `cx-core-code` | extracted | the XAP Stream Protocol: the frame codec, the XSP-AUTH handshake, the protocol pages |
+| `cx-platform-xsp` | platform | none | binary | `xsp` | `cx-core-code` | extracted | the XAP Stream Protocol: the XSP-AUTH handshake, the protocol pages |
 | `cx-platform-xap` | platform | none | binary | `xap` | `cx-platform-net` `cx-platform-mail` `cx-platform-identity` `cx-platform-store` `cx-platform-db` `cx-platform-fabric` `cx-platform-xsp` | extracted | the application host, compose, dist, schema, market, the reference deployments |
 | `cx-platform-flow` | platform | none | package | — | `cx-core-code` `cx-platform-store` | extracted | workflow; its CLI verbs stay in the binary |
 | `cx-platform-connector` | platform | none | package | — | `cx-core-code` `cx-platform-mail` `cx-platform-store` | extracted | the connector kit and sync |
@@ -9069,7 +9069,7 @@ the product compiles from (RULED: RS-24).
 | `cx-binding-ruby` | binding | none | archived | — | — | — | archived at the ABI it was frozen with; lang/_archived/README.md names the version |
 | `cx-registry` | ecosystem | none | none | — | — | extracted | the package index: the store, publisher keys, the publish program |
 | `cx-decisions` | ecosystem | none | none | — | — | extracted | the ledger, the process specs, the standing rules, design texts |
-| `cx-tooling` | ecosystem | none | editor | — | — | extracted | vscode, neovim, tree-sitter, completions, syntax, the installer, diagram |
+| `cx-tooling` | ecosystem | none | editor | — | — | extracted | vscode, neovim, tree-sitter, completions, syntax, the installer |
 
 ## 3. The pins — how the front door is assembled
 
@@ -9083,17 +9083,17 @@ the product compiles from (RULED: RS-24).
 | `cx-platform-sso` | 1 | no | `cx-platform/sso` |
 | `cx-platform-flow` | 1 | no | `cx-platform/flow` |
 | `cx-core-data` | 1 | yes | `cx-core-data` |
-| `cx-core-code` | 53 | yes | `cx-stdlib/array` `cx-stdlib/authz` `cx-stdlib/bus` `cx-stdlib/bytes` `cx-stdlib/crypto` `cx-stdlib/csv` `cx-stdlib/cx` `cx-stdlib/did` `cx-stdlib/email` `cx-stdlib/env` `cx-stdlib/format` `cx-stdlib/fp` `cx-stdlib/geo` `cx-stdlib/graphql` `cx-stdlib/hash` `cx-stdlib/html` `cx-stdlib/http-client` `cx-stdlib/i18n` `cx-stdlib/io` `cx-stdlib/json` `cx-stdlib/jsonrpc` `cx-stdlib/jsonschema` `cx-stdlib/locale` `cx-stdlib/log` `cx-stdlib/map` `cx-stdlib/math` `cx-stdlib/mime` `cx-stdlib/oidc` `cx-stdlib/path` `cx-stdlib/process` `cx-stdlib/prof` `cx-stdlib/random` `cx-stdlib/re` `cx-stdlib/saml` `cx-stdlib/sched` `cx-stdlib/scim` `cx-stdlib/set` `cx-stdlib/similar` `cx-stdlib/soap` `cx-stdlib/strings` `cx-stdlib/supervise` `cx-stdlib/tar` `cx-stdlib/term` `cx-stdlib/test` `cx-stdlib/time` `cx-stdlib/url` `cx-stdlib/uuid` `cx-stdlib/validate` `cx-stdlib/vc` `cx-stdlib/ws` `cx-stdlib/xml` `cx-stdlib/zip` `term` |
+| `cx-core-code` | 57 | yes | `cx-stdlib/array` `cx-stdlib/authz` `cx-stdlib/bus` `cx-stdlib/bytes` `cx-stdlib/crypto` `cx-stdlib/csv` `cx-stdlib/cx` `cx-stdlib/diagram` `cx-stdlib/did` `cx-stdlib/email` `cx-stdlib/env` `cx-stdlib/format` `cx-stdlib/fp` `cx-stdlib/ft` `cx-stdlib/geo` `cx-stdlib/graphql` `cx-stdlib/hash` `cx-stdlib/html` `cx-stdlib/http-client` `cx-stdlib/i18n` `cx-stdlib/io` `cx-stdlib/json` `cx-stdlib/jsonrpc` `cx-stdlib/jsonschema` `cx-stdlib/locale` `cx-stdlib/log` `cx-stdlib/map` `cx-stdlib/math` `cx-stdlib/mime` `cx-stdlib/oidc` `cx-stdlib/path` `cx-stdlib/process` `cx-stdlib/prof` `cx-stdlib/random` `cx-stdlib/re` `cx-stdlib/saml` `cx-stdlib/sasl` `cx-stdlib/sched` `cx-stdlib/scim` `cx-stdlib/set` `cx-stdlib/similar` `cx-stdlib/soap` `cx-stdlib/strings` `cx-stdlib/supervise` `cx-stdlib/tar` `cx-stdlib/term` `cx-stdlib/test` `cx-stdlib/time` `cx-stdlib/url` `cx-stdlib/uuid` `cx-stdlib/validate` `cx-stdlib/vc` `cx-stdlib/ws` `cx-stdlib/xml` `cx-stdlib/xsp` `cx-stdlib/zip` `term` |
 | `cx-platform-db` | 3 | yes | `db` `sql` `redis` |
 | `cx-platform-net` | 4 | yes | `cx-platform/net` `cx-platform/http` `cx-platform/ftp` `cx-platform/sftp` |
-| `cx-platform-mail` | 3 | yes | `cx-platform/imap` `cx-platform/smtp` `cx-stdlib/sasl` |
-| `cx-platform-store` | 5 | yes | `cx-platform/store` `cx-platform/journal` `cx-platform/live` `cx-platform/audit` `cx-stdlib/ft` |
+| `cx-platform-mail` | 2 | yes | `cx-platform/imap` `cx-platform/smtp` |
+| `cx-platform-store` | 4 | yes | `cx-platform/store` `cx-platform/journal` `cx-platform/live` `cx-platform/audit` |
 | `cx-platform-identity` | 4 | yes | `cx-platform/session` `cx-platform/authz-store` `cx-platform/did-web` `cx-platform/vc-revocation` |
 | `cx-platform-connector` | 2 | no | `cx-platform/connector` `cx-platform/sync` |
 | `cx-platform-secrets` | 1 | no | `cx-platform/secrets` |
 | `cx-platform-fabric` | 1 | yes | `cx-platform/fabric` |
-| `cx-platform-xsp` | 2 | yes | `cx-stdlib/xsp` `cx-platform/xsp-auth` |
-| `cx-tooling` | 1 | no | `cx-stdlib/diagram` |
+| `cx-platform-xsp` | 1 | yes | `cx-platform/xsp-auth` |
+| `cx-tooling` | 1 | no | `cx-tooling` |
 | `cx-platform-xap` | 1 | yes | `cx-platform/xap` |
 | `cx-registry` | 1 | no | `cx-registry` |
 | `cx-decisions` | 1 | no | `cx-decisions` |
@@ -9225,7 +9225,7 @@ row is refused by name (RULED: RS-1).
 | `ring=` | 102 | `1` `0` |
 | `ns=` | 102 | `cx-stdlib` `cx-platform` `none` |
 | `kind=` | 102 | `module` `natives` `backend` `design` `suite` `codec` |
-| `repo=` | 102 | 16 distinct values |
+| `repo=` | 102 | 15 distinct values |
 | `spec=` | 102 | 100 distinct values |
 | `corpus=` | 102 | 98 distinct values |
 | `source=` | 102 | 91 distinct values |
@@ -9257,19 +9257,18 @@ What the columns mean (the file's own `[doc]` block is the full text):
 
 | repository | rows | ring 0 | ring 1 | `group=platform` | `status=planned` | the rows (`name=`) |
 |---|---|---|---|---|---|---|
-| `cx-core-code` | 56 | 1 | 55 | 0 | 0 | authz, array, bus, bytes, crypto, csv, cx, decision, did, email, env, format, fp, geo, graphql, hash, heap, pdf, html, http-client, i18n, io, json, jsonrpc, jsonschema, locale, log, map, math, mime, oidc, path, process, prof, random, re, saml, sched, scim, set, similar, soap, strings, supervise, tar, term, test, time, url, uuid, validate, vc, ws, zip, term, xml |
-| `cx-tooling` | 1 | 0 | 1 | 0 | 0 | diagram |
-| `cx-platform-store` | 7 | 0 | 1 | 6 | 0 | ft, audit, journal, live, store, distributed_store, erasure_compliance |
-| `cx-platform-mail` | 3 | 0 | 1 | 2 | 0 | sasl, imap, smtp |
-| `cx-platform-xsp` | 2 | 0 | 1 | 1 | 0 | xsp, xsp-auth |
+| `cx-core-code` | 60 | 1 | 59 | 0 | 0 | authz, array, bus, bytes, crypto, csv, cx, decision, diagram, did, email, env, format, fp, ft, geo, graphql, hash, heap, pdf, html, http-client, i18n, io, json, jsonrpc, jsonschema, locale, log, map, math, mime, oidc, path, process, prof, random, re, saml, sasl, sched, scim, set, similar, soap, strings, supervise, tar, term, test, time, url, uuid, validate, vc, ws, xsp, zip, term, xml |
+| `cx-platform-store` | 6 | 0 | 0 | 6 | 0 | audit, journal, live, store, distributed_store, erasure_compliance |
 | `cx-platform-identity` | 4 | 0 | 0 | 4 | 0 | authz-store, did-web, session, vc-revocation |
 | `cx-platform-connector` | 2 | 0 | 0 | 2 | 0 | connector, sync |
 | `cx-platform-flow` | 1 | 0 | 0 | 1 | 0 | flow |
 | `cx-platform-fabric` | 1 | 0 | 0 | 1 | 0 | fabric |
 | `cx-platform-net` | 4 | 0 | 0 | 4 | 0 | ftp, http, net, sftp |
+| `cx-platform-mail` | 2 | 0 | 0 | 2 | 0 | imap, smtp |
 | `cx-platform-secrets` | 1 | 0 | 0 | 1 | 0 | secrets |
 | `cx-platform-sso` | 1 | 0 | 0 | 1 | 0 | sso |
 | `cx-platform-xap` | 5 | 0 | 0 | 5 | 0 | xap, xap_dist, xap-compose, xap-schema, xap-on |
+| `cx-platform-xsp` | 1 | 0 | 0 | 1 | 0 | xsp-auth |
 | `cx-platform-agent` | 8 | 0 | 0 | 8 | 0 | a2a, a2a-xap, adjudicate, llm, mcp, mcp-server, run, tools |
 | `cx-platform-ux` | 3 | 0 | 0 | 3 | 0 | ux, ux-tui, ux-web |
 | `cx-platform-db` | 3 | 0 | 0 | 3 | 0 | redis, sql, db |
@@ -9556,7 +9555,7 @@ The union `make test` runs, in order. A step marked in the doc pipeline also
 runs in `make test-docs` (RULED: INT-10); the third column is where to start
 reading what the step checks.
 
-<sub>Generated by `scripts/gen_docs/contributor_facts.cx` from the Makefile's `TEST_TARGETS` (in order), `DOC_TARGETS`, the targets `docs-src/flow/docs.flow.cx` names, and each step's own rule (132 rows) — do not edit here: change the source, run `make docs`.</sub>
+<sub>Generated by `scripts/gen_docs/contributor_facts.cx` from the Makefile's `TEST_TARGETS` (in order), `DOC_TARGETS`, the targets `docs-src/flow/docs.flow.cx` names, and each step's own rule (133 rows) — do not edit here: change the source, run `make docs`.</sub>
 
 | # | step | in the doc pipeline | the first program its recipe names |
 |---|---|---|---|
@@ -9692,6 +9691,7 @@ reading what the step checks.
 | 130 | `check-verification-timings` |  | `scripts/verification_timings_selftest.sh` |
 | 131 | `check-bench-runners-compile` |  | `bench/probe` |
 | 132 | `check-flow-doc-lines` |  | `scripts/check_flow_doc_lines_selftest.cx` |
+| 133 | `perf-pair` |  | `scripts/compare_bench.cx` |
 
 
 <!-- https://cxhome.org/llm/reference-platform.md -->

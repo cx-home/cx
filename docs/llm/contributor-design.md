@@ -59,7 +59,7 @@ row is refused by name (RULED: RS-1).
 | `ring=` | 102 | `1` `0` |
 | `ns=` | 102 | `cx-stdlib` `cx-platform` `none` |
 | `kind=` | 102 | `module` `natives` `backend` `design` `suite` `codec` |
-| `repo=` | 102 | 16 distinct values |
+| `repo=` | 102 | 15 distinct values |
 | `spec=` | 102 | 100 distinct values |
 | `corpus=` | 102 | 98 distinct values |
 | `source=` | 102 | 91 distinct values |
@@ -91,19 +91,18 @@ What the columns mean (the file's own `[doc]` block is the full text):
 
 | repository | rows | ring 0 | ring 1 | `group=platform` | `status=planned` | the rows (`name=`) |
 |---|---|---|---|---|---|---|
-| `cx-core-code` | 56 | 1 | 55 | 0 | 0 | authz, array, bus, bytes, crypto, csv, cx, decision, did, email, env, format, fp, geo, graphql, hash, heap, pdf, html, http-client, i18n, io, json, jsonrpc, jsonschema, locale, log, map, math, mime, oidc, path, process, prof, random, re, saml, sched, scim, set, similar, soap, strings, supervise, tar, term, test, time, url, uuid, validate, vc, ws, zip, term, xml |
-| `cx-tooling` | 1 | 0 | 1 | 0 | 0 | diagram |
-| `cx-platform-store` | 7 | 0 | 1 | 6 | 0 | ft, audit, journal, live, store, distributed_store, erasure_compliance |
-| `cx-platform-mail` | 3 | 0 | 1 | 2 | 0 | sasl, imap, smtp |
-| `cx-platform-xsp` | 2 | 0 | 1 | 1 | 0 | xsp, xsp-auth |
+| `cx-core-code` | 60 | 1 | 59 | 0 | 0 | authz, array, bus, bytes, crypto, csv, cx, decision, diagram, did, email, env, format, fp, ft, geo, graphql, hash, heap, pdf, html, http-client, i18n, io, json, jsonrpc, jsonschema, locale, log, map, math, mime, oidc, path, process, prof, random, re, saml, sasl, sched, scim, set, similar, soap, strings, supervise, tar, term, test, time, url, uuid, validate, vc, ws, xsp, zip, term, xml |
+| `cx-platform-store` | 6 | 0 | 0 | 6 | 0 | audit, journal, live, store, distributed_store, erasure_compliance |
 | `cx-platform-identity` | 4 | 0 | 0 | 4 | 0 | authz-store, did-web, session, vc-revocation |
 | `cx-platform-connector` | 2 | 0 | 0 | 2 | 0 | connector, sync |
 | `cx-platform-flow` | 1 | 0 | 0 | 1 | 0 | flow |
 | `cx-platform-fabric` | 1 | 0 | 0 | 1 | 0 | fabric |
 | `cx-platform-net` | 4 | 0 | 0 | 4 | 0 | ftp, http, net, sftp |
+| `cx-platform-mail` | 2 | 0 | 0 | 2 | 0 | imap, smtp |
 | `cx-platform-secrets` | 1 | 0 | 0 | 1 | 0 | secrets |
 | `cx-platform-sso` | 1 | 0 | 0 | 1 | 0 | sso |
 | `cx-platform-xap` | 5 | 0 | 0 | 5 | 0 | xap, xap_dist, xap-compose, xap-schema, xap-on |
+| `cx-platform-xsp` | 1 | 0 | 0 | 1 | 0 | xsp-auth |
 | `cx-platform-agent` | 8 | 0 | 0 | 8 | 0 | a2a, a2a-xap, adjudicate, llm, mcp, mcp-server, run, tools |
 | `cx-platform-ux` | 3 | 0 | 0 | 3 | 0 | ux, ux-tui, ux-web |
 | `cx-platform-db` | 3 | 0 | 0 | 3 | 0 | redis, sql, db |
