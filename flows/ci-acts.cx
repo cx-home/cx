@@ -272,7 +272,7 @@
 # each a process group of its own on its own runner directory
 # (<slot-base>-own<k>, k = 1..max, a free k for each start), with VJOBS set so
 # `max` steps fill the box instead of oversubscribing it. A job is
-#   [job name=<step> log=<file> stall-ms=<n> cwd=<dir> [arg v=…]…]
+#   [job name=<step> log=<file> stall-ms=<n> [budget-ms=<n>] cwd=<dir> [arg v=…]…]
 # and its answer, when it ends, is
 #   [ran-step name= runner=own<k> rc= stalled= t0= t1= log=]
 # in the order the jobs END. Each job is under the same liveness watch as
@@ -323,7 +323,10 @@
         [= $p [$process:spawn $argv cwd=[$string $j@cwd] new-process-group=true stdin=:discard
                               stdout=$log stderr=[$concat $log '.err']
                               env={CX_BUILD_SLOT: $runner, CX_RUNNER: null, VJOBS: [$string $vjobs], BUILD_SLOT_TIMEOUT: '60'}]]
-    ($p, [pool-job name=[$string $j@name] k=$k log=$log stall-ms=[$string $j@stall-ms] t0=[$string [$now-sec]] t0s=[$utc-iso] mark='' quiet='0'])]]
+        [= $b [$string [?else $j@budget-ms '']]]
+    ($p, [pool-job name=[$string $j@name] k=$k log=$log stall-ms=[$string $j@stall-ms]
+                   budget-ms=[?if [= $b ''] [then [$string [$make-ms]]] [else $b]]
+                   t0=[$string [$now-sec]] t0s=[$utc-iso] mark='' quiet='0'])]]
 
 [?def pool-kill scope=public impure [returns element] ($p $m $rows $q)
   [?let [= $tree [$tree-text [$rows-of-group $rows [$process:pid $p]]]]
@@ -336,6 +339,26 @@
                  [$concat "premerge-flow: the step's process group at the kill:\n" $tree "\n"
                           "premerge-flow: STALLED — no line on either stream and no CPU in any process of the step's group for " [$string [/ $q 1000]] ' s (#1787); killed by group, the tree above' "\n"]]]
     [ran-step name=[$string $m@name] runner=[$concat 'own' [$string $m@k]] rc='124' stalled='true'
+              t0=[$string $m@t0] t0s=[$string $m@t0s] t1=[$string [$now-sec]] log=$log]]]
+
+# pool-timeout: a job past its wall-clock budget (budget-ms=, default make-ms,
+# the bound a serial step has in watched-run-in) is killed by group like a
+# stalled one, rc 124 timed-out. The liveness watch alone cannot end a step
+# that spins: on 6581a4588 test-playground-mermaid's shard burned 96 % CPU in
+# the wasm engine for 5 h, so its group was never quiet and the post-merge run
+# held its slot until a person killed it (#1879).
+[?def pool-timeout scope=public impure [returns element] ($p $m $rows $age-ms)
+  [?let [= $tree [$tree-text [$rows-of-group $rows [$process:pid $p]]]]
+        [= $log [$string $m@log]]
+        [= $_t [?fallback [$process:kill-group $p :term] [recover-with null]]]
+        [= $_y [$process:wait-timeout $p 10000]]
+        [= $_k [?fallback [$process:kill-group $p :kill] [recover-with null]]]
+        [= $_r [?fallback [$process:wait $p] [recover-with 0]]]
+        [= $_a [$io:append-file [$concat $log '.err']
+                 [$concat "premerge-flow: the step's process group at the kill:\n" $tree "\n"
+                          "premerge-flow: TIMED OUT — the step ran " [$string [/ $age-ms 1000]] ' s, past its budget of '
+                          [$string [/ [$strings:to-int [$string $m@budget-ms]] 1000]] ' s (#1879); killed by group, the tree above' "\n"]]]
+    [ran-step name=[$string $m@name] runner=[$concat 'own' [$string $m@k]] rc='124' stalled='false' timed-out='true'
               t0=[$string $m@t0] t0s=[$string $m@t0s] t1=[$string [$now-sec]] log=$log]]]
 
 [?def pool-run scope=public impure [returns any] ($jobs $max $slot-base $vjobs $look-ms)
@@ -365,8 +388,10 @@
                                                                [$work-signature [$rows-of-group $rows [$process:pid $p]]]]]
                                               [= $q [?if [= $sig [$string $m@mark]] [then [+ [$strings:to-int [$string $m@quiet]] [+ $since 1000]]] [else 0]]]
                                               [= $stall [$strings:to-int [$string $m@stall-ms]]]
+                                              [= $age [* [- [$now-sec] [$strings:to-int [$string $m@t0]]] 1000]]
                                           [?if [and [> $stall 0] [>= $q $stall]] [then [$pool-kill $p $m $rows $q]]
-                                            [else [still i=[$string $i] mark=$sig quiet=[$string $q]]]]]]]]]]]]]
+                                            [else [?if [>= $age [$strings:to-int [$string $m@budget-ms]]] [then [$pool-timeout $p $m $rows $age]]
+                                              [else [still i=[$string $i] mark=$sig quiet=[$string $q]]]]]]]]]]]]]]]
                     [= $ended [?to-sequence [?for [in $v $verdicts] [where [= [$name $v] 'ran-step']] [yield $v]]]]
                     [= $kept [?to-sequence [?for [in $v $verdicts] [where [= [$name $v] 'still']] [yield $v]]]]
                     [= $hs2 [?to-sequence [?for [in $v $kept] [yield [$nth $hs1 [$strings:to-int [$string $v@i]]]]]]]
@@ -374,6 +399,7 @@
                               [= $m [$nth $ms1 [$strings:to-int [$string $v@i]]]]
                               [yield [?if $look
                                        [then [pool-job name=[$string $m@name] k=[$string $m@k] log=[$string $m@log] stall-ms=[$string $m@stall-ms]
+                                                       budget-ms=[$string $m@budget-ms]
                                                        t0=[$string $m@t0] t0s=[$string $m@t0s] mark=[$string $v@mark] quiet=[$string $v@quiet]]]
                                        [else $m]]]]]]
                     [= $_say [?to-sequence [?for [in $e $ended] [yield [$say-step $e]]]]]

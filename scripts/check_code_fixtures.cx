@@ -120,6 +120,8 @@
 # program-gap277- … — one category for the letters' gap cases (GAPS-1, STREAM-1).
 # `program-core` (no dash) is the cx-core-code issue family — program-core80-,
 # program-core85- … — one category for its numbered issues' cases (STREAM-1).
+# `program-62-` is cx-core-data#62's case (a bigint holds its limbs), named by
+# that issue's bare number in the core corpus (STREAM-1).
 [?const PREFIX-MAP (
   [prefixes level=core [#
 program-for- program-let- program-fn- program-err- program-pipe- program-par-
@@ -132,7 +134,7 @@ program-with- program-order-by- program-string- program-str- program-arith-
 program-logic- program-cmp- program-pfa- program-fizzbuzz- program-sleep-
 program-secret- program-reveal- program-with-error-hook- program-with-caps-
 program-dc- program-gen- program-sap- program-meta- program-stack-
-cmd- eff-trace- ev-budget- ev-pull- ev-select-fair- program-callstep-
+cmd- eff-trace- ev-budget- ev-pull- ev-trim- ev-select-fair- program-callstep- program-1836- program-62-
 cxast- ev-let- img- ev-park- cxtape-
 program-ascription- program-attr-ascription- program-attr-bare-
 program-body-bare- program-computed-step- program-body-ascription-
@@ -151,7 +153,7 @@ program-tree-eval- program-ophead-
 program-shadow- program-ophole-
 program-grant-default- program-prose-join- program-emit-
 program-gap program-lazy- program-distinct- program-construct- program-doc-
-program-core
+program-core program-62-
 #]],
   [prefixes level=resilience [#
 program-retry- program-timeout- program-cb- program-fallback-
