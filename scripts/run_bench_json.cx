@@ -11,6 +11,10 @@
 #   cx … scripts/run_bench_json.cx --include-eval # add the T1 evaluator bench
 #   cx … scripts/run_bench_json.cx --harness-cx   # print the cx the rows time (#1751)
 #   cx … scripts/run_bench_json.cx --rss-selftest # grade the peak-RSS reader offline (#1884)
+#   cx … scripts/run_bench_json.cx --memory-under-load  # measure over the load bound (#1884):
+#        the artifact records the load, so compare_bench judges only its
+#        peak-RSS and arena rows (the load cannot move them) and refuses its
+#        time rows — the paired step a busy box can still run (make perf-pair)
 #   (or: make bench-json)
 #
 # Output schema:
@@ -65,7 +69,8 @@
   [flag name="output"       short="o" type=string]
   [flag name="include-eval"           type=bool]
   [flag name="harness-cx"             type=bool]
-  [flag name="rss-selftest"           type=bool]]]
+  [flag name="rss-selftest"           type=bool]
+  [flag name="memory-under-load"      type=bool]]]
 
 # #1751 — the cx the fmt and convert rows time is the cx RUNNING this script
 # (`make perf-ratchet` runs it with the release front door,
@@ -332,8 +337,11 @@
       [then ([$cry [$string $r@stdout]],
              [$die 'could not parse bench-code-streaming output (no `shape … :` + `mean input throughput` pairs); see stdout above'])]
       [else ()]]]
+    [; its peak moves with the box: an allocation-heavy run whose collector
+       works beside it read 817-989 MB at one load, run to run (#1884), so the
+       row says so and compare_bench judges it on a quiet box only. ]
     [$map:put $out 'code_streaming.peak_rss_mb'
-      [$rss-row 'make bench-code-streaming' ([$peak-rss-mb [$string $r@stderr]])]]]]
+      [$map:put [$rss-row 'make bench-code-streaming' ([$peak-rss-mb [$string $r@stderr]])] 'load_sensitive' true]]]]
 
 [; #1281 — `cx fmt` on a generated 8,000-record document (~1.4 MB): the
    standalone formatter was a 26 s / 3.3 GB outlier against ~1 s for
@@ -533,7 +541,9 @@
      costs seconds rather than the whole bench suite. ]
   [= $bound [$max-load]]
   [= $load-start [$load-1m]]
-  [= $_guard [$refuse-if-loaded $load-start $bound]]
+  [= $_guard [?if [?else [$env:flag $args 'memory-under-load'] false]
+               [then null]
+               [else [$refuse-if-loaded $load-start $bound]]]]
 
   [= $streaming [$map:merge ([$run-streaming-bench], [$run-code-streaming-bench], [$run-fmt-bench], [$run-convert-bench], [$run-csv-bulk-bench], [$run-flow-saga-bench])]]
   [= $benchmarks [?if $include-eval

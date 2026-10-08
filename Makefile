@@ -1868,6 +1868,26 @@ perf-ratchet: build-vcx
 	@"$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-read --allow-write --allow-subprocess --allow-clock --allow-env scripts/run_bench_json.cx -o bench/current.json
 	@$(MAKE) bench-compare STRICT=1 CX_BIN=$(CURDIR)/deps/cx-core-code/vcx/target/cx
 
+# #1884 (the owner's rule of 2026-10-08: performance never at the cost of
+# memory) — the PAIRED step. This tree's bench rows against a recorded
+# artifact of the head it lands on (PERF_HEAD=, written by `make perf-record`
+# on the head), every key judged on its own at the strict 10 %, so a time row
+# that improved never excuses its peak-RSS twin that grew. It measures with
+# --memory-under-load: on a box over the #1450 load bound the time rows are
+# refused and the peak-RSS / arena rows — which the load cannot move — are
+# still judged; compare_bench's exit 3 (time unjudged, memory clean) passes,
+# exit 1 (a row regressed) fails. Wall-clock and machine-bound, so NOT a
+# TEST_TARGETS member: the landing gate and the loop call it (patch on #1884).
+PERF_HEAD ?= bench/head.json
+PERF_OUT  ?= vcx/target/bench-pair.json
+.PHONY: perf-record perf-pair
+perf-record: build-vcx
+	@mkdir -p $(dir $(PERF_OUT))
+	@"$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-read --allow-write --allow-subprocess --allow-clock --allow-env scripts/run_bench_json.cx --memory-under-load -o $(PERF_OUT)
+perf-pair: perf-record
+	@"$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-read --allow-write --allow-env scripts/compare_bench.cx $(PERF_HEAD) $(PERF_OUT) --strict; \
+	  rc=$$?; if [ $$rc -eq 3 ]; then echo "perf-pair: memory rows judged clean; time rows unjudged on a loaded box (#1450)"; exit 0; fi; exit $$rc
+
 # Documentation hygiene — every relative markdown link resolves.
 # Source markdown lives in docs-src/ (docs/ is the GENERATED HTML guide /
 # Pages site, which has no .md files — pointing the check there made the
