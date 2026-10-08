@@ -239,4 +239,5 @@
   [patch sha=dbb2aeb1b797adf0573fd0275958f6a5d0e31b42 family=vgc issue='cx-private#1856']
   [patch sha=0f0241e857e14609295b3d296e4b4d8b5dde3567 family=build-toolchain issue='cx-private#1856']
   [patch sha=950e84b1e7682685b2968f53a6db2d47f9feb19f family=vgc issue='cx-private#1893']
+  [patch sha=cd9b09506d15c46ac0744db40d4fa9090a588ba2 family=vgc issue='cx-private#1892']
 ]
