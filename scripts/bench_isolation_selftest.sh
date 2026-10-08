@@ -23,6 +23,12 @@
 #      retired `vcx/target/cx` (#1682) — absent in every worktree, where it
 #      turned perf-ratchet's artifact into an err with no `benchmarks`, and a
 #      stale different build in the main checkout
+#   G  the peak-RSS reader (#1884) reads BSD `-l` (bytes) and GNU `-v`
+#      (kbytes) /usr/bin/time reports, takes the largest of several, and
+#      answers -1 — which refuses the run — when there is none
+#   H  the paired judgement (#1884): time 17 % faster with peak RSS 17 %
+#      higher (webhook-saga's trade, cx-private#1882) is a regression at the
+#      strict 10 % — each twin is judged on its own, whatever the other did
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -146,8 +152,45 @@ else
   bad F "wanted --harness-cx = $CX (exit 0) and no vcx/target/cx spawn — exit $rc, printed '$out', $retired retired-path spawn(s)"
 fi
 
+# ── G — every timed row's peak RSS twin is read, never dropped (#1884) ───────
+out=$("$CX" --allow-read --allow-write --allow-subprocess --allow-clock --allow-env \
+        scripts/run_bench_json.cx --rss-selftest 2>&1); rc=$?
+if [ "$rc" -eq 0 ]; then
+  ok G "the peak-RSS reader reads BSD and GNU /usr/bin/time reports and refuses a missing one (#1884)"
+else
+  bad G "run_bench_json --rss-selftest — exit $rc: $out"
+fi
+
+# ── H — a time win never buys a memory loss (#1884) ─────────────────────────
+pair() { # pair <file> <ms> <rss-mb>
+  cat > "$1" <<JSON
+{
+  "schema_version": 1,
+  "run_id": "2026-10-08T04:00:00Z",
+  "cx_commit": "deadbee",
+  "uname": "Darwin 25.6.0 arm64",
+  "load_1m_start": 0.9,
+  "load_1m_end": 1.0,
+  "load_1m_bound": 8.0,
+  "benchmarks": {
+    "workload.saga_ms":          { "median": $2, "unit": "ms" },
+    "workload.saga_peak_rss_mb": { "median": $3, "unit": "MB" }
+  }
+}
+JSON
+}
+pair "$T/pair_base.json" 550.0 359.0
+pair "$T/pair_trade.json" 456.0 421.0
+out=$("$CX" --allow-read --allow-write --allow-env scripts/compare_bench.cx \
+        "$T/pair_base.json" "$T/pair_trade.json" --strict 2>&1); rc=$?
+if [ "$rc" -eq 1 ] && case "$out" in *"workload.saga_peak_rss_mb: baseline="*) true ;; *) false ;; esac; then
+  ok H "17 % faster at 17 % more peak RSS (cx-private#1882) is refused on the memory row (#1884)"
+else
+  bad H "a time win hid a memory loss — exit $rc: $out"
+fi
+
 if [ "$fails" -ne 0 ]; then
   echo "bench-isolation self-test: $fails case(s) FAILED" >&2
   exit 1
 fi
-echo "bench-isolation self-test: 7/7 (measure-side refusal; judge-side refusal; judged under the bound; a pre-#1450 artifact unchanged; a loaded regression refused and the same number on a quiet box still failing; the harness rows time the running cx, #1751)"
+echo "bench-isolation self-test: 9/9 (measure-side refusal; judge-side refusal; judged under the bound; a pre-#1450 artifact unchanged; a loaded regression refused and the same number on a quiet box still failing; the harness rows time the running cx, #1751; the peak-RSS reader and the paired judgement, #1884)"
