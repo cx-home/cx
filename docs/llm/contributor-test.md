@@ -140,8 +140,8 @@ reading what the step checks.
 | 4 | `ring-svg-check` | yes, in the docs flow | `scripts/gen_site/ring_svg.cx` |
 | 5 | `check-no-ai-attribution` |  | `scripts/check_no_ai_attribution.cx` |
 | 6 | `check-public-history-replace` |  | `scripts/public_history_replace_selftest.cx` |
-| 7 | `check-vcache-soundness` |  | `scripts/vcache_soundness_gate.sh` |
-| 8 | `check-vcache-soundness-selftest` |  | `scripts/vcache_soundness_selftest.sh` |
+| 7 | `check-vcache-soundness` |  | `scripts/vcache_soundness_memo.sh` |
+| 8 | `check-vcache-soundness-selftest` |  | `scripts/vcache_soundness_memo_selftest.sh` |
 | 9 | `check-build-failure-classifier` |  | `scripts/classify_v_build_failure.sh` |
 | 10 | `test-vcx-timing` |  | `v test deps/cx-core-code/vcx/timing/` |
 | 11 | `check-conformance-coverage` |  | `scripts/check_conformance_coverage.sh` |
@@ -238,7 +238,7 @@ reading what the step checks.
 | 102 | `test-mail-real` |  | — |
 | 103 | `test-net-real` |  | — |
 | 104 | `test-web-component-offline` |  | `scripts/test_web_component_offline.sh` |
-| 105 | `bench-code-pattern-compile` |  | `v run deps/cx-core-code/vcx/tests/runners/code_pattern_compile_bench.v` |
+| 105 | `bench-code-pattern-compile` |  | — |
 | 106 | `test-db-real` |  | — |
 | 107 | `test-sso-interop` |  | `deps/cx-platform-sso/scripts/sso_interop.sh` |
 | 108 | `test-xpath-parity-cx` |  | `scripts/check_xpath_parity_fixtures.cx` |
