@@ -271,4 +271,5 @@
   [patch sha=c0d54aeb4f56b254304201283a755ba0a3afda08 family=vgc issue='cx-private#1892']
   [patch sha=a140c64f295d4ca51020f08fb6ce2bfb88e2ec13 family=vgc issue='cx-home/v#12']
   [patch sha=458a7996872b7d380a152a93719b7e86403b2f32 family=vgc issue='cx-home/v#15']
+  [patch sha=e2ee7a68e90aacf450740eaf7f24ca4501f09f53 family=vgc issue='cx-home/v#12']
 ]
