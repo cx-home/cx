@@ -1,7 +1,8 @@
 [verification-budget
   [; The verification-cost BOUNDS (#1562, RULED: VCOST-1). The owner's sentence
      — "the fixture grader ≤ 20 min, a selected post-merge run ≤ 20 min, the
-     union ≤ 60 min" — has to be a step or it is a wish, and a step needs the
+     union ≤ 60 min" — has to be a step or it is a wish; #1903 (the owner,
+     2026-10-09) moved the union to 20 minutes with every other pre-merge run, and a step needs the
      numbers in one place with the measurement that set each and the issue that
      last moved it.
 
@@ -21,9 +22,15 @@
     [moved-by 1562]
     [note 'ratchets DOWN only from here; the post-merge run as steps (#1817) is the next change to its time.']]
 
-  [bound name=union seconds=3600
-    [what 'make test — the whole TEST_TARGETS union, the merge gate']
-    [measured '2,004 s (33 min 24 s) on the full union of 2026-10-05 03:05Z (load 5.59 at its start, so advisory under the idle rule) — the row the loop wrote; the bound moves DOWN to the owner'"'"'s sentence (60 min), which the measured union now sits under by 1.8x (#1562, RULED: STREAM-1). Before: 10,516 s on 57745f541 (2026-09-19), raised to that on the owner'"'"'s word of 2026-09-21']
-    [moved-by 1562]
-    [note 'ratchets DOWN only from here; #1561 (the compile ratio) and #1817 (the load-insensitive steps in parallel) are what move it next.']]
+  [bound name=union seconds=1200
+    [what 'make test — the whole TEST_TARGETS union, the post-merge run of cx-private (scripts/postmerge_steps.cx)']
+    [measured '2,575 s on 715d2262a (2026-10-09 10:53Z, load 9.35 at its start): prebuild 314 + the parallel phase 1,016 (test-vcx-suite 999) + the load-sensitive phase 1,245 (perf-pair 529); 2,738-6,239 s on the eight ticks before it, median about 4,500 s — the rows the loop wrote. Before: 3,600 s (the 60-minute sentence of #1562), 10,516 s on 57745f541 (2026-09-19)']
+    [moved-by 1903]
+    [note 'the owner 2026-10-09 13:15Z (#1903): the pre-merge run of every repository at or under 20 minutes, the budget enforced by a gate step; judged on the median of the last five runs (check_verification_budget.cx). It reds until the cuts of #1903 land, which is the point.']]
+
+  [bound name=premerge-* seconds=1200
+    [what 'the pre-merge run of each pinned repository — make deps + make check at its pin with the cx of the tree, one premerge-<repo> row per repository (scripts/premerge_record.sh, make premerge-record)']
+    [measured '2026-10-09 15:0xZ, the cx of 715d2262a, load 25-79: every green one under 200 s — cx-platform-flow 199, cx-core-code 44, cx-platform-ux 26, cx-platform-xap 7, the rest under 5 (cx-private#1903)']
+    [moved-by 1903]
+    [note 'a family: the median of the last five rows of each repository judges on its own. A repository whose check is red records nothing (the stream owns the red), so it reads unmeasured.']]
 ]

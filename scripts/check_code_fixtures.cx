@@ -126,6 +126,14 @@
 # refusal), named by the issue number as `program-1836-` is (STREAM-1).
 # `program-1886-` is cx-private#1886's cases (fasta: the def-answered int range
 # folded in place), named by the issue number the same way (STREAM-1).
+# `program-<n>-` in general (cx-private#1903, the loop's red on 715d2262a:
+# core's program-1886- case): a level=core case named by the bare number of
+# the issue it closes is that issue's category — the fifth such literal row
+# (1836, 1839, 62, 1886) is the rule, so the next issue's case reds nothing.
+# CORE-ISSUE-RX below, beside the literal rows (STREAM-1).
+# the id, then the title the fixture name carries after one space (line 249)
+[?const CORE-ISSUE-RX '^program-[1-9][0-9]*-[a-z][a-z0-9-]*( [\\s\\S]*)?$']
+
 [?const PREFIX-MAP (
   [prefixes level=core [#
 program-for- program-let- program-fn- program-err- program-pipe- program-par-
@@ -157,7 +165,7 @@ program-tree-eval- program-ophead-
 program-shadow- program-ophole-
 program-grant-default- program-prose-join- program-emit-
 program-gap program-lazy- program-distinct- program-construct- program-doc-
-program-core program-62- program-1839- program-1886-
+program-core program-62- program-1839- program-1886- program-1838-
 #]],
   [prefixes level=resilience [#
 program-retry- program-timeout- program-cb- program-fallback-
@@ -300,6 +308,7 @@ program-viz-
               [= $bad-id-category [?for [in $f $fixtures]
                 [= $prefixes [?else [$map:get $prefix-by-level [$map:get $f "level"]] ()]]
                 [where [not [$empty $prefixes]]]
+                [where [not [and [= [$map:get $f "level"] 'core'] [$re:matches [$re:compile CORE-ISSUE-RX] [$map:get $f "name"]]]]]
                 [where [$empty [?for [in $p $prefixes]
                   [where [$starts-with [$map:get $f "name"] $p]] [yield $p]]]]
                 [yield {id: [$map:get $f "name"], level: [$map:get $f "level"]}]]]
