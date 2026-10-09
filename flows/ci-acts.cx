@@ -272,7 +272,9 @@
 # each a process group of its own on its own runner directory
 # (<slot-base>-own<k>, k = 1..max, a free k for each start), with VJOBS set so
 # `max` steps fill the box instead of oversubscribing it. A job is
-#   [job name=<step> log=<file> stall-ms=<n> [budget-ms=<n>] cwd=<dir> [arg v=…]…]
+#   [job name=<step> log=<file> stall-ms=<n> [budget-ms=<n>] [vjobs=<n>] cwd=<dir> [arg v=…]…]
+# (vjobs= overrides the pool's VJOBS for that one job: the post-merge run's
+# critical-path `v test` steps take a wider share, cx-private#1903)
 # and its answer, when it ends, is
 #   [ran-step name= runner=own<k> rc= stalled= t0= t1= log=]
 # in the order the jobs END. Each job is under the same liveness watch as
@@ -319,10 +321,12 @@
   [?let [= $argv [?to-sequence [?for [in $a $j/arg] [yield [$string $a@v]]]]]
         [= $log [$string $j@log]]
         [= $runner [$concat $slot-base '-own' $k]]
+        [= $vj0 [$string [?else $j@vjobs '']]]
+        [= $vj [?if [= $vj0 ''] [then [$string $vjobs]] [else $vj0]]]
         [= $_d [$io:make-dirs [$path:dirname $log]]]
         [= $p [$process:spawn $argv cwd=[$string $j@cwd] new-process-group=true stdin=:discard
                               stdout=$log stderr=[$concat $log '.err']
-                              env={CX_BUILD_SLOT: $runner, CX_RUNNER: null, VJOBS: [$string $vjobs], BUILD_SLOT_TIMEOUT: '60'}]]
+                              env={CX_BUILD_SLOT: $runner, CX_RUNNER: null, VJOBS: $vj, BUILD_SLOT_TIMEOUT: '60'}]]
         [= $b [$string [?else $j@budget-ms '']]]
     ($p, [pool-job name=[$string $j@name] k=$k log=$log stall-ms=[$string $j@stall-ms]
                    budget-ms=[?if [= $b ''] [then [$string [$make-ms]]] [else $b]]

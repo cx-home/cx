@@ -55,7 +55,11 @@ ln -s "$ROOT/scripts" "$M/scripts"
 DEFAULT_PATH=$M/vcx/target/verification_timings.cxd
 
 OVER_BOUND='[verification-timings
-  [timing name=fixture-grader seconds=4000 load=0.8 at=2026-09-18T11:00:00Z]]'
+  [timing name=fixture-grader seconds=4000 load=0.8 at=2026-10-09T10:00:00Z]
+  [timing name=fixture-grader seconds=4000 load=9.4 at=2026-10-09T11:00:00Z]
+  [timing name=fixture-grader seconds=4000 load=31.2 at=2026-10-09T12:00:00Z]
+  [timing name=fixture-grader seconds=4000 load=12.0 at=2026-10-09T13:00:00Z]
+  [timing name=fixture-grader seconds=4000 load=44.5 at=2026-10-09T14:00:00Z]]'
 
 fails=0
 
@@ -107,27 +111,55 @@ else
 fi
 
 # 1 — the planted over-budget IDLE timing. The bound is 1200 s; 4000 s is over.
-check 1 "OVER BOUND" "an idle measurement over its bound FAILS the step" \
+# The #1903 rule: the median of a bound's last FIVE rows judges, at any load.
+check 1 "OVER BOUND" "five rows whose median is over the bound FAIL the step, loaded or not" \
 '[verification-timings
-  [timing name=fixture-grader seconds=4000 load=0.8 at=2026-09-18T11:00:00Z]]'
+  [timing name=fixture-grader seconds=4000 load=0.8 at=2026-10-09T10:00:00Z]
+  [timing name=fixture-grader seconds=1300 load=9.4 at=2026-10-09T11:00:00Z]
+  [timing name=fixture-grader seconds=900 load=31.2 at=2026-10-09T12:00:00Z]
+  [timing name=fixture-grader seconds=5000 load=12.0 at=2026-10-09T13:00:00Z]
+  [timing name=fixture-grader seconds=1250 load=44.5 at=2026-10-09T14:00:00Z]]'
 
-# 2 — the same number, taken on a loaded box: advisory, never failing.
-check 0 "ADVISORY" "the same number on a LOADED box is advisory" \
+check 0 "ok" "five rows whose median is under the bound pass, one slow run among them" \
 '[verification-timings
-  [timing name=fixture-grader seconds=4000 load=9.4 at=2026-09-18T11:00:00Z]]'
+  [timing name=fixture-grader seconds=900 load=30.1 at=2026-10-09T10:00:00Z]
+  [timing name=fixture-grader seconds=4000 load=62.0 at=2026-10-09T11:00:00Z]
+  [timing name=fixture-grader seconds=1000 load=28.4 at=2026-10-09T12:00:00Z]
+  [timing name=fixture-grader seconds=800 load=19.9 at=2026-10-09T13:00:00Z]
+  [timing name=fixture-grader seconds=1100 load=25.0 at=2026-10-09T14:00:00Z]]'
 
-# 3 — within bound on an idle box.
-check 0 "ok" "an idle measurement under its bound passes" \
+check 0 "MEASURING" "four rows judge nothing yet, however slow" \
 '[verification-timings
-  [timing name=fixture-grader seconds=900 load=0.7 at=2026-09-18T11:00:00Z]]'
+  [timing name=union seconds=99999 load=1.0 at=2026-10-09T10:00:00Z]
+  [timing name=union seconds=99999 load=1.0 at=2026-10-09T11:00:00Z]
+  [timing name=union seconds=99999 load=1.0 at=2026-10-09T12:00:00Z]
+  [timing name=union seconds=99999 load=1.0 at=2026-10-09T13:00:00Z]]'
 
-# 4 — nothing measured.
+check 1 "OVER BOUND" "only the LAST five of a name count: old fast rows do not mask five slow ones" \
+'[verification-timings
+  [timing name=selected-run seconds=100 load=5 at=2026-10-09T10:00:00Z]
+  [timing name=selected-run seconds=100 load=5 at=2026-10-09T11:00:00Z]
+  [timing name=selected-run seconds=100 load=5 at=2026-10-09T12:00:00Z]
+  [timing name=selected-run seconds=4000 load=5 at=2026-10-09T13:00:00Z]
+  [timing name=selected-run seconds=4000 load=5 at=2026-10-09T14:00:00Z]
+  [timing name=selected-run seconds=4000 load=5 at=2026-10-09T15:00:00Z]
+  [timing name=selected-run seconds=4000 load=5 at=2026-10-09T16:00:00Z]
+  [timing name=selected-run seconds=4000 load=5 at=2026-10-09T17:00:00Z]]'
+
 check 0 "NOT MEASURED" "a bound with no measurement does not fail the step" ""
 
-# 5 — a timing with no load: the fail-safe reading is LOADED.
-check 0 "ADVISORY" "a measurement with no load is treated as loaded" \
+check 1 "premerge-cx-slow  bound 20m0s  median 25m0s" "the premerge-* family judges each repository on its own: one slow repository FAILS, its fast sibling reads ok" \
 '[verification-timings
-  [timing name=union seconds=99999 at=2026-09-18T11:00:00Z]]'
+  [timing name=premerge-cx-fast seconds=30 load=40.0 at=2026-10-09T10:00:00Z]
+  [timing name=premerge-cx-fast seconds=30 load=40.0 at=2026-10-09T11:00:00Z]
+  [timing name=premerge-cx-fast seconds=30 load=40.0 at=2026-10-09T12:00:00Z]
+  [timing name=premerge-cx-fast seconds=30 load=40.0 at=2026-10-09T13:00:00Z]
+  [timing name=premerge-cx-fast seconds=30 load=40.0 at=2026-10-09T14:00:00Z]
+  [timing name=premerge-cx-slow seconds=1500 load=40.0 at=2026-10-09T10:00:00Z]
+  [timing name=premerge-cx-slow seconds=1500 load=40.0 at=2026-10-09T11:00:00Z]
+  [timing name=premerge-cx-slow seconds=1500 load=40.0 at=2026-10-09T12:00:00Z]
+  [timing name=premerge-cx-slow seconds=1500 load=40.0 at=2026-10-09T13:00:00Z]
+  [timing name=premerge-cx-slow seconds=1500 load=40.0 at=2026-10-09T14:00:00Z]]'
 
 # 6 — with the override UNSET the default path is read exactly as before, so the
 #     row still sitting there fails the step. The override moves the path and
@@ -157,17 +189,18 @@ else
   fails=$((fails + 1))
 fi
 
-# 8 — the bounds are the owner's sentence (VCOST-1): the fixture grader
-#     <= 20 min, a selected post-merge run <= 20 min, the union <= 60 min.
-#     A row may sit under it; none may sit over it.
+# 8 — the bounds are the owner's sentence: VCOST-1's fixture grader and
+#     selected run <= 20 min, and #1903's (owner 2026-10-09) every pre-merge
+#     run <= 20 min — the union is the cx-private one. A row may sit under it;
+#     none may sit over it.
 over=""
-for pair in fixture-grader:1200 selected-run:1200 union:3600; do
+for pair in fixture-grader:1200 selected-run:1200 union:1200; do
   nm=${pair%%:*}; cap=${pair#*:}
   got=$(sed -n "s/.*\[bound name=$nm seconds=\([0-9][0-9]*\).*/\1/p" "$ROOT/scripts/verification_budget.cxd")
   if [ -z "$got" ] || [ "$got" -gt "$cap" ]; then over="$over $nm=${got:-missing}>$cap"; fi
 done
 if [ -z "$over" ]; then
-  echo "  ok   every bound is within the owner's sentence (fixture grader and selected run 20 min, union 60 min)"
+  echo "  ok   every bound is within the owner's sentence (fixture grader, selected run and union 20 min)"
 else
   echo "  FAIL bounds over the owner's sentence:$over"
   fails=$((fails + 1))
@@ -177,4 +210,4 @@ if [ "$fails" -gt 0 ]; then
   echo "verification-budget self-test: $fails failure(s)"
   exit 1
 fi
-echo "verification-budget self-test OK — 9 properties, all planted under $T (never the real timings path)"
+echo "verification-budget self-test OK — 10 properties, all planted under $T (never the real timings path)"
