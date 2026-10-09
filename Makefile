@@ -5705,7 +5705,11 @@ test-net-real: build-vcx-dev
 ##                  engines, which no shipped build carries (they link libpq and
 ##                  libmysqlclient, db_access.md §2), so DB_REAL_CX is built
 ##                  here from THIS tree's pins with -d cx_db_pg -d cx_db_mysql,
-##                  as a dev build at a path of its own: the shipped
+##                  on the SHIPPED recipe (`cli`: -Os, stripped; cx-private#1902 —
+##                  the cli-dev build it used ran 4.9x slower than build-vcx, so
+##                  every postgres/mysql program and cx-platform-reference's
+##                  measure-check timed an unoptimised cx) at a path of its own
+##                  (CLI=, its own .buildid): the shipped
 ##                  deps/cx-core-code/vcx/target/cx is never relinked with them.
 ##                  The client libraries are devbox.json's (libpq 18.6, mysql84's
 ##                  libmysqlclient 8.4.11, libcurl for libpq's pkg-config), and
@@ -5738,15 +5742,16 @@ DB_REAL_PC_DEFAULTS = $(DB_REAL_PC):$(shell sed -n '/^const default_paths = \[/,
 db-real-cx: check-gate-lock deps-present
 	@PKG_CONFIG_PATH="$(DB_REAL_PC)$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
 	  PKG_CONFIG_PATH_DEFAULTS="$(DB_REAL_PC_DEFAULTS)" \
-	  $(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx cli-dev CLI_DEV=$(DB_REAL_CX) CX_DFLAGS='-d cx_db_pg -d cx_db_mysql' PORTABLE=true
+	  $(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx cli CLI=$(DB_REAL_CX) CX_DFLAGS='-d cx_db_pg -d cx_db_mysql' PORTABLE=true
 
 # THE COLUMNAR cx (cx-platform-store#12; RULED: STREAM-1). store.md §8's
 # document+file://…?encoding=parquet / arrow-ipc substrate is compiled in only
 # under `-d cxstore_columnar -d cx_arrow_files`, and until this target no make
 # target built a `cx` that carried it — test-vcx-columnar grades the backend in a
 # V test, so no CX program and no reference application could land data
-# columnar. `make columnar-cx` builds that dev binary, cx-columnar, the
-# db-real-cx shape: the same cli-dev recipe with the two flags. Apache Arrow
+# columnar. `make columnar-cx` builds that binary, cx-columnar, the
+# db-real-cx shape: the shipped `cli` recipe (-Os, stripped; cx-private#1902)
+# with the two flags, at its own path. Apache Arrow
 # (with Parquet) is PINNED from the nixpkgs commit devbox.json pins openssl
 # from, realised by nix into a gc root under the core target dir, so every box
 # links the same Arrow and a box without one fetches it (the binary cache
@@ -5773,7 +5778,7 @@ columnar-arrow: deps-present
 columnar-cx: check-gate-lock deps-present columnar-arrow
 	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx arrow-shim ARROW_CXXFLAGS='-I$(COLUMNAR_ARROW)/include'
 	@PKG_CONFIG_PATH="$(COLUMNAR_ARROW)/lib/pkgconfig$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
-	  $(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx cli-dev CLI_DEV=$(COLUMNAR_CX) CX_DFLAGS='-enable-globals -d cxstore_columnar -d cx_arrow_files' PORTABLE=true
+	  $(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx cli CLI=$(COLUMNAR_CX) CX_DFLAGS='-enable-globals -d cxstore_columnar -d cx_arrow_files' PORTABLE=true
 test-columnar-cx: columnar-cx
 	@test -f deps/cx-platform-store/tooling/columnar_check.cx || { \
 	  echo "test-columnar-cx: deps/cx-platform-store/tooling/columnar_check.cx is not there — the check lives in the pinned repository; run \`make deps-sync\`" >&2; \
