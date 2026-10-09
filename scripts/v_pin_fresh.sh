@@ -18,7 +18,7 @@
 # only other vlib modules needs no rebuild (user programs compile vlib from source). The rebuild is the fork's own `v self` into
 # a side file, then an atomic rename over the binary, so a recipe already running keeps
 # its inode and one starting mid-rebuild never finds the binary absent. The previous
-# binary is kept as v.prev. Callers serialize through scripts/tree_lock.sh (v-pin) and
+# binary is kept as v_old. Callers serialize through scripts/tree_lock.sh (v-pin) and
 # this script re-checks after the lock, so concurrent steps rebuild once.
 #
 # No binary, or no compiler sources beside it (a bare PATH v): nothing to do — the cx
@@ -30,15 +30,18 @@ newer=$(find "$VD/cmd/v" "$VD/vlib/v" -name '*.v' ! -name '*_test.v' ! -path '*/
 [ -n "$newer" ] || exit 0
 echo "v-pin-fresh: rebuilding $VD/v (compiler source newer than the binary: ${newer#$VD/})"
 cd "$VD" || exit 1
-rm -f v.cxnew
-if ./v self -o v.cxnew >v.cxnew.log 2>&1 && [ -x v.cxnew ] && ./v.cxnew version >/dev/null 2>&1; then
-  cp -p v v.prev 2>/dev/null
-  mv -f v.cxnew v
-  rm -f v.cxnew.log
+# vnew / v_old: names the fork's .gitignore already ignores (v self's own backup is
+# v_old), so the rebuild leaves the submodule's status clean.
+LOG=$(mktemp "${TMPDIR:-/tmp}/v-pin-fresh.XXXXXX")
+rm -f vnew
+if ./v self -o vnew >"$LOG" 2>&1 && [ -x vnew ] && ./vnew version >/dev/null 2>&1; then
+  cp -p v v_old 2>/dev/null
+  mv -f vnew v
+  rm -f "$LOG"
   echo "v-pin-fresh: OK — $(./v version) rebuilt at $(git rev-parse --short=10 HEAD 2>/dev/null || echo '?')"
 else
-  echo "v-pin-fresh: FAILED — \`./v self\` in $VD did not produce a working compiler; log $VD/v.cxnew.log:" >&2
-  tail -20 v.cxnew.log >&2
-  rm -f v.cxnew
+  echo "v-pin-fresh: FAILED — \`./v self\` in $VD did not produce a working compiler; log $LOG:" >&2
+  tail -20 "$LOG" >&2
+  rm -f vnew
   exit 1
 fi
