@@ -1919,6 +1919,15 @@ perf-promote:
 	@[ -f "$(PERF_OUT)" ] || { echo "perf-promote: no $(PERF_OUT) (run make perf-pair first)"; exit 1; }
 	@cp "$(PERF_OUT)" "$(PERF_HEAD)" && echo "perf-promote: $(PERF_OUT) is the head record $(PERF_HEAD)"
 
+# cx-private#1915: the post-merge verdict seeds and promotes the head record on a GREEN perf-pair
+# STEP, not only on an all-green tick, which had never happened, so perf-pair judged nothing. The
+# fixture plants a checkout and runs the verdict act the loop runs (flows/private-acts.cx).
+.PHONY: check-perf-settle-selftest
+check-perf-settle-selftest: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+check-perf-settle-selftest:
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-env --allow-clock scripts/perf_settle_selftest.cx > /dev/null
+	@echo "check-perf-settle-selftest OK — a green perf-pair step seeds or promotes the head record on any tick; a red one or none keeps it (cx-private#1915)"
+
 # Documentation hygiene — every relative markdown link resolves.
 # Source markdown lives in docs-src/ (docs/ is the GENERATED HTML guide /
 # Pages site, which has no .md files — pointing the check there made the
