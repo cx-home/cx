@@ -110,6 +110,72 @@
         [= $_s [$c:say-step $e]]
     $e]]
 
+# THE ORPHAN REAP (cx-private#1903). Only a post-merge run takes the own
+# runners <slot>-own<k>, and this run holds the post-merge runner <slot> for
+# its life, so a LIVE holder of an own runner when this run starts is an
+# orphan of a run that died. Measured on 715d2262a's tick (2026-10-09): pid
+# 9523 — scripts/build-slot.sh over a test-playground-mermaid make whose node
+# child had slept at 0 % CPU since 6581a4588's run was killed (RUN-EXIT=70,
+# 2026-10-07) — still held own3, and every step pool-run gave own3 waited
+# BUILD_SLOT_TIMEOUT (60 s) and exited 75 unrun: nine steps red on that tick,
+# 9 to 25 on each of the eight ticks before it. The liveness watch (#1787)
+# cannot see it: the watcher died with the killed run.
+#
+# So, before the pool starts and ONLY when the runner's holder is this
+# process's ancestor (a hand run outside the runner reaps nothing), each own
+# runner's live holder has its process group killed — TERM, 5 s, KILL (a
+# holder that leads no group: it and its children) — and the directory
+# removed, one line per reap naming what it held.
+[?def ancestors scope=private impure [returns any] ()
+  [?let [= $rows [$c:ps-rows]]
+        [= $pp [?to-sequence [?for [in $w $rows] [yield ([$string [$first $w]], [$string [$nth $w 2]])]]]]
+    [?loop [= $cur [$string [$env:pid]]] [= $acc ()] [= $hops 0]
+      [?let [= $up [?to-sequence [?for [in $r $pp] [where [= [$first $r] $cur]] [yield [$nth $r 2]]]]]
+        [?if [or [= [$count $up] 0] [>= $hops 64] [= $cur '1']] [then [break $acc]]
+          [else [continue [$first $up] [$c:cat2 $acc ([$first $up])] [+ $hops 1]]]]]]]]
+
+[?def file-word scope=private impure [returns string] ($p)
+  [?if [$io:is-file $p] [then [$strings:trim [$io:read-file $p]]] [else '']]]
+
+[?def reap-own scope=private impure [returns any] ($slot $n)
+  [?let [= $holder [$file-word [$concat $slot '/pid']]]
+        [= $mine [and [not [= $holder '']] [$c:member $holder [$ancestors]]]]
+    [?if [not $mine]
+      [then [?let [= $_s [$say [$concat 'postmerge-steps: the runner ' $slot ' is not held by this run (holder ' [?if [= $holder ''] [then 'none'] [else $holder]] ') — no own-runner reap']]] ()]]
+      [else [?to-sequence [?for [in $k [$range 1 $n]]
+              [= $d [$concat $slot '-own' [$string $k]]]
+              [= $pid [$file-word [$concat $d '/pid']]]
+              [where [and [not [= $pid '']] [$c:ok [$process:run ('kill', '-0', $pid) timeout-ms=10000]]]]
+              [yield [?let [= $since [$file-word [$concat $d '/since']]] [= $cmd [$file-word [$concat $d '/cmd']]]
+                           [= $g [$c:out [$process:run ('ps', '-o', 'pgid=', '-p', $pid) timeout-ms=10000]]]
+                           [= $kids [?to-sequence [?for [in $w [$c:ps-rows]] [where [= [$string [$nth $w 2]] $pid]] [yield [$string [$first $w]]]]]]
+                           [= $tgt [?if [= $g $pid] [then ([$concat '-' $pid])] [else [$c:cat2 ($pid) $kids]]]]
+                           [= $_t [$process:run [$c:cat2 ('kill', '-TERM', '--') $tgt] timeout-ms=10000]]
+                           [= $_z [?sleep 5s]]
+                           [= $_k [$process:run [$c:cat2 ('kill', '-KILL', '--') $tgt] timeout-ms=10000]]
+                           [= $_r [?if [$io:exists $d] [then [$io:remove-tree $d]] [else null]]]
+                           [= $_s [$say [$concat 'postmerge-steps: REAPED own' [$string $k] ' — holder pid ' $pid ' (group ' $g ', since '
+                                                 $since ') outlived its run: ' $cmd]]]
+                       [$string $k]]]]]]]]]
+
+# THE WIDE STEPS (cx-private#1903). The parallel phase ends when its longest
+# step does, and on 715d2262a's tick that was test-vcx-suite: 999 s of a
+# 1,016 s phase, 46 `v test` files on VJOBS=4 (cores / 6), comptime 2,367 s
+# against runtime 1,025 s — one C compile per file, single-threaded, four at
+# a time — while every other step of the phase had ended by 1,189 s with the
+# box half idle. A step named here starts FIRST and runs with VJOBS = half the
+# cores (never below the pool's share); the rest keep cores / N.
+[?const WIDE ('test-vcx-suite', 'test-vcx-code')]
+
+# THE BENCH BUILDS (cx-private#1903). perf-pair and bench-code-pattern-compile
+# are load-sensitive rows — their CLOCKS are — but each compiled the evaluator
+# at -prod inside the quiet phase every tick (streaming_bench alone: 164 s of
+# compile, 3.4 GB peak, for a 1 s run, measured 2026-10-09 at load 78). When
+# either is in the plan, `make bench-bins` joins the pool right after the
+# wide steps, so the quiet phase finds the binaries built under an unchanged
+# key and only runs them (the Makefile's BENCH_COMPILE).
+[?const BENCH-RUNS ('perf-pair', 'bench-code-pattern-compile', 'perf-record')]
+
 [?def red-names scope=private pure [returns any] ($es)
   [?to-sequence [?for [in $e $es] [where [not [= [$string $e@rc] '0']]] [yield [$string $e@name]]]]]
 
@@ -131,6 +197,8 @@
     [then [?let [= $_e [$say 'usage: postmerge_steps.cx --checkout=<checkout> test | test-changed BASE=<sha>']] [$env:exit 64]]]
   [else [?if [> [$count $lr] 0]
     [then [?let [= $_e [$say [$strings:join $lr "\n"]]] [$env:exit 2]]]
+  [else [?if [= [$first $rest] 'reap']
+    [then [?let [= $_r [$reap-own $slot [$ci:parallel-steps]]] [$env:exit 0]]]
   [else [?let
     [= $_d [?if [$io:exists [$concat $c '/vcx/target/steps']] [then [$io:remove-tree [$concat $c '/vcx/target/steps']]] [else null]]]
     [= $pre [?to-sequence [?for [in $t ('deps-sync', 'build-vcx', 'build-vcx-dev')]
@@ -148,18 +216,38 @@
         [= $n [$ci:parallel-steps]]
         [= $vj [?if [< [$floor [/ [$cores] $n]] 1] [then 1] [else [$floor [/ [$cores] $n]]]]]
         [= $_h [$say [$concat 'postmerge-steps: ' [$string [$count $own]] ' load-insensitive step(s), ' [$string $n]
-                              ' at a time on their own runners (VJOBS=' [$string $vj] '); then ' [$string [$count $shared]]
+                              ' at a time on their own runners (VJOBS=' [$string $vj] '; first and VJOBS=' [$string [?if [< [$floor [/ [$cores] 2]] $vj] [then $vj] [else [$floor [/ [$cores] 2]]]]] ': ' [$strings:join WIDE ' '] '); then ' [$string [$count $shared]]
                               ' load-sensitive on the post-merge runner: ' [?if [= [$count $shared] 0] [then 'none'] [else [$strings:join $shared ' ']]]
                               '; then the tail: ' [?if [= [$count $tail] 0] [then 'none'] [else [$strings:join $tail ' ']]]]]]
         [= $slotsh ('sh', [$concat $c '/scripts/build-slot.sh'])]
-        [= $jobs [?to-sequence [?for [in $t $own]
+        [= $vw [?if [< [$floor [/ [$cores] 2]] $vj] [then $vj] [else [$floor [/ [$cores] 2]]]]]
+        [= $bb [?if [> [$count [?to-sequence [?for [in $t [$c:cat2 $storm $tail]] [where [$c:member $t BENCH-RUNS]] [yield $t]]]] 0]
+                 [then ('bench-bins')] [else ()]]]
+        [= $ord [$c:cat2 [$c:cat2 [?to-sequence [?for [in $t $own] [where [$c:member $t WIDE]] [yield $t]]] $bb]
+                         [?to-sequence [?for [in $t $own] [where [not [$c:member $t WIDE]]] [yield $t]]]]]
+        [= $jobs [?to-sequence [?for [in $t $ord]
                    [yield [job name=$t log=[$concat $c '/vcx/target/steps/' $t '.log'] stall-ms=[$string [$ci:stall-ms $t]] cwd=$c
+                            vjobs=[$string [?if [$c:member $t WIDE] [then $vw] [else $vj]]]
                             [?splice [?to-sequence [?for [in $w [$c:cat2 $slotsh [$make-words $t [$string $p@suite]]]]
                                        [yield [arg v=$w]]]]]]]]]]
+        [= $_reap [$reap-own $slot $n]]
         [= $par [$c:pool-run $jobs $n $slot $vj 60000]]
-        [= $sh [?to-sequence [?for [in $t $shared] [yield [$serial-step $c $t [$make-words $t [$string $p@suite]] 'post-merge']]]]]
+        [= $wall [$ci:sensitive-wall]]
+        [= $sn [$ci:sensitive-parallel]]
+        [= $ports [?if [> $sn 1] [then [?to-sequence [?for [in $t $shared] [where [not [$c:member $t $wall]]] [yield $t]]]] [else ()]]]
+        [= $alone [?to-sequence [?for [in $t $shared] [where [not [$c:member $t $ports]]] [yield $t]]]]
+        [= $pjobs [?to-sequence [?for [in $t $ports]
+                    [yield [job name=$t log=[$concat $c '/vcx/target/steps/' $t '.log'] stall-ms=[$string [$ci:stall-ms $t]] cwd=$c
+                             [?splice [?to-sequence [?for [in $w [$c:cat2 $slotsh [$make-words $t [$string $p@suite]]]]
+                                        [yield [arg v=$w]]]]]]]]]]
+        [= $_ph [?if [> [$count $ports] 0]
+                  [then [$say [$concat 'postmerge-steps: ' [$string [$count $ports]] ' load-sensitive socket step(s), ' [$string $sn]
+                                       ' at a time (cx-private#1903): ' [$strings:join $ports ' '] '; then alone: ' [$strings:join $alone ' ']]]]
+                  [else null]]]
+        [= $sp [?if [> [$count $ports] 0] [then [$c:pool-run $pjobs $sn $slot [?if [< [$floor [/ [$cores] $sn]] 1] [then 1] [else [$floor [/ [$cores] $sn]]]] 60000]] [else ()]]]
+        [= $sh [$c:cat2 $sp [?to-sequence [?for [in $t $alone] [yield [$serial-step $c $t [$make-words $t [$string $p@suite]] 'post-merge']]]]]]
         [= $before [$c:cat2 [$c:cat2 $pre $par] $sh]]
         [= $tl [?if [> [$count [$red-names $before]] 0] [then ()]
                  [else [?to-sequence [?for [in $t $tail] [yield [$serial-step $c $t [$make-words $t [$string $p@suite]] 'tail']]]]]]]
         [$finish [$c:cat2 $before $tl]
-                 [?if [and [> [$count [$red-names $before]] 0] [> [$count $tail] 0]] [then 'the serial tail did not run: a step before it is red'] [else '']]]]]]]]]]]]]]]
+                 [?if [and [> [$count [$red-names $before]] 0] [> [$count $tail] 0]] [then 'the serial tail did not run: a step before it is red'] [else '']]]]]]]]]]]]]]]]]

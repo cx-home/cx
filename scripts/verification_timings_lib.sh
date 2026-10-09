@@ -54,8 +54,12 @@ write_timing_row() {
 	[ -d "$wt_dir" ] || mkdir -p "$wt_dir" || return 1
 	wt_keep=''
 	if [ -r "$wt_file" ]; then
-		wt_keep=$(grep -oE '\[timing [^]]*\]' "$wt_file" 2>/dev/null \
-			| grep -vE "^\[timing[[:space:]]+name=${wt_name}([[:space:]]|\])" || true)
+		# every other name's rows, then the last four of this name: five per name with the new
+		# one, the median check-verification-budget judges (cx-private#1903)
+		wt_rows=$(grep -oE '\[timing [^]]*\]' "$wt_file" 2>/dev/null || true)
+		wt_keep=$( { printf '%s\n' "$wt_rows" | grep -vE "^\[timing[[:space:]]+name=${wt_name}([[:space:]]|\])"; \
+			printf '%s\n' "$wt_rows" | grep -E "^\[timing[[:space:]]+name=${wt_name}([[:space:]]|\])" | tail -n 4; } \
+			| grep -v '^$' || true)
 	fi
 	wt_tmp=$wt_file.$$.tmp
 	{
