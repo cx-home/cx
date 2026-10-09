@@ -157,7 +157,7 @@ program-tree-eval- program-ophead-
 program-shadow- program-ophole-
 program-grant-default- program-prose-join- program-emit-
 program-gap program-lazy- program-distinct- program-construct- program-doc-
-program-core program-62- program-1839- program-1886-
+program-core program-62- program-1839- program-1886- program-1838-
 #]],
   [prefixes level=resilience [#
 program-retry- program-timeout- program-cb- program-fallback-
