@@ -9054,7 +9054,7 @@ the product compiles from (RULED: RS-24).
 | `cx-platform-connector` | platform | none | package | — | `cx-core-code` `cx-platform-mail` `cx-platform-store` | extracted | the connector kit and sync |
 | `cx-platform-secrets` | platform | none | package | — | `cx-core-code` `cx-platform-connector` `cx-platform-store` | extracted | the minimal keystore: one handle grammar, one internal resolve seam, the PEP and the audit record, custody that rises by a provider row |
 | `cx-platform-sso` | platform | none | package | — | `cx-core-code` `cx-platform-identity` `cx-platform-net` `cx-platform-store` | extracted | enterprise sign-on and its interop step |
-| `cx-platform-ux` | platform | none | package | — | `cx-core-code` `cx-platform-flow` `cx-tooling` | extracted | the web and terminal surfaces |
+| `cx-platform-ux` | platform | none | package | — | `cx-core-code` `cx-platform-flow` | extracted | the web and terminal surfaces |
 | `cx-platform-workbench` | platform | none | package | — | `cx-core-code` | created | the document workbench — open, browse, comment on and safely modify a CX document |
 | `cx-platform-agent` | platform | none | package | — | `cx-core-code` `cx-platform-store` `cx-platform-xap` | extracted | tools, mcp, mcp-server, a2a, a2a-xap, llm, run, adjudicate |
 | `cx-binding-python` | binding | none | pypi | — | — | extracted | cxlib for Python |
