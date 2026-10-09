@@ -940,10 +940,14 @@ check-build-failure-classifier:
 	@sh scripts/classify_v_build_failure.sh --self-test
 
 .PHONY: check-vcache-soundness
+# #1903: the gate proves the V COMPILER's cache and reads nothing of cx, so its SOUND verdict is
+# remembered per set of inputs (compiler, fork vlib + diff, cc, OS, V's environment, the
+# scripts; 12 h at most) by scripts/vcache_soundness_memo.sh. A red is never remembered.
+# CX_VCACHE_MEMO=0 forces the proof.
 check-vcache-soundness:
 	@log=deps/cx-core-code/vcx/target/vcache-soundness.log; \
-	bash scripts/vcache_soundness_gate.sh > $$log 2>&1; rc=$$?; \
-	grep -E '^PROBE|^vcache-soundness' $$log; \
+	bash scripts/vcache_soundness_memo.sh check-vcache-soundness bash scripts/vcache_soundness_gate.sh > $$log 2>&1; rc=$$?; \
+	grep -E '^PROBE|^vcache-soundness|: MEMO' $$log; \
 	echo "full log: $$log; GATE-RC=$$rc"; exit $$rc
 
 # ── check-vcache-soundness-selftest (#1675, RULED: RUN-1, AGENTS-1, CXF-8) ──
@@ -952,7 +956,8 @@ check-vcache-soundness:
 # gates started together must both end SOUND and neither may collide.
 .PHONY: check-vcache-soundness-selftest
 check-vcache-soundness-selftest:
-	@sh scripts/vcache_soundness_selftest.sh
+	@bash scripts/vcache_soundness_memo_selftest.sh
+	@bash scripts/vcache_soundness_memo.sh check-vcache-soundness-selftest sh scripts/vcache_soundness_selftest.sh
 
 # V6 — pre-commit lint rules over .cx files. Catches the retired
 # v0.7.x syntax forms the v0.8.0 parser rejects, plus the
@@ -2849,6 +2854,14 @@ check-profile-gate-selection:
 check-verification-budget: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 check-verification-budget:
 	@"$(CX_BIN)" --allow-read --allow-write --allow-env scripts/check_verification_budget.cx
+
+# premerge-record (cx-private#1903): every pinned repository's pre-merge run (make deps + make
+# check at its pin, this tree's cx), one premerge-<repo> timing row each for
+# check-verification-budget's premerge-* family bound.
+.PHONY: premerge-record
+premerge-record: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+premerge-record: build-vcx
+	@CX_BIN="$(CX_BIN)" bash scripts/premerge_record.sh
 
 .PHONY: check-verification-budget-selftest
 check-verification-budget-selftest: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
@@ -4762,9 +4775,34 @@ PATCHED_V := $(if $(wildcard $(CURDIR)/third_party/v/v),$(CURDIR)/third_party/v/
 # compiler's that `v run` would have charged to it.
 BENCH_BIN_DIR := $(CURDIR)/vcx/target/bench
 BENCH_WRAP ?=
+# BENCH_COMPILE <bench> <V flags> (cx-private#1903): compile
+# deps/cx-core-code/vcx/tests/runners/<bench>.v to $(BENCH_BIN_DIR)/<bench>
+# UNLESS the binary there was built under the same key — libcx's build
+# identity (V binary, flags, CX_SRC_HASH of the vcx sources a bench links as V
+# source), the bench's flags, the V binary's own stat line and the bench
+# file's checksum, kept beside it as <bench>.key. The post-merge run builds
+# the benches in its PARALLEL phase (`bench-bins`, a pool job of
+# scripts/postmerge_steps.cx), so the load-sensitive phase only RUNS them:
+# on 715d2262a's tick perf-pair (529 s) and bench-code-pattern-compile
+# (132 s) each compiled the evaluator at -prod inside the quiet serial phase.
+# A changed key, or no key, compiles exactly as before.
+BENCH_KEY = { cat deps/cx-core-code/vcx/target/libcx.dylib.buildid 2>/dev/null; echo '$(2)'; ls -lT $(PATCHED_V) 2>/dev/null || ls -l $(PATCHED_V); cksum < deps/cx-core-code/vcx/tests/runners/$(1).v; }
+define BENCH_COMPILE
+@mkdir -p $(BENCH_BIN_DIR); k=$$($(BENCH_KEY) | tr '\n' ' '); \
+if [ -x $(BENCH_BIN_DIR)/$(1) ] && [ "$$(cat $(BENCH_BIN_DIR)/$(1).key 2>/dev/null)" = "$$k" ]; then \
+  echo "$(1): up to date (bench-bins key unchanged; compile skipped)"; \
+else rm -f $(BENCH_BIN_DIR)/$(1).key; \
+  echo "$(PATCHED_V) $(2) -o $(BENCH_BIN_DIR)/$(1) deps/cx-core-code/vcx/tests/runners/$(1).v"; \
+  $(PATCHED_V) $(2) -o $(BENCH_BIN_DIR)/$(1) deps/cx-core-code/vcx/tests/runners/$(1).v && printf '%s' "$$k" > $(BENCH_BIN_DIR)/$(1).key; \
+fi
+endef
+.PHONY: bench-bins
+bench-bins: build-vcx
+	$(call BENCH_COMPILE,streaming_bench,-prod)
+	$(call BENCH_COMPILE,code_streaming_throughput_bench,-enable-globals -prod)
+	$(call BENCH_COMPILE,code_pattern_compile_bench,-enable-globals -prod)
 bench-streaming: build-vcx
-	@mkdir -p $(BENCH_BIN_DIR)
-	$(PATCHED_V) -prod -o $(BENCH_BIN_DIR)/streaming_bench deps/cx-core-code/vcx/tests/runners/streaming_bench.v
+	$(call BENCH_COMPILE,streaming_bench,-prod)
 	$(BENCH_WRAP) $(BENCH_BIN_DIR)/streaming_bench
 
 # cxparse unification — parser perf baseline / per-phase N3 gate
@@ -4816,7 +4854,8 @@ bench-eval: build-vcx
 # measured p99 0.031 ms against the 1 ms bound. Gate 15 stays off a run while
 # its throughput half is red (#804).
 bench-code-pattern-compile: build-vcx
-	$(PATCHED_V) -enable-globals -prod run deps/cx-core-code/vcx/tests/runners/code_pattern_compile_bench.v
+	$(call BENCH_COMPILE,code_pattern_compile_bench,-enable-globals -prod)
+	$(BENCH_BIN_DIR)/code_pattern_compile_bench
 
 # Gate 15 — streaming throughput on JSON-shape workloads:
 # mean MUST be ≥ 200 MB/s + no trial below 80 % of mean.
@@ -4830,8 +4869,7 @@ bench-code-pattern-compile: build-vcx
 # under test; this is a measurement repair, and the §11.4.4 floor is
 # untouched by it.
 bench-code-streaming: build-vcx
-	@mkdir -p $(BENCH_BIN_DIR)
-	$(PATCHED_V) -enable-globals -prod -o $(BENCH_BIN_DIR)/code_streaming_throughput_bench deps/cx-core-code/vcx/tests/runners/code_streaming_throughput_bench.v
+	$(call BENCH_COMPILE,code_streaming_throughput_bench,-enable-globals -prod)
 	$(BENCH_WRAP) $(BENCH_BIN_DIR)/code_streaming_throughput_bench
 
 # #804 leg-2 CEILING probe — not a gate, a decision instrument. Walks the

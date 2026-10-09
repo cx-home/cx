@@ -13,16 +13,19 @@
 #     behind: [timing name= seconds= load= at=]. Written by whatever ran, read
 #     here; absent, there is nothing to judge.
 #
-# IDLE vs LOADED, which is the whole reason this can be a gate at all. A time
-# measured while the box was busy says nothing about the software: the same
-# `make fixtures` read 3,168 s and 2,898 s on the same corpus hours apart
-# because another agent's grader had a core. So:
-#   * `load` at or below IDLE-LOAD  → the measurement JUDGES. Over its bound,
-#     the step FAILS.
-#   * `load` above it              → ADVISORY. Reported with the load beside
-#     it, never failing.
-# A timing with no `load` is treated as loaded: the fail-safe direction is the
-# one that does not red a run on a number nobody can defend.
+# THE JUDGING RULE (cx-private#1903, owner 2026-10-09 13:15Z: "every
+# repository's pre-merge run back to 20 minutes or under, the budget enforced by
+# a gate step"; its acceptance: "measured over five runs"). A bound is judged
+# on the MEDIAN of its last FIVE measurements, at whatever load each was taken:
+#   * five or more rows of the bound's name → the median of the last five
+#     JUDGES. Over the bound, the step FAILS.
+#   * one to four rows                      → MEASURING (n of 5), reported,
+#     never failing: one slow run is noise, five are the run.
+# Each row's load is printed beside it. Before #1903 a row judged only at a
+# load of 2.0 or under, and on a box that five to seven streams share none
+# did: every union since 2026-10-04 read ADVISORY, so the budget was a
+# convention. The median is what absorbs the noise the idle rule was for
+# (the same corpus at 3,168 s and 2,898 s hours apart is 9 %, inside it).
 #
 # A bound with NO timing is reported as unmeasured and does not fail — a gate
 # that reds because a measurement is missing punishes the run that did not take
@@ -55,11 +58,9 @@
 [?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
 [?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
 
-# IDLE-LOAD: the one-minute load average at or below which a measurement is
-# allowed to JUDGE. Two runnable things on this box is the pre-merge runner plus
-# the thing it is running; above that another agent is on the machine and the
-# number is theirs as much as ours.
-[?const IDLE-LOAD 2.0e0]
+# RUNS: how many of a bound's latest measurements its median is taken over,
+# and the fewest it judges on (the writers keep this many rows per name).
+[?const RUNS 5]
 
 [?const BOUNDS-FILE 'scripts/verification_budget.cxd']
 
@@ -80,6 +81,11 @@
 [?const TIMINGS-DEFAULT 'vcx/target/verification_timings.cxd']
 
 # mins renders seconds as a minutes-and-seconds string for the report.
+# the median of a non-empty sequence of ints (the lower middle for an even count)
+[?def median-int scope=public pure ($xs)
+  [?let [= $s [?to-sequence [$sort $xs]]] [= $n [$count $s]]
+    [$nth $s [+ [$div [- $n 1] 2] 1]]]]
+
 [?def mins scope=public ($s) [$cat ([$string [$div $s 60]], 'm', [$string [$mod $s 60]], 's')]]
 
 [?let
@@ -103,27 +109,43 @@
     [else [?to-sequence [?for [in $t $tdoc//timing] [yield $t]]]]]]
 
   [= $_h [$say [$cat ('check-verification-budget: ', [$string [$count $bounds]], ' bound(s), ',
-                      [$string [$count $timings]], ' measurement(s), idle-load ', [$string IDLE-LOAD],
+                      [$string [$count $timings]], ' measurement(s), the median of the last ', [$string RUNS], ' judges',
                       ', timings ', $timings-file)]]]
 
   # One verdict per bound.
-  [= $over [?to-sequence [?for [in $b $bounds]
+  # A FAMILY bound (cx-private#1903): a name ending in `*` is one bound per
+  # measured name it prefixes — `premerge-*` judges each premerge-<repo> row's
+  # median on its own (scripts/premerge_record.sh writes them). With no
+  # measured name under it, the family reports itself unmeasured.
+  [= $judged [?to-sequence [?for [in $b $bounds]
+    [= $bn [$string $b@name]]
+    [= $fam [$strings:ends-with $bn '*']]
+    [= $pre [?if $fam [then [$strings:slice $bn 1 [- [$strings:length $bn] 1]]] [else '']]]
+    [= $members [?if $fam
+                  [then [?to-sequence [$distinct [?to-sequence [?for [in $t $timings]
+                          [where [$strings:starts-with [$string $t@name] $pre]] [yield [$string $t@name]]]]]]]
+                  [else ()]]]
+    [in $j [?if [or [not $fam] [= [$count $members] 0]] [then ($b)]
+             [else [?to-sequence [?for [in $m $members] [yield [bound name=$m seconds=[$string $b@seconds]]]]]]]]
+    [yield $j]]]]
+  [= $over [?to-sequence [?for [in $b $judged]
     [= $name [$string $b@name]]
     [= $limit [$str-to-int [$string $b@seconds]]]
-    [= $hits [?to-sequence [?for [in $t $timings]
+    [= $all [?to-sequence [?for [in $t $timings]
                 [where [= [$string $t@name] $name]] [yield $t]]]]
-    [= $t [?if [= [$count $hits] 0] [then null] [else [$first $hits]]]]
-    [= $secs [?if [= [$count $hits] 0] [then 0] [else [$str-to-int [$string $t@seconds]]]]]
-    [= $load [?if [= [$count $hits] 0] [then 9.9e2]
-               [else [?fallback [$str-to-float [$string $t@load]] [recover-with 9.9e2]]]]]
-    [= $judges [and [> [$count $hits] 0] [<= $load IDLE-LOAD]]]
+    [= $hits [?if [> [$count $all] RUNS] [then [?to-sequence [?drop [- [$count $all] RUNS] $all]]] [else $all]]]
+    [= $ss [?to-sequence [?for [in $t $hits] [yield [$str-to-int [$string $t@seconds]]]]]]
+    [= $secs [?if [= [$count $hits] 0] [then 0] [else [$median-int $ss]]]]
+    [= $loads [$strings:join [?to-sequence [?for [in $t $hits] [yield [$string [?else $t@load '?']]]]] ' ']]
+    [= $judges [>= [$count $hits] RUNS]]
     [= $line [?if [= [$count $hits] 0]
       [then [$cat ('  ', $name, '  bound ', [$mins $limit], '  — NOT MEASURED (nothing to judge)')]]
-      [else [$cat ('  ', $name, '  bound ', [$mins $limit], '  measured ', [$mins $secs],
-                   '  load ', [$string $load],
+      [else [$cat ('  ', $name, '  bound ', [$mins $limit], '  median ', [$mins $secs],
+                   ' of ', [$string [$count $hits]], ' (', [$strings:join [?to-sequence [?for [in $x $ss] [yield [$mins $x]]]] ' '],
+                   ')  loads ', $loads,
                    [?if $judges
                      [then [?if [> $secs $limit] [then '  OVER BOUND'] [else '  ok']]]
-                     [else '  (ADVISORY — the box was loaded; this number judges nothing)']])]]]]
+                     [else [$cat ('  (MEASURING — ', [$string [$count $hits]], ' of ', [$string RUNS], ' runs; judges nothing yet)')]]])]]]]
     [= $_p [$say $line]]
     [where [and $judges [> $secs $limit]]]
     [yield [over name=$name limit=$limit measured=$secs]]]]]
@@ -131,7 +153,7 @@
   [?if [> [$count $over] 0]
     [then ([$cry ''],
            [$cry [$cat ('check-verification-budget FAILED — ', [$string [$count $over]],
-                        ' idle-box measurement(s) over bound:')]],
+                        ' bound(s) whose median of ', [$string RUNS], ' runs is over:')]],
            [?for [in $o $over]
              [yield [$cry [$cat ('  ', [$string $o@name], ': ', [$mins [$str-to-int [$string $o@measured]]],
                                  ' against a bound of ', [$mins [$str-to-int [$string $o@limit]]])]]]],
@@ -139,5 +161,5 @@
            [$cry '  is the ratchet running backwards; a row moves only in a commit that names why'],
            [$cry [$cat ('  (', BOUNDS-FILE, ' carries the measurement that set each and the issue that last moved it).')]],
            [$env:exit 1])]
-    [else ([$say 'check-verification-budget OK — no idle-box measurement over its bound'],
+    [else ([$say [$cat ('check-verification-budget OK — no bound whose median of ', [$string RUNS], ' runs is over')]],
            [$env:exit 0])]]]
