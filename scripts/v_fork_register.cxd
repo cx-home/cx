@@ -314,4 +314,5 @@
   [patch sha=4024da357913d4a77e0f59c1f6b40f54c355507e family=bench issue='cx-home/v#16']
   [patch sha=8a78ad3bc40d0f4ca57b756ae53a37e23be509eb family=bench issue='cx-home/v#16']
   [patch sha=25dac8bd412640348b797b56400a2d21e9c564ee family=vlib issue='cx-home/v#23']
+  [patch sha=9a831e3bbc37bb81f49f8720125ab328e7ec5766 family=vgc issue='cx-core-code#116']
 ]
