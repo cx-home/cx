@@ -52,7 +52,8 @@
 import { createRequire } from 'node:module';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
+import { availableParallelism } from 'node:os';
 import { createHash } from 'node:crypto';
 
 const require = createRequire(import.meta.url);
@@ -193,14 +194,46 @@ if (!SLICE) {
   if (total === 0) setupFail('playground.examples.js yielded no examples.');
   const totals = { pass: 0, empty: 0, skipped: 0, cximage: 0, wrongsrc: 0, fail: 0 };
   let sawSetupFailure = false;
-  for (let from = 0; from < total; from += SHARD_SIZE) {
-    const to = Math.min(from + SHARD_SIZE, total);
+  // cx-private#1917: the shards run JOBS at a time (each is its own process
+  // and engine, so they share nothing); their reports are read back in slice
+  // order, so the log is the same text a one-at-a-time walk printed. 439
+  // shards one at a time were 530-2,532 s of the post-merge run's parallel
+  // phase. PLAYGROUND_MERMAID_JOBS overrides; default the pool's VJOBS (the
+  // step's share of the box), else cores / 4, at least 1, at most 8 (a shard
+  // can reach ~550 MB RSS).
+  const JOBS = (() => {
+    const v = parseInt(process.env.PLAYGROUND_MERMAID_JOBS || process.env.VJOBS || '', 10);
+    const n = Number.isFinite(v) && v > 0 ? v : Math.floor(availableParallelism() / 4);
+    return Math.max(1, Math.min(8, n));
+  })();
+  const runShard = (from, to) => new Promise((done) => {
     const args = [process.argv[1], '--slice', `${from}:${to}`];
     if (VERBOSE) args.push('--verbose');
-    const r = spawnSync(process.execPath, args, {
-      cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
-      timeout: SHARD_TIMEOUT_S * 1000, killSignal: 'SIGKILL',
+    const child = spawn(process.execPath, args, { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
+    let stdout = ''; let stderr = ''; let timedOut = false;
+    child.stdout.setEncoding('utf8'); child.stderr.setEncoding('utf8');
+    child.stdout.on('data', (d) => { stdout += d; });
+    child.stderr.on('data', (d) => { stderr += d; });
+    const timer = setTimeout(() => { timedOut = true; child.kill('SIGKILL'); }, SHARD_TIMEOUT_S * 1000);
+    child.on('close', (status) => {
+      clearTimeout(timer);
+      done({ stdout, stderr, status, error: timedOut ? { code: 'ETIMEDOUT' } : undefined });
     });
+    child.on('error', (e) => { clearTimeout(timer); done({ stdout, stderr, status: null, error: e }); });
+  });
+  const slices = [];
+  for (let from = 0; from < total; from += SHARD_SIZE) slices.push([from, Math.min(from + SHARD_SIZE, total)]);
+  const results = new Array(slices.length);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(JOBS, slices.length) }, async () => {
+    while (next < slices.length) {
+      const i = next++;
+      results[i] = await runShard(slices[i][0], slices[i][1]);
+    }
+  }));
+  for (let i = 0; i < slices.length; i++) {
+    const [from, to] = slices[i];
+    const r = results[i];
     const out = r.stdout || '';
     if (r.error && r.error.code === 'ETIMEDOUT') {
       totals.fail += 1;
@@ -231,7 +264,7 @@ if (!SLICE) {
   if (sawSetupFailure) process.exit(2);
   console.log('\n══════════════════════════════════════════════════════════');
   console.log('playground diagram validity gate — TOTAL');
-  console.log(`  examples          ${total}   (in shards of ${SHARD_SIZE})`);
+  console.log(`  examples          ${total}   (in shards of ${SHARD_SIZE}, ${JOBS} at a time)`);
   console.log(`  diagrams parsed   ${totals.pass}`);
   console.log(`  empty (no shape)  ${totals.empty}`);
   console.log(`  no subject        ${totals.skipped}`);
