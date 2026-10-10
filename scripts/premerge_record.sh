@@ -21,6 +21,15 @@ TIMINGS=${CX_VERIFICATION_TIMINGS:-$ROOT/vcx/target/verification_timings.cxd}
 JOBS=${PREMERGE_JOBS:-4}
 W=$(mktemp -d "${TMPDIR:-/tmp}/cx-premerge.XXXXXX"); trap 'rm -rf "$W"' EXIT
 repos=${PREMERGE_REPOS:-$(for d in deps/*/; do d=${d%/}; grep -q '^check:' "$d/Makefile" 2>/dev/null && basename "$d"; done)}
+# cx-private#1917: longest first — the JOBS slots pack best when the slowest repositories start
+# first; order by each one's last recorded seconds (no row = 0, plan order kept among equals).
+# On f834bf117 the step took 2,086 s and store alone ~413 s of it. PREMERGE_REPOS keeps its order.
+if [ -z "${PREMERGE_REPOS:-}" ] && [ -r "$TIMINGS" ]; then
+  repos=$(for r in $repos; do
+    s=$(grep -oE "\[timing name=premerge-$r seconds=[0-9]+" "$TIMINGS" | tail -n 1 | sed 's/.*seconds=//')
+    echo "${s:-0} $r"
+  done | sort -s -k1,1nr | awk '{print $2}')
+fi
 one() { # one <repo> — prints `<repo> <rc> <seconds> <load>`
   r=$1; c="$W/$r"
   git clone -q "$ROOT/deps/$r" "$c" 2>/dev/null && git -C "$c" remote set-url origin "https://github.com/cx-home/$r.git" \
