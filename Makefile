@@ -3777,6 +3777,14 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="NO REASON DECLARED for this step -- retried anyway; declare it in RETRY_REASON_CASE in the Makefile" ;; \
 	esac
 
+# The reason above is the roster's CLASS — why the step is on a retry roster at
+# all — printed before the retry runs, so it is not a diagnosis of THIS run. When
+# the serial retry fails as well, the class did not apply: say so, or the reason
+# line is read as the verdict (31eec7997's tick: code_eval_fixtures_shard_5 failed
+# an assertion, array-join-persistent-200k, at load 1.9 in both runs, and the log's
+# last header read "#1432 early exit ... with NO assertion").
+RETRY_FAILED_LINE = echo "──── the serial retry FAILED as well: $$rel is a REAL failure on this head, not the retry class named above — read its own assertion in the output just above ────"
+
 # The profile gate grades the SAME supervise fixtures as
 # code_eval_fixtures_test.v but is not a `v test` step, so no roster above
 # reaches it. It used to carry its own serial re-grade class (#1054) for the
@@ -4084,7 +4092,7 @@ test-vcx-suite: build-vcx-dev check-serial-retry-rosters check-fixture-shard-man
 	        *" $$rel "*) \
 	          $(RETRY_REASON_CASE); \
 	          echo "──── serial retry ($$reason): $$rel ────"; \
-	          $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test "$$rel" || st=1 ;; \
+	          $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test "$$rel" || { st=1; $(RETRY_FAILED_LINE); } ;; \
 	        *) \
 	          if grep -aq 'C compilation error' $$log; then \
 	            $(CACHE_ESCAPE_PROBE); \
@@ -4189,7 +4197,7 @@ test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	        *" $$rel "*) \
 	          $(RETRY_REASON_CASE); \
 	          echo "──── serial retry ($$reason): $$rel ────"; \
-	          $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test "$$rel" || st=1 ;; \
+	          $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test "$$rel" || { st=1; $(RETRY_FAILED_LINE); } ;; \
 	        *) \
 	          if grep -aq 'C compilation error' $$log; then \
 	            $(CACHE_ESCAPE_PROBE); \
