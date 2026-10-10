@@ -14,6 +14,10 @@
 #   D  the document stays well formed — one [verification-timings … ] wrapper,
 #      balanced brackets, every row one [timing name= seconds= load= at=]
 #   E  sample_load_1m prints a bare number
+#   F  the last five rows of a name are kept, oldest dropped
+#   G  loaded rows (load over 8) never push the last five QUIET rows of a name
+#      out: five quiet, then six loaded, then one quiet → the last five quiet and
+#      the last four loaded (BUDGET-LOAD = (a), owner 2026-10-10)
 #
 # Everything is planted under mktemp: this selftest never writes the real
 # timings path (issue 1582 is the same discipline one step out).
@@ -97,6 +101,20 @@ else
 	bad F "kept union rows: '$kept'"
 fi
 
+# ── G — loaded writes keep the quiet ones (BUDGET-LOAD = (a)) ────────────────
+G=$(mktemp "${TMPDIR:-/tmp}/vt-g.XXXXXX"); rm -f "$G"
+for i in 1 2 3 4 5; do write_timing_row "$G" union $((100 + i)) 2.0 2026-10-10T0$i:00:00Z; done
+for i in 1 2 3 4 5 6; do write_timing_row "$G" union $((900 + i)) 30.5 2026-10-10T1$i:00:00Z; done
+g1=$(row_of "$G" union | sed -E 's/.*seconds=([0-9]+).*/\1/' | tr '\n' ' ')
+write_timing_row "$G" union 107 1.0 2026-10-10T20:00:00Z
+g2=$(row_of "$G" union | sed -E 's/.*seconds=([0-9]+).*/\1/' | tr '\n' ' ')
+rm -f "$G"
+if [ "$g1" = '101 102 103 104 105 902 903 904 905 906 ' ] && [ "$g2" = '102 103 104 105 903 904 905 906 107 ' ]; then
+	ok G "six loaded writes keep the five quiet rows; a quiet write then drops the oldest quiet one"
+else
+	bad G "after six loaded: '$g1'; after one more quiet: '$g2'"
+fi
+
 # ── E — the load sample ──────────────────────────────────────────────────────
 load=$(sample_load_1m)
 case "$load" in
@@ -108,4 +126,4 @@ if [ "$fails" -ne 0 ]; then
 	echo "verification-timings writer selftest: $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "verification-timings writer selftest: 6/6 (created; joins its own name; adds a new name; well formed; the load sample is a number; the last five per name)"
+echo "verification-timings writer selftest: 7/7 (created; joins its own name; adds a new name; well formed; the load sample is a number; the last five per name; loaded rows keep the last five quiet)"

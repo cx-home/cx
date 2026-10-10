@@ -54,11 +54,20 @@ write_timing_row() {
 	[ -d "$wt_dir" ] || mkdir -p "$wt_dir" || return 1
 	wt_keep=''
 	if [ -r "$wt_file" ]; then
-		# every other name's rows, then the last four of this name: five per name with the new
-		# one, the median check-verification-budget judges (cx-private#1903)
+		# every other name's rows, then this name's rows that are among its last four OR among its
+		# last QUIET ones (load <= $CX_BENCH_MAX_LOAD, else 8) — four when the new row is quiet, five
+		# when it is not: with the new row, the last five and the last five quiet per name. check-verification-budget judges the median of the last
+		# five quiet rows (cx-private#1903; BUDGET-LOAD = (a), owner 2026-10-10), and a file that
+		# kept only the last five would let five loaded ticks push every quiet one out before it judged.
 		wt_rows=$(grep -oE '\[timing [^]]*\]' "$wt_file" 2>/dev/null || true)
 		wt_keep=$( { printf '%s\n' "$wt_rows" | grep -vE "^\[timing[[:space:]]+name=${wt_name}([[:space:]]|\])"; \
-			printf '%s\n' "$wt_rows" | grep -E "^\[timing[[:space:]]+name=${wt_name}([[:space:]]|\])" | tail -n 4; } \
+			printf '%s\n' "$wt_rows" | grep -E "^\[timing[[:space:]]+name=${wt_name}([[:space:]]|\])" \
+			| awk -v lb="${CX_BENCH_MAX_LOAD:-8}" -v nl="$wt_load" '
+				BEGIN { nl = (nl ~ /^-?[0-9.eE+]+$/) ? nl + 0 : 999; kq = (nl >= 0 && nl <= lb + 0) ? 4 : 5 }
+				{ row[NR] = $0; l = 999; if (match($0, /load=[-0-9.eE+]+/)) l = substr($0, RSTART + 5, RLENGTH - 5) + 0
+				  q[NR] = (l >= 0 && l <= lb + 0) }
+				END { nq = 0; for (i = NR; i >= 1; i--) { if (q[i]) nq++; keep[i] = (NR - i < 4) || (q[i] && nq <= kq) }
+				      for (i = 1; i <= NR; i++) if (keep[i]) print row[i] }'; } \
 			| grep -v '^$' || true)
 	fi
 	wt_tmp=$wt_file.$$.tmp

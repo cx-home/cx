@@ -22,15 +22,19 @@
 #
 #   0. an over-bound file at the DEFAULT path is NOT read when the override
 #      names an empty file                          → passes, NOT MEASURED
-#   1. an IDLE measurement over its bound            → FAILS (exit 1)
-#   2. a LOADED measurement over the same bound      → passes, ADVISORY
-#   3. an idle measurement under its bound           → passes, ok
-#   4. no measurement at all                         → passes, NOT MEASURED
-#   5. a measurement with no `load` at all           → passes, treated as loaded
-#   6. with NO override the DEFAULT path is still what is read — the override
+#   1. five QUIET rows (load <= 8) whose median is over the bound → FAILS (exit 1)
+#   2. five quiet rows under it, one slow among them → passes, ok
+#   3. five LOADED rows over the bound → passes, each "not judged (load N)"
+#      (BUDGET-LOAD = (a), owner 2026-10-10: a loaded tick is recorded, never red)
+#   4. loaded rows between quiet ones neither judge nor push the quiet ones out
+#      of the median: five quiet under the bound among three loaded far over → ok
+#   5. a measurement with no `load` at all → passes, "not judged (load ?)"
+#   6. four quiet rows judge nothing yet; only the last five quiet count;
+#      no measurement at all → NOT MEASURED; the premerge-* family per repository
+#   7. with NO override the DEFAULT path is still what is read — the override
 #      moves the path and nothing else
 #
-# (2) and (5) are the reason this can be a gate rather than a coin flip: the same
+# (3) and (5) are the reason this can be a gate rather than a coin flip: the same
 # `make fixtures` read 3,168 s and 2,898 s on one corpus hours apart because
 # another agent had a core, so a number taken on a busy box judges nothing and
 # must never red a run. (4) is the same discipline one step out — a gate that
@@ -56,10 +60,10 @@ DEFAULT_PATH=$M/vcx/target/verification_timings.cxd
 
 OVER_BOUND='[verification-timings
   [timing name=fixture-grader seconds=4000 load=0.8 at=2026-10-09T10:00:00Z]
-  [timing name=fixture-grader seconds=4000 load=9.4 at=2026-10-09T11:00:00Z]
-  [timing name=fixture-grader seconds=4000 load=31.2 at=2026-10-09T12:00:00Z]
-  [timing name=fixture-grader seconds=4000 load=12.0 at=2026-10-09T13:00:00Z]
-  [timing name=fixture-grader seconds=4000 load=44.5 at=2026-10-09T14:00:00Z]]'
+  [timing name=fixture-grader seconds=4000 load=3.4 at=2026-10-09T11:00:00Z]
+  [timing name=fixture-grader seconds=4000 load=1.2 at=2026-10-09T12:00:00Z]
+  [timing name=fixture-grader seconds=4000 load=8 at=2026-10-09T13:00:00Z]
+  [timing name=fixture-grader seconds=4000 load=4.5 at=2026-10-09T14:00:00Z]]'
 
 fails=0
 
@@ -110,32 +114,63 @@ else
   fails=$((fails + 1))
 fi
 
-# 1 — the planted over-budget IDLE timing. The bound is 1200 s; 4000 s is over.
-# The #1903 rule: the median of a bound's last FIVE rows judges, at any load.
-check 1 "OVER BOUND" "five rows whose median is over the bound FAIL the step, loaded or not" \
+# 1 — the planted over-budget QUIET timing. The bound is 1200 s; the median is over.
+# The #1903 rule: the median of a bound's last FIVE rows judges; BUDGET-LOAD = (a):
+# only rows at a load at or under 8 (the #1450 bound) are among them.
+check 1 "OVER BOUND" "five quiet rows whose median is over the bound FAIL the step" \
 '[verification-timings
   [timing name=fixture-grader seconds=4000 load=0.8 at=2026-10-09T10:00:00Z]
-  [timing name=fixture-grader seconds=1300 load=9.4 at=2026-10-09T11:00:00Z]
-  [timing name=fixture-grader seconds=900 load=31.2 at=2026-10-09T12:00:00Z]
-  [timing name=fixture-grader seconds=5000 load=12.0 at=2026-10-09T13:00:00Z]
-  [timing name=fixture-grader seconds=1250 load=44.5 at=2026-10-09T14:00:00Z]]'
+  [timing name=fixture-grader seconds=1300 load=7.9 at=2026-10-09T11:00:00Z]
+  [timing name=fixture-grader seconds=900 load=3.2 at=2026-10-09T12:00:00Z]
+  [timing name=fixture-grader seconds=5000 load=8 at=2026-10-09T13:00:00Z]
+  [timing name=fixture-grader seconds=1250 load=4.5 at=2026-10-09T14:00:00Z]]'
 
-check 0 "ok" "five rows whose median is under the bound pass, one slow run among them" \
+check 0 "ok" "five quiet rows whose median is under the bound pass, one slow run among them" \
 '[verification-timings
-  [timing name=fixture-grader seconds=900 load=30.1 at=2026-10-09T10:00:00Z]
-  [timing name=fixture-grader seconds=4000 load=62.0 at=2026-10-09T11:00:00Z]
-  [timing name=fixture-grader seconds=1000 load=28.4 at=2026-10-09T12:00:00Z]
-  [timing name=fixture-grader seconds=800 load=19.9 at=2026-10-09T13:00:00Z]
-  [timing name=fixture-grader seconds=1100 load=25.0 at=2026-10-09T14:00:00Z]]'
+  [timing name=fixture-grader seconds=900 load=3.1 at=2026-10-09T10:00:00Z]
+  [timing name=fixture-grader seconds=4000 load=6.0 at=2026-10-09T11:00:00Z]
+  [timing name=fixture-grader seconds=1000 load=2.4 at=2026-10-09T12:00:00Z]
+  [timing name=fixture-grader seconds=800 load=1.9 at=2026-10-09T13:00:00Z]
+  [timing name=fixture-grader seconds=1100 load=5.0 at=2026-10-09T14:00:00Z]]'
 
-check 0 "MEASURING" "four rows judge nothing yet, however slow" \
+# 3 — BUDGET-LOAD = (a): the loaded tick. Five union rows far over the bound, every
+# one taken over load 8 (the 2026-10-10 ticks read 6,189 s at load 55-110 beside
+# 1,062 s at 1.9): recorded, reported "not judged (load N)", never red.
+check 0 "not judged (load 26.92): 37m46s" "five LOADED rows over the bound are recorded, each reported not judged with its load, and never red the step" \
+'[verification-timings
+  [timing name=union seconds=6189 load=11.2 at=2026-10-10T12:26:10Z]
+  [timing name=union seconds=5786 load=18.95 at=2026-10-10T14:04:52Z]
+  [timing name=union seconds=2266 load=26.92 at=2026-10-10T14:45:18Z]
+  [timing name=union seconds=4000 load=8.01 at=2026-10-10T15:18:55Z]
+  [timing name=union seconds=9000 load=110 at=2026-10-10T16:00:00Z]]'
+
+check 0 "median 15m0s of 5 quiet" "loaded rows among quiet ones neither judge nor push the quiet ones out of the median" \
+'[verification-timings
+  [timing name=union seconds=900 load=1.9 at=2026-10-10T08:00:00Z]
+  [timing name=union seconds=9999 load=55 at=2026-10-10T09:00:00Z]
+  [timing name=union seconds=1000 load=2.0 at=2026-10-10T10:00:00Z]
+  [timing name=union seconds=800 load=3.0 at=2026-10-10T11:00:00Z]
+  [timing name=union seconds=9999 load=90 at=2026-10-10T12:00:00Z]
+  [timing name=union seconds=1100 load=1.5 at=2026-10-10T13:00:00Z]
+  [timing name=union seconds=9999 load=26 at=2026-10-10T14:00:00Z]
+  [timing name=union seconds=900 load=1.7 at=2026-10-10T15:00:00Z]]'
+
+check 0 "not judged (load ?)" "a row with no load at all is loaded: reported not judged, never red" \
+'[verification-timings
+  [timing name=selected-run seconds=9999 at=2026-10-10T10:00:00Z]
+  [timing name=selected-run seconds=9999 at=2026-10-10T11:00:00Z]
+  [timing name=selected-run seconds=9999 at=2026-10-10T12:00:00Z]
+  [timing name=selected-run seconds=9999 at=2026-10-10T13:00:00Z]
+  [timing name=selected-run seconds=9999 at=2026-10-10T14:00:00Z]]'
+
+check 0 "MEASURING" "four quiet rows judge nothing yet, however slow" \
 '[verification-timings
   [timing name=union seconds=99999 load=1.0 at=2026-10-09T10:00:00Z]
   [timing name=union seconds=99999 load=1.0 at=2026-10-09T11:00:00Z]
   [timing name=union seconds=99999 load=1.0 at=2026-10-09T12:00:00Z]
   [timing name=union seconds=99999 load=1.0 at=2026-10-09T13:00:00Z]]'
 
-check 1 "OVER BOUND" "only the LAST five of a name count: old fast rows do not mask five slow ones" \
+check 1 "OVER BOUND" "only the LAST five quiet rows of a name count: old fast rows do not mask five slow ones" \
 '[verification-timings
   [timing name=selected-run seconds=100 load=5 at=2026-10-09T10:00:00Z]
   [timing name=selected-run seconds=100 load=5 at=2026-10-09T11:00:00Z]
@@ -150,16 +185,16 @@ check 0 "NOT MEASURED" "a bound with no measurement does not fail the step" ""
 
 check 1 "premerge-cx-slow  bound 20m0s  median 25m0s" "the premerge-* family judges each repository on its own: one slow repository FAILS, its fast sibling reads ok" \
 '[verification-timings
-  [timing name=premerge-cx-fast seconds=30 load=40.0 at=2026-10-09T10:00:00Z]
-  [timing name=premerge-cx-fast seconds=30 load=40.0 at=2026-10-09T11:00:00Z]
-  [timing name=premerge-cx-fast seconds=30 load=40.0 at=2026-10-09T12:00:00Z]
-  [timing name=premerge-cx-fast seconds=30 load=40.0 at=2026-10-09T13:00:00Z]
-  [timing name=premerge-cx-fast seconds=30 load=40.0 at=2026-10-09T14:00:00Z]
-  [timing name=premerge-cx-slow seconds=1500 load=40.0 at=2026-10-09T10:00:00Z]
-  [timing name=premerge-cx-slow seconds=1500 load=40.0 at=2026-10-09T11:00:00Z]
-  [timing name=premerge-cx-slow seconds=1500 load=40.0 at=2026-10-09T12:00:00Z]
-  [timing name=premerge-cx-slow seconds=1500 load=40.0 at=2026-10-09T13:00:00Z]
-  [timing name=premerge-cx-slow seconds=1500 load=40.0 at=2026-10-09T14:00:00Z]]'
+  [timing name=premerge-cx-fast seconds=30 load=4.0 at=2026-10-09T10:00:00Z]
+  [timing name=premerge-cx-fast seconds=30 load=4.0 at=2026-10-09T11:00:00Z]
+  [timing name=premerge-cx-fast seconds=30 load=4.0 at=2026-10-09T12:00:00Z]
+  [timing name=premerge-cx-fast seconds=30 load=4.0 at=2026-10-09T13:00:00Z]
+  [timing name=premerge-cx-fast seconds=30 load=4.0 at=2026-10-09T14:00:00Z]
+  [timing name=premerge-cx-slow seconds=1500 load=4.0 at=2026-10-09T10:00:00Z]
+  [timing name=premerge-cx-slow seconds=1500 load=4.0 at=2026-10-09T11:00:00Z]
+  [timing name=premerge-cx-slow seconds=1500 load=4.0 at=2026-10-09T12:00:00Z]
+  [timing name=premerge-cx-slow seconds=1500 load=4.0 at=2026-10-09T13:00:00Z]
+  [timing name=premerge-cx-slow seconds=1500 load=4.0 at=2026-10-09T14:00:00Z]]'
 
 # 6 — with the override UNSET the default path is read exactly as before, so the
 #     row still sitting there fails the step. The override moves the path and
@@ -210,4 +245,4 @@ if [ "$fails" -gt 0 ]; then
   echo "verification-budget self-test: $fails failure(s)"
   exit 1
 fi
-echo "verification-budget self-test OK — 10 properties, all planted under $T (never the real timings path)"
+echo "verification-budget self-test OK — 13 properties, all planted under $T (never the real timings path)"
