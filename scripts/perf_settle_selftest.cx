@@ -1,0 +1,47 @@
+# perf_settle_selftest.cx (cx-private#1915) — the post-merge verdict's perf-row settlement, run
+# against a planted checkout. flows/private-acts.cx's settle-perf-rows used to promote a tick's
+# perf-pair rows to the head record only when the WHOLE tick was green. No tick was all-green
+# for days, so the record was never seeded and perf-pair judged nothing. Meanwhile `cx fmt`'s
+# peak grew 616 -> 768 MB. Each case plants vcx/target/bench-pair.json and the perf-pair step's
+# logs, calls the public verdict act the loop calls, and reads where the rows went.
+#
+#   cx --allow-read --allow-write --allow-subprocess --allow-env --allow-clock scripts/perf_settle_selftest.cx
+[?lib './flows/private-acts.cx' as=ci]
+
+[?def die scope=private impure ($msg) ([$io:write-line [$env:stderr] $msg], [$env:exit 1], null)]
+
+[?def plant scope=private impure ($c $pp-log $pp-err)
+  [?let [= $t [$concat $c '/vcx/target']]
+        [= $_d [$io:make-dirs [$concat $t '/steps']]]
+        [= $_r [$io:write-file [$concat $t '/bench-pair.json'] '{"rows": 1}']]
+        [= $_h [?if [$io:is-file [$concat $t '/bench-head.json']] [then [$io:remove [$concat $t '/bench-head.json']]] [else null]]]
+        [= $_x [?if [$io:is-file [$concat $t '/bench-pair.red.json']] [then [$io:remove [$concat $t '/bench-pair.red.json']]] [else null]]]
+        [= $l [$concat $t '/steps/perf-pair.log']] [= $e [$concat $t '/steps/perf-pair.log.err']]
+        [= $_l0 [?if [$io:is-file $l] [then [$io:remove $l]] [else null]]]
+        [= $_e0 [?if [$io:is-file $e] [then [$io:remove $e]] [else null]]]
+        [= $_l [?if [= $pp-log null] [then null] [else [$io:write-file $l $pp-log]]]]
+        [= $_e [?if [= $pp-err null] [then null] [else [$io:write-file $e $pp-err]]]]
+    $t]]
+
+[?def where-went scope=private impure ($t)
+  [?if [$io:is-file [$concat $t '/bench-head.json']] [then 'head']
+    [else [?if [$io:is-file [$concat $t '/bench-pair.red.json']] [then 'aside'] [else 'nowhere']]]]]
+
+[?def one scope=private impure ($label $c $rc $pp-log $pp-err $want)
+  [?let [= $t [$plant $c $pp-log $pp-err]]
+        [= $_v [$ci:postmerge-verdict checkout=$c runner-cx='none'
+                  ran=[ran status='ran' rc=$rc sha='abc1234' suffix='' name='' t0='0' load='0']]]
+        [= $got [$where-went $t]]
+    [?if [= $got $want]
+      [then [?let [= $_p [$io:write-line [$env:stdout] [$concat '  ok   ' $label ' -> ' $got]]] 0]]
+      [else [?let [= $_p [$io:write-line [$env:stdout] [$concat '  FAIL ' $label ': rows went ' $got ', want ' $want]]] 1]]]]]
+
+[?let [= $c [$io:temp-dir 'perf-settle-selftest']]
+      [= $f [+ [$one 'a green tick promotes its rows' $c '0' 'perf-pair: ok' '' 'head']
+               [$one 'a red tick whose perf-pair step was green promotes them (#1915: the record is seeded)' $c '2' 'perf-pair: no head record — nothing judged' '' 'head']
+               [$one 'a red tick whose perf-pair found a regression moves them aside' $c '2' 'FAIL: performance regressions' 'make: *** [perf-pair] Error 1' 'aside']
+               [$one 'a red tick whose perf-pair did not run moves them aside' $c '2' null null 'aside']]]
+      [= $_rm [$io:remove-tree $c]]
+  [?if [= $f 0]
+    [then [$io:write-line [$env:stdout] 'perf-settle self-test OK — a green perf-pair step seeds or promotes the head record on any tick; a perf-pair red, or no perf-pair run, keeps a head off it (cx-private#1915)']]
+    [else [$die [$concat 'perf-settle self-test: ' [$string $f] ' failure(s)']]]]]
