@@ -98,6 +98,41 @@ EOF
 # is listed first — it must be checked out before the github row aborts the
 # script, in BOTH runs.
 
+# A run is bounded (DEPS_BOOTSTRAP_SELFTEST_SECONDS, default 120; a run takes
+# 1-36 s on the loop): on the 11779c611 tick one run's subshell slept 76 min
+# with no CPU and no child in the step's group until the liveness watch killed
+# the step (exit 124, nothing named). A hung run now prints its process tree
+# (every descendant, whatever its group) and is killed, and the selftest is
+# red at once, naming the run.
+BOUND="${DEPS_BOOTSTRAP_SELFTEST_SECONDS:-120}"
+descendants() {
+  ps -A -o pid=,ppid= | awk -v root="$1" '
+    { kids[$2] = kids[$2] " " $1 }
+    END { q[1] = root; n = 1; i = 1
+          while (i <= n) { split(kids[q[i]], k, " "); for (j in k) { n++; q[n] = k[j]; print k[j] }; i++ } }'
+}
+bounded() {
+  # $1 = the run's name; the rest = the command. Answers the command's status,
+  # or 124 when it outlived BOUND.
+  name="$1"; shift
+  "$@" &
+  bpid=$!
+  waited=0
+  while kill -0 "$bpid" 2>/dev/null; do
+    if [ "$waited" -ge "$BOUND" ]; then
+      echo "deps_bootstrap_selftest: the $name run HUNG — alive after ${BOUND} s; its process tree:" >&2
+      tree="$bpid $(descendants "$bpid" | tr '\n' ' ')"
+      for t in $tree; do ps -o pid=,ppid=,pgid=,stat=,time=,command= -p "$t" 2>/dev/null | sed 's/^/  /' >&2; done
+      for t in $tree; do kill -9 "$t" 2>/dev/null; done
+      wait "$bpid" 2>/dev/null
+      return 124
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  wait "$bpid"
+}
+
 run_bootstrap() {
   # $1 = CX_DEPS_TOKEN value ("" for unset), $2 = output capture file.
   # deps_bootstrap.sh always `cd`s to its OWN repo root (dirname "$0"/..) —
@@ -117,9 +152,13 @@ RED_LOG="$WORK/red.log"
 GREEN_LOG="$WORK/green.log"
 
 set +e
-run_bootstrap "" "$RED_LOG";         red_status=$?
-run_bootstrap "$TOKEN" "$GREEN_LOG"; green_status=$?
+bounded RED run_bootstrap "" "$RED_LOG";           red_status=$?
+bounded GREEN run_bootstrap "$TOKEN" "$GREEN_LOG"; green_status=$?
 set -e
+if [ "$red_status" -eq 124 ] || [ "$green_status" -eq 124 ]; then
+  echo "deps_bootstrap_selftest: RED — a run hung (red=$red_status green=$green_status); its tree is above" >&2
+  exit 1
+fi
 
 fail=0
 
