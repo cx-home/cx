@@ -417,6 +417,7 @@ step_globs() {
     # timings a run leaves behind; the self-test reads the step and its own
     # source. Neither reads the tree, so neither runs when the tree moves.
     check-verification-budget)     echo "scripts/check_verification_budget.cx scripts/verification_budget.cxd" ;;
+    premerge-record)               echo "scripts/premerge_record.sh scripts/verification_timings_lib.sh deps.cxd" ;;
     check-verification-budget-selftest) echo "scripts/check_verification_budget.cx scripts/verification_budget_selftest.sh" ;;
     # RULED: RUN-2: the keep-going selftest reads the `test:` recipe, its own
     # source and (#1758, B3) scripts/test_changed.sh's SERIAL_TAIL.
