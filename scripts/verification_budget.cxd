@@ -26,7 +26,7 @@
     [what 'make test — the whole TEST_TARGETS union, the post-merge run of cx-private (scripts/postmerge_steps.cx)']
     [measured '2,575 s on 715d2262a (2026-10-09 10:53Z, load 9.35 at its start): prebuild 314 + the parallel phase 1,016 (test-vcx-suite 999) + the load-sensitive phase 1,245 (perf-pair 529); 2,738-6,239 s on the eight ticks before it, median about 4,500 s — the rows the loop wrote. Before: 3,600 s (the 60-minute sentence of #1562), 10,516 s on 57745f541 (2026-09-19)']
     [moved-by 1903]
-    [note 'the owner 2026-10-09 13:15Z (#1903): the pre-merge run of every repository at or under 20 minutes, the budget enforced by a gate step; judged on the median of the last five runs (check_verification_budget.cx). It reds until the cuts of #1903 land, which is the point.']]
+    [note 'the owner 2026-10-09 13:15Z (#1903): the pre-merge run of every repository at or under 20 minutes, the budget enforced by a gate step; judged on the median of the last five runs (check_verification_budget.cx). It reds until the cuts of #1903 land, which is the point. BUDGET-LOAD = (a) (owner 2026-10-10 12:44Z, #1917): only QUIET runs judge, a load at or under 8 (the #1450 bound); a loaded tick is recorded and reported not judged (load N), never red. The bound did not move.']]
 
   [bound name=premerge-* seconds=1200
     [what 'the pre-merge run of each pinned repository — make deps + make check at its pin with the cx of the tree, one premerge-<repo> row per repository (scripts/premerge_record.sh, make premerge-record)']
