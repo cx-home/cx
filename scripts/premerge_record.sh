@@ -13,6 +13,7 @@
 #
 # Exit 0 when it measured (whatever it found); 2 when it cannot run at all.
 set -u
+exec </dev/null # nothing here reads the caller's stdin; a stray read must not wait on the runner's
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"; cd "$ROOT" || exit 2
 . "$ROOT/scripts/verification_timings_lib.sh"
 CX=${CX_BIN:-$ROOT/deps/cx-core-code/vcx/target/cx}
@@ -47,9 +48,15 @@ one() { # one <repo> — prints `<repo> <rc> <seconds> <load>`
 export -f one sample_load_1m; export W ROOT CX RUN_LOAD
 results=$(printf '%s\n' $repos | xargs -P "$JOBS" -I{} bash -c 'one "$@"' _ {})
 at=$(date -u +%FT%TZ); rec=0; red=''
-while read -r r rc secs load; do
+# No here-string (cx-private#1917): on the loop's 3c2523d22 tick (2026-10-10 ~20:00Z) bash could not
+# create the here-string's pipe ("cannot create temp file for here-document: No space left on
+# device") after 76 min of checks; the step then printed nothing and used no CPU until the #1787
+# stall kill 30 min later, and every row was lost. Splitting the variable needs no descriptor.
+old_ifs=$IFS; IFS=$'\n'; set -f; lines=($results); IFS=$old_ifs; set +f
+for line in "${lines[@]}"; do
+  set -f; set -- $line; set +f; r=${1:-}; rc=${2:-}; secs=${3:-}; load=${4:-}
   [ -n "$r" ] || continue
   if [ "$rc" = 0 ]; then write_timing_row "$TIMINGS" "premerge-$r" "$secs" "$load" "$at"; rec=$((rec + 1)); echo "  premerge-$r  ${secs}s  load $load  recorded"
-  else red="$red $r"; echo "  premerge-$r  ${secs}s  rc=$rc  NOT recorded (its check is red: tail below)"; tail -3 "$W/$r.log" | sed 's/^/      /'; fi
-done <<< "$results"
+  else red="$red $r"; echo "  premerge-$r  ${secs}s  rc=$rc  NOT recorded (its check is red: tail below)"; tail -3 "$W/$r.log" 2>/dev/null | sed 's/^/      /'; fi
+done
 echo "premerge-record: $rec row(s) to $TIMINGS${red:+; red, not recorded:$red}"
