@@ -459,10 +459,14 @@
       [where [and [= $r@exit-code 0] [= [$strings:trim [$string $r@stdout]] '7']]]
       [yield {ms: [/ [- $t1 $t0] 1000000.0e0], rss: [$peak-rss-mb [$string $r@stderr]]}]]]
     [= $_rm ([$io:remove $data], [$io:remove $prog], [$io:remove-dir $dir])]
+    [; the peak row is load_sensitive: it moves with the box (cx-private#1915's first judged tick,
+       b347ba67e at load 260: 53.1 MB against 27.9 recorded at load 3; at load 40-60 the same binary
+       reads 31-32 MB, or 49 MB on one run in five — a collector beside the fold), so compare_bench
+       judges it on a quiet box only, like code_streaming's ]
     [?if [< [$count $runs] 3]
       [then [$die 'the csv bulk-load program failed or misanswered on the 200k-record corpus — the workload.csv_bulk_200k rows cannot be measured']]
       [else {'workload.csv_bulk_200k_ms': {median: [$math:median [?for [in $x $runs] [yield $x.ms]]], unit: 'ms'},
-             'workload.csv_bulk_200k_peak_rss_mb': [$rss-row 'the csv bulk-load program' [?for [in $x $runs] [yield $x.rss]]]}]]]]
+             'workload.csv_bulk_200k_peak_rss_mb': [$map:put [$rss-row 'the csv bulk-load program' [?for [in $x $runs] [yield $x.rss]]] 'load_sensitive' true]}]]]]
 
 [; #1884 (4) — a SERVED-LOOP workload row, the webhook-saga shape that
    cx-private#1882 caught: 300 orders, each STARTED (charge runs, the run
