@@ -326,4 +326,7 @@
   [patch sha=66b67903e0694559f00772cd82ff6c0903c18f36 family=vgc issue='cx-home/v#16']
   [patch sha=1cbc5dd51f124c391bc112d1f805ea652bc065d6 family=vgc issue='cx-home/v#16']
   [patch sha=66580d40286b1beff05d8b9f6b3eb76254fb7c26 family=vgc issue='cx-home/v#16']
+  [patch sha=2af40f00f51ee09a7625a7e54dd7171e6bc05deb family=vlib issue='cx-home/v#25']
+  [patch sha=0cad9fce7833b3e976cbb082b2588ed3d62df7e1 family=vlib issue='cx-core-code#124']
+  [patch sha=75efae048c97afa2b361ca787b6832b763749ff2 family=vgc issue='cx-home/v#14']
 ]
