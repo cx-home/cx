@@ -21,20 +21,17 @@ An exclusion whose issue is closed, or now carries what the gate asks for,
 is reported as stale so the row can go.
 #]]
 
-  [exclude repo=cx-private number=1697 why='SHIP-2: a duplicate of cx-core-code#2 (the same DEPS_V_DIRS defect, filed in the owning repository)']
   [exclude repo=cx-private number=1622 why='SHIP-2: stale and bound by D35a (the five register files moved to their pins)']
   [exclude repo=cx-private number=1444 why='SHIP-2: blocked outside the tree — a question for upstream V; posting it is the owner\'s']
-  [exclude repo=cx-private number=1443 why='owner 2026-10-09: in v0.18 (every V GC/memory/scaling issue) — the V fork half is gaps2\'s; the label is on, this row only records the history']
-  [exclude repo=cx-private number=1011 why='SHIP-2: blocked outside the tree — needs a Windows runner (parked on v0.19)']
   [exclude repo=cx-private number=954 why='SHIP-2: blocked outside the tree — Linguist\'s adoption bar']
-  [exclude repo=cx-private number=834 why='owner 2026-10-09: in v0.18 (every V GC/memory/scaling issue) — a signal-free linux STW in the V fork, verified on the Linux CI lane; the label is on, this row only records the history']
   [exclude repo=cx-private number=801 why='SHIP-2: not scheduled by its own record; its open decision is ruled at scheduling']
   [exclude repo=cx-private number=784 why='SHIP-2: not scheduled by its own record — after M5\'s replica consumer']
-  [exclude repo=cx-private number=521 why='SHIP-2: trigger-bound — multi-node demand proven by a consumer']
   [exclude repo=cx-private number=517 why='SHIP-2: Windows investigation-only by ruling; no Windows host']
   [exclude repo=cx-platform-xap number=9 why='SHIP-2: HKEY-1 (Letter 125 = (a)) puts it after the v0.18.0 cut']  [; version-literal-ok — the ruling names the cut ]
   [exclude repo=cx-platform-xap number=8 why='SHIP-2: a duplicate of cx-platform-xap#4 (the umbrella\'s pre-split path scans)']
   [exclude repo=cx-platform-xap number=6 why='SHIP-2: a duplicate of cx-platform-xap#4 (the same panic of the pinned layout)']
+  [exclude repo=cx-platform-store number=18 why='owner 2026-10-10 00:33Z: parked on v0.19 by word (retitled v0.19, milestone v0.19) — store Phase 3, the 1.0-production geo-distributed plane; after the v0.18.0 cut']  [; version-literal-ok — the ruling names the cut ]
+  [exclude repo=cx-platform-fabric number=5 why='owner 2026-10-10 00:33Z: parked on v0.19 by word (retitled v0.19, milestone v0.19) — fabric multi-writer plane on store Phase 3; after the v0.18.0 cut']  [; version-literal-ok — the ruling names the cut ]
 
   [parking milestone='v0.19' why='LBL-1: v0.19 stays a parking milestone only for what the owner parks by word']
 ]
