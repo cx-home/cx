@@ -272,4 +272,7 @@
   [patch sha=a140c64f295d4ca51020f08fb6ce2bfb88e2ec13 family=vgc issue='cx-home/v#12']
   [patch sha=458a7996872b7d380a152a93719b7e86403b2f32 family=vgc issue='cx-home/v#15']
   [patch sha=e2ee7a68e90aacf450740eaf7f24ca4501f09f53 family=vgc issue='cx-home/v#12']
+  [patch sha=5fa49a3ac6233f0ab499f5fa24c5df93aaf7db22 family=usecache issue='cx-home/v#18']
+  [patch sha=fbe27f1d64d0b21fa7990c2e2a9813d50fb4b73c family=vgc issue='cx-private#1916']
+  [patch sha=792afb93c6b099f3b6aebd4546e041d8baa860f1 family=bench issue='cx-private#1916']
 ]
