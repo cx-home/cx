@@ -30,15 +30,21 @@ if [ -z "${PREMERGE_REPOS:-}" ] && [ -r "$TIMINGS" ]; then
     echo "${s:-0} $r"
   done | sort -s -k1,1nr | awk '{print $2}')
 fi
+# The load is sampled ONCE, at the record's start, and every row carries it (BUDGET-LOAD = (a),
+# owner 2026-10-10: a row judges only at a load at or under 8). Sampled per repository it read
+# the record's own JOBS slots: on 2026-10-10 08:10Z the first four repositories carried 3.92 and
+# every later one 22-31 from its siblings alone, so the same quiet box judged four rows and
+# refused thirteen. The union's row is sampled at RUN-START for the same reason.
+RUN_LOAD=$(sample_load_1m)
 one() { # one <repo> — prints `<repo> <rc> <seconds> <load>`
   r=$1; c="$W/$r"
   git clone -q "$ROOT/deps/$r" "$c" 2>/dev/null && git -C "$c" remote set-url origin "https://github.com/cx-home/$r.git" \
     || { echo "$r clone-failed 0 0"; return; }
-  l=$(sample_load_1m); s=$(date +%s)
+  l=$RUN_LOAD; s=$(date +%s)
   ( cd "$c" && make deps CX_BIN="$CX" && make check CX_BIN="$CX" ) > "$W/$r.log" 2>&1; rc=$?
   echo "$r $rc $(( $(date +%s) - s )) $l"
 }
-export -f one sample_load_1m; export W ROOT CX
+export -f one sample_load_1m; export W ROOT CX RUN_LOAD
 results=$(printf '%s\n' $repos | xargs -P "$JOBS" -I{} bash -c 'one "$@"' _ {})
 at=$(date -u +%FT%TZ); rec=0; red=''
 while read -r r rc secs load; do
