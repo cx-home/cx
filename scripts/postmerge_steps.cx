@@ -11,9 +11,12 @@
 # V test compiled for 26 minutes that compiles in two on a quiet box.
 #
 # THE RUN, in order:
-#   1. prebuild — `make deps-sync`, `make build-vcx`, `make build-vcx-dev` on
-#      the post-merge runner, one at a time (as make test and test_changed.sh
-#      prebuild): every step after runs `-o` of both binaries, so none relinks.
+#   1. prebuild — `make deps-sync`, `make -j2 build-vcx`, `make -j2
+#      build-vcx-dev` on the post-merge runner, one at a time (as make test and
+#      test_changed.sh prebuild): every step after runs `-o` of both binaries,
+#      so none relinks. Each build's two artifacts (lib and cli, lib-dev and
+#      cli-dev) are independent single-threaded compiles, so -j2 builds them
+#      side by side (cx-private#1917, PREBUILD-JOBS below).
 #   2. the plan — test_changed.sh's own --dry-run split, `parallel (-j):` and
 #      `serial tail:`, of the full union (its build-infra escalation, over a
 #      change list naming the Makefile) or of the selection from BASE; its
@@ -168,6 +171,17 @@
 # cores (never below the pool's share); the rest keep cores / N.
 [?const WIDE ('test-vcx-suite', 'test-vcx-code')]
 
+# THE PREBUILD'S WIDTH (cx-private#1917). build-vcx is two compiles, libcx
+# (-prod) and cx, each one V-to-C pass and one cc of one C file, so each runs
+# on one core. Core's `build: re2-shim lib cli` ran them one after the other,
+# with nothing else of the run started: 213 s of c4b29e8f8's 270 s serial
+# prebuild. cx relinks on every tick because its build id carries the
+# cx-private commit. Under -j2 the one make builds re2-shim first, then lib
+# and cli side by side; build-vcx-dev's lib-dev and cli-dev are the same
+# shape. Measured on the core tree at c8414c87 (load 31-166): lib + cli one
+# after the other 248 s, -j2 140 s.
+[?const PREBUILD-JOBS '-j2']
+
 # THE BENCH BUILDS (cx-private#1903). perf-pair and bench-code-pattern-compile
 # are load-sensitive rows — their CLOCKS are — but each compiled the evaluator
 # at -prod inside the quiet phase every tick (streaming_bench alone: 164 s of
@@ -253,7 +267,8 @@
   [else [?let
     [= $_d [?if [$io:exists [$concat $c '/vcx/target/steps']] [then [$io:remove-tree [$concat $c '/vcx/target/steps']]] [else null]]]
     [= $pre [?to-sequence [?for [in $t ('deps-sync', 'build-vcx', 'build-vcx-dev')]
-              [yield [$serial-step $c $t ('make', '--no-print-directory', $t) 'post-merge']]]]]
+              [yield [$serial-step $c $t [?if [= $t 'deps-sync'] [then ('make', '--no-print-directory', $t)]
+                                           [else ('make', '--no-print-directory', PREBUILD-JOBS, $t)]] 'post-merge']]]]]
     [?if [> [$count [$red-names $pre]] 0] [then [$finish $pre 'the prebuild is red: no step ran']]
     [else [?let
       [= $p [$plan $c $rest]]
