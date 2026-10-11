@@ -90,7 +90,11 @@ OWNERS=$(sed '/\[doc \[#/,/#\]\]/d' "$MANIFEST" \
 
 # ── resolve the selection ───────────────────────────────────────────────────
 want_driver=1
-shard_tests=$(printf '%s\n' "$OWNERS" | awk '{ print $1, $2 }' | awk '!seen[$0]++ { print $2 }')
+# One launch per TEST FILE, in manifest order: since cx-private#1917 every
+# shard row names the one binary code_eval_fixtures_shards_test.v, which starts
+# its shards as children (reading CX_FIXTURE_FILES itself), so a file named by
+# seven rows is still ONE step here, never seven copies of it.
+shard_tests=$(printf '%s\n' "$OWNERS" | awk '!seen[$2]++ { print $2 }')
 canon=""
 
 if [ -n "$SELECTION" ]; then
@@ -122,8 +126,8 @@ if [ -n "$SELECTION" ]; then
   canon=${canon# }
   # only the shards that own a named file
   shard_tests=$(printf '%s\n' "$OWNERS" \
-    | awk -v sel=" $canon " '{ if (index(sel, " " $3 " ")) print $1, $2 }' \
-    | awk '!seen[$0]++ { print $2 }')
+    | awk -v sel=" $canon " '{ if (index(sel, " " $3 " ")) print $2 }' \
+    | awk '!seen[$0]++')
 fi
 
 # A stale census from an earlier run would be summed into this one, so the

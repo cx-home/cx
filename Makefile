@@ -3636,13 +3636,7 @@ fixtures-census-reset:
 SUITE_SERIAL_RETRY := deps/cx-core-code/vcx/tests/env_retention_test.v \
                       deps/cx-core-code/vcx/tests/process_pty_test.v \
                       deps/cx-core-code/vcx/tests/code_eval_fixtures_test.v \
-                      deps/cx-core-code/vcx/tests/code_eval_fixtures_shard_1_test.v \
-                      deps/cx-core-code/vcx/tests/code_eval_fixtures_shard_2_test.v \
-                      deps/cx-core-code/vcx/tests/code_eval_fixtures_shard_3_test.v \
-                      deps/cx-core-code/vcx/tests/code_eval_fixtures_shard_4_test.v \
-                      deps/cx-core-code/vcx/tests/code_eval_fixtures_shard_5_test.v \
-                      deps/cx-core-code/vcx/tests/code_eval_fixtures_shard_6_test.v \
-                      deps/cx-core-code/vcx/tests/code_eval_fixtures_shard_7_test.v
+                      deps/cx-core-code/vcx/tests/code_eval_fixtures_shards_test.v
 
 # ── the grader's SHARDS carry its roster row too (#1448, RULED: 1448-a) ─────
 # 1448-a split the eval grading's stdlib walk out of code_eval_fixtures_test.v and
@@ -3653,7 +3647,11 @@ SUITE_SERIAL_RETRY := deps/cx-core-code/vcx/tests/env_retention_test.v \
 # row. A roster that named only the driver would have silently dropped the
 # class for five of six processes; `check-serial-retry-rosters` holds every row
 # to an existing file, and `check-fixture-shard-manifest` holds the shard set
-# and the manifest to each other.
+# and the manifest to each other. Since cx-private#1917 the shards are child
+# processes of ONE binary, code_eval_fixtures_shards_test.v (seven shard files
+# were seven full compiles of the interpreter, ~2,800 s of the suite's compile
+# on a pin move), so the class is one row: a child that exits early fails the
+# runner, and the serial retry re-runs every shard.
 
 # ── http_umbrella_test.v joined the real-socket class (#1445), historical ──
 # The post-merge run on ca5cb0996 (2026-09-13 22:48Z–23:09Z) failed ONLY at
@@ -3767,7 +3765,7 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="real-socket contention: live store/grpc endpoint under -j (\#648)" ;; \
 	  deps/cx-core-code/vcx/code/code_module_umbrella_test.v) \
 	    reason="\#1432 timing under load: test_retry_without_delay_does_not_suspend is a WALL-CLOCK control row (delay=0 must cost < 40 ms) and read 42 ms at load 190-218 while two pipelines built at -j; nothing in that head touched the retry path, and the bound is NOT loosened" ;; \
-	  deps/cx-core-code/vcx/tests/code_eval_fixtures_test.v|deps/cx-core-code/vcx/tests/code_eval_fixtures_shard_*_test.v) \
+	  deps/cx-core-code/vcx/tests/code_eval_fixtures_test.v|deps/cx-core-code/vcx/tests/code_eval_fixtures_shards_test.v) \
 	    reason="\#1432 early exit under load: the grader runs 20+ minutes over 4583 fixtures, and the failing run exited after 13.8 s with NO assertion while a parallel step relinked libcx.dylib/cx; the step's first line and its first failure now name the cx build identity, so a mid-run relink says so itself" ;; \
 	  deps/cx-core-code/vcx/tests/env_retention_test.v) \
 	    reason="\#1597 memory gauge under load: the bytes twelve connector loads retain over what two retain, read after forced collections, moves with the -gc e collection point under a -j storm (3.6 in the -j28 storm on 7ac722830, 98.4x in the storm on 684a12502, 0.05 idle); the 3.0 bound is NOT loosened" ;; \
@@ -3949,9 +3947,13 @@ check-serial-retry-rosters:
 # while every step stays green — and this refuses it, together with a file in
 # two shards, a row naming a file that does not exist, a shard row naming a
 # test file that does not exist, and a shard test file with no manifest row.
+# It also runs scripts/run_fixture_shards_selftest.sh (no compile, ~1 s): the
+# wrapper's resolution on a synthetic tree, including cx-private#1917's shape —
+# every shard row names ONE test file, which `make fixtures` launches once.
 .PHONY: check-fixture-shard-manifest
 check-fixture-shard-manifest:
 	@bash scripts/check_fixture_shard_manifest.sh
+	@sh scripts/run_fixture_shards_selftest.sh
 
 # ── fixtures (#1448, RULED: 1448-a) — the grader's ONE-COMMAND form ─────────
 # Before the shard split a pre-merge pipeline graded the corpus with one line

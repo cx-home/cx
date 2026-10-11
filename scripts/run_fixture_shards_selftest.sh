@@ -24,12 +24,17 @@
 #   H  the shard process sees CX_FIXTURE_FILES in the MANIFEST spelling
 #   I  the census is restricted to the shards that ran
 #   J  the manifest's own documentation is not read as rows (decoy)
+#   K  two shard rows naming ONE test file (cx-private#1917: every shard is a
+#      child of code_eval_fixtures_shards_test.v) launch that file ONCE,
+#      selected or not, and the census still sums both shards
 #
 # Exit 0 and the count line only when every case matches.
 set -u
 
 HERE="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
-for f in run_fixture_shards.sh fixtures_census.sh; do
+# verification_timings_lib.sh: the wrapper sources it for its RUN-5 timing row
+# (issue 1583); without it every case exited 1 before resolving anything.
+for f in run_fixture_shards.sh fixtures_census.sh verification_timings_lib.sh; do
 	[ -f "$HERE/$f" ] || { echo "SELFTEST FAILED: no $f beside this script" >&2; exit 1; }
 done
 
@@ -37,14 +42,16 @@ T=$(mktemp -d)
 trap 'rm -rf "$T"' EXIT
 fails=0
 
-mkdir -p "$T/scripts" "$T/vcx/tests/fixtures_grader" "$T/vcx/target" \
+# The tree is the post-split one (RULED: RS-7): the grader, its manifest and the
+# census directory live in the pinned cx-core-code checkout under deps/.
+mkdir -p "$T/scripts" "$T/deps/cx-core-code/vcx/tests/fixtures_grader" "$T/deps/cx-core-code/vcx/target" \
 	"$T/conformance/platform" "$T/conformance/stdlib" "$T/conformance/xap"
-cp "$HERE/run_fixture_shards.sh" "$HERE/fixtures_census.sh" "$T/scripts/"
+cp "$HERE/run_fixture_shards.sh" "$HERE/fixtures_census.sh" "$HERE/verification_timings_lib.sh" "$T/scripts/"
 
 # A manifest in the real row shape, with DECOYS inside the prose block: a
 # reader that reads its own documentation as data grades a shard that does not
 # exist (case J).
-cat > "$T/vcx/tests/fixtures_grader/fixture_shards.cxd" <<'MANIFEST'
+cat > "$T/deps/cx-core-code/vcx/tests/fixtures_grader/fixture_shards.cxd" <<'MANIFEST'
 [fixture-shards
   [doc [#
 A row is written `[shard name=s-decoy test=vcx/tests/decoy_test.v measured-ms=0 cases=0]`
@@ -65,9 +72,9 @@ MANIFEST
 for f in conformance/platform/alpha.cxd conformance/stdlib/beta.cxd conformance/xap/gamma.cxd; do
 	printf '[test-suite ring=1]\n' > "$T/$f"
 done
-touch "$T/vcx/tests/code_eval_fixtures_test.v" \
-	"$T/vcx/tests/code_eval_fixtures_shard_1_test.v" \
-	"$T/vcx/tests/code_eval_fixtures_shard_2_test.v"
+touch "$T/deps/cx-core-code/vcx/tests/code_eval_fixtures_test.v" \
+	"$T/deps/cx-core-code/vcx/tests/code_eval_fixtures_shard_1_test.v" \
+	"$T/deps/cx-core-code/vcx/tests/code_eval_fixtures_shard_2_test.v"
 
 # The fake `v`: run from vcx/ with the step as its last argument. It records the
 # launch and writes the census a real shard writes, so the census script has
@@ -81,10 +88,16 @@ echo "LAUNCHED $step CX_FIXTURE_FILES=[${CX_FIXTURE_FILES-<unset>}]" >> "$root/l
 case "$step" in
 *shard_1_test.v) s=s-1 ;;
 *shard_2_test.v) s=s-2 ;;
+*shards_test.v)
+	for s in s-1 s-2; do
+		printf 'shard=%s\nfiles=1\nran=7\nout_err_ran=3\nmodule:%s=3\n' "$s" "$s" \
+			> "$root/deps/cx-core-code/vcx/target/fixtures/$s.census"
+	done
+	exit 0 ;;
 *) exit 0 ;;
 esac
 printf 'shard=%s\nfiles=1\nran=7\nout_err_ran=3\nmodule:%s=3\n' "$s" "$s" \
-	> "$root/vcx/target/fixtures/$s.census"
+	> "$root/deps/cx-core-code/vcx/target/fixtures/$s.census"
 FAKEV
 chmod +x "$T/fake-v"
 
@@ -200,8 +213,28 @@ if run_case 0 "xap/gamma.cxd"; then
 	want G "a name spelled without the conformance/ prefix resolves the same" $?
 fi
 
+# K — the one-binary shape (cx-private#1917): both shard rows name the same
+#     test file; it is launched once, never once per row.
+CASE=K
+sed -E 's#test=vcx/tests/code_eval_fixtures_shard_[12]_test.v#test=vcx/tests/code_eval_fixtures_shards_test.v#' \
+	"$T/deps/cx-core-code/vcx/tests/fixtures_grader/fixture_shards.cxd" > "$T/manifest.k" &&
+	mv "$T/manifest.k" "$T/deps/cx-core-code/vcx/tests/fixtures_grader/fixture_shards.cxd"
+touch "$T/deps/cx-core-code/vcx/tests/code_eval_fixtures_shards_test.v"
+if run_case 0 ""; then
+	n=$(launched_count)
+	k=$(grep -c 'shards_test.v' "$T/launched")
+	[ "$n" -eq 2 ] && [ "$k" -eq 1 ] &&
+		grep -q 'stdlib corpus: 14 fixtures ran across 2 module file(s)' "$T/out"
+	want K "two rows naming one test file: driver + that file ONCE, census over both shards" $?
+fi
+if run_case 0 "conformance/platform/alpha.cxd conformance/xap/gamma.cxd"; then
+	n=$(launched_count)
+	grep -q 'shards_test.v' "$T/launched" && [ "$n" -eq 1 ]
+	want K "selected files of both shards: that file ONCE, no driver" $?
+fi
+
 if [ "$fails" -ne 0 ]; then
 	echo "run_fixture_shards selftest: $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "run_fixture_shards selftest: 10/10 (A/J unselected; B/C/D/G/H/I selected; E/F refused)"
+echo "run_fixture_shards selftest: 12/12 (A/J/K unselected; B/C/D/G/H/I/K selected; E/F refused)"
