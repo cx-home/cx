@@ -200,6 +200,10 @@
 # +1,473 s, so the phase's last step ended 3,186 s in although its longest took 2,581 s.
 # A step with no row (new, or no previous run) keeps its plan position after
 # the measured ones; the order among equals is the plan's.
+# The socket phase's pool takes its steps the same way: on 2ddbf280c's tick it
+# ran them in plan order, 4 at a time, and test-net-real (241 s, the phase's
+# longest) started 24 s in behind four short ones, so the phase took 265 s;
+# longest first it starts at 0 and the phase is about its own length.
 [?def last-seconds scope=private impure [returns any] ($c)
   [?let [= $r [$process:run ('sh', '-c', 'f=$(ls -1 "$0"/vcx/target/gate-prev-*.log 2>/dev/null | tail -1); if [ -n "$f" ]; then grep -a "^STEP-END " "$f"; fi; exit 0', $c) timeout-ms=60000]]
     [?to-sequence [?for [in $l [$strings:split [$string $r@stdout] "\n"]]
@@ -301,7 +305,8 @@
         [= $par [$c:pool-run $jobs $n $slot $vj 60000]]
         [= $wall [$ci:sensitive-wall]]
         [= $sn [$ci:sensitive-parallel]]
-        [= $ports [?if [> $sn 1] [then [?to-sequence [?for [in $t $shared] [where [not [$c:member $t $wall]]] [yield $t]]]] [else ()]]]
+        [= $ports [?if [> $sn 1] [then [$longest-first [?to-sequence [?for [in $t $shared] [where [not [$c:member $t $wall]]] [yield $t]]]
+                                                        [$last-seconds $c]]] [else ()]]]
         [= $alone [?to-sequence [?for [in $t $shared] [where [not [$c:member $t $ports]]] [yield $t]]]]
         [= $pjobs [?to-sequence [?for [in $t $ports]
                     [yield [job name=$t log=[$concat $c '/vcx/target/steps/' $t '.log'] stall-ms=[$string [$ci:stall-ms $t]] cwd=$c
