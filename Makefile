@@ -4815,10 +4815,19 @@ else rm -f $(BENCH_BIN_DIR)/$(1).key; \
   $(PATCHED_V) $(2) -o $(BENCH_BIN_DIR)/$(1) deps/cx-core-code/vcx/tests/runners/$(1).v && printf '%s' "$$k" > $(BENCH_BIN_DIR)/$(1).key; \
 fi
 endef
-.PHONY: bench-bins
+# The three compiles are independent, each a single-threaded -prod C compile
+# of the evaluator (one output file and key apiece), so they run side by side:
+# one after the other they were the run's third-longest step (d089a5332's
+# tick: 699 s at load ~8; 3c6ff3001's: 2,073 s at load 80-160), longer than
+# any compile in it but test-vcx-suite's (cx-private#1917).
+.PHONY: bench-bins bench-bin-streaming bench-bin-code-streaming bench-bin-pattern-compile
 bench-bins: build-vcx
+	@$(MAKE) --no-print-directory -j3 bench-bin-streaming bench-bin-code-streaming bench-bin-pattern-compile
+bench-bin-streaming:
 	$(call BENCH_COMPILE,streaming_bench,-prod)
+bench-bin-code-streaming:
 	$(call BENCH_COMPILE,code_streaming_throughput_bench,-enable-globals -prod)
+bench-bin-pattern-compile:
 	$(call BENCH_COMPILE,code_pattern_compile_bench,-enable-globals -prod)
 bench-streaming: build-vcx
 	$(call BENCH_COMPILE,streaming_bench,-prod)
