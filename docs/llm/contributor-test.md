@@ -96,7 +96,7 @@ three baselines together, deliberately, naming each id:
 
 | Baseline | Step | What moves it |
 |---|---|---|
-| the parser's full-corpus census | `vcx/tests/cxparse_full_corpus_diff_test.v` | every new `in-cx` input — bump its pinned count, naming the ids |
+| the parser's full-corpus census | `vcx/tests/parser_units_umbrella_test.v` (its `cxparse_full_corpus_diff` section) | every new `in-cx` input — bump its pinned count, naming the ids |
 | the headline rebless scope | `vcx/tests/cxparse_headline_rebless_scan_test.v` | regenerate with `CX_REBLESS_SCAN_WRITE=1`, commit the scope file |
 | the Tier-2 address baseline | `make address-baseline-gate` | an extraction or a case removal: `make address-baseline-capture`, the ids named in the commit |
 

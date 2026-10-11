@@ -3295,7 +3295,8 @@ test-code-diagram: build-vcx
 # fails naming the file and the first divergent case id. It is the standing
 # form of CXF-5's rule, and it is in TEST_TARGETS.
 #
-# NOT a second copy of cxparse_full_corpus_diff_test.v: that census diffs the
+# NOT a second copy of the cxparse census (parser_units_umbrella_test.v's
+# cxparse_full_corpus_diff section since cx-private#1917): that census diffs the
 # data and program readers over the `in_cx` SECTIONS of the corpus and locks
 # bucket counts. This one reads the `.cxd` documents themselves — the position
 # the defect lived in, which no step read.
@@ -5091,7 +5092,7 @@ test-vcx-services: build-vcx
 .PHONY: test-vcx-diagram-roundtrip
 test-vcx-diagram-roundtrip: build-vcx
 	$(MAKE) test-code-diagram
-	VFLAGS='$(VFLAGS_VCX)' $(V) test deps/cx-core-code/vcx/tests/code_diagram_roundtrip_test.v \
+	VFLAGS='$(VFLAGS_VCX)' $(V) test deps/cx-core-code/vcx/tests/parser_units_umbrella_test.v \
 		deps/cx-core-code/vcx/tests/code_units_umbrella_test.v
 
 # ── Gate 12 — reference renderer (CLI + web + LSP) ────────────────────────

@@ -31,3 +31,11 @@
 #absorbed vcx/tests/codecs_formats_umbrella_test.v
 #absorbed vcx/tests/cxparse_forks_umbrella_test.v
 #absorbed vcx/tests/gc_boehm_aggregate_test.v
+
+# cx-private#1917 (2026-10-11, window 10): cxparse_full_corpus_diff (the pinned census; its
+# baseline now lives in this umbrella's section) and code_diagram_roundtrip (gate 9; its
+# subprocess grant moved from testsuite_begin into each graphviz test, and its two DSC-1c
+# roads, never run as zz_test_/zzz_test_, run as test_zz_/test_zzz_) absorbed in
+# cx-core-code f5b1a890. test_changed.sh and test-vcx-diagram-roundtrip follow.
+#absorbed vcx/tests/cxparse_full_corpus_diff_test.v
+#absorbed vcx/tests/code_diagram_roundtrip_test.v

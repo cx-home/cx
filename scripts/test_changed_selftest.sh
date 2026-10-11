@@ -135,7 +135,7 @@ fi
 # every remaining platform PRODUCT directory (RULED: RS-12) -- vcx/ now
 # carries only code/, the Ring-1 core, so a module source in it selects the
 # generic core graders (code_eval_fixtures_test.v, parser_units_umbrella_test.v,
-# cxparse_full_corpus_diff_test.v, reader_parity_test.v — every one of vcx/code/'s
+# reader_parity_test.v (the census rides parser_units since cx-private#1917) — every one of vcx/code/'s
 # own files, not this module's), beside its own shard and its named umbrellas.
 # vcx/code/stdlib_crypto.v: its shard is stdlib-4, and four umbrella tests name
 # it literally outside that shard -- cli, identity, modules, stdlib. The

@@ -3,7 +3,8 @@
 # (~2,200 CPU-s of compile for ~12 s of work in the v0.16.0 record run).
 #
 # NOT listed, on purpose:
-#   code_diagram_roundtrip_test.v — named in the retired cx-v mirror's rsync
+#   code_diagram_roundtrip_test.v (absorbed into parser_units by cx-private#1917, the
+#     mirror being retired) — named in the retired cx-v mirror's rsync
 #     --exclude list (RULED: D81a; it reads @VMODROOT/../stdlib/diagram.cx,
 #     which escaped the mirror's package). Absorbing it would force that exclusion
 #     onto the whole umbrella and drop every lane below out of the cx-v
