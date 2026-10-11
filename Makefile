@@ -2240,10 +2240,11 @@ check-null-absence-conflation:
 # read/write/open). Runs as part of `test-vcx` too; this dedicated target is
 # the named gate.
 # (#700: effect_alignment_test.v consolidated into the eval_semantics
-# umbrella — the named target retargets to the umbrella like its siblings.)
+# umbrella — the named target retargets to the umbrella like its siblings;
+# cx-private#1917 folded eval_semantics into code_units_umbrella_test.v.)
 .PHONY: check-effect-alignment
 check-effect-alignment: build-vcx
-	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) test deps/cx-core-code/vcx/tests/eval_semantics_umbrella_test.v
+	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) test deps/cx-core-code/vcx/tests/code_units_umbrella_test.v
 
 # ── check-code-spec-consistency (#707 item 4 / code.md §11.4.1 gates 1-3 +
 # the clean-room no-impl-anchor / no-dangling-decision checks). The tool
@@ -5132,9 +5133,7 @@ test-renderer: build-vcx
 # 28.8 (structural-sharing perf budget lives at gate 30.5).
 .PHONY: test-modify-action-coverage
 test-modify-action-coverage: build-vcx
-	VFLAGS='$(VFLAGS_VCX)' v test deps/cx-core-code/vcx/tests/eval_semantics_umbrella_test.v \
-		deps/cx-core-code/vcx/tests/code_units_umbrella_test.v \
-		deps/cx-core-code/vcx/tests/modify_node_codec_test.v
+	VFLAGS='$(VFLAGS_VCX)' v test deps/cx-core-code/vcx/tests/code_units_umbrella_test.v
 
 # ── Gate 30.5 — [?modify] structural-sharing perf budget ──────────────────
 # Drives deps/cx-core-code/vcx/tests/runners/code_modify_sharing_bench.v — single-match

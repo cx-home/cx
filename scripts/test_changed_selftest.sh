@@ -701,7 +701,7 @@ fi
 
 # ── U — a front-door page a pinned test reads by name (#1703's class) ───────
 # Pinned suite files read pages of THIS tree through testenv.front_door_root()
-# and a name they spell out: planar_umbrella_test.v reads
+# and a name they spell out: code_units_umbrella_test.v (planar's section) reads
 # ledger/rulings_2026_09_17_totality_audit_1250.md, the rebless scan and the
 # identity umbrella read files at the top of _gate_evidence/. ledger/ and
 # _gate_evidence/ select nothing, so a change to exactly such a page skipped
@@ -711,7 +711,7 @@ fi
 run ledger/rulings_2026_09_17_totality_audit_1250.md > "$T/u1"
 run ledger/README.md _gate_evidence/pipeline_x/RESULTS.md > "$T/u2"
 u_bad=""
-suite_files_of "$T/u1" | grep -q 'planar_umbrella_test\.v$' || u_bad="$u_bad the-1250-page-selected:[$(suite_line "$T/u1")]"
+suite_files_of "$T/u1" | grep -q 'code_units_umbrella_test\.v$' || u_bad="$u_bad the-1250-page-selected:[$(suite_line "$T/u1")]"
 [ -z "$(suite_files_of "$T/u2")" ] || u_bad="$u_bad the-index-or-evidence-selected:[$(suite_line "$T/u2")]"
 if [ -z "$u_bad" ]; then
 	ok U "a ledger page a pinned test reads by name selects that test; the index and a branch's evidence select none"

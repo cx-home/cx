@@ -103,7 +103,7 @@
 # cx-core-code's corpus beside the module's source (cx-core-code#103).
 [?const CROSS-SUITE (
   [xs code='CXER0120' file='deps/cx-core-code/conformance/stdlib/cx.cxd'],
-  [xs code='CXER0273' file='deps/cx-core-code/vcx/tests/eval_semantics_umbrella_test.v'],
+  [xs code='CXER0273' file='deps/cx-core-code/vcx/tests/code_units_umbrella_test.v'],
   [xs code='CXER0275' file='deps/cx-platform-store/conformance/platform/store.cxd'],
   [xs code='CXER0282' file='deps/cx-core-code/conformance/stdlib/diagram.cxd'])]
 

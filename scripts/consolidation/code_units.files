@@ -19,3 +19,13 @@
 # cx-private#1917 (2026-10-11): node_units_umbrella_test.v (1 s of tests, a full code + xap
 # compile) absorbed in cx-core-code 8264b000; test-modify-action-coverage names code_units.
 #absorbed vcx/tests/node_units_umbrella_test.v
+
+# cx-private#1917 (2026-10-11, window 10): four module-importing suite binaries, each a full
+# code + xap compile (132-152 s on the b90e1e766 tick) for 0.6-18 s of tests, absorbed in
+# cx-core-code e18f6b32. check-effect-alignment and test-modify-action-coverage name code_units;
+# check_no_nested_make's default selection, check_code_fixtures' CXER0273 row and the 1250-page
+# row of test_changed_selftest follow the planar/modules/eval_semantics sections here.
+#absorbed vcx/tests/planar_umbrella_test.v
+#absorbed vcx/tests/modules_umbrella_test.v
+#absorbed vcx/tests/eval_semantics_umbrella_test.v
+#absorbed vcx/tests/stdlib_umbrella_test.v
