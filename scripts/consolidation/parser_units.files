@@ -19,3 +19,15 @@
 #absorbed vcx/tests/typed_attr_test.v
 #absorbed vcx/tests/bare_url_attr_value_test.v
 #absorbed vcx/tests/predicate_eval_test.v
+
+# cx-private#1917 (test-vcx-suite compile wall, 2026-10-11): six suite binaries, each a full
+# compile of code + xap for 1-3 s of tests (cxparse_forks ~40 s), absorbed by hand-run
+# consolidate_tests.cx in cx-core-code (8264b000; the paths stay repo-relative, as above).
+# Three colliding file-local helpers renamed in their own sections: codecs_formats canon ->
+# canon_strict, lexicon_surface canon -> canon_code, tmp_doc -> lex_tmp_doc.
+#absorbed vcx/tests/numerics_temporal_umbrella_test.v
+#absorbed vcx/tests/lexicon_surface_umbrella_test.v
+#absorbed vcx/tests/identity_umbrella_test.v
+#absorbed vcx/tests/codecs_formats_umbrella_test.v
+#absorbed vcx/tests/cxparse_forks_umbrella_test.v
+#absorbed vcx/tests/gc_boehm_aggregate_test.v

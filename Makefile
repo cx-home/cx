@@ -5133,7 +5133,7 @@ test-renderer: build-vcx
 .PHONY: test-modify-action-coverage
 test-modify-action-coverage: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v test deps/cx-core-code/vcx/tests/eval_semantics_umbrella_test.v \
-		deps/cx-core-code/vcx/tests/node_units_umbrella_test.v \
+		deps/cx-core-code/vcx/tests/code_units_umbrella_test.v \
 		deps/cx-core-code/vcx/tests/modify_node_codec_test.v
 
 # ── Gate 30.5 — [?modify] structural-sharing perf budget ──────────────────
