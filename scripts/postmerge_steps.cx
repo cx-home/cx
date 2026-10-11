@@ -26,7 +26,8 @@
 #   4. the storm's load-SENSITIVE steps (flows/load.cxd's rows), one at a time
 #      on the post-merge runner itself, the box quiet;
 #   5. the serial tail, in its order, only after every step before it passed
-#      (site-live-check last: SITER-1).
+#      (site-live-check last: SITER-1); a site reader after a site step that
+#      passed reads that step's site/ (`make -o site`, THE TAIL'S SITE below).
 # Every step is red or green on its own and every red one is named (-k, RUN-2):
 # each ended step's output goes to the log between its STEP-START and
 # STEP-END lines with make's own `make: *** [<step>] Error <n>` line for a red
@@ -201,6 +202,31 @@
                                     [$strings:pad-start [$string $i] 5 '0'] ' ' $t]]]]]
     [?to-sequence [?for [in $k [$sort $keyed]] [yield [$nth [$str-split-whitespace $k] 2]]]]]]
 
+# THE TAIL'S SITE (cx-private#1917). Three tail steps read site/ and each one's
+# make assembled it again first: test-playground-primer (`make site` in its
+# recipe), test-site-phone-width and nav-shape-check (`site` a prerequisite),
+# ~11 s of guide render each, one after another in the serial tail. Nothing
+# else writes site/ once the storm has drained (test_changed.sh's SERIAL_TAIL
+# note) and none of the three writes it, so once one of them has passed — its
+# site/ assembled whole from this tree — a later reader runs `make -o site`:
+# it reads the site that step assembled. A red builder proves nothing about
+# site/, so the next reader assembles it again.
+[?const SITE-BUILDERS ('test-playground-primer', 'test-site-phone-width', 'nav-shape-check')]
+[?const SITE-READERS ('test-site-phone-width', 'nav-shape-check')]
+
+[?def run-tail scope=private impure [returns any] ($c $tail $suite)
+  [?loop [= $i 1] [= $acc ()] [= $fresh '']
+    [?if [> $i [$count $tail]] [then [break $acc]]
+      [else [?let [= $t [$string [$nth $tail $i]]]
+                  [= $w [$make-words $t $suite]]
+                  [= $reuse [and [not [= $fresh '']] [$c:member $t SITE-READERS]]]
+                  [= $_s [?if $reuse [then [$say [$concat 'postmerge-steps: ' $t ' reads the site ' $fresh ' assembled (make -o site)']]] [else null]]]
+                  [= $e [$serial-step $c $t [?if $reuse [then [$c:cat2 ('make', '-o', 'site') [?to-sequence [?drop 1 $w]]]] [else $w]] 'tail']]
+                  [= $ok [= [$string $e@rc] '0']]
+        [continue [+ $i 1] [$c:cat2 $acc ($e)]
+                  [?if [and $ok [$c:member $t SITE-BUILDERS]] [then [?if [= $fresh ''] [then $t] [else $fresh]]]
+                    [else [?if [$c:member $t SITE-BUILDERS] [then ''] [else $fresh]]]]]]]]]]
+
 [?def red-names scope=private pure [returns any] ($es)
   [?to-sequence [?for [in $e $es] [where [not [= [$string $e@rc] '0']]] [yield [$string $e@name]]]]]
 
@@ -274,6 +300,6 @@
         [= $sh [$c:cat2 $sp [?to-sequence [?for [in $t $alone] [yield [$serial-step $c $t [$make-words $t [$string $p@suite]] 'post-merge']]]]]]
         [= $before [$c:cat2 [$c:cat2 $pre $par] $sh]]
         [= $tl [?if [> [$count [$red-names $before]] 0] [then ()]
-                 [else [?to-sequence [?for [in $t $tail] [yield [$serial-step $c $t [$make-words $t [$string $p@suite]] 'tail']]]]]]]
+                 [else [$run-tail $c $tail [$string $p@suite]]]]]
         [$finish [$c:cat2 $before $tl]
                  [?if [and [> [$count [$red-names $before]] 0] [> [$count $tail] 0]] [then 'the serial tail did not run: a step before it is red'] [else '']]]]]]]]]]]]]]]]]
