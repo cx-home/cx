@@ -372,8 +372,15 @@
     [= $_rm ([$io:remove $path], [$io:remove-dir $dir])]
     [?if [< [$count $runs] 5]
       [then [$die 'cx fmt failed on the 8k-record bench document — the tooling.fmt_8k_ms row cannot be measured']]
+      [; the peak row is load_sensitive (cx-private#1917, integrator ruling 2026-10-11 18:19Z): vgc's
+         sweep walks run parallel only while the box has free CPUs (vgc_box_busy / vgc_box_free_cpus,
+         the walk load gate), and the walk count moves the peak. The loop's quiet tick on 2ddbf280c
+         (load 6-8) recorded 407.7 MB; the same build reads 461.9-468.0 at load 28-300, every gate
+         since red on it at +14.8 %. On one binary at load 27: 461.9 MB with the gate on, 403.6-407.6 with
+         VGC_WALK_LOAD_GATE=0 or VGC_WALK_WORKERS=8, 461.9 with one walker. So it is judged on a quiet
+         box only, like code_streaming's and csv_bulk's ]
       [else {'tooling.fmt_8k_ms': {median: [$math:median [?for [in $x $runs] [yield $x.ms]]], unit: 'ms'},
-             'tooling.fmt_8k_peak_rss_mb': [$rss-row 'cx fmt' [?for [in $x $runs] [yield $x.rss]]]}]]]]
+             'tooling.fmt_8k_peak_rss_mb': [$map:put [$rss-row 'cx fmt' [?for [in $x $runs] [yield $x.rss]]] 'load_sensitive' true]}]]]]
 
 [; #1226 — `--from=json --to=json` on the bench/repr JSON corpus shape at
    300,000 records (19 MB): the parse-side passes used to hold up to three
