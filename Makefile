@@ -472,11 +472,25 @@ sync-cmd-split: sync-cmd-links
 	@# first's link to a DIRECTORY follows it and writes the link inside the
 	@# pin's own tree — deps/cx-core-code/conformance/stdlib/stdlib, a loop that
 	@# made the next deps-sync refuse the pin as drifted (2026-10-06 01:1xZ).
+	@# REFRESHED IN PLACE, never emptied first (#1917, gate-1011f): every make
+	@# that reaches deps-present ran this, and it deleted EVERY link before
+	@# re-making them, so a reader in a parallel step (extraction_gate_cli's
+	@# shards, the probe) opened conformance-merged/code.cxd inside that window
+	@# and panicked "cannot read …/code.cxd". Now a link already pointing
+	@# where it should is left alone; a wrong one is replaced (ln -sfn); a link
+	@# whose source is gone is removed. The later source wins a basename, as
+	@# the old loop's last ln did (walked in reverse, the first seen kept).
 	@mkdir -p deps/cx-core-code/vcx/target/conformance-merged
-	@find deps/cx-core-code/vcx/target/conformance-merged -maxdepth 1 -type l -delete
-	@for e in conformance/*.cxd conformance/*.md conformance/llm deps/cx-core-code/conformance/*; do \
-	  [ -e "$$e" ] || continue; \
-	  ln -sfn "$(CURDIR)/$$e" "deps/cx-core-code/vcx/target/conformance-merged/$$(basename $$e)"; \
+	@m=deps/cx-core-code/vcx/target/conformance-merged; rev=''; want='/'; \
+	for e in conformance/*.cxd conformance/*.md conformance/llm deps/cx-core-code/conformance/*; do \
+	  [ -e "$$e" ] && rev="$$e $$rev"; \
+	done; \
+	for e in $$rev; do \
+	  b=$$(basename "$$e"); case "$$want" in *"/$$b/"*) continue ;; esac; want="$$want$$b/"; \
+	  [ "$$(readlink "$$m/$$b" 2>/dev/null)" = "$(CURDIR)/$$e" ] || ln -sfn "$(CURDIR)/$$e" "$$m/$$b"; \
+	done; \
+	for l in "$$m"/* "$$m"/.[!.]*; do \
+	  [ -L "$$l" ] || continue; case "$$want" in *"/$$(basename "$$l")/"*) ;; *) rm -f "$$l" ;; esac; \
 	done
 .PHONY: deps-present
 deps-present: sync-cmd-split
