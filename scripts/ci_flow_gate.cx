@@ -159,21 +159,41 @@
     [yield [$cat ([$label-of $c], ': the world after the run has ', [$string $k], '=',
                   [$string [?else [$attr $seen $k] '(nothing)']], ', the table names ', [$string [$attr $want $k]])]]]]]
 
-[?def real-case scope=public impure ($bin $flow $env $c)
+# A world that stamps the UTC day (`day=` on its [world …] and [seen …]) and
+# straddles midnight is not the world the table describes: the postmerge
+# document owes a full union on a new day, so a pass seeded "today" reads as
+# yesterday's by the time the run classifies (E-refresh-code, red on
+# 4f5d644ab's tick, 23:54-00:02Z). Such a case is run once more in a fresh
+# world; a miss in a world that kept its day stands.
+[?def real-once scope=public impure ($bin $flow $env $c)
   [?let [= $root [$io:temp-dir 'ci-flow-gate']]
         [= $program [$string $c@program]]
         [= $b [$run-program $bin $program ('build', $root, [$string $c@scenario]) $c]]
         [= $w [$answer-of $b@stdout 'world']]
-        [= $misses [?if [or [not [= [$name $w] 'world']] [not [= [$string $w@errs] '']]]
-                     [then ([$cat ([$label-of $c], ': the world could not be built — ',
-                                   [$string [?else $w@errs '']], ' ', [$strings:slice [$string $b@stdout] 0 400], ' ',
-                                   [$strings:slice [$strings:trim [$string $b@stderr]] 0 400])])]
-                     [else [?let [= $rm [$run-flow $bin $flow $env $c [$argv-words $w@args]]]
-                                 [= $o [$run-program $bin $program ('observe', $root) $c]]
-                                 [= $seen [$answer-of $o@stdout 'seen']]
-                       [$cat-seqs ($rm, [$world-misses $c $seen])]]]]]
+        [= $built [and [= [$name $w] 'world'] [= [$string $w@errs] '']]]
+        [= $o [?if $built [then [?let [= $rm [$run-flow $bin $flow $env $c [$argv-words $w@args]]]
+                                      [= $ob [$run-program $bin $program ('observe', $root) $c]]
+                                      [= $seen [$answer-of $ob@stdout 'seen']]
+                                [$cat-seqs (([$string [and [not [= [$string [?else $w@day '']] '']]
+                                                           [not [= [$string [?else $w@day '']] [$string [?else $seen@day '']]]]]]),
+                                            $rm, [$world-misses $c $seen])]]]
+                [else ('false',
+                       [$cat ([$label-of $c], ': the world could not be built — ',
+                              [$string [?else $w@errs '']], ' ', [$strings:slice [$string $b@stdout] 0 400], ' ',
+                              [$strings:slice [$strings:trim [$string $b@stderr]] 0 400])])]]]
         [= $_rm [$io:remove-tree $root]]
-    $misses]]
+    $o]]
+
+# real-once answers ('true'|'false' straddled, miss…).
+[?def outcome-misses scope=public pure ($o) [?to-sequence [?drop 1 $o]]]
+
+[?def real-case scope=public impure ($bin $flow $env $c)
+  [?let [= $first-run [$real-once $bin $flow $env $c]]
+        [= $m1 [$outcome-misses $first-run]]
+    [?if [and [> [$count $m1] 0] [= [$string [$first $first-run]] 'true']]
+      [then [?let [= $_s [$cry [$cat ([$label-of $c], ': its world straddled UTC midnight — run once more in a fresh world')]]]
+              [$outcome-misses [$real-once $bin $flow $env $c]]]]
+      [else $m1]]]]
 
 # ── the run ─────────────────────────────────────────────────────────────────
 [?def run-case scope=public impure ($bin $flow $env $c)
