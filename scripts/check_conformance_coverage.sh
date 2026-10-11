@@ -55,7 +55,7 @@ done >> "$claims"
 #    2026-09-08 note above), and "code_eval_fixtures_test.v" would now be
 #    exactly that.
 printf '%s\t%s\n' "deps/cx-core-code/conformance/code.cxd" "test-vcx-suite (v test deps/cx-core-code/vcx/tests/ -> code_eval_fixtures_test.v: parse_all_code_fixtures) or 'make fixtures'; also test-vcx-resilience-matrix and test-vcx-services, which run that file by name" >> "$claims"
-for f in deps/cx-core-code/conformance/stdlib/*.cxd conformance/platform/*.cxd conformance/x/*.cxd conformance/xap/*.cxd deps/cx-core-data/conformance/extended.cxd deps/cx-core-code/conformance/xml_codec.cxd; do printf '%s\t%s\n' "$f" "test-vcx-suite (v test deps/cx-core-code/vcx/tests/ -> code_eval_fixtures_shard_<k>_test.v, partitioned by deps/cx-core-code/vcx/tests/fixtures_grader/fixture_shards.cxd and held complete by check-fixture-shard-manifest) or 'make fixtures'"; done >> "$claims"
+for f in deps/cx-core-code/conformance/stdlib/*.cxd conformance/platform/*.cxd conformance/x/*.cxd conformance/xap/*.cxd deps/cx-core-data/conformance/extended.cxd deps/cx-core-code/conformance/xml_codec.cxd; do printf '%s\t%s\n' "$f" "test-vcx-suite (v test deps/cx-core-code/vcx/tests/ -> code_eval_fixtures_shards_test.v, one child process per shard of deps/cx-core-code/vcx/tests/fixtures_grader/fixture_shards.cxd and held complete by check-fixture-shard-manifest) or 'make fixtures'"; done >> "$claims"
 # The shard manifest itself needs NO claim row: it is not a conformance suite
 # and it does not live in conformance/. It sits beside the grader that reads it,
 # deps/cx-core-code/vcx/tests/fixtures_grader/fixture_shards.cxd, because every walker of

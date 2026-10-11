@@ -71,7 +71,7 @@ printf 'source\n' > vcx/store/stdlib_iowatch.v
 printf 'source\n' > vcx/code/stdlib_json.v
 printf 'source\n' > vcx/cx/parser.v
 printf 'source\n' > vcx/tests/fixtures_grader/grader.v
-printf 'source\n' > vcx/tests/code_eval_fixtures_shard_2_test.v
+printf 'source\n' > vcx/tests/code_eval_fixtures_shards_test.v
 printf 'wrapper\n' > scripts/run_fixture_shards.sh
 printf 'pin\n' > third_party/v/keep
 printf 'module source\n' > stdlib/flow.cx
@@ -148,7 +148,7 @@ git add -A && git commit -qm G
 check G "ALL"
 
 # H — a shard test file
-printf 'a fn\n' >> vcx/tests/code_eval_fixtures_shard_2_test.v
+printf 'a fn\n' >> vcx/tests/code_eval_fixtures_shards_test.v
 git add -A && git commit -qm H
 check H "ALL"
 
