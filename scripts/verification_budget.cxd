@@ -16,17 +16,18 @@
     [moved-by 1515]
     [note 'the residue is 260 harness cases waiting out real bounds — 89% of connector.cxd. Lowering this row further is #1515s letter, not a tightening here.']]
 
-  [bound name=selected-run seconds=1200
+  [bound name=selected-run seconds=1200 rows-from='2026-10-11T14:49:40Z'
     [what 'a SELECTED post-merge run — make test-changed BASE=<last passed head> plus the branch steps it selects']
     [measured '817 s on the selected run of 2026-10-04 23:59Z, idle box (load 1.85) — the row the loop wrote; the bound moves DOWN to the owner'"'"'s sentence (20 min) now that an idle run sits under it (#1562, RULED: STREAM-1). Before: 9,263 s, the first row the loop wrote on 884c05469 (2026-09-19), raised to that on the owner'"'"'s word of 2026-09-21']
     [moved-by 1562]
     [note 'ratchets DOWN only from here; the post-merge run as steps (#1817) is the next change to its time.']]
 
-  [bound name=union seconds=1200
+  [bound name=union seconds=1200 rows-from='2026-10-11T14:49:40Z'
     [what 'make test — the whole TEST_TARGETS union, the post-merge run of cx-private (scripts/postmerge_steps.cx)']
     [measured '2,575 s on 715d2262a (2026-10-09 10:53Z, load 9.35 at its start): prebuild 314 + the parallel phase 1,016 (test-vcx-suite 999) + the load-sensitive phase 1,245 (perf-pair 529); 2,738-6,239 s on the eight ticks before it, median about 4,500 s — the rows the loop wrote. Before: 3,600 s (the 60-minute sentence of #1562), 10,516 s on 57745f541 (2026-09-19)']
     [moved-by 1903]
-    [note 'the owner 2026-10-09 13:15Z (#1903): the pre-merge run of every repository at or under 20 minutes, the budget enforced by a gate step; judged on the median of the last five runs (check_verification_budget.cx). It reds until the cuts of #1903 land, which is the point. BUDGET-LOAD = (a) (owner 2026-10-10 12:44Z, #1917): only QUIET runs judge, a load at or under 8 (the #1450 bound); a loaded tick is recorded and reported not judged (load N), never red. The bound did not move.']]
+    [note 'the owner 2026-10-09 13:15Z (#1903): the pre-merge run of every repository at or under 20 minutes, the budget enforced by a gate step; judged on the median of the last five runs (check_verification_budget.cx). It reds until the cuts of #1903 land, which is the point. BUDGET-LOAD = (a) (owner 2026-10-10 12:44Z, #1917): only QUIET runs judge, a load at or under 8 (the #1450 bound); a loaded tick is recorded and reported not judged (load N), never red. The bound did not move.']
+    [rows-from-why 'cx-private#1917, 2026-10-11: rows-from is the end of the 2ddbf280c tick (14:49:39Z) plus one second. Every later tick starts on a checkout that holds both row rules: the post-merge verdict writes a union or selected-run row only when the serial tail ran (e12dd4148), and the row load is the greater of the start and end one-minute load (497a6f4c9). launchd starts cx flow run in the checkout before the pull, so tick N runs the acts of tick N-1 head. The 2ddbf280c tick itself ran the acts of d4a60195a: it wrote union 1,210 s at load 7.42 although check-verification-budget was red before its tail. It judged five quiet rows to a 1,882 s median, and three of them could not speak to the bound: 956 s (c4b29e8f8) and 1,694 s (3f538f15a) stopped before the tail, and 10,733 s (3c2523d22) read load 3.25 at its start and 82-520 through it. Earlier rows are reported, never judged; the seconds did not move.']]
 
   [bound name=premerge-* seconds=1200
     [what 'the pre-merge run of each pinned repository — make deps + make check at its pin with the cx of the tree, one premerge-<repo> row per repository (scripts/premerge_record.sh, make premerge-record)']
