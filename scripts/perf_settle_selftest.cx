@@ -23,6 +23,23 @@
         [= $_e [?if [= $pp-err null] [then null] [else [$io:write-file $e $pp-err]]]]
     $t]]
 
+# the load cases (#1917): a planted head record at load $hl, this tick's rows at load $rl, a
+# green tick; answers whose rows the head record holds afterwards (head / new) and where the
+# tick's rows went.
+[?def load-case scope=private impure ($label $c $hl $rl $want)
+  [?let [= $t [$plant $c 'perf-pair: ok' '']]
+        [= $_l [?if [$io:is-file [$concat $t '/bench-pair.loaded.json']] [then [$io:remove [$concat $t '/bench-pair.loaded.json']]] [else null]]]
+        [= $_h [$io:write-file [$concat $t '/bench-head.json'] [$concat '{"run_id": "head", "load_1m_start": ' $hl '}']]]
+        [= $_r [$io:write-file [$concat $t '/bench-pair.json'] [$concat '{"run_id": "new", "load_1m_start": ' $rl '}']]]
+        [= $_v [$ci:postmerge-verdict checkout=$c runner-cx='none'
+                  ran=[ran status='ran' rc='0' sha='abc1234' suffix='' name='' t0='0' load='0']]]
+        [= $hd [$io:read-file [$concat $t '/bench-head.json']]]
+        [= $got [$concat [?if [$strings:contains $hd '"new"'] [then 'head=new'] [else 'head=old']]
+                         [?if [$io:is-file [$concat $t '/bench-pair.loaded.json']] [then ' rows=loaded'] [else '']]]]
+    [?if [= $got $want]
+      [then [?let [= $_p [$io:write-line [$env:stdout] [$concat '  ok   ' $label ' -> ' $got]]] 0]]
+      [else [?let [= $_p [$io:write-line [$env:stdout] [$concat '  FAIL ' $label ': ' $got ', want ' $want]]] 1]]]]]
+
 [?def where-went scope=private impure ($t)
   [?if [$io:is-file [$concat $t '/bench-head.json']] [then 'head']
     [else [?if [$io:is-file [$concat $t '/bench-pair.red.json']] [then 'aside'] [else 'nowhere']]]]]
@@ -40,8 +57,12 @@
       [= $f [+ [$one 'a green tick promotes its rows' $c '0' 'perf-pair: ok' '' 'head']
                [$one 'a red tick whose perf-pair step was green promotes them (#1915: the record is seeded)' $c '2' 'perf-pair: no head record — nothing judged' '' 'head']
                [$one 'a red tick whose perf-pair found a regression moves them aside' $c '2' 'FAIL: performance regressions' 'make: *** [perf-pair] Error 1' 'aside']
-               [$one 'a red tick whose perf-pair did not run moves them aside' $c '2' null null 'aside']]]
+               [$one 'a red tick whose perf-pair did not run moves them aside' $c '2' null null 'aside']
+               [$load-case 'a loaded tick (93) keeps a quiet head (4.5): its clocks stay judgeable' $c '4.5' '93.0' 'head=old rows=loaded']
+               [$load-case 'a quiet tick (3.0) replaces a quiet head (4.5)' $c '4.5' '3.0' 'head=new']
+               [$load-case 'a loaded tick (40) replaces a loaded head (93): memory moves on' $c '93.0' '40.0' 'head=new']
+               [$load-case 'a quiet tick (2.0) replaces a loaded head (93)' $c '93.0' '2.0' 'head=new']]]
       [= $_rm [$io:remove-tree $c]]
   [?if [= $f 0]
-    [then [$io:write-line [$env:stdout] 'perf-settle self-test OK — a green perf-pair step seeds or promotes the head record on any tick; a perf-pair red, or no perf-pair run, keeps a head off it (cx-private#1915)']]
+    [then [$io:write-line [$env:stdout] 'perf-settle self-test OK — a green perf-pair step seeds or promotes the head record on any tick; a perf-pair red, or no perf-pair run, keeps a head off it (cx-private#1915); a loaded tick never replaces a quiet head (#1917)']]
     [else [$die [$concat 'perf-settle self-test: ' [$string $f] ' failure(s)']]]]]
