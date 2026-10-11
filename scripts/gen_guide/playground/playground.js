@@ -727,11 +727,21 @@
   // A recorded refusal (`match: contains`) is pinned by its code, which the
   // native CLI prints as `cx-err:CXERnnnn: …` and the wasm engine throws as
   // `CXERnnnn: …` — the same code either way, so the prefix is not compared.
+  // A fixture that records the CLI's refusal LINE (exit 1, `error:
+  // cx-err:CXERnnnn: …` — a program the parser or binder refuses before it
+  // runs, e.g. the primer's ap-py-*-wrong rows) is the same refusal the
+  // engine throws: the `error: ` is the terminal's line prefix, not the
+  // engine's answer, so it is dropped and the code compared bare. The rest
+  // of the line — the message, its position — is still compared exactly.
   function sameAnswer(got, ex) {
     const g = String(got || '').replace(/\s+$/, '');
     const e = String(ex.expected || '').replace(/\s+$/, '');
-    if (ex.match !== 'contains') return g === e;
     const bare = (s) => s.replace(/cx-err:/g, '');
+    if (ex.match !== 'contains') {
+      if (g === e) return true;
+      const cliRefusal = /^error: (cx-err:CXER\d+: [\s\S]*)$/.exec(e);
+      return String(ex.exit) === '1' && cliRefusal !== null && bare(g) === bare(cliRefusal[1]);
+    }
     return bare(g).includes(bare(e));
   }
   function showVerdict(raw) {
