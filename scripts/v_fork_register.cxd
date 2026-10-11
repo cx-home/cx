@@ -338,4 +338,8 @@
   [patch sha=1ed331fe149b1e22c4c63567c25c026fa8e6a1b8 family=vlib issue='cx-home/v#33']
   [patch sha=fcb5a6afe3a08d57bc259bbb05061cdaa2565305 family=vgc issue='cx-home/v#15']
   [patch sha=7a1bf7eb072098bfae6dcbc43f6bc77748f9d551 family=net issue='cx-platform-xap#20']
+  [patch sha=331699c13395d429b44e723b85b8b2c80c5ae8ff family=net issue='cx-platform-xap#20']
+  [patch sha=b175f916f6913555468c9735fd9dc01bdbf176f2 family=net issue='cx-platform-xap#20']
+  [patch sha=11b0457b9ba7dc655bb9566391002ab88a4c0c87 family=net issue='cx-platform-xap#20']
+  [patch sha=4e4defbb31da302b16641de7d84efc64f8f0d4f0 family=net issue='cx-platform-xap#20']
 ]
