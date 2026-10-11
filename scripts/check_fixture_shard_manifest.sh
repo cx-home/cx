@@ -22,7 +22,8 @@
 #   3. every [file name=…] row resolves to a file that EXISTS under
 #      conformance/;
 #   4. every [shard … test=…] row names a test file that EXISTS;
-#   5. every deps/cx-core-code/vcx/tests/code_eval_fixtures_shard_*_test.v in the tree has a
+#   5. every deps/cx-core-code/vcx/tests/code_eval_fixtures_shard*_test.v in the tree (since
+#      cx-private#1917 the one runner, code_eval_fixtures_shards_test.v) has a
 #      manifest row — a shard file with no row grades nothing and passes.
 #
 # (macOS bash 3.2: no associative arrays — the sets are sorted text streams.)
@@ -74,7 +75,7 @@ done < "$tmp/shards"
 
 # ── property 5: every shard test file in the tree has a row ─────────────────
 cut -d' ' -f2 "$tmp/shards" | sort > "$tmp/claimed_tests"
-ls deps/cx-core-code/vcx/tests/code_eval_fixtures_shard_*_test.v 2>/dev/null \
+ls deps/cx-core-code/vcx/tests/code_eval_fixtures_shard*_test.v 2>/dev/null \
   | sed 's#^deps/cx-core-code/##' | sort > "$tmp/tree_tests" || true
 orphan_tests=$(comm -13 "$tmp/claimed_tests" "$tmp/tree_tests")
 if [ -n "$orphan_tests" ]; then
