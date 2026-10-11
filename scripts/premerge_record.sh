@@ -10,6 +10,7 @@
 #
 #   bash scripts/premerge_record.sh          (or: make premerge-record)
 #   PREMERGE_REPOS='cx-platform-net cx-core-code' PREMERGE_JOBS=4 bash scripts/premerge_record.sh
+#   PREMERGE_ANY_LOAD=1 bash scripts/premerge_record.sh   (run over the load bound too)
 #
 # Exit 0 when it measured (whatever it found); 2 when it cannot run at all.
 set -u
@@ -36,7 +37,18 @@ fi
 # the record's own JOBS slots: on 2026-10-10 08:10Z the first four repositories carried 3.92 and
 # every later one 22-31 from its siblings alone, so the same quiet box judged four rows and
 # refused thirteen. The union's row is sampled at RUN-START for the same reason.
-RUN_LOAD=$(sample_load_1m)
+RUN_LOAD=${PREMERGE_LOAD:-$(sample_load_1m)} # PREMERGE_LOAD: the self-test's planted load
+# Over the load bound (CX_BENCH_MAX_LOAD, else 8) NOTHING runs (integrator, 2026-10-10 22:06Z, under
+# BUDGET-LOAD = (a)): a row taken there is "not judged" by check-verification-budget anyway, and the
+# runs were the loaded tick's wall (2,008 s on f25781f53 at load 82; 6,416 s with the 3c2523d22 stall).
+# One line per repository says so and no timings row is written, so the quiet rows the budget judges
+# stay as they were. Quiet ticks are unchanged. PREMERGE_ANY_LOAD=1 runs at any load (by hand).
+if [ "${PREMERGE_ANY_LOAD:-0}" != 1 ] && ! awk -v l="$RUN_LOAD" -v b="${CX_BENCH_MAX_LOAD:-8}" \
+     'BEGIN { exit !(l ~ /^[0-9.]+$/ && l + 0 <= b + 0) }'; then
+  for r in $repos; do echo "  premerge-$r  not run (load $RUN_LOAD)"; done
+  echo "premerge-record: not run (load $RUN_LOAD over the bound ${CX_BENCH_MAX_LOAD:-8}): 0 row(s) to $TIMINGS"
+  exit 0
+fi
 one() { # one <repo> — prints `<repo> <rc> <seconds> <load>`
   r=$1; c="$W/$r"
   git clone -q "$ROOT/deps/$r" "$c" 2>/dev/null && git -C "$c" remote set-url origin "https://github.com/cx-home/$r.git" \

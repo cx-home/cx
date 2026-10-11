@@ -33,6 +33,8 @@
 #      no measurement at all → NOT MEASURED; the premerge-* family per repository
 #   7. with NO override the DEFAULT path is still what is read — the override
 #      moves the path and nothing else
+#   9. premerge-record over the load bound runs nothing: one "not run (load N)"
+#      line per repository, exit 0, no timings row (integrator 2026-10-10 22:06Z)
 #
 # (3) and (5) are the reason this can be a gate rather than a coin flip: the same
 # `make fixtures` read 3,168 s and 2,898 s on one corpus hours apart because
@@ -241,8 +243,27 @@ else
   fails=$((fails + 1))
 fi
 
+# 9 — premerge-record runs nothing over the load bound (integrator 2026-10-10 22:06Z, under
+#     BUDGET-LOAD = (a)): a planted load of 42 names each repository "not run (load 42)", exits 0
+#     and writes no timings row; a planted quiet load (3.5) does run — a repository that does not
+#     exist is cloned and named red — so the skip is the load's doing and nothing else's.
+PM=$T/premerge_timings.cxd
+out=$(PREMERGE_LOAD=42 PREMERGE_REPOS='cx-core-code cx-no-such-repo' CX_VERIFICATION_TIMINGS="$PM" CX_BIN="$CX" \
+      bash "$ROOT/scripts/premerge_record.sh" 2>&1); got=$?
+quiet=$(PREMERGE_LOAD=3.5 PREMERGE_REPOS='cx-no-such-repo' CX_VERIFICATION_TIMINGS="$PM" CX_BIN="$CX" \
+      bash "$ROOT/scripts/premerge_record.sh" 2>&1)
+if [ "$got" = 0 ] && [ ! -e "$PM" ] \
+   && case "$out" in *"premerge-cx-core-code  not run (load 42)"*"premerge-cx-no-such-repo  not run (load 42)"*) true ;; *) false ;; esac \
+   && case "$quiet" in *"rc=clone-failed"*) true ;; *) false ;; esac; then
+  echo "  ok   premerge-record over the load bound runs nothing: each repository 'not run (load 42)', no row written; at load 3.5 it runs"
+else
+  echo "  FAIL premerge-record's load skip — exit $got (want 0), row file $( [ -e "$PM" ] && echo written || echo absent ), output:"
+  printf '%s\n' "$out" "--- at load 3.5:" "$quiet" | sed 's/^/        /'
+  fails=$((fails + 1))
+fi
+
 if [ "$fails" -gt 0 ]; then
   echo "verification-budget self-test: $fails failure(s)"
   exit 1
 fi
-echo "verification-budget self-test OK — 13 properties, all planted under $T (never the real timings path)"
+echo "verification-budget self-test OK — 14 properties, all planted under $T (never the real timings path)"
