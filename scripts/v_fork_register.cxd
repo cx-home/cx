@@ -337,4 +337,5 @@
   [patch sha=453b2e06c023644074221b5b00181d0e89af67ec family=vgc issue='cx-home/v#15']
   [patch sha=1ed331fe149b1e22c4c63567c25c026fa8e6a1b8 family=vlib issue='cx-home/v#33']
   [patch sha=fcb5a6afe3a08d57bc259bbb05061cdaa2565305 family=vgc issue='cx-home/v#15']
+  [patch sha=7a1bf7eb072098bfae6dcbc43f6bc77748f9d551 family=net issue='cx-platform-xap#20']
 ]
