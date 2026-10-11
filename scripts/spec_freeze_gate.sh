@@ -40,7 +40,7 @@
 # before it was adjudicated BY that audit; history after it is gated here.
 set -euo pipefail
 
-FREEZE_EPOCH=f964c16a
+FREEZE_EPOCH=${SPEC_FREEZE_EPOCH:-f964c16a}   # the override is the selftest's (a planted history)
 
 # Adjudicated commits: authored on a PARALLEL integration lineage where this
 # gate did not run, carrying an express owner ruling recorded OUTSIDE the
@@ -226,7 +226,29 @@ case "${1:-}" in
       printf '  %s\n' $legacy >&2
       rc=1
     fi
-    for sha in $(git rev-list --no-merges "${FREEZE_EPOCH}..HEAD" 2>/dev/null); do
+    # ONE `git log` pass classifies every commit in the range; check_commit
+    # (which classifies again, exactly as before) runs only for a commit that
+    # pass flags as spec+impl, and for an adjudicated row (which it prints).
+    # One git show + one rev-parse per commit over ~7,300 commits was ~22,000
+    # process spawns: 600-1,500 s of the post-merge run under its own load
+    # (cx-private#1917). The awk mirrors is_normative_spec / is_impl above:
+    # a change to either rule changes both.
+    adjudicated_full=$(printf '%s\n' "$ADJUDICATED_SHAS" | awk 'NF {printf "%s ", $1}')
+    candidates=$(git log --no-merges --format='%x01%H' --name-only "${FREEZE_EPOCH}..HEAD" 2>/dev/null | awk -v adj="$adjudicated_full" '
+      BEGIN { n = split(adj, a, " "); for (i = 1; i <= n; i++) if (a[i] != "") isadj[a[i]] = 1 }
+      function flush() { if (sha != "" && ((sp && im) || (sha in isadj))) print sha }
+      /^\001/ { flush(); sha = substr($0, 2); sp = 0; im = 0; next }
+      $0 == "" { next }
+      {
+        f = $0
+        if (f ~ /^spec\/02-working\/(partition_|batch_)/ || f ~ /^spec\/03-approved\/xap\/demos\//) { } else if (f ~ /^spec\//) sp = 1
+        if (!(f ~ /^(spec|ledger|\.claude)\// || f ~ /^(README|CHANGELOG|LICENSE)/)) im = 1
+      }
+      END { flush() }') || {
+      echo "SPEC-FREEZE-GATE INFRA FAILURE: git log over ${FREEZE_EPOCH}..HEAD failed — cannot adjudicate; rerun the gate." >&2
+      exit 3
+    }
+    for sha in $candidates; do
       check_commit "$sha" || rc=1
     done
     if [ "$rc" -eq 0 ]; then
