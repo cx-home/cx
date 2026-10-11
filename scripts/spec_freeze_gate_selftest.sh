@@ -98,12 +98,16 @@ trap 'rm -rf "$T"' EXIT
   seed=$(git rev-list --max-parents=0 HEAD)
   out=$(SPEC_FREEZE_EPOCH="$seed" bash "$GATE" 2>&1) && {
     echo "SELFTEST FAILED: scenario J (range with three violations) passed the default-mode gate" >&2; exit 1; }
+  # matched in the shell, not `printf | grep -q`: under pipefail grep -q's
+  # early exit can SIGPIPE the printf of a long $out and fail the pipeline on
+  # a line that IS there (gate-1011f: "did not name eb381d4…" above the very
+  # line naming it).
   for v in "$a" "$c" "$h"; do
-    printf '%s\n' "$out" | grep -q "commit $v " || {
-      echo "SELFTEST FAILED: scenario J did not name violation $v:" >&2; printf '%s\n' "$out" >&2; exit 1; }
+    case "$out" in *"commit $v "*) ;; *)
+      echo "SELFTEST FAILED: scenario J did not name violation $v:" >&2; printf '%s\n' "$out" >&2; exit 1 ;; esac
   done
   for ok in "$b" "$f" "$g"; do
-    if printf '%s\n' "$out" | grep -q "commit $ok "; then
+    if case "$out" in *"commit $ok "*) true ;; *) false ;; esac; then
       echo "SELFTEST FAILED: scenario J named the recorded-token commit $ok" >&2; exit 1
     fi
   done

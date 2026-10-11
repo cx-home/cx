@@ -174,13 +174,26 @@ async function bootServer() {
   setupFail('could not boot scripts/serve_static.cx on any candidate port.');
 }
 
-// ── the browser + CDP (one Chrome process, one tab reused across pages) ──
+// ── the browser + CDP (one Chrome process; one tab reused across the audited
+// pages, and SERVED_TABS tabs side by side for the every-served-page sweep) ──
+// #1917: the sweep read its 168 pages one after another in one tab (~42 s of
+// the step's ~60, and the step runs in the post-merge run's SERIAL tail, so
+// every second of it is a second of the union). Each page's reading is
+// independent of every other's (its own navigation, its own viewport), so the
+// sweep reads them in SERVED_TABS tabs at once and reports in page order. The
+// background-throttling switches keep a tab that is not in front from
+// clamping the page's own 80 ms disclosure timers to a second.
+const SERVED_TABS = Math.max(1, Number(process.env.CX_SITE_PHONE_TABS || 4) || 4);
+let cdpPortOf = null;
 async function bootBrowser() {
   const cdpPort = 9300 + (process.pid % 300);
+  cdpPortOf = cdpPort;
   profileDir = mkdtempSync(join(tmpdir(), 'cx-site-phone-gate-'));
   browser = spawn(chrome, [
     `--remote-debugging-port=${cdpPort}`, '--headless=new', '--no-first-run',
     '--no-default-browser-check', '--disable-gpu', '--disable-dev-shm-usage',
+    '--disable-background-timer-throttling', '--disable-renderer-backgrounding',
+    '--disable-backgrounding-occluded-windows',
     `--user-data-dir=${profileDir}`, 'about:blank',
   ], { stdio: ['ignore', 'pipe', 'pipe'] });
   let version = null;
@@ -194,6 +207,11 @@ async function bootBrowser() {
     } catch (_) {}
   }
   if (!version) setupFail(`the browser's CDP port ${cdpPort} never opened.`);
+  return openTab(cdpPort);
+}
+
+// one more tab on the running browser, with its own CDP websocket.
+async function openTab(cdpPort) {
   const tabRes = await fetch(`http://127.0.0.1:${cdpPort}/json/new?about:blank`, { method: 'PUT', signal: AbortSignal.timeout(15000) });
   if (!tabRes.ok) setupFail(`CDP refused to open a tab: HTTP ${tabRes.status}`);
   const tab = await tabRes.json();
@@ -647,22 +665,36 @@ async function measure(cdp, port, page, width, height) {
   // SITE-3: every served page, at 375x812.
   const served = servedPages(SITE);
   let servedBad = 0;
-  for (const page of served) {
-    checkDeadline(`${page}@375 (every served page)`);
-    try {
-      await load(cdp, port, page, 375, 812, 60);
-      const f = layoutFailures(await layout(cdp, 375), `${page} @ 375x812`, 375);
-      // the sidebar's disclosure on EVERY served page, not the audited six
-      // (the adversarial reader: about.html open at load passed).
-      if (page !== 'playground.html') f.push(...sidebarFailures(await sidebarCollapse(cdp, 375, 812), `${page} @ 375x812`, 375, 812));
-      if (f.length) servedBad++;
-      if (served.indexOf(page) % 40 === 39) say(`every served page @ 375x812 — ${served.indexOf(page) + 1} of ${served.length} read (${Math.round((Date.now() - STARTED) / 1000)} s)`);
-      failures.push(...f);
-    } catch (e) {
-      failures.push(`${page} @ 375x812: layout measurement threw — ${e.message}`);
+  // SERVED_TABS readers pull the next page off one shared index; each page's
+  // failures land in its own slot, so the report is in page order whatever
+  // order the tabs finish in.
+  const tabs = [cdp];
+  for (let i = 1; i < SERVED_TABS; i++) tabs.push(await openTab(cdpPortOf));
+  const servedFails = new Array(served.length);
+  let next = 0, done = 0;
+  const sweepStart = Date.now();
+  await Promise.all(tabs.map(async (tab) => {
+    for (let i = next++; i < served.length; i = next++) {
+      const page = served[i];
+      checkDeadline(`${page}@375 (every served page)`);
+      let f;
+      try {
+        await load(tab, port, page, 375, 812, 60);
+        f = layoutFailures(await layout(tab, 375), `${page} @ 375x812`, 375);
+        // the sidebar's disclosure on EVERY served page, not the audited six
+        // (the adversarial reader: about.html open at load passed).
+        if (page !== 'playground.html') f.push(...sidebarFailures(await sidebarCollapse(tab, 375, 812), `${page} @ 375x812`, 375, 812));
+        if (f.length) servedBad++;
+      } catch (e) {
+        f = [`${page} @ 375x812: layout measurement threw — ${e.message}`];
+      }
+      servedFails[i] = f;
+      if (++done % 40 === 0) say(`every served page @ 375x812 — ${done} of ${served.length} read (${Math.round((Date.now() - STARTED) / 1000)} s)`);
     }
-  }
-  say(`every served page @ 375x812 — ${served.length} pages, ${servedBad} with a layout failure`);
+  }));
+  for (const f of servedFails) failures.push(...(f || []));
+  for (const t of tabs.slice(1)) t.close();
+  say(`every served page @ 375x812 — ${served.length} pages, ${servedBad} with a layout failure (${tabs.length} tab(s), ${Math.round((Date.now() - sweepStart) / 1000)} s)`);
   // SITE-3 (#1760): the playground opens on one example — its source and its output.
   for (const [width, height] of PLAYGROUND_WIDTHS) {
     checkDeadline(`playground controls @${width}`);
