@@ -355,4 +355,5 @@
   [patch sha=ead491f6b98304a321b5223218458f3516a9daa1 family=vgc issue='cx-home/v#14']
   [patch sha=93a47672f60e993d9468fa7e8ca65aaaabdc63fa family=net issue='cx-home/v#35']
   [patch sha=bde575f4c112925723de97aad93d701defd012d2 family=net issue='cx-home/v#35']
+  [patch sha=136d24adc45035420ccdc92684303a177a4f9730 family=vgc issue='cx-home/v#36']
 ]
