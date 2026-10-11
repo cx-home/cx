@@ -207,12 +207,26 @@
 # work escaped is judged by what stayed (c8); and a step that polls — a loop
 # that starts a short sleep each turn — comes and goes every look and is never
 # quiet, so it is bounded by budget-ms alone (c12).
-[?def group-rows scope=public impure [returns any] ($pgid)
-  [?let [= $r [$process:run ('ps', '-A', '-o', 'pid=,ppid=,pgid=,stat=,time=,command=') timeout-ms=30000]]
-    [?to-sequence [?for [in $l [$nonblank-lines [$string $r@stdout]]]
-                    [= $w [$str-split-whitespace $l]]
-                    [where [and [>= [$count $w] 6] [= [$nth $w 3] [$string $pgid]]]]
-                    [yield $w]]]]]
+#
+# A look whose ps FAILED (non-zero, or past its 30 s bound, which a box at load
+# 500-900 reaches) saw nothing, and it is not counted either way: the quiet
+# count neither grows nor resets and the signature to compare stays the last
+# good look's (cx-private#1917). The watch used to read a failed ps as an empty
+# process list, so on a loaded box the signature flipped between "no rows" and
+# the real rows on alternate looks. A step asleep for 120 s was never quiet for
+# 4 s, and the loop's 846892f31 tick read F-stall's planted hang as exit 0.
+# That is the one case the watch is for: under load a real hang would sit to
+# budget-ms. $CX_WATCH_PS names the ps to run (default `ps`). It is the probe's
+# seam, used to plant a ps that fails on alternate looks.
+[?def group-look scope=public impure [returns any] ($pgid)
+  [?let [= $r [$process:run ([$env:var-or-default 'CX_WATCH_PS' 'ps'], '-A', '-o', 'pid=,ppid=,pgid=,stat=,time=,command=') timeout-ms=30000]]
+    [?if [not [$ok $r]] [then null]
+      [else [?to-sequence [?for [in $l [$nonblank-lines [$string $r@stdout]]]
+                            [= $w [$str-split-whitespace $l]]
+                            [where [and [>= [$count $w] 6] [= [$nth $w 3] [$string $pgid]]]]
+                            [yield $w]]]]]]]
+
+[?def group-rows scope=public impure [returns any] ($pgid) [?else [$group-look $pgid] ()]]
 
 # the runner's own processes: build-slot.sh's shell, devbox, devbox's .cmd.sh.
 [?const RUNNER-PROC '(scripts/build-slot\.sh devbox |^devbox |\.devbox/gen/scripts/\.cmd\.sh)']
@@ -245,10 +259,14 @@
       [?let [= $x [$process:wait-timeout $p $poll-ms]]
         [?if [not [= [$count [?to-sequence [?concat () $x]]] 0]]
           [then [break [proc-result exit-code=[$string $x] stalled='false']]]
-          [else [?let [= $rows [$group-rows $pid]]
-                      [= $sig [$concat [$string [$file-size $log]] '/' [$string [$file-size [$concat $log '.err']]] ' '
-                                       [$work-signature $rows]]]
-                      [= $q [?if [and [= $sig $mark] [$holds-slot $pidfile $pid]] [then [+ $quiet $poll-ms]] [else 0]]]
+          [else [?let [= $look [$group-look $pid]]
+                      [= $blind [= $look null]]
+                      [= $rows [?if $blind [then ()] [else $look]]]
+                      [= $sig [?if $blind [then $mark]
+                                [else [$concat [$string [$file-size $log]] '/' [$string [$file-size [$concat $log '.err']]] ' '
+                                               [$work-signature $rows]]]]]
+                      [= $q [?if $blind [then $quiet]
+                              [else [?if [and [= $sig $mark] [$holds-slot $pidfile $pid]] [then [+ $quiet $poll-ms]] [else 0]]]]]
                       [= $w [+ $waited $poll-ms]]
                   [?if [and [> $stall-ms 0] [>= $q $stall-ms]]
                     [then [?let [= $tree [$tree-text $rows]]
