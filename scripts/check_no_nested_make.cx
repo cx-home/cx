@@ -47,9 +47,10 @@
 # `cli_umbrella_test.v` is the ONLY V test file in the tree that runs `make`
 # (one `make -C vcx print-<name>` behind `2>/dev/null`, which is also the
 # invocation whose silenced stderr matches the sighting's), so it is the first
-# file any selection must carry; the other two drive the built binary hardest.
+# file any selection must carry; the other (code_units, which absorbed modules for
+# cx-private#1917) drives the built binary hardest.
 [?const DEFAULT_SUITE_FILES [#
-vcx/tests/cli_umbrella_test.v vcx/tests/code_units_umbrella_test.v vcx/tests/modules_umbrella_test.v
+vcx/tests/cli_umbrella_test.v vcx/tests/code_units_umbrella_test.v
 #]]
 
 # The shim. It is SHELL and not cx on purpose: `make` and every recipe reach it

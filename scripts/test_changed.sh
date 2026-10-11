@@ -1087,7 +1087,7 @@ suite_files() {
       flows/*)
         ;;
       # a top-level ledger/ or _gate_evidence/ page a pinned file reads BY
-      # NAME through testenv.front_door_root() (planar_umbrella reads the 1250
+      # NAME through testenv.front_door_root() (code_units_umbrella reads the 1250
       # audit page, the rebless scan and the identity umbrella their tracked
       # evidence files): the NAME clause selects the files that spell it. The
       # index and a branch's own pipeline_*/ evidence are read by none.

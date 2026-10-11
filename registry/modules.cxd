@@ -24,7 +24,7 @@ record what that costs. This file is the declaration; `make placement-gate`
 with the row, or where an artifact under a ring directory has no row.
 
 Derived FROM this file: the bundled-surface census asserted in
-vcx/tests/stdlib_umbrella_test.v, the namespace migration tool
+vcx/tests/code_units_umbrella_test.v, the namespace migration tool
 (`cx --migrate-namespace registry/modules.cxd`), and — as #1427 proceeds —
 the catalog step and the two READMEs.
 
