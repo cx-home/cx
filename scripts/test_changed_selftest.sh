@@ -28,7 +28,9 @@
 #   J0 case J's wall-clock bound (#988's       the floor at idle, floor x a
 #      shape, on fake clocks)                    same-process reference probe's
 #                                                ratio under load, a fired bound
-#                                                re-probed once before believed
+#                                                re-probed once before believed; a
+#                                                slow verdict reds only at load
+#                                                <= 8 (#1917, BUDGET-LOAD)
 #   M  a worktree whose third_party/* are        nothing is selected; a REAL
 #      SYMLINKS, gitlink unchanged (#1599)       gitlink move still runs the
 #                                                whole suite
@@ -289,6 +291,29 @@ j_bound() {
 	[ "$jb_b" -lt "$J_FLOOR_MS" ] && jb_b=$J_FLOOR_MS
 	echo "$jb_b"
 }
+# j_load / j_load_judges LOAD — the box's one-minute load, and whether a SLOW
+# verdict may red at it. The probe is J's own work at one line, so it carries
+# the script's fixed cost and almost none of its per-line cost; under heavy
+# contention the per-line work (a fork per line) stretches far more than the
+# fixed part. The landing gate of ca5ff4ca4 at load 237: probe 3.9 s (1.4x its
+# idle cost), J 110.2 s, re-probed 4.8 s, the retry 152.2 s — red on how busy
+# the box was, while J completed with its RUN: line both times. So a slow
+# verdict judges only on a quiet box, the rule every wall-clock bound here
+# keeps (BUDGET-LOAD = (a), owner 2026-10-10; the #1450 bound, $CX_BENCH_MAX_LOAD
+# else 8). Over it J reports "not judged (load N)" and passes; a run that FAILED
+# or printed no RUN: line still reds at any load, and a hang is still a hang
+# (the step's stall watch). An unreadable load is 999: loaded, never red.
+# $J_LOAD plants a reading (J0).
+j_load() {
+	if [ -n "${J_LOAD:-}" ]; then echo "$J_LOAD"; return 0; fi
+	jl_raw=$(sysctl -n vm.loadavg 2>/dev/null) || jl_raw=''
+	if [ -n "$jl_raw" ]; then printf '%s\n' "$jl_raw" | awk '{ gsub(/[{}]/, ""); print $1 + 0 }'; return 0; fi
+	if [ -r /proc/loadavg ]; then awk '{ print $1 + 0 }' /proc/loadavg; return 0; fi
+	echo 999
+}
+j_load_judges() {
+	awk -v l="$1" -v b="${CX_BENCH_MAX_LOAD:-8}" 'BEGIN { exit !(l ~ /^[0-9.]+$/ && l + 0 <= b + 0) }'
+}
 # j_calibrated PROBE_FN WORK_FN — PROBE_FN prints the reference probe's
 # elapsed ms; WORK_FN prints "<rc> <elapsed ms>" (rc 0: the work succeeded).
 # Probe, derive the bound, run the work. A reading AT OR OVER its bound is
@@ -372,8 +397,11 @@ else
 	j0_case slow-at-idle "$ji $ji"             "0/$((J_FLOOR_MS * 4 / 3)) 0/$((J_FLOOR_MS * 4 / 3))" slow    1
 	j0_case at-bound     "$ji $ji"             "0/$J_FLOOR_MS 0/$J_FLOOR_MS"                      slow    1
 	j0_case failed       "$ji"                 "1/$((J_FLOOR_MS / 3))"                            failed  0
+	for jlj in 0.5 3.2 8; do j_load_judges "$jlj" || j0_fails="$j0_fails [load $jlj: a slow verdict must judge on a quiet box]"; done
+	for jlj in 8.01 237.37 999 '' x; do j_load_judges "$jlj" && j0_fails="$j0_fails [load '$jlj': a slow verdict must not judge over the load bound or on an unreadable load]"; done
+	[ "$(J_LOAD=41.5 j_load)" = 41.5 ] || j0_fails="$j0_fails [J_LOAD does not plant the reading]"
 	if [ -z "$j0_fails" ]; then
-		ok J0 "the bound is the floor at idle, floor x probe/idle under load, and a fired bound is re-probed once before it is believed"
+		ok J0 "the bound is the floor at idle, floor x probe/idle under load, and a fired bound is re-probed once before it is believed; a slow verdict judges only at load <= 8"
 	else
 		bad J0 "the calibrated bound's shape:$j0_fails"
 	fi
@@ -422,7 +450,13 @@ fi
 case "$j_verdict" in
 ok) ok J "a ${bsz}-byte change set through $jbash completed in $jr1" ;;
 starved) ok J "a ${bsz}-byte change set through $jbash read $jr1 — the bound fired under contention; $jr2, within it" ;;
-slow) bad J "a ${bsz}-byte change set: $jr1; $jr2 — want exit 0 within the calibrated bound (the $(ms_s "$J_FLOOR_MS")s floor at idle) — $BIG_BASH" ;;
+slow)
+	jl=$(j_load)
+	if j_load_judges "$jl"; then
+		bad J "a ${bsz}-byte change set: $jr1; $jr2 — want exit 0 within the calibrated bound (the $(ms_s "$J_FLOOR_MS")s floor at idle) — $BIG_BASH"
+	else
+		ok J "a ${bsz}-byte change set through $jbash completed with its RUN: line; $jr1; $jr2 — not judged (load $jl, over ${CX_BENCH_MAX_LOAD:-8})"
+	fi ;;
 *) bad J "a ${bsz}-byte change set: exit $jrc (want 0, with a RUN: line) after $jr1 $jr2 — $BIG_BASH" ;;
 esac
 
