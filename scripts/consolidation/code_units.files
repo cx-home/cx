@@ -15,3 +15,7 @@
 # these bodies, and any fix made to the umbrella since exists only there.
 # Restoring an original to regenerate is refused by name —
 # `scripts/consolidate_tests.sh audit <area>`.
+
+# cx-private#1917 (2026-10-11): node_units_umbrella_test.v (1 s of tests, a full code + xap
+# compile) absorbed in cx-core-code 8264b000; test-modify-action-coverage names code_units.
+#absorbed vcx/tests/node_units_umbrella_test.v
