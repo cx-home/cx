@@ -89,7 +89,7 @@ trap 'rm -rf "$T"' EXIT
   if bash "$GATE" 2>/dev/null; then
     echo "SELFTEST FAILED: scenario I (legacy-namespace file at HEAD) passed the default-mode gate" >&2; exit 1
   fi
-  git rm -q spec/02-working/partition_sneaky.md && git commit -qm "leave the legacy namespace"
+  git rm -q spec/02-working/partition_sneaky.md && git commit -qm "leave the legacy namespace"  # spec-path-ok (a planted path)
 
   # J — the RANGE scan (default mode; one git-log pass picks the commits
   # check_commit sees, cx-private#1917) must still find every violation in the
