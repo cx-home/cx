@@ -178,4 +178,28 @@ EOF
     echo "SELFTEST FAILED: scenario D — the absorbed original is still in the tree" >&2; exit 1; }
 )
 
-echo "consolidate-tests selftest: 4/4 (missing CX_BIN, generator failure, equivalence failure — each non-zero with the committed umbrella intact; a working absorb completes)"
+# E — the REAL generator (scripts/consolidate_tests.cx) hoists a file-level
+# attribute: `@[has_globals]` above an input's module clause must land above
+# the umbrella's ONE module clause, once — left in the section, V refuses the
+# umbrella ("use v -enable-globals"; eval_turn_test.v, cx-private#1917). Needs
+# a built cx; skipped by name when there is none (the cheap pre-flight above
+# does not need one).
+GEN_CX="${CX_BIN:-$(cd "$(dirname "$0")/.." && pwd)/deps/cx-core-code/vcx/target/cx}"
+GEN="$(cd "$(dirname "$0")" && pwd)/consolidate_tests.cx"
+if [ -x "$GEN_CX" ]; then
+  mkdir -p "$T/gen"
+  printf 'module main\n\nimport os\n\nfn test_p() {\n\tassert os.args.len > 0\n}\n' > "$T/gen/p_test.v"
+  printf '@[has_globals]\nmodule main\n\n__global (\n\tq_count int\n)\n\nfn test_q() {\n\tq_count++\n\tassert q_count == 1\n}\n' > "$T/gen/q_test.v"
+  printf '%s\n%s\n' "$T/gen/p_test.v" "$T/gen/q_test.v" > "$T/gen/roster.files"
+  MANIFEST="$T/gen/roster.files" MANIFEST_LABEL=demo OUT="$T/gen/out.v" AREA=demo \
+    "$GEN_CX" --allow-read --allow-write --allow-env "$GEN" >/dev/null 2>&1 || {
+    echo "SELFTEST FAILED: scenario E — the generator failed on two plain inputs" >&2; exit 1; }
+  first="$(grep -v '^//' "$T/gen/out.v" | grep -v '^[[:space:]]*$' | head -2 | tr '\n' '|')"
+  [ "$first" = "@[has_globals]|module main|" ] || {
+    echo "SELFTEST FAILED: scenario E — the umbrella opens with '$first', not '@[has_globals]|module main|'" >&2; exit 1; }
+  [ "$(grep -c '^@\[has_globals\]' "$T/gen/out.v")" -eq 1 ] || {
+    echo "SELFTEST FAILED: scenario E — @[has_globals] appears more than once (left in its section as well)" >&2; exit 1; }
+  echo "consolidate-tests selftest: 5/5 (missing CX_BIN, generator failure, equivalence failure — each non-zero with the committed umbrella intact; a working absorb completes; the generator hoists a file-level attribute)"
+else
+  echo "consolidate-tests selftest: 4/4 (missing CX_BIN, generator failure, equivalence failure — each non-zero with the committed umbrella intact; a working absorb completes) — scenario E SKIPPED: no cx at $GEN_CX"
+fi

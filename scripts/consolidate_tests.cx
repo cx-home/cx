@@ -243,6 +243,21 @@
                 [yield $l]] "\n"]]
           [= $module-line
             [?if [= $module-raw ""] [then "module main"] [else $module-raw]]]
+          # file-level attributes (`@[has_globals]`, …) sit ABOVE the module
+          # clause, and V accepts them nowhere else: left in the preamble they
+          # landed mid-umbrella and V refused the merge ("use v
+          # -enable-globals", eval_turn_test.v, cx-private#1917). They are
+          # carried per file and hoisted above the ONE module clause.
+          [= $mod-idxs
+            [?for [in $i [$range 1 $n]]
+              [where [$strings:starts-with $lines[$i] "module "]]
+              [yield $i]]]
+          [= $mod-idx [?if [= [$count $mod-idxs] 0] [then 0] [else $mod-idxs[1]]]]
+          [= $file-attrs
+            [$strings:join
+              [?for [in $i [$range 1 [- $mod-idx 1]]]
+                [where [$strings:starts-with [$strings:trim $lines[$i]] "@["]]
+                [yield [$strings:trim $lines[$i]]]] "\n"]]
           [= $import-lines
             [$strings:join
               [?for [in $l $lines]
@@ -276,6 +291,7 @@
               [?for [in $i [$range 1 [- $first-decl 1]]]
                 [= $l $lines[$i]]
                 [where [not [$strings:starts-with $l "module "]]]
+                [where [not [and [< $i $mod-idx] [$strings:starts-with [$strings:trim $l] "@["]]]]
                 [where [not [$strings:starts-with $l "import "]]]
                 [where [not [= [$strings:trim $l] ""]]]
                 [yield $l]] "\n"]]
@@ -303,7 +319,7 @@
                 [yield 1]]]]
 
           [yield [file-part file=$f module=$module-line imports=$import-lines
-                    preamble=$preamble chunks=$chunks keys=$keys tfns=$tfns]]]]
+                    attrs=$file-attrs preamble=$preamble chunks=$chunks keys=$keys tfns=$tfns]]]]
 
       # ── refusal 1: mixed module clauses ───────────────────────────────
       [= $p1 [?if [= [$count $parts] 0] [then [file-part module=""]] [else $parts[1]]]]
@@ -532,8 +548,16 @@
               "// Regenerate: scripts/consolidate_tests.sh gen " $area "\n"
               "// Manifest:   " [?if [= $label ""] [then $manifest] [else $label]] "\n\n"]]
 
+          # the union of every file's file-level attributes, first-seen order
+          [= $attr-lines
+            [$distinct
+              [?for [in $p $parts]
+                [where [not [= [$string $p@attrs] ""]]]
+                [in $a [$strings:split [$string $p@attrs] "\n"]]
+                [yield $a]]]]
           [= $out-text
             [$concat $header
+              [?if [= [$count $attr-lines] 0] [then ""] [else [$concat [$strings:join $attr-lines "\n"] "\n"]]]
               [?if [= $module0 ""] [then "module main\n"] [else [$concat $module0 "\n"]]]
               "\n"
               $import-union "\n"
