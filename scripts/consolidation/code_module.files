@@ -27,3 +27,27 @@
 
 # 1390: the oidc machine grant's pure value builder (RULED: #728 CK-7).
 #absorbed vcx/code/stdlib_oidc_test.v
+
+# cx-private#1917 (test-vcx-code compile wall, 2026-10-11): sixteen in-module test files absorbed
+# by hand-run absorb in cx-core-code (the files left this tree with RS-7; the paths stay
+# repo-relative, as the rows above). Each was a full compile of module code (36-84 s on a
+# loaded tick) for under 3 s of tests. NOT absorbed: net_alpn/net_happy_eyeballs/
+# net_read_deadline_at (real sockets), io_watch_behavior (file-watch timing, 15 s) and
+# serve_gate (wall-clock gate) — a flake there would retry the whole umbrella under its
+# #1432 reason; err_propagation_sweep_test.v runs its four stdlib shards as children.
+#absorbed vcx/code/worker_cancel_position_test.v
+#absorbed vcx/code/stdlib_zip_test.v
+#absorbed vcx/code/stdlib_crypto_xmlenc_test.v
+#absorbed vcx/code/stdlib_crypto_xmlsign_test.v
+#absorbed vcx/code/oidc_transport_refusal_test.v
+#absorbed vcx/code/out_err_matches_test.v
+#absorbed vcx/code/render_linear_test.v
+#absorbed vcx/code/oidc_transport_opts_test.v
+#absorbed vcx/code/sched_call_boundary_test.v
+#absorbed vcx/code/sched_due_index_test.v
+#absorbed vcx/code/mk_err_with_cause_callers_test.v
+#absorbed vcx/code/eval_turn_test.v
+#absorbed vcx/code/effects_trace_test.v
+#absorbed vcx/code/futures_parked_cancel_test.v
+#absorbed vcx/code/http_retry_after_test.v
+#absorbed vcx/code/io_link_verbs_caps_test.v
