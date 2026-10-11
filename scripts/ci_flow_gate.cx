@@ -207,6 +207,61 @@
     [yield [$cat-seqs ([?to-sequence [?for [in $e $c/expect/s] [yield $e]]],
                        [?to-sequence [?for [in $wv $c/world] [in $a [$attrs $wv]] [yield $a]]])]]]]]]]
 
+# ── the cases in parallel (cx-private#1917) ────────────────────────────────
+# A table's cases share nothing. Each real case builds its own world under its
+# own temp root, with its own checkout, origin and runner, and a probe or a
+# simulate reads only the tree. Run one after another, postmerge's 52 took
+# 291-342 s, mostly waiting on their subprocesses (user 52 s, sys 99 s of 342
+# s), in the post-merge run's parallel phase, where every step's wall is a
+# runner held. So the gate runs its cases in SHARDS: JOBS child processes of
+# this program, each `--shard=<k>/<n>`, taking the cases whose position mod n
+# is k. Each prints its misses as its RED lines. The parent alone runs the D
+# checks (the pinned count, every document's table, every program named) and
+# answers for all of them. A shard that dies without its own answer is a miss
+# naming the shard, never a pass. JOBS is $CI_FLOW_GATE_JOBS, else the pool's
+# VJOBS (the step's share of the box), else 4. It is at most the case count,
+# and 1 runs in this process as before.
+[?def shard-arg scope=public impure [returns string] ()
+  [?let [= $hits [?to-sequence [?for [in $a [$env:argv]] [where [$strings:starts-with [$string $a] '--shard=']] [yield [$string $a]]]]]
+    [?if [= [$count $hits] 0] [then ''] [else [$strings:replace [$first $hits] '--shard=' '']]]]]
+
+[?def gate-jobs scope=public impure [returns int] ($n)
+  [?let [= $v [$strings:trim [$env:var-or-default 'CI_FLOW_GATE_JOBS' [$env:var-or-default 'VJOBS' '4']]]]
+        [= $j [?else [$strings:to-int $v] 4]]
+        [= $j1 [?if [< $j 1] [then 1] [else $j]]]
+    [?if [> $j1 $n] [then $n] [else $j1]]]]
+
+[?def in-shard scope=public pure [returns bool] ($i $shard)
+  [?if [= $shard ''] [then true]
+    [else [?let [= $kn [$strings:split $shard '/']]
+            [= [% [- $i 1] [?else [$strings:to-int [$nth $kn 2]] 1]] [?else [$strings:to-int [$nth $kn 1]] 0]]]]]]
+
+[?const RED-HEAD 'ci-flow-gate RED: ']
+
+[?def run-shards scope=public impure [returns any] ($bin $doc $jobs)
+  [?let [= $dir [$io:temp-dir 'ci-flow-gate-shards']]
+        [= $self [$string [$nth [$env:argv] 1]]]
+        [= $r [$process:run [$cat-seqs (('sh', '-c',
+                  'n=$1; d=$2; shift 2; i=0; while [ $i -lt $n ]; do ( "$@" "--shard=$i/$n" > "$d/$i.out" 2> "$d/$i.err"; echo $? > "$d/$i.rc" ) & i=$((i+1)); done; wait',
+                  'sh', [$string $jobs], $dir, $bin), $GRANTS, ($self, $doc))]
+                timeout-ms=3600000]]
+        [= $ms [$cat-seqs [?to-sequence [?for [in $k [$range 0 [- $jobs 1]]]
+                 [= $f [$cat ($dir, '/', [$string $k])]]
+                 [= $out [?if [$io:is-file [$cat ($f, '.out')]] [then [$io:read-file [$cat ($f, '.out')]]] [else '']]]
+                 [= $err [?if [$io:is-file [$cat ($f, '.err')]] [then [$io:read-file [$cat ($f, '.err')]]] [else '']]]
+                 [= $rc [?if [$io:is-file [$cat ($f, '.rc')]] [then [$strings:trim [$io:read-file [$cat ($f, '.rc')]]]] [else 'none']]]
+                 [= $reds [?to-sequence [?for [in $l [$strings:split $out "\n"]] [where [$strings:starts-with $l $RED-HEAD]]
+                            [yield [$strings:replace $l $RED-HEAD '']]]]]
+                 [= $done [$strings:contains $out 'ci-flow-gate SHARD ']]
+                 [= $_e [?if [= [$strings:trim $err] ''] [then null] [else [$cry [$strings:trim $err]]]]]
+                 [yield [?if [and [= $rc '0'] $done] [then ()]
+                          [else [?if [and [= $rc '2'] [> [$count $reds] 0]] [then $reds]
+                            [else ([$cat ('ci-flow-gate: shard ', [$string $k], '/', [$string $jobs], ' of ', $doc,
+                                          ' ended without its answer (exit ', $rc, ') — ', [$strings:slice [$strings:trim $out] 0 400], ' ',
+                                          [$strings:slice [$strings:trim $err] 0 400])])]]]]]]]]]
+        [= $_rm [$io:remove-tree $dir]]
+    $ms]]
+
 [?def home-of scope=public impure [returns string] ($doc)
   [?let [= $hits [?to-sequence [?for [in $h $HOMES] [where [$io:is-file [$cat ($h, '/', $doc, '.flow.cx')]]] [yield $h]]]]
     [?if [= [$count $hits] 0] [then ''] [else [$first $hits]]]]]
@@ -218,6 +273,7 @@
 
 [?let
   [= $doc [$strings:trim [?else [$nth [$env:argv] 2] '']]]
+  [= $shard [$shard-arg]]
   [= $bin [$locate-cx]]
   [= $home [$home-of $doc]]
   [= $flow [$cat ($home, '/', $doc, '.flow.cx')]]
@@ -235,7 +291,12 @@
              [then [?to-sequence [?for [in $f [$io:list-dir $simdir]] [where [$strings:ends-with [$string $f] '.cx']]
                      [yield [$cat ($simdir, '/', [$string $f])]]]]]
              [else ()]]]
-  [= $misses [$cat-seqs
+  [= $jobs [?if [= $shard ''] [then [$gate-jobs [$count $cs]]] [else 1]]]
+  [= $misses [?if [not [= $shard '']]
+    [then [?if [= $home ''] [then ()]
+            [else [$cat-seqs [?to-sequence [?for [in $i [$range 1 [$count $cs]]] [where [$in-shard $i $shard]]
+                    [yield [$run-case $bin $flow $env [$nth $cs $i]]]]]]]]]
+    [else [$cat-seqs
     ([?if [= $doc ''] [then ('ci-flow-gate: name the document — e.g. release, docs, merge (usage in the header)')] [else ()]],
      [?if [= $home ''] [then ([$cat ('ci-flow-gate: no ', $doc, '.flow.cx in any of ', [$strings:join $HOMES ', '])])] [else ()]],
      [?if [= [$count $cs] 0]
@@ -249,13 +310,16 @@
        [yield [$cat ($home, '/', $d, '.flow.cx: a flow document with no ', $home, '/sim/', $d, '/cases.cxd')]]]],
      [?to-sequence [?for [in $s $sims] [where [not [$member $s $named]]]
        [yield [$cat ($s, ': a program under the table that no case names')]]]],
-     [?if [= $home ''] [then ()]
-       [else [$cat-seqs [?to-sequence [?for [in $c $cs] [yield [$run-case $bin $flow $env $c]]]]]]])]]
+     [?if [or [= $home ''] [= [$count $cs] 0]] [then ()]
+       [else [?if [> $jobs 1] [then [$run-shards $bin $doc $jobs]]
+               [else [$cat-seqs [?to-sequence [?for [in $c $cs] [yield [$run-case $bin $flow $env $c]]]]]]]]])]]]]
   [?if [> [$count $misses] 0]
     [then [?let [= $_ [?for [in $m $misses] [yield [$cry [$string $m]]]]]
                  # the same lines on stdout: a run log that keeps only stdout
                  # (a post-merge union under -Otarget) still names the case.
                  [= $_o [?for [in $m $misses] [yield [$io:write-line [$env:stdout] [$cat ('ci-flow-gate RED: ', [$string $m])]]]]]
             [?let [= $_x [$env:exit 2]] '']]]
-    [else [$cat ('ci-flow-gate OK — ', $flow, ': ', [$string [$count $cs]], ' cases, ',
-                 [$string [$expectation-count $cs]], ' expectations')]]]]
+    [else [?if [not [= $shard '']]
+      [then [$cat ('ci-flow-gate SHARD ', $shard, ' OK — ', $flow)]]
+      [else [$cat ('ci-flow-gate OK — ', $flow, ': ', [$string [$count $cs]], ' cases, ',
+                   [$string [$expectation-count $cs]], ' expectations', [?if [> $jobs 1] [then [$cat (' (', [$string $jobs], ' shards)')]] [else '']])]]]]]]
