@@ -27,6 +27,8 @@
 #   * a LOADED row (load over the bound, or no readable load — the writers
 #     record 999 for that, the fail-safe direction) is RECORDED and reported on
 #     its own line, "not judged (load N)", and never reds the step.
+#   * a row stamped before its bound's rows-from= (ROWS-FROM below, #1917) is
+#     reported "not judged (written before …)" and counts as neither.
 # Why (a): from #1903 to BUDGET-LOAD every row judged at any load, and on a box
 # that five to seven streams share the same union read 1,062 s at load 1.9 and
 # 6,189 s at load 55-110 on the next tick (2026-10-10): the budget step was red
@@ -85,6 +87,25 @@
 [?def load-bound-text scope=public impure () [$env:var-or-default 'CX_BENCH_MAX_LOAD' '8']]
 [?def quiet-row scope=public ($t $lb)
   [?let [= $l [$row-load $t]] [and [>= $l 0.0e0] [<= $l $lb]]]]
+
+# ROWS-FROM (cx-private#1917): a bound row may carry rows-from=<UTC stamp>,
+# after which every row of that name was written under the rules the bound now
+# relies on. A row stamped before it (or with no at= to place it) is reported
+# "not judged (written before …)" and is neither quiet nor loaded: it cannot
+# say what the bound needs it to say. The union and selected-run rows up to
+# the 2ddbf280c tick (ended 14:49:39Z) were written by a verdict that (1) wrote
+# a row even when a red stopped the run before its serial tail (e12dd4148), so
+# 956 s and 1,694 s were the steps before the tail, not the union, and (2) read
+# the load at the run's start only (497a6f4c9), so 3c2523d22's 10,733 s run at
+# load 82-520 read quiet at 3.25. The rules take effect one tick late: launchd
+# starts `cx flow run` in the checkout before its pull, so a tick runs the acts
+# of the head before it, and the 2ddbf280c tick still wrote 1,210 s with its
+# tail unrun. The bound's seconds do not move; which rows may speak to it does,
+# the discipline of BUDGET-LOAD. ISO-8601 UTC stamps of one shape sort as strings.
+[?def early-row scope=public ($t $from)
+  [?if [= $from ''] [then false]
+    [else [?let [= $at [$string [?else $t@at '']]]
+      [or [= $at ''] [< $at $from]]]]]]
 
 # TIMINGS-DEFAULT is where a run leaves its measurements, and $CX_VERIFICATION_TIMINGS
 # names another file instead (issue 1582). The default does not move: the
@@ -155,10 +176,13 @@
   [= $over [?to-sequence [?for [in $b $judged]
     [= $name [$string $b@name]]
     [= $limit [$str-to-int [$string $b@seconds]]]
+    [= $from [$string [?else $b@rows-from '']]]
     [= $all [?to-sequence [?for [in $t $timings]
                 [where [= [$string $t@name] $name]] [yield $t]]]]
-    [= $quiet [?to-sequence [?for [in $t $all] [where [$quiet-row $t $lb]] [yield $t]]]]
-    [= $loaded [?to-sequence [?for [in $t $all] [where [not [$quiet-row $t $lb]]] [yield $t]]]]
+    [= $early [?to-sequence [?for [in $t $all] [where [$early-row $t $from]] [yield $t]]]]
+    [= $cur [?to-sequence [?for [in $t $all] [where [not [$early-row $t $from]]] [yield $t]]]]
+    [= $quiet [?to-sequence [?for [in $t $cur] [where [$quiet-row $t $lb]] [yield $t]]]]
+    [= $loaded [?to-sequence [?for [in $t $cur] [where [not [$quiet-row $t $lb]]] [yield $t]]]]
     [= $hits [?if [> [$count $quiet] RUNS] [then [?to-sequence [?drop [- [$count $quiet] RUNS] $quiet]]] [else $quiet]]]
     [= $ss [?to-sequence [?for [in $t $hits] [yield [$str-to-int [$string $t@seconds]]]]]]
     [= $secs [?if [= [$count $hits] 0] [then 0] [else [$median-int $ss]]]]
@@ -166,6 +190,9 @@
     [= $judges [>= [$count $hits] RUNS]]
     [= $line [?if [= [$count $all] 0]
       [then [$cat ('  ', $name, '  bound ', [$mins $limit], '  — NOT MEASURED (nothing to judge)')]]
+      [else [?if [= [$count $cur] 0]
+        [then [$cat ('  ', $name, '  bound ', [$mins $limit], '  — NO ROW SINCE ', $from, ' (', [$string [$count $early]],
+                     ' written before it, judged by none)')]]
       [else [?if [= [$count $hits] 0]
         [then [$cat ('  ', $name, '  bound ', [$mins $limit], '  — NO QUIET RUN (', [$string [$count $loaded]],
                      ' loaded, judged by none; the load bound is ', [$load-bound-text], ')')]]
@@ -174,8 +201,12 @@
                    ')  loads ', $loads,
                    [?if $judges
                      [then [?if [> $secs $limit] [then '  OVER BOUND'] [else '  ok']]]
-                     [else [$cat ('  (MEASURING — ', [$string [$count $hits]], ' of ', [$string RUNS], ' quiet runs; judges nothing yet)')]]])]]]]]]
+                     [else [$cat ('  (MEASURING — ', [$string [$count $hits]], ' of ', [$string RUNS], ' quiet runs; judges nothing yet)')]]])]]]]]]]]
     [= $_p [$say $line]]
+    [= $_e [?for [in $t $early]
+      [yield [$say [$cat ('    not judged (written before ', $from, '): ',
+                          [$mins [$str-to-int [$string $t@seconds]]], ' at ', [$string [?else $t@at '?']],
+                          ' load ', [$string [?else $t@load '?']])]]]]]
     [= $_l [?for [in $t $loaded]
       [yield [$say [$cat ('    not judged (load ', [$string [?else $t@load '?']], '): ',
                           [$mins [$str-to-int [$string $t@seconds]]], ' at ', [$string [?else $t@at '?']])]]]]]

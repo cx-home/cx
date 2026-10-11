@@ -33,6 +33,9 @@
 #      no measurement at all → NOT MEASURED; the premerge-* family per repository
 #   7. with NO override the DEFAULT path is still what is read — the override
 #      moves the path and nothing else
+#  10. ROWS-FROM (#1917): union/selected-run rows stamped before their bound's
+#      rows-from (or with no at=) are reported "not judged (written before …)"
+#      and fill none of the five; rows since it judge and are never masked
 #   9. premerge-record over the load bound runs nothing: one "not run (load N)"
 #      line per repository, exit 0, no timings row (integrator 2026-10-10 22:06Z)
 #
@@ -140,50 +143,94 @@ check 0 "ok" "five quiet rows whose median is under the bound pass, one slow run
 # 1,062 s at 1.9): recorded, reported "not judged (load N)", never red.
 check 0 "not judged (load 26.92): 37m46s" "five LOADED rows over the bound are recorded, each reported not judged with its load, and never red the step" \
 '[verification-timings
-  [timing name=union seconds=6189 load=11.2 at=2026-10-10T12:26:10Z]
-  [timing name=union seconds=5786 load=18.95 at=2026-10-10T14:04:52Z]
-  [timing name=union seconds=2266 load=26.92 at=2026-10-10T14:45:18Z]
-  [timing name=union seconds=4000 load=8.01 at=2026-10-10T15:18:55Z]
-  [timing name=union seconds=9000 load=110 at=2026-10-10T16:00:00Z]]'
+  [timing name=union seconds=6189 load=11.2 at=2026-10-12T12:26:10Z]
+  [timing name=union seconds=5786 load=18.95 at=2026-10-12T14:04:52Z]
+  [timing name=union seconds=2266 load=26.92 at=2026-10-12T14:45:18Z]
+  [timing name=union seconds=4000 load=8.01 at=2026-10-12T15:18:55Z]
+  [timing name=union seconds=9000 load=110 at=2026-10-12T16:00:00Z]]'
 
 check 0 "median 15m0s of 5 quiet" "loaded rows among quiet ones neither judge nor push the quiet ones out of the median" \
 '[verification-timings
-  [timing name=union seconds=900 load=1.9 at=2026-10-10T08:00:00Z]
-  [timing name=union seconds=9999 load=55 at=2026-10-10T09:00:00Z]
-  [timing name=union seconds=1000 load=2.0 at=2026-10-10T10:00:00Z]
-  [timing name=union seconds=800 load=3.0 at=2026-10-10T11:00:00Z]
-  [timing name=union seconds=9999 load=90 at=2026-10-10T12:00:00Z]
-  [timing name=union seconds=1100 load=1.5 at=2026-10-10T13:00:00Z]
-  [timing name=union seconds=9999 load=26 at=2026-10-10T14:00:00Z]
-  [timing name=union seconds=900 load=1.7 at=2026-10-10T15:00:00Z]]'
+  [timing name=union seconds=900 load=1.9 at=2026-10-12T08:00:00Z]
+  [timing name=union seconds=9999 load=55 at=2026-10-12T09:00:00Z]
+  [timing name=union seconds=1000 load=2.0 at=2026-10-12T10:00:00Z]
+  [timing name=union seconds=800 load=3.0 at=2026-10-12T11:00:00Z]
+  [timing name=union seconds=9999 load=90 at=2026-10-12T12:00:00Z]
+  [timing name=union seconds=1100 load=1.5 at=2026-10-12T13:00:00Z]
+  [timing name=union seconds=9999 load=26 at=2026-10-12T14:00:00Z]
+  [timing name=union seconds=900 load=1.7 at=2026-10-12T15:00:00Z]]'
 
 check 0 "not judged (load ?)" "a row with no load at all is loaded: reported not judged, never red" \
 '[verification-timings
-  [timing name=selected-run seconds=9999 at=2026-10-10T10:00:00Z]
-  [timing name=selected-run seconds=9999 at=2026-10-10T11:00:00Z]
-  [timing name=selected-run seconds=9999 at=2026-10-10T12:00:00Z]
-  [timing name=selected-run seconds=9999 at=2026-10-10T13:00:00Z]
-  [timing name=selected-run seconds=9999 at=2026-10-10T14:00:00Z]]'
+  [timing name=selected-run seconds=9999 at=2026-10-12T10:00:00Z]
+  [timing name=selected-run seconds=9999 at=2026-10-12T11:00:00Z]
+  [timing name=selected-run seconds=9999 at=2026-10-12T12:00:00Z]
+  [timing name=selected-run seconds=9999 at=2026-10-12T13:00:00Z]
+  [timing name=selected-run seconds=9999 at=2026-10-12T14:00:00Z]]'
 
 check 0 "MEASURING" "four quiet rows judge nothing yet, however slow" \
 '[verification-timings
-  [timing name=union seconds=99999 load=1.0 at=2026-10-09T10:00:00Z]
-  [timing name=union seconds=99999 load=1.0 at=2026-10-09T11:00:00Z]
-  [timing name=union seconds=99999 load=1.0 at=2026-10-09T12:00:00Z]
-  [timing name=union seconds=99999 load=1.0 at=2026-10-09T13:00:00Z]]'
+  [timing name=union seconds=99999 load=1.0 at=2026-10-12T10:00:00Z]
+  [timing name=union seconds=99999 load=1.0 at=2026-10-12T11:00:00Z]
+  [timing name=union seconds=99999 load=1.0 at=2026-10-12T12:00:00Z]
+  [timing name=union seconds=99999 load=1.0 at=2026-10-12T13:00:00Z]]'
 
 check 1 "OVER BOUND" "only the LAST five quiet rows of a name count: old fast rows do not mask five slow ones" \
 '[verification-timings
-  [timing name=selected-run seconds=100 load=5 at=2026-10-09T10:00:00Z]
-  [timing name=selected-run seconds=100 load=5 at=2026-10-09T11:00:00Z]
-  [timing name=selected-run seconds=100 load=5 at=2026-10-09T12:00:00Z]
-  [timing name=selected-run seconds=4000 load=5 at=2026-10-09T13:00:00Z]
-  [timing name=selected-run seconds=4000 load=5 at=2026-10-09T14:00:00Z]
-  [timing name=selected-run seconds=4000 load=5 at=2026-10-09T15:00:00Z]
-  [timing name=selected-run seconds=4000 load=5 at=2026-10-09T16:00:00Z]
-  [timing name=selected-run seconds=4000 load=5 at=2026-10-09T17:00:00Z]]'
+  [timing name=selected-run seconds=100 load=5 at=2026-10-12T10:00:00Z]
+  [timing name=selected-run seconds=100 load=5 at=2026-10-12T11:00:00Z]
+  [timing name=selected-run seconds=100 load=5 at=2026-10-12T12:00:00Z]
+  [timing name=selected-run seconds=4000 load=5 at=2026-10-12T13:00:00Z]
+  [timing name=selected-run seconds=4000 load=5 at=2026-10-12T14:00:00Z]
+  [timing name=selected-run seconds=4000 load=5 at=2026-10-12T15:00:00Z]
+  [timing name=selected-run seconds=4000 load=5 at=2026-10-12T16:00:00Z]
+  [timing name=selected-run seconds=4000 load=5 at=2026-10-12T17:00:00Z]]'
 
 check 0 "NOT MEASURED" "a bound with no measurement does not fail the step" ""
+
+# 10 — ROWS-FROM (cx-private#1917): the union and selected-run bounds carry rows-from=, after which
+#      every tick runs a verdict that writes a row only when the serial tail ran and with the greater of
+#      its start and end load (a tick runs the acts of the head before it, so the 2ddbf280c tick, ended
+#      14:49:39Z, is the last of the old ones). Its file, planted as it was: five quiet rows over the bound
+#      (median 31m22s, the step RED), then 1,210 s written with the tail unrun. All are reported, none
+#      judged, exit 0; the first row after rows-from MEASURES (1 of 5).
+check 0 "not judged (written before 2026-10-11T14:49:40Z): 178m53s at 2026-10-10T21:39:51Z" "union rows stamped before the bound's rows-from are reported, never judged (the 2ddbf280c file)" \
+'[verification-timings
+  [timing name=union seconds=1882 load=1.71 at=2026-10-10T19:00:00Z]
+  [timing name=union seconds=10733 load=3.25 at=2026-10-10T21:39:51Z]
+  [timing name=union seconds=1694 load=1.65 at=2026-10-11T00:42:57Z]
+  [timing name=union seconds=2253 load=4.01 at=2026-10-11T04:10:47Z]
+  [timing name=union seconds=956 load=2.91 at=2026-10-11T11:03:36Z]
+  [timing name=union seconds=3580 load=68.41 at=2026-10-11T14:27:15Z]
+  [timing name=union seconds=1210 load=7.42 at=2026-10-11T14:49:39Z]]'
+check 0 "MEASURING — 1 of 5" "the one union row since rows-from measures; the early quiet rows do not fill the five" \
+'[verification-timings
+  [timing name=union seconds=1882 load=1.71 at=2026-10-10T19:00:00Z]
+  [timing name=union seconds=10733 load=3.25 at=2026-10-10T21:39:51Z]
+  [timing name=union seconds=1694 load=1.65 at=2026-10-11T00:42:57Z]
+  [timing name=union seconds=2253 load=4.01 at=2026-10-11T04:10:47Z]
+  [timing name=union seconds=956 load=2.91 at=2026-10-11T11:03:36Z]
+  [timing name=union seconds=1210 load=7.42 at=2026-10-11T14:49:39Z]
+  [timing name=union seconds=1010 load=3.10 at=2026-10-11T18:20:00Z]]'
+#      rows-from never masks: five quiet rows since it over the bound FAIL beside fast early ones, and
+#      a row with no at= cannot place itself after rows-from, so it is early too.
+check 1 "OVER BOUND" "five quiet union rows since rows-from over the bound FAIL; fast early rows do not mask them" \
+'[verification-timings
+  [timing name=union seconds=300 load=1.0 at=2026-10-11T10:00:00Z]
+  [timing name=union seconds=300 load=1.0 at=2026-10-11T11:00:00Z]
+  [timing name=union seconds=300 load=1.0 at=2026-10-11T12:00:00Z]
+  [timing name=union seconds=1500 load=2.0 at=2026-10-11T14:49:40Z]
+  [timing name=union seconds=1500 load=2.0 at=2026-10-11T15:00:00Z]
+  [timing name=union seconds=1500 load=2.0 at=2026-10-11T16:00:00Z]
+  [timing name=union seconds=300 load=2.0 at=2026-10-11T17:00:00Z]
+  [timing name=union seconds=1500 load=2.0 at=2026-10-11T18:00:00Z]]'
+check 0 "NO ROW SINCE 2026-10-11T14:49:40Z (5 written before it" "selected-run rows with no at= or before rows-from judge nothing" \
+'[verification-timings
+  [timing name=selected-run seconds=9999 load=1.0]
+  [timing name=selected-run seconds=9999 load=1.0]
+  [timing name=selected-run seconds=9999 load=1.0 at=2026-10-06T00:07:46Z]
+  [timing name=selected-run seconds=9999 load=1.0 at=2026-10-07T00:07:46Z]
+  [timing name=selected-run seconds=9999 load=1.0 at=2026-10-11T14:49:39Z]]'
 
 check 1 "premerge-cx-slow  bound 20m0s  median 25m0s" "the premerge-* family judges each repository on its own: one slow repository FAILS, its fast sibling reads ok" \
 '[verification-timings
@@ -266,4 +313,4 @@ if [ "$fails" -gt 0 ]; then
   echo "verification-budget self-test: $fails failure(s)"
   exit 1
 fi
-echo "verification-budget self-test OK — 14 properties, all planted under $T (never the real timings path)"
+echo "verification-budget self-test OK — 18 properties, all planted under $T (never the real timings path)"
