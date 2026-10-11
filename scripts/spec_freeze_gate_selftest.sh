@@ -89,6 +89,28 @@ trap 'rm -rf "$T"' EXIT
   if bash "$GATE" 2>/dev/null; then
     echo "SELFTEST FAILED: scenario I (legacy-namespace file at HEAD) passed the default-mode gate" >&2; exit 1
   fi
+  git rm -q spec/02-working/partition_sneaky.md && git commit -qm "leave the legacy namespace"  # spec-path-ok (a planted path)
+
+  # J — the RANGE scan (default mode; one git-log pass picks the commits
+  # check_commit sees, cx-private#1917) must still find every violation in the
+  # range: A (tokenless), C and H (unrecorded tokens) are named, the recorded
+  # and single-class commits are not.
+  seed=$(git rev-list --max-parents=0 HEAD)
+  out=$(SPEC_FREEZE_EPOCH="$seed" bash "$GATE" 2>&1) && {
+    echo "SELFTEST FAILED: scenario J (range with three violations) passed the default-mode gate" >&2; exit 1; }
+  for v in "$a" "$c" "$h"; do
+    printf '%s\n' "$out" | grep -q "commit $v " || {
+      echo "SELFTEST FAILED: scenario J did not name violation $v:" >&2; printf '%s\n' "$out" >&2; exit 1; }
+  done
+  for ok in "$b" "$f" "$g"; do
+    if printf '%s\n' "$out" | grep -q "commit $ok "; then
+      echo "SELFTEST FAILED: scenario J named the recorded-token commit $ok" >&2; exit 1
+    fi
+  done
+
+  # K — a range holding only clean commits (after H) passes the range scan.
+  SPEC_FREEZE_EPOCH="$h" bash "$GATE" >/dev/null || {
+    echo "SELFTEST FAILED: scenario K (clean range after H) was refused" >&2; exit 1; }
 )
 
-echo "spec-freeze-gate selftest: 9/9 (tokenless-mixed RED, unrecorded-token RED plain+parenthesized, recorded plain/parenthesized/qualified green, spec-only/impl-only green, legacy-namespace RED)"
+echo "spec-freeze-gate selftest: 11/11 (tokenless-mixed RED, unrecorded-token RED plain+parenthesized, recorded plain/parenthesized/qualified green, spec-only/impl-only green, legacy-namespace RED, range scan names exactly the three violations, clean range green)"
