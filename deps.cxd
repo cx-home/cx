@@ -62,7 +62,7 @@ unchanged.
   [dep repo=cx-platform-fabric sha=0a28d4fb5031411690e5c7c01370b0f71da91935 module='cx-platform/fabric' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-xsp sha=b7e119d9a9275460190b735c607b564a29012ef3 module='cx-platform/xsp-auth' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-tooling sha=95207684724ce5c7b3b5811b89ae752941830fca module=cx-tooling]
-  [dep repo=cx-platform-xap sha=46d7e1ce4d88498af3cb663e3496a59ec0872de1 module='cx-platform/xap' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
+  [dep repo=cx-platform-xap sha=5e8894d25bcf5bee66ab2a709ae4a82aee8cd79e module='cx-platform/xap' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-registry sha=a70cbe92722f18c9dee52a947431ece6e58a01be module=cx-registry]
   [dep repo=cx-decisions sha=ee9038cfe0ab2cc871ed1c40c36cb6b49c901c78 module=cx-decisions]
   [dep repo=cx-binding-python sha=c3367a7f1326029b8ab8b569eec0598e091e1ebe module=cx-binding-python]
