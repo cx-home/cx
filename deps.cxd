@@ -68,5 +68,5 @@ unchanged.
   [dep repo=cx-binding-python sha=c3367a7f1326029b8ab8b569eec0598e091e1ebe module=cx-binding-python]
   [dep repo=cx-binding-go sha=f3d15b8bfd025b69a25dd96e4a769fa32ccd80ea module=cx-binding-go]
   [dep repo=cx-binding-rust sha=bffcaea9905f957a0466dd129b9175aa41975817 module=cx-binding-rust]
-  [dep repo=cx-binding-v sha=9154865bc50f36ba9525b68df8f10dc2f12069c1 module=cx-binding-v]
+  [dep repo=cx-binding-v sha=ea14483a90c29f2241d5223be00ab5ee66d50822 module=cx-binding-v]
 ]
