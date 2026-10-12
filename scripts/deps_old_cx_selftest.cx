@@ -24,7 +24,7 @@
 #
 # THE BINARY. CX_OLD=<path> when given (any pre-DEPSV-1 cx). Otherwise the 0.17
 # release asset for this platform (darwin-arm64, linux-arm64), downloaded once
-# into ${XDG_CACHE_HOME:-$HOME/.cache}/cx/release/v0.17.0/<platform>/ and
+# into ${XDG_CACHE_HOME:-$HOME/.cache}/cx/release/<tag>/<platform>/ and
 # checked against the sha256 below on every run. A platform with no asset and
 # no CX_OLD is a FAILURE naming CX_OLD, never a skip (RULED: PYE-6).
 #
@@ -40,9 +40,9 @@
 [?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
 [?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
 
-[?def release-tag scope=private pure [returns string] () "v0.17.0"]
+[?def release-tag scope=private pure [returns string] () "v0.17.0"]  [; version-literal-ok — the release this test runs, by design an old one ]
 
-# sha256 of each release asset, as published on the v0.17.0 release.
+# sha256 of each release asset, as published on that release.
 [?def asset-sha scope=private pure [returns string] ($plat::string)
   [?if [= $plat "darwin-arm64"] [then "2859705f6ec3848ff8ea999ebae442fbcfcd7068647351232b7fbf272deb9873"]
     [else [?if [= $plat "linux-arm64"] [then "27fff174ea8ff5a8b37937c398565e88390568cd1b2180b18dc8fe801caaa2c7"]
@@ -66,26 +66,30 @@
     [= $dir [$concat $cache "/cx/release/" [$release-tag] "/" $plat]]
     [= $tgz [$concat $dir "/cx-" $plat ".tar.gz"]]
     [= $url [$concat "https://github.com/cx-home/cx/releases/download/" [$release-tag] "/cx-" $plat ".tar.gz"]]
+    [= $no-asset [$concat "the " [$release-tag] " release has no cx asset for " $plat
+                          " -- set CX_OLD to a cx that predates DEPSV-1"]]
+    [= $bin [$concat $dir "/cx"]]
     [?if [= $sum ""]
-      [then [failed why=[$concat "the " [$release-tag] " release has no cx asset for " $plat
-                                 " -- set CX_OLD to a cx that predates DEPSV-1"]]]
+      [then [failed why=$no-asset]]
       [else [?let
         [= $r [$sh [$concat "set -e; mkdir -p '" $dir "'; cd '" $dir "'; "
                             "if [ ! -f '" $tgz "' ]; then curl -fsSL -o '" $tgz ".part' '" $url "' && mv '" $tgz ".part' '" $tgz "'; fi; "
                             "got=$( (shasum -a 256 '" $tgz "' 2>/dev/null || sha256sum '" $tgz "') | cut -d' ' -f1); "
                             "if [ \"$got\" != '" $sum "' ]; then rm -f '" $tgz "'; echo \"sha256 $got, want " $sum "\" >&2; exit 3; fi; "
                             "[ -x '" $dir "/cx' ] || tar xzf '" $tgz "' -C '" $dir "'"]]]
+        [= $why [$concat "cannot fetch " $url " into " $dir ": "
+                         [$strings:trim [$string $r@stderr]]
+                         " -- or set CX_OLD to a cx that predates DEPSV-1"]]
         [?if [= [$string $r@exit-code] "0"]
-          [then [got path=[$concat $dir "/cx"]]]
-          [else [failed why=[$concat "cannot fetch " $url " into " $dir ": "
-                                     [$strings:trim [$string $r@stderr]]
-                                     " -- or set CX_OLD to a cx that predates DEPSV-1"]]]]]]]]]
+          [then [got path=$bin]]
+          [else [failed why=$why]]]]]]]]
 
 [?def check scope=private impure ($name::string $ok::bool $detail::string)
   [?let [= $_ [?if $ok
                 [then [$say [$concat "  ok    " $name]]]
                 [else [$cry [$concat "  FAIL  " $name ": " $detail]]]]]
-    [checked name=$name ok=[?if $ok [then "true"] [else "false"]]]]]
+        [= $okv [?if $ok [then "true"] [else "false"]]]
+    [checked name=$name ok=$okv]]]
 
 [?let
   [= $given [$env:var-or-default "CX_OLD" ""]]
