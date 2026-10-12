@@ -1,0 +1,149 @@
+# scripts/deps_old_cx_selftest.cx -- the pin transport on the OLDEST cx it runs
+# on (cx-private#1921). Written in CX (AGENTS.md rule 6).
+#
+# `make deps-sync` runs `cx deps sync` when the cx it found has the verb, and
+# otherwise this checkout's scripts/deps_sync.cx under that cx (DEPS_SYNC_RUN in
+# the Makefile). The second path is there for an installed cx that predates
+# DEPSV-1 -- the 0.17 release (ep-2's /opt/homebrew/bin/cx; cx-examples'
+# tools/pin_build.sh runs `make deps-sync` with whatever `cx` is on PATH). On
+# 10-12 that path refused at parse time ([?splice] inside a tuple literal,
+# CXER0100), and under it scripts/deps_pins.cx answered no verdict and no fetch
+# URL (no [$attrs] in 0.17). This program grades both scripts on that cx:
+#
+#   1. the binary is what the test needs: it has no `cx deps` verb and refuses
+#      a [?splice] inside a tuple literal with CXER0100 -- else this test would
+#      prove nothing;
+#   2. the deps.cxd corpus, graded with `--with-cx` that binary: every sync
+#      scenario (fetch, move, drift, refusals, --vpath) runs scripts/deps_sync.cx
+#      under it, and every verdict case is rendered by it too;
+#   3. `--vpath` over this checkout's deps.cxd prints the same line under it as
+#      under this cx;
+#   4. scripts/bundle_check.cx -- the second program `make deps-sync` and
+#      `make deps-check` run with that cx (scripts/bundle_sources.cx and
+#      scripts/deps_pins.cx under it) -- prints the same census under it.
+#
+# THE BINARY. CX_OLD=<path> when given (any pre-DEPSV-1 cx). Otherwise the 0.17
+# release asset for this platform (darwin-arm64, linux-arm64), downloaded once
+# into ${XDG_CACHE_HOME:-$HOME/.cache}/cx/release/<tag>/<platform>/ and
+# checked against the sha256 below on every run. A platform with no asset and
+# no CX_OLD is a FAILURE naming CX_OLD, never a skip (RULED: PYE-6).
+#
+# Exit 0 when all four hold, 1 otherwise.
+# Run from the checkout root:  cx --allow-all scripts/deps_old_cx_selftest.cx
+# (or: make test-deps-pins, which runs it after the corpus)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def release-tag scope=private pure [returns string] () "v0.17.0"]  [; version-literal-ok — the release this test runs, by design an old one ]
+
+# sha256 of each release asset, as published on that release.
+[?def asset-sha scope=private pure [returns string] ($plat::string)
+  [?if [= $plat "darwin-arm64"] [then "2859705f6ec3848ff8ea999ebae442fbcfcd7068647351232b7fbf272deb9873"]
+    [else [?if [= $plat "linux-arm64"] [then "27fff174ea8ff5a8b37937c398565e88390568cd1b2180b18dc8fe801caaa2c7"]
+      [else ""]]]]]
+
+[?def sh scope=private impure ($script::string)
+  [$process:run ("sh", "-c", $script)]]
+
+[?def platform scope=private impure [returns string] ()
+  [?let [= $s [$strings:trim [$string [$sh "uname -s"]@stdout]]]
+        [= $m [$strings:trim [$string [$sh "uname -m"]@stdout]]]
+        [= $os [?if [= $s "Darwin"] [then "darwin"] [else [?if [= $s "Linux"] [then "linux"] [else $s]]]]]
+        [= $arch [?if [or [= $m "arm64"] [= $m "aarch64"]] [then "arm64"] [else $m]]]
+    [$concat $os "-" $arch]]]
+
+# fetch-release: [got path=] or [failed why=].
+[?def fetch-release scope=private impure ($plat::string)
+  [?let
+    [= $sum [$asset-sha $plat]]
+    [= $cache [$env:var-or-default "XDG_CACHE_HOME" [$concat [$env:var-or-default "HOME" "/tmp"] "/.cache"]]]
+    [= $dir [$concat $cache "/cx/release/" [$release-tag] "/" $plat]]
+    [= $tgz [$concat $dir "/cx-" $plat ".tar.gz"]]
+    [= $url [$concat "https://github.com/cx-home/cx/releases/download/" [$release-tag] "/cx-" $plat ".tar.gz"]]
+    [= $no-asset [$concat "the " [$release-tag] " release has no cx asset for " $plat
+                          " -- set CX_OLD to a cx that predates DEPSV-1"]]
+    [= $bin [$concat $dir "/cx"]]
+    [?if [= $sum ""]
+      [then [failed why=$no-asset]]
+      [else [?let
+        [= $r [$sh [$concat "set -e; mkdir -p '" $dir "'; cd '" $dir "'; "
+                            "if [ ! -f '" $tgz "' ]; then curl -fsSL -o '" $tgz ".part' '" $url "' && mv '" $tgz ".part' '" $tgz "'; fi; "
+                            "got=$( (shasum -a 256 '" $tgz "' 2>/dev/null || sha256sum '" $tgz "') | cut -d' ' -f1); "
+                            "if [ \"$got\" != '" $sum "' ]; then rm -f '" $tgz "'; echo \"sha256 $got, want " $sum "\" >&2; exit 3; fi; "
+                            "[ -x '" $dir "/cx' ] || tar xzf '" $tgz "' -C '" $dir "'"]]]
+        [= $why [$concat "cannot fetch " $url " into " $dir ": "
+                         [$strings:trim [$string $r@stderr]]
+                         " -- or set CX_OLD to a cx that predates DEPSV-1"]]
+        [?if [= [$string $r@exit-code] "0"]
+          [then [got path=$bin]]
+          [else [failed why=$why]]]]]]]]
+
+[?def check scope=private impure ($name::string $ok::bool $detail::string)
+  [?let [= $_ [?if $ok
+                [then [$say [$concat "  ok    " $name]]]
+                [else [$cry [$concat "  FAIL  " $name ": " $detail]]]]]
+        [= $okv [?if $ok [then "true"] [else "false"]]]
+    [checked name=$name ok=$okv]]]
+
+[?let
+  [= $given [$env:var-or-default "CX_OLD" ""]]
+  [= $plat  [$platform]]
+  [= $src   [?if [= $given ""] [then [$fetch-release $plat]] [else [got path=$given]]]]
+  [?if [= [$name $src] "failed"]
+    [then [?let [= $_ [$cry [$concat "deps-old-cx: FAILED -- " [$string $src@why]]]]
+            [$env:exit 1]]]
+    [else ""]]]
+
+[?let
+  [= $given [$env:var-or-default "CX_OLD" ""]]
+  [= $old   [?if [= $given ""]
+              [then [$string [$fetch-release [$platform]]@path]]
+              [else $given]]]
+  [= $me    [$env:executable-path]]
+  [= $tmp   [$io:temp-dir "cx-deps-old-cx-"]]
+  [= $probe [$concat $tmp "/splice.cx"]]
+  [= $_w    [$io:write-file $probe "[?let [= $xs (\"b\")] (\"a\", [?splice $xs])]\n"]]
+  [= $p1    [$process:run ($old, "--allow-all", $probe)]]
+  [= $p2    [$process:run ($old, "deps", "--help")]]
+  [= $_rm   [$io:remove-tree $tmp]]
+  [= $is-old [and [not [= [$string $p1@exit-code] "0"]]
+                  [$strings:contains [$concat [$string $p1@stderr] [$string $p1@stdout]] "CXER0100"]
+                  [not [= [$string $p2@exit-code] "0"]]]]
+  [= $c1 [$check [$concat "the binary predates DEPSV-1 (" $old ")"] $is-old
+                 [$concat "a [?splice] in a tuple exits " [$string $p1@exit-code]
+                          ", `deps --help` exits " [$string $p2@exit-code]
+                          " -- this binary cannot prove the fallback"]]]
+  [= $g  [$process:run ($me, "--allow-read", "--allow-write", "--allow-subprocess",
+                        "scripts/check_deps_pins_fixtures.cx", "--with-cx", $old)]]
+  [= $c2 [$check "the deps.cxd corpus under it (scripts/check_deps_pins_fixtures.cx --with-cx)"
+                 [= [$string $g@exit-code] "0"]
+                 [$concat [$strings:trim [$string $g@stdout]] "\n" [$string $g@stderr]]]]
+  [= $v-old [$process:run ($old, "--allow-all", "scripts/deps_sync.cx", "--vpath", "--dir", "deps")]]
+  [= $v-me  [$process:run ($me,  "--allow-all", "scripts/deps_sync.cx", "--vpath", "--dir", "deps")]]
+  [= $c3 [$check "--vpath under it equals --vpath under this cx"
+                 [and [= [$string $v-old@exit-code] "0"]
+                      [= [$strings:trim [$string $v-old@stdout]] [$strings:trim [$string $v-me@stdout]]]
+                      [not [= [$strings:trim [$string $v-me@stdout]] ""]]]
+                 [$concat "under it (exit " [$string $v-old@exit-code] "): " [$strings:trim [$string $v-old@stdout]]
+                          " | under this cx: " [$strings:trim [$string $v-me@stdout]]]]]
+  [= $b-old [$process:run ($old, "--allow-all", "scripts/bundle_check.cx")]]
+  [= $b-me  [$process:run ($me,  "--allow-all", "scripts/bundle_check.cx")]]
+  [= $c4 [$check "scripts/bundle_check.cx (deps-sync's second line) under it equals under this cx"
+                 [and [= [$string $b-old@exit-code] [$string $b-me@exit-code]]
+                      [= [$strings:trim [$string $b-old@stdout]] [$strings:trim [$string $b-me@stdout]]]
+                      [not [= [$strings:trim [$string $b-me@stdout]] ""]]]
+                 [$concat "under it (exit " [$string $b-old@exit-code] "): " [$strings:trim [$string $b-old@stdout]]
+                          [$strings:trim [$string $b-old@stderr]]
+                          " | under this cx (exit " [$string $b-me@exit-code] "): " [$strings:trim [$string $b-me@stdout]]]]]
+  [= $bad [?for [in $c ($c1, $c2, $c3, $c4)] [where [= [$string $c@ok] "false"]] [yield $c]]]
+  [?if [= [$count $bad] 0]
+    [then [?let [= $_ [$say "deps-old-cx: OK -- scripts/deps_sync.cx, deps_pins.cx and bundle_check.cx run on the pre-DEPSV-1 cx (#1921)"]]
+            [$env:exit 0]]]
+    [else [?let [= $_ [$cry [$concat "deps-old-cx: FAILED -- " [$string [$count $bad]] " of 4 checks"]]]
+            [$env:exit 1]]]]]

@@ -80,8 +80,11 @@
     [?if [= [$count $hits] 0] [then $d] [else [$first $hits]]]]]
 
 # git: run a git command, as [r exit= out= err=].
+# No [?splice] inside a tuple literal here or below: a pre-DEPSV-1 cx (the
+# 0.17 release) refuses it (CXER0100), and this program is the fallback
+# `make deps-sync` runs on exactly that cx (#1921). Two-level ?for instead.
 [?def git scope=private impure ($argv)
-  [?let [= $r [$process:run [?for [in $a ("git", [?splice $argv])] [yield $a]]]]
+  [?let [= $r [$process:run [?for [in $p (("git"), $argv)] [in $a $p] [yield $a]]]]
     [r exit=[$string $r@exit-code]
        out=[$strings:trim [$string $r@stdout]]
        err=[$strings:trim [$string $r@stderr]]]]]
@@ -194,7 +197,7 @@
         [else [?let
           [= $roots [?for [in $r [$pins:rows $doc]] [where [$present $r@v-fork]]
                       [yield [$concat $root "/" [$string $r@repo] "/vcx"]]]]
-          [= $_ [$say [$strings:join ([?splice $roots], "@vmodules", "@vlib") "|"]]]
+          [= $_ [$say [$strings:join [?for [in $p ($roots, ("@vmodules", "@vlib"))] [in $a $p] [yield $a]] "|"]]]
           [$env:exit 0]]]]]]
   [else ""]]
 

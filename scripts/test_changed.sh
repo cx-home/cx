@@ -446,7 +446,7 @@ step_globs() {
     store-session-dep-gate)        echo 'scripts/store_session_dep_gate.cx vcx/store/* vcx/identity/stdlib_session.v' ;;
     # the pin document, its format module, its grader and the spec page it
     # implements -- nothing else changes what the corpus asserts.
-    test-deps-pins)                echo 'conformance/deps_pins.cxd scripts/check_deps_pins_fixtures.cx scripts/deps_pins.cx scripts/deps_sync.cx deps.cxd spec/03-approved/process/repository-dependency-pins.md' ;;
+    test-deps-pins)                echo 'conformance/deps_pins.cxd scripts/check_deps_pins_fixtures.cx scripts/deps_pins.cx scripts/deps_sync.cx scripts/deps_pins_render.cx scripts/deps_old_cx_selftest.cx scripts/bundle_check.cx scripts/bundle_sources.cx deps.cxd spec/03-approved/process/repository-dependency-pins.md' ;;
     # SITE-1: the bootstrap script and its own selftest -- nothing else
     # changes what this step grades.
     check-deps-bootstrap-token)    echo 'scripts/deps_bootstrap.sh scripts/deps_bootstrap_selftest.sh' ;;

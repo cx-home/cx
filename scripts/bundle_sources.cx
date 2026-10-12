@@ -148,4 +148,4 @@
 # report: what scripts/bundle_check.cx prints and what the corpus pins, so the
 # two can never say different things about the same tree.
 [?def report scope=public pure [returns string] ($v)
-  [$strings:join ([$census $v], [?splice [$render $v]]) "\n"]]
+  [$strings:join [?for [in $p (([$census $v]), [$render $v])] [in $l $p] [yield $l]] "\n"]]
