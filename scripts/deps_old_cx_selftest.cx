@@ -17,7 +17,10 @@
 #      scenario (fetch, move, drift, refusals, --vpath) runs scripts/deps_sync.cx
 #      under it, and every verdict case is rendered by it too;
 #   3. `--vpath` over this checkout's deps.cxd prints the same line under it as
-#      under this cx.
+#      under this cx;
+#   4. scripts/bundle_check.cx -- the second program `make deps-sync` and
+#      `make deps-check` run with that cx (scripts/bundle_sources.cx and
+#      scripts/deps_pins.cx under it) -- prints the same census under it.
 #
 # THE BINARY. CX_OLD=<path> when given (any pre-DEPSV-1 cx). Otherwise the 0.17
 # release asset for this platform (darwin-arm64, linux-arm64), downloaded once
@@ -25,7 +28,7 @@
 # checked against the sha256 below on every run. A platform with no asset and
 # no CX_OLD is a FAILURE naming CX_OLD, never a skip (RULED: PYE-6).
 #
-# Exit 0 when all three hold, 1 otherwise.
+# Exit 0 when all four hold, 1 otherwise.
 # Run from the checkout root:  cx --allow-all scripts/deps_old_cx_selftest.cx
 # (or: make test-deps-pins, which runs it after the corpus)
 
@@ -125,9 +128,18 @@
                       [not [= [$strings:trim [$string $v-me@stdout]] ""]]]
                  [$concat "under it (exit " [$string $v-old@exit-code] "): " [$strings:trim [$string $v-old@stdout]]
                           " | under this cx: " [$strings:trim [$string $v-me@stdout]]]]]
-  [= $bad [?for [in $c ($c1, $c2, $c3)] [where [= [$string $c@ok] "false"]] [yield $c]]]
+  [= $b-old [$process:run ($old, "--allow-all", "scripts/bundle_check.cx")]]
+  [= $b-me  [$process:run ($me,  "--allow-all", "scripts/bundle_check.cx")]]
+  [= $c4 [$check "scripts/bundle_check.cx (deps-sync's second line) under it equals under this cx"
+                 [and [= [$string $b-old@exit-code] [$string $b-me@exit-code]]
+                      [= [$strings:trim [$string $b-old@stdout]] [$strings:trim [$string $b-me@stdout]]]
+                      [not [= [$strings:trim [$string $b-me@stdout]] ""]]]
+                 [$concat "under it (exit " [$string $b-old@exit-code] "): " [$strings:trim [$string $b-old@stdout]]
+                          [$strings:trim [$string $b-old@stderr]]
+                          " | under this cx (exit " [$string $b-me@exit-code] "): " [$strings:trim [$string $b-me@stdout]]]]]
+  [= $bad [?for [in $c ($c1, $c2, $c3, $c4)] [where [= [$string $c@ok] "false"]] [yield $c]]]
   [?if [= [$count $bad] 0]
-    [then [?let [= $_ [$say "deps-old-cx: OK -- scripts/deps_sync.cx and scripts/deps_pins.cx run on the pre-DEPSV-1 cx (#1921)"]]
+    [then [?let [= $_ [$say "deps-old-cx: OK -- scripts/deps_sync.cx, deps_pins.cx and bundle_check.cx run on the pre-DEPSV-1 cx (#1921)"]]
             [$env:exit 0]]]
-    [else [?let [= $_ [$cry [$concat "deps-old-cx: FAILED -- " [$string [$count $bad]] " of 3 checks"]]]
+    [else [?let [= $_ [$cry [$concat "deps-old-cx: FAILED -- " [$string [$count $bad]] " of 4 checks"]]]
             [$env:exit 1]]]]]
