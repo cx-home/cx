@@ -34,6 +34,10 @@
 #      row grew 17 % exits 1, and a head recorded over the bound has its time
 #      rows left unjudged even when the current reading is quiet, as is a
 #      peak the runner marks load_sensitive
+#   J  the collector rows (cx-private#1910, ruling 2026-10-12 01:42Z): the runner
+#      carries workload.json_codec_1mb_x100_peak_rss_mb and
+#      workload.pi_digits_3000_peak_rss_mb, and their answer checks pass a right
+#      output and refuse a wrong or empty one (a misanswer is no reading)
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -235,8 +239,19 @@ else
   bad I "loaded memory judgement — clean exit $r1, grown exit $r2, loaded-head exit $r3, load_sensitive exit $r4: $o1 / $o2 / $o3"
 fi
 
+# ── J — the collector rows are carried and answer-checked (#1910) ───────────
+out=$("$CX" --allow-read --allow-write --allow-subprocess --allow-clock --allow-env \
+        scripts/run_bench_json.cx --workload-selftest 2>&1); rc=$?
+if [ "$rc" -eq 0 ] && grep -q "'workload.json_codec_1mb_x100_peak_rss_mb'" scripts/run_bench_json.cx \
+   && grep -q "'workload.pi_digits_3000_peak_rss_mb'" scripts/run_bench_json.cx \
+   && grep -q '\[\$run-json-codec-bench\], \[\$run-pi-digits-bench\]' scripts/run_bench_json.cx; then
+  ok J "the json-codec 1 MB x100 and pi-digits 3000 peak-RSS rows are measured and their answer checks grade planted outputs (#1910)"
+else
+  bad J "run_bench_json --workload-selftest — exit $rc (or a collector row is gone from the runner): $out"
+fi
+
 if [ "$fails" -ne 0 ]; then
   echo "bench-isolation self-test: $fails case(s) FAILED" >&2
   exit 1
 fi
-echo "bench-isolation self-test: 10/10 (measure-side refusal; judge-side refusal; judged under the bound; a pre-#1450 artifact unchanged; a loaded regression refused and the same number on a quiet box still failing; the harness rows time the running cx, #1751; the peak-RSS reader, the paired judgement and the memory half under load, #1884)"
+echo "bench-isolation self-test: 11/11 (measure-side refusal; judge-side refusal; judged under the bound; a pre-#1450 artifact unchanged; a loaded regression refused and the same number on a quiet box still failing; the harness rows time the running cx, #1751; the peak-RSS reader, the paired judgement and the memory half under load, #1884; the collector rows, #1910)"
