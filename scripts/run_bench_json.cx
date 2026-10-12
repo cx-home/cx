@@ -341,9 +341,19 @@
       [else ()]]]
     [; its peak moves with the box: an allocation-heavy run whose collector
        works beside it read 817-989 MB at one load, run to run (#1884), so the
-       row says so and compare_bench judges it on a quiet box only. ]
+       row says so and compare_bench judges it on a quiet box only.
+       One run is not a reading of it either: the same binary (e3abcc1f3, load
+       7.2-7.7, 2026-10-12 08:2xZ) read 538, 931, 513, 513, 513, 513, 513 MB, and
+       the loop's e3abcc1f3 tick read 824 against the head record's 620 on a
+       tree with no runtime change, so perf-pair went red on noise. The row is
+       the median of five: the make run above and four more of the bench binary
+       it built (about 6 s each). The bench exits 2 on its own gate-15 verdict,
+       so any run whose timer printed a peak counts. ]
+    [= $more [?to-sequence [?for [in $i [$range 1 4]]
+      [= $m [$process:run [$timed-argv ('vcx/target/bench/code_streaming_throughput_bench')]]]
+      [yield [$peak-rss-mb [$string $m@stderr]]]]]]
     [$map:put $out 'code_streaming.peak_rss_mb'
-      [$map:put [$rss-row 'make bench-code-streaming' ([$peak-rss-mb [$string $r@stderr]])] 'load_sensitive' true]]]]
+      [$map:put [$rss-row 'make bench-code-streaming' ([$peak-rss-mb [$string $r@stderr]], [?splice $more])] 'load_sensitive' true]]]]
 
 [; #1281 — `cx fmt` on a generated 8,000-record document (~1.4 MB): the
    standalone formatter was a 26 s / 3.3 GB outlier against ~1 s for
@@ -721,9 +731,10 @@
     [else $streaming]]]
 
   [; the load either side of the measurement, so a row in this artifact is
-     classifiable from the file alone (#1450). load_1m_end is recorded and NOT
-     judged: a box that got busy during the run is visible in the artifact, and
-     a second refusal after the work is spent would only throw the reading away. ]
+     classifiable from the file alone (#1450). The runner does not refuse on
+     load_1m_end (the work is spent); compare_bench judges the greater of the
+     two (cx-private#1917): a box that got busy during the run read a +64 %
+     flow_saga on a tree with no runtime change. ]
   [= $load-end [$load-1m]]
   [= $report {schema_version: 1,
               run_id: [$run-id],

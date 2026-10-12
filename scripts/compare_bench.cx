@@ -143,9 +143,13 @@
      any row is printed. The bound the artifact carries wins, so a reading is
      judged against the bound it was taken under; CX_BENCH_MAX_LOAD then 8 are
      the fallbacks. ]
-  [= $curr-load [$num-or $curr 'load_1m_start' -1.0e0]]
+  [; a reading's load is the greater of its start and end loads (cx-private#1917,
+     the union-row rule of 497a6f4c9): a run that started at 7.8 and ended at
+     27.6 read flow_saga +64 % and fmt_8k's peak +29 % on a tree with no
+     runtime change. -1 at either end is "not read" and does not count. ]
+  [= $curr-load [$math:max ([$num-or $curr 'load_1m_start' -1.0e0], [$num-or $curr 'load_1m_end' -1.0e0])]]
   [= $load-bound [$num-or $curr 'load_1m_bound' [$env:var-float 'CX_BENCH_MAX_LOAD' 8.0e0]]]
-  [= $base-load [$num-or $base 'load_1m_start' -1.0e0]]
+  [= $base-load [$math:max ([$num-or $base 'load_1m_start' -1.0e0], [$num-or $base 'load_1m_end' -1.0e0])]]
   [= $base-bound [$num-or $base 'load_1m_bound' $load-bound]]
   [; a head artifact recorded on a loaded box (#1884's paired step records
      the head as it lands) has inflated TIME rows: judging a quiet reading
@@ -191,8 +195,9 @@
   [= $_h3 [$say [$cat ('  current  ', [$meta-str $curr 'cx_commit'], ' on ',
                        [$meta-str $curr 'uname'], ' (', [$meta-str $curr 'run_id'], ')')]]]
   [= $_h3b [$say [$cat ('  load     ', [?if [> $curr-load -1.0e0]
-                                         [then [$cat ([$fixed1 $curr-load], ' at the start of the current run, bound ',
-                                                      [$fixed1 $load-bound])]]
+                                         [then [$cat ([$fixed1 [$num-or $curr 'load_1m_start' -1.0e0]], ' at the start of the current run, ',
+                                                      [$fixed1 [$num-or $curr 'load_1m_end' -1.0e0]], ' at its end, bound ',
+                                                      [$fixed1 $load-bound], ' (the greater is judged)')]]
                                          [else 'not recorded (a pre-#1450 artifact)']])]]]
   [= $_h4 [$say '']]
 
