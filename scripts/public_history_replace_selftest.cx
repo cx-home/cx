@@ -130,6 +130,25 @@
     [= $c4 [$rm-commit $src "secret.txt" "remove it"]]
     [w src=$src c1=$c1 c2=$c2 c3=$c3 c4=$c4 repl-content=$repl-content]]]
 
+# world-h: a history whose `git log -p` is not valid UTF-8 (cx-private#1917's
+# loop, 2026-10-12: #1840's JSONTestSuite corpus, a9ca86369, tracks
+# i_string_UTF-8_invalid_sequence.json and its kin, so every refresh since
+# the corpus landed compensated at this pass with "cannot run git (log -p
+# --all)": $process:run's default utf-8 decoding refuses the whole stdout,
+# CXER4008). A blob of invalid bytes beside the planted literal: the scan
+# still counts the literal's two diff lines and the rewrite still redacts it.
+[?def world-h scope=private impure ($root::string)
+  [?let
+    [= $src [$cat ($root, "/src4")]]
+    [= $_i [$process:run ("git", "init", "-q", "-b", "main", $src)]]
+    [= $c1 [$write-commit $src "a.txt" "seed\n" "seed"]]
+    [= $_b [$process:run ("sh", "-c", "printf '[\"\\346\\227\\245\\321\\210\\372\"]' > bad.json") cwd=$src]]
+    [= $_a [$git $src ("add", "bad.json")]]
+    [= $_c [$git $src ("commit", "-q", "-m", "a JSONTestSuite-shaped file of invalid UTF-8")]]
+    [= $c3 [$write-commit $src "secret.txt" [$cat ("token ", [$literal], " here\n")] "oops: a literal beside invalid bytes"]]
+    [= $c4 [$rm-commit $src "secret.txt" "remove it"]]
+    [w src=$src]]]
+
 [?def run-tool scope=private impure ($cx::string $tool::string $cwd::string $args)
   [?let [= $r [$process:run ($cx, "--allow-all", $tool, [?splice $args]) cwd=$cwd]]
     [out code=[$string $r@exit-code] text=[$cat ([$string $r@stdout], [$string $r@stderr])]]]]
@@ -235,10 +254,26 @@
                             [= [$strings:count $blob-secret "<redacted-test-shape>"] 3]]]]
              [out code="0" text=$blob-secret]]]
 
+  # H/I — world-h: a history with invalid UTF-8 in a diff (the loop's refresh
+  # red since #1840's corpus). RED before the fix: exit 2, "cannot run git
+  # (log -p --all)"; after, the scan reads the history lossily and counts.
+  [= $wh [$world-h $root]]
+  [= $w4 [$cat ($root, "/w4")]]
+  [= $srcarg4 [$cat ("source:src=", [$string $wh@src])]]
+  [= $h [$run-tool $cx $tool $root ("src", [$cat ("verify-only:src")], [$cat ("work=", $w4)], $srcarg4, $replarg)]]
+  [= $ok-h [$check "H verify-only over a history with invalid UTF-8 in a diff: 2 shape hits, exit 1 (not 'cannot run git')"
+             [and [= [$string $h@code] "1"] [$has $h ("src: verify-only, ", "2 shape hit(s)")]]
+             $h]]
+  [= $i [$run-tool $cx $tool $root ("src", [$cat ("work=", $w4)], $replarg)]]
+  [= $ok-i [$check "I rewrite over that history: commits unchanged, hits 2 -> 0, fsck clean"
+             [and [= [$string $i@code] "0"]
+                  [$has $i ("src: every ref, commits 4 -> 4 (unchanged: true)", "hits 2 -> 0", "fsck clean: true")]]
+             $i]]
+
   [= $_rm [$io:remove-tree $root]]
   [= $checks ($ok-a, $ok-b-report, $ok-b-blob, $ok-c, $ok-strip, $ok-d, $ok-d-msg,
-              $ok-e, $ok-e-selfmatch, $ok-e-redact)]
+              $ok-e, $ok-e-selfmatch, $ok-e-redact, $ok-h, $ok-i)]
   [= $all-ok [= [$count [?for [in $x $checks] [where [not $x]] [yield 1]]] 0]]
   [?if $all-ok
-    [then [?let [= $_ [$say "public-history-replace fixture: 10/10 OK"]] [$env:exit 0]]]
+    [then [?let [= $_ [$say "public-history-replace fixture: 12/12 OK"]] [$env:exit 0]]]
     [else [?let [= $_ [$say "public-history-replace fixture: FAILED"]] [$env:exit 1]]]]]
