@@ -131,8 +131,13 @@
 # the issue it closes is that issue's category — the fifth such literal row
 # (1836, 1839, 62, 1886) is the rule, so the next issue's case reds nothing.
 # CORE-ISSUE-RX below, beside the literal rows (STREAM-1).
+# A component repository's issue number carries the repository's short name,
+# `program-data69-` (cx-core-data#69, pi-digits' owned bigint temporaries:
+# core merge 49 59daccd01 landed it and every gate and the loop read
+# check-code-fixtures red, priv 2026-10-12) or `program-code<n>-`; the rule takes
+# both, as it takes cx-private's bare number (STREAM-1).
 # the id, then the title the fixture name carries after one space (line 249)
-[?const CORE-ISSUE-RX '^program-[1-9][0-9]*-[a-z][a-z0-9-]*( [\\s\\S]*)?$']
+[?const CORE-ISSUE-RX '^program-(data|code)?[1-9][0-9]*-[a-z][a-z0-9-]*( [\\s\\S]*)?$']
 
 [?const PREFIX-MAP (
   [prefixes level=core [#

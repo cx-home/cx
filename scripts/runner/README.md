@@ -47,7 +47,8 @@ A tick is five steps:
    - RUN-1's selection, `make test-changed BASE=<last passed head>`;
    - the full union: once a day, on the re-run flag, or when nothing has
      passed yet;
-   - RUN-3's daily union, on an idle runner that holds a passed tip;
+   - RUN-3's union on an idle runner that holds a passed tip, owed once a UTC day and
+     on every tip with no full pass of its own (cx-private#1917: each pause gives a quiet row);
    - reaping a killed run;
    - or nothing.
 3. **run** is the pivot. It takes the runner at zero wait: a live holder in
