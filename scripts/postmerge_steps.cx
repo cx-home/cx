@@ -207,16 +207,20 @@
 # ran them in plan order, 4 at a time, and test-net-real (241 s, the phase's
 # longest) started 24 s in behind four short ones, so the phase took 265 s;
 # longest first it starts at 0 and the phase is about its own length.
-# A step's seconds are the LARGEST of its rows in the last FIVE previous runs,
-# not the newest run's alone (cx-private#1917, the 93fd77d2b tick): that tick
+# A step's seconds are the MEDIAN of its rows in the last FIVE previous runs
+# (the upper middle of an even count), not the newest run's alone
+# (cx-private#1917, the 93fd77d2b tick): that tick
 # followed a SELECTED run of 94 steps, so ledger-index-check (138 s),
 # repr-guard-selftest (120 s), check-effect-alignment (66 s) and
 # check-selection-manifest (57 s) had no row, kept their plan position after
 # every measured step and started 581-653 s in; the phase ended at 791 s
 # (ledger-index-check) where e7ab18c2d's full run, ordered from a full run,
-# ended at 595 s, and the union read 1,281 s against 942. The largest, not the
-# newest: a step whose time swings (check-vcache-soundness-selftest, 5 s warm,
-# 99 s cold) starts early on the reading that would hold the phase open.
+# ended at 595 s, and the union read 1,281 s against 942. The median, not the
+# largest: the largest (c2dd5d935) let one loaded run order the pool — on the
+# 702e67b5b tick f7dba6c7b's run at load 50-210 (reader-parity 556 s,
+# check-selection-manifest 439 s against 53-242 and 57-144 on the quiet runs)
+# put both ahead of test-flow-umbrella (261-296 s on every run), which started
+# 213 s late and ended the phase with ledger-index-check.
 [?def last-seconds scope=private impure [returns any] ($c)
   [?let [= $r [$process:run ('sh', '-c', 'for f in $(ls -1 "$0"/vcx/target/gate-prev-*.log 2>/dev/null | tail -5); do grep -a "^STEP-END " "$f"; done; exit 0', $c) timeout-ms=60000]]
     [?to-sequence [?for [in $l [$strings:split [$string $r@stdout] "\n"]]
@@ -227,7 +231,7 @@
 [?def longest-first scope=private pure [returns any] ($ts $rows)
   [?let [= $keyed [?to-sequence [?for [in $i [$range 1 [$count $ts]]] [= $t [$string [$nth $ts $i]]]
                     [= $hit [?to-sequence [?for [in $r $rows] [where [= [$string $r@name] $t]] [yield [?else [$strings:to-int [$string $r@s]] -1]]]]]
-                    [= $sec [?if [= [$count $hit] 0] [then -1] [else [$last [$sort $hit]]]]]
+                    [= $sec [?if [= [$count $hit] 0] [then -1] [else [$nth [$sort $hit] [+ [$floor [/ [$count $hit] 2]] 1]]]]]
                     [yield [$concat [$strings:pad-start [$string [- 9999999 [?if [< $sec 0] [then 0] [else $sec]]]] 7 '0']
                                     [?if [< $sec 0] [then '1'] [else '0']]
                                     [$strings:pad-start [$string $i] 5 '0'] ' ' $t]]]]]
