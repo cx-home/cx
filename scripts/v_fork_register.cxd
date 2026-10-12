@@ -377,4 +377,5 @@
   [patch sha=85020f065835157d42f8674ceeca201fa805b155 family=vgc issue='cx-private#1910']
   [patch sha=936c8e2d49569bed9d1601bb5ad4844806997d27 family=vgc issue='cx-private#1910']
   [patch sha=04a893526393f702a6162fa6194f7dad3b997516 family=vgc issue='cx-private#1910']
+  [patch sha=3809702e722cda90669b86e3f4bd62aeaca19408 family=vgc issue='cx-home/v#15']
 ]
