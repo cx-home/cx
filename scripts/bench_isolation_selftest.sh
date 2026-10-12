@@ -38,6 +38,14 @@
 #      carries workload.json_codec_1mb_x100_peak_rss_mb and
 #      workload.pi_digits_3000_peak_rss_mb, and their answer checks pass a right
 #      output and refuse a wrong or empty one (a misanswer is no reading)
+#   K  a reading is loaded when the load at EITHER end of it is over the bound
+#      (cx-private#1917's union-row rule, applied to perf-pair; priv 2026-10-12):
+#      a run that started at 7.8 and ended at 27.6 read flow_saga +64 % and
+#      fmt_8k's peak +29 % on a tree with no runtime change. Its time rows and
+#      load_sensitive peaks are refused (exit 3) and a load-independent peak is
+#      still judged; a head recorded with a loaded end is a loaded head. The
+#      code_streaming peak is the median of five runs, not one (the same binary
+#      read 513-931 MB at one load).
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -250,8 +258,45 @@ else
   bad J "run_bench_json --workload-selftest — exit $rc (or a collector row is gone from the runner): $out"
 fi
 
+# ── K — a loaded END makes a loaded reading; code_streaming's peak is a median ─
+pairk() { # pairk <file> <load-start> <load-end> <ms> <rss-mb> <sensitive-rss-mb>
+  cat > "$1" <<JSON
+{
+  "schema_version": 1,
+  "run_id": "2026-10-12T08:28:07Z",
+  "cx_commit": "deadbee",
+  "uname": "Darwin 25.5.0 arm64",
+  "load_1m_start": $2,
+  "load_1m_end": $3,
+  "load_1m_bound": 8.0,
+  "benchmarks": {
+    "workload.saga_ms":          { "median": $4, "unit": "ms" },
+    "workload.saga_peak_rss_mb": { "median": $5, "unit": "MB" },
+    "tooling.fmt_peak_rss_mb":   { "median": $6, "unit": "MB", "load_sensitive": true }
+  }
+}
+JSON
+}
+pairk "$T/k_base.json" 0.9 1.1 550.0 359.0 307.0
+pairk "$T/k_end_loaded.json" 7.8 27.6 900.0 360.0 396.0
+pairk "$T/k_end_grown.json" 7.8 27.6 550.0 421.0 307.0
+pairk "$T/k_head_end_loaded.json" 0.9 27.6 550.0 359.0 307.0
+pairk "$T/k_quiet_slow.json" 0.9 1.1 900.0 359.0 307.0
+k1=$(cmp2 "$T/k_base.json" "$T/k_end_loaded.json"); q1=$?
+k2=$(cmp2 "$T/k_base.json" "$T/k_end_grown.json"); q2=$?
+k3=$(cmp2 "$T/k_head_end_loaded.json" "$T/k_quiet_slow.json"); q3=$?
+k4=$(cmp2 "$T/k_base.json" "$T/k_quiet_slow.json"); q4=$?
+if [ "$q1" -eq 3 ] && [ "$q2" -eq 1 ] && case "$k2" in *"workload.saga_peak_rss_mb: baseline="*) true ;; *) false ;; esac \
+   && [ "$q3" -eq 3 ] && [ "$q4" -eq 1 ] \
+   && grep -q "'vcx/target/bench/code_streaming_throughput_bench'" scripts/run_bench_json.cx \
+   && grep -q "'make bench-code-streaming' (\[\$peak-rss-mb \[\$string \$r@stderr\]\], \[?splice \$more\])" scripts/run_bench_json.cx; then
+  ok K "a loaded end refuses the time rows and the load_sensitive peaks (exit 3) and still judges a peak (+17 % -> 1); a head with a loaded end is a loaded head; quiet both ends still fails a slowdown; code_streaming's peak is a median of five (cx-private#1917)"
+else
+  bad K "end-load judgement — end-loaded exit $q1, end-loaded grown exit $q2, head end-loaded exit $q3, quiet slow exit $q4 (want 3 1 3 1), or the code_streaming median-of-five is gone: $k1 / $k2 / $k3"
+fi
+
 if [ "$fails" -ne 0 ]; then
   echo "bench-isolation self-test: $fails case(s) FAILED" >&2
   exit 1
 fi
-echo "bench-isolation self-test: 11/11 (measure-side refusal; judge-side refusal; judged under the bound; a pre-#1450 artifact unchanged; a loaded regression refused and the same number on a quiet box still failing; the harness rows time the running cx, #1751; the peak-RSS reader, the paired judgement and the memory half under load, #1884; the collector rows, #1910)"
+echo "bench-isolation self-test: 12/12 (measure-side refusal; judge-side refusal; judged under the bound; a pre-#1450 artifact unchanged; a loaded regression refused and the same number on a quiet box still failing; the harness rows time the running cx, #1751; the peak-RSS reader, the paired judgement and the memory half under load, #1884; the collector rows, #1910; a loaded end and the code_streaming median, #1917)"
