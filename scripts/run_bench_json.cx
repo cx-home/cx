@@ -11,6 +11,7 @@
 #   cx … scripts/run_bench_json.cx --include-eval # add the T1 evaluator bench
 #   cx … scripts/run_bench_json.cx --harness-cx   # print the cx the rows time (#1751)
 #   cx … scripts/run_bench_json.cx --rss-selftest # grade the peak-RSS reader offline (#1884)
+#   cx … scripts/run_bench_json.cx --workload-selftest # grade the json-codec / pi-digits answer checks offline (#1910)
 #   cx … scripts/run_bench_json.cx --memory-under-load  # measure over the load bound (#1884):
 #        the artifact records the load, so compare_bench judges only its
 #        peak-RSS and arena rows (the load cannot move them) and refuses its
@@ -70,7 +71,8 @@
   [flag name="include-eval"           type=bool]
   [flag name="harness-cx"             type=bool]
   [flag name="rss-selftest"           type=bool]
-  [flag name="memory-under-load"      type=bool]]]
+  [flag name="memory-under-load"      type=bool]
+  [flag name="workload-selftest"      type=bool]]]
 
 # #1751 — the cx the fmt and convert rows time is the cx RUNNING this script
 # (`make perf-ratchet` runs it with the release front door,
@@ -535,11 +537,168 @@
       [else {'workload.flow_saga_300_ms': {median: [$math:median [?for [in $x $runs] [yield $x.ms]]], unit: 'ms'},
              'workload.flow_saga_300_peak_rss_mb': [$rss-row 'the flow saga program' [?for [in $x $runs] [yield $x.rss]]]}]]]]
 
+[; cx-private#1910 / #1886 (integrator ruling 2026-10-12 01:42Z, CRIT-1) — two COLLECTOR rows, so a
+   collector bump cannot land a memory regression unseen: bump H raised json-codec 1 MB x100 from
+   59.4 MB (H1b) to 71.7 MB (+21 %) and no perf-pair row read it. Both programs are cx-examples'
+   own (workloads/json-codec: inputs.cx and json-codec.cx; benchmarks/pi-digits: pi-digits.cx with
+   run.cx), the ones the PERF-EVID tables time against Python, carried here verbatim so the row
+   needs no examples checkout. Peak RSS only, median of three: their time halves are judged on the
+   PERF-EVID tables (#1886), not at perf-pair's strict 10 %. Quiet readings on 93fd77d2b (fork
+   c7cb620ada): json-codec 71.7 MB, pi-digits 19.1 MB (Python 27.4-31.4 and 9.5); 72.8 and 19.3
+   at load 8.7-10.4 (priv, 2026-10-12 03:28Z). Both peaks are load_sensitive, judged on a quiet
+   box only like csv_bulk's and fmt_8k's: the concurrent mark races the mutator, so a marker
+   thread starved of a core lets the heap grow further before the cycle ends (csv_bulk read
+   27.9 MB at load 3 and 53.1 at load 260), and a false red here would stop every landing
+   gate on a busy box. A quiet tick still judges them at the strict 10 %, which bump H's +21 %
+   would have failed. ]
+[?const JSON-CODEC-INPUTS [#
+[?lib 'cx-stdlib/io' as=io]
+[?lib 'cx-stdlib/json' as=json]
+[?lib 'cx-stdlib/env' as=env]
+[?const tiers ('bronze', 'silver', 'gold', 'platinum')]
+[?const cities ('London', 'Lagos', 'Lima', 'Lyon', 'Leeds', 'Lisbon')]
+[?def record ($i)
+  {id: $i, name: [?str "Customer {$i}"], email: [?str "c{$i}@example.com"],
+   active: [= [% $i 3] 0], score: [/ [cast [% [* $i 37] 400] :float] 4.0e0],
+   tier: [$nth $tiers [+ 1 [% $i 4]]],
+   tags: [?for-array [in $t [$range 1 [+ 1 [% $i 3]]]] [yield [?str "tag-{[% [* $i $t] 17]}"]]],
+   address: {street: [?str "{[+ 1 [% [* $i 7] 300]]} High Street"], city: [$nth $cities [+ 1 [% $i 6]]],
+             postcode: [?str "AB{[% [* $i 13] 90]} {[% $i 9]}CD"]},
+   balance: [% [* $i 7919] 100000]}]
+[?def page ($n)
+  [$json:emit {kind: 'customer-page', count: $n,
+               items: [?for-array [in $i [$range 1 $n]] [yield [$record $i]]]}]]
+[?let [= $dir [$nth [$env:argv] 2]]
+      [= $mk [$io:make-dirs $dir]]
+      [= $b [$io:write-file [?str "{$dir}/doc-1mb.json"] [$page 4700]]]
+  [$io:size [?str "{$dir}/doc-1mb.json"]]]
+#]]
+
+[?const JSON-CODEC-PROGRAM [#
+[?lib 'cx-stdlib/io' as=io]
+[?lib 'cx-stdlib/json' as=json]
+[?lib 'cx-stdlib/env' as=env]
+[?lib 'cx-stdlib/time' as=time]
+[?lib 'cx-stdlib/strings' as=str]
+[?def timed impure ($n $f)
+  [?let [= $t0 [$time:monotonic-now]]
+        [= $last [?reduce [$range 1 $n] [using [?fn ($prev $i) [$f]]] [init null]]]
+    {ns: [- [$time:monotonic-now] $t0], last: $last}]]
+[?let [= $text [$io:read-file [$nth [$env:argv] 2]]]
+      [= $n [$str:to-int [$nth [$env:argv] 3]]]
+      [= $parsed [$timed $n [?fn () [$json:parse $text]]]]
+      [= $emitted [$timed $n [?fn () [$json:emit $parsed.last]]]]
+  [?do [$env:write-line
+    [?str "bytes={[$str:length-bytes $text]}\niterations={$n}\nparse-ns={$parsed.ns}\nemit-ns={$emitted.ns}\nemitted-bytes={[$str:length-bytes $emitted.last]}"]]
+       [$env:exit 0]]]
+#]]
+
+[?const PI-DIGITS-PROGRAM [#
+[?lib 'cx-stdlib/strings' as=str]
+[?lib 'cx-stdlib/env' as=env]
+[?lib 'cx-stdlib/io' as=io]
+[?def digits ($n)
+  [?loop [= $k 0] [= $acc [cast 0 :bigint]] [= $den [cast 1 :bigint]] [= $num [cast 1 :bigint]] [= $out '']
+    [?if [= [$str:length $out] $n]
+      [then [break $out]]
+      [else [?let [= $k [+ $k 1]]
+                  [= $odd [+ [* 2 $k] 1]]
+                  [= $acc [* [+ $acc [* 2 $num]] $odd]]
+                  [= $den [* $den $odd]]
+                  [= $num [* $num $k]]
+                  [= $d [?if [> $num $acc] [then -1] [else [$idiv [+ [* 3 $num] $acc] $den]]]]
+              [?if [or [< $d 0] [!= $d [$idiv [+ [* 4 $num] $acc] $den]]]
+                [then [continue $k $acc $den $num $out]]
+                [else [continue $k [* [- $acc [* $den $d]] 10] $den [* $num 10] [$concat $out [$string $d]]]]]]]]]]
+[?def main ($n)
+  [$str:join [?for [in ($i, $ten) [?enumerate [?chunks 10 [$str:split [$digits $n] '']]]]
+               [yield [?str "{[$str:pad-end [$str:join $ten ''] 10 ' ']}\t:{[$min ([* $i 10], $n)]}\n"]]]
+             '']]
+[?do [$io:write-file "/dev/stdout" [$main [$str:to-int [$nth [$env:argv] 2]]]]
+     [$env:exit 0]]
+#]]
+
+[; the answer checks: a run that misanswers is no reading (the #759 rule). json-codec's
+   emit of its own parse writes the document's bytes back (inputs.cx sorts its keys as the
+   emitter does), so emitted-bytes = bytes; pi-digits' N digits print ten to a line, the
+   first `3141592653\t:10` and the last ending `\t:N`. ]
+[?def kv-of scope=public ($text::string $key::string)
+  [?let [= $hits [?to-sequence [?for [in $l [$strings:split $text '\n']]
+                                 [where [$strings:starts-with $l [$cat ($key, '=')]]]
+                                 [yield [$strings:slice $l [+ [$strings:length $key] 2] [$strings:length $l]]]]]]
+    [?if [= [$count $hits] 0] [then ''] [else [$strings:trim [$first $hits]]]]]]
+
+[?def jc-answer-ok scope=public ($out::string $n::int)
+  [?let [= $b [$kv-of $out 'bytes']] [= $e [$kv-of $out 'emitted-bytes']]
+    [and [not [= $b '']] [= $b $e] [= [$kv-of $out 'iterations'] [$string $n]]
+         [> [?else [$strings:to-int $b] 0] 1000000]]]]
+
+[?def pi-answer-ok scope=public ($out::string $n::int)
+  [?let [= $ls [?to-sequence [?for [in $l [$strings:split $out '\n']] [where [not [= $l '']]] [yield $l]]]]
+    [and [> [$count $ls] 0]
+         [= [$first $ls] '3141592653\t:10']
+         [$strings:ends-with [$last $ls] [$cat ('\t:', [$string $n])]]]]]
+
+[?def run-json-codec-bench scope=public impure ()
+  [?let
+    [= $dir [$io:temp-dir 'cx-bench-json-codec']]
+    [= $gen [$cat ($dir, '/inputs.cx')]]
+    [= $prog [$cat ($dir, '/json-codec.cx')]]
+    [= $doc [$cat ($dir, '/doc-1mb.json')]]
+    [= $_w ([$io:write-file $gen [$text JSON-CODEC-INPUTS]], [$io:write-file $prog [$text JSON-CODEC-PROGRAM]])]
+    [= $_g [$process:run ([$bench-cx], '--allow-read', '--allow-write', $gen, $dir)]]
+    [= $runs [?if [not [$io:is-file $doc]] [then ()]
+      [else [?to-sequence [?for [in $i [$range 1 3]]
+        [= $r [$process:run [$timed-argv ([$bench-cx], '--allow-read', '--allow-clock', $prog, $doc, '100')]]]
+        [where [and [= $r@exit-code 0] [$jc-answer-ok [$string $r@stdout] 100]]]
+        [yield [$peak-rss-mb [$string $r@stderr]]]]]]]]
+    [= $_rm ([?if [$io:is-file $doc] [then [$io:remove $doc]] [else null]], [$io:remove $gen], [$io:remove $prog], [$io:remove-dir $dir])]
+    [?if [< [$count $runs] 3]
+      [then [$die 'the json-codec program failed or misanswered on the 1 MB document x100 — the workload.json_codec_1mb_x100 row cannot be measured']]
+      [else {'workload.json_codec_1mb_x100_peak_rss_mb': [$map:put [$rss-row 'the json-codec program' $runs] 'load_sensitive' true]}]]]]
+
+[?def run-pi-digits-bench scope=public impure ()
+  [?let
+    [= $dir [$io:temp-dir 'cx-bench-pi-digits']]
+    [= $prog [$cat ($dir, '/pi-digits.cx')]]
+    [= $_w [$io:write-file $prog [$text PI-DIGITS-PROGRAM]]]
+    [= $runs [?to-sequence [?for [in $i [$range 1 3]]
+      [= $r [$process:run [$timed-argv ([$bench-cx], '--allow-read', '--allow-write', $prog, '3000')]]]
+      [where [and [= $r@exit-code 0] [$pi-answer-ok [$string $r@stdout] 3000]]]
+      [yield [$peak-rss-mb [$string $r@stderr]]]]]]
+    [= $_rm ([$io:remove $prog], [$io:remove-dir $dir])]
+    [?if [< [$count $runs] 3]
+      [then [$die 'the pi-digits program failed or misanswered at 3000 digits — the workload.pi_digits_3000 row cannot be measured']]
+      [else {'workload.pi_digits_3000_peak_rss_mb': [$map:put [$rss-row 'the pi-digits program' $runs] 'load_sensitive' true]}]]]]
+
+[; --workload-selftest: the two answer checks graded on planted outputs, offline
+   (scripts/bench_isolation_selftest.sh case J). ]
+[?const WORKLOAD-CASES (
+  [wl-case kind='jc' want=true  text='bytes=1050974\niterations=100\nparse-ns=1\nemit-ns=2\nemitted-bytes=1050974\n'],
+  [wl-case kind='jc' want=false text='bytes=1050974\niterations=100\nparse-ns=1\nemit-ns=2\nemitted-bytes=1050973\n'],
+  [wl-case kind='jc' want=false text='bytes=1050974\niterations=10\nparse-ns=1\nemit-ns=2\nemitted-bytes=1050974\n'],
+  [wl-case kind='jc' want=false text=''],
+  [wl-case kind='pi' want=true  text='3141592653\t:10\n5897932384\t:20\n'],
+  [wl-case kind='pi' want=false text='3141592654\t:10\n5897932384\t:20\n'],
+  [wl-case kind='pi' want=false text='3141592653\t:10\n5897932384\t:19\n'],
+  [wl-case kind='pi' want=false text=''])]
+[?def workload-selftest scope=public impure ()
+  [?let [= $bad [?for [in $c WORKLOAD-CASES]
+                  [= $t [$string $c@text]]
+                  [= $got [?if [= [$string $c@kind] 'jc'] [then [$jc-answer-ok $t 100]] [else [$pi-answer-ok $t 20]]]]
+                  [where [not [= $got $c@want]]]
+                  [yield [$cat ('  ', [$string $c@kind], ' want ', [$string $c@want], ' got ', [$string $got], ' for: ', $t)]]]]
+    [?if [= [$count $bad] 0]
+      [then ([$say [$cat ('run_bench_json --workload-selftest OK — ', [$string [$count WORKLOAD-CASES]], ' planted json-codec / pi-digits outputs graded (cx-private#1910)')]], [$env:exit 0])]
+      [else ([$cry 'run_bench_json --workload-selftest FAILED — an answer check misgraded:'],
+             [$cry [$strings:join $bad '\n']], [$env:exit 1])]]]]
+
 [?let
   [= $args [?fallback [$env:parse-args ARG_SPEC]
              [recover-with ([$cry 'usage: run_bench_json.cx [-o FILE] [--include-eval] [--harness-cx] [--rss-selftest]'],
                             [$env:exit 2], null)]]]
   [= $_rss [?if [?else [$env:flag $args 'rss-selftest'] false] [then [$rss-selftest]] [else null]]]
+  [= $_wls [?if [?else [$env:flag $args 'workload-selftest'] false] [then [$workload-selftest]] [else null]]]
   [= $_probe [?if [?else [$env:flag $args 'harness-cx'] false]
                [then [?let [= $_p [$say [$bench-cx]]] [$env:exit 0]]]
                [else null]]]
@@ -556,7 +715,7 @@
                [then null]
                [else [$refuse-if-loaded $load-start $bound]]]]
 
-  [= $streaming [$map:merge ([$run-streaming-bench], [$run-code-streaming-bench], [$run-fmt-bench], [$run-convert-bench], [$run-csv-bulk-bench], [$run-flow-saga-bench])]]
+  [= $streaming [$map:merge ([$run-streaming-bench], [$run-code-streaming-bench], [$run-fmt-bench], [$run-convert-bench], [$run-csv-bulk-bench], [$run-flow-saga-bench], [$run-json-codec-bench], [$run-pi-digits-bench])]]
   [= $benchmarks [?if $include-eval
     [then [$map:merge ($streaming, [$run-eval-features-bench])]]
     [else $streaming]]]
