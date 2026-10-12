@@ -29,6 +29,14 @@
 #
 # Run:  cx --allow-read --allow-write --allow-subprocess scripts/check_deps_pins_fixtures.cx [--verbose]
 #       cx --allow-read --allow-write --allow-subprocess scripts/check_deps_pins_fixtures.cx --self-test
+#       cx --allow-read --allow-write --allow-subprocess scripts/check_deps_pins_fixtures.cx --with-cx PATH
+#
+# --with-cx PATH grades the corpus on ANOTHER cx (cx-private#1921): every sync
+# scenario runs scripts/deps_sync.cx under PATH, and every verdict case is
+# graded twice -- in this process, and by scripts/deps_pins_render.cx run
+# under PATH. scripts/deps_old_cx_selftest.sh points PATH at the 0.17 release,
+# the cx `make deps-sync` falls back to when the installed one has no
+# `cx deps` verb.
 #
 # EVERY GRANT IS LOAD-BEARING: it reads the corpus and it writes to stdout,
 # and a denied write bound to an unused [?let] binding is dropped silently
@@ -231,7 +239,9 @@
                          [?if [= [$string $r@exit] "0"]
                            [then ()]
                            [else ([$concat "seed failed: " [$machine-free [$string $r@err] $root $remote]])]]]]]]
-    [= $_dirt  [?if [= [$string $s@dirty] "true"]
+    [; A seed that failed left no checkout to dirty: the "seed failed" line is
+       the case's diff, not an err that stops the whole corpus (#1921). ]
+    [= $_dirt  [?if [and [= [$string $s@dirty] "true"] [$io:is-directory $co]]
                  [then [$io:write-file [$concat $co "/a.txt"] "a local edit\n"]]
                  [else ()]]]
     [= $_pin   [$write-pins $doc $url [?if [= [$string $s@pin] "unknown"]
@@ -259,6 +269,50 @@
 
 [?def grade-any scope=private impure ($case $cx::string)
   [?if [$is-sync-case $case] [then [$grade-sync $case $cx]] [else [$grade $case]]]]
+
+# -- --with-cx: the corpus on another cx (#1921), impure --------------------
+
+[?def flag-value scope=private pure [returns string] ($argv $name::string $d::string)
+  [?let [= $n [$count $argv]]
+        [= $hits [?for [in $i [$range 1 $n]]
+                   [where [= [$nth $argv $i] [$concat "--" $name]]]
+                   [where [< $i $n]]
+                   [yield [$nth $argv [+ $i 1]]]]]
+    [?if [= [$count $hits] 0] [then $d] [else [$first $hits]]]]]
+
+# verdict-text-via: scripts/deps_pins_render.cx over $src, run under $cx. A
+# run that does not exit 0 answers its status and stderr, which no out-text
+# block equals.
+[?def verdict-text-via scope=private impure [returns string] ($cx::string $src::string)
+  [?let [= $dir [$io:temp-dir "cx-deps-pins-"]]
+        [= $f   [$concat $dir "/deps.cxd"]]
+        [= $_w  [$io:write-file $f $src]]
+        [= $r   [$process:run ($cx, "--allow-read", "--allow-write", "scripts/deps_pins_render.cx", $f)]]
+        [= $_rm [$io:remove-tree $dir]]
+    [?if [= [$string $r@exit-code] "0"]
+      [then [$strings:trim-end-chars [$string $r@stdout] "\n"]]
+      [else [$concat "exit " [$string $r@exit-code] ": " [$strings:trim [$string $r@stderr]]]]]]]
+
+# grade-via: grade-any with every scenario under $cx, and a verdict case's
+# out-text compared with $cx's verdict as well as this process's.
+[?def grade-via scope=private impure ($case $cx::string)
+  [?if [$is-sync-case $case]
+    [then [$grade-sync $case $cx]]
+    [else [?let
+      [= $g  [$grade $case]]
+      [= $in [$block $case "in-cx"]]
+      [= $wt [$block $case "out-text"]]
+      [= $dv [?match $wt
+               [case [absent] ()]
+               [else [?match $in
+                       [case [absent] ()]
+                       [else [?let [= $want [$text-of $wt]] [= $got [$verdict-text-via $cx [$text-of $in]]]
+                               [?if [= $want $got] [then ()]
+                                 [else ([diff what=[$concat "out-text under " $cx] want=$want got=$got])]]]]]]]]
+      [graded id=[$string $g@id]
+              status=[?if [and [= [$string $g@status] "pass"] [= [$count $dv] 0]] [then pass] [else fail]]
+              [?for [in $d $g/diff] [yield $d]]
+              [?splice $dv]]]]]]
 
 # -- the self-test: the comparator itself, red on a synthetic violation ----
 #
@@ -322,8 +376,11 @@
   [= $verbose [$member "--verbose" [$env:argv]]]
   [= $suite [$cx:parse [$io:read-file "conformance/deps_pins.cxd"]]]
   [= $cases [?for [in $c $suite/case] [yield $c]]]
+  [= $with [$flag-value [$env:argv] "with-cx" ""]]
   [= $cxbin [$env:executable-path]]
-  [= $graded [?for [in $c $cases] [yield [$grade-any $c $cxbin]]]]
+  [= $graded [?if [= $with ""]
+               [then [?for [in $c $cases] [yield [$grade-any $c $cxbin]]]]
+               [else [?for [in $c $cases] [yield [$grade-via $c $with]]]]]]
   [= $failed [?for [in $g $graded] [where [= [$string $g@status] "fail"]] [yield $g]]]
   [= $passed [?for [in $g $graded] [where [= [$string $g@status] "pass"]] [yield $g]]]
   [= $_v [?if $verbose
@@ -334,7 +391,7 @@
                 [yield [$cry [$concat "deps-pins: " [$string $g@id] " " [$string $d@what]
                                       "\n  want:\n" [$string $d@want]
                                       "\n  got:\n"  [$string $d@got]]]]]]
-  [= $_census [$say [$concat "deps-pins corpus: " [$string [$count $passed]] " passed, "
+  [= $_census [$say [$concat "deps-pins corpus" [?if [= $with ""] [then ""] [else [$concat " under " $with]]] ": " [$string [$count $passed]] " passed, "
                              [$string [$count $failed]] " failed, "
                              [$string [$count $cases]] " cases"]]]
   [?if [and [= [$count $failed] 0] [> [$count $passed] 0]]

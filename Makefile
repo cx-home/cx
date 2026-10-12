@@ -1747,12 +1747,17 @@ test-docs-fragment: build-vcx
 # trees: scripts/deps_cx_selftest.cx runs this Makefile's `deps-cx` step under a
 # cleared environment, one scenario per place a developer keeps a cx. Its own
 # file, not a deps_pins.cxd case: it grades a Makefile step, not the document.
+# The fourth (#1921) grades scripts/deps_sync.cx and scripts/deps_pins.cx on the
+# cx DEPS_SYNC_RUN falls back to -- one with no `cx deps` verb, the 0.17 release
+# (CX_OLD=<path>, or the release asset fetched once into ~/.cache/cx/release/,
+# sha256-checked): the corpus with --with-cx that binary, and --vpath equal.
 .PHONY: test-deps-pins
 test-deps-pins: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 test-deps-pins: build-vcx
 	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/check_deps_pins_fixtures.cx --self-test
 	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/check_deps_pins_fixtures.cx
 	@"$(CX_BIN)" --allow-all scripts/deps_cx_selftest.cx
+	@"$(CX_BIN)" --allow-all scripts/deps_old_cx_selftest.cx
 
 # ── check-deps-bootstrap-token (SITE-1, ledger/rulings_2026_09_26_owner_decisions_l35_l39.md,
 # RULED: SITE-1, D83a, RS-33) ─────────────────────────────────────────────
