@@ -124,6 +124,7 @@
 [?lib 'cx-stdlib/process' as=process]
 [?lib 'cx-stdlib/fp'      as=fp]
 [?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/bytes'   as=bytes]
 
 [?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
 [?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
@@ -188,18 +189,26 @@
 # same convention its own header notes: no CX import-from-script exists yet
 # to share a helper across scripts/*.cx) --------------------------------------
 
+# git's output is read as BYTES and decoded lossily (an invalid sequence reads
+# U+FFFD): `git log -p` over a history that tracks invalid UTF-8 on purpose
+# (#1840's JSONTestSuite corpus, a9ca86369: i_string_UTF-8_invalid_sequence.json
+# and its kin) made $process:run's default utf-8 decoding refuse the whole
+# stdout (CXER4008), so every loop refresh since compensated here with
+# "cannot run git (log -p --all)" (cx-private#1917's loop, 2026-10-12). Every
+# expression's old side is valid UTF-8 text, so no hit can sit across an
+# invalid byte, and a sha, a count or a ref name is ASCII.
 [?def run-git scope=private impure ($dir::string $argv $what::string)
   [?let
     [= $full ("git", "-C", $dir, [?splice $argv])]
-    [= $r [?fallback [$process:run $full]
+    [= $r [?fallback [$process:run $full encoding=:bytes]
             [recover-with ([$cry [$cat ("public-history-replace: cannot run git (", $what, ")")]],
                            [$env:exit 2], null)]]]
     [?if [not [= [$string $r@exit-code] "0"]]
       [then [?let [= $_f ([$cry [$cat ("public-history-replace: git ", $what, " failed (exit ",
                                        [$string $r@exit-code], ")")]],
-                          [$cry [$string $r@stderr]])]
+                          [$cry [$bytes:to-string-utf8-lossy $r@stderr]])]
               [?let [= $_x [$env:exit 2]] ""]]]
-      [else [$string $r@stdout]]]]]
+      [else [$bytes:to-string-utf8-lossy $r@stdout]]]]]
 
 [?def tip-of scope=private pure [returns string] ($spec::string)
   [?let [= $parts [$strings:split $spec ".."]]
