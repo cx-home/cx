@@ -1,0 +1,28 @@
+# scripts/deps_pins_render.cx — the verdict of scripts/deps_pins.cx over ONE
+# pin document, one line per refusal ("ok" when there are none), on stdout.
+#
+#   cx --allow-read --allow-write scripts/deps_pins_render.cx FILE   (checkout root;
+#   the write grant is stdout's: without it the 0.17 cx prints nothing, exit 0)
+#
+# The line format is [$pins:render]'s, which the conformance corpus
+# (conformance/deps_pins.cxd, out-text) pins. It exists so the corpus can be
+# graded on ANOTHER cx than the grader's own: scripts/check_deps_pins_fixtures.cx
+# --with-cx PATH runs this program under PATH for every verdict case, and
+# scripts/deps_old_cx_selftest.sh points PATH at the 0.17 release -- the cx
+# `make deps-sync` falls back to when the installed one has no `cx deps` verb
+# (cx-private#1921). Written in forms that cx parses: no [?splice] outside an
+# element body.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib './scripts/deps_pins.cx' as=pins]
+
+[?let [= $argv [$env:argv]]
+  [?if [< [$count $argv] 2]
+    [then [?let [= $_ [$io:write-line [$env:stderr] "usage: cx --allow-read --allow-write scripts/deps_pins_render.cx FILE"]]
+            [$env:exit 2]]]
+    [else [?let [= $text [$io:read-file [$nth $argv 2]]]
+                [= $_ [$io:write-line [$env:stdout]
+                         [$strings:join [$pins:render [$pins:validate [$pins:read $text]]] "\n"]]]
+            [$env:exit 0]]]]]

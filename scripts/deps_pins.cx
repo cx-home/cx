@@ -21,6 +21,8 @@
 [?lib 'cx-stdlib/cx'      as=cx]
 [?lib 'cx-stdlib/re'      as=re]
 [?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/json'    as=json]
+[?lib 'cx-stdlib/map'     as=map]
 
 # -- the format, as data -------------------------------------------------
 #
@@ -43,8 +45,42 @@
 [?def member scope=private pure [returns bool] ($x::string $xs)
   [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
 
+# -- attributes, on the oldest cx this module runs on ---------------------
+#
+# `make deps-sync` falls back to running scripts/deps_sync.cx (and so this
+# module) on a cx that predates DEPSV-1 -- the 0.17 release is the oldest, and
+# the one an installed cx usually is (cx-private#1921). That cx has no
+# [$attrs] (nor [$attr]): the call answers an err value, which every binding
+# downstream silently carried, so validation reported nothing and the fetch
+# URL of a row came out empty. attr-pairs therefore asks whether the running
+# cx has the verb and, when it does not, reads the attributes from the
+# element's JSON form (to-format "json": one key per attribute, then one per
+# child element name, "_" for text), minus the child names. The verb is the
+# exact reading; the JSON one differs only for an attribute named like a
+# child of the same element or named "_", neither of which a [dep] row has.
+# scripts/deps_old_cx_selftest.sh grades this module on the 0.17 release.
+[?def has-attrs-verb scope=private pure [returns bool] ()
+  [= [$strings:join [?for [in $a [$attrs [$first [$cx:parse "[probe k=v]"]]]] [yield [$string $a@name]]] ","] "k"]]
+
+[?def attr-pairs-json scope=private pure ($e)
+  [?let [= $text [$string [$cx:to-format $e "json"]]]
+        [= $kids [?for [in $c $e/*] [yield [$string [$name $c]]]]]
+    [?if [not [$re:matches [$re:compile "^[{]\\s*\"[^\"]*\"\\s*:\\s*[{][\\s\\S]*$"] $text]]
+      [then ()]
+      [else [?let [= $m [$map:get [$json:parse $text] [$name $e]]]
+              [?for [in $k [$map:keys $m]]
+                    [where [not [= [$string $k] "_"]]]
+                    [where [not [$member [$string $k] $kids]]]
+                    [yield [a name=[$string $k] value=[$string [$map:get $m $k]]]]]]]]]]
+
+# attr-pairs: [a name= value=] for each attribute of $e, in document order.
+[?def attr-pairs scope=private pure ($e)
+  [?if [$has-attrs-verb]
+    [then [?for [in $a [$attrs $e]] [yield [a name=[$string $a@name] value=[$string $a]]]]]
+    [else [$attr-pairs-json $e]]]]
+
 [?def attr-or scope=private pure [returns string] ($e $k::string $d::string)
-  [?let [= $hits [?for [in $a [$attrs $e]] [where [= [$string $a@name] $k]] [yield [$string $a]]]]
+  [?let [= $hits [?for [in $a [$attr-pairs $e]] [where [= [$string $a@name] $k]] [yield [$string $a@value]]]]
     [?if [= [$count $hits] 0] [then $d] [else [$first $hits]]]]]
 
 # -- reading -------------------------------------------------------------
@@ -68,7 +104,7 @@
 [?def check-row scope=private pure ($row)
   [?let
     [= $id [$row-id $row]]
-    [= $names [?for [in $a [$attrs $row]] [yield [$string $a@name]]]]
+    [= $names [?for [in $a [$attr-pairs $row]] [yield [$string $a@name]]]]
     [= $unknown [?for [in $k $names] [where [not [$member $k [$known-keys]]]]
                   [yield [refusal kind=unknown-key row=$id what=$k]]]]
     [= $missing [?for [in $k [$required-keys]] [where [not [$member $k $names]]]
