@@ -46,8 +46,14 @@ export PATH := $(CURDIR)/third_party/v:$(PATH)
 # linux step (plain gcc) was already -O0. Same compiler, same nix store, same
 # lockfile — one flag. Guarded on the variable being DEFINED so a non-nix shell
 # is untouched (to the wrapper an EMPTY value means "all hardening off").
+# HARDEN-1 (owner 2026-10-13, cx-private#1928): the WHOLE set is off, not only
+# fortify. The wrapper also added -fzero-call-used-regs=used-gpr,
+# -fstrict-flex-arrays=1 and stack-clash protection to every compile, so the
+# loop's binary on dev2 was a different (slower) binary than the ep-2 pin and
+# the Linux release, and the 10 % bars judged two binaries against one bar.
+# The soundness instruments are the oracle gate and the sanitizer builds.
 ifneq ($(origin NIX_HARDENING_ENABLE),undefined)
-export NIX_HARDENING_ENABLE := $(filter-out fortify fortify3,$(NIX_HARDENING_ENABLE))
+export NIX_HARDENING_ENABLE :=
 endif
 
 # Explicit handle on the patched V toolchain. The PATH export above is meant to
@@ -139,7 +145,7 @@ UNAME_S := $(shell uname -s)
 # (Xcode ships 3.9; the binding + emscripten need >= 3.10).
 PYTHON ?= $(shell if python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then echo python3; elif [ -x /opt/homebrew/bin/python3 ]; then echo /opt/homebrew/bin/python3; else echo python3; fi)
 
-.PHONY: all build build-wasm build-playground build-vcx build-vcx-dev build-lib build-lib-arrow \
+.PHONY: all build build-wasm build-playground build-vcx build-vcx-pgo build-vcx-dev build-lib build-lib-arrow \
  build-vscode \
  publish-org \
  release-all \
@@ -573,6 +579,13 @@ v-pin-fresh:
 # `V fork` (its vcx/Makefile's CX_CORE_COMMIT, unconditional on this).
 build-vcx: check-gate-lock deps-present v-pin-fresh
 	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx build
+
+# The product with profile-guided optimization (FLAGS-1, #1928): cx-core-code's build-pgo —
+# an instrumented build, its training run over the conformance corpus and the Benchmarks
+# Game, the profile-use build. What the release and cx-examples' pin build; the loop's
+# ticks stay on build-vcx (-O2). A training run that writes no profile fails it.
+build-vcx-pgo: check-gate-lock deps-present v-pin-fresh
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx build-pgo
 
 # Unoptimised dev build of libcx + cx (no -prod/-Os). Functionally
 # identical for tests but compiles far faster; the test path depends on
