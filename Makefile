@@ -46,8 +46,14 @@ export PATH := $(CURDIR)/third_party/v:$(PATH)
 # linux step (plain gcc) was already -O0. Same compiler, same nix store, same
 # lockfile — one flag. Guarded on the variable being DEFINED so a non-nix shell
 # is untouched (to the wrapper an EMPTY value means "all hardening off").
+# HARDEN-1 (owner 2026-10-13, cx-private#1928): the WHOLE set is off, not only
+# fortify. The wrapper also added -fzero-call-used-regs=used-gpr,
+# -fstrict-flex-arrays=1 and stack-clash protection to every compile, so the
+# loop's binary on dev2 was a different (slower) binary than the ep-2 pin and
+# the Linux release, and the 10 % bars judged two binaries against one bar.
+# The soundness instruments are the oracle gate and the sanitizer builds.
 ifneq ($(origin NIX_HARDENING_ENABLE),undefined)
-export NIX_HARDENING_ENABLE := $(filter-out fortify fortify3,$(NIX_HARDENING_ENABLE))
+export NIX_HARDENING_ENABLE :=
 endif
 
 # Explicit handle on the patched V toolchain. The PATH export above is meant to
