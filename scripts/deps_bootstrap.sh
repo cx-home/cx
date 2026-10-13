@@ -114,7 +114,17 @@ grep -oE '\[dep [^]]*\]' "$DEPS_CXD" | while IFS= read -r row; do
     set -e
     rm -f "$fetch_err"
     if [ "$fetch_status" -ne 0 ]; then
-      echo "deps_bootstrap: fetch refused for $repo @ $sha" >&2
+      # Name WHICH refusal (cx-home/cx Site run 38337866874, 10-13: the line
+      # said only "fetch refused" for cx-platform-workbench, a repository
+      # created after the token was issued). A second, output-discarded probe
+      # with the same credentials tells the two apart: the repository answers
+      # (the pin names a commit it does not hold) or it does not (the token's
+      # repository access lacks it). Still nothing of git's own is relayed.
+      if git -c "$auth_cfg" ls-remote -q "$url" HEAD >/dev/null 2>&1; then
+        echo "deps_bootstrap: fetch refused for $repo @ $sha — the repository answers CX_DEPS_TOKEN but holds no commit $sha (an unpushed pin?)" >&2
+      else
+        echo "deps_bootstrap: fetch refused for $repo @ $sha — CX_DEPS_TOKEN cannot read $url: the token's repository access must include $repo" >&2
+      fi
       exit "$fetch_status"
     fi
   else
