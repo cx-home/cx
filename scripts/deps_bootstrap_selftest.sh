@@ -58,6 +58,17 @@ cat > "$SPYDIR/git" <<'SPY'
 #!/bin/sh
 args="$*"
 case "$args" in
+  *"ls-remote"*"cx-private-selftest-does-not-exist.git"*)
+    # The refusal's probe: answers only when the run asks it to (GREEN2,
+    # the repository readable but the pinned commit absent).
+    if [ "${SPY_LSREMOTE_OK:-}" = "1" ]; then
+      echo "1111111111111111111111111111111111111111	HEAD"
+      exit 0
+    fi
+    echo "remote: Invalid username or password." >&2
+    echo "fatal: Authentication failed for 'https://github.com/cx-home/cx-private-selftest-does-not-exist.git/'" >&2
+    exit 128
+    ;;
   *"fetch"*"cx-private-selftest-does-not-exist.git"*)
     case "$args" in
       *x-access-token*)
@@ -150,13 +161,16 @@ run_bootstrap() {
 
 RED_LOG="$WORK/red.log"
 GREEN_LOG="$WORK/green.log"
+GREEN2_LOG="$WORK/green2.log"
+run_bootstrap_lsok() { SPY_LSREMOTE_OK=1 run_bootstrap "$@"; }
 
 set +e
 bounded RED run_bootstrap "" "$RED_LOG";           red_status=$?
+bounded GREEN2 run_bootstrap_lsok "$TOKEN" "$GREEN2_LOG"; green2_status=$?
 bounded GREEN run_bootstrap "$TOKEN" "$GREEN_LOG"; green_status=$?
 set -e
-if [ "$red_status" -eq 124 ] || [ "$green_status" -eq 124 ]; then
-  echo "deps_bootstrap_selftest: RED — a run hung (red=$red_status green=$green_status); its tree is above" >&2
+if [ "$red_status" -eq 124 ] || [ "$green_status" -eq 124 ] || [ "$green2_status" -eq 124 ]; then
+  echo "deps_bootstrap_selftest: RED — a run hung (red=$red_status green=$green_status green2=$green2_status); its tree is above" >&2
   exit 1
 fi
 
@@ -196,10 +210,24 @@ if ! grep -q "deps_bootstrap: fetch refused for cx-selftest-pin" "$GREEN_LOG"; t
   fail=1
 fi
 
-# NEVER: the token string in no line either run printed.
-if grep -q "$TOKEN" "$RED_LOG" "$GREEN_LOG"; then
+# WHICH refusal (Site run 38337866874, 10-13): the token that cannot read the
+# repository is named as such (GREEN); a repository that answers the token but
+# lacks the pinned commit is named as that (GREEN2).
+if ! grep -q "CX_DEPS_TOKEN cannot read https://github.com/cx-home/cx-private-selftest-does-not-exist.git: the token's repository access must include cx-selftest-pin" "$GREEN_LOG"; then
+  echo "deps_bootstrap_selftest: GREEN case did not name the token's missing repository access — got:" >&2
+  cat "$GREEN_LOG" >&2
+  fail=1
+fi
+if [ "$green2_status" -eq 0 ] || ! grep -q "the repository answers CX_DEPS_TOKEN but holds no commit 0000000000000000000000000000000000000000" "$GREEN2_LOG"; then
+  echo "deps_bootstrap_selftest: GREEN2 case (repository readable, commit absent) did not refuse naming the absent commit — status $green2_status, got:" >&2
+  cat "$GREEN2_LOG" >&2
+  fail=1
+fi
+
+# NEVER: the token string in no line any run printed.
+if grep -q "$TOKEN" "$RED_LOG" "$GREEN_LOG" "$GREEN2_LOG"; then
   echo "deps_bootstrap_selftest: the token string leaked into captured output — never allowed:" >&2
-  grep -n "$TOKEN" "$RED_LOG" "$GREEN_LOG" >&2
+  grep -n "$TOKEN" "$RED_LOG" "$GREEN_LOG" "$GREEN2_LOG" >&2
   fail=1
 fi
 

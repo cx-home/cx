@@ -106,18 +106,18 @@ want='' is a case the gate passes.
      promises "each named, with its title". ]
   [case id=line-a-names-why-and-title want='a:cx-private#1801'
     [private '[{"number": 1801, "created_at": "2026-10-04T18:12:00Z", "title": "v7.7 the runner failed", "labels": [{"name": "bug"}], "milestone": null}]']
-    [line "issue-label-gate: REFUSED a:cx-private#1801 -- created 2026-10-04T18:12:00Z without the label v7.7: 'v7.7 the runner failed'"]]
+    [line "issue-label-gate: REFUSED a:cx-private#1801 -- created 2026-10-04T18:12:00Z without the label v7.7: 'v7.7 the runner failed' -- fix: gh issue edit 1801 --repo cx-home/cx-private --add-label v7.7"]]
   [case id=line-b-names-milestone-and-title want='b:cx-private#1802'
     [private '[{"number": 1802, "created_at": "2026-09-01T00:00:00Z", "title": "a parked thing", "labels": [{"name": "v7.7"}], "milestone": {"title": "v7.7"}}]']
-    [line "issue-label-gate: REFUSED b:cx-private#1802 -- on the milestone 'v7.7', which no [parking] row names: 'a parked thing'"]]
+    [line "issue-label-gate: REFUSED b:cx-private#1802 -- on the milestone 'v7.7', which no [parking] row names: 'a parked thing' -- fix: gh issue edit 1802 --repo cx-home/cx-private --remove-milestone (the label is the release, LBL-1), or a [parking] row in scripts/issue_label_exclusions.cxd"]]
   [case id=line-c-names-prefix-and-title want='c:cx-platform-xap#6'
     [component repo=cx-platform-xap '[{"number": 6, "created_at": "2026-09-01T00:00:00Z", "title": "the umbrella panics", "labels": [], "milestone": null}]']
-    [line "issue-label-gate: REFUSED c:cx-platform-xap#6 -- the title does not start with 'v7.7 ': 'the umbrella panics'"]]
+    [line "issue-label-gate: REFUSED c:cx-platform-xap#6 -- the title does not start with 'v7.7 ': 'the umbrella panics' -- fix: retitle to 'v7.7: the umbrella panics' (gh issue edit 6 --repo cx-home/cx-platform-xap --title ...)"]]
   [case id=line-register-names-the-row want='register:cx-private#1790 a:cx-private#1790'
     [register [exclude repo=cx-private number=1790]]
     [private '[{"number": 1790, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [], "milestone": null}]']
     [line "issue-label-gate: REFUSED register:cx-private#1790 -- a row of scripts/issue_label_exclusions.cxd without a why= or a number=; it excludes nothing"]
-    [line "issue-label-gate: REFUSED a:cx-private#1790 -- created 2026-10-03T01:00:00Z without the label v7.7: 'x'"]]
+    [line "issue-label-gate: REFUSED a:cx-private#1790 -- created 2026-10-03T01:00:00Z without the label v7.7: 'x' -- fix: gh issue edit 1790 --repo cx-home/cx-private --add-label v7.7"]]
 
   [; A read that failed (exit 2) is the ENVIRONMENT, not a label refusal: its
      own sentence, so an unreachable GitHub (no gh, no auth, no network) is
