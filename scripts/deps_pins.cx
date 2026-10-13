@@ -120,16 +120,41 @@
                  [else ()]]]
     [found [?splice $unknown] [?splice $missing] [?splice $bad-sha] [?splice $bad-vf]]]]
 
+# A [vendored] row (spec §2.3, cx-home/cx-core-code#112, WEBP-1 = (a)): a
+# third-party source tree copied INTO this repository, so the row is a record
+# and never a fetch -- `rows` reads [dep] only, and the sync never sees it.
+# Every key is required: the library's name, its release version, the
+# upstream commit the copy was taken from, where that commit lives, the path
+# the copy sits at, and its licence (an SPDX identifier, the licence file
+# beside the copy). A missing or unknown key is the same refusal a [dep] gets.
+[?def vendored-keys scope=public pure () ("name", "version", "sha", "url", "path", "license")]
+
+[?def check-vendored scope=private pure ($row)
+  [?let
+    [= $id [$concat "vendored=" [$attr-or $row "name" ""]]]
+    [= $names [?for [in $a [$attr-pairs $row]] [yield [$string $a@name]]]]
+    [= $unknown [?for [in $k $names] [where [not [$member $k [$vendored-keys]]]]
+                  [yield [refusal kind=unknown-key row=$id what=$k]]]]
+    [= $missing [?for [in $k [$vendored-keys]] [where [not [$member $k $names]]]
+                  [yield [refusal kind=[$concat "missing-" $k] row=$id
+                                  what=[$concat "no " $k "= on the row"]]]]]
+    [= $sha [$attr-or $row "sha" ""]]
+    [= $bad-sha [?if [and [not [= $sha ""]] [not [$sha-shaped $sha]]]
+                  [then ([refusal kind=malformed-sha row=$id what=$sha])]
+                  [else ()]]]
+    [found [?splice $unknown] [?splice $missing] [?splice $bad-sha]]]]
+
 [?def validate scope=public pure ($doc)
   [?let
     [= $bad-root [?if [= [$name $doc] "deps"]
                    [then ()]
                    [else ([refusal kind=unknown-root row=document what=[$name $doc]])]]]
     [= $bad-child [?for [in $c $doc/*]
-                    [where [not [or [= [$name $c] "dep"] [= [$name $c] "doc"]]]]
+                    [where [not [or [= [$name $c] "dep"] [= [$name $c] "doc"] [= [$name $c] "vendored"]]]]
                     [yield [refusal kind=unknown-child row=document what=[$name $c]]]]]
     [= $rs [$rows $doc]]
     [= $per-row [?for [in $r $rs] [yield [$check-row $r]]]]
+    [= $per-vendored [?for [in $v $doc/vendored] [yield [$check-vendored $v]]]]
     [= $repos [?for [in $r $rs] [yield [$attr-or $r "repo" ""]]]]
     [= $dups [?for [in $q $repos]
                [where [and [not [= $q ""]]
@@ -141,6 +166,7 @@
       [?splice $bad-root]
       [?splice $bad-child]
       [?for [in $f $per-row] [in $x $f/refusal] [yield $x]]
+      [?for [in $f $per-vendored] [in $x $f/refusal] [yield $x]]
       [?splice $dups]]]]
 
 [?def refusals scope=public pure ($verdict) [?for [in $r $verdict/refusal] [yield $r]]]
