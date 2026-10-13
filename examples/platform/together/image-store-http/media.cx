@@ -9,46 +9,26 @@
 #   2. Each is put in the store by $store:put-blob — its key IS the hash of
 #      its bytes, so the same derivative is the same key on every node and
 #      a changed one is a new key.
-#   3. GET /media/<hash>.<ext> (the key's SHA-256 hex and the format's
-#      extension) answers get-blob's bytes byte-exact with
-#      ETag "<hash>" and Cache-Control: public, max-age=31536000, immutable:
-#      the URL names the content, so nothing behind it can ever change, and a
-#      cache (the CDN, the browser) may keep it for a year without asking.
-#      A request carrying If-None-Match: "<hash>" is 304 with no body; a hash
-#      the store does not hold, or the wrong extension for it, is 404.
+#   3. [immutable-content prefix='/media' store=$store] serves them
+#      (cx-home/cx-platform-net#22, http.md §14.5): GET /media/<hash>.<ext>
+#      (the key's SHA-256 hex and the format's extension) answers the blob
+#      byte-exact with ETag "<hash>" and Cache-Control: public,
+#      max-age=31536000, immutable: the URL names the content, so nothing
+#      behind it can ever change, and a cache (the CDN, the browser) may keep
+#      it for a year without asking. A request carrying If-None-Match:
+#      "<hash>" is 304 with no body; a hash the store does not hold, or a name
+#      that is not <hash>.<known extension>, is 404; a blob that no longer
+#      hashes to its key is 500 and none of it is sent. No handler is written.
 #   4. GET /index lists the two derivatives' URLs, which is what an upload
 #      handler would hand back to the client.
 [?lib 'cx-stdlib/image']
 [?lib 'cx-stdlib/env']
 [?lib 'cx-stdlib/strings']
-[?lib 'cx-stdlib/map']
 [?lib 'cx-platform/store']
 
 [?def upload [returns bytes] () 0x89504e470d0a1a0a0000000d494844520000001000000010080200000090916836000001964944415478da15d151154421084551231881084630021188608413c1084620021188400422cc1bbfd9accb758cc11cc8600df640073638030677f0063e88410e6ad083312673229335d9139dd8e44c98dcc99bf8242639a949cf0f08531061095b50c18423205ce1092e849042092d1f58cc852cd6622f74618bb36071176fe18b58e4a216bd3eb0991bd9accddee8c63667c3e66edec637b1c94d6d7a7f40998a284bd98a2aa61c05e52a4f712594544a69fd80310d3196b10d35cc3806c6359ee146186994d1f681c33cc8611df6410f7638070ef7f00e7e88431eead0e703ff02bf4abe23bfd85f906ff537fc7f171e38042414f4f73de3322f7259977dd18b5dcefd8fdfcbbbf8252e79a94bdf0f3ce6431eebb11ffab0c779ffe5f7f11efe88473eead1ef03ce74c459ce76d431e7f83fca759ee34e38e994d3fe81600612ac60071a5870e21ffc062ff020820c2ae8f84032134956b2134d2c39f93ff3262ff124924c2ae9fc40310b2956b10b2dac38f52fe516aff0228a2caae8fa40331b6956b31b6dac39fdaff036aff1269a6caae9e607880270100b735fc00000000049454e44ae426082::bytes]
 
 [?def hex-of [returns string] ($key::string) [$strings:replace $key 'sha2-256:' '']]
-
-[?def cache-headers [returns element] ($hex::string $type::string)
-  [?let [= $etag [$concat '"' $hex '"']]
-    [headers [header name='Content-Type' value=$type]
-             [header name='ETag' value=$etag]
-             [header name='Cache-Control' value='public, max-age=31536000, immutable']]]]
-
-[?def if-none-match [returns string] ($request::any)
-  [$string [?else [$first [?for [in $h $request/headers/header]
-                              [where [= [$strings:lower [$string $h@name]] 'if-none-match']]
-                              [yield [$string $h@value]]]] '']]]
-
-[?def media impure [returns element] ($request::any $store::element $types::map)
-  [?let [= $file [$string $request/path-params/file]]
-        [= $type [?else [$map:get $types $file] '']]
-        [= $hex  [$first [$strings:split $file '.']]]
-    [?if [= $type '']
-      [then [response status=404 [body 'no such derivative']]]
-      [else [?if [= [$if-none-match $request] [$concat '"' $hex '"']]
-        [then [response status=304 [$cache-headers $hex $type]]]
-        [else [response status=200 [$cache-headers $hex $type]
-                [body [$store:get-blob $store [$concat 'sha2-256:' $hex]]]]]]]]]]
 
 [?let
   [= $port   [$env:flag [$env:parse-args [argspec [flag name=port type=int default=8796]]] 'port']]
@@ -59,13 +39,12 @@
   [= $kt     [$store:put-blob $store $thumb]]
   [= $fa     [$concat [$hex-of $ka] '.webp']]
   [= $ft     [$concat [$hex-of $kt] '.jpg']]
-  [= $types  {[?entry $fa 'image/webp'] [?entry $ft 'image/jpeg']}]
   [= $_b     [$env:write-line [$concat 'media: serving 2 derivatives on 127.0.0.1:' [$string $port]]]]
   [?http-service on=http port=$port name=media
     [bind-host '127.0.0.1']
     [block true]
+    [immutable-content prefix='/media' store=$store]
     [resource [get '/health'] [response status=200 [body 'ok']]]
     [resource [get '/index']
       [response status=200 [headers [header name='Content-Type' value='text/plain']]
-        [body [$concat '/media/' $fa '\n/media/' $ft '\n']]]]
-    [resource [get '/media/:file'] [$media $request $store $types]]]]
+        [body [$concat '/media/' $fa '\n/media/' $ft '\n']]]]]]
