@@ -172,6 +172,11 @@ build_one() {
           ( cd "/src-tp/$tp" && tar cf - --exclude=./v --exclude=./obj --exclude=./.git . ) | tar xf - -C "/build/third_party/$tp"
         fi
       done
+      # A host V that was BUILT carries thirdparty/tcc as a detached checkout of the host
+      # architecture. Without vc/v.c (local=0) the fork refreshes that tree with
+      # `git pull --rebase`, which refuses a detached HEAD and stops the build before cx
+      # (core 10-13, PGO-1 proof run 1): drop it, and the fork clones tccbin at its pin.
+      if [ '"$V_LOCAL"' != 1 ]; then rm -rf /build/third_party/v/thirdparty/tcc; fi
       cd /build
       git config --global --add safe.directory "*"
       # local=1: build V from the vendored vc/tcc checkouts as-is when the
