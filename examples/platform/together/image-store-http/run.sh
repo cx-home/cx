@@ -3,7 +3,8 @@
 # for a CDN (cx-home/cx-core-code#112). media.cx makes a 64-wide WebP avatar
 # and an 8x8 JPEG thumbnail of an inline PNG with cx-stdlib/image, puts each
 # in the store with $store:put-blob (the key is the SHA-256 of its bytes) and
-# serves GET /media/<hash>.<ext> from get-blob.
+# serves GET /media/<hash>.<ext> through [?http-service]'s [immutable-content
+# prefix='/media' store=$store] (cx-platform-net#22, http.md §14.5): no handler.
 #
 # What the transcript asserts, and why each line is a property rather than a
 # value: the keys and byte counts are the encoders' output, so they are not

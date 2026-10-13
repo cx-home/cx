@@ -51,6 +51,16 @@ A `[sync source= every=|cron=]` child on the host's `[connector]` row, armed at 
 The pure half ships; `open` refuses `mode=log` for every backend; the `db_access` seam is filed as
 its own issue with a named consumer. Rejected: a postgres logical-slot read now; dropping `log`.
 
+**Reversed 2026-10-12 11:05Z (owner, SYNC-7 REVERSED = 4b; recorded by plat in its first connector#27 landing).**
+Log-based capture is v0.18 work for all three backends. Postgres uses logical decoding: a replication
+slot, pgoutput or wal2json, the LSN as the position, and CXER6413 when the slot's WAL is gone. MySQL
+uses the binlog position. SQLite uses a trigger-maintained change table declared as the `log=`
+surface. `open` accepts `mode=log` and reaches `rung=complete-ordered` per sync.md §3.4, and the
+db-cdc reference project gets its real CDC row (cx-platform-connector#27). The sqlite and postgres
+slices land together in that first landing: the kit's `log-install`/`log-read` (connector.md §3.8.10),
+sync.md §3.4.1 (sqlite) and §3.4.2 (postgres). The mysql slice follows on the same issue. Until a backend's slice lands, `open` refuses
+`mode=log` over that backend with CXER6401, naming the pending slice.
+
 ## SYNC-8 — orders-db-005/006/008 flip to enforced in wave 1 (L55.8 = (a))
 
 The package's feature gains the `[capture]` row and the three cases read it from there.
