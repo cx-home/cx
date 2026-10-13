@@ -1,15 +1,17 @@
 # Together — one component's output is the next one's input
 
-One runnable scenario.
+Two runnable scenarios.
 
 ```sh
 make deps-sync   # the login half is cx-platform-sso's now (RULED: RS-12)
 cd examples/platform/together/sso-flow-xap && CX=cx sh run.sh
+cd examples/platform/together/image-store-http && CX=cx sh run.sh
 ```
 
 | Scenario | What it shows |
 | -------- | ------------- |
 | [`sso-flow-xap/`](sso-flow-xap/) | An SSO login establishes a principal; that principal is the flow run's actor; the XAP wiring layer is what governs the same domain in a deployment |
+| [`image-store-http/`](image-store-http/) | An upload's image derivatives (`cx-stdlib/image`) are put in the store by content (`$store:put-blob`: the key is the SHA-256 of the bytes) and served at `/media/<hash>.<ext>` with the hash as ETag and `Cache-Control: public, max-age=31536000, immutable`, so a CDN in front keeps them for a year; `If-None-Match` is 304 |
 
 ## Why this is a composition and not three examples in a row
 

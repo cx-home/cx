@@ -1,0 +1,23 @@
+$ curl /index                                 # what the upload handler hands back
+derivatives=2
+
+$ curl /media/<hash>.webp
+status=200
+content-type=image/webp
+cache-control=public, max-age=31536000, immutable
+etag-is-the-hash=yes
+hash-is-sha256-of-the-body=yes
+$ curl ... -H "If-None-Match: <etag>"   # a cache revalidating
+status=304 bytes=0
+
+$ curl /media/<hash>.jpg
+status=200
+content-type=image/jpeg
+cache-control=public, max-age=31536000, immutable
+etag-is-the-hash=yes
+hash-is-sha256-of-the-body=yes
+$ curl ... -H "If-None-Match: <etag>"   # a cache revalidating
+status=304 bytes=0
+
+$ curl /media/<a hash not stored>.webp
+status=404
