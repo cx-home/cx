@@ -88,8 +88,11 @@ for tp in v re2; do
   fi
 done
 
-BUILD_TARGET=$([ "$DEV" = 1 ] && echo build-vcx-dev || echo build-vcx)
+# The release cx is the profile-guided build (PGO-1, cx-private#1928): gcc here, so
+# build-pgo trains, keeps its .gcda files and builds with -fprofile-use; no profile fails.
+BUILD_TARGET=$([ "$DEV" = 1 ] && echo build-vcx-dev || echo build-vcx-pgo)
 PROFILES_TARGET=$([ "$DEV" = 1 ] && echo build-profiles-dev || echo build-profiles)
+PROFILES_OLD=$([ "$DEV" = 1 ] && echo "" || echo "-o build-vcx")
 SDE="$(git log -1 --format=%ct)"
 # Version stamps: the container copy carries no .git (lean copy), so derive
 # the commit + V-fork pins on the host and hand them to make (command-line
@@ -183,7 +186,10 @@ build_one() {
       # pre-split build step did. Measured in an 8 GB Docker VM: the root Makefile`s
       # default five concurrent -prod V compiles were OOM-killed (cli-cli,
       # cli-embed: "Killed"), _gate_evidence/pipeline_batchh2/1674-linux-build.log.
-      make '"$PROFILES_TARGET"' PROFILE_BUILD_JOBS=1 CX_COMMIT='"$CX_COMMIT"' CX_VFORK='"$CX_VFORK"' CX_RELEASE='"$CX_RELEASE"'
+      # -o build-vcx (PGO-1): build-profiles depends on build-vcx, whose -O2 recipe would
+      # relink the PGO cx just built over it (a different PROD_CFLAGS is a different build
+      # id), and the platform tarball below would ship the plain build.
+      make '"$PROFILES_TARGET"' '"$PROFILES_OLD"' PROFILE_BUILD_JOBS=1 CX_COMMIT='"$CX_COMMIT"' CX_VFORK='"$CX_VFORK"' CX_RELEASE='"$CX_RELEASE"'
       if [ '"$DEV"' = 1 ]; then
         echo "-- dev build: the -dev artifacts built; nothing staged, R2.2 not run (build validation only)"
         exit 0

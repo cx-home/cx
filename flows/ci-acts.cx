@@ -642,7 +642,7 @@
             [= $_pm [$io:make-dirs 'dist/public']]
             [= $cxdir [$out [$r22 'r22_vcx_target' () $env]]]
             [= $more ([step what='flat public tarball' r=[$r22 'r22_tar_platform' ([$concat 'dist/' $tg], [$concat [$env:cwd] '/dist/public'], $pp) $env]],
-                      [step what='make build-profiles' r=[$process:run ('devbox', 'run', '--', 'make', 'build-profiles') timeout-ms=[$make-ms]]],
+                      [step what='make build-profiles' r=[$process:run ('devbox', 'run', '--', 'make', '-o', 'build-vcx', 'build-profiles') timeout-ms=[$make-ms]]],
                       [step what='the profile tarballs' r=[$r22 'r22_stage_profiles' ('dist/public', $pp) $env]],
                       [step what='SHA256SUMS' r=[$write-sums $t ()]],
                       [step what='the asset-links gate (#1670)'

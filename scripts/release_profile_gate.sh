@@ -34,9 +34,9 @@ PUB="dist/_precut_public"
 
 printf '\n== R2.2 pre-cut profile gate (%s) ==\n' "$PUB_PLAT"
 
-echo "-- building the cut's artifacts (-prod: build-vcx + build-profiles) and the loading probe"
-devbox run -- make build-vcx
-devbox run -- make build-profiles
+echo "-- building the cut's artifacts (-prod: build-vcx-pgo, the shipped PGO build (PGO-1), + build-profiles) and the loading probe"
+devbox run -- make build-vcx-pgo
+devbox run -- make -o build-vcx build-profiles   # never relink the PGO cx above as plain -O2 (PGO-1)
 devbox run -- make build-extraction-probe
 
 echo "-- staging the four tarballs the cut stages → $PUB/"
