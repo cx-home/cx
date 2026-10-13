@@ -13,9 +13,10 @@
 #   prev     the last successful Site run's duration in seconds ('' when
 #            unread), the window for a run still in progress;
 #   now      the moment of the reading (RFC 3339);
-#   ok       the verdict; `why` a substring its reason must carry.
+#   ok       the verdict (true, false, or skip: the no-network skip); `why`
+#            a substring its reason must carry.
 # P below is the public main, S an older build.
-[cases expectations=28
+[cases expectations=31
   [case id=stamp-equal ok=true why='live: the stamp is the public main'
         stamp='4d499e603f55f7bf0e6534bee0aba3a339ea6a73' lm='' maxage='600'
         public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73' run='unread' prev='' now='2026-10-03T07:00:00Z']
@@ -44,6 +45,15 @@
   [case id=public-unread ok=false why='public main is unreadable'
         stamp='4d499e603f55f7bf0e6534bee0aba3a339ea6a73' lm='' maxage='600'
         public='' run='unread' prev='' now='2026-10-03T06:21:00Z']
+  [case id=no-network ok=skip why='no network'
+        stamp='HTTP (no answer)' lm='' maxage='0'
+        public='' run='unread' prev='' now='2026-10-13T02:55:00Z']
+  [case id=no-git-site-answers ok=false why='public main is unreadable'
+        stamp='HTTP 503' lm='' maxage='0'
+        public='' run='unread' prev='' now='2026-10-13T02:55:00Z']
+  [case id=no-curl-git-answers ok=false why='stamp is unreadable'
+        stamp='HTTP (no answer)' lm='' maxage='0'
+        public='2ddf0f165344b2bc05d94e2da0b6c75aa7fb94d2' run='unread' prev='' now='2026-10-13T02:55:00Z']
   [case id=in-progress-past-window ok=false why='stale'
         stamp='eb8f1600230784e01931098816d9f357df42d182' lm='' maxage='600'
         public='4d499e603f55f7bf0e6534bee0aba3a339ea6a73'

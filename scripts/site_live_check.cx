@@ -24,6 +24,10 @@
 #     duration: `gh run list --workflow site.yml` on the public repository.
 #
 # THE DECISION (`decide`, held by scripts/site_live_check_cases.cxd):
+#   - NO NETWORK — the public main unread, the stamp no HTTP answer at all and
+#     the Site run unread, all three at once: a named skip (exit 0, a
+#     `site-live-check SKIP:` line), never a pass; any reading answering
+#     decides below;
 #   - the public main unreadable: refused;
 #   - the stamp IS the public main: live;
 #   - otherwise the site may lag the public main only for the Site run's
@@ -48,7 +52,8 @@
 #   run dated after the reading, refuses. The cache allowance is the stamp's
 #   max-age, never more than the Site run's own duration.
 #
-# Exit: 0 live or deploying; 1 refused; 2 a self-test case answered wrongly.
+# Exit: 0 live, deploying, or the named no-network skip; 1 refused; 2 a
+# self-test case answered wrongly.
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
 [?lib 'cx-stdlib/cx'      as=cx]
@@ -119,7 +124,16 @@
         [= $dur [?if [= $rs 'completed'] [then [- $updated $created]] [else $pv]]]
         [= $known [or [= $rs 'completed'] [> [$count [?to-sequence [?for [in $f $flight] [where [= $f $rs]] [yield $f]]]] 0]]]
         [= $site [?if $has [then [$concat 'the site is ' $st]] [else 'the live site carries no stamp']]]
-    [?if [not [$is-sha $p]] [then [$v false 'the public main is unreadable (git ls-remote): refused, never a pass']]
+    # NO NETWORK (FLAKE-1, the integrator's Window 16 item 1): every reading
+    # unanswered at once — git ls-remote named no public main, curl got no
+    # HTTP answer for the stamp, gh read no Site run — is this box off the
+    # network, not a site that is wrong. A named skip, never a pass and never
+    # red: a transient outage stopped RUN-3's idle repeat. Any ONE reading
+    # answering decides as below (a site that answers while git cannot is
+    # still a refusal).
+    [?if [and [= $p ''] [= $st 'HTTP (no answer)'] [= [$strings:trim [$string $run]] 'unread']]
+      [then [$v 'skip' 'no network: git ls-remote, curl and gh all unanswered — the live site is not judged this run']]
+    [else [?if [not [$is-sha $p]] [then [$v false 'the public main is unreadable (git ls-remote): refused, never a pass']]
       [else [?if [and $has [= $st $p]] [then [$v true [$concat 'live: the stamp is the public main ' $p]]]
       [else [?if [and [not $has] [not [= $st '']]]
         [then [$v false [$concat 'the live stamp is unreadable (`' [$strings:slice $st 1 [?if [> [$strings:length $st] 60] [then 60] [else [$strings:length $st]]]]
@@ -150,7 +164,7 @@
                         [then [$v true [$concat 'deploying: ' $site ', the public main ' $p ' for ' [$string $lag]
                                                            ' s, within the Site run duration plus the cache max-age (' [$string $window] ' s)']]]
                         [else [$v false [$concat 'stale: ' $site ', the public main ' $p ' for ' [$string $lag]
-                                                            ' s, past the Site run duration plus the cache max-age (' [$string $window] ' s)']]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
+                                                            ' s, past the Site run duration plus the cache max-age (' [$string $window] ' s)']]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
 
 # ── the self-test: the case table ───────────────────────────────────────────
 [?def self-test scope=private impure ()
@@ -226,11 +240,33 @@
                               ' stamp=' [?if [= $body ''] [then [$concat '(none, HTTP ' $status ')']] [else $body]]
                               ' last-modified=`' $lm '` max-age=' $maxage ' public=' $pub ' main=' [?if [= $p ''] [then '(unread)'] [else $p]]
                               ' site-run=`' $run '` prev-duration=' [?if [= $prev ''] [then '(unread)'] [else $prev]]]]]
+        # A Site run that ended other than success: name its failing job and
+        # step, so the red line says what broke the deploy (the 10-13 red was
+        # the run's dependency bootstrap, not the site). Read only in that
+        # case; a reading gh cannot make leaves the reason as it was.
+        [= $failed [?if [and [= [$string $v@ok] 'false'] [$strings:contains [$string $v@why] ' ended ']]
+                     [then [$failed-steps $slug $p]] [else '']]]
+        [= $why [?if [= $failed ''] [then [$string $v@why]] [else [$concat [$string $v@why] ' (' $failed ')']]]]
     [?if [= [$string $v@ok] 'true']
-      [then [?let [= $_ [$say [$concat 'site-live-check OK — ' [$string $v@why]]]] [$env:exit 0]]]
-      [else [?let [= $_ [$cry [$concat 'site-live-check RED: ' [$string $v@why]]]]
-                  [= $_o [$say [$concat 'site-live-check RED: ' [$string $v@why]]]]
-              [$env:exit 1]]]]]]
+      [then [?let [= $_ [$say [$concat 'site-live-check OK — ' $why]]] [$env:exit 0]]]
+      [else [?if [= [$string $v@ok] 'skip']
+        [then [?let [= $_ [$cry [$concat 'site-live-check SKIP: ' $why]]]
+                    [= $_o [$say [$concat 'site-live-check SKIP: ' $why]]]
+                [$env:exit 0]]]
+        [else [?let [= $_ [$cry [$concat 'site-live-check RED: ' $why]]]
+                    [= $_o [$say [$concat 'site-live-check RED: ' $why]]]
+                [$env:exit 1]]]]]]]]
+
+# the failing job and step(s) of the Site run on $sha, '' when gh cannot say.
+[?def failed-steps scope=private impure [returns string] ($slug $sha)
+  [?let [= $ir [$run-out ('gh', 'run', 'list', '--repo', $slug, '--workflow', 'site.yml', '--commit', $sha, '--limit', '1',
+                          '--json', 'databaseId', '--jq', '.[0].databaseId // ""') 120000]]
+        [= $id [$out $ir]]
+    [?if [or [not [$ok $ir]] [= $id '']] [then '']
+      [else [?let [= $jr [$run-out ('gh', 'run', 'view', $id, '--repo', $slug, '--json', 'jobs',
+                                    '--jq', '[.jobs[] | select(.conclusion == "failure") | .name + ": " + ([.steps[] | select(.conclusion == "failure") | .name] | join(", "))] | join("; ")') 120000]]
+        [?if [or [not [$ok $jr]] [= [$out $jr] '']] [then [$concat 'run ' $id]]
+          [else [$concat 'run ' $id ' failed at ' [$out $jr]]]]]]]]]
 
 [?if [> [$count [?to-sequence [?for [in $a [$env:argv]] [where [= [$string $a] '--self-test']] [yield $a]]]] 0]
   [then [$self-test]]
