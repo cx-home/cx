@@ -168,7 +168,17 @@
                             [case "b" [$concat "on the milestone '" [$milestone $i] "', which no [parking] row names"]]
                             [case "c" [$concat "the title does not start with '" $release " '"]]
                             [else [$concat "a row of " REGISTER " without a why= or a number=; it excludes nothing"]]]]
-              [$concat "issue-label-gate: REFUSED " $key " -- " $why $t]]]]]]
+                  # the fix, spelled as the command that makes it (10-13: four
+                  # owner-filed issues each needed a hand fix the line did not name)
+                  [= $slug [$concat ORG "/" $repo]]
+                  [= $fix [?match $kind
+                            [case "a" [$concat " -- fix: gh issue edit " $n " --repo " $slug " --add-label " $release]]
+                            [case "b" [$concat " -- fix: gh issue edit " $n " --repo " $slug
+                                               " --remove-milestone (the label is the release, LBL-1), or a [parking] row in " REGISTER]]
+                            [case "c" [$concat " -- fix: retitle to '" $release ": " [?if [= [$string $i] "null"] [then "<title>"] [else [$title $i]]]
+                                               "' (gh issue edit " $n " --repo " $slug " --title ...)"]]
+                            [else ""]]]
+              [$concat "issue-label-gate: REFUSED " $key " -- " $why $t $fix]]]]]]
 # read-line: the line a read that failed prints, exit 2 -- the environment,
 # never a label refusal (the case table's [read-case] rows grade it).
 [?def read-line scope=public ($repo $why)
