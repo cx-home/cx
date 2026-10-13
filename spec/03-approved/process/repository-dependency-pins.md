@@ -36,8 +36,8 @@ and nothing about it needs a new lexer, parser or codec.
 ]
 ```
 
-The root element is `[deps]`. Its children are `[dep]` rows and an optional `[doc]` block, and
-nothing else. A repository that pins nothing carries `[deps]` with no rows; that is a legitimate
+The root element is `[deps]`. Its children are `[dep]` rows, `[vendored]` rows (§2.3) and an
+optional `[doc]` block, and nothing else. A repository that pins nothing carries `[deps]` with no rows; that is a legitimate
 state, not a missing file, and it is the state of a repository before the first extraction lands.
 
 **One row per pinned repository, not per module.** A consumer that uses four modules of one
@@ -73,6 +73,23 @@ with a `tag` and no `sha` is refused.
 When a row carries no `url`, the URL is the consumer's own `origin` with the final path segment
 replaced by `repo`. A repository whose dependency lives somewhere else says so per row. Nothing
 is inferred from a repository name beyond that substitution.
+
+### 2.3 Vendored source trees (RULED: STREAM-1; WEBP-1 = (a), cx-home/cx-core-code#112)
+
+A third-party library whose source is COPIED into the repository — not a repository the build
+pins — is recorded by a `[vendored]` row, so its version is read off the same document as every
+pin:
+
+```
+[vendored name=<lib> version=<release> sha=<sha> url=<upstream> path=<dir> license=<SPDX>]
+```
+
+Every key is required and no other key is permitted (the same refusals as a `[dep]`: `unknown-key`,
+`missing-<key>`, `malformed-sha` naming the row `vendored=<name>`). `sha` is the full upstream commit
+the copy was taken from, `path` the directory it sits at, and `license` its SPDX identifier, the
+licence file itself beside the copy. A `[vendored]` row is a record and never a fetch: `deps sync`
+reads `[dep]` rows only. Moving the copy to a new release is one commit that replaces the tree and
+the row together.
 
 ## 3 — `deps sync`
 

@@ -374,4 +374,42 @@ exit 0
 checkout at new clean
 #]]
  ]
+
+ [case id=deps-040-vendored-row level=core
+  [tags deps pins vendored]
+  [title a [vendored] row records a third-party source tree copied into the repository -- validated, and never a row the sync fetches (spec Sec 2.3)]
+  [in-cx [#
+[deps
+  [vendored name="libwebp" version="1.6.0" sha="4fa21912338357f89e4fd51cf2368325b59e9bd9" url="https://github.com/webmproject/libwebp.git" path="third_party/libwebp" license="BSD-3-Clause"]
+  [dep repo="cx-core-data" sha="caffa938072a6d8284be00149ae549c5f01f2218" module="cx-core-data"]]
+#]]
+  [out-canonical [#
+[deps
+  [vendored name=libwebp version=1.6.0 sha=4fa21912338357f89e4fd51cf2368325b59e9bd9 url=https://github.com/webmproject/libwebp.git path=third_party/libwebp license=BSD-3-Clause]
+  [dep repo=cx-core-data sha=caffa938072a6d8284be00149ae549c5f01f2218 module=cx-core-data]
+]
+#]]
+  [out-text [#
+ok
+#]]
+ ]
+
+ [case id=deps-041-vendored-row-refusals level=core
+  [tags deps pins vendored refusal unknown-key missing-url malformed-sha]
+  [title every key of a [vendored] row is required and closed, and its sha is a full commit -- the refusals a [dep] row gets]
+  [in-cx [#
+[deps
+  [vendored name="libwebp" version="1.6.0" sha="4fa2191" path="third_party/libwebp" license="BSD-3-Clause" fetch="true"]]
+#]]
+  [out-canonical [#
+[deps
+  [vendored name=libwebp version=1.6.0 sha=4fa2191 path=third_party/libwebp license=BSD-3-Clause fetch='true']
+]
+#]]
+  [out-text [#
+unknown-key vendored=libwebp: fetch
+missing-url vendored=libwebp: no url= on the row
+malformed-sha vendored=libwebp: 4fa2191
+#]]
+ ]
 ]
