@@ -4384,8 +4384,10 @@ site-links-external:
 # reading: the site's stamp.txt (site_assemble.cx writes the commit it
 # assembles; the Site run builds the public main) against `git ls-remote` of
 # the public main. They may differ only for the Site run's duration plus the
-# stamp's cache max-age; a red Site run, no run, or a reading gh, git or curl
-# cannot make is a refusal, never a pass (advisory-audit's shape). A site
+# stamp's cache max-age; a red Site run (its failing job and step named), no
+# run, or a reading gh, git or curl cannot make is a refusal, never a pass
+# (advisory-audit's shape) — except all three unanswered at once, the box off
+# the network: a named `site-live-check SKIP:` line, exit 0 (FLAKE-1). A site
 # with no stamp yet (assembled before it existed) is the public main's when
 # its Last-Modified follows the start of the successful Site run on it.
 # ── issue-label-gate (#1781, RULED: LBL-1, SHIP-2, CXF-1) — the label is the
