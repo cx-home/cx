@@ -127,12 +127,23 @@
 # the file used to have. Reading `--name-status` rather than `--name-only` is
 # what keeps it exact: `--name-only` also prints the other side of a rename
 # commit, and on this tree that put two unrelated `.gitkeep` paths in the list.
+#
+# The chain ENDS at its first copy link. `--follow` also detects copies (a `C`
+# line: a new file at least half like one that stays), and walks on into the
+# copied-from file's own history — whose renames are that other file's former
+# names, not this one's. Measured (the refresh's ff-check on 16c86986d and
+# 14a1c3a54, 10-12): #1840's corpus files followed C063 / C079 back into
+# _gate_evidence/…/c29.cx.txt and r09-fmt-060.cx.txt, the R100 links behind
+# them added _gate_evidence/…/c29.cx and r09-fmt-060.cx to the list, and the
+# refreshed history carried those two private files from 10-03 on — every
+# published commit after rewritten, so the refresh was no fast-forward. Only
+# the links newer than the first `C` line (output is newest first) are read.
 [?def former-paths scope=private impure ($path::string)
   [?let [= $r [$process:run ("git", "-c", "core.quotePath=false", "log", "--follow", "--name-status",
                              "--format=", "--", $path)]]
     [?if [not [= [$string $r@exit-code] "0"]]
       [then ()]
-      [else [?for [in $l [$nonblank [$string $r@stdout]]]
+      [else [?for [in $l [$nonblank [$string [$first [$strings:split [$concat "\n" [$string $r@stdout]] "\nC"]]]]]
               [where [$strings:starts-with $l "R"]]
               [in $f [?let [= $cols [$strings:split $l "\t"]]
                        [?if [< [$count $cols] 2] [then ()] [else ([$nth $cols 2])]]]]
