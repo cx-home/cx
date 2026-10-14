@@ -35,6 +35,8 @@
 #      is refused, never "0 subject ids" (REFUTE-1 l02 l03 l04 l11)
 #   P  a parenthesis inside a new clause does not end it: (RULED: CFG-1 (see
 #      note), CAPADDR-1) refuses CAPADDR-1 (REFUTE-1 l05)
+#   Q  a token a ledger page records as `TOKEN` (unparsed, IDSH-1) is excused
+#      (MYSQLCDC-1 -> MYCDC-1); an unrecorded one is still refused (I)
 #
 # Planted through CX_LEDGER_SUBJECTS_FILE, which is the only input this reader
 # takes other than `git log`, so the rule is proven without a repository.
@@ -205,8 +207,18 @@ else
   bad P "wanted exit 1 refusing CAPADDR-1 — exit $rc: $out"
 fi
 
+# Q — a token a ledger page records as `TOKEN` (unparsed, IDSH-1) beside its renamed id is excused
+#     (MYSQLCDC-1 -> MYCDC-1, cited in 3f720d7bc); an unrecorded one (CAPADDR-1, case I) still is not
+printf '%s\n' 'chore: x (RULED: STREAM-1, MYSQLCDC-1)' > "$T/alias.txt"
+out=$(check_with "$T/alias.txt"); rc=$?
+if [ "$rc" -eq 0 ]; then
+  ok Q "MYSQLCDC-1, recorded by its ledger page as renamed MYCDC-1, is excused; unrecorded tokens stay refused (I)"
+else
+  bad Q "wanted exit 0 for the page-recorded MYSQLCDC-1 — exit $rc: $out"
+fi
+
 if [ "$fails" -ne 0 ]; then
   echo "ledger-subject-ids self-test: $fails case(s) FAILED" >&2
   exit 1
 fi
-echo "ledger-subject-ids self-test: 19/19 (a known id passes; an id with no page is refused by name; a prose clause passes; the live history resolves; a denied env or subprocess grant and an unreadable planted file are refused, never counted; unresolved ids print one per line; an id-shaped token the grammar does not parse is refused with its subject (IDSH-1); the owner-letter D-shape parses and resolves; the rule binds from IDSH-1 on; the refusal names its source; typographic dashes and glued characters are refused; a parenthesis inside a new clause does not end it)"
+echo "ledger-subject-ids self-test: 20/20 (a known id passes; an id with no page is refused by name; a prose clause passes; the live history resolves; a denied env or subprocess grant and an unreadable planted file are refused, never counted; unresolved ids print one per line; an id-shaped token the grammar does not parse is refused with its subject (IDSH-1); the owner-letter D-shape parses and resolves; the rule binds from IDSH-1 on; the refusal names its source; typographic dashes and glued characters are refused; a parenthesis inside a new clause does not end it; a token its ledger page records as renamed is excused)"

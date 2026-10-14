@@ -413,6 +413,12 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `bounds-1` | [rulings_2026_10_13_owner_decisions_flags_repin_multicore.md](rulings_2026_10_13_owner_decisions_flags_repin_multicore.md) | BOUNDS-1 — bounds checks stay on in the product (Letter 4 = (a)) |
 | `bp-1` | [rulings_2026_08_20_binding_axes.md](rulings_2026_08_20_binding_axes.md) | BP-1 — binding paths carry the value-meaningful compact steps only |
 | `bp-1` | [rulings_2026_08_20_call_result_steps.md](rulings_2026_08_20_call_result_steps.md) | CRS-1a rider — code.md §6.2 trued to BP-1 |
+| `bridge-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | BRIDGE-1 — no bridge on extra usage in the 10-13 19:xxZ pause |
+| `bridge-2` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | BRIDGE-2 — fable-1910, gaps2 and core (then all five streams) run on extra usage through the 23:30Z reset without a restart |
+| `bridge-3` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | BRIDGE-3 — after #1917 closes, every 5-hour gap is bridged on extra usage (revoked by BRIDGE-4) |
+| `bridge-3` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | BRIDGE-4 — the 02:10Z-04:30Z bridge is the last one (revokes BRIDGE-3) |
+| `bridge-4` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | BRIDGE-3 — after #1917 closes, every 5-hour gap is bridged on extra usage (revoked by BRIDGE-4) |
+| `bridge-4` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | BRIDGE-4 — the 02:10Z-04:30Z bridge is the last one (revokes BRIDGE-3) |
 | `bsesc-1` | [rulings_2026_10_04_owner_decisions_l187_l193.md](rulings_2026_10_04_owner_decisions_l187_l193.md) | BSESC-1 — canonical.md §2.4 states the backslash rule as the emitter holds it: a backslash is doubled when the following byte AS WRITTEN is itself an escape; the DEL row reads `\u007f` (Letter 192 = (a); #1769's flag) |
 | `budget-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | Owner decisions 2026-09-27 (afternoon) — Letters 52, 53 and 54: XCO's two readings (ACK-1, RT-1), a list verb through the host walks every page (WALK-1), the vendor budget is per process (BUDGET-1) |
 | `budget-1` | [rulings_2026_09_27_owner_decisions_l52_l54.md](rulings_2026_09_27_owner_decisions_l52_l54.md) | BUDGET-1 — the vendor budget is per process under one host per tenant; §4.3 says so (L54 = (a)) |
@@ -457,6 +463,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ck-8` | [rulings_2026_09_06_connector_open_items_728.md](rulings_2026_09_06_connector_open_items_728.md) | CK-8 — `Retry-After` — RULED: (a) |
 | `ck-9` | [rulings_2026_09_06_connector_open_items_728.md](rulings_2026_09_06_connector_open_items_728.md) | CK-9 — pagination's vocabulary — RULED: (a) |
 | `ckey-1` | [rulings_2026_10_05_owner_decisions_l194_l200.md](rulings_2026_10_05_owner_decisions_l194_l200.md) | CKEY-1 — a sequence or an array is a set member and a map key: Ring 0 admits compound keys (Letter 198 = (a); #1809 §10; the scalar-key decisions amended) |
+| `close-1927` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | CLOSE-1927 — cx-private#1927 closes on v#42's fix in H9 (fork c44b0e0049) |
 | `co-1` | [rulings_2026_08_25_0170_closeout.md](rulings_2026_08_25_0170_closeout.md) | CO-1 (#974, ruled 1a) — store multicodec read-compat |
 | `co-10` | [rulings_2026_08_25_0170_closeout.md](rulings_2026_08_25_0170_closeout.md) | CO-10 (#969 edges, ruled 3a) — all three mint hardenings |
 | `co-11` | [rulings_2026_08_25_0170_closeout.md](rulings_2026_08_25_0170_closeout.md) | CO-11 (#990, ruled 1a) — $eq's attribute atomization IS the ruled compare |
@@ -506,6 +513,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `cr-9` | [rulings_2026_08_30_codec_ring_layering.md](rulings_2026_08_30_codec_ring_layering.md) | CR-9 — the fmt cone is Ring-0; the ABI cx_fmt tells the truth |
 | `crs-1` | [rulings_2026_08_20_call_result_steps.md](rulings_2026_08_20_call_result_steps.md) | CRS-1 — call-result heads gain the [135a] compact-step subset |
 | `crs-1a` | [rulings_2026_08_20_call_result_steps.md](rulings_2026_08_20_call_result_steps.md) | CRS-1a rider — code.md §6.2 trued to BP-1 |
+| `csvrow-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | CSVROW-1 — the csv-aggregate workload program streams its file (csv:rows over io:open), the way Python's csv.DictReader reads it (#1925/#1869) |
 | `cut-1` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | CUT-1 — the v0.18.0 cut comes after the docs and playground items, on the owner's "cut" (L68 = (a), the owner's word) |
 | `cxf-1` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) | cx first — the decisions of the #1522 mini-campaign (owner, 2026-09-17 ~13:50Z: "highest priority"; RULED: CXF-1 … CXF-8) |
 | `cxf-2` | [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md) | 1537's branch takes the next free agent slot (prio:high); CXF-2 (c) and CXF-4 follow it; the cx-first page's order |
@@ -658,6 +666,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ent-1` | [rulings_2026_08_20_cx_pragma_registry.md](rulings_2026_08_20_cx_pragma_registry.md) | ENT-1 rider — attribute-position entity references (#878, corrected) |
 | `errat-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | ERRAT-1 — the paused source-position branch is ported onto cx-core-code (L134 = (a); #1545) |
 | `errsf-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | ERRSF-1 — #1062 closes on the shipped exit rule; the opt-in refuse flag is withdrawn (L127 = (a)) |
+| `fable-8` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | FABLE-8 — the fable-1910 task runs on account 8 (#1869 slice re-home, #1925 parse cost, #133 store, v#15 lever 3) |
 | `fabr-1` | [rulings_2026_09_28_owner_decisions_l80_l84.md](rulings_2026_09_28_owner_decisions_l80_l84.md) | FABR-1 — the host context carries the fabric the host built on the deployment's journal (L81 = (a)) |
 | `fabt-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | FABT-1 — the standby-delivery panic is the test's defect, not the fabric's (L137 = (a); #1506) |
 | `fdisp-1` | [rulings_2026_09_28_owner_decisions_l80_l84.md](rulings_2026_09_28_owner_decisions_l80_l84.md) | FDISP-1 — the host dispatches a verb through a feature→package map built at boot (L80 = (d)) |
@@ -743,6 +752,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1.3 — #898: `[err …]` in the source contaminates the injected image |
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1.4 — #899: the `/Name` → `//Name` source rewrite RETIRES |
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1.5 — #894: the missing comma in an array literal |
+| `jinja-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | JINJA-1 — one pip download of Jinja2 into a venv on the PYBASE-1 interpreter for the template comparison |
 | `keyv-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | KEYV-1 — the declarable key vocabulary stays bound to its ruled trigger; #1199 is the one item put to the owner at the cut (L132 = (b)) |
 | `kit-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | Owner decisions 2026-09-26 — the four designs of Letters 26–29: the connector kit (KIT-1…KIT-6), cross-company (XCO-1…XCO-5), the minimal keystore (SEC-1), the host's four choices (HOST-1…HOST-4) |
 | `kit-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | KIT-1 — a reference connector declares one verb per kit mechanism it proves |
@@ -754,6 +764,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `kit-6` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | Owner decisions 2026-09-26 — the four designs of Letters 26–29: the connector kit (KIT-1…KIT-6), cross-company (XCO-1…XCO-5), the minimal keystore (SEC-1), the host's four choices (HOST-1…HOST-4) |
 | `kit-6` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | KIT-6 — the design pages tell the truth |
 | `kwarr-1` | [rulings_2026_10_04_owner_decisions_l187_l193.md](rulings_2026_10_04_owner_decisions_l187_l193.md) | KWARR-1 — a keyword literal (`true`, `false`, `null`) followed by `,` is an array literal; L83 is amended so an array headed by a keyword has one canonical spelling (Letter 188 = (a); cx-core-data#25) |
+| `labels-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | LABELS-1 — cx-private#1836, #1837, #801 and #784 are v0.18 work as labeled and enter the streams' lists |
 | `land-1` | [rulings_2026_10_13_owner_decisions_flags_repin_multicore.md](rulings_2026_10_13_owner_decisions_flags_repin_multicore.md) | LAND-1 — ep-2 opens the two PRs with their lanes green; the campaign's stream lands them through the build slot and the gate (landing = (a)) |
 | `lbl-1` | [rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md](rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md) | LBL-1 — the `v0.18` label is the one truth of release membership; the milestone retires from open issues; every new issue is labelled at creation (the owner, 2026-10-04 ~05:1xZ) |
 | `letd-1` | [rulings_2026_10_05_owner_decisions_l194_l200.md](rulings_2026_10_05_owner_decisions_l194_l200.md) | LETD-1 — `[= PATTERN value]` destructures in `[?let]` as the single-arm `[?match]` does; a shape that does not fit is a loud refusal (Letter 195 = (a); #1810 §6; the earlier let-binding decision reversed on this one point) |
@@ -763,6 +774,9 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `lim-2` | [rulings_2026_08_20_limits_second_half.md](rulings_2026_08_20_limits_second_half.md) | 876 closes: LIM-1 (spec home) + LIM-2 (this ruling) cover both halves. |
 | `lintb-1` | [rulings_2026_09_30_integrator_decisions_l141_l142.md](rulings_2026_09_30_integrator_decisions_l141_l142.md) | LINTB-1 — `cx lint` flags a bare head that names a def in scope or an imported member (L142 = (a); #1664) |
 | `liter-1` | [rulings_2026_09_28_owner_decisions_l80_l84.md](rulings_2026_09_28_owner_decisions_l80_l84.md) | LITER-1 — a `[?for]` contributes one item per `[yield]` in a `(…)` or array literal, as 1509-a says (L83 = (b)) |
+| `load-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | Owner decisions 2026-10-13 evening – 2026-10-14 early: PGO-1, LOOPBIN-1, SCALE-1, RACE-1, LOAD-1, the bridges and the quiet mode, YAML/PyYAML/Jinja2 baselines, MYCDC-1 |
+| `load-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | QUIET-1 — two build-free rows slots per window (superseded the same hour by LOAD-1) |
+| `load-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | LOAD-1 — rows at any load, cx and Python interleaved, medians, load stated; builds at nice 10; the BOX claim is the only exclusion (supersedes QUIET-1) |
 | `lswap-1` | [rulings_2026_09_29_integrator_decisions_l106_l108.md](rulings_2026_09_29_integrator_decisions_l106_l108.md) | LSWAP-1 — the loop swap happens in one gap, the old loop unloaded first (L106 = (a), delegated) |
 | `lt-1` | [rulings_2026_08_26_diagram_let_node_ids_1036.md](rulings_2026_08_26_diagram_let_node_ids_1036.md) | LT-1 — the defect |
 | `lt-2` | [rulings_2026_08_26_diagram_let_node_ids_1036.md](rulings_2026_08_26_diagram_let_node_ids_1036.md) | LT-2 — the fix is a threaded counter, because the alternatives do not cover siblings |
@@ -784,6 +798,9 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `mss-5` | [rulings_2026_08_22_map_syntax_settlement.md](rulings_2026_08_22_map_syntax_settlement.md) | MSS-5 (= letter Q5a, the revised recommendation) — xap's `ref` is spelled honestly |
 | `mss-6` | [rulings_2026_08_22_map_syntax_settlement.md](rulings_2026_08_22_map_syntax_settlement.md) | MSS-6 (= letter Q6a) — the fences |
 | `mss-7` | [rulings_2026_08_22_map_syntax_settlement.md](rulings_2026_08_22_map_syntax_settlement.md) | MSS-7 — the prefix family completes: `::T VALUE` types the value (RULED "1a", 2026-08-22, same day) |
+| `mycdc-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | Owner decisions 2026-10-13 evening – 2026-10-14 early: PGO-1, LOOPBIN-1, SCALE-1, RACE-1, LOAD-1, the bridges and the quiet mode, YAML/PyYAML/Jinja2 baselines, MYCDC-1 |
+| `mycdc-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | MYCDC-1 — cx-platform-connector#27's mysql slice is the binlog client (the decision first posted as MYSQLCDC-1) |
+| `mycdc-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | The token MYSQLCDC-1 — renamed MYCDC-1 |
 | `names-1` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | NAMES-1 — the names #1498 wave 2 chose get fixture-backed sentences (L66 = (a)) |
 | `ncnam-1` | [rulings_2026_09_30_owner_decisions_l115_l116.md](rulings_2026_09_30_owner_decisions_l115_l116.md) | NCNAM-1 — a computed attribute named `null`, `true` or `false` stays refused, CXER0236 (L115 = (a); #1699) |
 | `newb-1` | [rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md](rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md) | NEWB-1 — the newest bugs are scheduled first |
@@ -816,6 +833,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `org-1` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | ORG-1 — the org-profile README is pushed (`go .github` = (a)) |
 | `over-1` | [rulings_2026_10_01_owner_decision_overage.md](rulings_2026_10_01_owner_decision_overage.md) | OVER-1 — a $100 extra-usage allowance, spent only against a stop that would lose running agents' context |
 | `over-2` | [rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md](rulings_2026_10_04_owner_direction_newer_bugs_and_overspend.md) | OVER-2 — tens of dollars past a window's fill are spent when the spend is smaller than what a stop would cost |
+| `over-4` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | OVER-4 — tens of dollars of extra usage may extend a window past the fill to finish a landing or a close |
 | `pace-1` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | Owner decisions 2026-09-26 (evening) — Letters 35, 37, 38 and 39: the site token (SITE-1), the pace past the weekly meter (PACE-1), shared-slot steps beside a selected run (RUN-5), #1498 stays in v0.18 (SD-2) |
 | `pace-1` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | PACE-1 — the post-split epic crosses the weekly meter on extra usage (Letter 37 = (a), 23:1xZ) |
 | `pace-2` | [rulings_2026_09_27_owner_decisions_l41_l44.md](rulings_2026_09_27_owner_decisions_l41_l44.md) | Owner decisions 2026-09-27 — Letters 41–45: the call spread (SPREAD-1), the orders-db partial (ODB-1), R-1492 as graded (BEX-1), the bus audit subject (BUS-1), no new agents (PACE-2) |
@@ -841,6 +859,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pgc-1` | [rulings_2026_08_22_gate_hygiene.md](rulings_2026_08_22_gate_hygiene.md) | PGC-1 — the gate checks the payload a profile PROMISES (#915) |
 | `pgl-1` | [rulings_2026_08_22_profile_gate_lane.md](rulings_2026_08_22_profile_gate_lane.md) | PGL-1 — one implementation, reachable from a pre-cut lane |
 | `pgl-1a` | [rulings_2026_08_22_profile_gate_lane.md](rulings_2026_08_22_profile_gate_lane.md) | PGL-1a — AMENDMENT: the gate was BROKEN, and the lane proved it on its first run |
+| `pgo-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | Owner decisions 2026-10-13 evening – 2026-10-14 early: PGO-1, LOOPBIN-1, SCALE-1, RACE-1, LOAD-1, the bridges and the quiet mode, YAML/PyYAML/Jinja2 baselines, MYCDC-1 |
+| `pgo-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | PGO-1 — #1928 / cx-core-code#136 close on the SHIPPED binary: the release scripts build build-vcx-pgo (gcc .gcda form) and one release_linux.sh proof |
 | `pivot-1` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | PIVOT-1 — a read-only step before the pivot needs no compensator (Letter 51 = (a), owner ~06:1xZ) |
 | `pivot-2` | [rulings_2026_09_27_integrator_decisions_l57.md](rulings_2026_09_27_integrator_decisions_l57.md) | Integrator decision 2026-09-27 (afternoon), under the owner's delegation — Letter 57: a verb's `effect=` reaches both faces from the feature (PIVOT-2) |
 | `pivot-2` | [rulings_2026_09_27_integrator_decisions_l57.md](rulings_2026_09_27_integrator_decisions_l57.md) | PIVOT-2 — both faces copy a verb's `effect=` from the feature it came from (L57 = (b)) |
@@ -870,6 +890,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pw-2` | [rulings_2026_09_04_flow_w3_performers_1265.md](rulings_2026_09_04_flow_w3_performers_1265.md) | PW-2 — the inbox before `fleet` — RULED (a) |
 | `pw-3` | [rulings_2026_09_04_flow_w3_performers_1265.md](rulings_2026_09_04_flow_w3_performers_1265.md) | PW-3 — how an `[approval]` correlates to a run and step — RULED (a) |
 | `pybase-1` | [rulings_2026_10_13_owner_decisions_flags_repin_multicore.md](rulings_2026_10_13_owner_decisions_flags_repin_multicore.md) | PYBASE-1 — the comparisons run Python on the PGO+LTO interpreter people install, pinned by cx-examples `baseline/python.cxd` and checked by `python-check`; the re-measure runs on the installed Homebrew 3.12.13 (owner (b) at 05:3xZ, then Letter 5 = (a); cx-examples#392, PR #393) |
+| `pybase-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | JINJA-1 — one pip download of Jinja2 into a venv on the PYBASE-1 interpreter for the template comparison |
 | `pye-1` | [rulings_2026_08_22_bug_campaign.md](rulings_2026_08_22_bug_campaign.md) | 925 map:/array: IN FULL per PYE-1 (26 functions, new normative spec, |
 | `pye-1` | [rulings_2026_08_22_computed_path_steps.md](rulings_2026_08_22_computed_path_steps.md) | PYE-1a (1a) — the grammar edit for a computed member step is INSIDE PYE-1's authorization |
 | `pye-1` | [rulings_2026_08_22_python_eradication.md](rulings_2026_08_22_python_eradication.md) | PYE-1 (item 1b) — implement `map:` and `array:` IN FULL |
@@ -882,8 +903,14 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `pye-4` | [rulings_2026_08_22_python_eradication.md](rulings_2026_08_22_python_eradication.md) | PYE-4 (item 4c) — the regex class rewrite becomes correct, not narrowed |
 | `pye-5` | [rulings_2026_08_22_python_eradication.md](rulings_2026_08_22_python_eradication.md) | PYE-5 (item 5a) — the exemption is all of `lang/python/**` |
 | `pye-6` | [rulings_2026_08_22_python_eradication.md](rulings_2026_08_22_python_eradication.md) | PYE-6 (item 6a) — an all-SKIP gate run is a failure |
+| `pyyaml-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | PYYAML-1 — PyYAML 6.0.3 from PyPI, hash-pinned, as the YAML comparison's Python library |
 | `qdoc-1` | [rulings_2026_09_30_integrator_decisions_l149.md](rulings_2026_09_30_integrator_decisions_l149.md) | QDOC-1 — a head whose diff since the last graded head is confined to `flows/merge-queue.cxd` and `_gate_evidence/` takes the docs pipeline (L149 = (a)) |
 | `qual-1` | [rulings_2026_10_02_owner_decision_l172.md](rulings_2026_10_02_owner_decision_l172.md) | QUAL-1 — the four takings and their order |
+| `quiet-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | QUIET-1 — two build-free rows slots per window (superseded the same hour by LOAD-1) |
+| `quiet-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | LOAD-1 — rows at any load, cx and Python interleaved, medians, load stated; builds at nice 10; the BOX claim is the only exclusion (supersedes QUIET-1) |
+| `quiet-1917` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | QUIET-1917 — a quiet mode without a restart for #1917's union rows after the in-flight landings and a PASSED tick |
+| `race-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | Owner decisions 2026-10-13 evening – 2026-10-14 early: PGO-1, LOOPBIN-1, SCALE-1, RACE-1, LOAD-1, the bridges and the quiet mode, YAML/PyYAML/Jinja2 baselines, MYCDC-1 |
+| `race-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | RACE-1 — after a GREEN landing gate, a head move of other streams' files only is merge + push, no rebuild |
 | `refl-1` | [rulings_2026_09_30_integrator_decisions_l150.md](rulings_2026_09_30_integrator_decisions_l150.md) | REFL-1 — the gate-protocol partition of code.md §11.4 is spelled `reference-only`; the governance row follows; the allowance retires (L150 = (a)) |
 | `reprm-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | REPRM-1 — W8's measurement runs in v0.18 and its finding is fixed in v0.18 (L129 = (b), amended by SHIP-1; #1119) |
 | `rflow-1` | [rulings_2026_09_28_owner_decisions_l94_l104.md](rulings_2026_09_28_owner_decisions_l94_l104.md) | RFLOW-1 — the whole CI/CD as five cx flow documents, the design's nine choices (L96…L104 = (a)) |
@@ -972,6 +999,9 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `run-5` | [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md) | Owner decisions 2026-09-19 ~04:45Z — a failed run reports every red class (RUN-2); the daily full union runs on an idle runner (RUN-3); an escalated branch runs the computed selection pre-merge (RUN-4); the run log carries step timing and the timings file (RUN-5); the two agents and their order (AGENTS-1); the budget step stays open until it measures (1562-a) |
 | `run-5` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | Owner decisions 2026-09-26 (evening) — Letters 35, 37, 38 and 39: the site token (SITE-1), the pace past the weekly meter (PACE-1), shared-slot steps beside a selected run (RUN-5), #1498 stays in v0.18 (SD-2) |
 | `run-5` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | RUN-5 — a shared-slot step may run beside a SELECTED loop run under load 20 (Letter 38 = (a)) |
+| `scale-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | Owner decisions 2026-10-13 evening – 2026-10-14 early: PGO-1, LOOPBIN-1, SCALE-1, RACE-1, LOAD-1, the bridges and the quiet mode, YAML/PyYAML/Jinja2 baselines, MYCDC-1 |
+| `scale-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | SCALE-1 — #1923's scaling-efficiency bar: CPU per unit at k <= 1.3x k=1 through the P-core count; above it, cx's CPU per unit <= Python's at the same k |
+| `sched-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | SCHED-1 — nothing that loads dev2 runs in a usage pause; landable work pushes before the fill |
 | `sd-1` | [rulings_2026_09_15_views_group_vg3_schema_sd1.md](rulings_2026_09_15_views_group_vg3_schema_sd1.md) | Owner letters 2026-09-15 ~01:20Z — the fourth clause of `[views]`, and the schema-as-data feature kind (RULED: VG-3, SD-1) |
 | `sd-2` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | Owner decisions 2026-09-26 (evening) — Letters 35, 37, 38 and 39: the site token (SITE-1), the pace past the weekly meter (PACE-1), shared-slot steps beside a selected run (RUN-5), #1498 stays in v0.18 (SD-2) |
 | `sd-2` | [rulings_2026_09_26_owner_decisions_l35_l39.md](rulings_2026_09_26_owner_decisions_l35_l39.md) | SD-2 — #1498 stays in v0.18 (Letter 39 = (b)) |
@@ -1271,6 +1301,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xco-5` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | XCO-5 — a host may be did:web |
 | `xd-1` | [rulings_2026_08_21_x_tier_docs_and_domain_writes.md](rulings_2026_08_21_x_tier_docs_and_domain_writes.md) | XD-1 — the x/ tier is DOCUMENTED, and marked for what it is (#904) |
 | `xd-2` | [rulings_2026_08_21_x_tier_docs_and_domain_writes.md](rulings_2026_08_21_x_tier_docs_and_domain_writes.md) | XD-2 — domain data is journaled, and its authority is its own (#905) |
+| `yaml-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | YAML-1 — cx-examples#319/#320 are v0.18 scope for gaps2: cx's YAML parser widens to the corpus's valid YAML 1.2 documents; the bar is Python's YAML library's acceptance on the corpus |
 | `yield-1` | [rulings_2026_09_27_integrator_decisions_l60.md](rulings_2026_09_27_integrator_decisions_l60.md) | Integrator decision 2026-09-27 (evening), under the owner's delegation — Letter 60: each `[yield]` contributes exactly one item (YIELD-1) |
 | `yield-1` | [rulings_2026_09_27_integrator_decisions_l60.md](rulings_2026_09_27_integrator_decisions_l60.md) | YIELD-1 — a `[yield]` inside `[?for]` contributes exactly one item, whatever its type (L60 = (a)) |
 | `yield-2` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | YIELD-2 — a yielded pair in an element body is one child (L65 = (a)) |
@@ -1394,9 +1425,11 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `171-seq-mid` | [rulings_2026_09_08_let_cascade_lint_1170.md](rulings_2026_09_08_let_cascade_lint_1170.md), [rulings_2026_09_08_seq4_pin_page_sync_1170.md](rulings_2026_09_08_seq4_pin_page_sync_1170.md) |
 | `172-seq` | [rulings_2026_08_26_wasm_eval_sweep.md](rulings_2026_08_26_wasm_eval_sweep.md), [rulings_2026_09_08_let_cascade_lint_1170.md](rulings_2026_09_08_let_cascade_lint_1170.md), [rulings_2026_09_08_seq4_pin_page_sync_1170.md](rulings_2026_09_08_seq4_pin_page_sync_1170.md) |
 | `182-cpu-min` | [rulings_2026_08_24_0170_campaign.md](rulings_2026_08_24_0170_campaign.md) |
+| `1869-csv` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) |
 | `191-map` | [rulings_2026_09_10_doc_top_postfix_ascription_1361.md](rulings_2026_09_10_doc_top_postfix_ascription_1361.md) |
 | `192-cbc` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) |
 | `192-map` | [rulings_2026_09_09_diagram_node_id_ordinals_1349.md](rulings_2026_09_09_diagram_node_id_ordinals_1349.md) |
+| `1926-s1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) |
 | `2026-mm` | [rulings_2026_09_09_xap_correction_taxonomy_1310.md](rulings_2026_09_09_xap_correction_taxonomy_1310.md) |
 | `2026-vs` | [rulings_2026_09_09_flow_activation_seq_1316c1.md](rulings_2026_09_09_flow_activation_seq_1316c1.md) |
 | `256-cbc` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) |
@@ -1554,7 +1587,9 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ga-1b` | [rulings_2026_08_20_guest_attach.md](rulings_2026_08_20_guest_attach.md) |
 | `gql-1` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_14_connector_transports_1430c.md](rulings_2026_09_14_connector_transports_1430c.md) |
 | `half-1` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
+| `hold-1917` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) |
 | `http-429` | [partition_remediation_register.md](partition_remediation_register.md) |
+| `idle-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) |
 | `ieee-754` | [partition_I5_stream17_runtime.md](partition_I5_stream17_runtime.md) |
 | `imap-1` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `imap-2` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
@@ -1705,4 +1740,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*390 ledger pages; 934 ids declared, 425 cited only.*
+*391 ledger pages; 954 ids declared, 429 cited only.*
