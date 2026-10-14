@@ -258,7 +258,7 @@ fi
 # it is local until release.sh's push phase, so the cut stays re-runnable.
 
 if [[ $DRY_RUN -eq 1 ]]; then
-    echo "[dry-run] would commit version bump, create the annotated tag $TAG on it, then run: make build-vcx"
+    echo "[dry-run] would commit version bump, create the annotated tag $TAG on it, then run: make build-vcx-pgo"
 else
     note "committing version bump"
     # Stage every file bump_version.sh just stamped. The tree was verified clean
@@ -288,8 +288,10 @@ else
     # dropping it keeps the cut re-runnable from a clean state.
     untag_and_fail() { git tag -d "$TAG" >/dev/null 2>&1 || true; fail "$@"; }
 
-    note "rebuilding libcx + cli (at the tag — the artifacts stamp as the release)"
-    make build-vcx || untag_and_fail "make build-vcx failed"
+    # The shipped binary is the profile-guided build (PGO-1, cx-private#1928): -O2 plus
+    # the profile of this tree's own training run; a run that writes no profile fails.
+    note "rebuilding libcx + cli with PGO (at the tag — the artifacts stamp as the release)"
+    make build-vcx-pgo || untag_and_fail "make build-vcx-pgo failed"
 
     # Provenance gate (#666, extended by #979/CO-4): the binary we just built
     # must self-report exactly this version at exactly this (clean) commit —
