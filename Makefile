@@ -56,6 +56,17 @@ ifneq ($(origin NIX_HARDENING_ENABLE),undefined)
 export NIX_HARDENING_ENABLE :=
 endif
 
+# V's test harness prints a heartbeat (">>>>> running 1/1 … started … ago")
+# every VTEST_REPORT_RUNNING_PERIOD_MS (300000 by default) into a step's log.
+# The loop's liveness watch (#1787, flows/load.cxd [liveness stall-minutes=30])
+# reads a growing log as work, so a test hung at 0 % CPU was never quiet: the
+# ea3f6ea6c tick sat 1 h 29 min in test-vcx-suite until a person killed it,
+# and only the 4-hour budget would have. Off under make (WATCH-1): a hung test
+# is quiet, the watch kills it by group and its tree names the test binary.
+# A person who wants the report sets the variable; `make print-vtest-beat`
+# answers what a recipe sees (flows/sim/premerge/probe-stall-beat.cx).
+export VTEST_REPORT_RUNNING_PERIOD_MS ?= 0
+
 # Explicit handle on the patched V toolchain. The PATH export above is meant to
 # make a bare `v` resolve to third_party/v/v, but `v test` recipes have been
 # observed re-resolving to the system V (e.g. /usr/local/bin/v) — under which
@@ -311,6 +322,11 @@ endef
 # here would hand the box away in the middle of the gate, which is the opposite
 # of what this lock is for.
 GATE_LOCK_TRAP := trap 'rm -f "$(CX_GATE_LOCK)"' INT TERM HUP;
+
+# the harness heartbeat period a recipe sees (WATCH-1; 0 = off).
+.PHONY: print-vtest-beat
+print-vtest-beat:
+	@printf '%s\n' "$${VTEST_REPORT_RUNNING_PERIOD_MS-unset}"
 
 .PHONY: gate-lock-status
 gate-lock-status:
