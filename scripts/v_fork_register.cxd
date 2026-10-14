@@ -403,4 +403,8 @@
   [patch sha=26e083fb9312f081470b4a32c712b6b87d0af5f8 family=bench issue='cx-home/v#42']
   [patch sha=83e17e37315b95220178b54290907b8d57db33fe family=vgc issue='cx-home/v#40']
   [patch sha=c44b0e004964f860575b04b48be1d18ac8fca89b family=bench issue='cx-home/v#40']
+  [patch sha=1d84e95e9b462e885d984550993742a976461501 family=bench issue='cx-home/v#42']
+  [patch sha=c5796bbaf25ad505448c5e06ac64b391b464570f family=vgc issue='cx-home/v#15']
+  [patch sha=0fe9d624de0737d1995cc7131f40bce612a4aa10 family=vgc issue='cx-home/v#15']
+  [patch sha=60a4e0d0f96f7b9ce7f1105bede44bf850c48004 family=vgc issue='cx-home/v#45']
 ]
