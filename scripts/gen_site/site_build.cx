@@ -48,6 +48,8 @@
 #                             figure a link away on rings.html (HOME-1)
 #   {{TLDR:lead}}             the lead paragraph alone, as the hero's
 #                             lede (the one sentence in one place, DOCS-49)
+#   {{TLDR:axiom}}            the axiom (AXIOM-1: the owner's text, verbatim),
+#                             opening the page's "What it is"
 #   {{FIXTURE:<id>}}          one replayed case in the guide's fixture shape
 #                             (its files, the invocation with the LIVE output,
 #                             where the case lives) — the block a beat's
@@ -301,6 +303,7 @@
 [?const FIGURE-TOKEN "@@FIGURE:rings@@"]
 [?const FIGURE-PLAIN-TOKEN "@@FIGURE:rings-plain@@"]
 [?const TLDR-LEAD-TOKEN "@@TLDR:lead@@"]
+[?const TLDR-AXIOM-TOKEN "@@TLDR:axiom@@"]
 [?def place-figure scope=public impure ($html)
   [$strings:replace
     [$strings:replace $html [$concat "<p>" FIGURE-TOKEN "</p>\n"]
@@ -382,10 +385,13 @@
               [$strings:replace
                 [$strings:replace $acc [$concat "<p>@@HERO:" $id "@@</p>\n"] $block]
                 [$concat "@@HERO:" $id "@@"] $block]]]]]
-        [= $led [$strings:replace $with-hero [$concat "<p>" TLDR-LEAD-TOKEN "</p>\n"]
+        [= $led0 [$strings:replace $with-hero [$concat "<p>" TLDR-LEAD-TOKEN "</p>\n"]
                   [$concat "<p class=\"lede\">" [$inline [$pb:tldr-part "lead"] [$map:get $ctx "where"]] "</p>\n"]]]
+        [; AXIOM-1: the owner's axiom, verbatim from tldr.cxd's [axiom]. ]
+        [= $led [$strings:replace $led0 [$concat "<p>" TLDR-AXIOM-TOKEN "</p>\n"]
+                  [$concat "<p class=\"axiom\">" [$inline [$pb:tldr-part "axiom"] [$map:get $ctx "where"]] "</p>\n"]]]
     [?if [$present [$strings:find $led "@@"]]
-      [then [$die "a placeholder token was left in the page — a {{FIXTURE:}}, {{HERO:}} or {{TLDR:lead}} not on a line of its own, or a {{FIGURE:}} this build does not draw"]]
+      [then [$die "a placeholder token was left in the page — a {{FIXTURE:}}, {{HERO:}}, {{TLDR:lead}} or {{TLDR:axiom}} not on a line of its own, or a {{FIGURE:}} this build does not draw"]]
       [else $led]]]]
 
 # guide-sidebar: the sidebar `make guide` rendered into docs/guide/index.html
@@ -475,6 +481,7 @@
       [when [= $kind "FIGURE:rings"] FIGURE-TOKEN]
       [when [= $kind "FIGURE:rings-plain"] FIGURE-PLAIN-TOKEN]
       [when [= $kind "TLDR:lead"] TLDR-LEAD-TOKEN]
+      [when [= $kind "TLDR:axiom"] TLDR-AXIOM-TOKEN]
       [when [$strings:starts-with $kind "HERO:"] [$concat "@@HERO:" [$strings:slice $kind 6 [$strings:length $kind]] "@@"]]
       [when [$strings:starts-with $kind "FIXTURE:"] [$concat "@@FIXTURE:" [$strings:slice $kind 9 [$strings:length $kind]] "@@"]]
       [when [$strings:starts-with $kind "COUNT:"]
