@@ -15,6 +15,11 @@ The lead carries no label: each page opens on its sentence as plain prose,
 and docs-src/site/vocabulary.cxd refuses the label's return (RULED: DOCS-51
 §1 and §7, DOCS-43).
 
+  [axiom]     the owner's statement of what CX is (AXIOM-1, 2026-10-14), verbatim:
+              it opens the why page and precedes the lead wherever the docs
+              state what CX is — the guide home, the primer's §0, the landing
+              page's "What it is" and llms.txt. Never paraphrased, never
+              given an adjective; only the owner edits it.
   [lead]      the opening paragraph: why to reach for CX, in our voice
   [standard]  the standard we hold ourselves to, stated as ours — each clause
               below is one of its terms with the fixture that proves it
@@ -26,6 +31,10 @@ and docs-src/site/vocabulary.cxd refuses the label's return (RULED: DOCS-51
 
 The prose carries the site's inline Markdown (**bold**, `code`); the HTML
 projection renders exactly those two forms.
+#]]
+
+  [axiom [#
+CX starts from a single axiom: computing is data transformation, nothing more. Languages, frameworks and processes are ceremony around that fact. CX is the principle made a language: transform.
 #]]
 
   [lead [#

@@ -41,6 +41,8 @@
 #   cx --allow-read --allow-write --allow-subprocess --allow-env --allow-clock \
 #      scripts/postmerge_steps.cx --checkout=<checkout> test
 #   cx … scripts/postmerge_steps.cx --checkout=<checkout> test-changed BASE=<sha>
+#   cx … scripts/postmerge_steps.cx --checkout=<checkout> idle   (UNION-1 (a): flows/load.cxd's
+#      [idle step=X] rows, one at a time on the post-merge runner — the loop's idle-rows tick)
 #   cx … scripts/postmerge_steps.cx --checkout=<checkout> order <step>…   (the pool's
 #      longest-first order of the named steps from the checkout's previous runs, one a line;
 #      scripts/postmerge_order_selftest.sh grades it)
@@ -272,6 +274,20 @@
                               [?if [= $why ''] [then ''] [else [$concat ' — ' $why]]]]]]
     [$env:exit [?if [= [$count $reds] 0] [then 0] [else 2]]]]]
 
+# UNION-1 (a) (cx-private#1917): the idle period's run — flows/load.cxd's
+# [idle step=X] rows, one at a time on the post-merge runner, in the tree the
+# union just graded (no prebuild: its binaries are the union's, and every step
+# runs -o of both). Each step's old log goes first, so a reader of
+# vcx/target/steps/ reads this run's; the union's other step logs stay.
+[?def run-idle scope=private impure ($c)
+  [?let [= $ts [$ci:idle-steps]]
+        [= $_h [$say [$concat 'postmerge-steps: the idle period (flows/load.cxd [idle], UNION-1 (a)): '
+                              [?if [= [$count $ts] 0] [then 'none'] [else [$strings:join $ts ' ']]] ', one at a time on the post-merge runner']]]
+        [= $_r [?to-sequence [?for [in $t $ts] [in $x ('.log', '.log.err')] [= $f [$concat $c '/vcx/target/steps/' $t $x]]
+                 [yield [?if [$io:is-file $f] [then [$io:remove $f]] [else null]]]]]]
+        [= $es [?to-sequence [?for [in $t $ts] [yield [$serial-step $c $t [$make-words $t ''] 'post-merge']]]]]
+    [$finish $es '']]]
+
 [?let [= $argv [?to-sequence [?for [in $a [$env:argv]] [yield [$string $a]]]]]
       [= $words [?to-sequence [?drop 1 $argv]]]
       [= $c [$arg-value $words '--checkout=']]
@@ -285,6 +301,8 @@
     [then [?let [= $_e [$say [$strings:join $lr "\n"]]] [$env:exit 2]]]
   [else [?if [= [$first $rest] 'reap']
     [then [?let [= $_r [$reap-own $slot [$ci:parallel-steps]]] [$env:exit 0]]]
+  [else [?if [= [$first $rest] 'idle']
+    [then [$run-idle $c]]
   [else [?if [= [$first $rest] 'order']
     [then [?let [= $_o [?to-sequence [?for [in $t [$longest-first [?to-sequence [?drop 1 $rest]] [$last-seconds $c]]] [yield [$say $t]]]]] [$env:exit 0]]]
   [else [?let
@@ -297,8 +315,16 @@
       [= $p [$plan $c $rest]]
       [?if [= [$name $p] 'plan-refused'] [then [?let [= $_e [$say [$concat 'postmerge-steps: ' [$string $p@why]]]] [$env:exit 2]]]
       [else [?let
-        [= $storm [$str-split-whitespace [$string $p@storm]]]
-        [= $tail [$str-split-whitespace [$string $p@tail]]]
+        [= $idle [$ci:idle-steps]]
+        [= $storm0 [$str-split-whitespace [$string $p@storm]]]
+        [= $tail0 [$str-split-whitespace [$string $p@tail]]]
+        [= $ss [$ci:idle-split $storm0 $idle]] [= $ts [$ci:idle-split $tail0 $idle]]
+        [= $storm [$str-split-whitespace [$string $ss@run]]]
+        [= $tail [$str-split-whitespace [$string $ts@run]]]
+        [= $left [$str-split-whitespace [$strings:trim [$concat [$string $ss@left] ' ' [$string $ts@left]]]]]
+        [= $_i [?if [= [$count $left] 0] [then null]
+                 [else [$say [$concat 'postmerge-steps: ' [$string [$count $left]] ' idle-period step(s) not in this run (flows/load.cxd [idle], UNION-1 (a)): '
+                                      [$strings:join $left ' '] ' — the loop runs them once the tip passed']]]]]
         [= $sens [$ci:sensitive]]
         [= $own [?to-sequence [?for [in $t $storm] [where [not [$c:member $t $sens]]] [yield $t]]]]
         [= $shared [?to-sequence [?for [in $t $storm] [where [$c:member $t $sens]] [yield $t]]]]
@@ -341,4 +367,4 @@
         [= $tl [?if [> [$count [$red-names $before]] 0] [then ()]
                  [else [$run-tail $c $tail [$string $p@suite]]]]]
         [$finish [$c:cat2 $before $tl]
-                 [?if [and [> [$count [$red-names $before]] 0] [> [$count $tail] 0]] [then 'the serial tail did not run: a step before it is red'] [else '']]]]]]]]]]]]]]]]]]]
+                 [?if [and [> [$count [$red-names $before]] 0] [> [$count $tail] 0]] [then 'the serial tail did not run: a step before it is red'] [else '']]]]]]]]]]]]]]]]]]]]]
