@@ -425,6 +425,17 @@ p.lede {
   margin: 0 0 1.1rem;
 }
 
+/* The axiom (AXIOM-1) — the owner's statement of what CX is, verbatim; it
+   opens the why page and precedes the lead. Full ink, an accent rule. */
+p.axiom {
+  color: var(--ink);
+  font-size: 1.16rem;
+  line-height: 1.6;
+  margin: 0 0 1.1rem;
+  padding-left: 0.9rem;
+  border-left: 3px solid var(--accent);
+}
+
 p { margin: 0.55rem 0; color: var(--ink-soft); }
 
 ul, ol { margin: 0.55rem 0; padding-left: 1.4rem; color: var(--ink-soft); }

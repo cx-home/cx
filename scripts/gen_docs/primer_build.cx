@@ -645,9 +645,12 @@
 [?def tldr-ids scope=public impure ()
   [?for [in $c [$tldr-clauses]] [yield [$string $c@fixture]]]]
 
-# tldr-md: the lead, the standard, then one bullet per clause citing its case.
+# tldr-md: the axiom (AXIOM-1, the owner's text, verbatim), the lead, the
+# standard, then one bullet per clause citing its case.
 [?def tldr-md scope=public impure ()
   [$strings:join (
+    [$tldr-part "axiom"],
+    "",
     [$tldr-part "lead"],
     "",
     [$tldr-part "standard"],
@@ -668,6 +671,7 @@
 
 [?def tldr-html scope=public impure ()
   [$strings:join (
+    [$concat "<p class=\"axiom\">" [$tldr-inline [$tldr-part "axiom"]] "</p>"],
     [$concat "<p class=\"lede\">" [$tldr-inline [$tldr-part "lead"]] "</p>"],
     [$concat "<p>" [$tldr-inline [$tldr-part "standard"]] "</p>"],
     "<ul class=\"tldr\">",
@@ -942,9 +946,12 @@
       [where [= [?else [$name $k] ""] "site"]] [yield [$string $k@base]]] ""]]
   [= $root [$strings:join [?for [in $k $manifest/*]
       [where [= [?else [$name $k] ""] "site"]] [yield [$string $k@root]]] ""]]
-  [= $tagline [$strings:join [?for [in $k $manifest/*]
-      [where [= [?else [$name $k] ""] "tagline"]]
-      [yield [$normalize [$raw-of $k]]]] ""]]
+  [; llms.txt's summary opens on the axiom (AXIOM-1: the owner's text,
+     verbatim, from docs-src/site/tldr.cxd) and then the manifest's tagline. ]
+  [= $tagline [$concat [$tldr-part "axiom"] " "
+      [$strings:join [?for [in $k $manifest/*]
+        [where [= [?else [$name $k] ""] "tagline"]]
+        [yield [$normalize [$raw-of $k]]]] ""]]]
   [= $suites [$fp:flat-map [?for [in $k $manifest/*]
       [where [= [?else [$name $k] ""] "suites"]]
       [yield [?for [in $l [$strings:split-lines [$normalize [$raw-of $k]]]]

@@ -337,6 +337,7 @@
    which post-body renders as it does for every other block. #]
 [?def tldr-block scope=public impure ($fx)
   [div class='tldr'
+    [p class='axiom' [$pb:tldr-part 'axiom']]
     [p class='lede' [$pb:tldr-part 'lead']]
     [p [$pb:tldr-part 'standard']]
     [?splice [$pb:cat-seqs [?for [in $c [$pb:tldr-clauses]]
@@ -407,6 +408,10 @@
        each clause beside the case that proves it, replayed like every other
        citation (the guide home and the primer §0 project the same source). ]
     [case [tldr] [$tldr-block $fx]]
+    [; AXIOM-1 (the owner, 2026-10-14): the why page opens on the axiom of
+       docs-src/site/tldr.cxd, the owner's text verbatim — projected, never
+       copied, so every page that states what CX is carries one text. ]
+    [case [axiom] [p class='axiom' [$pb:tldr-part 'axiom']]]
     [; DOCS-42: a figure rendered from the registries rides through [$xml:emit]
        as a token (raw SVG would be escaped there) and is placed by
        expand-figures once the page is a string. ]

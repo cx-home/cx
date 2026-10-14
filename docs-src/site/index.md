@@ -26,6 +26,8 @@
 
 ## What it is
 
+{{TLDR:axiom}}
+
 We write the data and the code in one shape, so a query is a pattern over the document — the `[user [name $n] [email $e]]` you would have parsed into objects is the very form that matches them.
 
 {{FIXTURE:program-for-003-name-email-pair}}
