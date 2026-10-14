@@ -91,10 +91,10 @@ jobs:
           make deps-sync  CX_BIN="$RUNNER_TEMP/cx-bootstrap/bin/cx"
           make deps-check CX_BIN="$RUNNER_TEMP/cx-bootstrap/bin/cx"
 
-      - name: Build libcx + cx CLI (-prod, against the fork, from the pins)
+      - name: Build libcx + cx CLI (-prod + PGO, against the fork, from the pins)
         run: |
           export SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)
-          make build-vcx                   # uses third_party/v/v automatically
+          make build-vcx-pgo               # PGO-1 (#1928): -O2 + this tree's training profile; uses third_party/v/v
           make build-lib-arrow || echo "::warning::libcx_arrow build skipped (optional module)"
 
       # The four §4 builds (cx_partition.md §4: data, cli, embed, platform).
@@ -102,7 +102,7 @@ jobs:
       # platform profile. They compile the same pinned tree, so a module that
       # arrived through a pin is in all four or in none.
       - name: Build the four profiles from the pins
-        run: make build-profiles
+        run: make -o build-vcx build-profiles   # never relink the PGO cx as plain -O2 (PGO-1)
 
       - name: Package
         run: |
