@@ -583,7 +583,8 @@ build-vcx: check-gate-lock deps-present v-pin-fresh
 # The product with profile-guided optimization (FLAGS-1, #1928): cx-core-code's build-pgo —
 # an instrumented build, its training run over the conformance corpus and the Benchmarks
 # Game, the profile-use build. What the release and cx-examples' pin build; the loop's
-# ticks stay on build-vcx (-O2). A training run that writes no profile fails it.
+# steps stay on build-vcx (-O2) except perf-pair, which measures this binary (LOOPBIN-1,
+# build-vcx-perf below). A training run that writes no profile fails it.
 build-vcx-pgo: check-gate-lock deps-present v-pin-fresh
 	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx build-pgo
 
@@ -1939,13 +1940,22 @@ perf-ratchet: build-vcx
 # last green head. With no record yet, perf-pair records and judges nothing.
 PERF_HEAD ?= vcx/target/bench-head.json
 PERF_OUT  ?= vcx/target/bench-pair.json
-.PHONY: perf-record perf-pair perf-promote
-perf-record: build-vcx
+# LOOPBIN-1 = (a) (owner 10-14): the pair measures the SHIPPED binary — the PGO build
+# (build-vcx-pgo, #1928) — built into its own target directory so the -O2 cx every other
+# step uses is never relinked under them. Its training record (pgo_train's line and
+# build-pgo's "built with the profile") lands in this step's log.
+PERF_PGO_TARGET := target/perf-pgo
+PERF_CX := $(CURDIR)/deps/cx-core-code/vcx/$(PERF_PGO_TARGET)/cx
+.PHONY: perf-record perf-pair perf-promote build-vcx-perf
+build-vcx-perf: check-gate-lock deps-present v-pin-fresh
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx TARGET=$(PERF_PGO_TARGET) build-pgo
+	@echo "perf-record: the pair measures $(PERF_CX) ($$("$(PERF_CX)" --version | head -1), profile-guided)"
+perf-record: build-vcx-perf
 	@mkdir -p $(dir $(PERF_OUT))
-	@"$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-read --allow-write --allow-subprocess --allow-clock --allow-env scripts/run_bench_json.cx --memory-under-load -o $(PERF_OUT)
+	@"$(PERF_CX)" --allow-read --allow-write --allow-subprocess --allow-clock --allow-env scripts/run_bench_json.cx --memory-under-load -o $(PERF_OUT)
 perf-pair: perf-record
 	@if [ ! -f "$(PERF_HEAD)" ]; then echo "perf-pair: no head record at $(PERF_HEAD) — this tree's rows recorded in $(PERF_OUT), nothing judged (make perf-promote seeds it)"; exit 0; fi; \
-	  "$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-read --allow-write --allow-env scripts/compare_bench.cx $(PERF_HEAD) $(PERF_OUT) --strict; \
+	  "$(PERF_CX)" --allow-read --allow-write --allow-env scripts/compare_bench.cx $(PERF_HEAD) $(PERF_OUT) --strict; \
 	  rc=$$?; if [ $$rc -eq 3 ]; then echo "perf-pair: memory rows judged clean; time rows unjudged on a loaded box (#1450)"; exit 0; fi; exit $$rc
 perf-promote:
 	@[ -f "$(PERF_OUT)" ] || { echo "perf-promote: no $(PERF_OUT) (run make perf-pair first)"; exit 1; }
@@ -4271,7 +4281,7 @@ test-vcx-code: build-vcx-dev check-serial-retry-rosters
 # roster is a variable and `check-inmodule-test-roster` now fails on any
 # vcx/cx/*_test.v that is in neither list, so the next addition cannot be
 # forgotten silently. Delete both lists and glob the directory when #737 closes.
-CX_INMODULE_TESTS := $(CXD)/vcx/cx/program_interior_comments_test.v $(CXD)/vcx/cx/program_layout_test.v $(CXD)/vcx/cx/program_fmt_guard_test.v $(CXD)/vcx/cx/program_emit_head_ascription_test.v $(CXD)/vcx/cx/directive_emit_surface_test.v $(CXD)/vcx/cx/anchor_resolve_test.v $(CXD)/vcx/cx/numeric_exact_fast_test.v $(CXD)/vcx/cx/atom_test.v $(CXD)/vcx/cx/token_golden_test.v $(CXD)/vcx/cx/version_stamp_test.v $(CXD)/vcx/cx/html_url_codec_test.v $(CXD)/vcx/cx/span_jump_test.v $(CXD)/vcx/cx/feature_compat_test.v $(CXD)/vcx/cx/name_pool_contract_test.v $(CXD)/vcx/cx/schema_extensions_test.v $(CXD)/vcx/cx/node_api_test.v $(CXD)/vcx/cx/compound_key_decode_test.v $(CXD)/vcx/cx/numeric_exact_big_test.v $(CXD)/vcx/cx/lint_l012_pred_test.v $(CXD)/vcx/cx/err_flag_test.v $(CXD)/vcx/cx/map_replace_present_test.v $(CXD)/vcx/cx/map_grow_lookup_test.v $(CXD)/vcx/cx/bytes_one_form_test.v $(CXD)/vcx/cx/pvec_test.v $(CXD)/vcx/cx/regex_re2_cursor_test.v $(CXD)/vcx/cx/regex_re2_linear_time_test.v $(CXD)/vcx/cx/parser_json_scratch_test.v $(CXD)/vcx/cx/text_hash_doc_test.v $(CXD)/vcx/cx/float_read_test.v
+CX_INMODULE_TESTS := $(CXD)/vcx/cx/program_interior_comments_test.v $(CXD)/vcx/cx/program_layout_test.v $(CXD)/vcx/cx/program_fmt_guard_test.v $(CXD)/vcx/cx/program_emit_head_ascription_test.v $(CXD)/vcx/cx/directive_emit_surface_test.v $(CXD)/vcx/cx/anchor_resolve_test.v $(CXD)/vcx/cx/numeric_exact_fast_test.v $(CXD)/vcx/cx/atom_test.v $(CXD)/vcx/cx/token_golden_test.v $(CXD)/vcx/cx/version_stamp_test.v $(CXD)/vcx/cx/html_url_codec_test.v $(CXD)/vcx/cx/span_jump_test.v $(CXD)/vcx/cx/feature_compat_test.v $(CXD)/vcx/cx/name_pool_contract_test.v $(CXD)/vcx/cx/schema_extensions_test.v $(CXD)/vcx/cx/node_api_test.v $(CXD)/vcx/cx/compound_key_decode_test.v $(CXD)/vcx/cx/numeric_exact_big_test.v $(CXD)/vcx/cx/lint_l012_pred_test.v $(CXD)/vcx/cx/err_flag_test.v $(CXD)/vcx/cx/map_replace_present_test.v $(CXD)/vcx/cx/map_grow_lookup_test.v $(CXD)/vcx/cx/bytes_one_form_test.v $(CXD)/vcx/cx/pvec_test.v $(CXD)/vcx/cx/regex_re2_cursor_test.v $(CXD)/vcx/cx/regex_re2_linear_time_test.v $(CXD)/vcx/cx/parser_json_scratch_test.v $(CXD)/vcx/cx/text_hash_doc_test.v $(CXD)/vcx/cx/float_read_test.v $(CXD)/vcx/cx/map_shape_test.v
 CX_INMODULE_TESTS_EXCLUDED := $(CXD)/vcx/cx/parser_multidoc_test.v
 
 # check-build-input-roster (#1065) — forwards to vcx/, where the per-artifact
