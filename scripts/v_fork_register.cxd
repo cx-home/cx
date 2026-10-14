@@ -411,4 +411,5 @@
   [patch sha=5f8e8c6b711d0ee73279f04a40839a8b8585b225 family=vgc issue='cx-private#1924']
   [patch sha=c12af85dabd2e83c6eef9741e18cc9e51a4df686 family=vgc issue='cx-private#1886']
   [patch sha=cbdd529dd32b891741c0a3fa8e69776a4dd17950 family=bench issue='cx-home/v#44']
+  [patch sha=4aeb065de6c69c85c4c4dbff28690b640541f417 family=vgc issue='cx-home/v#15']
 ]
