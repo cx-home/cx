@@ -12,6 +12,11 @@
 
 [section id=why group='Start here' n='0a' title='Why CX'
 
+  [; AXIOM-1 (the owner, 2026-10-14): the page opens on the axiom — "CX
+     starts from a single axiom: …" — projected verbatim from
+     docs-src/site/tldr.cxd's [axiom]; only the owner edits its text. ]
+  [axiom]
+
   [intro
     """We built CX so that the data is the program's own shape.
        One bracketed syntax is the document, the query, the program and the
