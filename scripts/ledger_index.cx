@@ -260,7 +260,19 @@
               [in $t [$strings:split [$re:replace $gap-rx [$re:replace $id-rx [$string $c@text] " "] " "] " "]]
               [where [$re:matches $shape-rx $t]]
               [yield [up token=$t subject=[$string $c@subject] new=$c@new]]]]]
-            [= $unparsed-new [?to-array [?for [in $u $unparsed] [where [= [$string $u@new] "true"]] [yield $u]]]]
+            [; IDSH-1 -- a token a ledger page records as `TOKEN` (unparsed, IDSH-1),
+               beside the id it was renamed to, is excused: a landed subject cannot be
+               rewritten (no force-push), so the page that renames the decision is its
+               record (MYSQLCDC-1 -> MYCDC-1, cited in 3f720d7bc). Any other token is
+               refused as before. ]
+            [= $idsh-rx [$re:compile "`([^`]+)` \\(unparsed, IDSH-1\\)"]]
+            [= $excused [$uniq-sorted [?for [in $f $files]
+                                         [in $m [$re:find-all $idsh-rx [$io:read-file $f]]]
+                                         [yield [$re:group $m 1]]]]]
+            [= $unparsed-new [?to-array [?for [in $u $unparsed]
+                                          [where [= [$string $u@new] "true"]]
+                                          [where [= 0 [$count [?for [in $e $excused] [where [= $e [$string $u@token]]] [yield $e]]]]]
+                                          [yield $u]]]]
             [= $unparsed-old [$uniq-sorted [?for [in $u $unparsed] [where [= [$string $u@new] "false"]] [yield [$string $u@token]]]]]
             [; IDSH-1 -- an owner-letter id in a new subject resolves against a page
                that DECLARES it (a heading), not one that only quotes it: D99z9
