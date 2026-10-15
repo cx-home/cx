@@ -41,6 +41,15 @@
 # The bound is the `load_1m_bound` the artifact carries, or CX_BENCH_MAX_LOAD,
 # or 8. An artifact with no load recorded (a pre-#1450 baseline) is judged as
 # before: the guard classifies what it can see and never invents a verdict.
+#
+# The streaming rows have a tighter bound (cx-private#1942). `streaming.*_ms`
+# and `code_streaming.*_mbps` move more than 10 % inside the load bound of 8:
+# code_streaming read 238 MB/s at load ~4.8 and 291.5 at 2.1 on one binary,
+# and three gates at load 4-4.5 read streaming_ms +13-14 % with no runtime
+# change. They are judged only when the reading's load (the greater of its
+# start and end) is under CX_BENCH_QUIET_LOAD, default 4.0 (WBAR-1's quiet
+# bound). Over it they are printed as QUIET, not judged. The other time rows
+# keep the bound of 8, and the memory rows are unchanged.
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
@@ -120,6 +129,12 @@
            [$strings:ends-with $key '_arenas']]
        [not [= [?else [$map:get [?else [$map:get $bm $key] {}] 'load_sensitive'] false] true]]]]
 
+[; cx-private#1942 — the time rows judged only on a quiet box (load under
+   CX_BENCH_QUIET_LOAD, default 4.0): streaming.*_ms and code_streaming.*_mbps. ]
+[?def quiet-only scope=public ($key)
+  [or [and [$strings:starts-with $key 'streaming.'] [$strings:ends-with $key '_ms']]
+      [and [$strings:starts-with $key 'code_streaming.'] [$strings:ends-with $key '_mbps']]]]
+
 [?let
   [= $args [?fallback [$env:parse-args ARG_SPEC]
              [recover-with ([$cry 'usage: compare_bench.cx BASELINE.json CURRENT.json [--strict]'],
@@ -151,6 +166,10 @@
   [= $load-bound [$num-or $curr 'load_1m_bound' [$env:var-float 'CX_BENCH_MAX_LOAD' 8.0e0]]]
   [= $base-load [$math:max ([$num-or $base 'load_1m_start' -1.0e0], [$num-or $base 'load_1m_end' -1.0e0])]]
   [= $base-bound [$num-or $base 'load_1m_bound' $load-bound]]
+  [; cx-private#1942 — over the quiet bound the streaming time rows are
+     reported, not judged. An unread load (-1) is not a load: judged as before. ]
+  [= $quiet-bound [$env:var-float 'CX_BENCH_QUIET_LOAD' 4.0e0]]
+  [= $unquiet [and [> $curr-load -1.0e0] [>= $curr-load $quiet-bound]]]
   [; a head artifact recorded on a loaded box (#1884's paired step records
      the head as it lands) has inflated TIME rows: judging a quiet reading
      against them would pass a real slowdown, so they are not judged either. ]
@@ -199,6 +218,10 @@
                                                       [$fixed1 [$num-or $curr 'load_1m_end' -1.0e0]], ' at its end, bound ',
                                                       [$fixed1 $load-bound], ' (the greater is judged)')]]
                                          [else 'not recorded (a pre-#1450 artifact)']])]]]
+  [= $_h3c [?if [and $unquiet [> [$count [?for [in $k [$map:keys [?else [$map:get $curr 'benchmarks'] {}]]] [where [$quiet-only $k]] [yield $k]]] 0]]
+    [then [$say [$cat ('  quiet    the streaming.*_ms and code_streaming.*_mbps rows are judged only under load ',
+                       [$fixed1 $quiet-bound], '; at ', [$fixed1 $curr-load], ' they are reported as QUIET, not judged (cx-private#1942)')]]]
+    [else ()]]]
   [= $_h4 [$say '']]
 
   [= $all-keys [?to-sequence [?for [in $k [$sort [$map:keys [$map:merge ($base-bm, $curr-bm)]]]]
@@ -228,13 +251,15 @@
                   [then [?if [= $cf 0.0e0] [then 1.0e10] [else [/ $bf $cf]]]]
                   [else [?if [= $bf 0.0e0] [then 1.0e10] [else [/ $cf $bf]]]]]]
                 [= $delta [* [- $ratio 1.0e0] 100.0e0]]
-                [= $badge [?if [> $ratio $threshold] [then 'REGRES']
-                  [else [?if [< $ratio 0.9e0] [then 'FASTER'] [else 'OK    ']]]]]
+                [= $deferred [and $unquiet [$quiet-only $key]]]
+                [= $badge [?if $deferred [then 'QUIET ']
+                  [else [?if [> $ratio $threshold] [then 'REGRES']
+                    [else [?if [< $ratio 0.9e0] [then 'FASTER'] [else 'OK    ']]]]]]]
                 [= $_p [$say [$cat ('  ', $key-pad, '  ', $badge,
                                     '  baseline=', [$strings:pad-start [$fixed1 $bf] 7 ' '],
                                     '  current=', [$strings:pad-start [$fixed1 $cf] 7 ' '],
                                     '  (', [$strings:pad-start [$sfixed1 $delta] 5 ' '], '%)')]]]
-                [?if [> $ratio $threshold]
+                [?if [and [not $deferred] [> $ratio $threshold]]
                   [then [$cat ($key, ': baseline=', [$numstr $b], [$unit-of $base-bm $key],
                                ' → current=', [$numstr $c], [$unit-of $curr-bm $key],
                                ' (', [$sfixed1 $delta], '%, threshold ', $thr-pct, '%)')]]
