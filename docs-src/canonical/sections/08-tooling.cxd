@@ -81,6 +81,7 @@
         [tr [td 'cx xap check-surface DIR'] [td 'Surface derivation check — every surface against the composed grammar + enabled features']]
         [tr [td 'cx demo'] [td 'Self-contained showcase, no I/O, < 1s']]
         [tr [td 'cx scaffold KIND'] [td 'Typed, commented skeleton on stdout (config / data / doc / log / table)']]
+        [tr [td 'cx build PROG.cx -o OUT'] [td 'One executable that runs a program as cx [RUN-FLAGS] PROG.cx does — no cx install needed where it runs (same OS and architecture)']]
         [tr [td 'cx lock'] [td 'Generate / verify cx.lock from [?lib] directives']]
         [tr [td 'cx imports FILE'] [td 'List the imports of a file against its calls (used / unused / missing); --fix adds the missing [?lib] lines, removes the unused and sorts them, touching only those lines']]
         [tr [td 'cx lsp'] [td 'Language server on stdio']]
@@ -129,7 +130,29 @@
            capability surface. Editors spawn it on demand — see
            [[editors]]."""]
       [example lang=sh
-        """$ cx lsp    # editor connects on stdio"""]]]
+        """$ cx lsp    # editor connects on stdio"""]]
+
+    [child id=cli-build n='8.1.4' title='cx build'
+      [body
+        """`cx build [RUN-FLAGS] PROG.cx -o OUT` writes OUT, one
+           executable that runs PROG the way
+           `cx [RUN-FLAGS] PROG.cx ARGS…` does. OUT is this cx binary
+           with the program source and the run flags appended to it,
+           so the machine it runs on needs no cx, no V and no C
+           compiler — only the same operating system and architecture
+           as the cx that built it. The run flags (capability grants,
+           `--data`, `--from` / `--to`, …) are fixed at build time;
+           every argument OUT is started with reaches the program's
+           `$env:argv`, whose first member is OUT's own path. OUT
+           carries the program, not the files it reads. A program that
+           does not parse is refused at build time (exit 1).
+           `OUT --version` alone prints the program's name and the cx
+           version and commit that built it; beside any other
+           argument, `--version` is the program's."""]
+      [example lang=sh
+        """$ cx build --allow-read wc.cx -o wc
+           $ ./wc notes.txt
+           $ ./wc --version"""]]]
 
   [child id=editors n=8.2 title='Editor integration'
     [intro

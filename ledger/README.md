@@ -1272,8 +1272,6 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `wasmc-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | WASMC-1 — the wasm wall-sleep and asyncify controls stay in Ring 1; abi.md names all four controls with their ring (L131 = (a); #1132) |
 | `watch-1` | [rulings_2026_10_14_owner_decisions_watch_spend_union_axiom_eval_native.md](rulings_2026_10_14_owner_decisions_watch_spend_union_axiom_eval_native.md) | Owner decisions 2026-10-14 (morning to evening): WATCH-1, STORE-133, SCALE-1910, REFPIN-1, SPEND-1, UNION-1, AXIOM-1, the evaluator's path to native (EVAL-1 … EVAL-4), BAR-139, BAR-15, GOLEDG-1 |
 | `watch-1` | [rulings_2026_10_14_owner_decisions_watch_spend_union_axiom_eval_native.md](rulings_2026_10_14_owner_decisions_watch_spend_union_axiom_eval_native.md) | WATCH-1 — V's harness heartbeat is off in the loop (VTEST_REPORT_RUNNING_PERIOD_MS ?= 0), so the 30-minute liveness watch ends a quiet hang as STALLED |
-| `wdur-1` | [rulings_2026_10_14_owner_decision_w1dur_store_durability.md](rulings_2026_10_14_owner_decision_w1dur_store_durability.md) | Owner decision 2026-10-14: the store's commit durability (WDUR-1, relayed as W1-DUR; cx-private#784 row W1) |
-| `wdur-1` | [rulings_2026_10_14_owner_decision_w1dur_store_durability.md](rulings_2026_10_14_owner_decision_w1dur_store_durability.md) | WDUR-1 — (relayed as W1-DUR) the cx store is power-loss durable by default on every OS; durability is a per-commit level (full default; barrier and none named opt-ins); the W1 bar is native RocksDB sync=true |
 | `we-1` | [rulings_2026_08_26_wasm_eval_sweep.md](rulings_2026_08_26_wasm_eval_sweep.md) | WE-1 — the harness must be a real browser; the cheap one is dishonest |
 | `we-2` | [rulings_2026_08_26_wasm_eval_sweep.md](rulings_2026_08_26_wasm_eval_sweep.md) | WE-2 — the mechanism, and why the marker set is what it is |
 | `we-3` | [rulings_2026_08_26_wasm_eval_sweep.md](rulings_2026_08_26_wasm_eval_sweep.md) | WE-3 — a marker must be JUSTIFIED, in both directions |
@@ -1781,7 +1779,6 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `vg-2a` | [issue_audit_2026_09_30_ship2.md](issue_audit_2026_09_30_ship2.md) |
 | `vocab-1` | [rulings_2026_09_30_integrator_decisions_l120.md](rulings_2026_09_30_integrator_decisions_l120.md), [rulings_2026_09_30_integrator_decisions_l150.md](rulings_2026_09_30_integrator_decisions_l150.md), [rulings_2026_10_01_owner_decision_play3.md](rulings_2026_10_01_owner_decision_play3.md), [rulings_2026_10_02_owner_decision_l173.md](rulings_2026_10_02_owner_decision_l173.md), [rulings_2026_10_04_integrator_decisions_l161_l176_l180.md](rulings_2026_10_04_integrator_decisions_l161_l176_l180.md), [rulings_2026_10_04_owner_decisions_l187_l193.md](rulings_2026_10_04_owner_decisions_l187_l193.md) |
 | `wave-3` | [rulings_2026_08_26_seq_classification.md](rulings_2026_08_26_seq_classification.md) |
-| `wbar-1` | [rulings_2026_10_14_owner_decision_w1dur_store_durability.md](rulings_2026_10_14_owner_decision_w1dur_store_durability.md) |
 | `wf-26a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
 | `wf-27a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
 | `words-2` | [rulings_2026_09_30_integrator_decisions_l150.md](rulings_2026_09_30_integrator_decisions_l150.md), [rulings_2026_10_01_owner_decision_l160.md](rulings_2026_10_01_owner_decision_l160.md), [rulings_2026_10_01_owner_decision_overage.md](rulings_2026_10_01_owner_decision_overage.md) |
@@ -1796,4 +1793,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*396 ledger pages; 988 ids declared, 430 cited only.*
+*396 ledger pages; 987 ids declared, 429 cited only.*

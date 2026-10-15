@@ -1,0 +1,42 @@
+# @PROG@ — an internal testing build (cx @VERSION@, commit @SHA@)
+
+This is **not a release of cx** and not the v0.18 cut. It is one program, `@PROG@.cx`,
+packed by `cx build` into a single executable so it can be tried on another machine
+without installing cx.
+
+**File:** `@OUT@`
+
+## What it runs on
+
+- **The same OS and architecture only:** @OS@ on @ARCH@. It does not run on
+  Linux, on Windows, or on an Intel Mac.
+- **Nothing else needs installing.** cx, V and a C compiler are not needed. The program
+  and cx's runtime are inside the file.
+
+## Running it
+
+After a browser download, macOS quarantines the file. Clear the flag once, then make
+the file executable:
+
+```console
+xattr -d com.apple.quarantine @OUT@
+chmod +x @OUT@
+./@OUT@ [ARGS...]
+```
+
+Every argument reaches the program, exactly as `cx@FLAGS@ @PROG@.cx ARGS...` would pass it.
+These run flags were fixed when the file was built: `@FLAGS_TEXT@`.
+
+`./@OUT@ --version` (with no other argument) prints the program's name and the cx
+version and commit that built it.
+
+## What it does not carry
+
+**Files the program reads are not embedded.** These include data files, documents passed
+with `--data`, and `[?lib]` modules outside cx's own standard library. Put them where the
+program expects them, relative to the directory you run it from.
+
+## Reporting a problem
+
+Send three things: the output of `./@OUT@ --version`, the command you ran, and what it
+printed. The commit line names the exact cx source the file was built from.
