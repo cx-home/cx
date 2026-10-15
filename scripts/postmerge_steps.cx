@@ -329,13 +329,30 @@
 # union just graded (no prebuild: its binaries are the union's, and every step
 # runs -o of both). Each step's old log goes first, so a reader of
 # vcx/target/steps/ reads this run's; the union's other step logs stay.
+# THE PERF SLOT (cx-private#1946, PROC-1). A landing gate's perf judge holds
+# STREAMS/state/perf-slot and takes it only while the loop is idle; it cannot see an
+# idle period that starts after it. On 2026-10-15 the loop's IDLE-START (16:13:58Z)
+# fell 8 minutes into a gate's slot (taken 16:05Z), two perf-pairs on one box. So
+# each idle-period step waits while the slot exists (CX_PERF_SLOT names another
+# path), at most an hour, then runs and says so.
+[?def wait-perf-slot scope=private impure ($t)
+  [?let [= $f [$env:var-or-default 'CX_PERF_SLOT' [$concat [$env:var-or-default 'HOME' ''] '/git-repos/cx/STREAMS/state/perf-slot']]]
+    [?loop [= $n 0]
+      [?if [or [not [$io:exists $f]] [>= $n 720]]
+        [then [break [?if [= $n 0] [then null]
+                       [else [$say [$concat 'postmerge-steps: ' $t ' waited ' [$string [* $n 5]] ' s for the perf slot ' $f
+                                            [?if [>= $n 720] [then ' — still held after an hour; it runs now'] [else '']]]]]]]]
+        [else [?let [= $_w [?if [= $n 0] [then [$say [$concat 'postmerge-steps: ' $t ' waits: the perf slot ' $f ' is held']]] [else null]]]
+                    [= $_z [?sleep 5s]]
+                [continue [+ $n 1]]]]]]]]
+
 [?def run-idle scope=private impure ($c)
   [?let [= $ts [$ci:idle-steps]]
         [= $_h [$say [$concat 'postmerge-steps: the idle period (flows/load.cxd [idle], UNION-1 (a)): '
                               [?if [= [$count $ts] 0] [then 'none'] [else [$strings:join $ts ' ']]] ', one at a time on the post-merge runner']]]
         [= $_r [?to-sequence [?for [in $t $ts] [in $x ('.log', '.log.err')] [= $f [$concat $c '/vcx/target/steps/' $t $x]]
                  [yield [?if [$io:is-file $f] [then [$io:remove $f]] [else null]]]]]]
-        [= $es [?to-sequence [?for [in $t $ts] [yield [$serial-step $c $t [$make-words $t '' ()] 'post-merge']]]]]
+        [= $es [?to-sequence [?for [in $t $ts] [yield [?let [= $_p [$wait-perf-slot $t]] [$serial-step $c $t [$make-words $t '' ()] 'post-merge']]]]]]
     [$finish $es '']]]
 
 [?let [= $argv [?to-sequence [?for [in $a [$env:argv]] [yield [$string $a]]]]]
