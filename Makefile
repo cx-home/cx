@@ -857,6 +857,37 @@ uninstall:
 	rm -f $(PREFIX)/lib/pkgconfig/cx.pc
 	@echo "uninstalled libcx from $(PREFIX)"
 
+# ── release-build-cli (cx-private#1934 s2a, RULED: S2A-1934) — an internal
+# testing build of ONE program, not the cut: `cx build` packs PROG and this
+# head's cx into dist/<prog>-v<major.minor>-pre-<commit>-<os>-<arch> (the
+# commit is the one `cx --version` names, the same one the CXBLD001 trailer
+# records and `OUT --version` prints) and writes dist/README-internal.md beside
+# it (same OS/arch only; the files the program reads are not embedded; the
+# quarantine flag after a browser download).
+#   make release-build-cli PROG=path/to/prog.cx [RUN_FLAGS='--allow-read']
+.PHONY: release-build-cli
+release-build-cli: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+release-build-cli: build-vcx
+	@test -n "$(PROG)" || { echo 'release-build-cli: PROG=<path to a .cx program> is required' >&2; exit 2; }
+	@test -f "$(PROG)" || { echo 'release-build-cli: no file $(PROG)' >&2; exit 2; }
+	@set -e; \
+	  sha=$$("$(CX_BIN)" --version | awk '$$1 == "commit" { print $$2 }'); \
+	  ver=$$("$(CX_BIN)" --version | head -1 | awk '{ print $$2 }'); \
+	  mm=$$(cut -d. -f1,2 VERSION); \
+	  os=$$(uname -s | sed -e 's/^Darwin$$/macos/' -e 's/^Linux$$/linux/'); \
+	  arch=$$(uname -m); \
+	  prog=$$(basename "$(PROG)" .cx); \
+	  out="$$prog-v$$mm-pre-$$sha-$$os-$$arch"; \
+	  flags='$(strip $(RUN_FLAGS))'; \
+	  mkdir -p "$(DIST_DIR)"; \
+	  "$(CX_BIN)" build $(RUN_FLAGS) "$(PROG)" -o "$(DIST_DIR)/$$out"; \
+	  sed -e "s|@PROG@|$$prog|g" -e "s|@OUT@|$$out|g" -e "s|@SHA@|$$sha|g" \
+	      -e "s|@VERSION@|$$ver|g" -e "s|@OS@|$$os|g" -e "s|@ARCH@|$$arch|g" \
+	      -e "s|@FLAGS@|$${flags:+ $$flags}|g" -e "s|@FLAGS_TEXT@|$${flags:-none}|g" \
+	      scripts/release_build_cli/README-internal.md.in > "$(DIST_DIR)/README-internal.md"; \
+	  echo "release-build-cli: $(CURDIR)/$(DIST_DIR)/$$out"; \
+	  echo "release-build-cli: $(CURDIR)/$(DIST_DIR)/README-internal.md"
+
 # Install the verified CLI separately from the libcx shared library.
 install-cli: build-vcx
 	install -d $(PREFIX)/bin

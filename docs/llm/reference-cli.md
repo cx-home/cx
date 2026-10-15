@@ -198,6 +198,7 @@ Subcommands (`cx <subcommand> --help` for details):
   code-diagram         Mermaid diagram of a CX source (flowchart / erDiagram).
   code-tree            Tree View JSON of a CX source.
   table                Table API over [table[...]] blocks (info / dump / load).
+  build                One executable that runs a program (cx build PROG.cx -o OUT).
   scaffold             Typed, commented skeleton on stdout (config/data/doc/log/table).
   xap                  XAP project tooling — scaffold a project (`init`), a composition pattern (`scaffold`), and check (`check-surface`).
   flow                 cx-platform/flow: the local profile (run / validate / simulate / status / diagram) and the standalone runner (serve).
@@ -263,6 +264,7 @@ by intent.
 | `cx xap init NAME` | scaffold a feature |
 | `cx xap check-surface DIR` | the surface derivation check |
 | `cx lock` | generate / verify `cx.lock` from `[?lib]` imports |
+| `cx build [RUN-FLAGS] PROG.cx -o OUT` | one executable that runs the program as `cx [RUN-FLAGS] PROG.cx` does, with no cx install where it runs (same OS and architecture); `OUT --version` names the program and the cx commit that built it |
 | `cx imports FILE.cx` | list the modules a file imports and calls (used / unused / missing); `--fix -w` adds the missing `[?lib]` lines, removes the unused and sorts them |
 | `cx flow run FLOW.cx --env ENV.cx` | run a flow document over a journal — build, release and authoring flows from a checkout, no engine to start |
 | `cx flow validate` / `simulate` / `status` | check a flow document, run the runner law over a supplied result table, read a run record back |
