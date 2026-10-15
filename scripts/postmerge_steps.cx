@@ -11,12 +11,14 @@
 # V test compiled for 26 minutes that compiles in two on a quiet box.
 #
 # THE RUN, in order:
-#   1. prebuild — `make deps-sync`, `make -j2 build-vcx`, `make -j2
-#      build-vcx-dev` on the post-merge runner, one at a time (as make test and
-#      test_changed.sh prebuild): every step after runs `-o` of both binaries,
-#      so none relinks. Each build's two artifacts (lib and cli, lib-dev and
-#      cli-dev) are independent single-threaded compiles, so -j2 builds them
-#      side by side (cx-private#1917, PREBUILD-JOBS below).
+#   1. prebuild — `make deps-sync`, the plan (2.), `make build-re2-shim` on the
+#      post-merge runner, then side by side on own runners `make -j2 build-vcx`,
+#      `make -j2 build-vcx-dev`, the profile matrix and db-real-cx when the plan
+#      needs them (cx-private#1946, THE PREBUILD'S OVERLAP below): every step
+#      after runs `-o` of what it built, so none relinks. Each build's two
+#      artifacts (lib and cli, lib-dev and cli-dev) are independent
+#      single-threaded compiles, so -j2 builds them side by side
+#      (cx-private#1917, PREBUILD-JOBS below).
 #   2. the plan — test_changed.sh's own --dry-run split, `parallel (-j):` and
 #      `serial tail:`, of the full union (its build-infra escalation, over a
 #      change list naming the Makefile) or of the selection from BASE; its
@@ -100,9 +102,10 @@
                     suite=[$suite-files $out]]]]]]]]
 
 # one step's make words: -o of both binaries and the docs targets' own builds
-# (ci/make's BUILT), SUITE_FILES for a narrowed test-vcx-suite, the target.
-[?def make-words scope=private pure [returns any] ($t $suite)
-  [$c:cat2 [$c:cat2 ('make', '--no-print-directory') [$ci:built-flags]]
+# (ci/make's BUILT), -o of what this run's prebuild built besides them ($po,
+# THE PREBUILD'S OVERLAP below), SUITE_FILES for a narrowed test-vcx-suite, the target.
+[?def make-words scope=private pure [returns any] ($t $suite $po)
+  [$c:cat2 [$c:cat2 [$c:cat2 ('make', '--no-print-directory') [$ci:built-flags]] $po]
            [?if [and [= $t 'test-vcx-suite'] [not [= $suite '']]] [then ([$concat 'SUITE_FILES=' $suite], $t)] [else ($t)]]]]
 
 # a step run on the post-merge runner, alone: the liveness watch, the block.
@@ -239,6 +242,53 @@
                                     [$strings:pad-start [$string $i] 5 '0'] ' ' $t]]]]]
     [?to-sequence [?for [in $k [$sort $keyed]] [yield [$nth [$str-split-whitespace $k] 2]]]]]]
 
+# THE PREBUILD'S OVERLAP (cx-private#1946, SELRUN). On 504a6632f's quiet
+# selected tick (1,174 s against the 1,200 s selected-run bound) three
+# load-insensitive compiles ran where nothing else could use the box:
+#   - build-vcx-dev (62 s) ran after build-vcx (154 s: cx relinks on every
+#     head, its build id carries the commit) one after the other, with libcx
+#     current and 26 of 28 cores idle;
+#   - test-db-real's prerequisite db-real-cx (the cx with the postgres and
+#     mysql engines) relinked for 213 s of the step's 239 s, inside the
+#     load-sensitive socket phase, whose length that step set (the union tick
+#     on the same head, cx-db-real up to date, read 23 s);
+#   - the profile matrix (#1449's build-profiles-dev: data, embed, cli) was
+#     built THREE times. test-flow-umbrella's prerequisite built it at the
+#     pool's start, while test-vcx-suite and test-vcx-code ran (CX_SRC_HASH,
+#     a hash over the pins' vcx/ trees tests included, read 98847d3f there and
+#     dc9d9d4e before and after them). test-extraction-gate's prerequisite
+#     rebuilt the data half, and test-profile-gate's rebuilt embed and cli in
+#     the serial tail (~53 s). Two writers of one artifact in one pool is the
+#     race #1449 named.
+# So the prebuild is deps-sync, build-re2-shim alone (the one vcx artifact
+# every build shares, written in place), and then side by side, each on its
+# own runner: build-vcx, build-vcx-dev, the profile matrix when a step of the
+# plan has it as a prerequisite, and db-real-cx when test-db-real is planned.
+# Every step after runs `-o` of what was built, so nothing builds it again.
+# This is `make test`'s storm order (build-profiles-dev first) made one node
+# per artifact again. A step not named here that needs one of these
+# prerequisites builds it itself, as before: no -o is passed for anything the
+# prebuild did not build.
+[?const PROFILE-STEPS ('test-flow-umbrella', 'test-extraction-gate', 'abi-gc-gate', 'test-profile-gate')]
+
+[?def pre-targets scope=private pure [returns any] ($all)
+  [$c:cat2 [$c:cat2 ('build-vcx', 'build-vcx-dev')
+                    [?if [> [$count [?to-sequence [?for [in $t $all] [where [$c:member $t PROFILE-STEPS]] [yield $t]]]] 0]
+                      [then ('build-profiles-dev')] [else ()]]]
+           [?if [$c:member 'test-db-real' $all] [then ('db-real-cx')] [else ()]]]]
+
+[?def pre-old scope=private pure [returns any] ($pts)
+  [$c:cat2 [?if [$c:member 'build-profiles-dev' $pts] [then ('-o', 'build-profiles-dev', '-o', 'build-profile-data')] [else ()]]
+           [?if [$c:member 'db-real-cx' $pts] [then ('-o', 'db-real-cx')] [else ()]]]]
+
+# a prebuild job's make words: build-vcx and build-vcx-dev at PREBUILD-JOBS; the
+# profile matrix `-o build-vcx` (build-profile-data names it only to order the
+# one make it shared with it; build-vcx is this prebuild's own job beside it).
+[?def pre-words scope=private pure [returns any] ($t)
+  [?if [or [= $t 'build-vcx'] [= $t 'build-vcx-dev']] [then ('make', '--no-print-directory', PREBUILD-JOBS, $t)]
+    [else [?if [= $t 'build-profiles-dev'] [then ('make', '--no-print-directory', '-o', 'build-vcx', $t)]
+      [else ('make', '--no-print-directory', $t)]]]]]
+
 # THE TAIL'S SITE (cx-private#1917). Three tail steps read site/ and each one's
 # make assembled it again first: test-playground-primer (`make site` in its
 # recipe), test-site-phone-width and nav-shape-check (`site` a prerequisite),
@@ -251,11 +301,11 @@
 [?const SITE-BUILDERS ('test-playground-primer', 'test-site-phone-width', 'nav-shape-check')]
 [?const SITE-READERS ('test-site-phone-width', 'nav-shape-check')]
 
-[?def run-tail scope=private impure [returns any] ($c $tail $suite)
+[?def run-tail scope=private impure [returns any] ($c $tail $suite $po)
   [?loop [= $i 1] [= $acc ()] [= $fresh '']
     [?if [> $i [$count $tail]] [then [break $acc]]
       [else [?let [= $t [$string [$nth $tail $i]]]
-                  [= $w [$make-words $t $suite]]
+                  [= $w [$make-words $t $suite $po]]
                   [= $reuse [and [not [= $fresh '']] [$c:member $t SITE-READERS]]]
                   [= $_s [?if $reuse [then [$say [$concat 'postmerge-steps: ' $t ' reads the site ' $fresh ' assembled (make -o site)']]] [else null]]]
                   [= $e [$serial-step $c $t [?if $reuse [then [$c:cat2 ('make', '-o', 'site') [?to-sequence [?drop 1 $w]]]] [else $w]] 'tail']]
@@ -285,7 +335,7 @@
                               [?if [= [$count $ts] 0] [then 'none'] [else [$strings:join $ts ' ']]] ', one at a time on the post-merge runner']]]
         [= $_r [?to-sequence [?for [in $t $ts] [in $x ('.log', '.log.err')] [= $f [$concat $c '/vcx/target/steps/' $t $x]]
                  [yield [?if [$io:is-file $f] [then [$io:remove $f]] [else null]]]]]]
-        [= $es [?to-sequence [?for [in $t $ts] [yield [$serial-step $c $t [$make-words $t ''] 'post-merge']]]]]
+        [= $es [?to-sequence [?for [in $t $ts] [yield [$serial-step $c $t [$make-words $t '' ()] 'post-merge']]]]]
     [$finish $es '']]]
 
 [?let [= $argv [?to-sequence [?for [in $a [$env:argv]] [yield [$string $a]]]]]
@@ -307,10 +357,8 @@
     [then [?let [= $_o [?to-sequence [?for [in $t [$longest-first [?to-sequence [?drop 1 $rest]] [$last-seconds $c]]] [yield [$say $t]]]]] [$env:exit 0]]]
   [else [?let
     [= $_d [?if [$io:exists [$concat $c '/vcx/target/steps']] [then [$io:remove-tree [$concat $c '/vcx/target/steps']]] [else null]]]
-    [= $pre [?to-sequence [?for [in $t ('deps-sync', 'build-vcx', 'build-vcx-dev')]
-              [yield [$serial-step $c $t [?if [= $t 'deps-sync'] [then ('make', '--no-print-directory', $t)]
-                                           [else ('make', '--no-print-directory', PREBUILD-JOBS, $t)]] 'post-merge']]]]]
-    [?if [> [$count [$red-names $pre]] 0] [then [$finish $pre 'the prebuild is red: no step ran']]
+    [= $ds [$serial-step $c 'deps-sync' ('make', '--no-print-directory', 'deps-sync') 'post-merge']]
+    [?if [> [$count [$red-names ($ds)]] 0] [then [$finish ($ds) 'the prebuild is red: no step ran']]
     [else [?let
       [= $p [$plan $c $rest]]
       [?if [= [$name $p] 'plan-refused'] [then [?let [= $_e [$say [$concat 'postmerge-steps: ' [$string $p@why]]]] [$env:exit 2]]]
@@ -325,16 +373,28 @@
         [= $_i [?if [= [$count $left] 0] [then null]
                  [else [$say [$concat 'postmerge-steps: ' [$string [$count $left]] ' idle-period step(s) not in this run (flows/load.cxd [idle], UNION-1 (a)): '
                                       [$strings:join $left ' '] ' — the loop runs them once the tip passed']]]]]
+        [= $n [$ci:parallel-steps]]
+        [= $vj [?if [< [$floor [/ [$cores] $n]] 1] [then 1] [else [$floor [/ [$cores] $n]]]]]
+        [= $slotsh ('sh', [$concat $c '/scripts/build-slot.sh'])]
+        [= $pts [$pre-targets [$c:cat2 $storm $tail]]]
+        [= $po [$pre-old $pts]]
+        [= $_reap0 [$reap-own $slot $n]]
+        [= $re [$serial-step $c 'build-re2-shim' ('make', '--no-print-directory', 'build-re2-shim') 'post-merge']]
+        [= $_ph0 [$say [$concat 'postmerge-steps: the prebuild, side by side after build-re2-shim (cx-private#1946): ' [$strings:join $pts ' ']]]]
+        [= $pjobs0 [?to-sequence [?for [in $t $pts]
+                     [yield [job name=$t log=[$concat $c '/vcx/target/steps/' $t '.log'] stall-ms=[$string [$ci:stall-ms $t]] cwd=$c
+                              [?splice [?to-sequence [?for [in $w [$c:cat2 $slotsh [$pre-words $t]]] [yield [arg v=$w]]]]]]]]]]
+        [= $pb [?if [= [$string $re@rc] '0'] [then [$c:pool-run $pjobs0 [$count $pjobs0] $slot $vj 60000]] [else ()]]]
+        [= $pre [$c:cat2 ($ds, $re) $pb]]
+        [?if [> [$count [$red-names $pre]] 0] [then [$finish $pre 'the prebuild is red: no step ran']]
+        [else [?let
         [= $sens [$ci:sensitive]]
         [= $own [?to-sequence [?for [in $t $storm] [where [not [$c:member $t $sens]]] [yield $t]]]]
         [= $shared [?to-sequence [?for [in $t $storm] [where [$c:member $t $sens]] [yield $t]]]]
-        [= $n [$ci:parallel-steps]]
-        [= $vj [?if [< [$floor [/ [$cores] $n]] 1] [then 1] [else [$floor [/ [$cores] $n]]]]]
         [= $_h [$say [$concat 'postmerge-steps: ' [$string [$count $own]] ' load-insensitive step(s), ' [$string $n]
                               ' at a time on their own runners (VJOBS=' [$string $vj] '; first and VJOBS=' [$string [?if [< [$floor [/ [$cores] 2]] $vj] [then $vj] [else [$floor [/ [$cores] 2]]]]] ': ' [$strings:join WIDE ' '] '); then ' [$string [$count $shared]]
                               ' load-sensitive on the post-merge runner: ' [?if [= [$count $shared] 0] [then 'none'] [else [$strings:join $shared ' ']]]
                               '; then the tail: ' [?if [= [$count $tail] 0] [then 'none'] [else [$strings:join $tail ' ']]]]]]
-        [= $slotsh ('sh', [$concat $c '/scripts/build-slot.sh'])]
         [= $vw [?if [< [$floor [/ [$cores] 2]] $vj] [then $vj] [else [$floor [/ [$cores] 2]]]]]
         [= $bb [?if [> [$count [?to-sequence [?for [in $t [$c:cat2 $storm $tail]] [where [$c:member $t BENCH-RUNS]] [yield $t]]]] 0]
                  [then ('bench-bins')] [else ()]]]
@@ -344,7 +404,7 @@
         [= $jobs [?to-sequence [?for [in $t $ord]
                    [yield [job name=$t log=[$concat $c '/vcx/target/steps/' $t '.log'] stall-ms=[$string [$ci:stall-ms $t]] cwd=$c
                             vjobs=[$string [?if [$c:member $t WIDE] [then $vw] [else $vj]]]
-                            [?splice [?to-sequence [?for [in $w [$c:cat2 $slotsh [$make-words $t [$string $p@suite]]]]
+                            [?splice [?to-sequence [?for [in $w [$c:cat2 $slotsh [$make-words $t [$string $p@suite] $po]]]
                                        [yield [arg v=$w]]]]]]]]]]
         [= $_reap [$reap-own $slot $n]]
         [= $par [$c:pool-run $jobs $n $slot $vj 60000]]
@@ -355,16 +415,16 @@
         [= $alone [?to-sequence [?for [in $t $shared] [where [not [$c:member $t $ports]]] [yield $t]]]]
         [= $pjobs [?to-sequence [?for [in $t $ports]
                     [yield [job name=$t log=[$concat $c '/vcx/target/steps/' $t '.log'] stall-ms=[$string [$ci:stall-ms $t]] cwd=$c
-                             [?splice [?to-sequence [?for [in $w [$c:cat2 $slotsh [$make-words $t [$string $p@suite]]]]
+                             [?splice [?to-sequence [?for [in $w [$c:cat2 $slotsh [$make-words $t [$string $p@suite] $po]]]
                                         [yield [arg v=$w]]]]]]]]]]
         [= $_ph [?if [> [$count $ports] 0]
                   [then [$say [$concat 'postmerge-steps: ' [$string [$count $ports]] ' load-sensitive socket step(s), ' [$string $sn]
                                        ' at a time (cx-private#1903): ' [$strings:join $ports ' '] '; then alone: ' [$strings:join $alone ' ']]]]
                   [else null]]]
         [= $sp [?if [> [$count $ports] 0] [then [$c:pool-run $pjobs $sn $slot [?if [< [$floor [/ [$cores] $sn]] 1] [then 1] [else [$floor [/ [$cores] $sn]]]] 60000]] [else ()]]]
-        [= $sh [$c:cat2 $sp [?to-sequence [?for [in $t $alone] [yield [$serial-step $c $t [$make-words $t [$string $p@suite]] 'post-merge']]]]]]
+        [= $sh [$c:cat2 $sp [?to-sequence [?for [in $t $alone] [yield [$serial-step $c $t [$make-words $t [$string $p@suite] $po] 'post-merge']]]]]]
         [= $before [$c:cat2 [$c:cat2 $pre $par] $sh]]
         [= $tl [?if [> [$count [$red-names $before]] 0] [then ()]
-                 [else [$run-tail $c $tail [$string $p@suite]]]]]
+                 [else [$run-tail $c $tail [$string $p@suite] $po]]]]
         [$finish [$c:cat2 $before $tl]
-                 [?if [and [> [$count [$red-names $before]] 0] [> [$count $tail] 0]] [then 'the serial tail did not run: a step before it is red'] [else '']]]]]]]]]]]]]]]]]]]]]
+                 [?if [and [> [$count [$red-names $before]] 0] [> [$count $tail] 0]] [then 'the serial tail did not run: a step before it is red'] [else '']]]]]]]]]]]]]]]]]]]]]]]]

@@ -610,6 +610,17 @@ build-vcx-pgo: check-gate-lock deps-present v-pin-fresh
 build-vcx-dev: check-gate-lock deps-present v-pin-fresh
 	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx build-dev CX_DFLAGS='$(CX_DFLAGS)'
 
+# build-re2-shim (cx-private#1946, SELRUN): the one vcx artifact every build
+# shares. lib, cli, lib-dev, cli-dev, each profile artifact and db-real-cx all
+# depend on re2-shim, and its rule writes cx_re2_shim.o and the archive in
+# place. The post-merge run's prebuild (scripts/postmerge_steps.cx) builds
+# build-vcx, build-vcx-dev, the profile matrix and db-real-cx side by side,
+# each in its own vcx sub-make. So it runs this first and alone (with
+# v-pin-fresh), and no two sub-makes can find the shim stale at once.
+.PHONY: build-re2-shim
+build-re2-shim: check-gate-lock deps-present v-pin-fresh
+	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx re2-shim
+
 # ── The §4 PROFILE MATRIX as ordinary build steps (#1449, RULED: 1449-a) ─────
 # These used to be built nowhere: `test-profile-gate` built the whole matrix
 # from scratch inside the SERIAL TAIL of `make test`, after the -j block had
