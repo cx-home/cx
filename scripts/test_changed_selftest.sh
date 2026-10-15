@@ -538,9 +538,14 @@ fi
 # a BASE...HEAD with no merge base, printed git's `fatal:` and left an EMPTY
 # change set, so a clean tree read "nothing to run" and exited 0 — a hollow
 # selection. RED on the pre-#1940 script (rc 0, "no changes vs no-such-base").
+# Run under `bash`, the way the loop runs it (scripts/postmerge_steps.cx's
+# plan argv, the Makefile's test-changed): bash outside POSIX mode does not
+# carry `set -e` into `$(…)`. Under `sh` (bash in POSIX mode) errexit IS
+# inherited and the old script died 128 on git's fatal — loud, but still not
+# the named refusal.
 m_repo "$T/mb" "$PIN_A"
 mb_rc=0
-( cd "$T/mb" && sh scripts/test_changed.sh no-such-base --dry-run ) > "$T/mb1.log" 2>&1 || mb_rc=$?
+( cd "$T/mb" && bash scripts/test_changed.sh no-such-base --dry-run ) > "$T/mb1.log" 2>&1 || mb_rc=$?
 if [ "$mb_rc" -eq 2 ] && grep -q "REFUSED — base 'no-such-base'" "$T/mb1.log" && ! grep -q 'nothing to run' "$T/mb1.log"; then
 	ok MB1 "a base that does not resolve is refused (exit 2), not an empty selection"
 else
@@ -548,7 +553,7 @@ else
 fi
 mb_orphan=$(cd "$T/mb" && git -c user.email=s@t -c user.name=s commit-tree "$(git rev-parse 'HEAD^{tree}')" -m orphan 2>/dev/null)
 mb_rc=0
-( cd "$T/mb" && sh scripts/test_changed.sh "$mb_orphan" --dry-run ) > "$T/mb2.log" 2>&1 || mb_rc=$?
+( cd "$T/mb" && bash scripts/test_changed.sh "$mb_orphan" --dry-run ) > "$T/mb2.log" 2>&1 || mb_rc=$?
 if [ -n "$mb_orphan" ] && [ "$mb_rc" -eq 2 ] && grep -q 'REFUSED — git could not compute' "$T/mb2.log" && ! grep -q 'nothing to run' "$T/mb2.log"; then
 	ok MB2 "a base with no merge base is refused (exit 2), not an empty selection"
 else
@@ -852,4 +857,4 @@ if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; MB a base git cannot answer is refused;N a step runner selects its own step; O a module-only sso change selects the interop step; P the vcx/corpus grading core selects the steps that run it; B a pin bump selects repr-guard (#1822); R the stripped scripts/ paths select their own rows; S every selected suite file is where the suite is; T a deleted test file is not named; U a page a pinned test reads by name selects it; V a change of one stripped scripts/ path selects its rows; W a page the vocabulary [tree] rows read selects docs-vocabulary-check; X a pin bump selects the pinned xap and fabric V umbrellas; Y a V pin move selects the *-real steps; Z a pin bump selects the pinned mail and net V tests)"
+echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; MB a base git cannot answer is refused; N a step runner selects its own step; O a module-only sso change selects the interop step; P the vcx/corpus grading core selects the steps that run it; B a pin bump selects repr-guard (#1822); R the stripped scripts/ paths select their own rows; S every selected suite file is where the suite is; T a deleted test file is not named; U a page a pinned test reads by name selects it; V a change of one stripped scripts/ path selects its rows; W a page the vocabulary [tree] rows read selects docs-vocabulary-check; X a pin bump selects the pinned xap and fabric V umbrellas; Y a V pin move selects the *-real steps; Z a pin bump selects the pinned mail and net V tests)"
