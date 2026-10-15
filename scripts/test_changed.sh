@@ -121,7 +121,24 @@ else
                     if (m[1] == ":160000" && m[2] == "120000" && m[5] == "T") print $2 }' \
     > "$TC_TMP/gitlink_symlinks"
   { git diff --name-only HEAD; git diff --name-only --cached; } > "$TC_TMP/worktree_changed"
-  CHANGED=$(git diff --name-only "$BASE"...HEAD
+  # ── A BASE GIT CANNOT ANSWER IS A REFUSAL, NEVER "NOTHING TO RUN" (#1940) ──
+  # The committed half used to be computed INSIDE the command substitution
+  # below, and `set -e` does not reach into `$(…)`: its status is the last
+  # command's (the grep's `|| true`). A base that does not resolve here (a typo,
+  # an unfetched origin/<branch>) or a BASE...HEAD with no merge base printed
+  # git's `fatal:` and left an EMPTY committed change set, so a clean tree read
+  # "no changes — nothing to run" and exited 0: a hollow selection, the false
+  # skip this script exists to prevent. The diff now runs as its own command
+  # into a file, and its failure is the script's (exit 2, git's error named).
+  if ! git rev-parse --verify --quiet "${BASE}^{commit}" > /dev/null; then
+    echo "test-changed: REFUSED — base '$BASE' is not a commit here (unfetched or misspelled?); nothing was selected, nothing is judged (#1940)" >&2
+    exit 2
+  fi
+  if ! git diff --name-only "$BASE"...HEAD > "$TC_TMP/committed_changed" 2> "$TC_TMP/committed_err"; then
+    echo "test-changed: REFUSED — git could not compute ${BASE}...HEAD: $(head -n 1 "$TC_TMP/committed_err"); nothing was selected, nothing is judged (#1940)" >&2
+    exit 2
+  fi
+  CHANGED=$(cat "$TC_TMP/committed_changed"
             grep -Fxv -f "$TC_TMP/gitlink_symlinks" "$TC_TMP/worktree_changed" || true)
 fi
 CHANGED=$(printf '%s\n' "$CHANGED" | sort -u | grep -v '^$' || true)
