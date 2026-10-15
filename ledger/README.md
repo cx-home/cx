@@ -767,6 +767,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `int-19` | [rulings_2026_09_15_websocket_stream_placement_int19.md](rulings_2026_09_15_websocket_stream_placement_int19.md) | Integrator decision 2026-09-15 — where the WebSocket frame codec, the upgrade and `kind=stream` live (RULED: INT-19) |
 | `int-20` | [rulings_2026_09_15_owner_decisions_1830z.md](rulings_2026_09_15_owner_decisions_1830z.md) | Owner decisions 2026-09-15 ~18:30Z — "1a 2a 3a 4a" (RULED: INT-20, 1503-b, 1502-b, 1457-a) |
 | `int-3` | [rulings_2026_09_14_owner_letters_1451b_m2_patterns.md](rulings_2026_09_14_owner_letters_1451b_m2_patterns.md) | Owner letters 2026-09-14 ~19:20Z — "1c 2a 3a" (RULED: 1451-b, INT-3 addendum 2, COMP-1 addendum) |
+| `ir-1934` | [rulings_2026_10_14_owner_decision_ir1934_native_ir_shape.md](rulings_2026_10_14_owner_decision_ir1934_native_ir_shape.md) | Owner decision 2026-10-14 evening: the native IR's shape (IR-1934) |
+| `ir-1934` | [rulings_2026_10_14_owner_decision_ir1934_native_ir_shape.md](rulings_2026_10_14_owner_decision_ir1934_native_ir_shape.md) | IR-1934 — (relayed as IR1934 = (a)(a)(a)) the resolution IR evolves the compiled-def tree in place; generated code calls a flat C-ABI table; the walker's 24-byte value everywhere, unboxed only where shape facts prove a number |
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1 — the sweep's scope and its per-issue dispositions |
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1.1 — #900: the fabric retention flake is a CLIENT that ignored a normative retry |
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1.2 — #893: the mermaid bench gate asserts a WALL TIME it cannot own |
@@ -1789,4 +1791,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*393 ledger pages; 985 ids declared, 429 cited only.*
+*394 ledger pages; 986 ids declared, 429 cited only.*
