@@ -846,6 +846,37 @@ uninstall:
 	rm -f $(PREFIX)/lib/pkgconfig/cx.pc
 	@echo "uninstalled libcx from $(PREFIX)"
 
+# ── release-build-cli (cx-private#1934 s2a, RULED: S2A-1934) — an internal
+# testing build of ONE program, not the cut: `cx build` packs PROG and this
+# head's cx into dist/<prog>-v<major.minor>-pre-<commit>-<os>-<arch> (the
+# commit is the one `cx --version` names, the same one the CXBLD001 trailer
+# records and `OUT --version` prints) and writes dist/README-internal.md beside
+# it (same OS/arch only; the files the program reads are not embedded; the
+# quarantine flag after a browser download).
+#   make release-build-cli PROG=path/to/prog.cx [RUN_FLAGS='--allow-read']
+.PHONY: release-build-cli
+release-build-cli: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+release-build-cli: build-vcx
+	@test -n "$(PROG)" || { echo 'release-build-cli: PROG=<path to a .cx program> is required' >&2; exit 2; }
+	@test -f "$(PROG)" || { echo 'release-build-cli: no file $(PROG)' >&2; exit 2; }
+	@set -e; \
+	  sha=$$("$(CX_BIN)" --version | awk '$$1 == "commit" { print $$2 }'); \
+	  ver=$$("$(CX_BIN)" --version | head -1 | awk '{ print $$2 }'); \
+	  mm=$$(cut -d. -f1,2 VERSION); \
+	  os=$$(uname -s | sed -e 's/^Darwin$$/macos/' -e 's/^Linux$$/linux/'); \
+	  arch=$$(uname -m); \
+	  prog=$$(basename "$(PROG)" .cx); \
+	  out="$$prog-v$$mm-pre-$$sha-$$os-$$arch"; \
+	  flags='$(strip $(RUN_FLAGS))'; \
+	  mkdir -p "$(DIST_DIR)"; \
+	  "$(CX_BIN)" build $(RUN_FLAGS) "$(PROG)" -o "$(DIST_DIR)/$$out"; \
+	  sed -e "s|@PROG@|$$prog|g" -e "s|@OUT@|$$out|g" -e "s|@SHA@|$$sha|g" \
+	      -e "s|@VERSION@|$$ver|g" -e "s|@OS@|$$os|g" -e "s|@ARCH@|$$arch|g" \
+	      -e "s|@FLAGS@|$${flags:+ $$flags}|g" -e "s|@FLAGS_TEXT@|$${flags:-none}|g" \
+	      scripts/release_build_cli/README-internal.md.in > "$(DIST_DIR)/README-internal.md"; \
+	  echo "release-build-cli: $(CURDIR)/$(DIST_DIR)/$$out"; \
+	  echo "release-build-cli: $(CURDIR)/$(DIST_DIR)/README-internal.md"
+
 # Install the verified CLI separately from the libcx shared library.
 install-cli: build-vcx
 	install -d $(PREFIX)/bin
@@ -4297,7 +4328,7 @@ test-vcx-code: build-vcx-dev check-serial-retry-rosters
 # roster is a variable and `check-inmodule-test-roster` now fails on any
 # vcx/cx/*_test.v that is in neither list, so the next addition cannot be
 # forgotten silently. Delete both lists and glob the directory when #737 closes.
-CX_INMODULE_TESTS := $(CXD)/vcx/cx/program_interior_comments_test.v $(CXD)/vcx/cx/program_layout_test.v $(CXD)/vcx/cx/program_fmt_guard_test.v $(CXD)/vcx/cx/program_emit_head_ascription_test.v $(CXD)/vcx/cx/directive_emit_surface_test.v $(CXD)/vcx/cx/anchor_resolve_test.v $(CXD)/vcx/cx/numeric_exact_fast_test.v $(CXD)/vcx/cx/atom_test.v $(CXD)/vcx/cx/token_golden_test.v $(CXD)/vcx/cx/version_stamp_test.v $(CXD)/vcx/cx/html_url_codec_test.v $(CXD)/vcx/cx/span_jump_test.v $(CXD)/vcx/cx/feature_compat_test.v $(CXD)/vcx/cx/name_pool_contract_test.v $(CXD)/vcx/cx/schema_extensions_test.v $(CXD)/vcx/cx/node_api_test.v $(CXD)/vcx/cx/compound_key_decode_test.v $(CXD)/vcx/cx/numeric_exact_big_test.v $(CXD)/vcx/cx/lint_l012_pred_test.v $(CXD)/vcx/cx/err_flag_test.v $(CXD)/vcx/cx/map_replace_present_test.v $(CXD)/vcx/cx/map_grow_lookup_test.v $(CXD)/vcx/cx/bytes_one_form_test.v $(CXD)/vcx/cx/pvec_test.v $(CXD)/vcx/cx/regex_re2_cursor_test.v $(CXD)/vcx/cx/regex_re2_linear_time_test.v $(CXD)/vcx/cx/parser_json_scratch_test.v $(CXD)/vcx/cx/text_hash_doc_test.v $(CXD)/vcx/cx/float_read_test.v $(CXD)/vcx/cx/map_shape_test.v $(CXD)/vcx/cx/fn_compound_flag_test.v $(CXD)/vcx/cx/node_size_test.v
+CX_INMODULE_TESTS := $(CXD)/vcx/cx/program_interior_comments_test.v $(CXD)/vcx/cx/program_layout_test.v $(CXD)/vcx/cx/program_fmt_guard_test.v $(CXD)/vcx/cx/program_emit_head_ascription_test.v $(CXD)/vcx/cx/directive_emit_surface_test.v $(CXD)/vcx/cx/anchor_resolve_test.v $(CXD)/vcx/cx/numeric_exact_fast_test.v $(CXD)/vcx/cx/atom_test.v $(CXD)/vcx/cx/token_golden_test.v $(CXD)/vcx/cx/version_stamp_test.v $(CXD)/vcx/cx/html_url_codec_test.v $(CXD)/vcx/cx/span_jump_test.v $(CXD)/vcx/cx/feature_compat_test.v $(CXD)/vcx/cx/name_pool_contract_test.v $(CXD)/vcx/cx/schema_extensions_test.v $(CXD)/vcx/cx/node_api_test.v $(CXD)/vcx/cx/compound_key_decode_test.v $(CXD)/vcx/cx/numeric_exact_big_test.v $(CXD)/vcx/cx/lint_l012_pred_test.v $(CXD)/vcx/cx/err_flag_test.v $(CXD)/vcx/cx/map_replace_present_test.v $(CXD)/vcx/cx/map_grow_lookup_test.v $(CXD)/vcx/cx/bytes_one_form_test.v $(CXD)/vcx/cx/pvec_test.v $(CXD)/vcx/cx/regex_re2_cursor_test.v $(CXD)/vcx/cx/regex_re2_linear_time_test.v $(CXD)/vcx/cx/parser_json_scratch_test.v $(CXD)/vcx/cx/text_hash_doc_test.v $(CXD)/vcx/cx/float_read_test.v $(CXD)/vcx/cx/map_shape_test.v $(CXD)/vcx/cx/fn_compound_flag_test.v $(CXD)/vcx/cx/node_size_test.v $(CXD)/vcx/cx/pre_parse_def_test.v
 CX_INMODULE_TESTS_EXCLUDED := $(CXD)/vcx/cx/parser_multidoc_test.v
 
 # check-build-input-roster (#1065) — forwards to vcx/, where the per-artifact
