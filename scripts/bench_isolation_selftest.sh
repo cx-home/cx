@@ -46,6 +46,12 @@
 #      still judged; a head recorded with a loaded end is a loaded head. The
 #      code_streaming peak is the median of five runs, not one (the same binary
 #      read 513-931 MB at one load).
+#   Q  the streaming time rows' quiet bound (cx-private#1942): streaming.*_ms and
+#      code_streaming.*_mbps are judged only under load 4.0. At 4.0 and over
+#      (here 4.0 and 6.0, both under the bound of 8) a +14 % streaming_ms and a
+#      -10 % for_mbps are QUIET, not judged (exit 0). At 6.0 another time row
+#      (+20 %) and a streaming peak RSS (+17 %) are still judged (exit 1). At 3.9
+#      the same streaming slowdown is a regression (exit 1).
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -295,8 +301,52 @@ else
   bad K "end-load judgement — end-loaded exit $q1, end-loaded grown exit $q2, head end-loaded exit $q3, quiet slow exit $q4 (want 3 1 3 1), or the code_streaming median-of-five is gone: $k1 / $k2 / $k3"
 fi
 
+# ── Q — the streaming time rows are judged only on a quiet box (#1942) ──────
+pairq() { # pairq <file> <load> <streaming-ms> <for-mbps> <saga-ms> <streaming-rss-mb>
+  cat > "$1" <<JSON
+{
+  "schema_version": 1,
+  "run_id": "2026-10-15T06:37:49Z",
+  "cx_commit": "deadbee",
+  "uname": "Darwin 25.5.0 arm64",
+  "load_1m_start": $2,
+  "load_1m_end": $2,
+  "load_1m_bound": 8.0,
+  "benchmarks": {
+    "streaming.streaming_ms":      { "median": $3, "unit": "ms" },
+    "code_streaming.for_mbps":     { "median": $4, "unit": "MB/s" },
+    "workload.saga_ms":            { "median": $5, "unit": "ms" },
+    "streaming.peak_rss_mb":       { "median": $6, "unit": "MB" }
+  }
+}
+JSON
+}
+pairq "$T/q_base.json" 2.1 90.0 291.5 550.0 56.0
+pairq "$T/q_six_stream.json" 6.0 103.0 262.0 550.0 56.0
+pairq "$T/q_four_stream.json" 4.0 103.0 262.0 550.0 56.0
+pairq "$T/q_six_saga.json" 6.0 103.0 262.0 660.0 56.0
+pairq "$T/q_six_rss.json" 6.0 103.0 262.0 550.0 65.5
+pairq "$T/q_quiet_stream.json" 3.9 103.0 262.0 550.0 56.0
+j1=$(cmp2 "$T/q_base.json" "$T/q_six_stream.json"); s1=$?
+j2=$(cmp2 "$T/q_base.json" "$T/q_four_stream.json"); s2=$?
+j3=$(cmp2 "$T/q_base.json" "$T/q_six_saga.json"); s3=$?
+j4=$(cmp2 "$T/q_base.json" "$T/q_six_rss.json"); s4=$?
+j5=$(cmp2 "$T/q_base.json" "$T/q_quiet_stream.json"); s5=$?
+if [ "$s1" -eq 0 ] && case "$j1" in *"streaming.streaming_ms"*"QUIET"*) true ;; *) false ;; esac \
+   && case "$j1" in *"cx-private#1942"*) true ;; *) false ;; esac && ! case "$j1" in *REGRES*) true ;; *) false ;; esac \
+   && [ "$s2" -eq 0 ] \
+   && [ "$s3" -eq 1 ] && case "$j3" in *"workload.saga_ms: baseline="*) true ;; *) false ;; esac \
+   && ! case "$j3" in *"streaming.streaming_ms: baseline="*) true ;; *) false ;; esac \
+   && [ "$s4" -eq 1 ] && case "$j4" in *"streaming.peak_rss_mb: baseline="*) true ;; *) false ;; esac \
+   && [ "$s5" -eq 1 ] && case "$j5" in *"streaming.streaming_ms: baseline="*) true ;; *) false ;; esac \
+   && case "$j5" in *"code_streaming.for_mbps: baseline="*) true ;; *) false ;; esac; then
+  ok Q "streaming.*_ms / code_streaming.*_mbps are QUIET (not judged) at load 4.0 and 6.0, judged at 3.9; other time rows and the streaming peak RSS are still judged at 6.0 (cx-private#1942)"
+else
+  bad Q "the streaming quiet bound — load 6 exit $s1, load 4 exit $s2, load-6 saga exit $s3, load-6 rss exit $s4, load-3.9 exit $s5 (want 0 0 1 1 1): $j1 / $j5"
+fi
+
 if [ "$fails" -ne 0 ]; then
   echo "bench-isolation self-test: $fails case(s) FAILED" >&2
   exit 1
 fi
-echo "bench-isolation self-test: 12/12 (measure-side refusal; judge-side refusal; judged under the bound; a pre-#1450 artifact unchanged; a loaded regression refused and the same number on a quiet box still failing; the harness rows time the running cx, #1751; the peak-RSS reader, the paired judgement and the memory half under load, #1884; the collector rows, #1910; a loaded end and the code_streaming median, #1917)"
+echo "bench-isolation self-test: 13/13 (measure-side refusal; judge-side refusal; judged under the bound; a pre-#1450 artifact unchanged; a loaded regression refused and the same number on a quiet box still failing; the harness rows time the running cx, #1751; the peak-RSS reader, the paired judgement and the memory half under load, #1884; the collector rows, #1910; a loaded end and the code_streaming median, #1917; the streaming rows' quiet bound, #1942)"
