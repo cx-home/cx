@@ -1099,6 +1099,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `spread-1` | [rulings_2026_09_27_owner_decisions_l41_l44.md](rulings_2026_09_27_owner_decisions_l41_l44.md) | SPREAD-1 — a call spread in the language (Letter 41 = (a); #1686) |
 | `spread-2` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | Owner decisions 2026-09-27 — Letters 46–50 and the org profile: KIT-4's shape (KIT4-1…3), the #1498 spec gaps (AA-7…9), HOST-4's seed made real (SEED-1), the host act's basis (HOSTB-1), the call spread's readings (SPREAD-2), the org-profile push (ORG-1) |
 | `spread-2` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | SPREAD-2 — the call spread's three readings (L50 = (a), (a), (a)) |
+| `sqlpar-1` | [rulings_2026_10_15_owner_decision_sqlpar1_sqlite_par_readers.md](rulings_2026_10_15_owner_decision_sqlpar1_sqlite_par_readers.md) | Owner decision 2026-10-15: [par] readers of one SQLite file (SQLPAR-1) |
+| `sqlpar-1` | [rulings_2026_10_15_owner_decision_sqlpar1_sqlite_par_readers.md](rulings_2026_10_15_owner_decision_sqlpar1_sqlite_par_readers.md) | SQLPAR-1 — (a): the #1923 workload holds one read transaction per worker share in both runtimes; and a v0.18 issue so cx [par] readers of one SQLite file do not serialize by default, never by immutable opens |
 | `sse-1` | [rulings_2026_08_20_sse_downstream.md](rulings_2026_08_20_sse_downstream.md) | Ruling SSE-1 (2026-08-20) — the v1 web binding's SSE downstream: negotiated XSP-envelope carriage (owner "1b") |
 | `sshl-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | SSHL-1 — the sftp module's SSH transport is libssh2 behind the V fork, mbedtls its crypto backend (L140 = (a); #1457) |
 | `store-133` | [rulings_2026_10_14_owner_decisions_watch_spend_union_axiom_eval_native.md](rulings_2026_10_14_owner_decisions_watch_spend_union_axiom_eval_native.md) | Owner decisions 2026-10-14 (morning to evening): WATCH-1, STORE-133, SCALE-1910, REFPIN-1, SPEND-1, UNION-1, AXIOM-1, the evaluator's path to native (EVAL-1 … EVAL-4), BAR-139, BAR-15, GOLEDG-1 |
@@ -1791,4 +1793,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*394 ledger pages; 986 ids declared, 429 cited only.*
+*395 ledger pages; 987 ids declared, 429 cited only.*
