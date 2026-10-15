@@ -49,15 +49,29 @@ if [ "${PREMERGE_ANY_LOAD:-0}" != 1 ] && ! awk -v l="$RUN_LOAD" -v b="${CX_BENCH
   echo "premerge-record: not run (load $RUN_LOAD over the bound ${CX_BENCH_MAX_LOAD:-8}): 0 row(s) to $TIMINGS"
   exit 0
 fi
+# cx-private#1933: each repository gets the environment its own stream's pre-merge run has, so a
+# red here is the repository's and never this script's: cx-core-data links cx's built RE2
+# (RE2_DIR), the bindings load this tree's libcx (LIBCX_PATH, LIBCX_LIB_DIR), and cx-platform-db's
+# `real` cases run on the cx built WITH the postgres/mysql engines (DB_REAL_CX, `make
+# test-db-real`'s binary) when this tree has one — a plain cx carries no engines. On 9b5a5a9b9 these
+# three were red inside the step and wrote no row.
+RE2_DIR=${RE2_DIR:-$ROOT/third_party/re2}
+LIBCX_LIB_DIR=${LIBCX_LIB_DIR:-$ROOT/deps/cx-core-code/vcx/target}
+LIBCX_PATH=${LIBCX_PATH:-$(ls "$LIBCX_LIB_DIR"/libcx.dylib "$LIBCX_LIB_DIR"/libcx.so 2>/dev/null | head -n 1)}
+DB_REAL_CX=${DB_REAL_CX:-$ROOT/deps/cx-core-code/vcx/target/cx-db-real}
+cx_for() { # cx_for <repo> — the cx that repository's check runs on
+  if [ "$1" = cx-platform-db ] && [ -x "$DB_REAL_CX" ]; then echo "$DB_REAL_CX"; else echo "$CX"; fi
+}
 one() { # one <repo> — prints `<repo> <rc> <seconds> <load>`
-  r=$1; c="$W/$r"
+  r=$1; c="$W/$r"; x=$(cx_for "$r")
   git clone -q "$ROOT/deps/$r" "$c" 2>/dev/null && git -C "$c" remote set-url origin "https://github.com/cx-home/$r.git" \
     || { echo "$r clone-failed 0 0"; return; }
   l=$RUN_LOAD; s=$(date +%s)
-  ( cd "$c" && make deps CX_BIN="$CX" && make check CX_BIN="$CX" ) > "$W/$r.log" 2>&1; rc=$?
+  ( cd "$c" && make deps CX_BIN="$x" && make check CX_BIN="$x" RE2_DIR="$RE2_DIR" \
+      LIBCX_PATH="$LIBCX_PATH" LIBCX_LIB_DIR="$LIBCX_LIB_DIR" ) > "$W/$r.log" 2>&1; rc=$?
   echo "$r $rc $(( $(date +%s) - s )) $l"
 }
-export -f one sample_load_1m; export W ROOT CX RUN_LOAD
+export -f one cx_for sample_load_1m; export W ROOT CX RUN_LOAD RE2_DIR LIBCX_PATH LIBCX_LIB_DIR DB_REAL_CX
 results=$(printf '%s\n' $repos | xargs -P "$JOBS" -I{} bash -c 'one "$@"' _ {})
 at=$(date -u +%FT%TZ); rec=0; red=''
 # No here-string (cx-private#1917): on the loop's 3c2523d22 tick (2026-10-10 ~20:00Z) bash could not
