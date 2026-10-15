@@ -767,6 +767,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `int-19` | [rulings_2026_09_15_websocket_stream_placement_int19.md](rulings_2026_09_15_websocket_stream_placement_int19.md) | Integrator decision 2026-09-15 — where the WebSocket frame codec, the upgrade and `kind=stream` live (RULED: INT-19) |
 | `int-20` | [rulings_2026_09_15_owner_decisions_1830z.md](rulings_2026_09_15_owner_decisions_1830z.md) | Owner decisions 2026-09-15 ~18:30Z — "1a 2a 3a 4a" (RULED: INT-20, 1503-b, 1502-b, 1457-a) |
 | `int-3` | [rulings_2026_09_14_owner_letters_1451b_m2_patterns.md](rulings_2026_09_14_owner_letters_1451b_m2_patterns.md) | Owner letters 2026-09-14 ~19:20Z — "1c 2a 3a" (RULED: 1451-b, INT-3 addendum 2, COMP-1 addendum) |
+| `ir-1934` | [rulings_2026_10_14_owner_decision_ir1934_native_ir_shape.md](rulings_2026_10_14_owner_decision_ir1934_native_ir_shape.md) | Owner decision 2026-10-14 evening: the native IR's shape (IR-1934) |
+| `ir-1934` | [rulings_2026_10_14_owner_decision_ir1934_native_ir_shape.md](rulings_2026_10_14_owner_decision_ir1934_native_ir_shape.md) | IR-1934 — (relayed as IR1934 = (a)(a)(a)) the resolution IR evolves the compiled-def tree in place; generated code calls a flat C-ABI table; the walker's 24-byte value everywhere, unboxed only where shape facts prove a number |
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1 — the sweep's scope and its per-issue dispositions |
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1.1 — #900: the fabric retention flake is a CLIENT that ignored a normative retry |
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1.2 — #893: the mermaid bench gate asserts a WALL TIME it cannot own |
@@ -1097,6 +1099,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `spread-1` | [rulings_2026_09_27_owner_decisions_l41_l44.md](rulings_2026_09_27_owner_decisions_l41_l44.md) | SPREAD-1 — a call spread in the language (Letter 41 = (a); #1686) |
 | `spread-2` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | Owner decisions 2026-09-27 — Letters 46–50 and the org profile: KIT-4's shape (KIT4-1…3), the #1498 spec gaps (AA-7…9), HOST-4's seed made real (SEED-1), the host act's basis (HOSTB-1), the call spread's readings (SPREAD-2), the org-profile push (ORG-1) |
 | `spread-2` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | SPREAD-2 — the call spread's three readings (L50 = (a), (a), (a)) |
+| `sqlpar-1` | [rulings_2026_10_15_owner_decision_sqlpar1_sqlite_par_readers.md](rulings_2026_10_15_owner_decision_sqlpar1_sqlite_par_readers.md) | Owner decision 2026-10-15: [par] readers of one SQLite file (SQLPAR-1) |
+| `sqlpar-1` | [rulings_2026_10_15_owner_decision_sqlpar1_sqlite_par_readers.md](rulings_2026_10_15_owner_decision_sqlpar1_sqlite_par_readers.md) | SQLPAR-1 — (a): the #1923 workload holds one read transaction per worker share in both runtimes; and a v0.18 issue so cx [par] readers of one SQLite file do not serialize by default, never by immutable opens |
 | `sse-1` | [rulings_2026_08_20_sse_downstream.md](rulings_2026_08_20_sse_downstream.md) | Ruling SSE-1 (2026-08-20) — the v1 web binding's SSE downstream: negotiated XSP-envelope carriage (owner "1b") |
 | `sshl-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | SSHL-1 — the sftp module's SSH transport is libssh2 behind the V fork, mbedtls its crypto backend (L140 = (a); #1457) |
 | `store-133` | [rulings_2026_10_14_owner_decisions_watch_spend_union_axiom_eval_native.md](rulings_2026_10_14_owner_decisions_watch_spend_union_axiom_eval_native.md) | Owner decisions 2026-10-14 (morning to evening): WATCH-1, STORE-133, SCALE-1910, REFPIN-1, SPEND-1, UNION-1, AXIOM-1, the evaluator's path to native (EVAL-1 … EVAL-4), BAR-139, BAR-15, GOLEDG-1 |
@@ -1792,4 +1796,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*394 ledger pages; 986 ids declared, 430 cited only.*
+*396 ledger pages; 988 ids declared, 430 cited only.*

@@ -213,7 +213,7 @@ fn (mut c Counts) walk(n cx.Node) {
 		.map_node {
 			m := n.map_node()
 			c.map_nodes++
-			for e in m.entries {
+			for e in m.entries() {
 				c.map_entries++
 				kv := e.key_value
 				if kv.is_string() {
