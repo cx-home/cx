@@ -59,6 +59,11 @@ RE2_DIR=${RE2_DIR:-$ROOT/third_party/re2}
 LIBCX_LIB_DIR=${LIBCX_LIB_DIR:-$ROOT/deps/cx-core-code/vcx/target}
 LIBCX_PATH=${LIBCX_PATH:-$(ls "$LIBCX_LIB_DIR"/libcx.dylib "$LIBCX_LIB_DIR"/libcx.so 2>/dev/null | head -n 1)}
 DB_REAL_CX=${DB_REAL_CX:-$ROOT/deps/cx-core-code/vcx/target/cx-db-real}
+# cx-binding-rust's cargo is the devbox profile's rustup proxy, and its toolchains live in the
+# RUSTUP_HOME devbox.json names (RUST-1: the reference install, rustc 1.99.0, the version the
+# repository's rust-toolchain.toml pins — cx-binding-rust#2). Run outside a devbox shell, rustup
+# read an empty ~/.rustup and refused ("no default is configured"), so that row was never written.
+RUSTUP_HOME=${RUSTUP_HOME:-$HOME/.cache/cx-devbox/rustup}
 cx_for() { # cx_for <repo> — the cx that repository's check runs on
   if [ "$1" = cx-platform-db ] && [ -x "$DB_REAL_CX" ]; then echo "$DB_REAL_CX"; else echo "$CX"; fi
 }
@@ -71,7 +76,7 @@ one() { # one <repo> — prints `<repo> <rc> <seconds> <load>`
       LIBCX_PATH="$LIBCX_PATH" LIBCX_LIB_DIR="$LIBCX_LIB_DIR" ) > "$W/$r.log" 2>&1; rc=$?
   echo "$r $rc $(( $(date +%s) - s )) $l"
 }
-export -f one cx_for sample_load_1m; export W ROOT CX RUN_LOAD RE2_DIR LIBCX_PATH LIBCX_LIB_DIR DB_REAL_CX
+export -f one cx_for sample_load_1m; export W ROOT CX RUN_LOAD RE2_DIR LIBCX_PATH LIBCX_LIB_DIR DB_REAL_CX RUSTUP_HOME
 results=$(printf '%s\n' $repos | xargs -P "$JOBS" -I{} bash -c 'one "$@"' _ {})
 at=$(date -u +%FT%TZ); rec=0; red=''
 # No here-string (cx-private#1917): on the loop's 3c2523d22 tick (2026-10-10 ~20:00Z) bash could not
