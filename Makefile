@@ -4821,7 +4821,7 @@ conform-vcx: build-vcx
 # THE cx MIRROR: `publish-org` syncs the org profile README, best-effort.
 
 publish-org:
-	@bash scripts/publish_org.sh
+	@$(TOOL_CX) --allow-all scripts/publish_org.cx
 
 release-all: publish-org
 
