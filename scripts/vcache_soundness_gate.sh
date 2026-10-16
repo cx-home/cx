@@ -189,7 +189,7 @@ osnap() {
 
 # mutate FILE SED-EXPR - an in-place edit that PROVES it happened.
 # Portable (plain sed to a temp, then mv - the backup-suffix idiom
-# scripts/bump_version.sh:29 uses, one step further so no .bak is left beside
+# scripts/bump_version.sh used, one step further so no .bak is left beside
 # a fixture the compiler then globs). A no-op edit is a TOOLING FAULT, never a
 # probe result: exit 2, loudly, naming the remedy.
 MUTATIONS=0

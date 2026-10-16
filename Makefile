@@ -2099,11 +2099,11 @@ verify-doc-links:
 # single source of truth; scripts/check_version_consistency.cx verifies every
 # stamped manifest + derived code surface against it. An explicit
 # VERSION=X.Y.Z arg additionally asserts the file holds the version you
-# intend to release (catches "forgot to run scripts/bump_version.sh").
+# intend to release (catches "forgot to run scripts/bump_version.cx").
 bump-version-check: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 bump-version-check: build-vcx
 	@if [ -n "$(VERSION)" ] && [ "$(VERSION)" != "$$(cat VERSION)" ]; then \
-	  echo "bump-version-check: VERSION file holds $$(cat VERSION), expected $(VERSION) — run scripts/bump_version.sh $(VERSION)"; \
+	  echo "bump-version-check: VERSION file holds $$(cat VERSION), expected $(VERSION) — run $(TOOL_CX) --allow-all scripts/bump_version.cx $(VERSION)"; \
 	  exit 1; \
 	fi
 	@"$(CX_BIN)" --allow-read --allow-write scripts/check_version_consistency.cx
@@ -2326,7 +2326,7 @@ secrets-scan-history:
 # of truth for the release version. Every static manifest must equal it and the
 # code surfaces (cabi.v/main.v) must DERIVE it from the build define. Catches the
 # drift that previously went unnoticed (cx.pc.in at 0.6.1, C-ABI at 0.8.0 while
-# the CLI said 0.10.0). Re-stamp with scripts/bump_version.sh.
+# the CLI said 0.10.0). Re-stamp with scripts/bump_version.cx.
 .PHONY: check-version-consistency
 check-version-consistency: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 check-version-consistency: build-vcx

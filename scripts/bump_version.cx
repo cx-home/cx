@@ -1,0 +1,94 @@
+# scripts/bump_version.cx — set the CX release version in ONE step.
+#
+# The repo-root VERSION file is the single source of truth. This script writes
+# it and stamps the static package manifests that must carry a literal version
+# at rest (package managers can't derive it). The code surfaces (vcx/cx/cabi.v,
+# vcx/cmd/main.v) DERIVE the version from the `cx_version` build define and are
+# NOT touched here. The git tag is created from VERSION by scripts/tag_release.sh.
+#
+# After running, `make check-version-consistency` must pass (CI enforces it).
+#
+# Usage:
+#   $(TOOL_CX) --allow-all scripts/bump_version.cx 0.11.0      # set version to 0.11.0
+#   $(TOOL_CX) --allow-all scripts/bump_version.cx             # re-stamp manifests from current VERSION
+#
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of bump_version.sh — the same stamps with sed's
+# readings (line by line, a last line with no newline kept so; the first match on a line; a
+# symlinked manifest refused and left as it is, as BSD sed -i does), the same lines and exits
+# (2 a bad version, cat's 1 when VERSION is absent and no version is given, make's own code when
+# make docs fails).
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+# s/RX/REP/ on every line (the first match on each); the line split keeps a missing last newline.
+[?def each-line scope=public ($t $rx $rep)
+  [$strings:join [?to-sequence [?for [in $l [$strings:split $t "\n"]] [yield [$re:replace-first $rx $l $rep]]]] "\n"]]
+# /^name = "cxlib"$/{n;s/^version = ".*"/version = "NEW"/;} — the line after each name line (that
+# line is not itself read as an address); at the end of input n just stops.
+[?def after-name scope=public ($t $new)
+  [?let [= $ls [$strings:split $t "\n"]] [= $n [$count $ls]] [= $rx [$re:compile '^version = ".*"']]
+    [$strings:join [?loop [= $i 1] [= $acc ()]
+                     [?if [> $i $n] [then [break $acc]]
+                       [else [?let [= $l [$nth $ls $i]]
+                         [?if [and [= $l 'name = "cxlib"'] [< $i $n]]
+                           [then [continue [+ $i 2] ([?splice $acc], $l, [$re:replace-first $rx [$nth $ls [+ $i 1]] [$cat ('version = "', $new, '"')]])]]
+                           [else [continue [+ $i 1] ([?splice $acc], $l)]]]]]]] "\n"]]]
+
+[?def stamp scope=public impure ($root $f0 $edit)
+  [?let [= $f [$cat ($root, '/', $f0)]]
+  [?if [not [$io:is-file $f]] [then [$say [$cat ('  skip (absent): ', $f0)]]]
+    # sed -i refuses a symlink (its line on stderr, the file untouched) and the line still reads
+    # stamped, as the shell's `sed ... && rm` let it.
+    [else [?let [= $_w [?if [$io:is-symlink $f]
+                         [then [$cry [$cat ('sed: ', $f0, ': in-place editing only works for regular files')]]]
+                         [else [$io:write-file $f [$edit [$io:read-file $f]]]]]]
+      [$say [$cat ('  stamped: ', $f0)]]]]]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $root [$path:dirname [$path:dirname [$path:absolute [$nth $argv 1]]]]]
+    [= $a1 [?if [> [$count $argv] 1] [then [$nth $argv 2]] [else '']]]
+  [= $new [?if [not [= $a1 '']] [then $a1]
+            [else [?if [$io:is-file [$cat ($root, '/VERSION')]] [then [$strings:trim-end-chars [$io:read-file [$cat ($root, '/VERSION')]] "\n"]]
+                    [else [?let [= $_e [$cry 'cat: VERSION: No such file or directory']] [$env:exit 1]]]]]]]
+  [= $_v [?if [$re:matches [$re:compile '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'] $new] [then null]
+           [else [?let [= $_e [$cry [$cat ('bad version: ', $new, ' (want X.Y.Z[-pre])')]]] [$env:exit 2]]]]]
+  [= $_w [$io:write-file [$cat ($root, '/VERSION')] [$cat ($new, "\n")]]]
+  [= $_h [$say [$cat ('Stamping static manifests to ', $new, ' (VERSION is the source of truth):')]]]
+  [= $_1 [$stamp $root 'cx.pc.in' [?fn ($t) [$each-line $t [$re:compile '^Version: .*'] [$cat ('Version: ', $new)]]]]]
+  # v.mod is tab-indented `version: '...'`; the leading whitespace is kept.
+  [= $vm [?fn ($t) [$each-line $t [$re:compile "^([[:space:]]*version:[[:space:]]*)'.*'"] [$cat ('${1}', "'", $new, "'")]]]]
+  [= $_2 [$stamp $root 'vcx/v.mod' $vm]]
+  [= $_3 [$stamp $root 'lang/v/v.mod' $vm]]
+  [= $toml [?fn ($t) [$each-line $t [$re:compile '^version = ".*"'] [$cat ('version = "', $new, '"')]]]]
+  [= $_4 [$stamp $root 'lang/rust/cxlib/Cargo.toml' $toml]]
+  # Cargo.lock records the cxlib package's own version too; ONLY the cxlib package's version line.
+  [= $_5 [$stamp $root 'lang/rust/cxlib/Cargo.lock' [?fn ($t) [$after-name $t $new]]]]
+  [= $_6 [$stamp $root 'lang/python/pyproject.toml' $toml]]
+  # The generated docs (docs/llm/*, the README badge) stamp the version too and `docs-check`
+  # refuses drift; regenerate them with the bump (#1435).
+  [= $d [$process:run ('make', 'docs') cwd=$root capture={stdout: :inherit, stderr: :inherit} timeout-ms=7200000]]
+  [= $_d [?match $d [case [err$e] [?let [= $_x [$cry [$string $e@message]]] [$env:exit 127]]]
+           [else [?if [= $d@exit-code 0] [then null] [else [$env:exit $d@exit-code]]]]]]
+  # The shields badge is the one narrative token that carries the version (check_version_consistency.cx).
+  [= $badge [?fn ($t) [$each-line $t [$re:compile 'badge/version-v[0-9.]*-blue'] [$cat ('badge/version-v', $new, '-blue')]]]]
+  [= $_7 [$stamp $root 'README.md' $badge]]
+  [= $_8 [$stamp $root 'vcx/README.md' $badge]]
+  # SECURITY.md names the supported minor SERIES (X.Y.x), derived from VERSION.
+  [= $series [$cat ([$strings:join [?let [= $p [$strings:split $new '.']] [?to-sequence [?for [in $i [$range 1 [?if [> [$count $p] 2] [then 2] [else [$count $p]]]]] [yield [$nth $p $i]]]]] '.'], '.x')]]
+  [= $_9 [$stamp $root 'SECURITY.md' [?fn ($t) [$each-line $t [$re:compile '\*\*[0-9][0-9]*\.[0-9][0-9]*\.x\*\*'] [$cat ('**', $series, '**')]]]]]
+  # The VS Code extension's stamps RETIRED (RULED: RS-12, D59a): it left with cx-tooling.
+  [= $_e1 [$say '']]
+  [= $_e2 [$say [$cat ('VERSION = ', $new, '. Code (cabi.v/main.v) derives via the build define — not stamped.')]]]
+  [= $_e3 [$say 'Verify:  make check-version-consistency']]
+  [= $_e4 [$say [$cat ('Release: scripts/tag_release.sh v', $new)]]]
+  [$env:exit 0]]

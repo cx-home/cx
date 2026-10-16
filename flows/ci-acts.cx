@@ -572,7 +572,7 @@
 
 # ── ci/release-tag — phase 1: gate + bump + tag (+ the build at the tag) ─────
 # tag_release.sh runs make test and verify-doc-links, bumps VERSION through
-# bump_version.sh, commits the bump, TAGS it, and builds at the tag (#979,
+# bump_version.cx, commits the bump, TAGS it, and builds at the tag (#979,
 # CO-4). Under --from-bump the gate and the bump already happened in
 # cx-private, so the tag alone is made here, signed when a key is configured.
 # Undone by release-untag.

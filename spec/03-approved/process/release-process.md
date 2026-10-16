@@ -110,7 +110,7 @@ zero-cost.
 The repo-root `VERSION` file is the single source of truth (see
 [`governance.md §9`](governance.md)); code derives it via
 the `cx_version` build define, manifests + README badges are stamped by
-`bump_version.sh`, and drift is a red build via `check-version-consistency`
+`scripts/bump_version.cx`, and drift is a red build via `check-version-consistency`
 (wired into `TEST_TARGETS`). Per-release detail lives in `CHANGELOG.md` +
 `RELEASE_NOTES_v*.md`; the latter is the authoritative release surface and is
 also the body of the GitHub release (phase 5).

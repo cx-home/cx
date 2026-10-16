@@ -7,7 +7,7 @@
 #   1. Sanity: on the release branch, working tree clean, tag does not exist
 #   4. Run `make test`  (the authoritative gate — all TEST_TARGETS)
 #   5. Run `make verify-doc-links`
-#   2. Bump version strings (VERSION + manifests via bump_version.sh)
+#   2. Bump version strings (VERSION + manifests via bump_version.cx)
 #   3. Commit the bump, CREATE THE ANNOTATED TAG on it, then build libcx + cli
 #      and verify the artifact's provenance stamp (#666, #979/CO-4 — the tag
 #      must exist BEFORE the build, because the build derives release-ness
@@ -227,8 +227,8 @@ if [[ $DRY_RUN -eq 1 ]]; then
     echo "          lang/rust/cxlib/Cargo.toml"
     echo "          lang/python/pyproject.toml"
 else
-    note "stamping version to $VERSION (VERSION file + manifests via bump_version.sh)"
-    scripts/bump_version.sh "$VERSION"
+    note "stamping version to $VERSION (VERSION file + manifests via bump_version.cx)"
+    vcx/target/cx --allow-all scripts/bump_version.cx "$VERSION"
     note "verifying version consistency"
     vcx/target/cx --allow-read --allow-write scripts/check_version_consistency.cx || fail "version inconsistent after bump"
     make docs-check || fail "generated docs drifted from the bumped VERSION (#1435)"
@@ -259,10 +259,10 @@ if [[ $DRY_RUN -eq 1 ]]; then
     echo "[dry-run] would commit version bump, create the annotated tag $TAG on it, then run: make build-vcx-pgo"
 else
     note "committing version bump"
-    # Stage every file bump_version.sh just stamped. The tree was verified clean
+    # Stage every file bump_version.cx just stamped. The tree was verified clean
     # at the start of this script, so the only tracked modifications now are the
     # version stamps — `git add -u` captures them all and CANNOT drift out of
-    # sync with bump_version.sh the way a hand-maintained file list does (that
+    # sync with bump_version.cx the way a hand-maintained file list does (that
     # drift left vscode/package.json at the old version in a tagged commit).
     git add -u 2>/dev/null || true
     git commit -m "chore(release): bump version strings to $VERSION" || true
