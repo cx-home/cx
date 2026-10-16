@@ -1505,7 +1505,7 @@ ledger-index: build-vcx
 ledger-index-check: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 ledger-index-check: build-vcx
 	@"$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/ledger_index.cx --check
-	@CX_BIN="$(CX_BIN)" sh scripts/ledger_subject_ids_selftest.sh
+	@CX_BIN="$(CX_BIN)" $(TOOL_CX) --allow-all scripts/ledger_subject_ids_selftest.cx
 
 # ── ledger-edit-map-check / ledger-edit-map-status (#1329, RULED: 1329-a,
 # EDMAP-1) ────────────────────────────────────────────────────────────────────

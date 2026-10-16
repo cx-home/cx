@@ -446,7 +446,7 @@ step_globs() {
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
     # ledger-index-check (#1438) regenerates ledger/README.md from the store and
     # compares: its inputs are every ledger page and the generator itself.
-    ledger-index-check)            echo 'ledger/* scripts/ledger_index.cx scripts/ledger_subject_ids_selftest.sh' ;;
+    ledger-index-check)            echo 'ledger/* scripts/ledger_index.cx scripts/ledger_subject_ids_selftest.cx' ;;
     # ledger-edit-map-check (#1329, RULED: 1329-a, EDMAP-1) reads every edit map
     # against the owning repository's history: the pages, the allocation that
     # names the owner, the pins that name its sha, and the step with its selftest.
