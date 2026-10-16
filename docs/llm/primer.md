@@ -771,7 +771,7 @@ $ cx fmt prog.cx
 You can check every claim in this document. Do that rather than trusting it.
 
 ```console
-cx FILE.cx                       # run a program, or print a document
+cx FILE.cx                       # run a program interpreted, or print a document
 cx --allow-read FILE.cx          # grant one capability
 cx --allow-read=./data FILE.cx   # …scoped to a directory subtree
 cx --probe FILE.cx               # the preset: --allow-read=. --allow-clock
@@ -782,8 +782,8 @@ cx --from=json --to=cx in.json   # the convert surface (the data reading)
 cx canonical FILE.cx             # strict canonical text — what identity is
 cx hash FILE.cx                  # SHA-256 over those canonical bytes
 cx lint FILE.cx                  # style + correctness findings
-cx build prog.cx -o prog         # one executable that runs prog (same OS/arch)
-cx build --native prog.cx -o prog   # the same, hot pure defs as machine code
+cx build prog.cx -o prog         # compiled: one executable that runs prog (same OS/arch)
+cx build --native prog.cx -o prog   # compiled, hot pure defs as machine code
 cx primer                        # this document, for the installed binary
 ```
 

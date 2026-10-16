@@ -130,8 +130,8 @@ reading what the step checks.
 | 4 | `ring-svg-check` | yes, in the docs flow | `scripts/gen_site/ring_svg.cx` |
 | 5 | `check-no-ai-attribution` |  | `scripts/check_no_ai_attribution.cx` |
 | 6 | `check-public-history-replace` |  | `scripts/public_history_replace_selftest.cx` |
-| 7 | `check-vcache-soundness` |  | `scripts/vcache_soundness_memo.sh` |
-| 8 | `check-vcache-soundness-selftest` |  | `scripts/vcache_soundness_memo_selftest.sh` |
+| 7 | `check-vcache-soundness` |  | `scripts/vcache_soundness_memo.cx` |
+| 8 | `check-vcache-soundness-selftest` |  | `scripts/vcache_soundness_memo_selftest.cx` |
 | 9 | `check-build-failure-classifier` |  | `scripts/classify_v_build_failure.sh` |
 | 10 | `test-vcx-timing` |  | `v test deps/cx-core-code/vcx/timing/` |
 | 11 | `check-conformance-coverage` |  | `scripts/check_conformance_coverage.sh` |
