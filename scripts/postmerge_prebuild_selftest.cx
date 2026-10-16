@@ -7,11 +7,13 @@
 #      every step after carries -o build-profiles-dev -o build-profile-data -o db-real-cx.
 #   B: a plan with neither — the prebuild is build-vcx and build-vcx-dev, and no step
 #      carries -o build-profiles-dev or -o db-real-cx (a step that needs them builds them).
-#   C: a red prebuild job — 'the prebuild is red: no step ran', exit 2, no step ran.
+#   C: a red prebuild job — 'the prebuild is red: no step ran, the serial tail did not run'
+#      (the run is partial: no timings row), exit 2, no step ran.
 #   D: the idle period's steps wait while the perf slot ($CX_PERF_SLOT) is held.
-#   E: a red check-verification-budget (a REPORT step: it judges earlier runs' rows) reds the
-#      run but the serial tail still runs, so the run is whole and writes its timings row.
-#   F: any other red before the tail stops it ('the serial tail did not run'), as before.
+#   E: a red check-verification-budget (it judges earlier runs' rows) reds the run but the
+#      serial tail still runs, so the run is whole and writes its timings row.
+#   F: any other red pool step reds the run (exit 2, named) and the tail still runs (#1946
+#      (a)): the run is whole and writes its row.
 # Exit 0 = all six hold. The planted checkout's scripts/test_changed.sh and scripts/build-slot.sh
 # are the shell stubs the runner invokes by those names (their own rewrites are CXMACH-1 items).
 # CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of postmerge_prebuild_selftest.sh.
@@ -121,7 +123,7 @@
   [= $_pc [$plan $co 'check-a test-db-real' '']]
   [= $rc [$run $cx $t $co ('test-changed', 'BASE=HEAD') 'c' {'FAIL_TARGET': 'db-real-cx'}]]
   [= $c1 [$check 'C: a red prebuild job stops the run before any step (exit 2)'
-           [and [$strings:contains $rc@out 'the prebuild is red: no step ran'] [= $rc@rc 2] [< [$at $t 'c' 'START' 'check-a'] 0]]
+           [and [$strings:contains $rc@out 'the prebuild is red: no step ran, the serial tail did not run'] [= $rc@rc 2] [< [$at $t 'c' 'START' 'check-a'] 0]]
            [$cat ('rc ', [$string $rc@rc], ': ', $rc@out)]]]
 
 
@@ -135,12 +137,13 @@
                 [not [$strings:contains $re@out 'the serial tail did not run']]]
            [$cat ('rc ', [$string $re@rc], ': ', $re@out)]]]
 
-  # F: any other red before the tail still stops it (the run is partial, as before)
+  # F: any other red pool step reds the run but the tail still runs (#1946 (a))
   [= $_pf [$plan $co 'check-verification-budget check-a' 'test-profile-gate']]
   [= $rf [$run $cx $t $co ('test-changed', 'BASE=HEAD') 'f' {'FAIL_TARGET': 'check-a'}]]
-  [= $f1 [$check 'F: a red check-a — the tail does not run (the serial tail did not run, exit 2)'
-           [and [< [$at $t 'f' 'START' 'test-profile-gate'] 0] [= $rf@rc 2]
-                [$strings:contains $rf@out 'the serial tail did not run']]
+  [= $f1 [$check 'F: a red check-a — the tail runs, the run is red (exit 2) and names it'
+           [and [>= [$at $t 'f' 'START' 'test-profile-gate'] 0] [= $rf@rc 2]
+                [$strings:contains $rf@out '1 red: check-a']
+                [not [$strings:contains $rf@out 'the serial tail did not run']]]
            [$cat ('rc ', [$string $rf@rc], ': ', $rf@out)]]]
   # D: the idle period (UNION-1 (a)) waits while the perf slot is held (PROC-1): the slot is
   #    released 7 s in, and no idle step starts before that
