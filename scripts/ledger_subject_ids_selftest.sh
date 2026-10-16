@@ -37,6 +37,9 @@
 #      note), CAPADDR-1) refuses CAPADDR-1 (REFUTE-1 l05)
 #   Q  a token a ledger page records as `TOKEN` (unparsed, IDSH-1) is excused
 #      (MYSQLCDC-1 -> MYCDC-1); an unrecorded one is still refused (I)
+#   R  the per-COMMIT exemption (IDSH-EXEMPT): a `<sha>\t<subject>` line whose
+#      commit is 1daef791e (one of the four s2a subjects citing S2A-1934, now
+#      CXBLD-1934) passes; the same subject under any other sha is refused
 #
 # Planted through CX_LEDGER_SUBJECTS_FILE, which is the only input this reader
 # takes other than `git log`, so the rule is proven without a repository.
@@ -217,8 +220,20 @@ else
   bad Q "wanted exit 0 for the page-recorded MYSQLCDC-1 — exit $rc: $out"
 fi
 
+# R — IDSH-EXEMPT is per commit: the exempt sha passes, the same subject under another sha is refused
+SUBJ='pin(cx-core-code): main 67a843f8 (RULED: S2A-1934)'
+printf '%s\t%s\n' 1daef791e6e759ec0c46cfab68f40b67fcbb728e "$SUBJ" > "$T/exempt.txt"
+out=$(check_with "$T/exempt.txt"); rc=$?
+printf '%s\t%s\n' 1daef791e6e759ec0c46cfab68f40b67fcbb7280 "$SUBJ" > "$T/notexempt.txt"
+out2=$(check_with "$T/notexempt.txt"); rc2=$?
+if [ "$rc" -eq 0 ] && [ "$rc2" -eq 1 ] && case "$out2" in *"S2A-1934 -- in:"*) true ;; *) false ;; esac; then
+  ok R "S2A-1934 in exempt commit 1daef791e passes; the same subject under another sha is refused"
+else
+  bad R "wanted exit 0 for the exempt sha and exit 1 naming S2A-1934 otherwise — exit $rc/$rc2: $out / $out2"
+fi
+
 if [ "$fails" -ne 0 ]; then
   echo "ledger-subject-ids self-test: $fails case(s) FAILED" >&2
   exit 1
 fi
-echo "ledger-subject-ids self-test: 20/20 (a known id passes; an id with no page is refused by name; a prose clause passes; the live history resolves; a denied env or subprocess grant and an unreadable planted file are refused, never counted; unresolved ids print one per line; an id-shaped token the grammar does not parse is refused with its subject (IDSH-1); the owner-letter D-shape parses and resolves; the rule binds from IDSH-1 on; the refusal names its source; typographic dashes and glued characters are refused; a parenthesis inside a new clause does not end it; a token its ledger page records as renamed is excused)"
+echo "ledger-subject-ids self-test: 21/21 (a known id passes; an id with no page is refused by name; a prose clause passes; the live history resolves; a denied env or subprocess grant and an unreadable planted file are refused, never counted; unresolved ids print one per line; an id-shaped token the grammar does not parse is refused with its subject (IDSH-1); the owner-letter D-shape parses and resolves; the rule binds from IDSH-1 on; the refusal names its source; typographic dashes and glued characters are refused; a parenthesis inside a new clause does not end it; a token its ledger page records as renamed is excused; the IDSH-EXEMPT commits are exempt by sha alone)"
