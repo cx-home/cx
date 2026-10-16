@@ -2182,7 +2182,7 @@ check-prod-build:
 # green with ZERO annotated exceptions; that is the standard to hold.
 .PHONY: check-pipefail-pipes
 check-pipefail-pipes:
-	@scripts/pipefail_pipe_gate.sh
+	@$(TOOL_CX) --allow-read --allow-env scripts/pipefail_pipe_gate.cx
 
 # ── check-exec-redirect (#1542) ───────────────────────────────────────────────
 # A bare `exec` carrying only redirections applies them to the SHELL, for the

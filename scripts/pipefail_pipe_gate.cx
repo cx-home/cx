@@ -1,0 +1,103 @@
+# scripts/pipefail_pipe_gate.cx — RULED: SPG-1 (#916, ledger/rulings_2026_08_22_gate_hygiene.md).
+#
+# Fails on `external_command | grep -q PATTERN` inside a shell script that sets `pipefail`. That
+# pipeline fires FALSE failures: `grep -q` exits on the first match, the producer is still
+# writing, takes SIGPIPE and exits 141, and pipefail promotes 141 to the pipeline's status — so a
+# guard reports "not found" for input that actually matched. It is TIMING-dependent, which is why
+# it earns a gate rather than a comment. `echo`/`printf` producers PASS: a builtin writing a small
+# string finishes before `grep` can exit. The escape hatch is an inline marker (assembled below so
+# the gate never matches its own documentation), reported in the summary.
+#
+# Scanned: every *.sh in the tree outside third_party/, .git/, .claude/ and any symlinked directory, that mentions
+# pipefail. Heredoc bodies are data and skipped; a pipeline continued past a trailing `|` is
+# joined; a here-string has no upstream process.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of pipefail_pipe_gate.sh, the same lines.
+#   $(TOOL_CX) --allow-read scripts/pipefail_pipe_gate.cx      (from the repo root)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+# cry — the explanation block goes to stdout: writing the stderr handle charges the write grant (io.md §3.8), and a read-only gate keeps --allow-read alone; the Makefile step shows both streams in one log.
+[?def cry scope=public impure ($s) [$env:write-line $s]]
+[?def OK-MARKER scope=public () [$cat ('pipefail-pipe', '-ok')]]
+[?def hit scope=public ($rx $s) [$present [$re:find [$re:compile $rx] $s]]]
+[?def ltrim scope=public ($s) [$strings:trim-start $s]]
+
+# is-safe-producer — strip the control words and case labels the bash stripped, then an
+# echo/printf producer is safe.
+[?def strip-once scope=public ($p)
+  [?let [= $heads ('if ', '! ', 'while ', 'until ', 'then ', 'elif ', '&& ', '|| ', '(')]
+        [= $lead [?for [in $h $heads] [where [$strings:starts-with $p $h]] [yield $h]]]
+    [?if [> [$count $lead] 0] [then [$ltrim [$strings:replace-first $p [$nth $lead 1] '']]]
+      [else [?let [= $m [$re:find [$re:compile '^[A-Za-z0-9_*?.@%^+=:,/-]+\)[ \t]+'] $p]]
+              [?if [$present $m] [then [$ltrim [$strings:replace-first $p [$re:group $m 0] '']]] [else $p]]]]]]]
+[?def is-safe-producer scope=public ($p)
+  [?let [= $q [?loop [= $x [$ltrim $p]]
+                [?let [= $y [$strip-once $x]] [?if [= $y $x] [then [break $x]] [else [continue $y]]]]]]
+    [or [= $q 'echo'] [= $q 'printf'] [$strings:starts-with $q 'echo '] [$strings:starts-with $q 'printf ']]]]
+
+# scan — one file's findings: [v at= text=] for a violation, [a at=] for an annotated site.
+[?def scan scope=public ($lines)
+  [?let [= $n [$count $lines]]
+    [?loop [= $i 1] [= $hd ''] [= $pending ''] [= $pno 0] [= $acc ()]
+      [?if [> $i $n] [then [break $acc]]
+        [else [?let [= $raw [$nth $lines $i]]
+          [?if [not [= $hd '']]
+            [then [continue [+ $i 1] [?if [= [$strings:trim $raw] $hd] [then ''] [else $hd]] $pending $pno $acc]]
+            [else [?let [= $hm [?if [$strings:contains $raw '<<<'] [then ()]
+                                 [else [$re:find [$re:compile "<<-?[ \t]*['\"]?([A-Za-z_][A-Za-z0-9_]*)['\"]?[ \t]*$"] $raw]]]]
+              [?if [$present $hm]
+                [then [continue [+ $i 1] [$re:group $hm 1] $pending $pno $acc]]
+                [else [?let [= $logical [?if [= $pending ''] [then $raw] [else [$cat ($pending, ' ', [$ltrim $raw])]]]]
+                            [= $start [?if [= $pending ''] [then $i] [else $pno]]]
+                            [= $trimmed [$ltrim $logical]]
+                  [?if [or [= $trimmed ''] [$strings:starts-with $trimmed '#']]
+                    [then [continue [+ $i 1] '' '' 0 $acc]]
+                    [else [?if [$hit '\|[ \t]*$' $logical]
+                      [then [continue [+ $i 1] '' [$strings:trim-end $logical] $start $acc]]
+                      [else [?if [or [not [$hit '\|[ \t]*grep[ \t]+-[a-zA-Z]*q' $logical]] [$strings:contains $logical '<<<']
+                                     [$is-safe-producer [$nth [$strings:split $logical '|'] 1]]]
+                        [then [continue [+ $i 1] '' '' 0 $acc]]
+                        [else [?if [$strings:contains $logical [$OK-MARKER]]
+                          [then [continue [+ $i 1] '' '' 0 ([?splice $acc], [a at=$start])]]
+                          [else [continue [+ $i 1] '' '' 0 ([?splice $acc], [v at=$start text=$trimmed])]]]]]]]]]]]]]]]]]]]]]
+
+[?let
+  # find(1) does not follow a symlinked directory and $io:walk does (cx-core-code#146): the
+  # subtrees under a linked directory (deps/cx-core-code/deps/* -> deps/*) are dropped here.
+  [= $kept [?to-sequence [?for [in $e [$io:walk '.']]
+                           [where [not [or [$strings:starts-with $e@path './third_party/'] [$strings:starts-with $e@path './.git/']
+                                           [$strings:starts-with $e@path './.claude/']]]]
+                           [yield $e]]]]
+  [= $links [?to-sequence [?for [in $e $kept] [where [and $e@is-directory [$io:is-symlink $e@path]]] [yield [$cat ($e@path, '/')]]]]]
+  [= $files [$sort [?for [in $e $kept]
+                     [where [and [= $e@is-file true] [$strings:ends-with $e@path '.sh']
+                                 [= [$count [?for [in $l $links] [where [$strings:starts-with $e@path $l]] [yield 1]]] 0]]]
+                     [yield $e@path]]]]
+  [= $pf [?for [in $f $files] [where [$strings:contains [?else [$io:read-file $f] ''] 'pipefail']] [yield $f]]]
+  [= $found [?for [in $f $pf] [in $x [$scan [$strings:split-lines [?else [$io:read-file $f] '']]]] [yield [r file=$f kind=[$name $x] at=$x@at text=[?else $x@text '']]]]]
+  [= $_p [?for [in $x $found]
+           [yield [?if [= $x@kind 'a'] [then [$say [$cat ('  ALLOWED ', $x@file, ':', [$string $x@at], ' (annotated)')]]]
+                    [else [?let [= $_1 [$say [$cat ('VIOLATION ', $x@file, ':', [$string $x@at])]]] [$say [$cat ('    ', $x@text)]]]]]]]]
+  [= $nv [$count [?for [in $x $found] [where [= $x@kind 'v']] [yield 1]]]]
+  [= $na [$count [?for [in $x $found] [where [= $x@kind 'a']] [yield 1]]]]
+  [= $_b [$say '']]
+  [?if [> $nv 0]
+    [then [?let [= $_m [?for [in $l ('pipefail-pipe-gate FAILED — see RULED: SPG-1 (#916).', '',
+                                     'A pipeline of the form  <external cmd> | grep -q P  under pipefail fires',
+                                     'FALSE failures: grep -q exits on the first match, the producer takes',
+                                     'SIGPIPE (exit 141), and pipefail promotes 141 to the pipeline status.', '',
+                                     'Use one of the two safe forms instead:', '',
+                                     '  grep -q P <<< "$out"                  # here-string: no upstream process',
+                                     '  out="$(cmd)"                          # capture once, then match',
+                                     '  case "$out" in *P*) ;; *) fail ;; esac', '',
+                                     [$cat ('If a site genuinely needs the pipe, annotate it with the ', [$OK-MARKER], ' marker and say why.')],
+                                     [$cat ('pipefail-pipe-gate: ', [$string $nv], ' violation(s) over ', [$string [$count $pf]], ' pipefail script(s), ', [$string $na], ' annotated')])]
+                         [yield [$cry $l]]]]
+            [$env:exit 1]]]
+    [else [?let [= $_ [$say [$cat ('pipefail-pipe-gate OK — ', [$string [$count $pf]], ' pipefail script(s) scanned, 0 violations, ', [$string $na], ' annotated exception(s)')]]]
+            [$env:exit 0]]]]]
