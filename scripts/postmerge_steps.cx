@@ -47,7 +47,7 @@
 #      [idle step=X] rows, one at a time on the post-merge runner — the loop's idle-rows tick)
 #   cx … scripts/postmerge_steps.cx --checkout=<checkout> order <step>…   (the pool's
 #      longest-first order of the named steps from the checkout's previous runs, one a line;
-#      scripts/postmerge_order_selftest.sh grades it)
+#      scripts/postmerge_order_selftest.cx grades it)
 #
 # Its cwd is the tree whose flows/ it reads (the acts', the checkout on the
 # box); every make and test_changed.sh runs in the checkout.
