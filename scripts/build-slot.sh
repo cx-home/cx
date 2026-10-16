@@ -36,7 +36,7 @@
 # .devbox/gen/scripts/.cmd.sh and the inner command's status is lost there,
 # while a bare `exit N` in the same position survives, which is what made the
 # trap so hard to see. It cost a wrong prio:high issue (#1569, withdrawn).
-# scripts/exit_status_probe_gate.sh is the step that holds this line.
+# scripts/exit_status_probe_gate.cx is the step that holds this line.
 set -u
 SLOT=${CX_RUNNER:-${CX_BUILD_SLOT:-"$HOME/git-repos/cx/.build-slot"}}
 # The command we run must be able to see WHICH runner it is holding: the

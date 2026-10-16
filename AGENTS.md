@@ -165,7 +165,7 @@ below all of these and never overrides one of them.
   as a cx defect rather than a wrapper one: it cost a wrong `prio:high` issue
   (#1569, withdrawn), in which `[$env:exit N]` looked broken and a dozen
   `TEST_TARGETS` gates looked vacuous. Both were fine.
-  [`scripts/exit_status_probe_gate.sh`](scripts/exit_status_probe_gate.sh) is
+  [`scripts/exit_status_probe_gate.cx`](scripts/exit_status_probe_gate.cx) is
   the step that holds the line; a probe that cannot be trusted is worse than no
   probe, and this one is quiet.
 - **Words.** `decision` is the noun for a thing the owner has ruled;

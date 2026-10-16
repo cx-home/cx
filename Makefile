@@ -2207,8 +2207,8 @@ check-exec-redirect:
 # failure mode is matching nothing (#1542's note).
 .PHONY: check-exit-status-probe
 check-exit-status-probe:
-	@scripts/exit_status_probe_gate.sh
-	@sh scripts/exit_status_probe_selftest.sh
+	@$(TOOL_CX) --allow-read --allow-env scripts/exit_status_probe_gate.cx
+	@$(TOOL_CX) --allow-all scripts/exit_status_probe_selftest.cx $(TOOL_CX)
 
 # ── check-build-slot (#1749) ─────────────────────────────────────────────────
 # The shared slot, .build-slot-impl, is taken only in a gap of the post-merge
