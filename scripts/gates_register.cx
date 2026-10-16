@@ -24,7 +24,7 @@
 #                 register lists every advisory suite.
 #
 # A register row whose suite FILE does not exist is not this check's: the
-# GATE-DANGLING step of scripts/gates_manifest_gate.sh refuses it by name, and
+# GATE-DANGLING step of scripts/gates_manifest_gate.cx refuses it by name, and
 # reporting it twice would make one defect read as two.
 #
 # The arguments:

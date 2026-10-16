@@ -2619,7 +2619,7 @@ ring-import-gate:
 # Reads deps/cx-core-code/vcx/target/cx (or CX_BIN); it does not build it.
 .PHONY: gates-manifest-gate
 gates-manifest-gate:
-	@bash scripts/gates_manifest_gate.sh
+	@$(TOOL_CX) --allow-read --allow-write --allow-env --allow-subprocess scripts/gates_manifest_gate.cx
 
 # ── ADVISORY AUDIT (ADVIS-1; RULED: QUAL-1 (b)) — every advisory case in every
 # corpus this checkout grades (this tree's and every pinned repository's under
