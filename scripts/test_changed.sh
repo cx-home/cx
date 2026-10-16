@@ -637,9 +637,9 @@ step_globs() {
     # REBUILDS the tree from source under mutated inputs and compares behaviour,
     # so its surface is the whole compiled closure plus the gate itself.
     check-selection-manifest)      echo 'Makefile scripts/test_changed.sh scripts/check_selection_manifest.sh scripts/test_changed_selftest.sh vcx/tests/* conformance/*' ;;
-    check-vcache-soundness)        echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/vcache_soundness_gate.sh scripts/vcache_soundness_memo.sh" ;;
+    check-vcache-soundness)        echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/vcache_soundness_gate.sh scripts/vcache_soundness_memo.cx" ;;
     # #1675: the concurrency fixture over the same gate, plus its own script.
-    check-vcache-soundness-selftest) echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/vcache_soundness_gate.sh scripts/vcache_soundness_selftest.sh scripts/vcache_soundness_memo.sh scripts/vcache_soundness_memo_selftest.sh" ;;
+    check-vcache-soundness-selftest) echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/vcache_soundness_gate.sh scripts/vcache_soundness_selftest.sh scripts/vcache_soundness_memo.cx scripts/vcache_soundness_memo_selftest.cx" ;;
     # #1272: the §1.2 normative body it fingerprints, the generated V constant
     # it compares against, and the gate/generator pair that writes both.
     check-contract-revision)       echo 'spec/* vcx/* scripts/check_contract_revision.sh scripts/gen_contract_revision.sh' ;;

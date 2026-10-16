@@ -1030,11 +1030,11 @@ check-build-failure-classifier:
 .PHONY: check-vcache-soundness
 # #1903: the gate proves the V COMPILER's cache and reads nothing of cx, so its SOUND verdict is
 # remembered per set of inputs (compiler, fork vlib + diff, cc, OS, V's environment, the
-# scripts; 12 h at most) by scripts/vcache_soundness_memo.sh. A red is never remembered.
+# scripts; 12 h at most) by scripts/vcache_soundness_memo.cx. A red is never remembered.
 # CX_VCACHE_MEMO=0 forces the proof.
 check-vcache-soundness:
 	@log=deps/cx-core-code/vcx/target/vcache-soundness.log; \
-	bash scripts/vcache_soundness_memo.sh check-vcache-soundness bash scripts/vcache_soundness_gate.sh > $$log 2>&1; rc=$$?; \
+	$(TOOL_CX) --allow-all scripts/vcache_soundness_memo.cx check-vcache-soundness bash scripts/vcache_soundness_gate.sh > $$log 2>&1; rc=$$?; \
 	grep -E '^PROBE|^vcache-soundness|: MEMO' $$log; \
 	echo "full log: $$log; GATE-RC=$$rc"; exit $$rc
 
@@ -1044,8 +1044,8 @@ check-vcache-soundness:
 # gates started together must both end SOUND and neither may collide.
 .PHONY: check-vcache-soundness-selftest
 check-vcache-soundness-selftest:
-	@bash scripts/vcache_soundness_memo_selftest.sh
-	@bash scripts/vcache_soundness_memo.sh check-vcache-soundness-selftest sh scripts/vcache_soundness_selftest.sh
+	@$(TOOL_CX) --allow-all scripts/vcache_soundness_memo_selftest.cx
+	@$(TOOL_CX) --allow-all scripts/vcache_soundness_memo.cx check-vcache-soundness-selftest sh scripts/vcache_soundness_selftest.sh
 
 # V6 — pre-commit lint rules over .cx files. Catches the retired
 # v0.7.x syntax forms the v0.8.0 parser rejects, plus the
