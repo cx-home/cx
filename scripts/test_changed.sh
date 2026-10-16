@@ -527,7 +527,7 @@ step_globs() {
     check-build-slot)              echo 'scripts/build-slot.sh scripts/build_slot_selftest.cx' ;;
     # #1450: the isolation guard reads the two bench scripts and its own source;
     # it plants its artifacts, so nothing else in the tree is an input.
-    check-bench-isolation)         echo 'scripts/run_bench_json.cx scripts/compare_bench.cx scripts/bench_isolation_selftest.sh' ;;
+    check-bench-isolation)         echo 'scripts/run_bench_json.cx scripts/compare_bench.cx scripts/bench_isolation_selftest.cx' ;;
     # #1884: the paired perf record — the runtime it measures (pin rows, front-door
     # modules, the V fork), the two bench scripts and the recipe; the same set
     # the landing gate calls a runtime diff.

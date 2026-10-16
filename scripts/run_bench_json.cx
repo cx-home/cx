@@ -81,7 +81,7 @@
 # then flowed as an err item into [$map:merge] and the artifact carried no
 # `benchmarks`), and the main checkout's stale copy would have timed a
 # different build. `--harness-cx` prints this one resolution and exits, so
-# scripts/bench_isolation_selftest.sh grades it without running the bench.
+# scripts/bench_isolation_selftest.cx grades it without running the bench.
 [?def bench-cx scope=public impure () [$env:executable-path]]
 
 # The T1 rows this gate REQUIRES, as a closed set (#759). Parsing whatever
@@ -682,7 +682,7 @@
       [else {'workload.pi_digits_3000_peak_rss_mb': [$map:put [$rss-row 'the pi-digits program' $runs] 'load_sensitive' true]}]]]]
 
 [; --workload-selftest: the two answer checks graded on planted outputs, offline
-   (scripts/bench_isolation_selftest.sh case J). ]
+   (scripts/bench_isolation_selftest.cx case J). ]
 [?const WORKLOAD-CASES (
   [wl-case kind='jc' want=true  text='bytes=1050974\niterations=100\nparse-ns=1\nemit-ns=2\nemitted-bytes=1050974\n'],
   [wl-case kind='jc' want=false text='bytes=1050974\niterations=100\nparse-ns=1\nemit-ns=2\nemitted-bytes=1050973\n'],

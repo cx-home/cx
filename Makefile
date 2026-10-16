@@ -2241,7 +2241,7 @@ check-build-slot: build-vcx
 .PHONY: check-bench-isolation
 check-bench-isolation: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 check-bench-isolation:
-	@CX_BIN="$(CX_BIN)" sh scripts/bench_isolation_selftest.sh
+	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-all scripts/bench_isolation_selftest.cx
 
 check-no-legacy-try: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 check-no-legacy-try:
