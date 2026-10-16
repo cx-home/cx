@@ -44,7 +44,7 @@ existing building blocks rather than duplicating them.
 | 3 | Build + package | `-prod` `cx`/`libcx`/`cx.h` for the maintainer platform → `cx-<tag>-<target>.tar.gz` + `cx-conformance-<tag>.zip` + `SHA256SUMS.txt`, and the four §4 profile tarballs, **each built from the pins**: `make deps-sync` fetches every `[dep]` row into `deps/`, and a module whose repository has left is embedded from that checkout, so the four builds are the pinned set and nothing else | `release.flow.cx` |
 | 4 | Tag + merge + push | annotated tag **on the release branch's bump commit**, then the flow merges the branch to `main` (`--no-ff`) and pushes `main` + the branch + the tag together (#666) | `tag_release.sh` / `release.flow.cx` |
 | 5 | GitHub release | `gh release create <tag>` with `RELEASE_NOTES_<tag>.md` and **every** artifact — the version-named tarballs, the conformance bundle, and the flat stable-named set the quickstart's `releases/latest/download/cx-<plat>.tar.gz` resolves to, with ONE `SHA256SUMS.txt` over both sets (the installer verifies against it) | `release.flow.cx` |
-| 6 | The org page | sync the organisation profile README (the `cx-v` mirror retired at the cut, RULED: D81a) | `make release-all` → `publish_org.sh` |
+| 6 | The org page | sync the organisation profile README (the `cx-v` mirror retired at the cut, RULED: D81a) | `make release-all` → `publish_org.cx` |
 
 The gate (phase 1) is the **single source of release confidence**: because
 `release.flow.cx` refuses to proceed on a red gate, a published tag is gate-green by

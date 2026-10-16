@@ -1,0 +1,66 @@
+# scripts/exec_redirect_gate.cx — #1542.
+#
+# Fails on a bare `exec` carrying ONLY redirections whose redirect is not scoped to it.
+# `exec 3<&- 4<&- 2>/dev/null` does not redirect the closes: a bare `exec` with no command
+# applies its redirections to the SHELL, for the rest of the script. `$(JS_CLOSE)` was written
+# that way, so every recipe line that opened with it ran with stderr pointed at /dev/null and
+# every diagnostic after it was lost — including the whole `SHELL='sh -x'` trace of
+# `test-vcx-suite`, which is why #1520's nested `make test` could be reproduced for months and
+# never read.
+#
+# Measured, and the two lines are the gate's own reason:
+#   sh -c 'exec 3<&- 2>/dev/null || true; echo x >&2'        → nothing
+#   sh -c '{ exec 3<&- ; } 2>/dev/null || true; echo x >&2'  → x
+#
+# The accepted spelling is the brace group: the group's redirect lasts only for the group, while
+# `exec`'s fd closes are the shell's and outlive it. Scanned: the Makefiles and every shell
+# script under scripts/. The escape hatch is an inline marker (assembled below so the gate never
+# flags its own documentation), reported in the summary so it can never be silent.
+# A violating line: not a comment, no marker, not already in a brace group, a bare `exec` whose
+# first word after it is a redirection (an fd number or `<`/`>`), and a redirect to a FILE
+# later on the line. The `exec` need not start the line (`$(JS_CLOSE)`'s was the right-hand side
+# of a make assignment).
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of exec_redirect_gate.sh, the same lines.
+#   $(TOOL_CX) --allow-read scripts/exec_redirect_gate.cx      (from the repo root)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def OK-MARKER scope=public () [$cat ('exec-redirect', '-ok')]]
+[?def hit scope=public ($rx $s) [$present [$re:find [$re:compile $rx] $s]]]
+
+[?def bad-line scope=public ($line)
+  [?let [= $body [$strings:trim-start $line]]
+    [and [not [$strings:starts-with $body '#']]
+         [not [$strings:contains $line [$OK-MARKER]]]
+         [not [$hit '\{.*exec' $line]]
+         [$hit 'exec [0-9].*[<>]|exec [<>]' $line]
+         [$hit '> ?/dev/null|>&[0-9]' $line]]]]
+
+[?def scripts-sh scope=public impure ()
+  [$sort [?for [in $e [$io:walk 'scripts']] [where [and [= $e@is-file true] [$strings:ends-with $e@path '.sh']]] [yield $e@path]]]]
+
+[?let
+  [= $files ([?splice [?for [in $f ('Makefile', 'vcx/Makefile')] [where [$io:is-file $f]] [yield $f]]], [?splice [$scripts-sh]])]
+  [= $viol [?for [in $f $files]
+             [in $p [?let [= $ls [$strings:split-lines [?else [$io:read-file $f] '']]]
+                      [?for [in $i [$range 1 [$count $ls]]] [yield [ln n=$i [$nth $ls $i]]]]]]
+             [where [$bad-line [$string $p]]]
+             [yield [?let [= $_1 [$say [$cat ('exec-redirect-gate: ', $f, ':', [$string $p@n], ' — a bare `exec` redirect applies to the SHELL, not to the closes:')]]]
+                          [= $_2 [$say [$cat ('    ', [$strings:trim-start [$string $p]])]]]
+                          [= $_3 [$say '  scope it:  { exec <the closes> ; } 2>/dev/null || true;']]
+                      1]]]]
+  [= $allowed [$count [?for [in $e ([?splice [?for [in $f ('Makefile', 'vcx/Makefile')] [where [$io:is-file $f]] [yield [row path=$f]]]],
+                                    [?splice [?for [in $w [$io:walk 'scripts']] [where [= $w@is-file true]] [yield [row path=$w@path]]]])]
+                        [where [$strings:contains [?else [$io:read-file $e@path] ''] [$OK-MARKER]]]
+                        [yield 1]]]]
+  [= $n [$count $viol]]
+  [?if [> $n 0]
+    [then [?let [= $_ [$say [$cat ('exec-redirect-gate: ', [$string $n], ' violation(s) across ', [$string [$count $files]], ' file(s).')]]] [$env:exit 1]]]
+    [else [?let [= $_ [$say [$cat ('exec-redirect-gate OK — ', [$string [$count $files]], ' file(s) scanned, no unscoped bare-`exec` redirect (',
+                                   [$string $allowed], ' file(s) carry the marker)')]]]
+            [$env:exit 0]]]]]

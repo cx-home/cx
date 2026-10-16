@@ -1,0 +1,40 @@
+# scripts/publish_org.cx — sync the cx-home org README from docs/internal/CX_HOME_ORG_README.md
+# to the cx-home/.github repo's profile/README.md. Best-effort: never aborts a release.
+#
+# Usage:  make publish-org
+#         ORG_GITHUB_ROOT=/path/to/.github make publish-org
+#
+# The org-profile README sync is best-effort BRANDING, not a release artifact. It must never abort
+# a release: release-all runs tag-public (the real release step) BEFORE this, and a missing source
+# or unconfigured .github clone here just skips the sync with a note (exit 0).
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of publish_org.sh, the same lines.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+
+[?let
+  [= $top [$process:run ('git', 'rev-parse', '--show-toplevel')]]
+  [= $private-root [$strings:trim [$string $top@stdout]]]
+  [= $org [$env:var-or-default 'ORG_GITHUB_ROOT' [$cat ([$env:var-or-default 'HOME' ''], '/git-repos/cx/.github')]]]
+  [= $src [$cat ($private-root, '/docs/internal/CX_HOME_ORG_README.md')]]
+  [= $dst-dir [$cat ($org, '/profile')]]
+  [= $dst [$cat ($dst-dir, '/README.md')]]
+  [= $_s [?if [$io:is-file $src] [then null]
+           [else [?let [= $_ [$say [$cat ('skip publish-org: org-README source not found (', $src, ') — profile sync skipped')]]] [$env:exit 0]]]]]
+  [= $_g [?if [$io:is-directory [$cat ($org, '/.git')]] [then null]
+           [else [?let [= $_1 [$say [$cat ('skip publish-org: cx-home/.github repo not found at ', $org)]]]
+                       [= $_2 [$say [$cat ('  to enable the org-profile sync: git clone git@github.com:cx-home/.github.git ', $org)]]]
+                       [= $_3 [$say '  (or set ORG_GITHUB_ROOT=/path/to/.github)']]
+                   [$env:exit 0]]]]]
+  [= $_m [$io:make-dirs $dst-dir]]
+  [= $_c [$io:write-file $dst [$io:read-file $src]]]
+  [= $_o [?for [in $l ([$cat ('synced: ', $src, ' → ', $dst)], '', 'Next: review the diff, commit, and push:',
+                       [$cat ('  cd ', $org)], '  git diff profile/README.md',
+                       "  git add profile/README.md && git commit -m 'docs: sync org README from cx-private'", '  git push')]
+           [yield [$say $l]]]]
+  [$env:exit 0]]

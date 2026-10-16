@@ -1,0 +1,60 @@
+# scripts/postmerge_order_selftest.cx (cx-private#1917) — scripts/postmerge_steps.cx's longest-first
+# order, on planted previous runs: a step's seconds are the MEDIAN of its rows in the last five
+# gate-prev logs (the upper middle of an even count), so a step the newest (selected) run did not
+# run still starts early, and one loaded run does not reorder the pool.
+# The 93fd77d2b tick: its previous run selected 94 of 144 steps, ledger-index-check (138 s) had no
+# row, started 653 s in and held the parallel phase to 791 s. Exit 0 = the order holds.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of postmerge_order_selftest.sh, cases A, C, B.
+#   $(TOOL_CX) --allow-all scripts/postmerge_order_selftest.cx [CX]      (from the repo root)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def row scope=public ($step $secs) [$cat ('STEP-END 2026-10-12T00:00:00Z ', $step, ' exit=0 seconds=', [$string $secs], "\n")]]
+[?def prev scope=public impure ($t $hh $rows)
+  [$io:write-file [$cat ($t, '/vcx/target/gate-prev-20261012-', $hh, '0000.log')] [$strings:join $rows '']]]
+[?def clear scope=public impure ($t)
+  [?for [in $f [?else [$io:glob [$cat ($t, '/vcx/target/gate-prev-*.log')]] ()]] [yield [$io:remove $f]]]]
+
+# order — postmerge_steps.cx's `order` verb over $steps in the planted checkout; its words.
+[?def order scope=public impure ($cx $t $steps)
+  [?let [= $r [$process:run ($cx, '--allow-read', '--allow-write', '--allow-subprocess', '--allow-env', '--allow-clock',
+                             'scripts/postmerge_steps.cx', [$cat ('--checkout=', $t)], 'order', [?splice $steps])]]
+    [?match $r [case [err$e] [$string $e@message]]
+      [else [$strings:join [$strings:split-whitespace [$cat ([$string $r@stdout], [$string $r@stderr])]] ' ']]]]]
+
+[?def check scope=public impure ($label $got $want)
+  [?let [= $ok [= $got $want]]
+        [= $_ [$say [?if $ok [then [$cat ('  ok   ', $label, ' (', $got, ')')]]
+                      [else [$cat ('  FAIL ', $label, ": want '", $want, "' got '", $got, "'")]]]]]
+    $ok]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $cx [?if [> [$count $argv] 1] [then [$nth $argv 2]] [else [$string [$env:executable-path]]]]]
+  [= $t [$string [$io:temp-dir 'cx-order-selftest.']]]
+  [= $_m [$io:make-dirs [$cat ($t, '/vcx/target')]]]
+  # six runs, oldest first by name: the oldest (outside the five) is the only one with `old`;
+  # a full run, then a selected run (the newest) that ran only `short` and `swing`
+  [= $_p1 [$prev $t '00' ([$row 'old' 900],)]]
+  [= $_p2 [$prev $t '01' ([$row 'ledger' 138], [$row 'short' 10], [$row 'swing' 5], [$row 'mid' 60])]]
+  [= $_p3 [?for [in $hh ('02', '03', '04')] [yield [$prev $t $hh ([$row 'mid' 50],)]]]]
+  [= $_p4 [$prev $t '05' ([$row 'short' 12], [$row 'swing' 99])]]
+  [= $a [$check 'A: the median of the last five runs (upper middle of an even count), unmeasured steps after in plan order'
+           [$order $cx $t ('short', 'new1', 'ledger', 'old', 'swing', 'mid', 'new2')]
+           'ledger swing mid short new1 old new2']]
+  # C: one loaded run (x 900 s once, 100 s four times) does not put x ahead of y (300 s every run)
+  [= $_c1 [$clear $t]]
+  [= $_c2 [?for [in $hh ('01', '02', '03', '04')] [yield [$prev $t $hh ([$row 'x' 100], [$row 'y' 300])]]]]
+  [= $_c3 [$prev $t '05' ([$row 'x' 900], [$row 'y' 310])]]
+  [= $c [$check 'C: one loaded run does not reorder the pool' [$order $cx $t ('x', 'y')] 'y x']]
+  [= $_b1 [$clear $t]]
+  [= $b [$check 'B: no previous run keeps the plan order' [$order $cx $t ('b', 'a', 'c')] 'b a c']]
+  [= $_r [?else [$io:remove-tree $t] null]]
+  [= $ok [and $a $c $b]]
+  [= $_o [$say [?if $ok [then 'postmerge-order-selftest OK'] [else 'postmerge-order-selftest FAILED']]]]
+  [$env:exit [?if $ok [then 0] [else 1]]]]
