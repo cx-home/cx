@@ -439,7 +439,7 @@ step_globs() {
     check-perf-settle-selftest) echo "flows/private-acts.cx scripts/perf_settle_selftest.cx" ;;
     # RULED: RUN-2: the keep-going selftest reads the `test:` recipe, its own
     # source and (#1758, B3) scripts/test_changed.sh's SERIAL_TAIL.
-    check-storm-keep-going)        echo "Makefile scripts/storm_keep_going_selftest.sh scripts/test_changed.sh" ;;
+    check-storm-keep-going)        echo "Makefile scripts/storm_keep_going_selftest.cx scripts/test_changed.sh" ;;
     # issue 1583 (RULED: RUN-5): the timings WRITER selftest reads the library
     # and its own source, and plants everything under mktemp.
     check-verification-timings)    echo "scripts/verification_timings_lib.sh scripts/verification_timings_selftest.sh" ;;

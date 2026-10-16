@@ -3016,7 +3016,7 @@ check-verification-budget-selftest:
 # gate before the tail.
 .PHONY: check-storm-keep-going
 check-storm-keep-going:
-	@sh scripts/storm_keep_going_selftest.sh
+	@$(TOOL_CX) --allow-all scripts/storm_keep_going_selftest.cx
 
 # ── check-verification-timings (issue 1583, RULED: RUN-5) ────────────────────
 # #1562's budget step shipped with no WRITER: every bound read NOT MEASURED and
