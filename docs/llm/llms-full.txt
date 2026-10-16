@@ -9568,17 +9568,17 @@ reading what the step checks.
 | 8 | `check-vcache-soundness-selftest` |  | `scripts/vcache_soundness_memo_selftest.cx` |
 | 9 | `check-build-failure-classifier` |  | `scripts/classify_v_build_failure.sh` |
 | 10 | `test-vcx-timing` |  | `v test deps/cx-core-code/vcx/timing/` |
-| 11 | `check-conformance-coverage` |  | `scripts/check_conformance_coverage.sh` |
+| 11 | `check-conformance-coverage` |  | `scripts/check_conformance_coverage.cx` |
 | 12 | `check-shim-archives` |  | `scripts/check_archive_alignment.sh` |
 | 13 | `abi-c-test` |  | — |
 | 14 | `check-v-fork` |  | `scripts/check_v_fork_patches.cx` |
 | 15 | `check-portable-links` |  | `scripts/check_portable_links.cx` |
 | 16 | `check-release-asset-links` |  | `scripts/release_asset_links_gate.cx` |
 | 17 | `check-serial-retry-rosters` |  | — |
-| 18 | `check-fixture-shard-manifest` |  | `scripts/check_fixture_shard_manifest.sh` |
+| 18 | `check-fixture-shard-manifest` |  | `scripts/check_fixture_shard_manifest.cx` |
 | 19 | `check-consolidation-manifests` |  | `scripts/consolidate_tests.sh` |
 | 20 | `check-bare-head-calls` |  | `scripts/bare_head_calls_selftest.cx` |
-| 21 | `test-vcx-suite` |  | `scripts/fixtures_census.sh` |
+| 21 | `test-vcx-suite` |  | `scripts/fixtures_census.cx` |
 | 22 | `test-vcx-code` |  | — |
 | 23 | `test-vcx-cmd` |  | `v test vcx/cmd/` |
 | 24 | `test-vcx-cx` |  | `v test deps/cx-core-data/vcx/fixtures/` |
@@ -9589,13 +9589,13 @@ reading what the step checks.
 | 29 | `check-no-legacy-try` |  | `scripts/check_no_legacy_try.cx` |
 | 30 | `check-pipefail-pipes` |  | `scripts/pipefail_pipe_gate.cx` |
 | 31 | `check-exec-redirect` |  | `scripts/exec_redirect_gate.cx` |
-| 32 | `check-exit-status-probe` |  | `scripts/exit_status_probe_gate.sh` |
+| 32 | `check-exit-status-probe` |  | `scripts/exit_status_probe_gate.cx` |
 | 33 | `check-build-slot` |  | `scripts/build_slot_selftest.cx` |
 | 34 | `check-bench-isolation` |  | `scripts/bench_isolation_selftest.sh` |
 | 35 | `check-no-infix-range` |  | `scripts/check_no_infix_range.cx` |
 | 36 | `check-no-cxl-token` |  | `scripts/check_no_cxl_token.cx` |
 | 37 | `listener-bind-gate` |  | `scripts/listener_bind_gate.cx` |
-| 38 | `check-no-consumer-terms` |  | `scripts/check_no_consumer_terms.sh` |
+| 38 | `check-no-consumer-terms` |  | `scripts/check_no_consumer_terms.cx` |
 | 39 | `secrets-scan` |  | `scripts/secrets_scan.cx` |
 | 40 | `check-version-consistency` | yes | `scripts/check_version_consistency.cx` |
 | 41 | `check-effect-alignment` |  | `v test deps/cx-core-code/vcx/tests/code_units_umbrella_test.v` |
@@ -9617,7 +9617,7 @@ reading what the step checks.
 | 57 | `docs-check` | yes, in the docs flow | `scripts/gen_docs/primer_build.cx` |
 | 58 | `primer-platform-check` | yes, in the docs flow | `scripts/gen_docs/primer_platform.cx` |
 | 59 | `ring-import-gate` |  | `scripts/ring_import_gate.sh` |
-| 60 | `gates-manifest-gate` |  | `scripts/gates_manifest_gate.sh` |
+| 60 | `gates-manifest-gate` |  | `scripts/gates_manifest_gate.cx` |
 | 61 | `advisory-audit` |  | `scripts/advisory_audit_check.cx` |
 | 62 | `property-gate` |  | `scripts/property_gate.cx` |
 | 63 | `spec-invariant-gate` |  | `scripts/spec_invariants.cx` |
@@ -9666,14 +9666,14 @@ reading what the step checks.
 | 106 | `test-db-real` |  | — |
 | 107 | `test-sso-interop` |  | `deps/cx-platform-sso/scripts/sso_interop.sh` |
 | 108 | `test-xpath-parity-cx` |  | `scripts/check_xpath_parity_fixtures.cx` |
-| 109 | `corpus-audit` |  | `scripts/corpus_audit.sh` |
+| 109 | `corpus-audit` |  | `scripts/corpus_audit.cx` |
 | 110 | `repr-guard` |  | `bench/repr/run.cx` |
 | 111 | `repr-guard-selftest` |  | `scripts/repr_guard_selftest.cx` |
 | 112 | `check-inmodule-test-roster` |  | — |
 | 113 | `check-build-input-roster` |  | `make -C deps/cx-core-code/vcx check-build-input-roster` |
 | 114 | `check-sync-cmd-split` |  | `scripts/sync_cmd_split_selftest.cx` |
 | 115 | `check-gitconfig-home` |  | `scripts/gitconfig_home_selftest.cx` |
-| 116 | `check-selection-manifest` |  | `scripts/check_selection_manifest.sh` |
+| 116 | `check-selection-manifest` |  | `scripts/check_selection_manifest.cx` |
 | 117 | `fmt-sweep-gate` |  | `scripts/fmt_corpus_sweep.cx` |
 | 118 | `test-playground-wasm-traps` |  | `scripts/test_playground_wasm_traps.mjs` |
 | 119 | `test-site-phone-width` |  | `scripts/test_site_phone_width.mjs` |
@@ -9684,7 +9684,7 @@ reading what the step checks.
 | 124 | `conformance-suites` |  | `scripts/conformance_suites.cx` |
 | 125 | `ledger-index-check` | yes | `scripts/ledger_index.cx` |
 | 126 | `ledger-edit-map-check` | yes | `scripts/ledger_edit_map_check.cx` |
-| 127 | `check-profile-gate-selection` |  | `scripts/profile_gate_selection_selftest.sh` |
+| 127 | `check-profile-gate-selection` |  | `scripts/profile_gate_selection_selftest.cx` |
 | 128 | `check-verification-budget` |  | `scripts/check_verification_budget.cx` |
 | 129 | `check-verification-budget-selftest` |  | `scripts/verification_budget_selftest.sh` |
 | 130 | `check-perf-settle-selftest` |  | `scripts/perf_settle_selftest.cx` |
