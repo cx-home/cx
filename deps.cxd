@@ -59,7 +59,7 @@ unchanged.
   [dep repo=cx-platform-identity sha=952cd692eff8c5f6327e9cd92061b817b9bf0455 module='cx-platform/session cx-platform/authz-store cx-platform/did-web cx-platform/vc-revocation' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-connector sha=3779bd862a37b1536af7cb9cb1b112e693771559 module='cx-platform/connector cx-platform/sync']
   [dep repo=cx-platform-secrets sha=8bf649eab3304abee93fe443b8bee8715d781a3a module='cx-platform/secrets']
-  [dep repo=cx-platform-fabric sha=0a28d4fb5031411690e5c7c01370b0f71da91935 module='cx-platform/fabric' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
+  [dep repo=cx-platform-fabric sha=37773356865b111b1963ad41ca51b154956c4764 module='cx-platform/fabric' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-xsp sha=1b57cf3077034ec0369b55125be7f78a140ffb8d module='cx-platform/xsp-auth' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-tooling sha=c919681fb84e23c3a1461f1d5623e24e56f62437 module=cx-tooling]
   [dep repo=cx-platform-xap sha=06e20b204f819c5f1e9985ac4608b26aea25f700 module='cx-platform/xap' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
