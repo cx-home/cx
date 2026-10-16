@@ -96,17 +96,42 @@
 [?const IDSH-COMMIT 'deb01933c28d6d576499a962fa17613ec2d75678']
 [?const IDSH-CUTOFF 1791091730]
 
-[?def git-new-argv scope=private pure [returns any] () ('git', 'log', SUBJECT-REF, [$concat '^' IDSH-COMMIT], '--format=%s')]
-[?def git-old-argv scope=private pure [returns any] () ('git', 'log', IDSH-COMMIT, '--format=%s')]
 
-# git-lines: the subjects one `git log` answers, each after `<mark>\t`, as
-# ('ok', <lines>) or ('refused', <why>).
+# IDSH-EXEMPT (IDSH-1, #1767; the integrator's RULING to core of
+# 2026-10-15T22:27:34Z) -- the commits on release/0.18, after IDSH-COMMIT,
+# whose subjects cite a token the grammar does not parse and which no
+# force-push may rewrite. Each is named by its full sha, so the exemption is
+# per COMMIT: the same token in any other subject is refused as before. An
+# exempt subject is read as history (mark 0000000000): its unparsed prose is
+# not judged, and every id it does parse must still resolve (#1447).
+#   4b845faed 132657bb3 eca8df2a9 1daef791e -- cx-private#1934 s2a cited
+#   `S2A-1934`; the decision is CXBLD-1934 (its ledger page says so).
+[?const IDSH-EXEMPT ('4b845faed9c078e1e2c83d0df7ef5334179fdc54',
+                     '132657bb30bacfd51a19088cad71694f38ee49a7',
+                     'eca8df2a9139a319b637b1e96c8386d6aaaea590',
+                     '1daef791e6e759ec0c46cfab68f40b67fcbb728e')]
+
+[?def git-new-argv scope=private pure [returns any] () ('git', 'log', SUBJECT-REF, [$concat '^' IDSH-COMMIT], '--format=%H%x09%s')]
+[?def git-old-argv scope=private pure [returns any] () ('git', 'log', IDSH-COMMIT, '--format=%H%x09%s')]
+
+# sha-line: a `<sha>\t<subject>` line as `<mark>\t<subject>` -- the history's
+# mark when the commit is in IDSH-EXEMPT -- and any other line as $other. git
+# answers every line in that shape; a planted subjects file may carry it too,
+# which is how the selftest proves the exemption is per commit (R).
+[?def sha-line scope=private pure [returns any] ($l $mark $other)
+  [?let [= $m [$re:find [$re:compile "^([0-9a-f]{40})\t(.*)$"] $l]]
+    [?match $m
+      [case () $other]
+      [else [?let [= $sha [$re:group $m 1]]
+              [= $hits [$count [?for [in $x IDSH-EXEMPT] [where [= $x $sha]] [yield $x]]]]
+              [$concat [?if [> $hits 0] [then '0000000000'] [else $mark]] "\t" [$re:group $m 2]]]]]]]
+
 [?def git-lines scope=private impure [returns any] ($argv $mark)
   [?let [= $r [$process:run $argv]]
     [?match $r
       [case [err$e] ('refused', [$concat "cannot run `" [$strings:join $argv " "] "` -- " [$string $e@message]])]
       [else [?if [= [$string $r@exit-code] '0']
-              [then ('ok', [?to-array [?for [in $l [$strings:split-lines [$string $r@stdout]]] [yield [$concat $mark "\t" $l]]]])]
+              [then ('ok', [?to-array [?for [in $l [$strings:split-lines [$string $r@stdout]]] [yield [$sha-line $l $mark [$concat $mark "\t" $l]]]]])]
               [else ('refused', [$concat "`" [$strings:join $argv " "] "` exited " [$string $r@exit-code] " -- "
                                          [$strings:trim [$string $r@stderr]]])]]]]]]
 
@@ -119,7 +144,8 @@
           [then [?let [= $t [$io:read-file $planted]]
                   [?match $t
                     [case [err$e] ('refused', [$concat "cannot read the planted subjects " $planted " -- " [$string $e@message]])]
-                    [else ('ok', [$strings:split-lines $t], [$concat "the subjects of " $planted])]]]]
+                    [else ('ok', [?to-array [?for [in $l [$strings:split-lines $t]] [yield [$sha-line $l '9999999999' $l]]]],
+                          [$concat "the subjects of " $planted])]]]]
           [else
             [?let [= $new [$git-lines [$git-new-argv] '9999999999']]
                   [= $old [$git-lines [$git-old-argv] '0000000000']]
