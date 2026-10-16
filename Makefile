@@ -1866,7 +1866,7 @@ test-deps-pins: build-vcx
 # component repositories over SSH the way dev2 does; a fine-grained token,
 # set as the CX_DEPS_TOKEN Actions secret, is honoured through a git
 # `insteadOf` rewrite when present, byte-identical to today when absent.
-# scripts/deps_bootstrap_selftest.sh (its own `--selftest` case, precedent:
+# scripts/deps_bootstrap_selftest.cx (its own `--selftest` case, precedent:
 # check-public-history-replace/#1675) proves RED (unset — the reported bug's
 # exact refusal) then GREEN (set — a different, authenticated-attempt
 # refusal, the token in no captured line either way). Pure shell, no cx: the

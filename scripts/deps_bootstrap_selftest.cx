@@ -1,0 +1,156 @@
+# scripts/deps_bootstrap_selftest.cx — fixture for CX_DEPS_TOKEN (SITE-1,
+# ledger/rulings_2026_09_26_owner_decisions_l35_l39.md, RULED: SITE-1, D83a,
+# RS-33). Invoked as `sh scripts/deps_bootstrap.sh --selftest` (its own
+# `--selftest` case, precedent: check-public-history-replace/#1675) and by
+# `make check-deps-bootstrap-token`.
+#
+# Fully offline and deterministic — no dependence on this box's own git
+# config (dev2 rewrites https://github.com/ to SSH in ~/.gitconfig.local, so
+# a LIVE fetch here would never reproduce the reported bug the way GitHub's
+# runner does) and no dependence on network reachability either way. A spy
+# `git` on PATH intercepts only the ONE fetch this fixture's row drives and
+# answers deterministically, exactly the way the real transport does:
+#
+#   RED   — auth_cfg absent (CX_DEPS_TOKEN unset): the spy answers with the
+#           EXACT text of the reported bug —
+#           "fatal: could not read Username for 'https://github.com': terminal
+#           prompts disabled" — and deps_bootstrap.sh (unset branch, no
+#           stderr capture — byte-identical to before this change) relays it
+#           straight through.
+#
+#   GREEN — auth_cfg present (CX_DEPS_TOKEN=dummy): the spy sees the `-c
+#           url.https://x-access-token:dummy@github.com/.insteadOf=…` argument
+#           on the SAME git invocation (proving the mechanism engaged) and
+#           answers with GitHub's real shape for a bad credential
+#           ("Invalid username or password" / "Authentication failed") —
+#           a DIFFERENT failure from RED's prompt refusal — and
+#           deps_bootstrap.sh's own (set) branch captures that text and never
+#           relays it, printing only its own sanitized refusal line instead.
+#
+#   A second, real (non-github, non-spied) row — a local bare repo — proves
+#   the ordinary fetch-and-checkout path is unaffected either way: same
+#   sha checked out in deps/<repo> regardless of CX_DEPS_TOKEN.
+#
+#   NEVER — across every line either run PRINTS (deps_bootstrap.sh's own
+#   captured stdout+stderr, `set -x` off throughout), the token string
+#   appears nowhere — run with CX_DEPS_TOKEN=dummy per the brief's own test.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of deps_bootstrap_selftest.sh — the same three
+# runs of the real deps_bootstrap.sh (RED, GREEN2, GREEN) against the same planted consumer, the
+# spy git a cx program (#! the cx running this selftest) answering exactly as the shell spy did
+# and handing every other call to the real git, each run's log written as > log 2>&1 wrote it,
+# the same checks, lines and exits. A run alive past the bound is killed (process:run's timeout)
+# and named HUNG with the same line; the shell's ps(1) listing of its tree is not repeated.
+#   $(TOOL_CX) --allow-all scripts/deps_bootstrap_selftest.cx
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def has-i scope=public ($s $n) [$strings:contains [$strings:lower $s] [$strings:lower $n]]]
+[?def read scope=public impure ($f) [?else [$io:read-file $f] '']]
+[?def which scope=public impure ($name)
+  [?let [= $hits [?to-sequence [?for [in $d [$strings:split [$env:var-or-default 'PATH' ''] ':']]
+                                     [where [?let [= $p [$cat ([?if [= $d ''] [then '.'] [else $d]], '/', $name)]]
+                                              [and [$io:is-file $p] [= [$strings:slice [$string [$io:stat $p]@permissions] 3 3] 'x']]]]
+                                     [yield [$cat ([?if [= $d ''] [then '.'] [else $d]], '/', $name)]]]]]
+    [?if [= [$count $hits] 0] [then ''] [else [$nth $hits 1]]]]]
+
+# The spy: case "$*" in the shell's two patterns; every other call is the real git's.
+[?def SPY scope=public ($cx)
+  [$cat ('#!', $cx, " --allow-all\n",
+         "[?lib 'cx-stdlib/io' as=io]\n[?lib 'cx-stdlib/env' as=env]\n[?lib 'cx-stdlib/process' as=process]\n[?lib 'cx-stdlib/strings' as=strings]\n",
+         "[?def err scope=public impure ($s) [$io:write-line [$env:stderr] $s]]\n",
+         "[?def after scope=public ($s $a $b) [?let [= $i [$strings:find $s $a]] [and [$present $i] [$strings:contains [$strings:slice $s $i [$strings:length $s]] $b]]]]\n",
+         "[?let [= $av [$env:argv]] [= $args [?to-sequence [?for [in $i [$range 2 [$count $av]]] [yield [$nth $av $i]]]]] [= $s [$strings:join $args ' ']]\n",
+         "      [= $repo 'cx-private-selftest-does-not-exist.git']\n",
+         "  [?if [$after $s 'ls-remote' $repo]\n",
+         "    [then [?if [= [$env:var-or-default 'SPY_LSREMOTE_OK' ''] '1']\n",
+         "            [then [?let [= $_ [$env:write-line \"1111111111111111111111111111111111111111\\tHEAD\"]] [$env:exit 0]]]\n",
+         "            [else [?let [= $_1 [$err 'remote: Invalid username or password.']] [= $_2 [$err \"fatal: Authentication failed for 'https://github.com/cx-home/cx-private-selftest-does-not-exist.git/'\"]] [$env:exit 128]]]]]\n",
+         "    [else [?if [$after $s 'fetch' $repo]\n",
+         "      [then [?if [$strings:contains $s 'x-access-token']\n",
+         "              [then [?let [= $_1 [$err 'remote: Invalid username or password.']] [= $_2 [$err \"fatal: Authentication failed for 'https://github.com/cx-home/cx-private-selftest-does-not-exist.git/'\"]] [$env:exit 1]]]\n",
+         "              [else [?let [= $_ [$err \"fatal: could not read Username for 'https://github.com': terminal prompts disabled\"]] [$env:exit 1]]]]]\n",
+         "      [else [?let [= $r [$process:run ([$env:var-or-default 'REAL_GIT' 'git'], [?splice $args]) capture={stdout: :inherit, stderr: :inherit}]]\n",
+         "              [$env:exit [?match $r [case [err$e] 127] [else $r@exit-code]]]]]]]]]\n")]]
+
+[?let
+  [= $self-root [$path:dirname [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]]
+  [= $self-cx [$string [$env:executable-path]]]
+  [= $work [$string [$io:temp-dir 'deps_bootstrap_selftest.']]]
+  [= $real-git [$which 'git']]
+  [= $token 'dummy']
+  [= $gh-url 'https://github.com/cx-home/cx-private-selftest-does-not-exist.git']
+  [= $needle-unprompted 'could not read Username']
+  [= $needle-auth-rejected 'Authentication failed']
+  [= $spydir [$cat ($work, '/spybin')]]
+  [= $_s1 [$io:make-dirs $spydir]]
+  [= $_s2 [$io:write-file [$cat ($spydir, '/git')] [$SPY $self-cx]]]
+  [= $_s3 [$process:run ('chmod', '+x', [$cat ($spydir, '/git')])]]
+  [= $local [$cat ($work, '/local-src')]]
+  [= $_l1 [$io:make-dirs $local]]
+  [= $_l2 [$process:run ($real-git, 'init', '-q', $local) capture=:both]]
+  [= $_l3 [$process:run ($real-git, '-C', $local, '-c', 'user.email=selftest@example.invalid', '-c', 'user.name=selftest', 'commit', '-q', '--allow-empty', '-m', 'selftest') capture=:both]]
+  [= $local-sha [$strings:trim-end-chars [$string [$process:run ($real-git, '-C', $local, 'rev-parse', 'HEAD') capture=:both]@stdout] "\n"]]
+  [= $consumer [$cat ($work, '/consumer')]]
+  [= $_c1 [$io:make-dirs $consumer]]
+  [= $_c2 [$io:write-file [$cat ($consumer, '/deps.cxd')]
+            [$cat ("[deps\n  [dep repo=cx-selftest-local sha=", $local-sha, " module=cx-selftest-local url='file://", $local, "']\n  [dep repo=cx-selftest-pin sha=0000000000000000000000000000000000000000 module=cx-selftest-pin url='", $gh-url, "']\n]\n")]]]
+  [= $bound [$strings:to-int [$env:var-or-default 'DEPS_BOOTSTRAP_SELFTEST_SECONDS' '120']]]
+  [= $path [$cat ($spydir, ':', [$env:var-or-default 'PATH' ''])]]
+  # run-bootstrap — one bounded run of the real deps_bootstrap.sh, its log as > log 2>&1 wrote it;
+  # 124 when it outlived the bound (killed, and named HUNG).
+  [= $bootstrap [?fn ($name $tok $lsok $log)
+    [?let [= $_r [?else [$io:remove-tree [$cat ($consumer, '/deps')]] null]]
+          [= $_w [$io:write-file $log '']]
+          [= $r [$process:run ('sh', [$cat ($self-root, '/scripts/deps_bootstrap.sh')], [$cat ($consumer, '/deps.cxd')], [$cat ($consumer, '/deps')])
+                   env={PATH: $path, REAL_GIT: $real-git, GIT_TERMINAL_PROMPT: '0', CX_DEPS_TOKEN: [?if [= $tok ''] [then null] [else $tok]],
+                        SPY_LSREMOTE_OK: [?if $lsok [then '1'] [else null]]}
+                   capture={stdout: {append: $log}, stderr: :stdout} timeout-ms=[* $bound 1000]]]
+      [?match $r
+        [case [err$e] [?let [= $_h [$cry [$cat ('deps_bootstrap_selftest: the ', $name, ' run HUNG — alive after ', [$string $bound], ' s; its process tree:')]]] 124]]
+        [else $r@exit-code]]]]]
+  [= $red-log [$cat ($work, '/red.log')]] [= $green-log [$cat ($work, '/green.log')]] [= $green2-log [$cat ($work, '/green2.log')]]
+  [= $red [$bootstrap 'RED' '' false $red-log]]
+  [= $green2 [$bootstrap 'GREEN2' $token true $green2-log]]
+  [= $green [$bootstrap 'GREEN' $token false $green-log]]
+  [= $_hung [?if [or [= $red 124] [= $green 124] [= $green2 124]]
+              [then [?let [= $_ [$cry [$cat ('deps_bootstrap_selftest: RED — a run hung (red=', [$string $red], ' green=', [$string $green], ' green2=', [$string $green2], '); its tree is above')]]]
+                          [= $_x [?else [$io:remove-tree $work] null]] [$env:exit 1]]]
+              [else null]]]
+  [= $rl [$read $red-log]] [= $gl [$read $green-log]] [= $g2l [$read $green2-log]]
+  [= $f1 [?if [= $red 0] [then [?let [= $_ [$cry [$cat ('deps_bootstrap_selftest: RED case unexpectedly succeeded — ', $red-log)]]] false]] [else true]]]
+  [= $f2 [?if [$has-i $rl $needle-unprompted] [then true]
+           [else [?let [= $_1 [$cry [$cat ("deps_bootstrap_selftest: RED case did not reproduce '", $needle-unprompted, "' — got:")]]] [= $_2 [$io:write-string [$env:stderr] $rl]] false]]]]
+  [= $f3 [?if [= $green 0] [then [?let [= $_ [$cry [$cat ('deps_bootstrap_selftest: GREEN case unexpectedly succeeded — ', $green-log)]]] false]] [else true]]]
+  [= $f4 [?if [$has-i $gl $needle-unprompted]
+           [then [?let [= $_1 [$cry 'deps_bootstrap_selftest: GREEN case still hit the unauthenticated prompt refusal — CX_DEPS_TOKEN was not honoured:']] [= $_2 [$io:write-string [$env:stderr] $gl]] false]]
+           [else true]]]
+  [= $f5 [?if [$has-i $gl $needle-auth-rejected]
+           [then [?let [= $_1 [$cry "deps_bootstrap_selftest: GREEN case relayed git's raw authentication-failure text instead of its own sanitized refusal:"]] [= $_2 [$io:write-string [$env:stderr] $gl]] false]]
+           [else true]]]
+  [= $f6 [?if [$strings:contains $gl 'deps_bootstrap: fetch refused for cx-selftest-pin'] [then true]
+           [else [?let [= $_1 [$cry 'deps_bootstrap_selftest: GREEN case did not print its own sanitized refusal line — got:']] [= $_2 [$io:write-string [$env:stderr] $gl]] false]]]]
+  [= $f7 [?if [$strings:contains $gl "CX_DEPS_TOKEN cannot read https://github.com/cx-home/cx-private-selftest-does-not-exist.git: the token's repository access must include cx-selftest-pin"] [then true]
+           [else [?let [= $_1 [$cry "deps_bootstrap_selftest: GREEN case did not name the token's missing repository access — got:"]] [= $_2 [$io:write-string [$env:stderr] $gl]] false]]]]
+  [= $f8 [?if [and [not [= $green2 0]] [$strings:contains $g2l 'the repository answers CX_DEPS_TOKEN but holds no commit 0000000000000000000000000000000000000000']] [then true]
+           [else [?let [= $_1 [$cry [$cat ('deps_bootstrap_selftest: GREEN2 case (repository readable, commit absent) did not refuse naming the absent commit — status ', [$string $green2], ', got:')]]]
+                       [= $_2 [$io:write-string [$env:stderr] $g2l]] false]]]]
+  [= $leaks [?to-sequence [?for [in $p (($red-log, $rl), ($green-log, $gl), ($green2-log, $g2l))]
+              [in $i [?let [= $ls [$strings:split [$nth $p 2] "\n"]] [$range 1 [?if [$strings:ends-with [$nth $p 2] "\n"] [then [- [$count $ls] 1]] [else [$count $ls]]]]]]
+              [where [$strings:contains [$nth [$strings:split [$nth $p 2] "\n"] $i] $token]]
+              [yield [$cat ([$nth $p 1], ':', [$string $i], ':', [$nth [$strings:split [$nth $p 2] "\n"] $i])]]]]]
+  [= $f9 [?if [= [$count $leaks] 0] [then true]
+           [else [?let [= $_1 [$cry 'deps_bootstrap_selftest: the token string leaked into captured output — never allowed:']] [= $_2 [$cry [$strings:join $leaks "\n"]]] false]]]]
+  [= $have0 [$process:run ($real-git, '-C', [$cat ($consumer, '/deps/cx-selftest-local')], 'rev-parse', 'HEAD') capture=:both]]
+  [= $have [?match $have0 [case [err$e] 'MISSING'] [else [?if [= $have0@exit-code 0] [then [$strings:trim-end-chars [$string $have0@stdout] "\n"]] [else 'MISSING']]]]]
+  [= $f10 [?if [= $have $local-sha] [then true]
+            [else [?let [= $_ [$cry [$cat ('deps_bootstrap_selftest: the local (non-github) pin did not end up at its pinned sha (', $have, ' != ', $local-sha, ') — the ordinary path regressed')]]] false]]]]
+  [= $_x [?else [$io:remove-tree $work] null]]
+  [?if [not [and $f1 $f2 $f3 $f4 $f5 $f6 $f7 $f8 $f9 $f10]] [then [$env:exit 1]]
+    [else [?let [= $_ [$say 'deps_bootstrap_selftest: ok — unset reproduces the reported bug, set changes the failure mode and never leaks the token, the ordinary (non-github) fetch path is unchanged']] [$env:exit 0]]]]]
