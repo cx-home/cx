@@ -653,7 +653,7 @@ step_globs() {
     check-release-asset-links)     echo 'dist/public/* scripts/release_asset_links_gate.cx scripts/lib/r22_profile_gate.sh flows/release.flow.cx flows/ci-acts.cx scripts/release_linux.sh scripts/release_profile_gate.sh' ;;
     # #1012's resurrection guards over the umbrella manifests: the manifests,
     # the driver and its selftest, and the umbrella test files they hold to.
-    check-consolidation-manifests) echo 'scripts/consolidation/* scripts/consolidate_tests.sh scripts/consolidate_tests.cx scripts/consolidate_tests_selftest.sh vcx/tests/*' ;;
+    check-consolidation-manifests) echo 'scripts/consolidation/* scripts/consolidate_tests.sh scripts/consolidate_tests.cx scripts/consolidate_tests_selftest.cx vcx/tests/*' ;;
     # the seam register against the platform + stdlib spec pages it is derived
     # from (scripts/check_composition_seams.cx reads spec/03-approved/{platform,stdlib}).
     check-composition-seams)       echo 'spec/* scripts/check_composition_seams.cx' ;;
