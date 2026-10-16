@@ -130,8 +130,8 @@ reading what the step checks.
 | 4 | `ring-svg-check` | yes, in the docs flow | `scripts/gen_site/ring_svg.cx` |
 | 5 | `check-no-ai-attribution` |  | `scripts/check_no_ai_attribution.cx` |
 | 6 | `check-public-history-replace` |  | `scripts/public_history_replace_selftest.cx` |
-| 7 | `check-vcache-soundness` |  | `scripts/vcache_soundness_memo.sh` |
-| 8 | `check-vcache-soundness-selftest` |  | `scripts/vcache_soundness_memo_selftest.sh` |
+| 7 | `check-vcache-soundness` |  | `scripts/vcache_soundness_memo.cx` |
+| 8 | `check-vcache-soundness-selftest` |  | `scripts/vcache_soundness_memo_selftest.cx` |
 | 9 | `check-build-failure-classifier` |  | `scripts/classify_v_build_failure.sh` |
 | 10 | `test-vcx-timing` |  | `v test deps/cx-core-code/vcx/timing/` |
 | 11 | `check-conformance-coverage` |  | `scripts/check_conformance_coverage.sh` |
@@ -153,8 +153,8 @@ reading what the step checks.
 | 27 | `test-vcx-sqlite` |  | `v test deps/cx-platform-store/vcx/store/store_sqlite_test.v` |
 | 28 | `check-prod-build` |  | `make -C deps/cx-core-code/vcx check-prod` |
 | 29 | `check-no-legacy-try` |  | `scripts/check_no_legacy_try.cx` |
-| 30 | `check-pipefail-pipes` |  | `scripts/pipefail_pipe_gate.sh` |
-| 31 | `check-exec-redirect` |  | `scripts/exec_redirect_gate.sh` |
+| 30 | `check-pipefail-pipes` |  | `scripts/pipefail_pipe_gate.cx` |
+| 31 | `check-exec-redirect` |  | `scripts/exec_redirect_gate.cx` |
 | 32 | `check-exit-status-probe` |  | `scripts/exit_status_probe_gate.sh` |
 | 33 | `check-build-slot` |  | `scripts/build_slot_selftest.cx` |
 | 34 | `check-bench-isolation` |  | `scripts/bench_isolation_selftest.sh` |

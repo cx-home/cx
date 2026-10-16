@@ -1,0 +1,144 @@
+# scripts/vcache_soundness_memo.cx (cx-private#1903) — one SOUND verdict of the V module-cache proof
+# per set of inputs, not one per run.
+#
+# WHY. check-vcache-soundness (scripts/vcache_soundness_gate.sh) is an adversarial proof of the V
+# COMPILER's -usecache key. It builds its own fixtures in a fresh temp root and reads nothing of
+# cx: no deps/, no vcx/, no libcx. Its verdict is a function of the compiler binary, the fork's
+# vlib, the C toolchain, the environment V reads (VFLAGS, VMODULES, VCACHE, CC), the OS and the
+# gate's own scripts. Yet every union and every landing gate re-proved it from scratch: 158 s +
+# 2 x 158 s of CPU per run (#1903's table on 715d2262a).
+#
+# WHAT. `vcache_soundness_memo.cx <name> <command…>` hashes those inputs into a key. When a GREEN
+# record for <name> under that key exists and is younger than CX_VCACHE_MEMO_MAX_AGE seconds
+# (default 43200, 12 h), it prints the recorded verdict lines, says MEMO, and exits 0. Otherwise
+# it runs the command (stdout and stderr together, printed when it ends). A green run records its
+# verdict lines under the key. A red run records nothing and exits with the command's own code,
+# so a red is re-proved every time, never remembered. The age bound re-proves on the clock as
+# well: the one input the key cannot see is the state of the shared V cache directory, which is
+# exactly what the gate's probes attack.
+#
+#   CX_VCACHE_MEMO=0          always run (and still record a green)
+#   CX_VCACHE_MEMO_DIR=<dir>  record store (default ~/.cache/cx/vcache-soundness, shared by every
+#                             checkout on the box, as the V cache itself is)
+#   CX_VCACHE_MEMO_MAX_AGE=N  seconds
+#   CX_VCACHE_MEMO_KEY_EXTRA  appended to the key (the memo's self-test uses it)
+#   CX_V                      the compiler (default <repo>/third_party/v/v)
+#
+# The fork tree is part of the key through `git rev-parse HEAD` plus a hash of its tracked diff, so
+# an edited vlib file misses even before a commit. An unreadable input (no git, no compiler) makes
+# the key the literal word `unkeyed`, and an unkeyed run never hits.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of vcache_soundness_memo.sh (run on TOOL_CX).
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/time'    as=time]
+[?lib 'cx-stdlib/hash'    as=hash]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+# The command it runs may be a cx command line (the self-test's planted gate): this [argspec]
+# names its grant so cx's post-FILE flag warning stays quiet (cx-home/cx-core-code#144).
+[?const ARG_SPEC [argspec [flag name="allow-all" type=bool]]]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def sha scope=public ($s) [$hash:sha256-hex $s]]
+[?def filesha scope=public impure ($p)
+  [?if [$io:is-file $p] [then [?else [$hash:sha256-hex [$io:read-file-bytes $p]] 'missing']] [else 'missing']]]
+[?def ev scope=public impure ($k) [$env:var-or-default $k '']]
+# run-text — a command's stdout + stderr, or absence when it cannot start or exits non-zero.
+[?def run-text scope=public impure ($argv)
+  [?let [= $r [$process:run $argv]]
+    [?match $r [case [err$e] ()] [else [?if [= $r@exit-code 0] [then [$cat ([$string $r@stdout], [$string $r@stderr])]] [else ()]]]]]]
+[?def all-text scope=public impure ($argv)
+  [?let [= $r [$process:run $argv]]
+    [?match $r [case [err$e] ''] [else [$cat ([$string $r@stdout], [$string $r@stderr])]]]]]
+# which — the first PATH entry holding $cmd (a path given as such is taken as it is).
+[?def which scope=public impure ($cmd)
+  [?if [$strings:contains $cmd '/'] [then [?if [$io:is-file $cmd] [then $cmd] [else ()]]]
+    [else [?let [= $hits [?for [in $d [$strings:split [$ev 'PATH'] ':']]
+                           [where [and [not [= $d '']] [$io:is-file [$cat ($d, '/', $cmd)]]]]
+                           [yield [$cat ($d, '/', $cmd)]]]]
+            [?if [= [$count $hits] 0] [then ()] [else [$nth $hits 1]]]]]]]
+[?def first16 scope=public ($s)
+  [$strings:join [?for [in $i [$range 1 16]] [yield [?else [$nth [$strings:split $s ''] $i] '']]] '']]
+[?def lines-after scope=public ($text $head)
+  [?for [in $l [$strings:split-lines $text]] [where [$strings:starts-with $l $head]]
+    [yield [$strings:replace-first $l $head '']]]]
+
+# key-inputs — the lines the key hashes, or absence when an input cannot be read.
+[?def key-inputs scope=public impure ($name $v $scripts $argv)
+  [?let [= $vroot [$strings:join [?let [= $p [$strings:split $v '/']]
+                                   [?for [in $i [$range 1 [- [$count $p] 1]]] [yield [$nth $p $i]]]] '/']]
+        [= $head [$run-text ('git', '-C', $vroot, 'rev-parse', 'HEAD')]]
+        [= $ccp [$which [$env:var-or-default 'CC' 'cc']]]
+    [?if [or [not [$io:is-file $v]] [not [$present $head]] [not [$present $ccp]]] [then ()]
+      [else ([$cat ('name ', $name)],
+             [$cat ('v-binary ', [$filesha $v])],
+             [$cat ('v-head ', [$strings:trim $head])],
+             [$cat ('v-diff ', [$sha [$all-text ('git', '-C', $vroot, 'diff', 'HEAD')]])],
+             [$cat ('cc ', $ccp, ' ', [$filesha $ccp])],
+             [$cat ('cc-version ', [$sha [$all-text ($ccp, '--version')]])],
+             [$cat ('os ', [$strings:trim [$all-text ('uname', '-srm')]])],
+             [$cat ('env VFLAGS=', [$ev 'VFLAGS'], ' VMODULES=', [$ev 'VMODULES'], ' VCACHE=', [$ev 'VCACHE'],
+                    ' CC=', [$ev 'CC'], ' VEXE=', [$ev 'VEXE'])],
+             [?splice [?for [in $f $scripts]
+                        [yield [$cat ('script ', [$nth [$strings:split $f '/'] [$count [$strings:split $f '/']]], ' ', [$filesha $f])]]]],
+             [$cat ('extra ', [$ev 'CX_VCACHE_MEMO_KEY_EXTRA'])],
+             [$cat ('argv ', [$strings:join $argv ' '])])]]]]
+
+[?let
+  [= $args [$env:argv]]
+  [= $_u [?if [< [$count $args] 3]
+           [then [?let [= $_ [$cry 'usage: vcache_soundness_memo.cx <name> <command…>']] [$env:exit 2]]] [else null]]]
+  [= $name [$nth $args 2]]
+  [= $cmd [?for [in $i [$range 3 [$count $args]]] [yield [$nth $args $i]]]]
+  [= $topr [$process:run ('git', 'rev-parse', '--show-toplevel')]]
+  [= $repo [$strings:trim [$string $topr@stdout]]]
+  [= $v [$env:var-or-default 'CX_V' [$cat ($repo, '/third_party/v/v')]]]
+  [= $dir [$env:var-or-default 'CX_VCACHE_MEMO_DIR' [$cat ([$env:var-or-default 'HOME' '/tmp'], '/.cache/cx/vcache-soundness')]]]
+  [= $max-age [?else [$strings:to-int [$env:var-or-default 'CX_VCACHE_MEMO_MAX_AGE' '43200']] 43200]]
+  [= $scripts ([$cat ($repo, '/scripts/vcache_soundness_gate.sh')], [$cat ($repo, '/scripts/vcache_soundness_selftest.sh')],
+               [$cat ($repo, '/scripts/vcache_soundness_memo.cx')])]
+  [= $inputs [$key-inputs $name $v $scripts $cmd]]
+  [= $key [?if [$present $inputs] [then [$sha [$cat ([$strings:join $inputs "\n"], "\n")]]] [else 'unkeyed']]]
+  [= $rec [$cat ($dir, '/', $name, '-', $key, '.rec')]]
+  [= $now [$time:to-unix [$time:utc-now]]]
+  [= $_hit [?if [and [not [= [$ev 'CX_VCACHE_MEMO'] '0']] [not [= $key 'unkeyed']] [$io:is-file $rec]]
+             [then [?let [= $text [?else [$io:read-file $rec] '']]
+                         [= $ats [$lines-after $text 'at-epoch ']]
+                         [= $at [?if [= [$count $ats] 0] [then -1] [else [?else [$strings:to-int [$nth $ats 1]] -1]]]]
+                     [?if [and [>= $at 0] [<= [- $now $at] $max-age]]
+                       [then [?let [= $_l [?for [in $l [$lines-after $text 'line ']] [yield [$say $l]]]]
+                                   [= $when [$lines-after $text 'at ']]
+                                   [= $_m [$say [$cat ($name, ': MEMO — SOUND verdict recorded ', [?if [= [$count $when] 0] [then ''] [else [$nth $when 1]]],
+                                                       ' (', [$string [$idiv [- $now $at] 60]], ' min ago) for key ', [$first16 $key],
+                                                       ': the compiler, the fork\'s vlib and diff, cc, the OS, V\'s environment and the gate\'s scripts are unchanged; re-proved after ',
+                                                       [$string $max-age], ' s or on any change (CX_VCACHE_MEMO=0 forces a run; cx-private#1903)')]]]
+                               [$env:exit 0]]]
+                       [else null]]]]
+             [else null]]]
+  [= $_d [?else [$io:make-dirs $dir] null]]
+  [= $tf [$io:temp-file 'vcache-memo.' '.out']]
+  [= $out $tf@path]
+  [= $_c [$io:close $tf]]
+  [= $h [$process:spawn $cmd stdin=:discard stdout=$out stderr=[$cat ($out, '.err')]]]
+  [= $rc [?match $h [case [err$e] 127] [else [?else [$process:wait $h] 127]]]]
+  [= $text [$cat ([?else [$io:read-file $out] ''], [?else [$io:read-file [$cat ($out, '.err')]] ''])]]
+  [= $_p [?if [= $text ''] [then null] [else [$io:write-string [$env:stdout] $text]]]]
+  [= $_r [?if [and [= $rc 0] [not [= $key 'unkeyed']]]
+           [then [?let [= $keep [?for [in $l [$strings:split-lines $text]]
+                                  [where [or [$strings:starts-with $l 'PROBE'] [$strings:starts-with $l 'vcache-soundness']
+                                             [$strings:starts-with $l '  ok '] [$strings:starts-with $l '  C ']]]
+                                  [yield [$cat ('line ', $l)]]]]
+                       [= $body [$strings:join ([$cat ('at-epoch ', [$string $now])],
+                                                [$cat ('at ', [$time:format-with-format [$time:utc-now] "yyyy-MM-dd'T'HH:mm:ss'Z'"])],
+                                                [$cat ('key ', $key)],
+                                                [?splice $keep],
+                                                [?splice [?for [in $i $inputs] [yield [$cat ('input ', $i)]]]]) "\n"]]
+                       [= $_w [$io:write-file [$cat ($rec, '.tmp')] [$cat ($body, "\n")]]]
+                   [$io:rename [$cat ($rec, '.tmp')] $rec]]]
+           [else null]]]
+  [= $_x [?do [?else [$io:remove $out] null] [?else [$io:remove [$cat ($out, '.err')]] null]]]
+  [$env:exit $rc]]
