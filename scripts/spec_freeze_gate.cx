@@ -123,12 +123,13 @@ cd025ce4aea894f5c901e5bdb6c404e0c772e84b #1230 — the root Scope copied at spaw
     [else [?let [= $r [$process:run ('find', 'ledger/', '-type', 'f', '-name', '*.md', '-print0') capture=:both]]
             [?match $r [case [err$e] null]
               [else [?if [not [= $r@exit-code 0]] [then null]
-                      [else [?to-sequence [?for [in $p [$strings:split [$string $r@stdout] [$strings:from-code-point 0]]] [where [not [= $p '']]]
-                                            [yield [$bytes:to-string-latin1 [?else [$io:read-file-bytes $p] [$bytes:from-string-utf8 '']]]]]]]]]]]]]]
-# in-ledger — the fragment as a fixed byte string, found in any ledger file.
+                      [else [$strings:join [?to-sequence [?for [in $p [$strings:split [$string $r@stdout] [$strings:from-code-point 0]]] [where [not [= $p '']]]
+                                                [yield [$bytes:to-string-latin1 [?else [$io:read-file-bytes $p] [$bytes:from-string-utf8 '']]]]]]
+                                            [$strings:from-code-point 0]]]]]]]]]]
+# in-ledger — grep -qrF over ledger/**/*.md: the files are one text joined by NUL, which no fragment
+# (a word of a commit message) carries, so a match never spans two files; one search per fragment.
 [?def in-ledger scope=public ($texts $frag)
-  [?let [= $needle [$bytes:to-string-latin1 [$bytes:from-string-utf8 $frag]]]
-    [> [$count [?for [in $t $texts] [where [$strings:contains $t $needle]] [yield 1]]] 0]]]
+  [$strings:contains $texts [$bytes:to-string-latin1 [$bytes:from-string-utf8 $frag]]]]
 
 # token-recorded — at least one id fragment of any RULED: token payload is found (fixed-string) in the
 # ruling stores. Fragments split on + , / and whitespace; each is tried whole and with a trailing (…)
@@ -145,12 +146,16 @@ cd025ce4aea894f5c901e5bdb6c404e0c772e84b #1230 — the root Scope copied at spaw
     [?if [= [$count $wanted] 0] [then [t found=false infra=false]]
       [else [?let [= $_t null]
               [?if [= $texts null] [then [t found=false infra=true]]
-                [else [t found=[> [$count [?for [in $f $wanted]
-                                             [where [or [$in-ledger $texts $f]
-                                                        [?let [= $i [$strings:find $f '(']]
-                                                              [= $base [?if [$present $i] [then [?if [<= $i 1] [then ''] [else [$strings:slice $f 1 [- $i 1]]]]] [else $f]]]
-                                                          [and [not [= $base $f]] [>= [$strings:length $base] 2] [$in-ledger $texts $base]]]]]
-                                             [yield 1]]] 0]
+                # the shell's loop: the first fragment (or its base before the first '(') found in the
+                # ledger ends the search.
+                [else [t found=[?loop [= $k 1]
+                                 [?if [> $k [$count $wanted]] [then [break false]]
+                                   [else [?let [= $f [$nth $wanted $k]]
+                                     [?if [or [$in-ledger $texts $f]
+                                              [?let [= $i [$strings:find $f '(']]
+                                                    [= $base [?if [$present $i] [then [?if [<= $i 1] [then ''] [else [$strings:slice $f 1 [- $i 1]]]]] [else $f]]]
+                                                [and [not [= $base $f]] [>= [$strings:length $base] 2] [$in-ledger $texts $base]]]]
+                                       [then [break true]] [else [continue [+ $k 1]]]]]]]]
                          infra=false]]]]]]]]
 
 [?def INFRA-LEDGER scope=public () 'SPEC-FREEZE-GATE INFRA FAILURE: grep over ledger/ errored (rc 2) — cannot adjudicate; rerun the gate.']
@@ -165,8 +170,10 @@ cd025ce4aea894f5c901e5bdb6c404e0c772e84b #1230 — the root Scope copied at spaw
 
 # check-commit — TEXTS is the ledger (ledger-text, null when it cannot be read); 0 clean (or adjudicated), 1 a violation; exits 3 on a ledger read failure and 128
 # when the sha does not resolve (git's own message on stderr), as set -e did in --check-commit mode.
-[?def check-commit scope=public impure ($sha $strict $texts)
-  [?let [= $rp [$git ('rev-parse', $sha)]]
+# PATHS — the commit's paths when the range's one git log pass already read them (its sha is then
+# the full sha git log printed, so neither rev-parse nor git show runs again); null for --check-commit.
+[?def check-commit scope=public impure ($sha $strict $texts $paths)
+  [?let [= $rp [?if [= $paths null] [then [$git ('rev-parse', $sha)]] [else [r ok=true rc=0 out=$sha err='']]]]
     [?if [not $rp@ok]
       [then [?let [= $_ [?if [= $rp@err ''] [then null] [else [$io:write-string [$env:stderr] $rp@err]]]]
               [?if $strict [then [$env:exit $rp@rc]] [else 1]]]]
@@ -176,7 +183,7 @@ cd025ce4aea894f5c901e5bdb6c404e0c772e84b #1230 — the root Scope copied at spaw
                 [then [?let [= $row [$strings:join $rows "\n"]] [= $i [$strings:find $row ' ']]
                         [= $_ [$say [$cat ('spec-freeze-gate: ', $sha, ' ADJUDICATED (', [?if [$present $i] [then [$strings:slice $row [+ $i 1] [$strings:length $row]]] [else $row]], ')')]]]
                         0]]
-                [else [?if [not [$mixed [$git ('show', '--format=', '--name-only', $sha)]@out]] [then 0]
+                [else [?if [not [$mixed [?if [= $paths null] [then [$git ('show', '--format=', '--name-only', $sha)]@out] [else $paths]]]] [then 0]
                   [else [?let
                     # A commit message is NEVER empty (the subject line always exists) — an empty read
                     # is a transient infrastructure failure (measured 2026-08-23 under release-verify's
@@ -212,13 +219,13 @@ cd025ce4aea894f5c901e5bdb6c404e0c772e84b #1230 — the root Scope copied at spaw
       [else [?to-sequence [?for [in $chunk [$strings:split $g@out $soh]] [where [not [= $chunk '']]]
               [yield [?let [= $ls [$strings:split $chunk "\n"]] [= $sha [$nth $ls 1]]
                            [= $paths [$strings:join [?to-sequence [?for [in $i [$range 2 [$count $ls]]] [yield [$nth $ls $i]]]] "\n"]]
-                       [?if [or [$mixed $paths] [> [$count [?for [in $a $adj] [where [= $a $sha]] [yield 1]]] 0]] [then $sha] [else '']]]]]]]]]]
+                       [?if [or [$mixed $paths] [> [$count [?for [in $a $adj] [where [= $a $sha]] [yield 1]]] 0]] [then [$cat ($sha, "\t", $paths)]] [else '']]]]]]]]]]
 
 [?let [= $av [$env:argv]]
       [= $mode [?if [> [$count $av] 1] [then [$nth $av 2]] [else '']]]
   [?match $mode
     [case '--check-commit'
-      [$env:exit [$check-commit [?if [> [$count $av] 2] [then [$nth $av 3]] [else '']] true [$ledger-text]]]]
+      [$env:exit [$check-commit [?if [> [$count $av] 2] [then [$nth $av 3]] [else '']] true [$ledger-text] null]]]
     [case '--staged'
       [?if [and [$mixed [$git ('diff', '--cached', '--name-only')]@out] [= [$env:var-or-default 'CX_RULED' ''] '']]
         [then [?do [$cry 'SPEC-FREEZE: the staged change touches normative spec AND implementation.']
@@ -241,7 +248,8 @@ cd025ce4aea894f5c901e5bdb6c404e0c772e84b #1230 — the root Scope copied at spaw
       [= $texts [$ledger-text]]
       [?if [= $cands null]
         [then [?do [$cry [$cat ('SPEC-FREEZE-GATE INFRA FAILURE: git log over ', $epoch, '..HEAD failed — cannot adjudicate; rerun the gate.')]] [$env:exit 3]]]
-        [else [?let [= $rcs [?to-sequence [?for [in $s $cands] [where [not [= $s '']]] [yield [$check-commit $s false $texts]]]]]
+        [else [?let [= $rcs [?to-sequence [?for [in $s $cands] [where [not [= $s '']]] [yield [?let [= $tab [$strings:find $s "\t"]]
+                                                                         [$check-commit [$strings:slice $s 1 [- $tab 1]] false $texts [$strings:slice $s [+ $tab 1] [$strings:length $s]]]]]]]]
                     [= $rc [?if [or [= $rc0 1] [> [$count [?for [in $x $rcs] [where [= $x 1]] [yield 1]]] 0]] [then 1] [else 0]]]
                 [?do [?if [= $rc 0] [then [$say [$cat ('spec-freeze-gate: clean (', $epoch, '..HEAD)')]]] [else null]]
                      [$env:exit $rc]]]]]]]]]
