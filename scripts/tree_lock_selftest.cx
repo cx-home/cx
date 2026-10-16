@@ -1,0 +1,72 @@
+# scripts/tree_lock_selftest.cx — tree_lock.cx's own test (CXMACH-1), on a lock name no build uses.
+#   $(TOOL_CX) --allow-all scripts/tree_lock_selftest.cx [CX]
+# Cases: (A) a free lock runs the command with the lock in CX_TREE_LOCKS_HELD, passes its exit code
+# and frees the lock; (B) a held lock makes a second caller wait, say so once, then run; (C) a lock
+# whose holder pid is dead is broken at once; (D) a nested call for a held lock runs at once;
+# (E) TREE_LOCK_TIMEOUT bounds the wait: exit 75 naming the holder, the command not run.
+# Run from the checkout root (the lock lives in its vcx/target). Exit 0 all held; 1 otherwise.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/time'    as=time]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def NAME scope=public () 'selftest-tree-lock']
+
+[?def lock scope=public impure ($cx $args $env)
+  [?let [= $t0 [$time:monotonic-now]]
+        [= $r [$process:run ($cx, '--allow-all', 'scripts/tree_lock.cx', [$NAME], 'the selftest tree', [?splice $args])
+                env=$env timeout-ms=60000]]
+    [?match $r [case [err$e] [res rc=-1 out='' err=[$string $e@message] ms=0]]
+      [else [res rc=$r@exit-code out=[$string $r@stdout] err=[$string $r@stderr]
+                 ms=[$idiv [- [$time:monotonic-now] $t0] 1000000]]]]]]
+
+[?def check scope=public impure ($name $ok $detail)
+  [?let [= $tag [?if $ok [then '  ok   '] [else 'FAILED ']]]
+        [= $_ [$say [$cat ($tag, $name, ' — ', $detail)]]]
+    $ok]]
+
+# hold — a detached holder: a cx that takes the lock around `sleep $secs`, its parent gone at once.
+[?def hold scope=public impure ($cx $secs)
+  [$process:spawn ($cx, '--allow-all', 'scripts/tree_lock.cx', [$NAME], 'the selftest tree', 'sleep', $secs)
+    stdin=:discard stdout=:discard stderr=:discard]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $cx [?if [> [$count $argv] 1] [then [$nth $argv 2]] [else [$env:executable-path]]]]
+  [= $lk [$cat ([$env:cwd], '/vcx/target/', [$NAME], '.lock')]]
+  [= $_c [?else [$io:remove-tree $lk] null]]
+
+  [= $a [$lock $cx ('sh', '-c', 'echo "$CX_TREE_LOCKS_HELD"; exit 3') null]]
+  [= $fa [$check 'A free lock' [and [= $a@rc 3] [$strings:contains $a@out [$cat ([$NAME], '.lock')]] [not [$io:is-directory $lk]]]
+           [$cat ('rc ', [$string $a@rc], ', held=', [$strings:trim $a@out])]]]
+
+  [= $h [$hold $cx '3']]
+  [= $_w [$process:run ('sleep', '1')]]
+  [= $b [$lock $cx ('true',) null]]
+  [= $_h [$process:wait $h]]
+  [= $fb [$check 'B held lock waits' [and [= $b@rc 0] [>= $b@ms 1000]
+                                          [= [$count [?for [in $l [$strings:split-lines $b@err]] [where [$strings:contains $l 'waiting for pid']] [yield 1]]] 1]]
+           [$cat ('rc ', [$string $b@rc], ' after ', [$string $b@ms], ' ms; ', [$strings:trim $b@err])]]]
+
+  [= $_d [?do [$io:make-dirs $lk] [$io:write-file [$cat ($lk, '/pid')] "2147483646\n"] [$io:write-file [$cat ($lk, '/cmd')] "gone\n"]]]
+  [= $c [$lock $cx ('true',) null]]
+  [= $fc [$check 'C stale holder broken' [and [= $c@rc 0] [< $c@ms 5000]] [$cat ('rc ', [$string $c@rc], ' after ', [$string $c@ms], ' ms')]]]
+
+  [= $_n [?do [$io:make-dirs $lk] [$io:write-file [$cat ($lk, '/pid')] [$cat ([$string [$env:pid]], "\n")]]]]
+  [= $d [$lock $cx ('true',) [map CX_TREE_LOCKS_HELD=[$cat ('/elsewhere:', $lk)]]]]
+  [= $fd [$check 'D nested call runs at once' [and [= $d@rc 0] [< $d@ms 5000]] [$cat ('rc ', [$string $d@rc], ' after ', [$string $d@ms], ' ms')]]]
+
+  [= $e [$lock $cx ('sh', '-c', 'echo RAN') [map TREE_LOCK_TIMEOUT='2']]]
+  [= $fe [$check 'E bounded wait' [and [= $e@rc 75] [not [$strings:contains $e@out 'RAN']]
+                                      [$strings:contains $e@err [$cat ('held by pid ', [$string [$env:pid]])]]]
+           [$cat ('rc ', [$string $e@rc], '; ', [$strings:trim $e@err])]]]
+  [= $_r [?else [$io:remove-tree $lk] null]]
+
+  [= $all ($fa, $fb, $fc, $fd, $fe)]
+  [= $fails [$count [?for [in $x $all] [where [not $x]] [yield 1]]]]
+  [= $_s [$say [$cat ('tree-lock-selftest: ', [$string [- [$count $all] $fails]], ' of ', [$string [$count $all]], ' held')]]]
+  [$env:exit [?if [= $fails 0] [then 0] [else 1]]]]

@@ -18,7 +18,7 @@
 # only other vlib modules needs no rebuild (user programs compile vlib from source). The rebuild is the fork's own `v self` into
 # a side file, then an atomic rename over the binary, so a recipe already running keeps
 # its inode and one starting mid-rebuild never finds the binary absent. The previous
-# binary is kept as v_old. Callers serialize through scripts/tree_lock.sh (v-pin) and
+# binary is kept as v_old. Callers serialize through scripts/tree_lock.cx (v-pin) and
 # this script re-checks after the lock, so concurrent steps rebuild once.
 #
 # No binary, or no compiler sources beside it (a bare PATH v): nothing to do — the cx

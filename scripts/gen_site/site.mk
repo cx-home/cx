@@ -49,7 +49,7 @@ site: guide
 	@$(SITE_CX_BIN) --allow-read --allow-write --allow-subprocess $(SITE_GEN)/site_assemble.cx
 
 # site-check and site-index-check render docs/guide/ and read it under
-# scripts/docs_tree_lock.sh (the Makefile's guide-render-gate note): the
+# the docs-tree lock (scripts/tree_lock.cx) (the Makefile's guide-render-gate note): the
 # post-merge flow runs them beside guide-render-gate as separate makes.
 .PHONY: site-check-locked site-index-check-locked
 site-check: build-vcx

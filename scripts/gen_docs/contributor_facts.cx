@@ -275,7 +275,7 @@
 
 # step-program: the first program the recipe names; a recipe that names none
 # and hands its body to another target through `$(MAKE) [-opts] <target>` (a
-# step run under scripts/docs_tree_lock.sh: `guide-render-gate` runs
+# step run under the docs-tree lock (scripts/tree_lock.cx): `guide-render-gate` runs
 # `guide-render-gate-locked`) is read through that target's recipe, one hop.
 [?const RX-DELEGATE "\\$\\(MAKE\\)(?:\\s+-[-a-z]+)*\\s+([a-z][a-z0-9-]*)"]
 

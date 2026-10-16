@@ -585,7 +585,7 @@ check-gitconfig-home:
 # side file, atomic rename), once per checkout under the v-pin tree lock.
 .PHONY: v-pin-fresh
 v-pin-fresh:
-	@sh $(CURDIR)/scripts/tree_lock.sh v-pin third_party/v/v sh $(CURDIR)/scripts/v_pin_fresh.sh $(CURDIR)/third_party/v
+	@$(TOOL_CX) --allow-all $(CURDIR)/scripts/tree_lock.cx v-pin third_party/v/v sh $(CURDIR)/scripts/v_pin_fresh.sh $(CURDIR)/third_party/v
 
 # CX_STAMP_ROOT=$(CURDIR) (D91a, #1591 item K14, on every recursive call into
 # the cx-core-code pin below): `commit` in `cx --version` names the tree the
@@ -809,11 +809,11 @@ wasm-fresh-gate:
 # stale and each ran build-playground; the other's build_libcx_wasm.sh removed
 # libcx-sync.js before it relinked it, and mermaid, its own build and freshness
 # proof done, read "no node-loadable wasm bundle under dist/wasm/". The check and
-# the build now run under scripts/tree_lock.sh (vcx/target/wasm-bundle.lock): the
+# the build now run under scripts/tree_lock.cx (vcx/target/wasm-bundle.lock): the
 # second step waits, finds the first one's bundle fresh, and does not rebuild.
 .PHONY: wasm-bundle-fresh wasm-bundle-fresh-locked
 wasm-bundle-fresh:
-	@sh $(CURDIR)/scripts/tree_lock.sh wasm-bundle dist/wasm/ $(MAKE) --no-print-directory wasm-bundle-fresh-locked
+	@$(TOOL_CX) --allow-all $(CURDIR)/scripts/tree_lock.cx wasm-bundle dist/wasm/ $(MAKE) --no-print-directory wasm-bundle-fresh-locked
 # check_wasm_fresh.sh compares the bundle with vcx/ + stdlib/ + VERSION, not with the
 # compiler: a V binary newer than the bundle (v-pin-fresh rebuilt it after a fork bump,
 # #1899) means the bundle was compiled by the previous compiler and is rebuilt too.
@@ -1110,11 +1110,11 @@ guide-check: build-vcx
 ## The post-merge flow runs guide-render-gate, site-check and docs-check (via
 ## site-index-check) each as its own make (#1817), and each renders docs/guide/
 ## before it reads it: on 73a02bbd4 site-check's render removed index.html under
-## this one. scripts/docs_tree_lock.sh holds one render-and-read per checkout;
+## this one. The docs-tree lock (scripts/tree_lock.cx) holds one render-and-read per checkout;
 ## the *-locked target is the body, run under the lock (re-entrant for the
 ## nested site-check -> guide-render-gate-locked path). The prerequisites stay on
 ## the outer target so the lock is never held across a build.
-DOCS_TREE_LOCK = sh $(CURDIR)/scripts/docs_tree_lock.sh
+DOCS_TREE_LOCK = $(TOOL_CX) --allow-all $(CURDIR)/scripts/tree_lock.cx docs-tree "docs/guide/ and site/"
 guide-render-gate: build-vcx
 	@$(DOCS_TREE_LOCK) $(MAKE) --no-print-directory guide-render-gate-locked
 .PHONY: guide-render-gate-locked
@@ -1640,6 +1640,11 @@ DEPS_CX_GIVEN := $(CX_BIN)
 DEPS_CX_MAIN = $(shell git -C "$(CURDIR)" worktree list --porcelain 2>/dev/null | sed -n '1s/^worktree //p')
 DEPS_CX_FOUND = $(shell for c in "$(CURDIR)/deps/cx-core-code/vcx/target/cx" "$(DEPS_CX_MAIN)/vcx/target/cx" "$$(command -v cx 2>/dev/null)" "$(HOME)/.local/bin/cx"; do [ -n "$$c" ] && [ -x "$$c" ] && { echo "$$c"; break; }; done)
 deps-sync deps-check deps-cx deps-present: CX_BIN ?= $(DEPS_CX_FOUND)
+
+# TOOL_CX (CXMACH-1): the cx that runs this tree's tooling programs (scripts/*.cx) from a recipe
+# that may run before build-vcx — the v-pin lock wraps the V compiler's own rebuild. CX_BIN when
+# given, else the first of DEPS_CX_FOUND's places; a released cx serves (tree_lock.cx runs on one).
+TOOL_CX = $(if $(CX_BIN),$(CX_BIN),$(if $(DEPS_CX_FOUND),$(DEPS_CX_FOUND),cx))
 
 .PHONY: deps-sync deps-check deps-cx
 deps-cx:
