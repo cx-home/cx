@@ -34,7 +34,7 @@ DIR=deps/cx-core-code/vcx/target/fixtures
 [ -f "$MANIFEST" ] || { echo "fixtures-census: no $MANIFEST" >&2; exit 1; }
 
 # The manifest documents its own row shape in a [doc [# … #]] block; drop the
-# prose before reading the rows (see check_fixture_shard_manifest.sh).
+# prose before reading the rows (see check_fixture_shard_manifest.cx).
 SELECTED="$DIR/.selected-shards"
 if [ -f "$SELECTED" ]; then
   selected=1

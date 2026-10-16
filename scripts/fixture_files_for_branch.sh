@@ -134,7 +134,7 @@ else
 fi
 
 # The corpus this grader walks — derived from the directories, never listed, the
-# same way check_fixture_shard_manifest.sh derives it. A .cxd that lands in a
+# same way check_fixture_shard_manifest.cx derives it. A .cxd that lands in a
 # ring directory is in the walk the moment it lands.
 corpus=$(for d in stdlib platform x xap; do
 	for f in conformance/$d/*.cxd; do [ -e "$f" ] && echo "$f"; done

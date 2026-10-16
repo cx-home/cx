@@ -4082,7 +4082,7 @@ check-serial-retry-rosters:
 # every shard row names ONE test file, which `make fixtures` launches once.
 .PHONY: check-fixture-shard-manifest
 check-fixture-shard-manifest:
-	@bash scripts/check_fixture_shard_manifest.sh
+	@$(TOOL_CX) --allow-read --allow-write scripts/check_fixture_shard_manifest.cx
 	@sh scripts/run_fixture_shards_selftest.sh
 
 # ── fixtures (#1448, RULED: 1448-a) — the grader's ONE-COMMAND form ─────────

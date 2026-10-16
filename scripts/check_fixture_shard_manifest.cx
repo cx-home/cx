@@ -1,0 +1,137 @@
+# scripts/check_fixture_shard_manifest.cx (#1448, RULED: 1448-a) — the partition of the
+# stdlib corpus across grader shards is COMPLETE and DISJOINT, or the step is red.
+#
+# 1448-a splits `deps/cx-core-code/vcx/tests/code_eval_fixtures_test.v`'s single-threaded walk
+# over the module corpus into shard test files the V runner's parallel jobs
+# carry. That buys 12–25 minutes off every run and introduces exactly one
+# new failure mode: a module file assigned to NO shard is graded by nothing,
+# while every step stays green. That is the vacuous-gate class this repo keeps
+# paying for (#1127, #1134, #1180, #1209, #1212), and this guard is the answer
+# to it — the same shape as `check-serial-retry-rosters`, which exists because
+# a roster row naming a deleted file silently disabled its retry class.
+#
+# Five properties, each red-on-synthetic:
+#   1. every corpus file the walk discovers is named by EXACTLY ONE shard. That
+#      walk is the UNION #1427-c left behind: conformance/{stdlib,platform,x,
+#      xap}/*.cxd, the ring-legible directories the specs sit in plus the `x/`
+#      tier and the XAP suites;
+#   2. so are the two files that belong to no ring directory — extended.cxd
+#      (joined to this walk by #1379) and the Ring-0 codec suite xml_codec.cxd;
+#   3. every [file name=…] row resolves to a file that EXISTS under
+#      conformance/;
+#   4. every [shard … test=…] row names a test file that EXISTS;
+#   5. every deps/cx-core-code/vcx/tests/code_eval_fixtures_shard*_test.v in the tree (since
+#      cx-private#1917 the one runner, code_eval_fixtures_shards_test.v) has a
+#      manifest row — a shard file with no row grades nothing and passes.
+#
+# The rows are read as text (two shapes, by pattern), not parsed as CX, so the guard runs on
+# the Makefile's TOOL_CX before this tree's cx is built; the manifest's own [doc [# … #]] block
+# SPELLS the two row shapes while explaining them, so the prose is dropped before the rows are
+# read — a guard that reads its own documentation as data is a guard with a false row in it.
+# The repository is the one this program sits in (its own path, two levels up).
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of check_fixture_shard_manifest.sh, the
+# same lines and exit codes (the sets as sorted lists, multiset differences as comm(1) took
+# them). Exit 0 OK; 1 a broken property.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat ($parts) [$strings:join $parts '']]
+[?def say impure ($s) [$env:write-line $s]]
+[?def hit ($m) [> [?else $m@start -1] -1]]
+[?def occurrences ($x $xs) [$count [?for [in $y $xs] [where [= $y $x]] [yield $y]]]]
+# uniq -d over a sorted list: each value that occurs more than once, once
+[?def dups ($sorted) [?for [in $x [$distinct $sorted]] [where [> [$occurrences $x $sorted] 1]] [yield $x]]]
+[?def rep ($x $n) [?if [<= $n 0] [then ()] [else ($x, [?splice [$rep $x [- $n 1]]])]]]
+# comm -23 A B over sorted lists: A's lines B does not match, one B line cancelling one A line
+[?def minus ($a $b)
+  [?for [in $x [$distinct $a]] [in $y [$rep $x [- [$occurrences $x $a] [$occurrences $x $b]]]] [yield $y]]]
+
+# sed '/\[doc \[#/,/#\]\]/d': from a line holding `[doc [#` through the next LATER line holding `#]]`
+[?def drop-doc ($lines $in)
+  [?if [= [$count $lines] 0] [then ()]
+    [else [?let [= $l [$nth $lines 1]]
+                [= $rest [?for [in $p [?enumerate $lines]] [where [> [$nth $p 1] 1]] [yield [$nth $p 2]]]]
+      [?if $in
+        [then [$drop-doc $rest [not [$strings:contains $l '#]]']]]]
+        [else [?if [$strings:contains $l '[doc [#'] [then [$drop-doc $rest true]]
+                [else ($l, [?splice [$drop-doc $rest false]])]]]]]]]]
+
+[?let
+  [= $root [$path:dirname [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]]
+  [= $in-root [?fn $p [$path:join $root $p]]]
+  [= $manifest 'deps/cx-core-code/vcx/tests/fixtures_grader/fixture_shards.cxd']
+  [= $_m [?if [$io:is-file [$in-root $manifest]] [then null]
+           [else [?do [$say [$cat ('check-fixture-shard-manifest: no ', $manifest)]] [$env:exit 1]]]]]
+  [= $rows [$drop-doc [$strings:split-lines [$io:read-file [$in-root $manifest]]] false]]
+  [= $shard-rx [$re:compile "^[ \\t]*\\[shard[ \\t]+name=([^\\] \\t]+)[ \\t]+test=([^\\] \\t]+)"]]
+  [= $file-rx [$re:compile "^[ \\t]*\\[file[ \\t]+name=([^\\] \\t]+)"]]
+  [= $shards [?for [in $l $rows] [where [$hit [$re:find $shard-rx $l]]]
+               [yield [?let [= $m [$re:find $shard-rx $l]] {name: [$re:group $m 1], test: [$re:group $m 2]}]]]]
+  [= $assigned [?for [in $l $rows] [where [$hit [$re:find $file-rx $l]]] [yield [$re:group [$re:find $file-rx $l] 1]]]]
+  # ── shard rows ──
+  [= $_s [?if [= [$count $shards] 0]
+           [then [?do [$say [$cat ('check-fixture-shard-manifest: ', $manifest, ' names NO shard — a manifest that')]]
+                      [$say '  partitions nothing would leave the whole stdlib corpus ungraded.']
+                      [$env:exit 1]]]
+           [else null]]]
+  [= $dupnames [$dups [$sort [?for [in $s $shards] [yield $s.name]]]]]
+  [= $f1 [?if [> [$count $dupnames] 0]
+           [then [?let [= $_p [?do [$say 'check-fixture-shard-manifest: shard name(s) declared twice —']
+                      [?for [in $n $dupnames] [yield [$say [$cat ('    ', $n)]]]]]] true]]
+           [else false]]]
+  [= $f2 [> [$count [?for [in $s $shards]
+                      [where [not [or [$io:is-file [$in-root $s.test]] [$io:is-file [$in-root [$cat ('deps/cx-core-code/', $s.test)]]]]]]
+                      [yield [$say [$cat ("check-fixture-shard-manifest: shard '", $s.name, "' names test file '", $s.test, "', which does not exist")]]]]] 0]]
+  # ── property 5: every shard test file in the tree has a row ──
+  [= $claimed [$sort [?for [in $s $shards] [yield $s.test]]]]
+  [= $tree-tests [$sort [?for [in $f [?else [$io:glob [$in-root 'deps/cx-core-code/vcx/tests/code_eval_fixtures_shard*_test.v']] ()]]
+                          [yield [$strings:replace-first $f [$cat ($root, '/deps/cx-core-code/')] '']]]]]
+  [= $orphan-tests [$minus $tree-tests $claimed]]
+  [= $f3 [?if [> [$count $orphan-tests] 0]
+           [then [?let [= $_p [?do [$say 'check-fixture-shard-manifest: shard test file(s) with NO manifest row —']
+                      [$say '  a shard whose name is not in the manifest grades nothing and passes:']
+                      [?for [in $t $orphan-tests] [yield [$say [$cat ('    ', $t)]]]]]] true]]
+           [else false]]]
+  # ── properties 1–3: the assignment is complete, disjoint and resolvable ──
+  # The manifest spells a corpus file the way the walk joins it: relative to
+  # conformance/, so `stdlib/ux.cxd`, `platform/flow.cxd`, and the two loose
+  # files by their own names.
+  [= $assigned-sorted [$sort $assigned]]
+  [= $dupfiles [$dups $assigned-sorted]]
+  [= $f4 [?if [> [$count $dupfiles] 0]
+           [then [?let [= $_p [?do [$say 'check-fixture-shard-manifest: corpus file(s) assigned to MORE THAN ONE shard —']
+                      [$say '  a case graded twice is counted twice in the census:']
+                      [?for [in $f $dupfiles] [yield [$say [$cat ('    ', $f)]]]]]] true]]
+           [else false]]]
+  [= $missing [?for [in $f $assigned]
+                [where [not [or [$io:is-file [$in-root [$cat ('conformance/', $f)]]]
+                                [$io:is-file [$in-root [$cat ('deps/cx-core-code/conformance/', $f)]]]]]]
+                [yield $f]]]
+  [= $f5 [?if [> [$count $missing] 0]
+           [then [?let [= $_p [?do [$say 'check-fixture-shard-manifest: manifest row(s) naming a corpus file that does not exist —']
+                      [?for [in $f $missing] [yield [$say [$cat ('    conformance/', $f)]]]]]] true]]
+           [else false]]]
+  # The corpus the walk actually discovers — derived, never listed, so a NEW
+  # .cxd in any of these directories is unassigned the moment it lands. Kept in
+  # step with fixtures_grader's corpus_dirs / corpus_loose.
+  [= $corpus [$sort ([?splice [?for [in $d ('stdlib', 'platform', 'x', 'xap')]
+                                    [in $base ('conformance/', 'deps/cx-core-code/conformance/')]
+                                    [in $f [?else [$io:glob [$in-root [$cat ($base, $d, '/*.cxd')]]] ()]]
+                                [yield [$cat ($d, '/', [$path:basename $f])]]]],
+                     '../deps/cx-core-data/conformance/extended.cxd',
+                     'xml_codec.cxd')]]
+  [= $unassigned [$minus $corpus [$distinct $assigned-sorted]]]
+  [= $f6 [?if [> [$count $unassigned] 0]
+           [then [?let [= $_p [?do [$say 'check-fixture-shard-manifest: corpus file(s) in NO shard —']
+                      [$say '  a .cxd graded by nothing is a green that guards nothing. Add each to a']
+                      [$say [$cat ('  shard in ', $manifest, " (and re-measure if the shard's budget is spent):")]]
+                      [?for [in $f $unassigned] [yield [$say [$cat ('    conformance/', $f)]]]]]] true]]
+           [else false]]]
+  [?if [or $f1 $f2 $f3 $f4 $f5 $f6] [then [$env:exit 1]]
+    [else [?do [$say [$cat ('check-fixture-shard-manifest OK — ', [$string [$count $corpus]], ' corpus file(s) partitioned across ',
+                            [$string [$count $shards]], ' shard(s), every one assigned exactly once')]]
+               [$env:exit 0]]]]]

@@ -78,7 +78,7 @@ GRADER_LOAD=$(sample_load_1m)
 
 # The manifest documents its own row shapes inside a [doc [# … #]] block, so
 # the prose is dropped before the rows are read — a reader that reads its own
-# documentation as data has a false row in it (check_fixture_shard_manifest.sh
+# documentation as data has a false row in it (check_fixture_shard_manifest.cx
 # makes the same cut). What comes out is one `<shard> <test> <file>` triple per
 # [file] row, in manifest order.
 OWNERS=$(sed '/\[doc \[#/,/#\]\]/d' "$MANIFEST" \
