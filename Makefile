@@ -2283,7 +2283,7 @@ listener-bind-gate:
 # workload language (users / tracked entities / events / deployments).
 .PHONY: check-no-consumer-terms
 check-no-consumer-terms:
-	@bash scripts/check_no_consumer_terms.sh
+	@$(TOOL_CX) --allow-read --allow-write --allow-subprocess --allow-env scripts/check_no_consumer_terms.cx
 
 # ── SECRETS-SCAN gate (K13, RULED: D59a, RS-28, CXF-1) — the other
 # public-flip precondition beside check-no-consumer-terms above: a component
