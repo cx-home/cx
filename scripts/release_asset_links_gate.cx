@@ -226,6 +226,6 @@
                     [$env:exit 0]]]
                 [else
                   [?let [= $_ [$cry [$concat "release-asset-links-gate FAILED (#1670) -- these staged assets will not load off the build machine:\n" $report
-                                "\n  the fix is at LINK time (scripts/portable_links.sh / vcx's sqlite decision, RESULTS.md _gate_evidence/pipeline_1670/); a staged asset failing here means the class was reintroduced upstream of packaging."]]]
+                                "\n  the fix is at LINK time (scripts/portable_links.cx / vcx's sqlite decision, RESULTS.md _gate_evidence/pipeline_1670/); a staged asset failing here means the class was reintroduced upstream of packaging."]]]
                     [$env:exit 1]]]]]]]]]]
 ]

@@ -10,7 +10,7 @@
    carried an absolute build path as libcx.dylib's OWN install name, which
    every consumer linking against it would have baked into their binary.
 
-   scripts/portable_links.sh repairs both at link time. This gate is the
+   scripts/portable_links.cx repairs both at link time. This gate is the
    half that matters more: it makes the CLASS impossible to reintroduce
    rather than fixing the instance. Two invariants, per shipped Mach-O:
 
@@ -112,6 +112,6 @@
           [else
             [?let [= $_ [$io:write-line [$env:stderr]
                           [$concat "check-portable-links FAILED -- these artifacts will not load off this machine (#1102):\n" $report
-                            "\n  scripts/portable_links.sh repairs this at link time; a path it cannot repoint is refused there on purpose."]]]
+                            "\n  scripts/portable_links.cx repairs this at link time; a path it cannot repoint is refused there on purpose."]]]
               [$env:exit 1]]]]]]]
 ]

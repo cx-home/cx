@@ -596,7 +596,7 @@ step_globs() {
     # and the shard test files it holds to it.
     check-fixture-shard-manifest)  echo 'vcx/tests/fixtures_grader/fixture_shards.cxd conformance/stdlib/* conformance/platform/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/code_eval_fixtures_shards_test.v scripts/check_fixture_shard_manifest.sh' ;;
     # #1370: the shim archives' alignment — the rules that write them and the checker.
-    check-shim-archives)           echo 'vcx/Makefile scripts/check_archive_alignment.sh vcx/deps/re2_shim/* vcx/arrow/shim/*' ;;
+    check-shim-archives)           echo 'vcx/Makefile scripts/check_archive_alignment.cx vcx/deps/re2_shim/* vcx/arrow/shim/*' ;;
     # pure shell over canned logs — its only inputs are the classifier and the
     # SKIP_UNUSED_ESCAPE_PROBE that consumes it (\#1337).
     check-build-failure-classifier) echo 'Makefile scripts/classify_v_build_failure.sh' ;;
@@ -645,7 +645,7 @@ step_globs() {
     check-contract-revision)       echo 'spec/* vcx/* scripts/check_contract_revision.sh scripts/gen_contract_revision.sh' ;;
     # reads the BUILT artifacts' link surface (vcx/target/cx, libcx.dylib), so
     # anything that changes what is linked into them is an input.
-    check-portable-links)          echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/check_portable_links.cx" ;;
+    check-portable-links)          echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/check_portable_links.cx scripts/portable_links.cx" ;;
     # #1670: reads whatever is CURRENTLY STAGED under dist/public/ (usually
     # nothing — it SKIPs then) plus the gate itself and the release scripts
     # that stage/call it, so a change to the staging shape or the gate logic

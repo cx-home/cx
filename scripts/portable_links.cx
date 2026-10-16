@@ -1,0 +1,90 @@
+# scripts/portable_links.cx ARTIFACT… — make a freshly linked macOS artifact loadable on a machine
+# that is not this one (#1102).
+#
+# IT RUNS INSIDE THE BUILD, as a post-link step on the artifact the build is producing — the one
+# case that matters most is repairing the `cx` binary itself. cx-core-code's vcx/Makefile runs it
+# through its cx_helper seam when the front door passes TOOL_CX, and the front door passes a COPY
+# (vcx/target/tool-cx, VCX_TOOL_CX): a build-recipe helper never runs as the artifact it repairs.
+#
+# THE DEFECT. Building under devbox (Nix) resolves `-lsqlite3` to the Nix store, and a Nix dylib's
+# install name is its ABSOLUTE store path:
+#
+#   /nix/store/<hash>-sqlite-3.53.3/lib/libsqlite3.dylib
+#
+# That path exists only on the build machine, and the artifacts carry no LC_RPATH, so on any other
+# machine dyld fails before `main` — every subcommand, not just the sqlite ones. Measured on the
+# shipped v0.17.0 tarball AND on the installed binary; Linux is unaffected because it links by  (version-literal-ok: incident history)
+# soname.
+#
+# THE FIX. Repoint each Nix load path at the copy macOS itself provides. Done at LINK time rather
+# than at packaging time on purpose: what we test is then what we ship, instead of the tested
+# artifact and the shipped one differing in exactly the field that broke.
+#
+# Anything we cannot repoint is REFUSED LOUDLY rather than rewritten to a guess. A Nix path
+# repointed at a `/usr/lib` file that does not exist is the same defect relocated — still dead in
+# dyld, just harder to find. So adding an engine that links a library macOS does not ship (libpq,
+# libssh2) fails the build here, which is where it should fail.
+#
+# A redistributable dylib must not carry an absolute BUILD path as its own install name either.
+# The shipped v0.17.0 libcx.dylib carried /Users/<maintainer>/git-repos/cx/cx-private/vcx/target/  (version-literal-ok: incident history)
+# libcx.dylib, which every consumer linking against it would bake into their own binary. @rpath is
+# the redistributable spelling; the Go binding already passes -Wl,-rpath for exactly this.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of portable_links.sh, the same lines and exits.
+# Exit 0 = every artifact repaired (or nothing to do; off macOS a no-op); 1 = a refusal or a failure.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+# fail — the lines on stderr, then 1 (a finding).
+[?def fail scope=public impure ($lines) [?let [= $_ [?to-sequence [?for [in $l $lines] [yield [$cry $l]]]]] 1]]
+
+# Libraries macOS provides itself, so a Nix-built reference can be repointed at the OS copy. Keep
+# this list short and justified — every addition is a claim that the OS ships that library on every
+# supported macOS.
+[?def SYSTEM-PROVIDED scope=public () ('libsqlite3.dylib', 'libz.dylib', 'libiconv.2.dylib', 'libc++.1.dylib', 'libcurl.4.dylib')]
+[?def member scope=public ($x $xs) [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+# tool — a command's stdout, '' when it could not run (the shell's 2>/dev/null and `|| true`).
+[?def out-of scope=public impure ($argv)
+  [?let [= $r [$process:run $argv capture={stdout: :pipe, stderr: :discard}]] [?match $r [case [err$e] ''] [else [$string $r@stdout]]]]]
+[?def ok scope=public impure ($argv)
+  [?let [= $r [$process:run $argv capture={stdout: :inherit, stderr: :discard}]] [?match $r [case [err$e] false] [else [= $r@exit-code 0]]]]]
+# after-first — `tail -n +2`: every line after the first.
+[?def after-first scope=public ($s)
+  [?let [= $ls [$strings:split-lines $s]] [?to-sequence [?for [in $i [$range 2 [$count $ls]]] [yield [$nth $ls $i]]]]]]
+
+# set-id — a .dylib's install name becomes @rpath/<base>; false when install_name_tool fails.
+[?def set-id scope=public impure ($a)
+  [?if [not [$strings:ends-with $a '.dylib']] [then true]
+    [else [?let [= $base [$path:basename $a]]
+                [= $current [$strings:join [$after-first [$out-of ('otool', '-D', $a)]] "\n"]]
+            [?if [= $current [$cat ('@rpath/', $base)]] [then true]
+              [else [$ok ('install_name_tool', '-id', [$cat ('@rpath/', $base)], $a)]]]]]]]
+
+# repair — 0 when the artifact is clean after the repair, 1 on a refusal or a failure.
+[?def repair scope=public impure ($a)
+  [?if [not [$io:is-file $a]] [then 0]
+    [else [?let [= $s1 [?if [$set-id $a] [then 0]
+                         [else [$fail ([$cat ('portable-links: FAILED to set the install name of ', $a)],)]]]]
+                [= $firsts [?to-sequence [?for [in $l [$after-first [$out-of ('otool', '-L', $a)]]]
+                                           [yield [?let [= $w [$strings:split-whitespace $l]] [?if [= [$count $w] 0] [then ''] [else [$nth $w 1]]]]]]]]
+                [= $paths [?to-sequence [?for [in $p $firsts] [where [$strings:starts-with $p '/nix/store/']] [yield $p]]]]
+                [= $rs [?to-sequence [?for [in $p $paths]
+                         [yield [?let [= $base [$path:basename $p]]
+                                  [?if [$member $base [$SYSTEM-PROVIDED]]
+                                    [then [?if [$ok ('install_name_tool', '-change', $p, [$cat ('/usr/lib/', $base)], $a)] [then 0]
+                                            [else [$fail ([$cat ('portable-links: FAILED to repoint ', $base, ' in ', $a)],)]]]]
+                                    [else [$fail ([$cat ('portable-links: REFUSING ', $a, ' — it loads ', $p, ', and macOS does not provide ', $base, '.')],
+                                                      'portable-links: repointing it at /usr/lib would ship a dangling path, which is the same defect moved.',
+                                                      'portable-links: either vendor/static-link that library, or add it to system_provided with a reason (#1102).')]]]]]]]]
+            [?if [or [= $s1 1] [$member 1 $rs]] [then 1] [else 0]]]]]]
+
+[?if [not [= [$env:os-name] 'macos']] [then [$env:exit 0]]
+  [else [?let [= $av [$env:argv]]
+              [= $rs [?to-sequence [?for [in $i [$range 2 [$count $av]]] [yield [$repair [$nth $av $i]]]]]]
+          [$env:exit [?if [$member 1 $rs] [then 1] [else 0]]]]]]

@@ -1,0 +1,69 @@
+# scripts/check_archive_alignment.cx ARCHIVE… — every object member of each ar archive must begin
+# on an 8-byte boundary (#1370).
+#
+# Apple's ld refuses a 64-bit Mach-O archive member that does not:
+#   ld: 64-bit mach-o member 'cx_re2_shim.o' not 8-byte aligned in 'libcx_re2_shim.a'
+# The GNU-style `ar` that is first on PATH inside devbox pads members to 2 bytes, so an archive it
+# writes links under the devbox linker and fails under the Apple toolchain three steps later, in
+# code the author never touched. This walks the `ar` headers and fails HERE, loudly, naming the
+# member. Exit 0 = every archive aligned; 1 = a member is not (or a file is not an archive);
+# 2 = usage.
+#
+# Layout walked: 8-byte magic `!<arch>\n`, then per member a 60-byte header (name 16 · mtime 12 ·
+# uid 6 · gid 6 · mode 8 · size 10 · fmag 2). A BSD long name `#1/N` puts the N-byte name FIRST in
+# the data, so the object begins N bytes after the header; GNU `/N` names live in the `//` table
+# and the object begins at the header's end. The symbol table (`__.SYMDEF…`, `/`) is data, not
+# Mach-O, and is skipped. Members are padded to 2 bytes.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of check_archive_alignment.sh, the same lines.
+# cx-core-code's vcx/Makefile runs it through its cx_helper seam when the front door passes TOOL_CX:
+#   $(TOOL_CX) --allow-all scripts/check_archive_alignment.cx ARCHIVE…
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/bytes'   as=bytes]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def P scope=public ($a) [$cat ('check_archive_alignment: ', $a, ': ')]]
+
+# field — bytes [from, to) of the archive (0-based, clamped to its end) read as latin-1 text,
+# NULs dropped as the shell's command substitution dropped them.
+[?def field scope=public ($b $from $to)
+  [?let [= $n [$bytes:length $b]] [= $s [?if [> $from $n] [then $n] [else $from]]] [= $e [?if [> $to $n] [then $n] [else $to]]]
+    [$strings:replace [$bytes:to-string-latin1 [$bytes:slice $b $s $e]] [$strings:from-code-point 0] '']]]
+
+# check — the findings for one archive, one line each, in walk order.
+[?def check scope=public impure ($a)
+  [?if [not [$io:is-file $a]] [then ([$cat ([$P $a], 'no such file')],)]
+    [else [?let [= $b [$io:read-file-bytes $a]] [= $size [$bytes:length $b]]
+      [?if [not [= [$field $b 0 7] '!<arch>']] [then ([$cat ([$P $a], 'not an ar archive')],)]
+        [else [?loop [= $off 8] [= $members 0] [= $acc ()]
+          [?if [>= $off $size]
+            [then [break ([?splice $acc], [?splice [?if [= $members 0] [then ([$cat ([$P $a], 'no object members')],)] [else ()]]])]]
+            [else [?let [= $name [$strings:trim-end-chars [$field $b $off [+ $off 16]] ' ']]
+                        [= $msz [$strings:replace [$field $b [+ $off 48] [+ $off 58]] ' ' '']]
+              [?if [not [$re:matches [$re:compile '^[0-9]+$'] $msz]]
+                [then [break ([?splice $acc], [$cat ([$P $a], 'malformed member header at offset ', [$string $off])],
+                              [?splice [?if [= $members 0] [then ([$cat ([$P $a], 'no object members')],)] [else ()]]])]]
+                [else [?let [= $data [+ $off 60]]
+                            [= $long [$strings:starts-with $name '#1/']]
+                            [= $n [?if $long [then [$strings:to-int [$strings:slice $name 4 [$strings:length $name]]]] [else 0]]]
+                            [= $obj [+ $data $n]]
+                            [= $real [?if $long [then [$field $b $data [+ $data $n]]] [else $name]]]
+                            [= $skip [or [$strings:starts-with $real '__.SYMDEF'] [= $real '/'] [= $real '//'] [= $real '']]]
+                            [= $bad [and [not $skip] [not [= [% $obj 8] 0]]]]
+                            [= $next [+ $data [$strings:to-int $msz]]]
+                        [continue [?if [= [% $next 2] 1] [then [+ $next 1]] [else $next]]
+                                  [?if $skip [then $members] [else [+ $members 1]]]
+                                  ([?splice $acc],
+                                   [?splice [?if $bad [then ([$cat ([$P $a], "member '", $real, "' begins at byte ", [$string $obj], ' (mod 8 = ',
+                                                                  [$string [% $obj 8]], ") — Apple's ld refuses the archive")],)] [else ()]]])]]]]]]]]]]]]]]
+
+[?let [= $args [?to-sequence [?for [in $i [$range 2 [$count [$env:argv]]]] [yield [$nth [$env:argv] $i]]]]]
+  [?if [= [$count $args] 0]
+    [then [?do [$io:write-line [$env:stderr] [$cat ('usage: ', [$nth [$env:argv] 1], ' ARCHIVE...')]] [$env:exit 2]]]
+    [else [?let [= $lines [?to-sequence [?for [in $a $args] [in $l [$check $a]] [yield $l]]]]
+            [?do [?if [= [$count $lines] 0] [then null] [else [$say [$strings:join $lines "\n"]]]]
+                 [$env:exit [?if [= [$count $lines] 0] [then 0] [else 1]]]]]]]]
