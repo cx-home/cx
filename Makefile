@@ -6111,7 +6111,7 @@ stage-web-component:
 # post-merge run, not by hand (scripts/spec_invariants_exempt.cxd names it).
 .PHONY: test-web-component-offline
 test-web-component-offline: stage-web-component
-	@bash scripts/test_web_component_offline.sh
+	@$(TOOL_CX) --allow-all scripts/test_web_component_offline.cx
 
 # ── #1370 — the shim archives are linkable by Apple's ld ──────────────────────
 # Every object member of deps/cx-core-code/vcx/target/libcx_re2_shim.a (and libcx_arrow_shim.a

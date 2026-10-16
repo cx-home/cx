@@ -582,7 +582,7 @@ step_globs() {
     # a cx-core-code runner compiled -prod with this tree's V.
     # #1730: the two programs whose def calls were bare heads, and their selftest.
     check-bare-head-calls)         echo 'scripts/bare_head_calls_selftest.cx bench/parallel-alloc/measure.cx scripts/consolidate_tests.cx' ;;
-    test-web-component-offline)    echo 'scripts/test_web_component_offline.sh scripts/gen_guide/playground/vendor/* deps.cxd registry/modules.cxd' ;;
+    test-web-component-offline)    echo 'scripts/test_web_component_offline.cx scripts/gen_guide/playground/vendor/* deps.cxd registry/modules.cxd' ;;
     bench-code-pattern-compile)    echo 'deps.cxd registry/modules.cxd vcx/* third_party/*' ;;
     # the db corpus on sqlite, postgres and mysql against real servers in
     # containers, run from the pinned checkout by a cx binary this tree builds
