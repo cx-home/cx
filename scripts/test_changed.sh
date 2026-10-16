@@ -608,7 +608,7 @@ step_globs() {
     # corpus-audit (RULED: VC-28) runs every rosetta program through the built
     # binary and fails on drift from AUDIT.md, so it depends on the corpus AND
     # on anything that changes the binary's behaviour.
-    corpus-audit)                  echo "corpus/* $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/corpus_audit.sh" ;;
+    corpus-audit)                  echo "corpus/* $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/corpus_audit.cx" ;;
     # bench/repr (#1119 W1) compiles the `cx` module as SOURCE and measures the
     # live tree it builds, so it depends on Ring 0 and on nothing above it.
     # A cx-core-data pin move (deps.cxd) moves the module it compiles (#1822).

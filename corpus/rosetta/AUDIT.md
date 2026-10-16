@@ -128,7 +128,7 @@ pre-reshape surface. Kept as history, not as findings:
 
 `corpus-audit` is in `TEST_TARGETS`, so both `make test` (the release gate) and
 `make test-no-parallel` run it. `scripts/test_changed.sh` carries a manifest row
-naming `corpus/*`, the ring lanes, and `scripts/corpus_audit.sh` as its inputs,
+naming `corpus/*`, the ring lanes, and `scripts/corpus_audit.cx` as its inputs,
 so the development-loop entry point runs it whenever the corpus or the audit
 script moves. Wiring landed last, deliberately: wiring it while the corpus was
 red would have painted that red into `make test`.

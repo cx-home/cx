@@ -5278,7 +5278,7 @@ bench-code-modify-sharing: build-vcx
 # CORPUS_DIR=path (default corpus/rosetta).
 .PHONY: corpus-audit
 corpus-audit: build-vcx
-	@bash scripts/corpus_audit.sh
+	@$(TOOL_CX) --allow-read --allow-env --allow-subprocess scripts/corpus_audit.cx
 
 
 # ── `cx fmt` corpus sweep (#1348) ───────────────────────────────────────────
