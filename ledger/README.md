@@ -522,6 +522,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `crs-1a` | [rulings_2026_08_20_call_result_steps.md](rulings_2026_08_20_call_result_steps.md) | CRS-1a rider — code.md §6.2 trued to BP-1 |
 | `csvrow-1` | [rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md](rulings_2026_10_14_owner_decisions_pgo_loopbin_scale_bridges.md) | CSVROW-1 — the csv-aggregate workload program streams its file (csv:rows over io:open), the way Python's csv.DictReader reads it (#1925/#1869) |
 | `cut-1` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md) | CUT-1 — the v0.18.0 cut comes after the docs and playground items, on the owner's "cut" (L68 = (a), the owner's word) |
+| `cxbld-1934` | [rulings_2026_10_15_owner_decision_s2a1934_cx_build.md](rulings_2026_10_15_owner_decision_s2a1934_cx_build.md) | Owner decision 2026-10-15: `cx build` ships as s2a, plus an internal testing build (CXBLD-1934) |
+| `cxbld-1934` | [rulings_2026_10_15_owner_decision_s2a1934_cx_build.md](rulings_2026_10_15_owner_decision_s2a1934_cx_build.md) | CXBLD-1934 — (a): `cx build PROG.cx -o OUT` ships now as the cx binary with the program and its build-time run flags appended; s2b adds C emitted from cx's IR and keeps the payload; never the V-source route |
 | `cxf-1` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) | cx first — the decisions of the #1522 mini-campaign (owner, 2026-09-17 ~13:50Z: "highest priority"; RULED: CXF-1 … CXF-8) |
 | `cxf-2` | [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md) | 1537's branch takes the next free agent slot (prio:high); CXF-2 (c) and CXF-4 follow it; the cx-first page's order |
 | `cxf-4` | [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md) | 1537's branch takes the next free agent slot (prio:high); CXF-2 (c) and CXF-4 follow it; the cx-first page's order |
@@ -1796,4 +1798,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*397 ledger pages; 988 ids declared, 430 cited only.*
+*397 ledger pages; 989 ids declared, 430 cited only.*

@@ -596,6 +596,14 @@ v-pin-fresh:
 build-vcx: check-gate-lock deps-present v-pin-fresh
 	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx build
 
+# The CLI link kit for `cx build --native` (cx-private#1934 s2b, RULED: CXBLD-1934):
+# cx-core-code's cli-kit — the CLI built once more through tools/cc_kit.sh, which
+# keeps cx's C compiled as deps/cx-core-code/vcx/target/native-kit/libcx-cli.a +
+# link.args beside target/cx, where `cx build --native` looks for it.
+.PHONY: build-vcx-kit
+build-vcx-kit: check-gate-lock deps-present v-pin-fresh
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx cli-kit
+
 # The product with profile-guided optimization (FLAGS-1, #1928): cx-core-code's build-pgo —
 # an instrumented build, its training run over the conformance corpus and the Benchmarks
 # Game, the profile-use build. What the release and cx-examples' pin build; the loop's
@@ -609,6 +617,17 @@ build-vcx-pgo: check-gate-lock deps-present v-pin-fresh
 # this instead of the -prod `build-vcx`. Shipped artifacts use `build-vcx`.
 build-vcx-dev: check-gate-lock deps-present v-pin-fresh
 	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx build-dev CX_DFLAGS='$(CX_DFLAGS)'
+
+# build-re2-shim (cx-private#1946, SELRUN): the one vcx artifact every build
+# shares. lib, cli, lib-dev, cli-dev, each profile artifact and db-real-cx all
+# depend on re2-shim, and its rule writes cx_re2_shim.o and the archive in
+# place. The post-merge run's prebuild (scripts/postmerge_steps.cx) builds
+# build-vcx, build-vcx-dev, the profile matrix and db-real-cx side by side,
+# each in its own vcx sub-make. So it runs this first and alone (with
+# v-pin-fresh), and no two sub-makes can find the shim stale at once.
+.PHONY: build-re2-shim
+build-re2-shim: check-gate-lock deps-present v-pin-fresh
+	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx re2-shim
 
 # ── The §4 PROFILE MATRIX as ordinary build steps (#1449, RULED: 1449-a) ─────
 # These used to be built nowhere: `test-profile-gate` built the whole matrix
@@ -846,17 +865,19 @@ uninstall:
 	rm -f $(PREFIX)/lib/pkgconfig/cx.pc
 	@echo "uninstalled libcx from $(PREFIX)"
 
-# ── release-build-cli (cx-private#1934 s2a, RULED: S2A-1934) — an internal
+# ── release-build-cli (cx-private#1934 s2a, RULED: CXBLD-1934) — an internal
 # testing build of ONE program, not the cut: `cx build` packs PROG and this
 # head's cx into dist/<prog>-v<major.minor>-pre-<commit>-<os>-<arch> (the
 # commit is the one `cx --version` names, the same one the CXBLD001 trailer
 # records and `OUT --version` prints) and writes dist/README-internal.md beside
 # it (same OS/arch only; the files the program reads are not embedded; the
 # quarantine flag after a browser download).
-#   make release-build-cli PROG=path/to/prog.cx [RUN_FLAGS='--allow-read']
+#   make release-build-cli PROG=path/to/prog.cx [RUN_FLAGS='--allow-read'] [NATIVE=1]
+# NATIVE=1 builds the link kit first and passes --native (s2b): the hot pure
+# defs a training run reached are linked in as machine code.
 .PHONY: release-build-cli
 release-build-cli: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
-release-build-cli: build-vcx
+release-build-cli: build-vcx $(if $(filter 1,$(NATIVE)),build-vcx-kit)
 	@test -n "$(PROG)" || { echo 'release-build-cli: PROG=<path to a .cx program> is required' >&2; exit 2; }
 	@test -f "$(PROG)" || { echo 'release-build-cli: no file $(PROG)' >&2; exit 2; }
 	@set -e; \
@@ -866,10 +887,10 @@ release-build-cli: build-vcx
 	  os=$$(uname -s | sed -e 's/^Darwin$$/macos/' -e 's/^Linux$$/linux/'); \
 	  arch=$$(uname -m); \
 	  prog=$$(basename "$(PROG)" .cx); \
-	  out="$$prog-v$$mm-pre-$$sha-$$os-$$arch"; \
+	  out="$$prog-v$$mm-pre-$$sha-$$os-$$arch$(if $(filter 1,$(NATIVE)),-native)"; \
 	  flags='$(strip $(RUN_FLAGS))'; \
 	  mkdir -p "$(DIST_DIR)"; \
-	  "$(CX_BIN)" build $(RUN_FLAGS) "$(PROG)" -o "$(DIST_DIR)/$$out"; \
+	  "$(CX_BIN)" build $(if $(filter 1,$(NATIVE)),--native) $(RUN_FLAGS) "$(PROG)" -o "$(DIST_DIR)/$$out"; \
 	  sed -e "s|@PROG@|$$prog|g" -e "s|@OUT@|$$out|g" -e "s|@SHA@|$$sha|g" \
 	      -e "s|@VERSION@|$$ver|g" -e "s|@OS@|$$os|g" -e "s|@ARCH@|$$arch|g" \
 	      -e "s|@FLAGS@|$${flags:+ $$flags}|g" -e "s|@FLAGS_TEXT@|$${flags:-none}|g" \
@@ -4460,13 +4481,13 @@ site-links-external:
 # the network: a named `site-live-check SKIP:` line, exit 0 (FLAKE-1). A site
 # with no stamp yet (assembled before it existed) is the public main's when
 # its Last-Modified follows the start of the successful Site run on it.
-# ── issue-label-gate (#1781, RULED: LBL-1, SHIP-2, CXF-1) — the label is the
-# release ──────────────────────────────────────────────────────────────────
-# The release label is the one truth of release membership (LBL-1): the step
-# refuses an open cx-private issue created after 2026-10-02 without it, an
-# open cx-private issue on a milestone no [parking] row names, and an open
-# issue of a status=extracted repository whose title lacks the release
-# prefix, unless scripts/issue_label_exclusions.cxd names it with its reason.
+# ── issue-label-gate (#1781, RULED: STREAM-1; the owner's MS-1, NOVER-1) — the milestone
+# is the release ─────────────────────────────────────────────────────────────
+# Release membership is the milestone (MS-1): the step refuses an open issue of
+# a deliverable repository (cx-private, cx, cx-examples, v,
+# cx-standard-features, cx-platform-reference and the registry's components)
+# on none of <release> / <next minor> / Backlog, and an issue filed after
+# NOVER-1 whose title or body names a version of this line.
 # First the case table on planted GitHub answers (offline), then the live
 # tracker through `gh api`. In TEST_TARGETS (the daily full run); it needs the
 # network, so its selection row names only its own inputs and a selected run

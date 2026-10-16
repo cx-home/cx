@@ -148,11 +148,24 @@
            does not parse is refused at build time (exit 1).
            `OUT --version` alone prints the program's name and the cx
            version and commit that built it; beside any other
-           argument, `--version` is the program's."""]
+           argument, `--version` is the program's.
+
+           `cx build --native …` also compiles the program's hot pure
+           defs to machine code. It runs PROG once first (the training
+           run: the same run flags, its output discarded, so a
+           program's effects happen at build time), compiles the C the
+           native tier generated for each def and the argument shapes
+           it saw, and links it into OUT with cx's link kit
+           (`native-kit/` beside cx, written by `make cli-kit`;
+           `CX_NATIVE_KIT` names another). The C compiler is needed
+           where OUT is built, not where it runs. A call whose argument
+           shapes the training run did not see runs as it does under
+           `cx`."""]
       [example lang=sh
         """$ cx build --allow-read wc.cx -o wc
            $ ./wc notes.txt
-           $ ./wc --version"""]]]
+           $ ./wc --version
+           $ cx build --native nbody.cx -o nbody"""]]]
 
   [child id=editors n=8.2 title='Editor integration'
     [intro
