@@ -6094,5 +6094,5 @@ test-web-component-offline: stage-web-component
 # that never produced one) is a red too: the step grades the artifact.
 .PHONY: check-shim-archives
 check-shim-archives: build-vcx-dev
-	@sh scripts/check_archive_alignment.sh deps/cx-core-code/vcx/target/libcx_re2_shim.a $(wildcard deps/cx-core-code/vcx/target/libcx_arrow_shim.a)
+	@$(TOOL_CX) --allow-read scripts/check_archive_alignment.cx deps/cx-core-code/vcx/target/libcx_re2_shim.a $(wildcard deps/cx-core-code/vcx/target/libcx_arrow_shim.a)
 	@echo "check-shim-archives: every shim archive member is 8-byte aligned"
