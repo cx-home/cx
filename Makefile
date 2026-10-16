@@ -3264,7 +3264,7 @@ test-no-parallel: $(TEST_TARGETS)
 # whole TEST_TARGETS matrix.
 #
 # Which paths count is NOT decided here and not in the spec either — it is
-# scripts/head_is_docs_only.sh, with scripts/head_is_docs_only_selftest.sh
+# scripts/head_is_docs_only.sh, with scripts/head_is_docs_only_selftest.cx
 # beside it, so the list has a test. This target only has to be the pipeline
 # that list selects.
 #

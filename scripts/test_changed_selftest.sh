@@ -9,7 +9,7 @@
 # repo could only imitate, and imitating them is how a selection selftest goes
 # green over a manifest that is wrong. The one case that is about a tree rather
 # than about this tree — a TEST_TARGETS entry with no row — gets a synthetic
-# repo under mktemp, the shape scripts/head_is_docs_only_selftest.sh uses.
+# repo under mktemp, the shape scripts/head_is_docs_only_selftest.cx uses.
 #
 # THE CASES. The failure direction that matters is a FALSE SKIP, so each case
 # names both what must be selected and what must not.

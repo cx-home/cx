@@ -1,7 +1,7 @@
 #!/bin/sh
 # fixture_files_for_branch_selftest — proves the #1513 selection's detection
 # power on a SYNTHETIC repo (mktemp; never the live tree — the same rule
-# head_is_docs_only_selftest.sh and the spec-freeze-gate selftest follow). One
+# head_is_docs_only_selftest.cx and the spec-freeze-gate selftest follow). One
 # case per rule in the helper's own header, and the cases that matter most are
 # the ones where it must NOT shrink the step:
 #

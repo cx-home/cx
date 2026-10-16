@@ -1,7 +1,7 @@
 #!/bin/sh
 # run_fixture_shards_selftest — proves the #1513 FIXTURE_FILES resolution on a
 # SYNTHETIC repo (mktemp; never the live tree — the rule
-# head_is_docs_only_selftest.sh and the spec-freeze-gate selftest follow). The
+# head_is_docs_only_selftest.cx and the spec-freeze-gate selftest follow). The
 # selection's whole value is that it SHRINKS the fixtures step, so the cases
 # that must be proved are the ones where it must not shrink it wrongly: a name
 # no shard owns, and a shard that owns none of the named files.
