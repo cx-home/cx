@@ -87,7 +87,7 @@ by intent.
 | `cx xap check-surface DIR` | the surface derivation check |
 | `cx lock` | generate / verify `cx.lock` from `[?lib]` imports |
 | `cx build [RUN-FLAGS] PROG.cx -o OUT` | one executable that runs the program as `cx [RUN-FLAGS] PROG.cx` does, with no cx install where it runs (same OS and architecture); `OUT --version` names the program and the cx commit that built it |
-| `cx build --native [RUN-FLAGS] PROG.cx -o OUT` | the same, with the hot pure defs compiled to machine code from a training run (a C compiler where OUT is built; the link kit beside cx, `make cli-kit`) |
+| `cx build --native [RUN-FLAGS] PROG.cx -o OUT [-- ARG...]` | the same, with the hot pure defs compiled to machine code from a training run (`-- ARG...` are its arguments, for a program that reads `$env:argv`; OUT takes its own when it runs; a C compiler where OUT is built; the link kit beside cx, `make cli-kit`) |
 | `cx imports FILE.cx` | list the modules a file imports and calls (used / unused / missing); `--fix -w` adds the missing `[?lib]` lines, removes the unused and sorts them |
 | `cx flow run FLOW.cx --env ENV.cx` | run a flow document over a journal — build, release and authoring flows from a checkout, no engine to start |
 | `cx flow validate` / `simulate` / `status` | check a flow document, run the runner law over a supplied result table, read a run record back |
