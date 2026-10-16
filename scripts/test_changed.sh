@@ -707,7 +707,7 @@ step_globs() {
     site-links-selftest)           echo 'scripts/gen_site/check_external_links* docs-src/site/links.cxd' ;;
     # #1781 (RULED: LBL-1): the live tracker through gh; a selected run picks it
     # only when its program, case table, register, the registry or VERSION move.
-    issue-label-gate)              echo 'scripts/issue_label_gate* scripts/issue_label_exclusions.cxd registry/repos.cxd VERSION' ;;
+    issue-label-gate)              echo 'scripts/issue_label_gate* registry/repos.cxd VERSION' ;;
     # #1840: the published conformance corpora (third_party/suites/) run
     # through the built cx's stdlib (json, toml, yaml, strings, re, csv), graded
     # against its register: the program, the register, the corpora and every

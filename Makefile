@@ -4471,13 +4471,13 @@ site-links-external:
 # the network: a named `site-live-check SKIP:` line, exit 0 (FLAKE-1). A site
 # with no stamp yet (assembled before it existed) is the public main's when
 # its Last-Modified follows the start of the successful Site run on it.
-# ── issue-label-gate (#1781, RULED: LBL-1, SHIP-2, CXF-1) — the label is the
-# release ──────────────────────────────────────────────────────────────────
-# The release label is the one truth of release membership (LBL-1): the step
-# refuses an open cx-private issue created after 2026-10-02 without it, an
-# open cx-private issue on a milestone no [parking] row names, and an open
-# issue of a status=extracted repository whose title lacks the release
-# prefix, unless scripts/issue_label_exclusions.cxd names it with its reason.
+# ── issue-label-gate (#1781, RULED: STREAM-1; the owner's MS-1, NOVER-1) — the milestone
+# is the release ─────────────────────────────────────────────────────────────
+# Release membership is the milestone (MS-1): the step refuses an open issue of
+# a deliverable repository (cx-private, cx, cx-examples, v,
+# cx-standard-features, cx-platform-reference and the registry's components)
+# on none of <release> / <next minor> / Backlog, and an issue filed after
+# NOVER-1 whose title or body names a version of this line.
 # First the case table on planted GitHub answers (offline), then the live
 # tracker through `gh api`. In TEST_TARGETS (the daily full run); it needs the
 # network, so its selection row names only its own inputs and a selected run
