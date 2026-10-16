@@ -9,7 +9,7 @@
 #          and graded against an expectation DERIVED from that same binary.
 #          No Docker, no network, no third-party image.  In TEST_TARGETS.
 #   28.5b  (manual)     the Saxon-HE cross-check.  Stays operator-run;
-#          scripts/test_xpath_parity.sh holds the recipe and the reason.
+#          scripts/test_xpath_parity.cx holds the recipe and the reason.
 #
 # The two rows read the SAME `[input-xml]` body, so the manual row can never
 # drift onto a different document than the step grades.

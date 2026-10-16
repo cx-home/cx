@@ -3445,10 +3445,10 @@ test-xpath-parity-cx: build-vcx
 # is what let the old breakage sit unexamined for months. The CX side of the
 # same corpus is gate 28.5a above and DOES run in every `make test`.
 # Full contract: conformance/GATE_REGISTER.md rows 28.5a/28.5b and the header of
-# scripts/test_xpath_parity.sh.
+# scripts/test_xpath_parity.cx.
 .PHONY: test-xpath-parity
 test-xpath-parity: build-vcx
-	@CX_BIN=$(CURDIR)/deps/cx-core-code/vcx/target/cx bash scripts/test_xpath_parity.sh
+	@CX_BIN=$(CURDIR)/deps/cx-core-code/vcx/target/cx $(CURDIR)/deps/cx-core-code/vcx/target/cx --allow-all scripts/test_xpath_parity.cx
 
 # ── v0.8.0 gates 28.6 + 28.9 — Layer-1 binding-API parity ────────────────
 # RETIRED (RULED: RS-12, RS-8; #1591 item K3): the four active bindings this
