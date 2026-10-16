@@ -3004,7 +3004,7 @@ premerge-record: build-vcx
 .PHONY: check-verification-budget-selftest
 check-verification-budget-selftest: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 check-verification-budget-selftest:
-	@CX_BIN="$(CX_BIN)" sh scripts/verification_budget_selftest.sh
+	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-all scripts/verification_budget_selftest.cx
 
 # ── check-storm-keep-going (RULED: RUN-2) ────────────────────────────────────
 # The -j storm of `make test` runs with `-k`, so ONE failed run names EVERY red
