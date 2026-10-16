@@ -28,7 +28,7 @@
 #
 # Exit 0 and the count line only when every case matches.
 # CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of head_is_docs_only_selftest.sh — the same
-# eighteen cases on the same synthetic repo, the classifier copied beside it and run with sh, the
+# eighteen cases on the same synthetic repo, the classifier copied beside it and run on the cx running this, the
 # same lines on the same streams and the same exit.
 #   $(TOOL_CX) --allow-all scripts/head_is_docs_only_selftest.cx
 
@@ -53,7 +53,7 @@
 # check — one case: the classifier on BASE..HEAD, docs on exit 0, full otherwise; then back to the
 # base commit (every case starts from the same base). The verdict: true when it matched.
 [?def check scope=public impure ($t $cls $base0 $name $want $base)
-  [?let [= $r [$run $t ('sh', $cls, $base, [$short-head $t])]]
+  [?let [= $r [$run $t ([$string [$env:executable-path]], '--allow-all', $cls, $base, [$short-head $t])]]
         [= $got [?if [= $r@rc 0] [then 'docs'] [else 'full']]]
         [= $ok [= $got $want]]
         [= $_p [?if $ok
@@ -65,11 +65,11 @@
 
 [?let
   [= $here [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]
-  [= $cls0 [$cat ($here, '/head_is_docs_only.sh')]]
+  [= $cls0 [$cat ($here, '/head_is_docs_only.cx')]]
   [= $_0 [?if [$io:is-file $cls0] [then null] [else [?let [= $_ [$cry [$cat ('SELFTEST FAILED: no classifier at ', $cls0)]]] [$env:exit 1]]]]]
   [= $t [$string [$io:temp-dir 'head_is_docs_only_selftest.']]]
-  [= $cls [$cat ($t, '/scripts/head_is_docs_only.sh')]]
-  [= $_1 [$put $t 'scripts/head_is_docs_only.sh' [$io:read-file $cls0]]]
+  [= $cls [$cat ($t, '/scripts/head_is_docs_only.cx')]]
+  [= $_1 [$put $t 'scripts/head_is_docs_only.cx' [$io:read-file $cls0]]]
   [= $_g [$git $t ('init', '-q', '.')]]
   [= $_u1 [$git $t ('config', 'user.email', 't@t')]]
   [= $_u2 [$git $t ('config', 'user.name', 't')]]
