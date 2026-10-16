@@ -1,0 +1,98 @@
+# scripts/check_conformance_coverage.cx — check-conformance-coverage (#1212): every conformance
+# suite is CLAIMED by a named `make test` step, or the gate is red.
+#
+# The document runner (conformance_run.v) lists the suites it drives; it is the DOCUMENT step and
+# refuses [in-code …] fixtures by design (#1134), so `test-vcx-conform` never covered code.cxd while
+# its name said "conformance". That corpus is graded by the EVAL step (test-vcx-suite), and other
+# suites by their own runners. A NEW .cxd dropped into conformance/ would be graded by nothing while
+# every step stayed green (the vacuous-gate class: #1127, #1134, #1180, #1209). This guard is that
+# map, in the tree: a suite with no claim is a red that names it and says where a claim is written.
+#
+# THE CLAIM MUST NAME A STEP THAT ACTUALLY RUNS THE FILE. Until 2026-09-08 the code.cxd and
+# stdlib/*.cxd rows claimed `test-vcx-code`, which runs neither; a worker who trusted the map ran it,
+# got a green that graded none of the new fixtures. A map that names the wrong step is worse than no
+# map, because it is believed. #1448 (RULED: 1448-a): the stdlib union is graded by the SHARD test
+# files, held complete by check-fixture-shard-manifest. The shard manifest needs NO claim row: it is
+# not a conformance suite and does not live in conformance/ (ring-tag-gate red 942e7d513 when it did).
+#
+# The sweep covers this tree's conformance/ AND the pinned cx-core-data checkout's (RULED: RS-7,
+# RS-12); a pinned suite this tree still carries under the same name is graded from this tree's
+# copy, so it is swept once, here. A missing pin is a failure.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of check_conformance_coverage.sh, the same lines.
+#   $(TOOL_CX) --allow-read --allow-env scripts/check_conformance_coverage.cx      (from the repo root)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def RUNNER scope=public () 'deps/cx-core-code/vcx/tests/runners/conformance/conformance_run.v']
+
+# 3. dedicated runners / steps — the claim and the step that grades it.
+[?def DEDICATED scope=public ()
+  ([claim path='deps/cx-core-code/conformance/code.cxd' step="test-vcx-suite (v test deps/cx-core-code/vcx/tests/ -> code_eval_fixtures_test.v: parse_all_code_fixtures) or 'make fixtures'; also test-vcx-resilience-matrix and test-vcx-services, which run that file by name"],
+   [claim path='deps/cx-core-data/conformance/diff.cxd' step='test-vcx-conform (conform-diff: tests/runners/diff_lint/diff_lint_conform.v)'],
+   [claim path='deps/cx-core-data/conformance/lint.cxd' step='test-vcx-conform (conform-lint: tests/runners/diff_lint/diff_lint_conform.v)'],
+   [claim path='deps/cx-core-data/conformance/fmt.cxd' step='test-vcx-conform (conform-fmt)'],
+   [claim path='deps/cx-core-data/conformance/streaming_write.cxd' step="test-vcx-conform (conform-streaming-write: tests/runners/streaming_write/streaming_write_run.v — #1635: it was claimed through conform-all's list, where it passed vacuously)"],
+   [claim path='deps/cx-core-data/conformance/data_bin_arrow.cxd' step='test-vcx-conform (conform-data-bin-arrow)'],
+   [claim path='deps/cx-core-code/conformance/code_diagram.cxd' step='test-code-diagram (scripts/check_code_diagram_fixtures.cx)'],
+   [claim path='deps/cx-core-code/conformance/xpath_31_parity.cxd' step='test-xpath-parity-cx (scripts/check_xpath_parity_fixtures.cx)'],
+   [claim path='deps/cx-core-code/conformance/binding_api.cxd' step="UNGRADED since the leave step (RULED: RS-12, RS-8; #1591 item K3): test-binding-api-parity retired with the four active bindings (lang/python, lang/go, lang/rust, lang/v all left); scripts/test_binding_api_parity.sh stays tracked here (registry/repos.cxd: repo=cx) but unwired — see _gate_evidence/pipeline_xbindings/RESULTS.md's LETTER"],
+   [claim path='deps/cx-core-code/conformance/abi.cxd' step="abi-c-test (tests/abi/c_abi_test.c reads deps/cx-core-code/conformance/abi.cxd — the vectors moved to cx-core-code beside libcx, cx-private#1858 (c) — and asserts every vector against libcx directly — RULED: D75a, RS-31, the successor to the retired test-binding-api-parity's LETTER above); also gradeable directly by `cx corpus deps/cx-core-code/conformance/abi.cxd` per cli.md §3.11 (the DOCUMENT reading, no [in-code …] section), and by each of the four binding repositories' own `lanes/abi_vectors_lane.*` against the released cx"],
+   [claim path='conformance/deps_pins.cxd' step='test-deps-pins (scripts/check_deps_pins_fixtures.cx — the deps.cxd pin document: wire form, canonical bytes and every refusal the format names)'],
+   [claim path='conformance/bundle_sources.cxd' step="test-bundle-sources (scripts/check_bundle_sources_fixtures.cx — where a bundled CX module's source comes from: the two legal states and every refusal, including the pinned checkout missing its source that would otherwise make a smaller binary)"],
+   [claim path='conformance/docs_fragment.cxd' step="test-docs-fragment (scripts/check_docs_fragment_fixtures.cx — the per-repository documentation fragment a component release publishes, every refusal of its contract, and the union's id and file collisions)"],
+   [claim path='deps/cx-core-code/conformance/migrate_namespace.cxd' step='test-migrate-namespace (scripts/check_migrate_namespace_fixtures.cx — cx --migrate-namespace --retired: the rewritten file, one line per site, and an idempotent second run)'],
+   [claim path='conformance/gates.cxd' step="POLICY — the enforced/advisory register, DERIVED from the suites' [test-suite] elements and held equal to them by gates-manifest-gate (D49a; not a fixture suite)"],
+   [claim path='conformance/gates_register.cxd' step="gates-manifest-gate (cx corpus conformance/gates_register.cxd — the derived gate register's drift check, scripts/gates_register.cx: every refusal over described trees, D49a)"],
+   [claim path='conformance/advisory_audit.cxd' step='advisory-audit (cx corpus conformance/advisory_audit.cxd — the advisory audit, scripts/advisory_audit.cx: every refusal over described cases and issues, ADVIS-1, RULED: QUAL-1 (b))'],
+   [claim path='conformance/property_gate.cxd' step="property-gate (cx corpus conformance/property_gate.cxd -- the property step's register: each case the minimal reproducing program of a class the step found and filed, advisory with its open issue, PROP-1, RULED: QUAL-1 (a))"])]
+
+# cxd-in — the *.cxd directly in $dir (a one-level glob), sorted.
+[?def cxd-in scope=public impure ($dir)
+  [?if [not [$io:is-directory $dir]] [then ()]
+    [else [$sort [?for [in $n [$io:list-dir $dir]] [where [$strings:ends-with $n '.cxd']] [yield [$cat ($dir, '/', $n)]]]]]]]
+
+# every-cxd — `find conformance deps/cx-core-data/conformance -name '*.cxd' | sort`: no descent
+# through a symlinked directory (io:walk follows links, cx-core-code#146).
+[?def every-cxd scope=public impure ($root)
+  [?if [not [$io:is-directory $root]] [then ()]
+    [else [?let [= $all [?to-sequence [$io:walk $root]]]
+                [= $links [?to-sequence [?for [in $e $all] [where [and $e@is-directory [$io:is-symlink $e@path]]] [yield [$cat ($e@path, '/')]]]]]
+      [?to-sequence [?for [in $e $all]
+                      [where [and [$strings:ends-with [$path:basename $e@path] '.cxd'] [not [and $e@is-directory [not [$io:is-symlink $e@path]]]]
+                                  [= [$count [?for [in $l $links] [where [$strings:starts-with $e@path $l]] [yield 1]]] 0]]]
+                      [yield $e@path]]]]]]]
+
+[?let
+  # 1. the document step: the runner's own suite list
+  [= $doc [?to-sequence [?for [in $m [$re:find-all [$re:compile "'\.\./(deps/cx-core-data/)?conformance/[A-Za-z0-9_./-]+\.cxd'"] [?else [$io:read-file [$RUNNER]] '']]]
+                          [yield [$strings:replace [$strings:replace-first [$re:group $m 0] "'../" ''] "'" '']]]]]
+  # 2. the eval step: every module corpus, graded by the shard test files (#1427-c, #1448)
+  [= $eval [?to-sequence [?for [in $d ('deps/cx-core-code/conformance/stdlib', 'conformance/platform', 'conformance/x', 'conformance/xap')] [in $f [$cxd-in $d]] [yield $f]]]]
+  [= $two ('deps/cx-core-data/conformance/extended.cxd', 'deps/cx-core-code/conformance/xml_codec.cxd')]
+  # 4. the llm primer pairs and the tools export
+  [= $extra [?to-sequence [?for [in $d ('conformance/llm', 'conformance/tools-export')] [in $f [$cxd-in $d]] [yield $f]]]]
+  [= $claimed ([?splice $doc], [?splice $eval], [?splice $two], [?splice [?for [in $c [$DEDICATED]] [yield $c@path]]], [?splice $extra])]
+  [?if [not [$io:is-directory 'deps/cx-core-data/conformance']]
+    [then [?do [$say 'check-conformance-coverage: deps/cx-core-data/conformance is not there — run `make deps-sync`'] [$env:exit 1]]]
+    [else [?let
+      [= $all [$sort ([?splice [$every-cxd 'conformance']], [?splice [$every-cxd 'deps/cx-core-data/conformance']])]]
+      [= $swept [?to-sequence [?for [in $f $all]
+                                [where [not [and [$strings:starts-with $f 'deps/cx-core-data/conformance/']
+                                                 [$io:exists [$cat ('conformance/', [$strings:replace-first $f 'deps/cx-core-data/conformance/' ''])]]]]]
+                                [yield $f]]]]
+      [= $unclaimed [?to-sequence [?for [in $f $swept] [where [= [$count [?for [in $c $claimed] [where [= $c $f]] [yield 1]]] 0]] [yield $f]]]]
+      [?if [> [$count $unclaimed] 0]
+        [then [?do [$say 'check-conformance-coverage: conformance suite(s) that NO step claims —']
+                   [?for [in $f $unclaimed] [yield [$say [$cat ('    ', $f)]]]]
+                   [$say '  A .cxd graded by nothing is a green that guards nothing. Either add the']
+                   [$say [$cat ("  suite to the document runner's list (", [$RUNNER], '), or record which step')]]
+                   [$say '  grades it in scripts/check_conformance_coverage.cx (#1212).']
+                   [$env:exit 1]]]
+        [else [?do [$say [$cat ('check-conformance-coverage OK — ', [$string [$count $swept]], ' conformance suites, every one claimed by a named step')]]
+                   [$env:exit 0]]]]]]]]

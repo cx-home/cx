@@ -4161,7 +4161,7 @@ check-consolidation-manifests:
 # ── #1212: every conformance suite is claimed by a named step ────────────────
 .PHONY: check-conformance-coverage
 check-conformance-coverage:
-	@bash scripts/check_conformance_coverage.sh
+	@$(TOOL_CX) --allow-read --allow-env scripts/check_conformance_coverage.cx
 
 # ── #1272 (RULED: 1272-a1): the §1.2 feature runtime contract has a REVISION ──
 # The gate refuses a tree whose §1.2 normative body moved without the author

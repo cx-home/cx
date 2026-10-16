@@ -252,7 +252,7 @@ step_globs() {
     # vcx/tests/ is `module main` importing code + platform + cx + fixtures.
     test-vcx-suite)                echo "$RING_LIB vcx/tests/* $RING_SUP conformance/* $RING_EMBED ledger/* _gate_evidence/*" ;;
     # #1216: the serial wall-clock step — the binary-driving closure plus its own dir.
-    check-conformance-coverage)    echo 'conformance/* scripts/check_conformance_coverage.sh vcx/tests/runners/conformance/*' ;;
+    check-conformance-coverage)    echo 'conformance/* scripts/check_conformance_coverage.cx vcx/tests/runners/conformance/*' ;;
     # ── THE SERIAL TAIL, narrowed (#1516, RULED: RUN-1) ─────────────────────
     # These two run ALONE after the -j storm drains, so their minutes are
     # wall-clock minutes nothing else overlaps: 660 s for the profile gate,
