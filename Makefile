@@ -3723,7 +3723,7 @@ skip-ledger-reset:
 # ── fixtures-census-reset (#1448, RULED: 1448-a) ────────────────────────────
 # The same property, and the same argument, as skip-ledger-reset above. Each
 # grader shard writes deps/cx-core-code/vcx/target/fixtures/<shard>.census and
-# scripts/fixtures_census.sh sums them into #1026's one `stdlib corpus: …`
+# scripts/fixtures_census.cx sums them into #1026's one `stdlib corpus: …`
 # line; a census left over from an EARLIER run would be summed into this one,
 # and a total that counts cases nobody graded this run is worse than no total,
 # because it is believed. One file per writer, so no writer can lose another's
@@ -4083,7 +4083,7 @@ check-serial-retry-rosters:
 .PHONY: check-fixture-shard-manifest
 check-fixture-shard-manifest:
 	@$(TOOL_CX) --allow-read --allow-write scripts/check_fixture_shard_manifest.cx
-	@sh scripts/run_fixture_shards_selftest.sh
+	@TOOL_CX="$(TOOL_CX)" sh scripts/run_fixture_shards_selftest.sh
 
 # ── fixtures (#1448, RULED: 1448-a) — the grader's ONE-COMMAND form ─────────
 # Before the shard split a pre-merge pipeline graded the corpus with one line
@@ -4106,7 +4106,7 @@ check-fixture-shard-manifest:
 FIXTURE_FILES ?=
 .PHONY: fixtures
 fixtures:
-	@FIXTURE_FILES="$(FIXTURE_FILES)" sh scripts/run_fixture_shards.sh
+	@FIXTURE_FILES="$(FIXTURE_FILES)" TOOL_CX="$(TOOL_CX)" sh scripts/run_fixture_shards.sh
 
 # ── check-no-nested-make (#1520) ──────────────────────────────────────────────
 # No step of the suite may spawn a nested `make test`. Measured twice on
@@ -4244,7 +4244,7 @@ test-vcx-suite: build-vcx-dev check-serial-retry-rosters check-fixture-shard-man
 	  printf '%s\n' "$$skips"; \
 	fi; \
 	if [ "$(SUITE_FILES)" = "deps/cx-core-code/vcx/tests/" ]; then \
-	  bash scripts/fixtures_census.sh || st=1; \
+	  $(TOOL_CX) --allow-read --allow-write scripts/fixtures_census.cx || st=1; \
 	else \
 	  echo "test-vcx-suite: SELECTED run (SUITE_FILES=$(SUITE_FILES)) — NO whole-corpus census, and this line is here so nobody reads one into it. The census sums the grader shards, only the union runs all of them, and \`make test\` plus every exit run are still the union (#1516)."; \
 	fi; \

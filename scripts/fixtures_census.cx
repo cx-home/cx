@@ -1,0 +1,101 @@
+# scripts/fixtures_census.cx (#1448, RULED: 1448-a) — the stdlib census line, summed
+# across the grader shards and printed ONCE.
+#
+# #1026 put this line in the tree so the eval grading STATES its coverage instead
+# of leaving it inferred: the authz suite's 25 [out-err …] cases were long
+# ASSUMED green here because they showed red under a document runner that has
+# no evaluator. Every pre-merge RESULTS.md quotes the line, so 1448-a keeps its
+# BYTE shape — only the printer moved. Each shard writes
+# `vcx/target/fixtures/<shard>.census`; this sums them.
+#
+# It carries the two refusals the single-threaded walk made globally, and adds
+# the one the split makes possible:
+#   • zero fixtures ran over a non-empty corpus — the vacuous-pass shape;
+#   • no fixture exercised the [out-err …] channel — the negative channel is dead;
+#   • a shard the manifest names wrote NO census — that shard did not run, and
+#     a total short by one shard is worse than no total, because it is believed.
+#
+# #1513: under a `make fixtures FIXTURE_FILES=…` selection the expected shard
+# set is not the manifest's — the wrapper deliberately launches only the shards
+# that own a named file — so it writes the shards it launched to
+# vcx/target/fixtures/.selected-shards and this sums THOSE. The two refusals
+# that still mean something there (a launched shard writing no census; a
+# non-empty selection grading zero fixtures) stay; the [out-err …] refusal does
+# not, because a selection of two module files is not the corpus that claim is
+# about, and a selected run failing on it would be a false red.
+# The manifest documents its own row shape in a [doc [# … #]] block; drop the
+# prose before reading the rows (see check_fixture_shard_manifest.cx).
+# The repository is the one this program sits in (its own path, two levels up).
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of fixtures_census.sh — the same line, byte
+# for byte (modules in C byte order), the same refusals on stderr, the same exit codes.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat ($parts) [$strings:join $parts '']]
+[?def say impure ($s) [$env:write-line $s]]
+[?def cry impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def hit ($m) [> [?else $m@start -1] -1]]
+[?def words ($s) [?for [in $w [$strings:split [$strings:replace [$strings:replace [$strings:trim $s] "\n" ' '] "\t" ' '] ' ']] [where [not [= $w '']]] [yield $w]]]
+
+# sed '/\[doc \[#/,/#\]\]/d': from a line holding `[doc [#` through the next LATER line holding `#]]`
+[?def drop-doc ($lines $in)
+  [?if [= [$count $lines] 0] [then ()]
+    [else [?let [= $l [$nth $lines 1]]
+                [= $rest [?for [in $p [?enumerate $lines]] [where [> [$nth $p 1] 1]] [yield [$nth $p 2]]]]
+      [?if $in
+        [then [$drop-doc $rest [not [$strings:contains $l '#]]']]]]
+        [else [?if [$strings:contains $l '[doc [#'] [then [$drop-doc $rest true]]
+                [else ($l, [?splice [$drop-doc $rest false]])]]]]]]]]
+
+# awk -F= '$1=="<key>"{print $2}' as a number: the value of the key's line, 0 when absent
+[?def field ($lines $key)
+  [?let [= $vs [?for [in $l $lines] [where [$strings:starts-with $l [$cat ($key, '=')]]]
+                 [yield [$nth [$strings:split $l '='] 2]]]]
+    [?if [= [$count $vs] 0] [then 0] [else [$strings:to-int [$nth $vs 1]]]]]]
+
+[?let
+  [= $root [$path:dirname [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]]
+  [= $manifest 'deps/cx-core-code/vcx/tests/fixtures_grader/fixture_shards.cxd']
+  [= $dir 'deps/cx-core-code/vcx/target/fixtures']
+  [= $at [?fn $p [$path:join $root $p]]]
+  [= $_m [?if [$io:is-file [$at $manifest]] [then null]
+           [else [?do [$cry [$cat ('fixtures-census: no ', $manifest)]] [$env:exit 1]]]]]
+  [= $sel-file [$at [$cat ($dir, '/.selected-shards')]]]
+  [= $selected [$io:is-file $sel-file]]
+  [= $shard-rx [$re:compile "^[ \\t]*\\[shard[ \\t]+name=([^\\] \\t]+)"]]
+  [= $shards [?if $selected [then [$words [$io:read-file $sel-file]]]
+               [else [?for [in $l [$drop-doc [$strings:split-lines [$io:read-file [$at $manifest]]] false]]
+                       [where [$hit [$re:find $shard-rx $l]]] [yield [$re:group [$re:find $shard-rx $l] 1]]]]]]
+  [= $_n [?if [or $selected [> [$count $shards] 0]] [then null]
+           [else [?do [$cry [$cat ('fixtures-census: ', $manifest, ' names no shard')]] [$env:exit 1]]]]]
+  [= $census-of [?fn $s [$at [$cat ($dir, '/', $s, '.census')]]]]
+  [= $missing [?for [in $s $shards] [where [not [$io:is-file [$census-of $s]]]] [yield $s]]]
+  [= $_x [?if [> [$count $missing] 0]
+           [then [?do [$cry [$cat ('fixtures-census: no census written by shard(s) —', [?splice [?for [in $s $missing] [yield [$cat (' ', $s)]]]])]]
+                      [$cry "  that shard did not run; a total that silently omits a shard's cases is"]
+                      [$cry "  a census of a corpus nobody graded. Run 'make fixtures' (or the whole"]
+                      [$cry "  suite) and read that shard's own failure."]
+                      [$env:exit 1]]]
+           [else null]]]
+  [= $docs [?for [in $s $shards] [yield [$strings:split-lines [$io:read-file [$census-of $s]]]]]]
+  [= $files [$sum [?for [in $d $docs] [yield [$field $d 'files']]]]]
+  [= $ran   [$sum [?for [in $d $docs] [yield [$field $d 'ran']]]]]
+  [= $oer   [$sum [?for [in $d $docs] [yield [$field $d 'out_err_ran']]]]]
+  [= $mods [?for [in $d $docs] [in $l $d] [where [$strings:starts-with $l 'module:']]
+             [yield [$strings:split [$strings:replace-first $l 'module:' ''] '=']]]]
+  [= $names [$sort [$distinct [?for [in $m $mods] [yield [$nth $m 1]]]]]]
+  [= $parts [$strings:join [?for [in $k $names]
+                              [yield [$cat ($k, '=', [$string [$sum [?for [in $m $mods] [where [= [$nth $m 1] $k]] [yield [$strings:to-int [$nth $m 2]]]]]])]]] ' ']]
+  [= $_z [?if [and [> $files 0] [= $ran 0]]
+           [then [?do [$cry [$cat ('fixtures-census: ', [$string $files], ' module file(s) assigned but ZERO fixtures ran')]] [$env:exit 1]]]
+           [else null]]]
+  [= $_o [?if [and [not $selected] [> $ran 0] [= $oer 0]]
+           [then [?do [$cry 'fixtures-census: no fixture exercised the [out-err …] channel — the negative channel is not running'] [$env:exit 1]]]
+           [else null]]]
+  [?do [$say [$cat ('stdlib corpus: ', [$string $ran], ' fixtures ran across ', [$string $files], ' module file(s); ', [$string $oer],
+                    ' exercised the [out-err …] channel — ', $parts)]]
+       [$env:exit 0]]]
