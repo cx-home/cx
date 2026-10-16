@@ -2963,7 +2963,7 @@ test-profile-gate: build-profiles-dev
 
 .PHONY: check-profile-gate-selection
 check-profile-gate-selection:
-	@TOOL_CX="$(TOOL_CX)" sh scripts/profile_gate_selection_selftest.sh
+	@$(TOOL_CX) --allow-all scripts/profile_gate_selection_selftest.cx
 
 # ── check-verification-budget (#1562, RULED: VCOST-1) ─────────────────────────
 # The owner's sentence — the fixture grader <= 20 min, a selected post-merge run

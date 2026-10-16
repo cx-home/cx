@@ -429,7 +429,7 @@ step_globs() {
     # row by name, so the directory's shape — a file added to it, the directory
     # renamed — is part of the pair's surface. One second of step, and the
     # manifest over-includes on doubt.
-    check-profile-gate-selection)  echo "scripts/profile_gate_files_for_branch.cx scripts/profile_gate_selection_selftest.sh vcx/tests/runners/profile_gate/*" ;;
+    check-profile-gate-selection)  echo "scripts/profile_gate_files_for_branch.cx scripts/profile_gate_selection_selftest.cx vcx/tests/runners/profile_gate/*" ;;
     # #1562 (RULED: VCOST-1): the budget step reads the bounds manifest and the
     # timings a run leaves behind; the self-test reads the step and its own
     # source. Neither reads the tree, so neither runs when the tree moves.
