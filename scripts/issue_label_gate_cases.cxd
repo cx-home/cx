@@ -1,20 +1,18 @@
-[issue-label-gate-cases release='v7.7' cutoff='2026-10-02T23:59:59Z'
+[issue-label-gate-cases release='v7.7' cutoff='2026-10-16T00:15:05Z'
   [doc [#
 scripts/issue_label_gate_cases.cxd — issue-label-gate's case table (#1781,
-RULED: LBL-1, SHIP-2, CXF-8). `cx scripts/issue_label_gate.cx --self-test`
-grades every case offline on PLANTED GitHub answers: [private] is the JSON of
-cx-private's open issues, each [component repo=] that repository's, and
-[register] stands in for scripts/issue_label_exclusions.cxd. The release is
-the root's release= (a made-up one, so the table carries no real version) and
-the cutoff its cutoff=.
+RULED: STREAM-1; the owner's MS-1, NOVER-1, LGATE-1). `cx scripts/issue_label_gate.cx --self-test`
+grades every case offline on PLANTED GitHub answers: each [issues repo=] is
+the JSON of that repository's open issues. The release is the root's
+release= (a made-up one, so the table carries no real version; its next minor
+and Backlog are the other two milestones) and the cutoff NOVER-1's hour.
 
 want= is every refusal the gate must make, space-separated, in order:
-  a:<repo>#N         an open cx-private issue created after the cutoff without
-                     the release label, not excluded, not on a [parking]
-                     milestone (the owner parked it out of the release)
-  b:<repo>#N         an open cx-private issue on a milestone no [parking] row names
-  c:<repo>#N         an open component issue whose title lacks `<release> `
-  register:<repo>#N  an exclusion row without a why= (it excludes nothing)
+  m:<repo>#N   an open issue on none of <release> / <next minor> / Backlog
+               (no milestone, or another one)
+  t:<repo>#N   an open issue created after the cutoff whose title or body
+               names a version of the release's line (v<major>.<n> or
+               <major>.<n>.<n>)
 want='' is a case the gate passes.
 
   [line '…']          (optional, inside a case) a line the refusals must
@@ -23,107 +21,66 @@ want='' is a case the gate passes.
                      (exit 2) for that repository and reason
 #]]
 
-  [case id=a-labelled-new want=''
-    [private '[{"number": 1790, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [{"name": "bug"}, {"name": "v7.7"}], "milestone": null}]']]
-  [case id=a-unlabelled-new want='a:cx-private#1790'
-    [private '[{"number": 1790, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [{"name": "bug"}], "milestone": null}]']]
-  [case id=a-label-near-miss want='a:cx-private#1790 a:cx-private#1791'
-    [private '[{"number": 1790, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [{"name": "v0.18-rc"}], "milestone": null},
-                 {"number": 1791, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [{"name": "V0.18"}], "milestone": null}]']]
-  [case id=a-unlabelled-before-cutoff want=''
-    [private '[{"number": 1700, "created_at": "2026-10-02T23:59:58Z", "title": "x", "labels": [], "milestone": null}]']]
-  [case id=a-unlabelled-excluded want=''
-    [register [exclude repo=cx-private number=1790 why='a named reason']]
-    [private '[{"number": 1790, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [], "milestone": null}]']]
-  [case id=a-exclusion-without-why want='register:cx-private#1790 a:cx-private#1790'
-    [register [exclude repo=cx-private number=1790]]
-    [private '[{"number": 1790, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [], "milestone": null}]']]
-  [case id=a-exclusion-other-repo want='a:cx-private#1790'
-    [register [exclude repo=cx-platform-xap number=1790 why='a reason for another repository']]
-    [private '[{"number": 1790, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [], "milestone": null}]']]
-  [case id=a-pull-request-skipped want=''
-    [private '[{"number": 1792, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [], "milestone": null, "pull_request": {"url": "u"}}]']]
-  [case id=a-new-on-parking-milestone want=''
-    [register [parking milestone='v7.8' why='parked by word']]
-    [private '[{"number": 1836, "created_at": "2026-10-06T00:05:19Z", "title": "v7.8 x", "labels": [{"name": "perf"}], "milestone": {"title": "v7.8"}}]']]
-  [case id=a-new-on-parking-milestone-without-why want='register:milestone#v7.8 a:cx-private#1836 b:cx-private#1836'
-    [register [parking milestone='v7.8']]
-    [private '[{"number": 1836, "created_at": "2026-10-06T00:05:19Z", "title": "v7.8 x", "labels": [{"name": "perf"}], "milestone": {"title": "v7.8"}}]']]
-  [case id=a-new-on-release-milestone want='a:cx-private#1841 b:cx-private#1841'
-    [register [parking milestone='v7.8' why='parked by word']]
-    [private '[{"number": 1841, "created_at": "2026-10-06T00:09:52Z", "title": "v7.7 x", "labels": [{"name": "bug"}], "milestone": {"title": "v7.7"}}]']]
-  [case id=b-release-milestone want='b:cx-private#1793'
-    [register [parking milestone='v7.8' why='parked by word']]
-    [private '[{"number": 1793, "created_at": "2026-09-01T00:00:00Z", "title": "x", "labels": [{"name": "v7.7"}], "milestone": {"title": "v7.7"}}]']]
-  [case id=b-parking-milestone want=''
-    [register [parking milestone='v7.8' why='parked by word']]
-    [private '[{"number": 1794, "created_at": "2026-09-01T00:00:00Z", "title": "x", "labels": [{"name": "v7.7"}], "milestone": {"title": "v7.8"}}]']]
-  [case id=b-other-milestone want='b:cx-private#1795'
-    [private '[{"number": 1795, "created_at": "2026-09-01T00:00:00Z", "title": "x", "labels": [{"name": "v7.7"}], "milestone": {"title": "store phase 1"}}]']]
-  [case id=b-parking-row-without-why want='register:milestone#v7.8 b:cx-private#1794'
-    [register [parking milestone='v7.8']]
-    [private '[{"number": 1794, "created_at": "2026-09-01T00:00:00Z", "title": "x", "labels": [{"name": "v7.7"}], "milestone": {"title": "v7.8"}}]']]
-  [case id=c-prefixed want=''
-    [component repo=cx-platform-xap '[{"number": 4, "created_at": "2026-09-01T00:00:00Z", "title": "v7.7 the umbrella panics", "labels": [], "milestone": null}]']]
-  [case id=c-colon-prefixed want=''
-    [component repo=cx-platform-xap '[{"number": 5, "created_at": "2026-09-01T00:00:00Z", "title": "v7.7: the umbrella panics", "labels": [], "milestone": null}]']]
-  [case id=c-unprefixed want='c:cx-platform-xap#8'
-    [component repo=cx-platform-xap '[{"number": 8, "created_at": "2026-09-01T00:00:00Z", "title": "the umbrella panics", "labels": [{"name": "v7.7"}], "milestone": null}]']]
-  [case id=c-prefix-near-miss want='c:cx-platform-xap#10 c:cx-platform-xap#11 c:cx-platform-xap#12 c:cx-platform-xap#14'
-    [component repo=cx-platform-xap '[{"number": 10, "created_at": "2026-09-01T00:00:00Z", "title": "v7.70 x", "labels": [], "milestone": null},
-                                       {"number": 11, "created_at": "2026-09-01T00:00:00Z", "title": "x v7.7 y", "labels": [], "milestone": null},
-                                       {"number": 12, "created_at": "2026-09-01T00:00:00Z", "title": "v7.7", "labels": [], "milestone": null},
-                                       {"number": 14, "created_at": "2026-09-01T00:00:00Z", "title": "v7.7:x", "labels": [], "milestone": null}]']]
-  [case id=c-excluded want=''
-    [register [exclude repo=cx-platform-xap number=9 why='after the cut by a ruling']]
-    [component repo=cx-platform-xap '[{"number": 9, "created_at": "2026-09-01T00:00:00Z", "title": "v7.8 later", "labels": [], "milestone": null}]']]
-  [case id=c-excluded-in-another-repo want='c:cx-platform-flow#9'
-    [register [exclude repo=cx-platform-xap number=9 why='after the cut by a ruling']]
-    [component repo=cx-platform-flow '[{"number": 9, "created_at": "2026-09-01T00:00:00Z", "title": "later", "labels": [], "milestone": null}]']]
-  [case id=c-pull-request-skipped want=''
-    [component repo=cx-platform-xap '[{"number": 13, "created_at": "2026-09-01T00:00:00Z", "title": "a PR", "labels": [], "milestone": null, "pull_request": {"url": "u"}}]']]
+  [; m: the milestone is the release (MS-1) ]
+  [case id=m-release want=''
+    [issues repo=cx-private '[{"number": 1790, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [], "milestone": {"title": "v7.7"}}]']]
+  [case id=m-next-and-backlog want=''
+    [issues repo=cx-platform-xap '[{"number": 4, "created_at": "2026-09-01T00:00:00Z", "title": "x", "labels": [], "milestone": {"title": "v7.8"}},
+                                   {"number": 5, "created_at": "2026-09-01T00:00:00Z", "title": "y", "labels": [], "milestone": {"title": "Backlog"}}]']]
+  [case id=m-none want='m:cx-private#1791 m:v#22'
+    [issues repo=cx-private '[{"number": 1791, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [{"name": "v7.7"}], "milestone": null}]']
+    [issues repo=v '[{"number": 22, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": []}]']]
+  [case id=m-label-is-not-membership want='m:cx-private#1792'
+    [issues repo=cx-private '[{"number": 1792, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [{"name": "v7.7"}], "milestone": {"title": "store phase 1"}}]']]
+  [case id=m-near-miss want='m:cx#1 m:cx#2 m:cx#3 m:cx#4'
+    [issues repo=cx '[{"number": 1, "created_at": "2026-09-01T00:00:00Z", "title": "x", "milestone": {"title": "v7.70"}},
+                      {"number": 2, "created_at": "2026-09-01T00:00:00Z", "title": "x", "milestone": {"title": "V7.7"}},
+                      {"number": 3, "created_at": "2026-09-01T00:00:00Z", "title": "x", "milestone": {"title": "backlog"}},
+                      {"number": 4, "created_at": "2026-09-01T00:00:00Z", "title": "x", "milestone": {"title": "v7.9"}}]']]
+  [case id=m-empty-milestone-object want='m:cx-private#1800'
+    [issues repo=cx-private '[{"number": 1800, "created_at": "2026-09-01T00:00:00Z", "title": "x", "labels": [], "milestone": {}}]']]
+  [case id=m-pull-request-skipped want=''
+    [issues repo=cx-private '[{"number": 1793, "created_at": "2026-10-03T01:00:00Z", "title": "x", "milestone": null, "pull_request": {"url": "u"}}]']]
 
-  [; REFUTE-1 of batch H4: a time the gate cannot read is judged, never
-     skipped; an empty milestone object is a milestone; null labels are none;
-     an exclusion row that names no number excludes nothing and is refused. ]
-  [case id=a-created-at-null want='a:cx-private#1796'
-    [private '[{"number": 1796, "created_at": null, "title": "x", "labels": [], "milestone": null}]']]
-  [case id=a-created-at-missing want='a:cx-private#1797'
-    [private '[{"number": 1797, "title": "x", "labels": [], "milestone": null}]']]
-  [case id=a-created-at-offset want='a:cx-private#1798'
-    [private '[{"number": 1798, "created_at": "2026-10-03T01:00:00+02:00", "title": "x", "labels": [], "milestone": null}]']]
-  [case id=a-labels-null want='a:cx-private#1799'
-    [private '[{"number": 1799, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": null, "milestone": null}]']]
-  [case id=b-milestone-empty-object want='b:cx-private#1800'
-    [private '[{"number": 1800, "created_at": "2026-09-01T00:00:00Z", "title": "x", "labels": [{"name": "v7.7"}], "milestone": {}}]']]
-  [case id=register-row-without-number want='register:cx-private#?'
-    [register [exclude repo=cx-private why='a reason, but for no issue']]]
+  [; t: no version in a title or body filed after NOVER-1; before it the text stays ]
+  [case id=t-title-after want='t:cx-private#1950'
+    [issues repo=cx-private '[{"number": 1950, "created_at": "2026-10-16T00:15:06Z", "title": "v7.7: the runner failed", "body": "", "milestone": {"title": "v7.7"}}]']]
+  [case id=t-body-after want='t:cx-platform-net#30 t:cx-platform-net#31 t:cx-platform-net#32'
+    [issues repo=cx-platform-net '[{"number": 30, "created_at": "2026-10-16T01:00:00Z", "title": "x", "body": "lands before the V7.7 cut", "milestone": {"title": "v7.7"}},
+                                   {"number": 31, "created_at": "2026-10-16T01:00:00Z", "title": "x", "body": "seen on 7.7.0-pre.1", "milestone": {"title": "v7.7"}},
+                                   {"number": 32, "created_at": "2026-10-16T01:00:00Z", "title": "x", "body": "(v7.12)", "milestone": {"title": "Backlog"}}]']]
+  [case id=t-before-cutoff-kept want=''
+    [issues repo=cx-private '[{"number": 1945, "created_at": "2026-10-15T09:00:00Z", "title": "the keystore in v7.7", "body": "v7.7 7.7.0", "milestone": {"title": "v7.7"}}]']]
+  [case id=t-other-versions-are-not-the-line want=''
+    [issues repo=cx-private '[{"number": 1951, "created_at": "2026-10-16T01:00:00Z", "title": "Python 3.12.15 vs Go 1.27.0", "body": "TLS 1.3, 0.90x at W=1, sqlite-3.53.3, UCD 16.0.0, v17.1, 77.7.1, v7", "milestone": {"title": "v7.7"}}]']]
+  [case id=t-body-null want=''
+    [issues repo=cx-private '[{"number": 1952, "created_at": "2026-10-16T01:00:00Z", "title": "x", "body": null, "milestone": {"title": "v7.7"}}]']]
+  [case id=t-created-at-null-is-judged want='t:cx-private#1953'
+    [issues repo=cx-private '[{"number": 1953, "created_at": null, "title": "v7.8 later", "milestone": {"title": "v7.8"}}]']]
+  [case id=t-created-at-offset-is-judged want='t:cx-private#1954'
+    [issues repo=cx-private '[{"number": 1954, "created_at": "2026-10-03T01:00:00+02:00", "title": "v7.8 later", "milestone": {"title": "v7.8"}}]']]
+  [case id=m-and-t-in-order want='m:cx-examples#9 t:cx-examples#8'
+    [issues repo=cx-examples '[{"number": 8, "created_at": "2026-10-16T02:00:00Z", "title": "v7.7 x", "milestone": {"title": "v7.7"}},
+                               {"number": 9, "created_at": "2026-09-01T00:00:00Z", "title": "x", "milestone": null}]']]
 
   [; What a refusal PRINTS (run4 of batch H4: the flow's red message tails the
-     step's stdout, and the refusals went to stderr alone, so the table it
-     showed named none). A case with [line] rows grades every printed line,
-     in order: the key, why, and the issue's title -- the gate's header
-     promises "each named, with its title". ]
-  [case id=line-a-names-why-and-title want='a:cx-private#1801'
-    [private '[{"number": 1801, "created_at": "2026-10-04T18:12:00Z", "title": "v7.7 the runner failed", "labels": [{"name": "bug"}], "milestone": null}]']
-    [line "issue-label-gate: REFUSED a:cx-private#1801 -- created 2026-10-04T18:12:00Z without the label v7.7: 'v7.7 the runner failed' -- fix: gh issue edit 1801 --repo cx-home/cx-private --add-label v7.7"]]
-  [case id=line-b-names-milestone-and-title want='b:cx-private#1802'
-    [private '[{"number": 1802, "created_at": "2026-09-01T00:00:00Z", "title": "a parked thing", "labels": [{"name": "v7.7"}], "milestone": {"title": "v7.7"}}]']
-    [line "issue-label-gate: REFUSED b:cx-private#1802 -- on the milestone 'v7.7', which no [parking] row names: 'a parked thing' -- fix: gh issue edit 1802 --repo cx-home/cx-private --remove-milestone (the label is the release, LBL-1), or a [parking] row in scripts/issue_label_exclusions.cxd"]]
-  [case id=line-c-names-prefix-and-title want='c:cx-platform-xap#6'
-    [component repo=cx-platform-xap '[{"number": 6, "created_at": "2026-09-01T00:00:00Z", "title": "the umbrella panics", "labels": [], "milestone": null}]']
-    [line "issue-label-gate: REFUSED c:cx-platform-xap#6 -- the title does not start with 'v7.7 ': 'the umbrella panics' -- fix: retitle to 'v7.7: the umbrella panics' (gh issue edit 6 --repo cx-home/cx-platform-xap --title ...)"]]
-  [case id=line-register-names-the-row want='register:cx-private#1790 a:cx-private#1790'
-    [register [exclude repo=cx-private number=1790]]
-    [private '[{"number": 1790, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [], "milestone": null}]']
-    [line "issue-label-gate: REFUSED register:cx-private#1790 -- a row of scripts/issue_label_exclusions.cxd without a why= or a number=; it excludes nothing"]
-    [line "issue-label-gate: REFUSED a:cx-private#1790 -- created 2026-10-03T01:00:00Z without the label v7.7: 'x' -- fix: gh issue edit 1790 --repo cx-home/cx-private --add-label v7.7"]]
+     step's stdout). A case with [line] rows grades every printed line, in
+     order: the key, why, the issue's title and the fix. ]
+  [case id=line-m-names-milestone-and-fix want='m:cx-private#1802'
+    [issues repo=cx-private '[{"number": 1802, "created_at": "2026-09-01T00:00:00Z", "title": "a parked thing", "milestone": {"title": "store phase 1"}}]']
+    [line "issue-label-gate: REFUSED m:cx-private#1802 -- on the milestone 'store phase 1', not one of v7.7 / v7.8 / Backlog (MS-1): 'a parked thing' -- fix: gh issue edit 1802 --repo cx-home/cx-private --milestone v7.7 (or v7.8, or Backlog)"]]
+  [case id=line-m-none want='m:cx-platform-xap#6'
+    [issues repo=cx-platform-xap '[{"number": 6, "created_at": "2026-09-01T00:00:00Z", "title": "the umbrella panics", "milestone": null}]']
+    [line "issue-label-gate: REFUSED m:cx-platform-xap#6 -- on no milestone, not one of v7.7 / v7.8 / Backlog (MS-1): 'the umbrella panics' -- fix: gh issue edit 6 --repo cx-home/cx-platform-xap --milestone v7.7 (or v7.8, or Backlog)"]]
+  [case id=line-t-names-the-version want='t:cx-private#1955'
+    [issues repo=cx-private '[{"number": 1955, "created_at": "2026-10-16T03:00:00Z", "title": "the runner failed", "body": "first seen on v7.7", "milestone": {"title": "v7.7"}}]']
+    [line "issue-label-gate: REFUSED t:cx-private#1955 -- created 2026-10-16T03:00:00Z, after NOVER-1, and names the version 'v7.7' in its title or body (the milestone carries the release): 'the runner failed' -- fix: gh issue edit 1955 --repo cx-home/cx-private --title/--body without the version"]]
 
-  [; A read that failed (exit 2) is the ENVIRONMENT, not a label refusal: its
-     own sentence, so an unreachable GitHub (no gh, no auth, no network) is
-     never read as an issue without its label. ]
+  [; A read that failed (exit 2) is the ENVIRONMENT, not a milestone refusal:
+     its own sentence, so an unreachable GitHub (no gh, no auth, no network)
+     is never read as an issue off its milestone. ]
   [read-case id=read-gh-not-authenticated repo=cx-private why='`gh api` exited 4: To get started with GitHub CLI, please run:  gh auth login'
-    want="issue-label-gate: ENVIRONMENT -- the open issues of cx-private could not be read (`gh api` exited 4: To get started with GitHub CLI, please run:  gh auth login); nothing was judged, this is not a label refusal (exit 2)"]
+    want="issue-label-gate: ENVIRONMENT -- the open issues of cx-private could not be read (`gh api` exited 4: To get started with GitHub CLI, please run:  gh auth login); nothing was judged, this is not a milestone refusal (exit 2)"]
   [read-case id=read-gh-absent repo=cx-platform-xap why='gh could not be run: no such file'
-    want="issue-label-gate: ENVIRONMENT -- the open issues of cx-platform-xap could not be read (gh could not be run: no such file); nothing was judged, this is not a label refusal (exit 2)"]
+    want="issue-label-gate: ENVIRONMENT -- the open issues of cx-platform-xap could not be read (gh could not be run: no such file); nothing was judged, this is not a milestone refusal (exit 2)"]
 ]
