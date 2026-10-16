@@ -599,7 +599,7 @@ step_globs() {
     check-shim-archives)           echo 'vcx/Makefile scripts/check_archive_alignment.cx vcx/deps/re2_shim/* vcx/arrow/shim/*' ;;
     # pure shell over canned logs — its only inputs are the classifier and the
     # SKIP_UNUSED_ESCAPE_PROBE that consumes it (\#1337).
-    check-build-failure-classifier) echo 'Makefile scripts/classify_v_build_failure.sh' ;;
+    check-build-failure-classifier) echo 'Makefile scripts/classify_v_build_failure.cx' ;;
     # 1170-f: every playground diagram parses and has no structural fault. Inputs:
     # the engine (the wasm bundle is built from it), the emitters, the playground
     # page and its example corpus, the gate itself.

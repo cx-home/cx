@@ -1032,10 +1032,10 @@ check-v-fork: build-vcx
 # so its matcher is red-proofed from both ends over canned logs, including the
 # verbatim \#1337 failure. Every alternative in the signature carries its own
 # sample, so deleting one reds and adding one without a sample reds too.
-# Pure shell over heredocs: it compiles nothing and needs no build slot.
+# A cx program over canned logs (CXMACH-1): it compiles nothing and needs no build slot.
 .PHONY: check-build-failure-classifier
 check-build-failure-classifier:
-	@sh scripts/classify_v_build_failure.sh --self-test
+	@$(TOOL_CX) --allow-all scripts/classify_v_build_failure.cx --self-test
 
 .PHONY: check-vcache-soundness
 # #1903: the gate proves the V COMPILER's cache and reads nothing of cx, so its SOUND verdict is
@@ -3988,13 +3988,13 @@ RETRY_FAILED_LINE = echo "──── the serial retry FAILED as well: $$rel is
 # way. The re-run is the classifier, never a retry, and it only happens when
 # the log actually carries a C symbol-level failure — re-running the whole
 # graph on an ordinary red (a moved address) would cost a full rebuild and
-# classify nothing. scripts/classify_v_build_failure.sh owns that decision and
+# classify nothing. scripts/classify_v_build_failure.cx owns that decision and
 # self-tests it.
 # NOTE for editors: this is a make VARIABLE, so a bare `#` starts a make
 # comment and silently truncates the line it is on. Issue numbers here must be
 # written `\#1337`, the same idiom CACHE_ESCAPE_PROBE above uses.
 SKIP_UNUSED_ESCAPE_PROBE = \
-	if sh scripts/classify_v_build_failure.sh "$$log"; then \
+	if $(TOOL_CX) --allow-all scripts/classify_v_build_failure.cx "$$log"; then \
 	  echo "──── -no-skip-unused DIAGNOSTIC (verdict stays RED; classifying only) ────"; \
 	  if eval "$$SU_RERUN" > "$$log.noskip" 2>&1; then \
 	    echo "════ SKIP-UNUSED ESCAPE (\#1337): FAILED with -skip-unused, PASSES with -no-skip-unused ════"; \

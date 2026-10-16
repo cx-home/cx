@@ -1,0 +1,150 @@
+# classify_v_build_failure.cx — does a failed V build's output carry a
+# C-SYMBOL-LEVEL failure, i.e. one worth re-running with `-no-skip-unused`?
+#
+# WHY THIS EXISTS (#1337). A gate went red like this:
+#
+#   cc: /tmp/v_501/address_baseline.<id>.tmp.c:341652:19: error: call to
+#       undeclared function 'string_runes'; ISO C99 and later do not support
+#       implicit function declarations [-Wimplicit-function-declaration]
+#   cc: /tmp/v_501/address_baseline.<id>.tmp.c:341652:14: error: initializing
+#       'Array_rune' (aka 'struct array') with an expression of incompatible
+#       type 'int'
+#
+# Those are ONE defect, not two: C99's implicit declaration gives the
+# undeclared call type `int`, and the second line is that `int` meeting the
+# real return type. The single defect is that `string_runes` was CALLED and
+# never DECLARED in the generated translation unit.
+#
+# #1337 attributed it to the `-usecache` module cache. It cannot be that:
+# `address-baseline-gate` runs `$(V) $(VFLAGS_VCX) run`, and
+# `VFLAGS_VCX := -cc cc -path "$(V_MODULE_PATH)"` has carried NO `-usecache`
+# since the single commit that ever wrote that line (1e144acff). The cache was
+# off in the failing run AND in the "cache-free" re-run the issue reports as a
+# discriminator — the same command twice, so its greenness is a NON-
+# REPRODUCTION, not a discriminator.
+#
+# What IS on for every such build is `-skip-unused`: for the C backend and any
+# build that is not `-build-module`, V sets `skip_unused = true`
+# unconditionally (third_party/v/vlib/v/pref/pref.v:1477-1481). Pruning a
+# symbol the translation unit still references is precisely this failure
+# class, the fork already carries two patches in it —
+#
+#   5f6bc5ab07  markused: fix undeclared C identifier for alias array type (#27660)
+#   third_party/v/vlib/v/markused/markused.v:286-302 (CX), whose own comment
+#               reads "the wrapper references an undeclared function -> C error"
+#
+# — and NEITHER covers a cache-free program TU. So the honest re-run for a
+# `$(V) ... run` gate is `-no-skip-unused`, which really does differ from the
+# failing command. A cache-free re-run of one differs from it in nothing,
+# which is why that option was rejected when ask 2 was taken (Makefile, the
+# check-vcache-soundness comment): that reasoning was right about the cache
+# and wrong about the remedy.
+#
+# CONTRACT
+#   classify_v_build_failure.cx LOGFILE
+#       exit 0  the log carries a C symbol-level failure -> re-run with
+#               -no-skip-unused and classify; the caller's verdict stays RED
+#               either way.
+#       exit 1  it does not (an ordinary behavioral red: a moved address, a
+#               failed assertion, a diverged transcript). No re-run: a
+#               whole-graph rebuild on every legitimate red is pure cost.
+#       exit 2  usage.
+#
+#   classify_v_build_failure.cx --self-test
+#       Red-proofs the matcher from BOTH ends over canned logs, including the
+#       verbatim #1337 text. A matcher that silently stops matching disables
+#       the diagnosis while the gate looks unchanged — the vacuous-gate class
+#       that check-serial-retry-rosters exists for.
+#
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of classify_v_build_failure.sh — the same
+# signature, the same lines and exits; an existing log grep could not read exits 2 as grep's did.
+#   $(TOOL_CX) --allow-all scripts/classify_v_build_failure.cx LOGFILE | --self-test
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/bytes'   as=bytes]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+
+[?def SIGNATURE scope=public () 'call to undeclared function|call to undeclared identifier|implicit-function-declaration|implicit declaration of function|use of undeclared identifier|Undefined symbols for architecture|undefined reference to|ld: symbol\(s\) not found']
+
+# 0 a match, 1 none (absent, or not a regular file), 2 an existing log that cannot be read.
+[?def classify scope=public impure ($log)
+  [?if [not [$io:is-file $log]] [then 1]
+    [else [?let [= $b [?else [$io:read-file-bytes $log] [err message='unreadable']]]
+      [?match $b [case [err$e] 2]
+        [else [?if [$present [$re:find [$re:compile [$SIGNATURE]] [$bytes:to-string-latin1 $b]]] [then 0] [else 1]]]]]]]]
+
+# One minimal SAMPLE per alternative in SIGNATURE, `alternative<TAB>sample`. The self-test requires
+# that EVERY alternative has a sample and that the sample matches — so removing an alternative reds
+# (its sample stops matching) and ADDING one without a sample reds too.
+[?def signature-samples scope=public () (
+  "call to undeclared function\tcc: x.tmp.c:1:1: error: call to undeclared function 'string_runes'",
+  "call to undeclared identifier\tcc: x.tmp.c:1:1: error: call to undeclared identifier 'Array_rune'",
+  "implicit-function-declaration\tcc: x.tmp.c:1:1: error: something [-Wimplicit-function-declaration]",
+  "implicit declaration of function\tx.tmp.c:1:1: warning: implicit declaration of function 'string_runes'",
+  "use of undeclared identifier\tcc: x.tmp.c:1:1: error: use of undeclared identifier 'g_str_buf'",
+  "Undefined symbols for architecture\tUndefined symbols for architecture arm64:",
+  "undefined reference to\t/usr/bin/ld: x.o: undefined reference to `string_runes'",
+  "ld: symbol(s) not found\tld: symbol(s) not found for architecture arm64")]
+
+# awk -F'\t' '$1 == a { print $2 }' under $( ): every matching row's second field, newline-joined.
+[?def sample-for scope=public ($plain)
+  [$strings:join [?to-sequence [?for [in $row [$signature-samples]]
+                                     [where [= [$nth [$strings:split $row "\t"] 1] $plain]]
+                                     [yield [?let [= $f [$strings:split $row "\t"]] [?if [> [$count $f] 1] [then [$nth $f 2]] [else '']]]]]] "\n"]]
+
+[?def plant scope=public impure ($t $name $content) [$io:write-file [$cat ($t, '/', $name)] $content]]
+
+[?def self-test scope=public impure ()
+  [?let
+    [= $t [$string [$io:temp-dir 'classify_v_build_failure.selftest.']]]
+    [= $alts [$strings:split [$SIGNATURE] '|']]
+    [= $nalt [$count $alts]]
+    # every alternative in SIGNATURE is load-bearing: its own sample, matched
+    [= $per [?to-sequence [?for [in $alt $alts]
+              [yield [?let [= $plain [$strings:replace $alt "\\" '']] [= $sample [$sample-for $plain]]
+                [?if [= $sample '']
+                  [then [?let [= $_s [$say [$cat ('  alternative [', $plain, ']: NO SAMPLE <- FAIL (add one to signature_samples)')]]] false]]
+                  [else [?let [= $_p [$plant $t 'alt' [$cat ($sample, "\n")]]]
+                             [?if [= [$classify [$cat ($t, '/alt')]] 0] [then true]
+                               [else [?let [= $_s [$say [$cat ('  alternative [', $plain, ']: its own sample does NOT match <- FAIL')]]] false]]]]]]]]]]]
+    [= $nmatch [$count [?to-sequence [?for [in $ok $per] [where $ok] [yield $ok]]]]]
+    [= $altok [= $nmatch $nalt]]
+    [= $_n [?if [< $nalt 8] [then [$say [$cat ('  SIGNATURE holds ', [$string $nalt], ' alternatives, expected at least 8 <- FAIL')]]] [else null]]]
+    [= $rc0 [and $altok [>= $nalt 8]]]
+    [= $_c [?if $rc0 [then [$say [$cat ('  ', [$string $nmatch], '/', [$string $nalt], ' signature alternatives each matched by their own sample')]]] [else null]]]
+    # MUST MATCH: the real-world logs, verbatim. The #1337 failure — both lines are ONE defect.
+    [= $_m1 [$plant $t 'm1' "cc: /tmp/v_501/address_baseline.01M1VYKMFNW4NH0EBWXYK4MPR0.tmp.c:341652:19: error: call to undeclared function 'string_runes'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]\ncc: /tmp/v_501/address_baseline.01M1VYKMFNW4NH0EBWXYK4MPR0.tmp.c:341652:14: error: initializing 'Array_rune' (aka 'struct array') with an expression of incompatible type 'int'\n"]]
+    # The #700 wave-2 link failure that motivated the cache probes (H11).
+    [= $_m2 [$plant $t 'm2' "ld: symbol(s) not found for architecture arm64\n  builtin__closure__closure_init\n"]]
+    # MUST NOT MATCH: the gate's OWN ordinary red (an address moved), an ordinary V type error,
+    # a green log, and an absent log (not a match, and no error).
+    [= $_n1 [$plant $t 'n1' "address-baseline: FAILED — 2 Tier-2 addresses differ from the recorded baseline\n  cx.data/parse            expected 0x4f2a... observed 0x91bc...\n  no re-bless is available to this stream; see address-baseline-capture\n"]]
+    [= $_n2 [$plant $t 'n2' "vcx/code/eval.v:120:5: error: expected `string`, not `int`\n"]]
+    [= $_n3 [$plant $t 'n3' "301 Tier-2 def addresses byte-identical to baseline\n"]]
+    [= $pos [?to-sequence [?for [in $f ('m1', 'm2')]
+              [yield [?if [= [$classify [$cat ($t, '/', $f)]] 0]
+                       [then [?let [= $_s [$say [$cat ('  real-world ', $f, ': MATCH (expected MATCH)')]]] true]]
+                       [else [?let [= $_s [$say [$cat ('  real-world ', $f, ': NO MATCH (expected MATCH) <- FAIL')]]] false]]]]]]]
+    [= $neg [?to-sequence [?for [in $f ('n1', 'n2', 'n3', 'missing')]
+              [yield [?if [= [$classify [$cat ($t, '/', $f)]] 0]
+                       [then [?let [= $_s [$say [$cat ('  negative ', $f, ': MATCH (expected NO MATCH) <- FAIL')]]] false]]
+                       [else [?let [= $_s [$say [$cat ('  negative ', $f, ': NO MATCH (expected NO MATCH)')]]] true]]]]]]]
+    [= $_r [?else [$io:remove-tree $t] null]]
+    [= $ok [and $rc0 [not [$contains $pos false]] [not [$contains $neg false]]]]
+    [?if $ok
+      [then [?let [= $_1 [$say [$cat ('classify_v_build_failure: self-test OK — ', [$string $nalt], ' alternatives each')]]]
+                 [= $_2 [$say '  load-bearing, 2 real-world logs match, 4 negatives do not.']] 0]]
+      [else [?let [= $_1 [$say 'classify_v_build_failure: self-test FAILED — the matcher no longer']]
+                  [= $_2 [$say '  classifies the failures it was written for. A classifier that']]
+                  [= $_3 [$say '  stops matching hides the diagnosis while the gate looks unchanged.']] 1]]]]]
+
+[?let [= $av [$env:argv]] [= $a1 [?if [> [$count $av] 1] [then [$nth $av 2]] [else '']]]
+  [$env:exit [?if [= $a1 '--self-test'] [then [$self-test]]
+               [else [?if [= $a1 '']
+                 [then [?let [= $_u [$io:write-line [$env:stderr] [$cat ('usage: ', [$nth $av 1], ' LOGFILE | --self-test')]]] 2]]
+                 [else [$classify $a1]]]]]]]
