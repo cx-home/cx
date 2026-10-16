@@ -1,0 +1,71 @@
+# scripts/vcache_soundness_memo_selftest.cx (cx-private#1903) — the fixture for
+# scripts/vcache_soundness_memo.cx. A planted gate (a cx one-liner) stands in for the real one: it
+# counts its runs in a file and prints a verdict line. Each assertion reads the count after the
+# call. A hit must not run the gate, and every reason to re-prove must run it.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of vcache_soundness_memo_selftest.sh, the same
+# eleven assertions.   $(TOOL_CX) --allow-all scripts/vcache_soundness_memo_selftest.cx  (repo root)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/map'     as=map]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+
+# gate — the planted gate as a cx one-liner: one 'ran' line appended to $cnt, the verdict printed.
+[?def gate scope=public ($cnt $green)
+  [$cat ("[?lib 'cx-stdlib/io' as=io] [?lib 'cx-stdlib/env' as=env] [?let [= $_a [$io:append-file '", $cnt, "' \"ran\\n\"]] ",
+         [?if $green [then "[= $_p [$env:write-line 'vcache-soundness: sound=12 red=0 mutations=9 elapsed=1s']] [$env:exit 0]]"]
+                     [else "[= $_p [$env:write-line 'vcache-soundness: sound=11 red=1']] [$env:exit 1]]"]])]]
+
+# memo — one memo call; [res rc= out=] with the environment $env added to the fixed one.
+[?def memo scope=public impure ($cx $w $cnt $green $env)
+  [?let [= $base {'CX_VCACHE_MEMO_DIR': [$cat ($w, '/store')], 'CX_VCACHE_MEMO_KEY_EXTRA': [$cat ('selftest-', [$string [$env:pid]])]}]
+        [= $r [$process:run ($cx, '--allow-all', 'scripts/vcache_soundness_memo.cx',
+                             [?if $green [then 'memo-selftest'] [else 'memo-selftest-red']],
+                             $cx, '--allow-all', '-e', [$gate $cnt $green])
+                env=[$map:merge ($base, $env)]]]
+    [?match $r [case [err$e] [res rc=-1 out=[$string $e@message]]]
+      [else [res rc=$r@exit-code out=[$cat ([$string $r@stdout], [$string $r@stderr])]]]]]]
+
+[?def runs scope=public impure ($cnt) [$count [?for [in $l [$strings:split-lines [?else [$io:read-file $cnt] '']]] [where [= $l 'ran']] [yield 1]]]]
+
+[?def check scope=public impure ($label $cnt $want-runs $want-rc $res $want-text)
+  [?let [= $n [$runs $cnt]]
+        [= $ok [and [= $n $want-runs] [= $res@rc $want-rc] [or [= $want-text ''] [$strings:contains $res@out $want-text]]]]
+        [= $_ [?if $ok [then [$say [$cat ('  ok   ', $label)]]]
+                [else [$say [$cat ('  FAIL ', $label, ': runs=', [$string $n], ' (want ', [$string $want-runs], ') rc=', [$string $res@rc],
+                                   ' (want ', [$string $want-rc], ')', [?if [= $want-text ''] [then ''] [else [$cat (", output wants '", $want-text, "'")]]],
+                                   "\n        ", $res@out)]]]]]
+    $ok]]
+
+[?let
+  [= $cx [$env:executable-path]]
+  [= $tdir [$io:temp-dir 'vcache-memo-selftest.']]
+  [= $w [$string $tdir]]
+  [= $cnt [$cat ($w, '/count')]]
+  [= $_c [$io:write-file $cnt '']]
+  [= $e {}]
+  [= $a [$check 'a first green run runs the gate and records it' $cnt 1 0 [$memo $cx $w $cnt true $e] '']]
+  [= $r2 [$memo $cx $w $cnt true $e]]
+  [= $b [$check 'the same inputs again HIT: the gate does not run, the recorded verdict and MEMO print' $cnt 1 0 $r2 'MEMO']]
+  [= $b2 [?let [= $ok [> [$count [?for [in $l [$strings:split-lines $r2@out]] [where [$strings:starts-with $l 'vcache-soundness: sound=12 red=0']] [yield 1]]] 0]]
+           [?if $ok [then true] [else [?let [= $_ [$say '  FAIL the hit does not reprint the recorded verdict line']] false]]]]]
+  [= $c [$check 'CX_VCACHE_MEMO=0 forces a run' $cnt 2 0 [$memo $cx $w $cnt true {'CX_VCACHE_MEMO': '0'}] '']]
+  [= $d [$check 'a changed key input re-proves' $cnt 3 0 [$memo $cx $w $cnt true {'CX_VCACHE_MEMO_KEY_EXTRA': 'other'}] '']]
+  [= $f [$check "a changed VFLAGS (V's own environment) re-proves" $cnt 4 0 [$memo $cx $w $cnt true {'VFLAGS': '-d planted_by_selftest'}] '']]
+  [= $g [$check 'a changed CC re-proves' $cnt 5 0 [$memo $cx $w $cnt true {'CC': '/usr/bin/false'}] '']]
+  [= $_s [$process:run ('sleep', '1')]]
+  [= $h [$check 'a record older than the age bound re-proves' $cnt 6 0 [$memo $cx $w $cnt true {'CX_VCACHE_MEMO_MAX_AGE': '0'}] '']]
+  [= $i [$check 'a red run exits red' $cnt 7 1 [$memo $cx $w $cnt false $e] '']]
+  [= $j [$check 'a red is never remembered: the second run runs again and is red again' $cnt 8 1 [$memo $cx $w $cnt false $e] '']]
+  [= $k [$check 'an unkeyed run (no compiler) runs' $cnt 9 0 [$memo $cx $w $cnt true {'CX_V': '/nonexistent/v'}] '']]
+  [= $l [$check 'and an unkeyed run never hits' $cnt 10 0 [$memo $cx $w $cnt true {'CX_V': '/nonexistent/v'}] '']]
+  [= $_r [?else [$io:remove-tree $w] null]]
+  [= $fails [$count [?for [in $x ($a, $b, $b2, $c, $d, $f, $g, $h, $i, $j, $k, $l)] [where [not $x]] [yield 1]]]]
+  [= $_o [?if [> $fails 0]
+           [then [$say [$cat ('vcache-soundness memo self-test: ', [$string $fails], ' failure(s)')]]]
+           [else [$say 'vcache-soundness memo self-test OK — a hit skips the gate, and the gate re-runs on every changed input, on MEMO=0, past the age bound, on red, and when unkeyed (cx-private#1903)']]]]
+  [$env:exit [?if [> $fails 0] [then 1] [else 0]]]]

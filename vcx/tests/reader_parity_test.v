@@ -708,6 +708,16 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/gen_site/docs_voice_check.cx', .program, reason_attr},
 	// #1601's scripts/gitconfig_home_selftest.cx: a verdict row's
 	// `what=[$cat ($what, ' — ', $detail)]`, a computed attribute (RULED: STREAM-1).
+	// CXMACH-1 batch 1 (cx-private#1946 stream): the bash ports carry computed
+	// attributes on constructed rows and spawn options (`kind=[$name $x]`,
+	// `stdout=[$cat …]`, `env=[map …]`), program forms (RULED: STREAM-1).
+	AcceptedByOne{'scripts/pipefail_pipe_gate.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/postmerge_prebuild_selftest.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/postmerge_reap_selftest.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/tree_lock.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/tree_lock_selftest.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/v_pin_fresh.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/vcache_soundness_memo_selftest.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/gitconfig_home_selftest.cx', .program, reason_attr},
 	// ── recorded exception — a program document the data balancer cannot read (3) ──
 	// 8 -> 9: scripts/docs_fragment.cx, the RS-9 fragment contract (a `"#]"` literal).

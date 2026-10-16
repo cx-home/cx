@@ -98,7 +98,7 @@ guide-snippets-check: $(GUIDE_CX_DEP)
 	@CX_BIN="$(GUIDE_CX_BIN)" $(GUIDE_CX_BIN) \
 	  --allow-read --allow-write --allow-subprocess --allow-env \
 	  $(GUIDE_GEN)/snippet_check.cx
-	@$(GUIDE_GEN)/check_retired_surface.sh
+	@$(TOOL_CX) --allow-read $(GUIDE_GEN)/check_retired_surface.cx
 
 ## check-retired-surface  Companion scan to the snippet gate: rejects
 ##                                   retired forms that PARSE as something
@@ -109,7 +109,7 @@ guide-snippets-check: $(GUIDE_CX_DEP)
 ##                                   `retired-ok` marker on the line.
 .PHONY: check-retired-surface
 check-retired-surface:
-	@$(GUIDE_GEN)/check_retired_surface.sh
+	@$(TOOL_CX) --allow-read $(GUIDE_GEN)/check_retired_surface.cx
 
 ## playground-examples-regen  Regenerate + re-audit
 ##                                   scripts/gen_guide/playground/
