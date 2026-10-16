@@ -636,7 +636,7 @@ step_globs() {
     # the adversarial -usecache proof (scripts/vcache_soundness_gate.sh): it
     # REBUILDS the tree from source under mutated inputs and compares behaviour,
     # so its surface is the whole compiled closure plus the gate itself.
-    check-selection-manifest)      echo 'Makefile scripts/test_changed.sh scripts/check_selection_manifest.sh scripts/test_changed_selftest.sh vcx/tests/* conformance/*' ;;
+    check-selection-manifest)      echo 'Makefile scripts/test_changed.sh scripts/check_selection_manifest.cx scripts/test_changed_selftest.sh vcx/tests/* conformance/*' ;;
     check-vcache-soundness)        echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/vcache_soundness_gate.sh scripts/vcache_soundness_memo.cx" ;;
     # #1675: the concurrency fixture over the same gate, plus its own script.
     check-vcache-soundness-selftest) echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/vcache_soundness_gate.sh scripts/vcache_soundness_selftest.sh scripts/vcache_soundness_memo.cx scripts/vcache_soundness_memo_selftest.cx" ;;

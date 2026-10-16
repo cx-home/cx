@@ -54,7 +54,8 @@ set -u
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 TC="$ROOT/scripts/test_changed.sh"
-CSM="$ROOT/scripts/check_selection_manifest.sh"
+CSM="$ROOT/scripts/check_selection_manifest.cx"
+CX="${TOOL_CX:-cx}"
 [ -f "$TC" ] || { echo "SELFTEST FAILED: no $TC" >&2; exit 1; }
 [ -f "$CSM" ] || { echo "SELFTEST FAILED: no $CSM" >&2; exit 1; }
 
@@ -179,10 +180,10 @@ fi
 # synthetic one: the checker resolves the repo from its own path, which also
 # proves it is relocatable.
 mkdir -p "$T/repo/scripts"
-cp "$CSM" "$T/repo/scripts/check_selection_manifest.sh"
+cp "$CSM" "$T/repo/scripts/check_selection_manifest.cx"
 cp "$TC" "$T/repo/scripts/test_changed.sh"
 printf 'TEST_TARGETS := check-prod-build a-step-with-no-row\n' > "$T/repo/Makefile"
-if ( cd "$T/repo" && sh scripts/check_selection_manifest.sh > "$T/g" 2>&1 ); then
+if ( cd "$T/repo" && "$CX" --allow-read --allow-write scripts/check_selection_manifest.cx > "$T/g" 2>&1 ); then
 	bad G "check-selection-manifest passed a TEST_TARGETS entry with no row"
 elif grep -q 'a-step-with-no-row' "$T/g"; then
 	ok G "check-selection-manifest names the rowless step and fails"

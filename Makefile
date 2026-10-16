@@ -4390,8 +4390,8 @@ check-build-input-roster:
 # for, and the selection rules are exactly the kind of thing that rots quietly.
 .PHONY: check-selection-manifest
 check-selection-manifest:
-	@bash scripts/check_selection_manifest.sh
-	@sh scripts/test_changed_selftest.sh
+	@$(TOOL_CX) --allow-read --allow-write scripts/check_selection_manifest.cx
+	@TOOL_CX=$(TOOL_CX) sh scripts/test_changed_selftest.sh
 
 # ── docs-voice-check (RULED: DOCS-43, RS-30) — the docs speak for CX ─────────
 # Counts the word "Python" (any case, whole word) in every served source —
