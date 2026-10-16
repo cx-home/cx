@@ -581,11 +581,13 @@ check-gitconfig-home:
 # artifact nothing rebuilt, so the loop's checkout compiled under the 2c38b21acf pin
 # with a 2026-09-24 compiler and cx-home/v#9's cgen fix never reached its wasm bundle.
 # Every recipe that compiles with $(V) through the builds below now proves the binary
-# no older than cmd/v + vlib/v first (scripts/v_pin_fresh.sh: the fork's `v self` into a
+# no older than cmd/v + vlib/v first (scripts/v_pin_fresh.cx: the fork's `v self` into a
 # side file, atomic rename), once per checkout under the v-pin tree lock.
 .PHONY: v-pin-fresh
 v-pin-fresh:
-	@$(TOOL_CX) --allow-all $(CURDIR)/scripts/tree_lock.cx v-pin third_party/v/v sh $(CURDIR)/scripts/v_pin_fresh.sh $(CURDIR)/third_party/v
+	@if [ -x "$(TOOL_CX)" ] || command -v "$(TOOL_CX)" >/dev/null 2>&1; then \
+	  $(TOOL_CX) --allow-all $(CURDIR)/scripts/tree_lock.cx v-pin third_party/v/v $(TOOL_CX) --allow-all $(CURDIR)/scripts/v_pin_fresh.cx $(CURDIR)/third_party/v; \
+	else echo "v-pin-fresh: no cx to run it with (TOOL_CX=$(TOOL_CX)); skipped — deps-sync needs one too"; fi
 
 # CX_STAMP_ROOT=$(CURDIR) (D91a, #1591 item K14, on every recursive call into
 # the cx-core-code pin below): `commit` in `cx --version` names the tree the

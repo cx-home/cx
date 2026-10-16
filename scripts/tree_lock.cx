@@ -18,7 +18,7 @@
 # CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of tree_lock.sh and docs_tree_lock.sh.
 # It runs BEFORE build-vcx (the v-pin lock wraps the V compiler's own rebuild), so it runs
 # on the bootstrap cx the Makefile's TOOL_CX finds — the released cx included.
-#   $(TOOL_CX) --allow-all scripts/tree_lock.cx v-pin third_party/v/v sh scripts/v_pin_fresh.sh …
+#   $(TOOL_CX) --allow-all scripts/tree_lock.cx v-pin third_party/v/v $(TOOL_CX) --allow-all scripts/v_pin_fresh.cx …
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
