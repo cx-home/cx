@@ -1,0 +1,71 @@
+# scripts/postmerge_reap_selftest.cx (cx-private#1903) — scripts/postmerge_steps.cx's own-runner
+# orphan reap, on a scratch runner: (A) run OUTSIDE the runner it reaps nothing; (B) run under the
+# runner it kills each live own-runner holder — one leading its own process group, one sharing
+# the caller's (it and its children) — and removes the runner directories. Exit 0 = both hold.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of postmerge_reap_selftest.sh.
+#   $(TOOL_CX) --allow-all scripts/postmerge_reap_selftest.cx [CX]      (from the repo root)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def text-of scope=public impure ($p) [$strings:trim [?else [$io:read-file $p] '']]]
+[?def alive scope=public impure ($p) [and [not [= $p '']] [?else [$process:pid-alive [$strings:to-int $p]] false]]]
+[?def check scope=public impure ($label $ok)
+  [?let [= $_ [$say [$cat ([?if $ok [then '  ok   '] [else '  FAIL ']], $label)]]] $ok]]
+[?def G scope=public () ('--allow-read', '--allow-write', '--allow-subprocess', '--allow-env', '--allow-clock')]
+
+# holder — `build-slot.sh sleep 600` under slot dir $slot, in its own process group or the caller's.
+[?def holder scope=public impure ($t $slot $own-group $log)
+  [$process:spawn ('sh', 'scripts/build-slot.sh', 'sleep', '600')
+    env={'CX_BUILD_SLOT': [$cat ($t, '/', $slot)]} new-process-group=$own-group
+    stdin=:discard stdout=[$cat ($t, '/', $log)] stderr=:discard]]
+
+[?def wait-pids scope=public impure ($t)
+  [?loop [= $i 0]
+    [?if [or [>= $i 10] [and [$io:is-file [$cat ($t, '/.slot-own2/pid')]] [$io:is-file [$cat ($t, '/.slot-own4/pid')]]]]
+      [then [break $i]]
+      [else [continue [?let [= $_ [$process:run ('sleep', '1')]] [+ $i 1]]]]]]]
+
+[?def children scope=public impure ($p)
+  [?let [= $r [$process:run ('pgrep', '-P', $p)]]
+    [?match $r [case [err$e] ()] [else [$strings:split-whitespace [$string $r@stdout]]]]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $cx [?if [> [$count $argv] 1] [then [$nth $argv 2]] [else [$string [$env:executable-path]]]]]
+  [= $here [$env:cwd]]
+  [= $t [$string [$io:temp-dir 'cx-reap-selftest.']]]
+  [= $h2 [$holder $t '.slot-own2' true 'o2.log']]
+  [= $h4 [$holder $t '.slot-own4' false 'o4.log']]
+  [= $_w [$wait-pids $t]]
+  [= $p2 [$text-of [$cat ($t, '/.slot-own2/pid')]]]
+  [= $p4 [$text-of [$cat ($t, '/.slot-own4/pid')]]]
+  [= $c4 [$children $p4]]
+  [= $ra [$process:run ($cx, [?splice [$G]], 'scripts/postmerge_steps.cx', [$cat ('--checkout=', $here)], 'reap')
+           env={'CX_BUILD_SLOT': [$cat ($t, '/.slot')]}]]
+  [= $aout [?match $ra [case [err$e] [$string $e@message]] [else [$cat ([$string $ra@stdout], [$string $ra@stderr])]]]]
+  [= $a [$check [$cat ('A: outside the runner nothing is reaped', [?if [$strings:contains $aout 'no own-runner reap'] [then ''] [else [$cat (': ', $aout)]]])]
+           [and [$alive $p2] [$alive $p4] [$strings:contains $aout 'no own-runner reap']]]]
+  [= $rb [$process:run ('sh', 'scripts/build-slot.sh', $cx, [?splice [$G]], 'scripts/postmerge_steps.cx', [$cat ('--checkout=', $here)], 'reap')
+           env={'CX_BUILD_SLOT': [$cat ($t, '/.slot')], 'BUILD_SLOT_TIMEOUT': '5'}]]
+  [= $bout [?match $rb [case [err$e] [$string $e@message]] [else [$cat ([$string $rb@stdout], [$string $rb@stderr])]]]]
+  [= $_s [$process:run ('sleep', '1')]]
+  # the two holders are this program's own children: reap them so a killed one is not a live zombie
+  [= $_z [?do [?else [$process:wait-timeout $h2 2000] null] [?else [$process:wait-timeout $h4 2000] null]]]
+  [= $left [?for [in $p ($p2, $p4, [?splice $c4])] [where [$alive $p]] [yield $p]]]
+  [= $b1 [$check [$cat ('B: no holder alive after the reap', [?if [= [$count $left] 0] [then ''] [else [$cat (' (alive: ', [$strings:join $left ' '], ')')]]])]
+            [= [$count $left] 0]]]
+  [= $nreap [$count [?for [in $l [$strings:split-lines $bout]] [where [$strings:starts-with $l 'postmerge-steps: REAPED own']] [yield 1]]]]
+  [= $b2 [$check [$cat ('B: two REAPED lines', [?if [= $nreap 2] [then ''] [else [$cat (': ', $bout)]]])] [= $nreap 2]]]
+  [= $b3 [$check 'B: runner directories removed'
+           [and [not [$io:is-directory [$cat ($t, '/.slot-own2')]]] [not [$io:is-directory [$cat ($t, '/.slot-own4')]]]]]]
+  [= $_k [?do [?else [$process:kill $h2] null] [?else [$process:kill $h4] null]
+              [?for [in $p $c4] [yield [?else [$process:run ('kill', $p)] null]]]]]
+  [= $_r [?else [$io:remove-tree $t] null]]
+  [= $ok [and $a $b1 $b2 $b3]]
+  [= $_o [$say [?if $ok [then 'postmerge-reap-selftest OK'] [else 'postmerge-reap-selftest FAILED']]]]
+  [$env:exit [?if $ok [then 0] [else 1]]]]

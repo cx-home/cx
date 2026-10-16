@@ -581,11 +581,13 @@ check-gitconfig-home:
 # artifact nothing rebuilt, so the loop's checkout compiled under the 2c38b21acf pin
 # with a 2026-09-24 compiler and cx-home/v#9's cgen fix never reached its wasm bundle.
 # Every recipe that compiles with $(V) through the builds below now proves the binary
-# no older than cmd/v + vlib/v first (scripts/v_pin_fresh.sh: the fork's `v self` into a
+# no older than cmd/v + vlib/v first (scripts/v_pin_fresh.cx: the fork's `v self` into a
 # side file, atomic rename), once per checkout under the v-pin tree lock.
 .PHONY: v-pin-fresh
 v-pin-fresh:
-	@sh $(CURDIR)/scripts/tree_lock.sh v-pin third_party/v/v sh $(CURDIR)/scripts/v_pin_fresh.sh $(CURDIR)/third_party/v
+	@if [ -x "$(TOOL_CX)" ] || command -v "$(TOOL_CX)" >/dev/null 2>&1; then \
+	  $(TOOL_CX) --allow-all $(CURDIR)/scripts/tree_lock.cx v-pin third_party/v/v $(TOOL_CX) --allow-all $(CURDIR)/scripts/v_pin_fresh.cx $(CURDIR)/third_party/v; \
+	else echo "v-pin-fresh: no cx to run it with (TOOL_CX=$(TOOL_CX)); skipped — deps-sync needs one too"; fi
 
 # CX_STAMP_ROOT=$(CURDIR) (D91a, #1591 item K14, on every recursive call into
 # the cx-core-code pin below): `commit` in `cx --version` names the tree the
@@ -817,11 +819,11 @@ wasm-fresh-gate:
 # stale and each ran build-playground; the other's build_libcx_wasm.sh removed
 # libcx-sync.js before it relinked it, and mermaid, its own build and freshness
 # proof done, read "no node-loadable wasm bundle under dist/wasm/". The check and
-# the build now run under scripts/tree_lock.sh (vcx/target/wasm-bundle.lock): the
+# the build now run under scripts/tree_lock.cx (vcx/target/wasm-bundle.lock): the
 # second step waits, finds the first one's bundle fresh, and does not rebuild.
 .PHONY: wasm-bundle-fresh wasm-bundle-fresh-locked
 wasm-bundle-fresh:
-	@sh $(CURDIR)/scripts/tree_lock.sh wasm-bundle dist/wasm/ $(MAKE) --no-print-directory wasm-bundle-fresh-locked
+	@$(TOOL_CX) --allow-all $(CURDIR)/scripts/tree_lock.cx wasm-bundle dist/wasm/ $(MAKE) --no-print-directory wasm-bundle-fresh-locked
 # check_wasm_fresh.sh compares the bundle with vcx/ + stdlib/ + VERSION, not with the
 # compiler: a V binary newer than the bundle (v-pin-fresh rebuilt it after a fork bump,
 # #1899) means the bundle was compiled by the previous compiler and is rebuilt too.
@@ -1038,11 +1040,11 @@ check-build-failure-classifier:
 .PHONY: check-vcache-soundness
 # #1903: the gate proves the V COMPILER's cache and reads nothing of cx, so its SOUND verdict is
 # remembered per set of inputs (compiler, fork vlib + diff, cc, OS, V's environment, the
-# scripts; 12 h at most) by scripts/vcache_soundness_memo.sh. A red is never remembered.
+# scripts; 12 h at most) by scripts/vcache_soundness_memo.cx. A red is never remembered.
 # CX_VCACHE_MEMO=0 forces the proof.
 check-vcache-soundness:
 	@log=deps/cx-core-code/vcx/target/vcache-soundness.log; \
-	bash scripts/vcache_soundness_memo.sh check-vcache-soundness bash scripts/vcache_soundness_gate.sh > $$log 2>&1; rc=$$?; \
+	$(TOOL_CX) --allow-all scripts/vcache_soundness_memo.cx check-vcache-soundness bash scripts/vcache_soundness_gate.sh > $$log 2>&1; rc=$$?; \
 	grep -E '^PROBE|^vcache-soundness|: MEMO' $$log; \
 	echo "full log: $$log; GATE-RC=$$rc"; exit $$rc
 
@@ -1052,8 +1054,8 @@ check-vcache-soundness:
 # gates started together must both end SOUND and neither may collide.
 .PHONY: check-vcache-soundness-selftest
 check-vcache-soundness-selftest:
-	@bash scripts/vcache_soundness_memo_selftest.sh
-	@bash scripts/vcache_soundness_memo.sh check-vcache-soundness-selftest sh scripts/vcache_soundness_selftest.sh
+	@$(TOOL_CX) --allow-all scripts/vcache_soundness_memo_selftest.cx
+	@$(TOOL_CX) --allow-all scripts/vcache_soundness_memo.cx check-vcache-soundness-selftest sh scripts/vcache_soundness_selftest.sh
 
 # V6 — pre-commit lint rules over .cx files. Catches the retired
 # v0.7.x syntax forms the v0.8.0 parser rejects, plus the
@@ -1120,11 +1122,11 @@ guide-check: build-vcx
 ## The post-merge flow runs guide-render-gate, site-check and docs-check (via
 ## site-index-check) each as its own make (#1817), and each renders docs/guide/
 ## before it reads it: on 73a02bbd4 site-check's render removed index.html under
-## this one. scripts/docs_tree_lock.sh holds one render-and-read per checkout;
+## this one. The docs-tree lock (scripts/tree_lock.cx) holds one render-and-read per checkout;
 ## the *-locked target is the body, run under the lock (re-entrant for the
 ## nested site-check -> guide-render-gate-locked path). The prerequisites stay on
 ## the outer target so the lock is never held across a build.
-DOCS_TREE_LOCK = sh $(CURDIR)/scripts/docs_tree_lock.sh
+DOCS_TREE_LOCK = $(TOOL_CX) --allow-all $(CURDIR)/scripts/tree_lock.cx docs-tree "docs/guide/ and site/"
 guide-render-gate: build-vcx
 	@$(DOCS_TREE_LOCK) $(MAKE) --no-print-directory guide-render-gate-locked
 .PHONY: guide-render-gate-locked
@@ -1651,6 +1653,14 @@ DEPS_CX_MAIN = $(shell git -C "$(CURDIR)" worktree list --porcelain 2>/dev/null 
 DEPS_CX_FOUND = $(shell for c in "$(CURDIR)/deps/cx-core-code/vcx/target/cx" "$(DEPS_CX_MAIN)/vcx/target/cx" "$$(command -v cx 2>/dev/null)" "$(HOME)/.local/bin/cx"; do [ -n "$$c" ] && [ -x "$$c" ] && { echo "$$c"; break; }; done)
 deps-sync deps-check deps-cx deps-present: CX_BIN ?= $(DEPS_CX_FOUND)
 
+# TOOL_CX (CXMACH-1): the cx that runs this tree's tooling programs (scripts/*.cx) from a recipe
+# that may run before build-vcx — the v-pin lock wraps the V compiler's own rebuild. CX_BIN when
+# given, else the first executable of: this tree's build, the main checkout's build (its deps/), the
+# main checkout's legacy vcx/target/cx, a cx on PATH, ~/.local/bin/cx. A released cx serves too
+# (tree_lock.cx and v_pin_fresh.cx are checked on one).
+TOOL_CX_FOUND = $(shell for c in "$(CURDIR)/deps/cx-core-code/vcx/target/cx" "$(DEPS_CX_MAIN)/deps/cx-core-code/vcx/target/cx" "$(DEPS_CX_MAIN)/vcx/target/cx" "$$(command -v cx 2>/dev/null)" "$(HOME)/.local/bin/cx"; do [ -n "$$c" ] && [ -x "$$c" ] && { echo "$$c"; break; }; done)
+TOOL_CX = $(if $(CX_BIN),$(CX_BIN),$(if $(TOOL_CX_FOUND),$(TOOL_CX_FOUND),cx))
+
 .PHONY: deps-sync deps-check deps-cx
 deps-cx:
 	@if [ -n "$(DEPS_CX_GIVEN)" ] && [ -x "$(DEPS_CX_GIVEN)" ]; then echo "deps-sync: using $(DEPS_CX_GIVEN) (CX_BIN)" >&2; exit 0; fi; \
@@ -2172,7 +2182,7 @@ check-prod-build:
 # green with ZERO annotated exceptions; that is the standard to hold.
 .PHONY: check-pipefail-pipes
 check-pipefail-pipes:
-	@scripts/pipefail_pipe_gate.sh
+	@$(TOOL_CX) --allow-read --allow-env scripts/pipefail_pipe_gate.cx
 
 # ── check-exec-redirect (#1542) ───────────────────────────────────────────────
 # A bare `exec` carrying only redirections applies them to the SHELL, for the
@@ -2184,7 +2194,7 @@ check-pipefail-pipes:
 # whose damage is silence.
 .PHONY: check-exec-redirect
 check-exec-redirect:
-	@scripts/exec_redirect_gate.sh
+	@$(TOOL_CX) --allow-read scripts/exec_redirect_gate.cx
 
 # ── check-exit-status-probe (#1570) ──────────────────────────────────────────
 # Third of the same family, and the quietest of the three: an exit status read
@@ -3645,16 +3655,22 @@ CX_GC ?= -gc e
 # engine-free build (then db.cxd's engine steps are expected red; see the
 # fixture doc-comment).
 CX_ENGINES ?= -d cx_db_sqlite -d cx_db_redis
-# `v test dir/` compiles EACH `*_test.v` as its own standalone executable, and
-# with no cache every one recompiles the whole graph (builtin + os + all vcx
-# modules) from scratch — the dominant cost is the per-file clang subprocess.
-# `-usecache` C-compiles each unchanged module ONCE and reuses the object across
-# every test binary (and across re-runs): the first file pays a cold tax, the
-# rest reuse the shared `vcx`/`builtin`/`os` objects. Cache-safe with `-gc e` —
-# the cache salt folds in the gc defines + `cc` + cflags + lookup path
-# (third_party/v/vlib/v/pref/default.v), so different flags get distinct buckets.
-# Overridable to A/B: `make CX_CACHE= test-vcx-suite` disables it.
-CX_CACHE ?= -usecache
+# `v test dir/` compiles EACH `*_test.v` as its own executable. CX_CACHE is EMPTY by default (cx-private#1946, measured 2026-10-16). `-usecache`
+# was meant to C-compile each unchanged module once and reuse the object across
+# test binaries, but the fork's type-table guard (validate_usecache_type_tables,
+# cx-private#864) discards every cached layer whose (idx, name) table is not a
+# prefix of the importing program's, and a test that imports `code` matches none:
+# `-v` on env_retention_test.v prints "emitting it inline" for all 79 modules,
+# cx and code among them. So the cache only ADDED work: after every head move each
+# test binary first rebuilt the stale layers (140 s compile cold vs 17 s cache-free
+# on env_retention_test.v, 19 s warm), then emitted the modules inline anyway. The
+# loop's test-vcx-suite on 3681a9e01: 734 s, compile 5,657 s (eight files at
+# 673-705 s each). The whole suite on one box, cache-free then cached (warm for
+# the env file only), load 17-20: 68 s / compile 299 s vs 212 s / compile 1,562 s.
+# A cached build that a fork fix makes reusable comes back as an explicit A/B:
+# `make CX_CACHE=-usecache test-vcx-suite`. check-vcache-soundness proves the
+# cache key itself and keeps its own flags.
+CX_CACHE ?=
 # #318 — a step whose environment prerequisite is absent (e.g. deps/cx-core-code/vcx/target/cx
 # not built in a bare out-of-tree checkout) SELF-SKIPS with a named reason via
 # vcx/testenv (exit 0, never failing-as-regression) and records the reason in
@@ -3990,6 +4006,7 @@ SKIP_UNUSED_ESCAPE_PROBE = \
 	exit 1
 
 CACHE_ESCAPE_PROBE = \
+	if [ -z "$(strip $(CX_CACHE))" ]; then echo "──── real failure (CX_CACHE is empty: no module cache in force to blame): $$rel ────"; else \
 	echo "──── cache-free DIAGNOSTIC (verdict stays red; classifying): $$rel ────"; \
 	if $(V) -cc cc $(CX_GC) $(CX_ENGINES) test "$$rel"; then \
 	  echo "════ GATE ESCAPE (\#700): $$rel FAILED under $(CX_CACHE) and PASSES cache-free ════"; \
@@ -4001,6 +4018,7 @@ CACHE_ESCAPE_PROBE = \
 	  echo "     Then add a probe to scripts/vcache_soundness_gate.sh that goes RED on it."; \
 	else \
 	  echo "──── real failure, not a cache artifact (fails cache-free too): $$rel ────"; \
+	fi; \
 	fi; \
 	st=1
 
@@ -4614,7 +4632,7 @@ test-vcx-cmd: build-vcx-dev
 	{ $(V) -cc cc $(CX_GC) -d cx_platform $(CX_ENGINES) $(CX_CACHE) test vcx/cmd/ 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
-	  if grep -aqE 'C compilation error|linker command failed|symbol\(s\) not found|duplicate symbol' $$log; then \
+	  if [ -n "$(strip $(CX_CACHE))" ] && grep -aqE 'C compilation error|linker command failed|symbol\(s\) not found|duplicate symbol' $$log; then \
 	    echo "──── cache-free DIAGNOSTIC (verdict stays red; classifying): vcx/cmd ────"; \
 	    if $(V) -cc cc $(CX_GC) -d cx_platform $(CX_ENGINES) test vcx/cmd/; then \
 	      echo "════ GATE ESCAPE (#700): vcx/cmd FAILED under $(CX_CACHE) and PASSES cache-free ════"; \
@@ -4824,7 +4842,7 @@ conform-vcx: build-vcx
 # THE cx MIRROR: `publish-org` syncs the org profile README, best-effort.
 
 publish-org:
-	@bash scripts/publish_org.sh
+	@$(TOOL_CX) --allow-all scripts/publish_org.cx
 
 release-all: publish-org
 

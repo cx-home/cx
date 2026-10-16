@@ -1,0 +1,87 @@
+# scripts/v_pin_fresh.cx [<v-dir>] — rebuild the pinned V compiler when its binary is older
+# than the compiler sources it sits beside.
+#
+# third_party/v/v is a BUILT artifact (untracked) of the third_party/v gitlink. A checkout
+# that moves the gitlink (a fork bump merged into release/0.18) updates the SOURCES and
+# leaves the binary as it was: every later recipe then compiles with the OLD compiler over
+# the NEW vlib, and a fork fix that lives in the compiler (cgen, checker, builder) never
+# reaches the build. The loop's checkout ran a 2026-09-24 binary under the fork pin
+# 2c38b21acf on 2026-10-08, so cx-home/v#9's cgen fix (map[voidptr] key width on wasm32)
+# was in the pinned source and absent from every wasm bundle the loop built (#1899).
+#
+# Staleness: a compiler source (cmd/v, vlib/v; *.v, not *_test.v, not under testdata/)
+# modified after the binary. A checkout writes changed files with the checkout's mtime, so
+# a gitlink move that touches the compiler is always seen; one that touches only other vlib
+# modules needs no rebuild (user programs compile vlib from source). The rebuild is the
+# fork's own `v self` into a side file, then an atomic rename over the binary, so a recipe
+# already running keeps its inode and one starting mid-rebuild never finds the binary
+# absent. The previous binary is kept as v_old. Callers serialize through
+# scripts/tree_lock.cx (v-pin) and this program re-checks after the lock, so concurrent
+# steps rebuild once.
+#
+# No binary, or no compiler sources beside it (a bare PATH v): nothing to do — the cx
+# build's own guard (deps/cx-core-code/vcx/Makefile, P4) refuses or warns there.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of v_pin_fresh.sh. It runs before V is
+# built, on the Makefile's TOOL_CX (a released cx serves). Exit 0 fresh or rebuilt; 1 failed.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/time'    as=time]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def mtime scope=public impure ($p) [$time:to-unix [$io:modified-time $p]]]
+[?def out scope=public impure ($argv $cwd)
+  [?let [= $r [$process:run $argv cwd=$cwd]]
+    [?match $r [case [err$e] ''] [else [?if [= $r@exit-code 0] [then [$strings:trim [$string $r@stdout]]] [else '']]]]]]
+
+# String positions are not used here: the released cx counts them from 0 and the current line
+# from 1, and this program runs on either (argv[0] is absolute for the same reason, #1630).
+# newer — the compiler sources modified after the binary (paths relative to $vd).
+[?def newer scope=public impure ($vd $t)
+  [?for [in $root ([$cat ($vd, '/cmd/v')], [$cat ($vd, '/vlib/v')])]
+        [in $e [$io:walk $root]]
+        [where [and [= $e@is-file true]
+                    [$strings:ends-with $e@path '.v'] [not [$strings:ends-with $e@path '_test.v']]
+                    [not [$strings:contains $e@path '/testdata/']]
+                    [> [$mtime $e@path] $t]]]
+    [yield [$strings:replace-first $e@path [$cat ($vd, '/')] '']]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $vd [?if [> [$count $argv] 1] [then [$nth $argv 2]]
+           [else [?let [= $r [$process:run ('git', 'rev-parse', '--show-toplevel')]]
+                   [$cat ([$strings:trim [$string $r@stdout]], '/third_party/v')]]]]]
+  [= $v [$cat ($vd, '/v')]]
+  [= $_p [?if [and [$io:is-file $v] [$io:is-directory [$cat ($vd, '/cmd/v')]] [$io:is-directory [$cat ($vd, '/vlib/v')]]]
+           [then null] [else [$env:exit 0]]]]
+  [= $new [$newer $vd [$mtime $v]]]
+  [= $_n [?if [= [$count $new] 0] [then [$env:exit 0]] [else null]]]
+  [= $_s [$say [$cat ('v-pin-fresh: rebuilding ', $v, ' (compiler source newer than the binary: ', [$nth $new 1], ')')]]]
+  # vnew / v_old: names the fork's .gitignore already ignores (v self's own backup is
+  # v_old), so the rebuild leaves the submodule's status clean.
+  [= $tf [$io:temp-file 'v-pin-fresh.' '.log']]
+  [= $log $tf@path]
+  [= $_c [$io:close $tf]]
+  [= $vnew [$cat ($vd, '/vnew')]]
+  [= $_r [?else [$io:remove $vnew] null]]
+  [= $h [$process:spawn ($v, 'self', '-o', 'vnew') cwd=$vd stdin=:discard stdout=$log stderr=[$cat ($log, '.err')]]]
+  # (stderr in its own file: the released cx has no stderr=:stdout merge)
+  [= $rc [?else [$process:wait $h] 127]]
+  [= $works [and [= $rc 0] [$io:is-file $vnew] [not [= [$out ($vnew, 'version') $vd] '']]]]
+  [?if $works
+    [then [?let [= $_o [$process:run ('cp', '-p', 'v', 'v_old') cwd=$vd]]
+                [= $_m [$io:rename $vnew $v]]
+                [= $_l [?do [?else [$io:remove $log] null] [?else [$io:remove [$cat ($log, '.err')]] null]]]
+                [= $sha [$out ('git', 'rev-parse', '--short=10', 'HEAD') $vd]]
+                [= $_k [$say [$cat ('v-pin-fresh: OK — ', [$out ($v, 'version') $vd], ' rebuilt at ', [?if [= $sha ''] [then '?'] [else $sha]])]]]
+            [$env:exit 0]]]
+    [else [?let [= $lines [$strings:split-lines [$cat ([?else [$io:read-file $log] ''], [?else [$io:read-file [$cat ($log, '.err')]] ''])]]]
+                [= $n [$count $lines]]
+                [= $_e [$cry [$cat ('v-pin-fresh: FAILED — `./v self` in ', $vd, ' did not produce a working compiler; log ', $log, ':')]]]
+                [= $_t [?for [in $i [$range [?if [> $n 20] [then [- $n 19]] [else 1]] $n]] [yield [$cry [$nth $lines $i]]]]]
+                [= $_r2 [?else [$io:remove $vnew] null]]
+            [$env:exit 1]]]]]

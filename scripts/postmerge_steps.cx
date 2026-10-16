@@ -47,7 +47,7 @@
 #      [idle step=X] rows, one at a time on the post-merge runner — the loop's idle-rows tick)
 #   cx … scripts/postmerge_steps.cx --checkout=<checkout> order <step>…   (the pool's
 #      longest-first order of the named steps from the checkout's previous runs, one a line;
-#      scripts/postmerge_order_selftest.sh grades it)
+#      scripts/postmerge_order_selftest.cx grades it)
 #
 # Its cwd is the tree whose flows/ it reads (the acts', the checkout on the
 # box); every make and test_changed.sh runs in the checkout.
@@ -317,6 +317,20 @@
 [?def red-names scope=private pure [returns any] ($es)
   [?to-sequence [?for [in $e $es] [where [not [= [$string $e@rc] '0']]] [yield [$string $e@name]]]]]
 
+# THE REPORT STEPS (cx-private#1946). check-verification-budget judges the
+# timings rows EARLIER runs wrote, not this tree, and the verdict writes this
+# run's row only when the serial tail ran (flows/private-acts.cx tail-skipped:
+# a run without its tail is partial and writes none). Its red stopping the tail
+# was a lock: from 2026-10-15T17:11Z every run on a head whose selected-run
+# median stood over the bound was red on that step alone, ran no tail, wrote no
+# row, and so the median (26m15s) could never move again, whatever a cut did to
+# the run. A report step's red still reds the run (exit 2, named); it no longer
+# stops the tail, so the run is whole and its row is written.
+[?const REPORT-STEPS ('check-verification-budget',)]
+
+[?def tail-blockers scope=private pure [returns any] ($es)
+  [?to-sequence [?for [in $n [$red-names $es]] [where [not [$c:member $n REPORT-STEPS]]] [yield $n]]]]
+
 [?def finish scope=private impure ($es $why)
   [?let [= $reds [$red-names $es]]
         [= $_s [$say [$concat 'postmerge-steps: ' [$string [$count $es]] ' step(s), ' [$string [$count $reds]] ' red'
@@ -441,7 +455,7 @@
         [= $sp [?if [> [$count $ports] 0] [then [$c:pool-run $pjobs $sn $slot [?if [< [$floor [/ [$cores] $sn]] 1] [then 1] [else [$floor [/ [$cores] $sn]]]] 60000]] [else ()]]]
         [= $sh [$c:cat2 $sp [?to-sequence [?for [in $t $alone] [yield [$serial-step $c $t [$make-words $t [$string $p@suite] $po] 'post-merge']]]]]]
         [= $before [$c:cat2 [$c:cat2 $pre $par] $sh]]
-        [= $tl [?if [> [$count [$red-names $before]] 0] [then ()]
+        [= $tl [?if [> [$count [$tail-blockers $before]] 0] [then ()]
                  [else [$run-tail $c $tail [$string $p@suite] $po]]]]
         [$finish [$c:cat2 $before $tl]
-                 [?if [and [> [$count [$red-names $before]] 0] [> [$count $tail] 0]] [then 'the serial tail did not run: a step before it is red'] [else '']]]]]]]]]]]]]]]]]]]]]]]]
+                 [?if [and [> [$count [$tail-blockers $before]] 0] [> [$count $tail] 0]] [then 'the serial tail did not run: a step before it is red'] [else '']]]]]]]]]]]]]]]]]]]]]]]]
