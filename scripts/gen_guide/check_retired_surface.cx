@@ -1,0 +1,52 @@
+# Retired-surface scan for guide sources (companion to the snippet gate).
+#
+# The snippet gate proves examples PARSE — but several retired forms parse
+# successfully as something else (`:table[` becomes an atom + strings,
+# `[port :u16 8080]` becomes an atom child), so a parse-only gate cannot
+# catch them. This scan rejects the known parseable-but-wrong families in
+# docs-src/canonical/sections/. Lines that must show a retired form on
+# purpose (migration panels) carry the marker `retired-ok` on the same
+# line to be waived.
+#
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of check_retired_surface.sh, the same
+# patterns and lines (`path:line:text` per hit, as grep -rn prints them).
+#   $(GUIDE_CX_BIN) --allow-read scripts/gen_guide/check_retired_surface.cx   (from the repo root)
+# Exit 0 clean; 1 with each family's hits named.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def SECTIONS scope=public () 'docs-src/canonical/sections']
+
+# The families: a label and an RE2 pattern each (the bash scan's ERE, unchanged).
+[?def FAMILIES scope=public ()
+  ([fam label="retired ':table[' form" rx=':table\['],
+   [fam label="retired spaced ':T' body annotation"
+        rx='\[[A-Za-z_-]+ :(u8|u16|u32|u64|i8|i16|i32|i64|int|float|f32|f64|decimal|bigint|date|time|datetime|bool|str|string|bytes)\[?\]? '],
+   [fam label="retired ':T[]' array annotation" rx='\[[A-Za-z_-]+ :\[\]| :(int|str|string|float|bool)\[\]'])]
+
+# hits — `path:line:text` for every unwaived line of every section file that matches $rx.
+[?def hits scope=public impure ($files $rx)
+  [?let [= $pat [$re:compile $rx]]
+    [?for [in $f $files]
+          [in $pair [?let [= $ls [$strings:split-lines [?else [$io:read-file $f] '']]]
+                      [?for [in $i [$range 1 [$count $ls]]] [yield [ln n=$i [$nth $ls $i]]]]]]
+          [where [and [$present [$re:find $pat [$string $pair]]] [not [$strings:contains [$string $pair] 'retired-ok']]]]
+      [yield [$cat ($f, ':', [$string $pair@n], ':', [$string $pair])]]]]]
+
+[?let
+  [= $files [$sort [?for [in $e [$io:walk [$SECTIONS]]] [where [= $e@is-file true]] [yield $e@path]]]]
+  [= $fails [?for [in $fam [$FAMILIES]]
+              [yield [?let [= $h [$hits $files $fam@rx]]
+                       [?if [= [$count $h] 0] [then 0]
+                         [else [?let [= $_ [$say [$cat ('check-retired-surface: FAIL — ', $fam@label, ':')]]]
+                                     [= $_l [?for [in $l $h] [yield [$say $l]]]]
+                                 1]]]]]]]
+  [= $bad [> [?reduce $fails [using [?fn ($a $b) [+ $a $b]]] [init 0]] 0]]
+  [= $_o [?if $bad [then null]
+           [else [$say [$cat ('check-retired-surface: OK — no retired parseable-but-wrong forms in ', [$SECTIONS])]]]]]
+  [$env:exit [?if $bad [then 1] [else 0]]]]

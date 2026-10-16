@@ -1,0 +1,113 @@
+# scripts/tree_lock.cx <name> <what> <command…> — one holder of a shared build tree per checkout.
+#
+# The post-merge flow runs each step as its own make on its own runner (#1817), so a
+# prerequisite two steps share runs once per STEP, not once per run, and two steps that
+# rebuild and then read the same tree race. The docs renders (docs/guide/ and site/, lock
+# name docs-tree), the Makefile's wasm-bundle-fresh (dist/wasm/) and the V pin rebuild
+# (third_party/v/v) take their lock here.
+#
+# The lock is a directory (make-dir is atomic) at vcx/target/<name>.lock in this checkout,
+# so worktrees never wait on each other. It records the holder's pid; a holder whose
+# pid is dead is stale and is broken by the next waiter. Re-entrant per lock: the
+# command runs with the lock's path added to CX_TREE_LOCKS_HELD, and a nested call
+# for a lock already held runs its command at once (site-check -> guide-render-gate ->
+# guide). Waiting is bounded (TREE_LOCK_TIMEOUT seconds, default 3600; the docs-tree
+# lock reads DOCS_TREE_LOCK_TIMEOUT first); on timeout it exits 75 without running the
+# command, naming the holder. Exit: the command's own, 64 usage, 75 timeout.
+#
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of tree_lock.sh and docs_tree_lock.sh.
+# It runs BEFORE build-vcx (the v-pin lock wraps the V compiler's own rebuild), so it runs
+# on the bootstrap cx the Makefile's TOOL_CX finds — the released cx included.
+#   $(TOOL_CX) --allow-all scripts/tree_lock.cx v-pin third_party/v/v $(TOOL_CX) --allow-all scripts/v_pin_fresh.cx …
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+# The forwarded command is a cx command line in the Makefile's recipes; this [argspec] names its
+# grant so cx's post-FILE flag warning stays quiet (cx-home/cx-core-code#144: a -- does not end
+# that warning yet). The program reads its argv positionally; the spec is not parsed.
+[?const ARG_SPEC [argspec [flag name="allow-all" type=bool]]]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def member-of scope=public ($x $xs) [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+[?def text-of scope=public impure ($path) [$strings:trim [?else [$io:read-file $path] '']]]
+# kill-0 — `kill -0 PID` for a released cx that predates process:pid-alive (cx-private#1706).
+[?def kill-0 scope=public impure ($n)
+  [?let [= $r [$process:run ('kill', '-0', [$string $n])]]
+    [?match $r [case [err$e] false] [else [= $r@exit-code 0]]]]]
+[?def alive scope=public impure ($pidtext)
+  [?let [= $n [?else [$strings:to-int $pidtext] 0]]
+    [and [> $n 0] [?else [$process:pid-alive $n] [$kill-0 $n]]]]]
+
+# run — the command with this lock added to CX_TREE_LOCKS_HELD, stdio inherited; its exit code.
+# A TERM / INT / HUP to the holder stops the command first, then frees the lock (143 / 130).
+[?def run scope=public impure ($cmd $held $lock)
+  [?let [= $h [$process:spawn $cmd env=[map CX_TREE_LOCKS_HELD=$held] stdin=:inherit stdout=:inherit stderr=:inherit]]
+        [= $_t [$env:on-signal (:term, :hup, :int)
+                 [?fn ($s) [?let [= $_k [?else [$process:terminate $h] null]]
+                                 [= $_w [?else [$process:wait-timeout $h 10000] null]]
+                                 [= $_r [?if [= $lock ''] [then null] [else [?else [$io:remove-tree $lock] null]]]]
+                             [$env:exit [?if [= $s :int] [then 130] [else 143]]]]]]]
+    [?match $h [case [err$e] [?let [= $_ [$cry [$cat ('tree-lock: cannot run ', [$string $e@message])]]] 127]]
+      [else [?else [$process:wait $h] 127]]]]]
+
+# attempt — one pass of the wait: take the lock, or break a stale one, or time out, or wait a second.
+# A released cx before the current line answers make-dir on an existing directory without an error
+# (mkdir -p), so the directory is looked at first: an existing lock is contended, never re-made.
+[?def attempt scope=public impure ($lock $name $what $cmdline $timeout $waited $said)
+  [?if [$io:is-directory $lock]
+    [then [$contend $lock $name $what $cmdline $timeout $waited $said]]
+    [else [?match [$io:make-dir $lock]
+            [case [err$e] [$contend $lock $name $what $cmdline $timeout $waited $said]]
+            [else [st state=got waited=$waited said=$said]]]]]]
+# contend — the lock is held: a dead holder, or a lock dir with no pid file for 10 s (its maker died
+# between make-dir and write), is stale and broken; else time out, or say so once and wait a second.
+[?def contend scope=public impure ($lock $name $what $cmdline $timeout $waited $said)
+  [?let [= $holder [$text-of [$cat ($lock, '/pid')]]]
+        [= $c [$text-of [$cat ($lock, '/cmd')]]]
+        [= $hcmd [?if [= $c ''] [then '?'] [else $c]]]
+        [= $hshow [?if [= $holder ''] [then '?'] [else $holder]]]
+        [= $stale [or [and [not [= $holder '']] [not [$alive $holder]]]
+                      [and [= $holder ''] [>= $waited 10]]]]
+    [?if $stale
+      [then [?let [= $_ [?else [$io:remove-tree $lock] null]] [st state=wait waited=$waited said=$said]]]
+      [else [?if [>= $waited $timeout]
+              [then [?let [= $_ [$cry [$cat ($name, '-lock: waited ', [$string $timeout], 's for ', $lock, ' (held by pid ', $hshow,
+                                             ': ', $hcmd, '); not running: ', $cmdline)]]]
+                      [st state=timeout waited=$waited said=$said]]]
+              [else [?let [= $_s [?if $said [then null]
+                                   [else [$cry [$cat ($name, '-lock: waiting for pid ', $hshow, ' (', $hcmd, ') to leave ', $what)]]]]]
+                          [= $_p [$process:run ('sleep', '1')]]
+                      [st state=wait waited=[+ $waited 1] said=true]]]]]]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $_u [?if [< [$count $argv] 4]
+           [then [?let [= $_ [$cry 'tree-lock: usage: tree_lock.cx <name> <what> <command…>']] [$env:exit 64]]] [else null]]]
+  [= $name [$nth $argv 2]]
+  [= $what [$nth $argv 3]]
+  [= $cmd [?for [in $i [$range 4 [$count $argv]]] [yield [$nth $argv $i]]]]
+  [= $root [?let [= $r [$process:run ('git', 'rev-parse', '--show-toplevel')]]
+             [?match $r [case [err$e] [$env:cwd]] [else [?if [= $r@exit-code 0] [then [$strings:trim [$string $r@stdout]]] [else [$env:cwd]]]]]]]
+  [= $lock [$cat ($root, '/vcx/target/', $name, '.lock')]]
+  [= $held0 [$env:var-or-default 'CX_TREE_LOCKS_HELD' '']]
+  [= $nested [and [$member-of $lock [$strings:split $held0 ':']] [$io:is-directory $lock]]]
+  [= $_n [?if $nested [then [$env:exit [$run $cmd $held0 '']]] [else null]]]
+  [= $_m [?else [$io:make-dirs [$cat ($root, '/vcx/target')]] null]]
+  [= $deflt [$env:var-or-default 'TREE_LOCK_TIMEOUT' '3600']]
+  [= $timeout [?else [$strings:to-int [?if [= $name 'docs-tree'] [then [$env:var-or-default 'DOCS_TREE_LOCK_TIMEOUT' $deflt]] [else $deflt]]] 3600]]
+  [= $cmdline [$strings:join $cmd ' ']]
+  [= $got [?loop [= $st [st state=wait waited=0 said=false]]
+            [?if [= $st@state 'got'] [then [break true]]
+              [else [?if [= $st@state 'timeout'] [then [break false]]
+                [else [continue [$attempt $lock $name $what $cmdline $timeout [$strings:to-int [$string $st@waited]]
+                                          [= [$string $st@said] 'true']]]]]]]]]
+  [= $_t [?if $got [then null] [else [$env:exit 75]]]]
+  [= $_w [?do [$io:write-file [$cat ($lock, '/pid')] [$cat ([$string [$env:pid]], "\n")]]
+              [$io:write-file [$cat ($lock, '/cmd')] [$cat ($cmdline, "\n")]]]]
+  [= $rc [$run $cmd [?if [= $held0 ''] [then $lock] [else [$cat ($held0, ':', $lock)]]] $lock]]
+  [= $_r [?else [$io:remove-tree $lock] null]]
+  [$env:exit $rc]]

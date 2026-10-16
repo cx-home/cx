@@ -92,6 +92,9 @@
   [family id=ssh
     reason='The SSH client and its SFTP v3 subsystem behind cx-platform/sftp (cx-private#1457, RULED: SSHL-1): libssh2, vendored in thirdparty/libssh2 and built over the fork own thirdparty/mbedtls as its crypto backend, so CX carries one crypto stack, with vlib/net/ssh2 the only V code that names a libssh2 symbol. Upstream V has no SSH client and no plan for one; a fresh SSH implementation in V was the rejected option, a security-critical protocol whose every primitive would be ours to get right. Retires only if upstream V grows an SSH client over its own TLS stack.']
 
+  [family id=crypto
+    reason='Verified cryptographic arithmetic for the TLS stack, vendored byte for byte with its license files: fiat-crypto P-256 field and scalar code (mit-plv/fiat-crypto at 64e8f2791b; formally verified, constant-time) in thirdparty/fiat-p256, the arithmetic for the P-256 ECDSA signature of a TLS server handshake that mbedtls computes over generic mbedtls_mpi bignums (cx-home/v#39, owner ruling ECSIG-1). Carried while the mbedtls builtin P-256 is generic bignum code; upstream V does not vendor it.']
+
   [patch sha=06ad7981133ed078bfb311cd5b92c4ce5de8cfc4 family=libgc]
   [patch sha=1877171d9b61d660bd3ec67cc9797945f1a4e3d5 family=cgen]
   [patch sha=b1349b9dcabbcfeffd23ed515f6e70b0334feb00 family=net]
@@ -418,4 +421,8 @@
   [patch sha=849e1a3c10e9f6ae7be52b15f8f4cd997e553db6 family=vgc issue='cx-home/v#47']
   [patch sha=c3146ef0575e0518ae01eef9f27bbe6ee9a8ba7a family=vgc issue='cx-home/v#47']
   [patch sha=4692993ef4cee59f71fb133d8df4c3ff894aee73 family=vgc issue='cx-home/v#47']
+  [patch sha=faa33c30ee0960ec59914a5259e05e86ca30946b family=crypto issue='cx-home/v#39']
+  [patch sha=d08976b28662ff8dde2438453b5e98792645754e family=vgc issue='cx-home/v#22']
+  [patch sha=c4aba36d8ad4553a45e5250f0f3806af1f89e7c3 family=vgc issue='cx-home/v#22']
+  [patch sha=e1eeffdbe4b559bd5e48df3e9a74d1cb9c553e8b family=crypto issue='cx-home/v#39']
 ]

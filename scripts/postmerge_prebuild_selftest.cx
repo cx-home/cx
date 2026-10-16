@@ -1,0 +1,163 @@
+# scripts/postmerge_prebuild_selftest.cx (cx-private#1946, SELRUN) — scripts/postmerge_steps.cx's
+# prebuild on a planted checkout whose `make` is a stub on PATH (a cx program) that logs its argv,
+# sleeps 2 s for a prebuild target and exits 2 for $FAIL_TARGET:
+#   A: a plan with a profile step and test-db-real — deps-sync, then build-re2-shim alone,
+#      then build-vcx, build-vcx-dev, build-profiles-dev and db-real-cx SIDE BY SIDE (each
+#      starts before any of them ends); build-vcx(-dev) at -j2, the matrix -o build-vcx;
+#      every step after carries -o build-profiles-dev -o build-profile-data -o db-real-cx.
+#   B: a plan with neither — the prebuild is build-vcx and build-vcx-dev, and no step
+#      carries -o build-profiles-dev or -o db-real-cx (a step that needs them builds them).
+#   C: a red prebuild job — 'the prebuild is red: no step ran', exit 2, no step ran.
+#   D: the idle period's steps wait while the perf slot ($CX_PERF_SLOT) is held.
+#   E: a red check-verification-budget (a REPORT step: it judges earlier runs' rows) reds the
+#      run but the serial tail still runs, so the run is whole and writes its timings row.
+#   F: any other red before the tail stops it ('the serial tail did not run'), as before.
+# Exit 0 = all six hold. The planted checkout's scripts/test_changed.sh and scripts/build-slot.sh
+# are the shell stubs the runner invokes by those names (their own rewrites are CXMACH-1 items).
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of postmerge_prebuild_selftest.sh.
+#   $(TOOL_CX) --allow-all scripts/postmerge_prebuild_selftest.cx [CX]      (from the repo root)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/time'    as=time]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def check scope=public impure ($label $ok $detail)
+  [?let [= $_ [$say [?if $ok [then [$cat ('  ok   ', $label)]] [else [$cat ('  FAIL ', $label, ': ', $detail)]]]]] $ok]]
+[?def G scope=public () ('--allow-read', '--allow-write', '--allow-subprocess', '--allow-env', '--allow-clock')]
+[?def epoch-now scope=public impure () [$time:to-unix [$time:utc-now]]]
+
+# The stub make: START <epoch> <last arg> :: <argv>, a 2 s sleep for a prebuild target, END, exit 2 on FAIL_TARGET.
+[?def MAKE-STUB scope=public ($cx)
+  [$cat ('#!', $cx, " --allow-all\n",
+         "[?lib 'cx-stdlib/io' as=io] [?lib 'cx-stdlib/env' as=env] [?lib 'cx-stdlib/time' as=time] [?lib 'cx-stdlib/process' as=process] [?lib 'cx-stdlib/strings' as=strings]\n",
+         "[?let [= $a [$env:argv]] [= $rest [?for [in $i [$range 2 [$count $a]]] [yield [$nth $a $i]]]]\n",
+         "      [= $t [?if [= [$count $rest] 0] [then ''] [else [$nth $rest [$count $rest]]]]]\n",
+         "      [= $log [$env:var 'MAKELOG']] [= $ep [?fn () [$string [$time:to-unix [$time:utc-now]]]]]\n",
+         "      [= $_s [$io:append-file $log [$strings:join ('START ', [$ep], ' ', $t, ' :: ', [$strings:join $rest ' '], \"\\n\") '']]]\n",
+         "      [= $_z [?if [or [$strings:starts-with $t 'build-'] [= $t 'db-real-cx'] [= $t 'deps-sync']] [then [$process:run ('sleep', '2')]] [else null]]]\n",
+         "      [= $_e [$io:append-file $log [$strings:join ('END ', [$ep], ' ', $t, \"\\n\") '']]]\n",
+         "  [$env:exit [?if [= $t [$env:var-or-default 'FAIL_TARGET' '']] [then 2] [else 0]]]]\n")]]
+
+[?def plan scope=public impure ($co $par $ser)
+  [$io:write-file [$cat ($co, '/scripts/test_changed.sh')]
+    [$cat ("#!/bin/sh\necho \"test-changed: --dry-run — parallel (-j): ", $par, "\"\necho \"test-changed: --dry-run — serial tail:  ", $ser, "\"\n")]]]
+
+[?def run scope=public impure ($cx $t $co $verb $case $extra)
+  [?let [= $mlog [$cat ($t, '/', $case, '.make')]]
+        [= $_c [$io:write-file $mlog '']]
+        [= $env [$map:merge ({'MAKELOG': $mlog, 'PATH': [$cat ($t, '/bin:', [$env:var 'PATH'])], 'CX_BUILD_SLOT': [$cat ($t, '/.slot')]}, $extra)]]
+        [= $r [$process:run ($cx, [?splice [$G]], [$env:var-or-default 'POSTMERGE_STEPS' 'scripts/postmerge_steps.cx'],
+                             [$cat ('--checkout=', $co)], [?splice $verb]) env=$env]]
+    [?match $r [case [err$e] [res rc=-1 out=[$string $e@message]]]
+      [else [res rc=$r@exit-code out=[$cat ([$string $r@stdout], [$string $r@stderr])]]]]]]
+
+# The make log's START/END rows for target $t: [row kind= at= target= argv=].
+[?def rows scope=public impure ($t $case)
+  [?for [in $l [$strings:split-lines [?else [$io:read-file [$cat ($t, '/', $case, '.make')]] '']]]
+        [where [not [= $l '']]]
+    [yield [?let [= $w [$strings:split $l ' ']]
+             [row kind=[$nth $w 1] at=[$strings:to-int [$nth $w 2]] target=[$nth $w 3] line=$l]]]]]
+[?def at scope=public impure ($t $case $kind $tgt)
+  [?let [= $hits [?for [in $r [$rows $t $case]] [where [and [= $r@kind $kind] [= $r@target $tgt]]] [yield $r@at]]]
+    [?if [= [$count $hits] 0] [then -1] [else [$nth $hits 1]]]]]
+[?def argv-of scope=public impure ($t $case $tgt)
+  [?let [= $hits [?for [in $r [$rows $t $case]] [where [and [= $r@kind 'START'] [= $r@target $tgt]]] [yield $r@line]]]
+    [?if [= [$count $hits] 0] [then ''] [else [$nth $hits 1]]]]]
+
+[?lib 'cx-stdlib/map' as=map]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $cx [?if [> [$count $argv] 1] [then [$nth $argv 2]] [else [$string [$env:executable-path]]]]]
+  [= $t [$string [$io:temp-dir 'cx-prebuild-selftest.']]]
+  [= $co [$cat ($t, '/co')]]
+  [= $_m [?do [$io:make-dirs [$cat ($t, '/bin')]] [$io:make-dirs [$cat ($co, '/scripts')]] [$io:make-dirs [$cat ($co, '/vcx/target')]]]]
+  [= $_s [?do [$io:write-file [$cat ($t, '/bin/make')] [$MAKE-STUB $cx]] [$process:run ('chmod', '+x', [$cat ($t, '/bin/make')])]]]
+  [= $_b [$io:write-file [$cat ($co, '/scripts/build-slot.sh')] "#!/bin/sh\nexec \"$@\"\n"]]
+
+  # A
+  [= $_pa [$plan $co 'check-a test-flow-umbrella test-db-real' 'test-profile-gate']]
+  [= $ra [$run $cx $t $co ('test-changed', 'BASE=HEAD') 'a' {}]]
+  [= $pre ('build-vcx', 'build-vcx-dev', 'build-profiles-dev', 'db-real-cx')]
+  [= $starts [?for [in $x $pre] [yield [$at $t 'a' 'START' $x]]]]
+  [= $ends [?for [in $x $pre] [yield [$at $t 'a' 'END' $x]]]]
+  [= $ran [= [$count [?for [in $x ([?splice $starts], [?splice $ends])] [where [< $x 0]] [yield 1]]] 0]]
+  [= $last-start [?reduce $starts [using [?fn ($m $x) [?if [> $x $m] [then $x] [else $m]]]] [init 0]]]
+  [= $first-end [?reduce $ends [using [?fn ($m $x) [?if [< $x $m] [then $x] [else $m]]]] [init 999999999999]]]
+  [= $a1 [$check [$cat ('A: the four prebuild jobs ran side by side (last start ', [$string $last-start], ' < first end ', [$string $first-end], ')')]
+           [and $ran [< $last-start $first-end]] [$string [$rows $t 'a']]]]
+  [= $first-row [$nth [$rows $t 'a'] 1]]
+  [= $a2 [$check 'A: deps-sync first, build-re2-shim alone before them'
+           [and [= $first-row@target 'deps-sync'] [<= [$at $t 'a' 'END' 'build-re2-shim'] [$at $t 'a' 'START' 'build-vcx']]]
+           [$strings:join [?for [in $r [$rows $t 'a']] [yield [$cat ($r@kind, ' ', $r@target)]]] ';']]]
+  [= $a3 [$check 'A: build-vcx(-dev) at -j2, the matrix -o build-vcx'
+           [and [$strings:ends-with [$argv-of $t 'a' 'build-vcx'] '-j2 build-vcx']
+                [$strings:ends-with [$argv-of $t 'a' 'build-vcx-dev'] '-j2 build-vcx-dev']
+                [$strings:ends-with [$argv-of $t 'a' 'build-profiles-dev'] '-o build-vcx build-profiles-dev']]
+           [$strings:join ([$argv-of $t 'a' 'build-vcx'], [$argv-of $t 'a' 'build-vcx-dev'], [$argv-of $t 'a' 'build-profiles-dev']) ' | ']]]
+  [= $a4 [$check 'A: every step after runs -o of what the prebuild built'
+           [= [$count [?for [in $s ('check-a', 'test-flow-umbrella', 'test-db-real', 'test-profile-gate')]
+                       [where [or [not [$strings:contains [$argv-of $t 'a' $s] '-o build-profiles-dev -o build-profile-data -o db-real-cx']]
+                                  [< [$at $t 'a' 'START' $s] [$at $t 'a' 'END' 'db-real-cx']]]]
+                       [yield 1]]] 0]
+           [$strings:join [?for [in $s ('check-a', 'test-flow-umbrella', 'test-db-real', 'test-profile-gate')] [yield [$argv-of $t 'a' $s]]] ' | ']]]
+  [= $a5 [$check 'A: exit 0' [= $ra@rc 0] [$cat ('exit ', [$string $ra@rc], ': ', $ra@out)]]]
+
+  # B
+  [= $_pb [$plan $co 'check-a check-b' '']]
+  [= $rb [$run $cx $t $co ('test-changed', 'BASE=HEAD') 'b' {}]]
+  [= $b1 [$check 'B: no profile step, no test-db-real — the prebuild is build-vcx + build-vcx-dev'
+           [and [< [$at $t 'b' 'START' 'build-profiles-dev'] 0] [< [$at $t 'b' 'START' 'db-real-cx'] 0] [>= [$at $t 'b' 'START' 'build-vcx-dev'] 0]]
+           [$strings:join [?for [in $r [$rows $t 'b']] [yield [$cat ($r@kind, ' ', $r@target)]]] ';']]]
+  [= $b2 [$check 'B: no -o for what the prebuild did not build'
+           [not [or [$strings:contains [$argv-of $t 'b' 'check-a'] 'build-profiles-dev'] [$strings:contains [$argv-of $t 'b' 'check-a'] 'db-real-cx']]]
+           [$argv-of $t 'b' 'check-a']]]
+
+  # C
+  [= $_pc [$plan $co 'check-a test-db-real' '']]
+  [= $rc [$run $cx $t $co ('test-changed', 'BASE=HEAD') 'c' {'FAIL_TARGET': 'db-real-cx'}]]
+  [= $c1 [$check 'C: a red prebuild job stops the run before any step (exit 2)'
+           [and [$strings:contains $rc@out 'the prebuild is red: no step ran'] [= $rc@rc 2] [< [$at $t 'c' 'START' 'check-a'] 0]]
+           [$cat ('rc ', [$string $rc@rc], ': ', $rc@out)]]]
+
+
+  # E: a red REPORT step (check-verification-budget judges earlier runs' rows) reds the run but
+  #    does not stop the serial tail, so the run is whole and the verdict writes its row (#1946)
+  [= $_pe [$plan $co 'check-verification-budget check-a' 'test-profile-gate']]
+  [= $re [$run $cx $t $co ('test-changed', 'BASE=HEAD') 'e' {'FAIL_TARGET': 'check-verification-budget'}]]
+  [= $e1 [$check 'E: a red check-verification-budget alone — the tail runs, the run is red (exit 2) and names it'
+           [and [>= [$at $t 'e' 'START' 'test-profile-gate'] 0] [= $re@rc 2]
+                [$strings:contains $re@out '1 red: check-verification-budget']
+                [not [$strings:contains $re@out 'the serial tail did not run']]]
+           [$cat ('rc ', [$string $re@rc], ': ', $re@out)]]]
+
+  # F: any other red before the tail still stops it (the run is partial, as before)
+  [= $_pf [$plan $co 'check-verification-budget check-a' 'test-profile-gate']]
+  [= $rf [$run $cx $t $co ('test-changed', 'BASE=HEAD') 'f' {'FAIL_TARGET': 'check-a'}]]
+  [= $f1 [$check 'F: a red check-a — the tail does not run (the serial tail did not run, exit 2)'
+           [and [< [$at $t 'f' 'START' 'test-profile-gate'] 0] [= $rf@rc 2]
+                [$strings:contains $rf@out 'the serial tail did not run']]
+           [$cat ('rc ', [$string $rf@rc], ': ', $rf@out)]]]
+  # D: the idle period (UNION-1 (a)) waits while the perf slot is held (PROC-1): the slot is
+  #    released 7 s in, and no idle step starts before that
+  [= $ps [$cat ($t, '/perf-slot')]]
+  [= $_d1 [$io:write-file $ps '']]
+  [= $_d2 [$process:spawn ($cx, '--allow-all', '-e',
+                           [$cat ("[?lib 'cx-stdlib/process' as=process] [?lib 'cx-stdlib/io' as=io] [?let [= $_ [$process:run ('sleep', '7')]] [$io:remove '", $ps, "']]")])
+            stdin=:discard stdout=:discard stderr=:discard]]
+  [= $t0 [$epoch-now]]
+  [= $rd [$run $cx $t $co ('idle',) 'd' {'CX_PERF_SLOT': $ps}]]
+  [= $starts-d [?for [in $r [$rows $t 'd']] [where [= $r@kind 'START']] [yield $r@at]]]
+  [= $first [?if [= [$count $starts-d] 0] [then -1] [else [$nth $starts-d 1]]]]
+  [= $d1 [$check [$cat ('D: the idle period waited for the perf slot (', [$string [- $first $t0]], ' s)')]
+           [and [>= $first 0] [>= [- $first $t0] 6] [$strings:contains $rd@out 'waits: the perf slot']]
+           [$cat ('first idle step at +', [$string [- $first $t0]], ' s: ', $rd@out)]]]
+  [= $_w [?else [$process:wait-timeout $_d2 10000] null]]
+  [= $_r [?else [$io:remove-tree $t] null]]
+  [= $ok [and $a1 $a2 $a3 $a4 $a5 $b1 $b2 $c1 $d1 $e1 $f1]]
+  [= $_o [$say [?if $ok [then 'postmerge-prebuild-selftest OK'] [else 'postmerge-prebuild-selftest FAILED']]]]
+  [$env:exit [?if $ok [then 0] [else 1]]]]
