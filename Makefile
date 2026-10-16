@@ -2718,8 +2718,8 @@ cxer-registry-gate:
 # a RULED: token referencing a recorded ruling (rulings-before-edits, R4.2).
 .PHONY: spec-freeze-gate
 spec-freeze-gate:
-	@bash scripts/spec_freeze_gate.sh
-	@bash scripts/spec_freeze_gate_selftest.sh
+	@"$(TOOL_CX)" --allow-read --allow-write --allow-env --allow-subprocess scripts/spec_freeze_gate.cx
+	@"$(TOOL_CX)" --allow-all scripts/spec_freeze_gate_selftest.cx
 
 # ── EXTRACTION GATE (partition spec §7, phase I2) — the Ring-0 byte-for-byte
 # rule, executable: the extracted artifacts must match the monolith over the

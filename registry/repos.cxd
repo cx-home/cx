@@ -357,7 +357,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='registry/repos.cxd' repo=cx]
   [; registry/ prefix rule RETIRED (RULED: RS-12, D59a, D77d; #1591 item K3): cx-registry
      is status=extracted and owns no tracked path here any more -- see its row above. ]
-  [path prefix='ledger/' repo=cx why='STAYS (RULED: D59a, K3): spec_freeze_gate.sh and ledger_index.cx read and write this tree at HEAD with no pinned successor -- see the cx-decisions row\'s why= for the full reasoning']
+  [path prefix='ledger/' repo=cx why='STAYS (RULED: D59a, K3): spec_freeze_gate.cx and ledger_index.cx read and write this tree at HEAD with no pinned successor -- see the cx-decisions row\'s why= for the full reasoning']
   [path prefix='spec/03-approved/process/' repo=cx why='STAYS (RULED: D59a, K3): AGENT-STANDING-RULES.md requires delivery-grammar.md read from here and cxer-registry-gate reads governance.md here, both with no pinned successor -- see the cx-decisions row\'s why= for the full reasoning']
   [; cx-decisions:spec/03-approved/core/cx_partition.md, spec/02-working/, spec/_archived/, design/,
      campaign/ and docs/internal/ RETIRED (RULED: RS-12, D59a; #1591 item K3): cx-decisions

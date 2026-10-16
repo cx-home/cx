@@ -1,0 +1,113 @@
+# scripts/spec_freeze_gate_selftest.cx — proves the gate's detection power on a SYNTHETIC repo (a temp
+# dir; never the live tree — the R3.10 gate-idempotency rule). The scenarios:
+#   A  mixed spec+impl, no token                → MUST FAIL  (red proof)
+#   B  mixed, token naming a RECORDED ruling    → must pass
+#   C  mixed, token naming NO recorded ruling   → MUST FAIL  (match check)
+#   D  spec-only, no token                      → must pass
+#   E  impl-only, no token                      → must pass
+#   F  mixed, PARENTHESIZED recorded token      → must pass  (the "(RULED: id)" spelling; id carries a
+#      non-ASCII prime, the real 831-1a′ shape)
+#   G  mixed, parenthesized token with an internal (…) qualifier → must pass
+#   H  mixed, parenthesized BOGUS token         → MUST FAIL  (paren stripping must not loosen the
+#      recorded-match check)
+#   I  a file re-entering the LEGACY ledger namespace (spec/02-working/partition_*) at HEAD
+#                                               → MUST FAIL  (R6.1 tree check)
+#   J  the RANGE scan names exactly the three violations; K  a clean range passes.
+# The gate runs on the cx running this program (TOOL_CX from the Makefile), in the planted repo.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of spec_freeze_gate_selftest.sh, the same scenarios
+# and lines.
+#   $(TOOL_CX) --allow-all scripts/spec_freeze_gate_selftest.cx
+# Exit: 0 = every scenario held; 1 = the first that did not (named on stderr).
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def die scope=public impure ($s) [?do [$cry $s] [$env:exit 1]]]
+
+[?def git scope=public impure ($t $args)
+  [?let [= $r [$process:run ('git', [?splice $args]) cwd=$t capture=:both]]
+    [?match $r [case [err$e] ''] [else [$strings:trim-end-chars [$string $r@stdout] "\n"]]]]]
+# gate — [g ok= out= err=]: the gate in the planted repo; stdout passes through (as the shell's did
+# for the scenarios that do not silence it), stderr is kept for the range scan.
+[?def gate scope=public impure ($script $t $args $epoch)
+  [?let [= $r [$process:run ([$env:executable-path], '--allow-read', '--allow-write', '--allow-env', '--allow-subprocess', $script, [?splice $args])
+                            cwd=$t env=[?if [= $epoch ''] [then null] [else {SPEC_FREEZE_EPOCH: $epoch}]] capture=:both]]
+    [?match $r [case [err$e] [g ok=false out='' err=[$string $e]]]
+      [else [g ok=[= $r@exit-code 0] out=[$string $r@stdout] err=[$string $r@stderr]]]]]]
+# pass — run the gate and echo its stdout and stderr (a scenario that must pass shows its lines).
+[?def shown scope=public impure ($g)
+  [?do [?if [= $g@out ''] [then null] [else [$io:write-string [$env:stdout] $g@out]]]
+       [?if [= $g@err ''] [then null] [else [$io:write-string [$env:stderr] $g@err]]]]]
+
+[?let
+  [= $script [$cat ([$path:dirname [$path:absolute [$nth [$env:argv] 1]]], '/spec_freeze_gate.cx')]]
+  [= $t [$io:temp-dir 'spec_freeze_selftest.']]
+  [= $_i [?do [$git $t ('init', '-q', '.')] [$git $t ('config', 'user.email', 't@t')] [$git $t ('config', 'user.name', 't')]
+              [$io:make-dirs [$cat ($t, '/spec/03-approved')]] [$io:make-dirs [$cat ($t, '/spec/02-working')]]
+              [$io:make-dirs [$cat ($t, '/vcx')]] [$io:make-dirs [$cat ($t, '/ledger')]]
+              [$io:write-file [$cat ($t, '/ledger/test_ledger.md')]
+                "ledger\n\nRULED: TST-1 — recorded test ruling (a)\nRULED: TST-3′ — recorded, id ends in a prime\nRULED: TST-4 — recorded base id; commits may cite TST-4(a-revised)\n"]
+              [$git $t ('add', '-A')] [$git $t ('commit', '-qm', 'seed ledger')]]]
+  [= $commit [?fn ($msg) [?do [$git $t ('add', '-A')] [$git $t ('commit', '-qm', $msg)]]]]
+  [= $mixed [?fn ($msg) [?let [= $_a [$io:append-file [$cat ($t, '/spec/03-approved/thing.md')] "spec\n"]]  # spec-path-ok (a planted path)
+                              [= $_b [$io:append-file [$cat ($t, '/vcx/thing.v')] "impl\n"]]
+                              [= $_c [$commit $msg]]
+                          [$git $t ('rev-parse', 'HEAD')]]]]
+  [= $one [?fn ($sha) [$gate $script $t ('--check-commit', $sha) '']]]
+  # A — mixed, no token → gate must REFUSE (detection power)
+  [= $a [$mixed 'mixed change, no ruling token']]
+  [= $_A [?let [= $g [$one $a]] [?if $g@ok [then [$die 'SELFTEST FAILED: scenario A (mixed, tokenless) passed the gate']] [else [$io:write-string [$env:stdout] $g@out]]]]]
+  # B — mixed, recorded token → must pass
+  [= $b [$mixed 'mixed change under an express ruling — RULED: TST-1']]
+  [= $_B [?let [= $g [$one $b]] [= $_s [$shown $g]] [?if $g@ok [then null] [else [$die 'SELFTEST FAILED: scenario B (recorded token) was refused']]]]]
+  # C — mixed, unrecorded token → gate must REFUSE (recorded-match check)
+  [= $c [$mixed 'mixed change with a bogus token — RULED: NOPE-99']]
+  [= $_C [?let [= $g [$one $c]] [?if $g@ok [then [$die 'SELFTEST FAILED: scenario C (unrecorded token) passed the gate']] [else [$io:write-string [$env:stdout] $g@out]]]]]
+  # D — spec-only, no token → must pass
+  [= $_D [?let [= $_a [$io:append-file [$cat ($t, '/spec/03-approved/thing.md')] "spec only\n"]]  # spec-path-ok (a planted path)
+               [= $_c [$commit 'spec-only change']] [= $g [$one [$git $t ('rev-parse', 'HEAD')]]] [= $_s [$shown $g]]
+           [?if $g@ok [then null] [else [$die 'SELFTEST FAILED: scenario D (spec-only) was refused']]]]]
+  # E — impl-only, no token → must pass
+  [= $_E [?let [= $_a [$io:append-file [$cat ($t, '/vcx/thing.v')] "impl only\n"]]
+               [= $_c [$commit 'impl-only change']] [= $g [$one [$git $t ('rev-parse', 'HEAD')]]] [= $_s [$shown $g]]
+           [?if $g@ok [then null] [else [$die 'SELFTEST FAILED: scenario E (impl-only) was refused']]]]]
+  # F — mixed, parenthesized recorded token with a prime → must pass
+  [= $f [$mixed 'mixed change under an express ruling (RULED: TST-3′)']]
+  [= $_F [?let [= $g [$one $f]] [= $_s [$shown $g]] [?if $g@ok [then null] [else [$die 'SELFTEST FAILED: scenario F (parenthesized recorded token) was refused']]]]]
+  # G — mixed, parenthesized token carrying an internal qualifier → must pass
+  [= $gs [$mixed 'mixed change under an express ruling (RULED: TST-4(a-revised))']]
+  [= $_G [?let [= $g [$one $gs]] [= $_s [$shown $g]] [?if $g@ok [then null] [else [$die 'SELFTEST FAILED: scenario G (parenthesized qualified token) was refused']]]]]
+  # H — mixed, parenthesized bogus token → gate must REFUSE
+  [= $h [$mixed 'mixed change with a bogus token (RULED: NOPE-77)']]
+  [= $_H [?let [= $g [$one $h]] [?if $g@ok [then [$die 'SELFTEST FAILED: scenario H (parenthesized unrecorded token) passed the gate']] [else [$io:write-string [$env:stdout] $g@out]]]]]
+  # I — a file re-entering the legacy ledger namespace at HEAD → default-mode gate must REFUSE (R6.1
+  # tree check; the per-commit classifier deliberately treats the legacy spelling as ledger-class for
+  # history, so the tree check is the only thing standing between the carve-out and a loophole)
+  [= $_I [?let [= $_w [$io:write-file [$cat ($t, '/spec/02-working/partition_sneaky.md')] "sneaky ledger\n"]]  # spec-path-ok (a planted path)
+               [= $_c [$commit 're-enter the legacy namespace']] [= $g [$gate $script $t () '']]
+           [?if $g@ok [then [$die 'SELFTEST FAILED: scenario I (legacy-namespace file at HEAD) passed the default-mode gate']]
+             [else [?do [$io:write-string [$env:stdout] $g@out]
+                        [$git $t ('rm', '-q', 'spec/02-working/partition_sneaky.md')] [$git $t ('commit', '-qm', 'leave the legacy namespace')]]]]]]  # spec-path-ok (a planted path)
+  # J — the RANGE scan (default mode; one git-log pass picks the commits check-commit sees,
+  # cx-private#1917) must still find every violation in the range: A (tokenless), C and H (unrecorded
+  # tokens) are named, the recorded and single-class commits are not.
+  [= $_J [?let [= $seed [$git $t ('rev-list', '--max-parents=0', 'HEAD')]] [= $g [$gate $script $t () $seed]]
+               [= $out [$cat ($g@out, $g@err)]]
+           [?if $g@ok [then [$die 'SELFTEST FAILED: scenario J (range with three violations) passed the default-mode gate']]
+             [else [?do
+               [?for [in $v ($a, $c, $h)] [where [not [$strings:contains $out [$cat ('commit ', $v, ' ')]]]]
+                 [yield [?do [$cry [$cat ('SELFTEST FAILED: scenario J did not name violation ', $v, ':')]] [$cry $out] [$env:exit 1]]]]
+               [?for [in $ok ($b, $f, $gs)] [where [$strings:contains $out [$cat ('commit ', $ok, ' ')]]]
+                 [yield [$die [$cat ('SELFTEST FAILED: scenario J named the recorded-token commit ', $ok)]]]]]]]]]
+  # K — a range holding only clean commits (after H) passes the range scan.
+  [= $_K [?let [= $g [$gate $script $t () $h]] [= $_e [?if [= $g@err ''] [then null] [else [$io:write-string [$env:stderr] $g@err]]]]
+           [?if $g@ok [then null] [else [$die 'SELFTEST FAILED: scenario K (clean range after H) was refused']]]]]
+  [= $_rm [$io:remove-tree $t]]
+  [?do [$say 'spec-freeze-gate selftest: 11/11 (tokenless-mixed RED, unrecorded-token RED plain+parenthesized, recorded plain/parenthesized/qualified green, spec-only/impl-only green, legacy-namespace RED, range scan names exactly the three violations, clean range green)']
+       [$env:exit 0]]]
