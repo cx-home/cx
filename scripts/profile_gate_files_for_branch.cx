@@ -1,0 +1,113 @@
+# scripts/profile_gate_files_for_branch.cx (#1560, RULED: VCOST-1) — the
+# PROFILE-GATE-FILES selection a branch owes, derived from its own diff.
+#
+#     make test-profile-gate PROFILE_GATE_FILES="$(cx --allow-all scripts/profile_gate_files_for_branch.cx origin/release/0.18)"
+#
+# `test-profile-gate` grades the whole ring≤1 corpus through TWO engine
+# compositions and is an 11-18 minute serial tail on EVERY run whatever the
+# branch touched (measured, VCOST-1's page). What a branch can actually move is
+# a short list, and this prints it — the same shape, and the same fail-safe
+# direction, as fixture_files_for_branch.sh (#1513).
+#
+# Prints, on one line:
+#   * `ALL` — no selection is safe; grade everything. Every doubt resolves here;
+#   * a space-separated list of corpus file BASENAMES (`code.cxd db.cxd`);
+#   * nothing — the branch touches no corpus file and no engine source, so it
+#     owes the step no selection.
+#
+# THE RULES, in the order they are applied.
+#
+#  (0) A base that is not a commit, or a git that refuses: ALL. The classifier's
+#      value is that it SHRINKS a step, so every failure of it must grow one.
+#
+#  (1) ALL when the branch changes what GRADES rather than what is graded: the
+#      runner itself, the fixtures library it loads the corpus with, the gate
+#      policy (`conformance/gates.cxd`), or the ring tagging. A change there can
+#      move any file's verdict.
+#
+#  (2) ALL when the branch changes the ENGINE the compositions are built from —
+#      `vcx/cx/`, the evaluator core under `vcx/code/`, `x/`, the V pin. This
+#      is the rule VCOST-1 names explicitly: "a
+#      `vcx/cx` change selects everything".
+#
+#  (2b) A BUNDLED MODULE's own source maps to that module's own corpus file
+#      (#1587). `registry/modules.cxd` already carries the mapping, one row per
+#      module, in its `source=` / `code=` / `half=` / `corpus=` columns, so this
+#      reads the registry rather than guessing from a filename. It covers
+#      `stdlib/<m>.cx`, a product's `vcx/<vmodule>/stdlib_<m>.v`, `vcx/code/stdlib_<m>.v` and
+#      every file a row's `half=` names.
+#
+#      Why it is owed: before it, EVERY branch that edited `stdlib/*.cx` — which
+#      is most code branches — answered ALL, so #1560's selection never reached
+#      one. Agent 1's c5 paid the unselected 70-100 minute profile gate for a
+#      one-module change, and so did every stdlib branch of the campaign.
+#
+#      A source file NO row names is ALL, and so is a `vcx/code/` or
+#      product `vcx/<vmodule>/` file that is not some row's `code=` or `half=`: those are
+#      the engine, and the doubt resolves upward as every other rule here does.
+#      The unselected gate is unchanged — the post-merge union passes no
+#      PROFILE_GATE_FILES at all and still grades everything.
+#
+#  (3) Otherwise: the corpus files the branch touched, by basename. A
+#      `conformance/**.cxd` edit selects that file and nothing else.
+# The repository is the one this program sits in (its own path, two levels up); git runs
+# there through PATH, so a shim earlier on PATH answers for it (the selection selftest).
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of profile_gate_files_for_branch.sh, the
+# same rules in the same order and the same one line.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat ($parts) [$strings:join $parts '']]
+[?def hit ($m) [> [?else $m@start -1] -1]]
+[?def matches ($rx $s) [$hit [$re:find [$re:compile $rx] $s]]]
+[?def done impure ($s) [?do [$env:write-line $s] [$env:exit 0]]]
+# a git command's stdout (stderr dropped), '' when it fails to run
+[?def git-out impure ($root $args)
+  [?let [= $r [$process:run ('git', [?splice $args]) cwd=$root]]
+    [?match $r [case [err$e] ''] [else [$string $r@stdout]]]]]
+[?def lines ($s) [?for [in $l [$strings:split-lines $s]] [where [not [= $l '']]] [yield $l]]]
+[?def split-ws ($s $rx) [?for [in $t [$re:split [$re:compile $rx] $s]] [yield $t]]]
+[?def strip-prefix ($v $p) [?if [$strings:starts-with $v $p] [then [$strings:replace-first $v $p '']] [else $v]]]
+
+# registry/modules.cxd's corpus= for the first [module row that names WANT as a token
+# (source=/code=/half= stripped), or '' — the shell's awk, token for token
+[?def corpus-of ($rows $want)
+  [?let [= $hits [?for [in $l $rows] [where [$strings:contains $l '[module ']]
+                   [yield [?let [= $corpus [?let [= $cs [?for [in $t [$split-ws $l "[ \\t]+"]] [where [$strings:starts-with $t 'corpus=']]
+                                                          [yield [$strings:replace-first $t 'corpus=' '']]]]
+                                             [?if [= [$count $cs] 0] [then ''] [else [$last $cs]]]]]
+                                [= $found [> [$count [?for [in $w [$split-ws [$strings:replace $l "'" ' '] "[ \\t\\]]+"]]
+                                                       [where [= [$strip-prefix [$strip-prefix [$strip-prefix $w 'source='] 'code='] 'half='] $want]]
+                                                       [yield $w]]] 0]]
+                            [?if [and $found [not [= $corpus '']] [not [= $corpus 'none']]] [then $corpus] [else '']]]]]]
+        [= $good [?for [in $h $hits] [where [not [= $h '']]] [yield $h]]]
+    [?if [= [$count $good] 0] [then ''] [else [$nth $good 1]]]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $base [?if [> [$count $argv] 1] [then [$nth $argv 2]] [else 'origin/release/0.18']]]
+  [= $root [$path:dirname [$path:dirname [$path:absolute [$nth $argv 1]]]]]
+  [= $_d [?if [$io:is-directory $root] [then null] [else [$done 'ALL']]]]
+  [= $rv [$process:run ('git', 'rev-parse', '--verify', '--quiet', [$cat ($base, '^{commit}')]) cwd=$root]]
+  [= $_b [?if [?match $rv [case [err$e] false] [else [= $rv@exit-code 0]]] [then null] [else [$done 'ALL']]]]
+  [= $changed [$lines [$cat ([$git-out $root ('diff', '--name-only', [$cat ($base, '...HEAD')])],
+                             [$git-out $root ('diff', '--name-only')],
+                             [$git-out $root ('ls-files', '--others', '--exclude-standard')])]]]
+  [= $_e [?if [= [$count $changed] 0] [then [$done '']] [else null]]]
+  [= $all-rx "^(vcx/tests/runners/profile_gate/|vcx/tests/fixtures/|vcx/cx/|deps\\.cxd|x/|third_party/v|conformance/gates\\.cxd|conformance/fixtures\\.cxs)"]
+  [= $_a [?if [> [$count [?for [in $c $changed] [where [$matches $all-rx $c]] [yield $c]]] 0] [then [$done 'ALL']] [else null]]]
+  [= $mod-rx "^(stdlib/.*\\.cx|vcx/code/.*\\.v|vcx/cxnet/.*\\.v|vcx/mail/.*\\.v|vcx/cxdb/.*\\.v|vcx/store/.*\\.v|vcx/identity/.*\\.v|vcx/fabric/.*\\.v|vcx/xap/.*\\.v)$"]
+  [= $candidates [?for [in $c $changed] [where [$matches $mod-rx $c]] [yield $c]]]
+  [= $reg [$path:join $root 'registry/modules.cxd']]
+  [= $_r [?if [and [> [$count $candidates] 0] [not [$io:is-file $reg]]] [then [$done 'ALL']] [else null]]]
+  [= $rows [?if [> [$count $candidates] 0] [then [$strings:split-lines [$io:read-file $reg]]] [else ()]]]
+  [= $modsel [?for [in $f $candidates]
+               [yield [?let [= $c [$corpus-of $rows $f]]
+                        [?if [= $c ''] [then [$done 'ALL']] [else [$last [$strings:split $c '/']]]]]]]]
+  [= $sel [?for [in $c $changed] [where [$matches "^conformance/.*\\.cxd$" $c]] [yield [$last [$strings:split $c '/']]]]]
+  [$done [$strings:join [$sort [$distinct ([?splice $sel], [?splice $modsel])]] ' ']]]

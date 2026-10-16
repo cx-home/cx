@@ -2955,7 +2955,7 @@ libcx-abi-gate: build-vcx
 # everything — the unselected target and the union are untouched, and a selected
 # run is an ADDITIONAL entry point rather than a narrowing of the merge gate.
 # The selection a branch owes is
-# `sh scripts/profile_gate_files_for_branch.sh origin/release/0.18`, whose rules
+# `$(TOOL_CX) --allow-all scripts/profile_gate_files_for_branch.cx origin/release/0.18`, whose rules
 # are pinned by `make check-profile-gate-selection`.
 PROFILE_GATE_FILES ?=
 test-profile-gate: build-profiles-dev
@@ -2963,7 +2963,7 @@ test-profile-gate: build-profiles-dev
 
 .PHONY: check-profile-gate-selection
 check-profile-gate-selection:
-	@sh scripts/profile_gate_selection_selftest.sh
+	@TOOL_CX="$(TOOL_CX)" sh scripts/profile_gate_selection_selftest.sh
 
 # ── check-verification-budget (#1562, RULED: VCOST-1) ─────────────────────────
 # The owner's sentence — the fixture grader <= 20 min, a selected post-merge run

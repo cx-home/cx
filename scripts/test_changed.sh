@@ -421,7 +421,7 @@ step_globs() {
     # CLI/cmd side, the embed estate beyond stdlib/, and the conformance files
     # no shard grades: a CSS byte in an x/ module and a docs/llm regeneration
     # grade nothing here, and they were selecting an 11-minute serial step.
-    test-profile-gate)             echo "$RING_LIB stdlib/* conformance/code.cxd conformance/stdlib/* conformance/platform/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/runners/profile_gate/* vcx/tests/fixtures_grader/* scripts/profile_gate_files_for_branch.sh third_party/*" ;;
+    test-profile-gate)             echo "$RING_LIB stdlib/* conformance/code.cxd conformance/stdlib/* conformance/platform/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/runners/profile_gate/* vcx/tests/fixtures_grader/* scripts/profile_gate_files_for_branch.cx third_party/*" ;;
     # #1560 (RULED: VCOST-1): the selection self-test reads only the helper it
     # pins and its own source, so it runs when either moves and not otherwise.
     # #1598 adds the profile gate's runner directory: the helper's ALL rule is
@@ -429,7 +429,7 @@ step_globs() {
     # row by name, so the directory's shape — a file added to it, the directory
     # renamed — is part of the pair's surface. One second of step, and the
     # manifest over-includes on doubt.
-    check-profile-gate-selection)  echo "scripts/profile_gate_files_for_branch.sh scripts/profile_gate_selection_selftest.sh vcx/tests/runners/profile_gate/*" ;;
+    check-profile-gate-selection)  echo "scripts/profile_gate_files_for_branch.cx scripts/profile_gate_selection_selftest.sh vcx/tests/runners/profile_gate/*" ;;
     # #1562 (RULED: VCOST-1): the budget step reads the bounds manifest and the
     # timings a run leaves behind; the self-test reads the step and its own
     # source. Neither reads the tree, so neither runs when the tree moves.

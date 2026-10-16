@@ -3,7 +3,7 @@
 # self-test VCOST-1 asks for: a touched file IS selected, an untouched one is
 # NOT, and a `vcx/cx` change selects everything.
 #
-# It drives scripts/profile_gate_files_for_branch.sh with `git` shadowed by a
+# It drives scripts/profile_gate_files_for_branch.cx with `git` shadowed by a
 # stub that reports a planted change set, so each rule is exercised in a second
 # rather than by making a commit. The same shim technique the nested-make probe
 # uses (#1520); the stub answers only the two subcommands the helper calls and
@@ -33,7 +33,7 @@ check() {
   want="$1"; shift
   name="$1"; shift
   printf '%s\n' "$@" > "$WORK/planted"
-  got=$(PATH="$WORK/bin:$PATH" PLANTED="$WORK/planted" sh scripts/profile_gate_files_for_branch.sh origin/release/0.18 | tr -s ' ' | sed 's/ *$//')
+  got=$(PATH="$WORK/bin:$PATH" PLANTED="$WORK/planted" "${TOOL_CX:-cx}" --allow-all scripts/profile_gate_files_for_branch.cx origin/release/0.18 | tr -s ' ' | sed 's/ *$//')
   if [ "$got" = "$want" ]; then
     echo "  ok   $name → '$got'"
   else
@@ -107,7 +107,7 @@ check "ALL" "an engine change selects everything" "vcx/code/eval.v"
 # Rule (2b) — the whole module map — now has NO live example: every
 # `source=`/`code=`/`half=` in registry/modules.cxd reads `none` or a
 # `deps/…` pin (verified: zero bare `source=stdlib/` or `code=vcx/` rows
-# remain). The property still holds — profile_gate_files_for_branch.sh's own
+# remain). The property still holds — profile_gate_files_for_branch.cx's own
 # awk match is unchanged and a NEW local module would exercise it again —
 # there is simply no file left in this tree that can demonstrate it. The
 # fail-safe direction (an unmapped source, or a source with no registry row,
