@@ -2711,7 +2711,7 @@ diagnostics-census-check:
 # registry-internal band overlap. --strict = the mechanical certainties.
 .PHONY: cxer-registry-gate
 cxer-registry-gate:
-	@bash scripts/cxer_registry_report.sh --strict
+	@$(TOOL_CX) --allow-all scripts/cxer_registry_report.cx --strict
 
 # ── SPEC-FREEZE GATE (remediation register R4.1) — no commit after the
 # audit epoch may touch normative spec AND implementation together without
@@ -3557,7 +3557,7 @@ test-vcx-gates: build-vcx-dev
 	@"$(CX_BIN)" --allow-all scripts/gen_guide/stdlib_docs_check.cx
 	@"$(CX_BIN)" --allow-all scripts/gen_guide/directive_docs_check.cx
 	@"$(CX_BIN)" --allow-all scripts/stdlib_catalog_gate.cx
-	@bash scripts/cxer_registry_report.sh --strict
+	@"$(CX_BIN)" --allow-all scripts/cxer_registry_report.cx --strict
 
 test-vcx: build-vcx-dev test-vcx-gates test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx
 	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) TOOL_CX=$(VCX_TOOL_CX) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-all

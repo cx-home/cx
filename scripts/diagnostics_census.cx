@@ -1,8 +1,8 @@
 # scripts/diagnostics_census.cx — the diagnostics corpus census (RULED: CXF-3).
 #
 # The audit tool for the diagnostics corpus is itself a CX program (RULED:
-# CXF-1): no Python, no shell pipeline doing the counting. The bash
-# predecessor `scripts/cxer_registry_report.sh` stays as the registry
+# CXF-1): no Python, no shell pipeline doing the counting. The
+# predecessor `scripts/cxer_registry_report.cx` (cx since CXMACH-1) stays as the registry
 # COMPLETENESS report; this tool reuses its three definitions verbatim and
 # adds the coverage judgment the audit needs.
 #
