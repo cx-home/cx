@@ -2613,8 +2613,8 @@ check-public-history-replace: build-vcx
 # extraction precondition); the Ring-1/2 split inside vcx/code is gated at I3.
 .PHONY: ring-import-gate
 ring-import-gate:
-	@bash scripts/ring_import_gate.sh
-	@bash scripts/ring_import_gate_selftest.sh
+	@"$(TOOL_CX)" --allow-read --allow-env --allow-subprocess scripts/ring_import_gate.cx
+	@"$(TOOL_CX)" --allow-all scripts/ring_import_gate_selftest.cx
 
 # ── GATES MANIFEST GATE (corpus audit G17) — validate conformance/gates.cxd:
 # it parses, every gate= value is in-enum, and every [module name=X] row

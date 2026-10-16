@@ -164,7 +164,7 @@ printf '%s\n' "$CHANGED" | sed 's/^/  /'
 #   - conformance/** feeds every corpus-consuming step;
 #   - spec/** feeds the doc/consistency gates.
 # ── The ring DAG, once (RULED: VC-22) ────────────────────────────────────
-# Authority: scripts/ring_import_gate.sh, which enforces these edges
+# Authority: scripts/ring_import_gate.cx, which enforces these edges
 # grep-level with zero tolerance. Stated here so a step's input set is
 # derived from the import contract rather than re-guessed per row.
 #
