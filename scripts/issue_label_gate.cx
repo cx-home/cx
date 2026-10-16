@@ -1,40 +1,45 @@
-# scripts/issue_label_gate.cx — release membership is the label (#1781,
-# RULED: LBL-1, SHIP-2, CXF-1, CXF-8).
+# scripts/issue_label_gate.cx — release membership is the milestone (#1781,
+# RULED: STREAM-1 -- the owner's MS-1, NOVER-1 and LGATE-1 of 2026-10-16;
+# replaces LBL-1's label-and-prefix rule).
 #
-# LBL-1 (the owner, 2026-10-04): the release label is the one truth of what
-# ships in the release; the release milestone retires from open issues; every
-# issue carries the label at creation — in a component repository, whose
-# LABELS.md carries no release label, the title prefix `<release> ` (SHIP-2).
-# Two issues filed on 10-04 had no label and 40 open ones still carried the
-# milestone when that was ruled. This step refuses, on the live tracker:
+# MS-1 (the owner, 2026-10-16): release membership is the milestone. The
+# milestones <release> (from VERSION), the next minor and `Backlog` exist in
+# every deliverable repository: cx-private, cx, cx-examples, v,
+# cx-standard-features, cx-platform-reference and the component repositories
+# (status=extracted or created in registry/repos.cxd). NOVER-1 (the owner,
+# 2026-10-16T00:15:05Z): no version number in an issue's title or body; the
+# milestone carries it. This step refuses, on the live tracker:
 #
-#   a  an open cx-private issue created after CUTOFF (2026-10-02, the owner's
-#      rule of that day) without the release label, unless it is on a
-#      [parking] milestone (parked out of the release by the owner's word);
-#   b  an open cx-private issue on a milestone, unless a [parking] row of the
-#      register names it (v0.19 stays a parking milestone, LBL-1);
-#   c  an open issue of a status=extracted repository of registry/repos.cxd
-#      whose title does not start with `<release> ` (or `<release>: `);
+#   m  an open issue of a deliverable repository that is not on exactly one
+#      of the milestones <release>, the next minor, `Backlog` (on none, or on
+#      any other milestone);
+#   t  an open issue created after NOVER-1 whose title or body names a version
+#      of this line: `v<major>.<n>` or `<major>.<n>.<n>` (<major> from
+#      VERSION; a third-party version such as a Python 3.12 or a TLS 1.3 is not
+#      this line's). Issues filed before the ruling keep their text (the owner:
+#      existing issues are not retitled).
 #
-# unless an [exclude] row of scripts/issue_label_exclusions.cxd names the
-# issue with its reason (SHIP-2's named exclusions). A register row without a
-# why= is refused and excludes nothing. The release is derived from VERSION
-# (`v` and its first two numbers), never written here.
+# The cx-private release label stays on issues until the cut (the stream list
+# query keys on it) but the gate no longer requires it; the exclusion
+# register (LBL-1/SHIP-2's named exceptions to the label and the title
+# prefix) retired with the rule it excused: a ruling now moves an issue to
+# a milestone instead. The release is derived from VERSION, never written here.
 #
 # It reaches GitHub (`gh api`, the subprocess grant), so it is on the daily
 # full run (TEST_TARGETS) and a selected run picks it only when its own inputs
-# change (its selection row names this program, its case table, its register,
-# the registry and VERSION). A read gh cannot make is a refusal, exit 2, never
-# a pass. `--self-test` first grades the decision offline on
+# change (its selection row names this program, its case table, the registry
+# and VERSION). A read gh cannot make is a refusal, exit 2, never a pass.
+# `--self-test` first grades the decision offline on
 # scripts/issue_label_gate_cases.cxd (planted GitHub answers).
 #
 # Run (from the repository root):
 #   cx --allow-read --allow-write --allow-env --allow-subprocess scripts/issue_label_gate.cx [--self-test]
 # Exit: 0 nothing refused; 1 a refusal (each named on stdout, the step's log,
-# with why and the issue's title; a count on stderr); 2 a read that failed --
-# the ENVIRONMENT (no gh, no auth, no network, an answer that is not one),
-# printed as its own sentence on both streams, never a label refusal. Under
-# make either red shows as make's exit 2: the printed sentence says which.
+# with why, the issue's title and the fix; a count on stderr); 2 a read that
+# failed -- the ENVIRONMENT (no gh, no auth, no network, an answer that is not
+# one), printed as its own sentence on both streams, never a milestone
+# refusal. Under make either red shows as make's exit 2: the printed sentence
+# says which.
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
@@ -45,12 +50,14 @@
 [?lib 'cx-stdlib/process' as=process]
 [?lib 'cx-stdlib/re'      as=re]
 
-[?const REGISTER "scripts/issue_label_exclusions.cxd"]
 [?const CASES    "scripts/issue_label_gate_cases.cxd"]
 [?const REPOS    "registry/repos.cxd"]
 [?const ORG      "cx-home"]
-[?const HOME     "cx-private"]
-[?const CUTOFF   "2026-10-02T23:59:59Z"]
+# the deliverable repositories registry/repos.cxd does not list as components (MS-1's thirty)
+[?const FRONT    ("cx-private", "cx", "cx-examples", "v", "cx-standard-features", "cx-platform-reference")]
+[?const BACKLOG  "Backlog"]
+# NOVER-1's hour: an issue created after it names no version
+[?const CUTOFF   "2026-10-16T00:15:05Z"]
 
 [?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
 [?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
@@ -59,19 +66,29 @@
   [?let [= $hits [?for [in $a [$attrs $e]] [where [= [$string $a@name] $k]] [yield [$string $a]]]]
     [?if [$empty $hits] [then $d] [else [$first $hits]]]]]
 
-# release-of: `v<major>.<minor>` from VERSION's text (0.18.0-pre.1 -> v0.18).
+# release-of: `v<major>.<minor>` from VERSION's text (e.g. 7.7.0-pre.1 -> v7.7).
 [?def release-of scope=public ($v)
   [?let [= $parts [$strings:split [$strings:trim $v] "."]]
     [$concat "v" [$nth $parts 1] "." [$nth $parts 2]]]]
+# next-of: the next minor of a release (v7.7 -> v7.8); major-of: its major (v7.7 -> 7).
+[?def next-of scope=public ($rel)
+  [?let [= $parts [$strings:split $rel "."]]
+    [$concat [$nth $parts 1] "." [$string [+ [$strings:to-int [$nth $parts 2]] 1]]]]]
+[?def major-of scope=public ($rel)
+  [$strings:trim-start-chars [$nth [$strings:split $rel "."] 1] "vV"]]
+# version-rx: a version of this line, `v<major>.<n>` (any case of v) or
+# `<major>.<n>.<n>`, as one group.
+[?def version-rx scope=public ($rel)
+  [?let [= $mj [$major-of $rel]]
+    [$re:compile [$concat "(\\b[vV]" $mj "\\.[0-9]+\\b|\\b" $mj "\\.[0-9]+\\.[0-9]+\\b)"]]]]
 
 # ── one issue, as GitHub answers it ──────────────────────────────────────
 [?def num    scope=public ($i) [$string [$map:get $i "number"]]]
 [?def title  scope=public ($i) [$string [$map:get $i "title"]]]
-# labels: the label names; a missing or null `labels` is none (REFUTE-1 i01).
-[?def labels scope=public ($i)
-  [?let [= $v [?else [$map:get $i "labels"] null]]
-    [?if [= [$string $v] "null"] [then ()]
-      [else [?for [in $l $v] [yield [$string [?else [$map:get $l "name"] ""]]]]]]]]
+# body: '' for none (missing or null).
+[?def body   scope=public ($i)
+  [?let [= $b [?else [$map:get $i "body"] null]]
+    [?if [= [$string $b] "null"] [then ""] [else [$string $b]]]]]
 # milestone: '' for none (missing or null); any other value is a milestone,
 # and one with no readable title is named `(untitled milestone)` -- so an
 # empty milestone object is refused like any other (REFUTE-1 i01).
@@ -93,6 +110,10 @@
       [else [$strings:to-int [$concat [$re:group $m 1] [$re:group $m 2] [$re:group $m 3]
                                         [$re:group $m 4] [$re:group $m 5] [$re:group $m 6]]]]]]]
 [?def member scope=public ($seq $x) [> [$count [?for [in $y $seq] [where [= $y $x]] [yield 1]]] 0]]
+# version-in: the first version of this line the issue's title, then body, names; '' for none.
+[?def version-in scope=public ($rel $i)
+  [?let [= $m [$re:find [$version-rx $rel] [$concat [$title $i] "\n" [$body $i]]]]
+    [?match $m [case () ""] [else [$re:group $m 1]]]]]
 
 # issues-of: the issues of one `gh api --paginate --slurp` answer (an array
 # of pages), pull requests left out — the issues endpoint lists both.
@@ -100,46 +121,22 @@
   [?for [in $p $pages] [in $i $p] [where [not [$is-pr $i]]] [yield $i]]]
 
 # ── the decision ─────────────────────────────────────────────────────────
-# judge: every refusal key, in order — register rows without a why, then a,
-# b and c (the case table's want= grammar). $reg is the register document,
-# $private the cx-private issues, $components a sequence of maps
-# {repo: <name>, issues: <issues>}.
-[?def judge scope=public ($release $cutoff $reg $private $components)
-  [?let [= $why-ok [?fn ($r) [not [= [$strings:trim [$attr $r "why" ""]] ""]]]]
-        [= $bad-rows (
-            [?for [in $x $reg//exclude] [where [or [not [$why-ok $x]] [= [$attr $x "number" ""] ""]]]
-              [yield [$concat "register:" [$attr $x "repo" "?"] "#" [$attr $x "number" "?"]]]],
-            [?for [in $x $reg//parking] [where [not [$why-ok $x]]]
-              [yield [$concat "register:milestone#" [$attr $x "milestone" "?"]]]])]
-        [= $excluded [?for [in $x $reg//exclude] [where [$why-ok $x]] [where [not [= [$attr $x "number" ""] ""]]]
-                       [yield [$concat [$attr $x "repo" ""] "#" [$attr $x "number" ""]]]]]
-        [= $parked [?for [in $x $reg//parking] [where [$why-ok $x]] [yield [$attr $x "milestone" ""]]]]
-        [= $prefix [$concat $release " "]]
-        # `<release>: ` is the same prefix (STREAM-1's brief spells it so,
-        # 2026-10-05; eighteen issues were filed that way the first hour).
-        [= $colon-prefix [$concat $release ": "]]
-        [= $a [?for [in $i $private]
-                [where [> [$stamp [$string [?else [$map:get $i "created_at"] ""]]] [$stamp $cutoff]]]
-                [where [not [$member [$labels $i] $release]]]
-                [where [not [$member $excluded [$concat HOME "#" [$num $i]]]]]
-                # an issue the owner files on a [parking] milestone is parked
-                # out of the release by that word (#1836-#1840, parked on
-                # 2026-10-06): it owes no release label.
-                [where [not [$member $parked [$milestone $i]]]]
-                [yield [$concat "a:" HOME "#" [$num $i]]]]]
-        [= $b [?for [in $i $private]
-                [= $m [$milestone $i]]
-                [where [not [= $m ""]]]
-                [where [not [$member $parked $m]]]
-                [yield [$concat "b:" HOME "#" [$num $i]]]]]
-        [= $c [?for [in $p $components]
+# judge: every refusal key, in order -- m then t (the case table's want=
+# grammar). $repos is a sequence of maps {repo: <name>, issues: <issues>}.
+[?def judge scope=public ($release $cutoff $repos)
+  [?let [= $allowed ($release, [$next-of $release], BACKLOG)]
+        [= $m [?for [in $p $repos]
                 [= $repo [$string [$map:get $p "repo"]]]
                 [in $i [$map:get $p "issues"]]
-                [where [not [or [$strings:starts-with [$title $i] $prefix]
-                                [$strings:starts-with [$title $i] $colon-prefix]]]]
-                [where [not [$member $excluded [$concat $repo "#" [$num $i]]]]]
-                [yield [$concat "c:" $repo "#" [$num $i]]]]]
-    [?to-array [?for [in $xs ($bad-rows, $a, $b, $c)] [in $x $xs] [where [not [= [$string $x] ""]]] [yield $x]]]]]
+                [where [not [$member $allowed [$milestone $i]]]]
+                [yield [$concat "m:" $repo "#" [$num $i]]]]]
+        [= $t [?for [in $p $repos]
+                [= $repo [$string [$map:get $p "repo"]]]
+                [in $i [$map:get $p "issues"]]
+                [where [> [$stamp [$string [?else [$map:get $i "created_at"] ""]]] [$stamp $cutoff]]]
+                [where [not [= [$version-in $release $i] ""]]]
+                [yield [$concat "t:" $repo "#" [$num $i]]]]]
+    [?to-array [?for [in $xs ($m, $t)] [in $x $xs] [where [not [= [$string $x] ""]]] [yield $x]]]]]
 
 # ── what is printed ──────────────────────────────────────────────────────
 # Refusals go to stdout, the step's log, which the flow's red message tails
@@ -147,43 +144,40 @@
 # and a count goes to stderr. A read that failed is printed on both.
 #
 # find-issue: the issue <repo>#<n> of the answers read, or null.
-[?def find-issue scope=public ($repo $n $private $components)
-  [?let [= $pool [?if [= $repo HOME] [then $private]
-                   [else [?for [in $p $components] [where [= [$string [$map:get $p "repo"]] $repo]]
-                           [in $i [$map:get $p "issues"]] [yield $i]]]]]
-        [= $hits [?for [in $i $pool] [where [= [$num $i] $n]] [yield $i]]]
+[?def find-issue scope=public ($repo $n $repos)
+  [?let [= $hits [?for [in $p $repos] [where [= [$string [$map:get $p "repo"]] $repo]]
+                   [in $i [$map:get $p "issues"]] [where [= [$num $i] $n]] [yield $i]]]
     [?if [$empty $hits] [then null] [else [$first $hits]]]]]
-# refusal-line: the line one refusal key prints -- the key, why, and the
-# issue's title (the case table's [line] rows grade it).
-[?def refusal-line scope=public ($release $key $private $components)
-  [?let [= $m [$re:find [$re:compile "^(a|b|c|register):([^#]*)#(.*)$"] $key]]
+# refusal-line: the line one refusal key prints -- the key, why, the issue's
+# title and the fix, spelled as the command that makes it (the case table's
+# [line] rows grade it).
+[?def refusal-line scope=public ($release $key $repos)
+  [?let [= $m [$re:find [$re:compile "^(m|t):([^#]*)#(.*)$"] $key]]
     [?match $m
       [case () [$concat "issue-label-gate: REFUSED " $key]]
       [else [?let [= $kind [$re:group $m 1]] [= $repo [$re:group $m 2]] [= $n [$re:group $m 3]]
-                  [= $i [$find-issue $repo $n $private $components]]
-                  [= $t [?if [or [= $kind "register"] [= [$string $i] "null"]] [then ""] [else [$concat ": '" [$title $i] "'"]]]]
-                  [= $why [?match $kind
-                            [case "a" [$concat "created " [$string [?else [$map:get $i "created_at"] "(no date)"]]
-                                               " without the label " $release]]
-                            [case "b" [$concat "on the milestone '" [$milestone $i] "', which no [parking] row names"]]
-                            [case "c" [$concat "the title does not start with '" $release " '"]]
-                            [else [$concat "a row of " REGISTER " without a why= or a number=; it excludes nothing"]]]]
-                  # the fix, spelled as the command that makes it (10-13: four
-                  # owner-filed issues each needed a hand fix the line did not name)
+                  [= $i [$find-issue $repo $n $repos]]
+                  [= $found [not [= [$string $i] "null"]]]
+                  [= $t [?if $found [then [$concat ": '" [$title $i] "'"]] [else ""]]]
                   [= $slug [$concat ORG "/" $repo]]
-                  [= $fix [?match $kind
-                            [case "a" [$concat " -- fix: gh issue edit " $n " --repo " $slug " --add-label " $release]]
-                            [case "b" [$concat " -- fix: gh issue edit " $n " --repo " $slug
-                                               " --remove-milestone (the label is the release, LBL-1), or a [parking] row in " REGISTER]]
-                            [case "c" [$concat " -- fix: retitle to '" $release ": " [?if [= [$string $i] "null"] [then "<title>"] [else [$title $i]]]
-                                               "' (gh issue edit " $n " --repo " $slug " --title ...)"]]
-                            [else ""]]]
+                  [= $names [$concat $release " / " [$next-of $release] " / " BACKLOG]]
+                  [= $why [?if [= $kind "m"]
+                            [then [?let [= $ms [?if $found [then [$milestone $i]] [else ""]]]
+                                    [$concat [?if [= $ms ""] [then "on no milestone"] [else [$concat "on the milestone '" $ms "'"]]]
+                                             ", not one of " $names " (MS-1)"]]]
+                            [else [$concat "created " [?if $found [then [$string [?else [$map:get $i "created_at"] "(no date)"]]] [else "(no date)"]]
+                                           ", after NOVER-1, and names the version '" [?if $found [then [$version-in $release $i]] [else ""]]
+                                           "' in its title or body (the milestone carries the release)"]]]]
+                  [= $fix [?if [= $kind "m"]
+                            [then [$concat " -- fix: gh issue edit " $n " --repo " $slug " --milestone " $release
+                                           " (or " [$next-of $release] ", or " BACKLOG ")"]]
+                            [else [$concat " -- fix: gh issue edit " $n " --repo " $slug " --title/--body without the version"]]]]
               [$concat "issue-label-gate: REFUSED " $key " -- " $why $t $fix]]]]]]
 # read-line: the line a read that failed prints, exit 2 -- the environment,
-# never a label refusal (the case table's [read-case] rows grade it).
+# never a milestone refusal (the case table's [read-case] rows grade it).
 [?def read-line scope=public ($repo $why)
   [$concat "issue-label-gate: ENVIRONMENT -- the open issues of " $repo " could not be read (" $why
-           "); nothing was judged, this is not a label refusal (exit 2)"]]
+           "); nothing was judged, this is not a milestone refusal (exit 2)"]]
 
 
 # ── the self-test (offline) ──────────────────────────────────────────────
@@ -199,20 +193,17 @@
         [= $release [$attr $root "release" ""]]
         [= $cutoff [$attr $root "cutoff" ""]]
         [= $rows [?for [in $c $root/case]
-                   [= $regs [?for [in $r $c/register] [yield $r]]]
-                   [= $reg [?if [$empty $regs] [then [$cx:parse "[register]"]] [else [$first $regs]]]]
-                   [= $private [?for [in $p $c/private] [in $i [$issues-of [$json:parse [$concat "[" [$string $p] "]"]]]] [yield $i]]]
-                   [= $components [?for [in $p $c/component]
-                                    [yield {repo: [$attr $p "repo" ""],
-                                                      issues: [?to-array [$issues-of [$json:parse [$concat "[" [$string $p] "]"]]]]}]]]
-                   [= $keys [$judge $release $cutoff $reg $private $components]]
+                   [= $repos [?for [in $p $c/issues]
+                               [yield {repo: [$attr $p "repo" ""],
+                                       issues: [?to-array [$issues-of [$json:parse [$concat "[" [$string $p] "]"]]]]}]]]
+                   [= $keys [$judge $release $cutoff $repos]]
                    [= $got [$strings:join $keys " "]]
                    [= $want [$attr $c "want" ""]]
                    [= $id [$attr $c "id" "?"]]
                    [; a case with [line] rows grades the printed lines too, in order ]
                    [= $want-lines [?for [in $l $c/line] [yield [$string $l]]]]
                    [= $got-lines [?if [$empty $want-lines] [then ()]
-                                   [else [?for [in $k $keys] [yield [$refusal-line $release $k $private $components]]]]]]
+                                   [else [?for [in $k $keys] [yield [$refusal-line $release $k $repos]]]]]]
                    [= $lines-ok [= [$strings:join $got-lines "\n"] [$strings:join $want-lines "\n"]]]
                    [= $ok [and [= $got $want] $lines-ok]]
                    [= $got-shown [?if $lines-ok [then $got] [else [$concat $got " | printed: " [$strings:join $got-lines " / "]]]]]
@@ -263,25 +254,20 @@
   [= $_st [?if [> [$count [?for [in $x [$env:argv]] [where [= $x "--self-test"]] [yield $x]]] 0]
             [then [$self-test]] [else ()]]]
   [= $release [$release-of [$io:read-file "VERSION"]]]
-  [= $reg [$cx:parse [$io:read-file REGISTER]]]
-  [= $names [?for [in $r [$cx:parse [$io:read-file REPOS]]//repo]
-              [where [or [= [$attr $r "status" ""] "extracted"] [= [$attr $r "status" ""] "created"]]]
-              [yield [$attr $r "name" ""]]]]
-  [= $private [$fetch HOME]]
-  [= $components [?for [in $n $names] [yield {repo: $n, issues: [$fetch $n]}]]]
-  [= $keys [?to-array [$judge $release CUTOFF $reg $private $components]]]
-  [= $_r [?for [in $k $keys] [yield [$say [$refusal-line $release $k $private $components]]]]]
+  [= $components [?for [in $r [$cx:parse [$io:read-file REPOS]]//repo]
+                   [where [or [= [$attr $r "status" ""] "extracted"] [= [$attr $r "status" ""] "created"]]]
+                   [= $n [$attr $r "name" ""]]
+                   [where [not [$member FRONT $n]]]
+                   [yield $n]]]
+  [= $names [?to-array [?for [in $xs (FRONT, $components)] [in $x $xs] [yield $x]]]]
+  [= $repos [?to-array [?for [in $n $names] [yield {repo: $n, issues: [$fetch $n]}]]]]
+  [= $keys [?to-array [$judge $release CUTOFF $repos]]]
+  [= $_r [?for [in $k $keys] [yield [$say [$refusal-line $release $k $repos]]]]]
   [= $_n [?if [$empty $keys] [then ()]
-           [else [$cry [$concat "issue-label-gate: " [$string [$count $keys]] " refusal(s), each named on stdout -- a label refusal (exit 1)"]]]]]
-  [= $stale [?for [in $x $reg/exclude]
-              [where [= [$attr $x "repo" ""] HOME]]
-              [where [not [$member [?for [in $i $private] [yield [$num $i]]] [$attr $x "number" ""]]]]
-              [yield [$concat HOME "#" [$attr $x "number" ""]]]]]
-  [= $_s [?for [in $s $stale] [yield [$say [$concat "issue-label-gate: NOTE — the exclusion of " $s " names an issue that is not open; the row can go"]]]]]
+           [else [$cry [$concat "issue-label-gate: " [$string [$count $keys]] " refusal(s), each named on stdout -- a milestone refusal (exit 1)"]]]]]
   [?if [$empty $keys]
-    [then [?let [= $_k [$say [$concat "issue-label-gate: " [$string [$count $private]] " open " HOME " issue(s) and "
-                                      [$string [$count [?for [in $c $components] [in $i [$map:get $c "issues"]] [yield 1]]]]
-                                      " open issue(s) across " [$string [$count $names]] " component repositories hold to "
-                                      $release " (" [$string [$count $reg//exclude]] " excluded by name)"]]]
+    [then [?let [= $_k [$say [$concat "issue-label-gate: " [$string [$count [?for [in $c $repos] [in $i [$map:get $c "issues"]] [yield 1]]]]
+                                      " open issue(s) across " [$string [$count $names]] " deliverable repositories, each on one of "
+                                      $release " / " [$next-of $release] " / " BACKLOG "; none filed since NOVER-1 names a version"]]]
             [$env:exit 0]]]
     [else [$env:exit 1]]]]

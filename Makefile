@@ -610,6 +610,17 @@ build-vcx-pgo: check-gate-lock deps-present v-pin-fresh
 build-vcx-dev: check-gate-lock deps-present v-pin-fresh
 	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx build-dev CX_DFLAGS='$(CX_DFLAGS)'
 
+# build-re2-shim (cx-private#1946, SELRUN): the one vcx artifact every build
+# shares. lib, cli, lib-dev, cli-dev, each profile artifact and db-real-cx all
+# depend on re2-shim, and its rule writes cx_re2_shim.o and the archive in
+# place. The post-merge run's prebuild (scripts/postmerge_steps.cx) builds
+# build-vcx, build-vcx-dev, the profile matrix and db-real-cx side by side,
+# each in its own vcx sub-make. So it runs this first and alone (with
+# v-pin-fresh), and no two sub-makes can find the shim stale at once.
+.PHONY: build-re2-shim
+build-re2-shim: check-gate-lock deps-present v-pin-fresh
+	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) CX_STAMP_ROOT=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx re2-shim
+
 # ── The §4 PROFILE MATRIX as ordinary build steps (#1449, RULED: 1449-a) ─────
 # These used to be built nowhere: `test-profile-gate` built the whole matrix
 # from scratch inside the SERIAL TAIL of `make test`, after the -j block had
@@ -4460,13 +4471,13 @@ site-links-external:
 # the network: a named `site-live-check SKIP:` line, exit 0 (FLAKE-1). A site
 # with no stamp yet (assembled before it existed) is the public main's when
 # its Last-Modified follows the start of the successful Site run on it.
-# ── issue-label-gate (#1781, RULED: LBL-1, SHIP-2, CXF-1) — the label is the
-# release ──────────────────────────────────────────────────────────────────
-# The release label is the one truth of release membership (LBL-1): the step
-# refuses an open cx-private issue created after 2026-10-02 without it, an
-# open cx-private issue on a milestone no [parking] row names, and an open
-# issue of a status=extracted repository whose title lacks the release
-# prefix, unless scripts/issue_label_exclusions.cxd names it with its reason.
+# ── issue-label-gate (#1781, RULED: STREAM-1; the owner's MS-1, NOVER-1) — the milestone
+# is the release ─────────────────────────────────────────────────────────────
+# Release membership is the milestone (MS-1): the step refuses an open issue of
+# a deliverable repository (cx-private, cx, cx-examples, v,
+# cx-standard-features, cx-platform-reference and the registry's components)
+# on none of <release> / <next minor> / Backlog, and an issue filed after
+# NOVER-1 whose title or body names a version of this line.
 # First the case table on planted GitHub answers (offline), then the live
 # tracker through `gh api`. In TEST_TARGETS (the daily full run); it needs the
 # network, so its selection row names only its own inputs and a selected run
