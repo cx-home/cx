@@ -25,6 +25,11 @@
 [?lib 'cx-stdlib/process' as=process]
 [?lib 'cx-stdlib/strings' as=strings]
 
+# The forwarded command is a cx command line in the Makefile's recipes; this [argspec] names its
+# grant so cx's post-FILE flag warning stays quiet (cx-home/cx-core-code#144: a -- does not end
+# that warning yet). The program reads its argv positionally; the spec is not parsed.
+[?const ARG_SPEC [argspec [flag name="allow-all" type=bool]]]
+
 [?def cat scope=public ($parts) [$strings:join $parts '']]
 [?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
 [?def member-of scope=public ($x $xs) [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
