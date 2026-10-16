@@ -3655,16 +3655,22 @@ CX_GC ?= -gc e
 # engine-free build (then db.cxd's engine steps are expected red; see the
 # fixture doc-comment).
 CX_ENGINES ?= -d cx_db_sqlite -d cx_db_redis
-# `v test dir/` compiles EACH `*_test.v` as its own standalone executable, and
-# with no cache every one recompiles the whole graph (builtin + os + all vcx
-# modules) from scratch — the dominant cost is the per-file clang subprocess.
-# `-usecache` C-compiles each unchanged module ONCE and reuses the object across
-# every test binary (and across re-runs): the first file pays a cold tax, the
-# rest reuse the shared `vcx`/`builtin`/`os` objects. Cache-safe with `-gc e` —
-# the cache salt folds in the gc defines + `cc` + cflags + lookup path
-# (third_party/v/vlib/v/pref/default.v), so different flags get distinct buckets.
-# Overridable to A/B: `make CX_CACHE= test-vcx-suite` disables it.
-CX_CACHE ?= -usecache
+# `v test dir/` compiles EACH `*_test.v` as its own executable. CX_CACHE is EMPTY by default (cx-private#1946, measured 2026-10-16). `-usecache`
+# was meant to C-compile each unchanged module once and reuse the object across
+# test binaries, but the fork's type-table guard (validate_usecache_type_tables,
+# cx-private#864) discards every cached layer whose (idx, name) table is not a
+# prefix of the importing program's, and a test that imports `code` matches none:
+# `-v` on env_retention_test.v prints "emitting it inline" for all 79 modules,
+# cx and code among them. So the cache only ADDED work: after every head move each
+# test binary first rebuilt the stale layers (140 s compile cold vs 17 s cache-free
+# on env_retention_test.v, 19 s warm), then emitted the modules inline anyway. The
+# loop's test-vcx-suite on 3681a9e01: 734 s, compile 5,657 s (eight files at
+# 673-705 s each). The whole suite on one box, cache-free then cached (warm for
+# the env file only), load 17-20: 68 s / compile 299 s vs 212 s / compile 1,562 s.
+# A cached build that a fork fix makes reusable comes back as an explicit A/B:
+# `make CX_CACHE=-usecache test-vcx-suite`. check-vcache-soundness proves the
+# cache key itself and keeps its own flags.
+CX_CACHE ?=
 # #318 — a step whose environment prerequisite is absent (e.g. deps/cx-core-code/vcx/target/cx
 # not built in a bare out-of-tree checkout) SELF-SKIPS with a named reason via
 # vcx/testenv (exit 0, never failing-as-regression) and records the reason in
@@ -4000,6 +4006,7 @@ SKIP_UNUSED_ESCAPE_PROBE = \
 	exit 1
 
 CACHE_ESCAPE_PROBE = \
+	if [ -z "$(strip $(CX_CACHE))" ]; then echo "──── real failure (CX_CACHE is empty: no module cache in force to blame): $$rel ────"; else \
 	echo "──── cache-free DIAGNOSTIC (verdict stays red; classifying): $$rel ────"; \
 	if $(V) -cc cc $(CX_GC) $(CX_ENGINES) test "$$rel"; then \
 	  echo "════ GATE ESCAPE (\#700): $$rel FAILED under $(CX_CACHE) and PASSES cache-free ════"; \
@@ -4011,6 +4018,7 @@ CACHE_ESCAPE_PROBE = \
 	  echo "     Then add a probe to scripts/vcache_soundness_gate.sh that goes RED on it."; \
 	else \
 	  echo "──── real failure, not a cache artifact (fails cache-free too): $$rel ────"; \
+	fi; \
 	fi; \
 	st=1
 
@@ -4624,7 +4632,7 @@ test-vcx-cmd: build-vcx-dev
 	{ $(V) -cc cc $(CX_GC) -d cx_platform $(CX_ENGINES) $(CX_CACHE) test vcx/cmd/ 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
-	  if grep -aqE 'C compilation error|linker command failed|symbol\(s\) not found|duplicate symbol' $$log; then \
+	  if [ -n "$(strip $(CX_CACHE))" ] && grep -aqE 'C compilation error|linker command failed|symbol\(s\) not found|duplicate symbol' $$log; then \
 	    echo "──── cache-free DIAGNOSTIC (verdict stays red; classifying): vcx/cmd ────"; \
 	    if $(V) -cc cc $(CX_GC) -d cx_platform $(CX_ENGINES) test vcx/cmd/; then \
 	      echo "════ GATE ESCAPE (#700): vcx/cmd FAILED under $(CX_CACHE) and PASSES cache-free ════"; \
