@@ -319,7 +319,7 @@ step_globs() {
     guide-check)                   echo 'docs-src/* vcx/* stdlib/*' ;;
     # #1667: every [example lang=cx] of the guide's sections run against this
     # tree's binary (a pin move changes the binary), and the retired-surface scan.
-    guide-snippets-check)          echo 'docs-src/* vcx/* stdlib/* deps.cxd registry/modules.cxd scripts/gen_guide/snippet_check.cx scripts/gen_guide/check_retired_surface.sh scripts/gen_guide/guide.mk' ;;
+    guide-snippets-check)          echo 'docs-src/* vcx/* stdlib/* deps.cxd registry/modules.cxd scripts/gen_guide/snippet_check.cx scripts/gen_guide/check_retired_surface.cx scripts/gen_guide/guide.mk' ;;
     # docs-voice-check (RULED: DOCS-43): the served sources it counts, and its
     # allowlist docs-src/site/voice.cxd (under docs-src/*).
     docs-voice-check)              echo 'docs-src/* scripts/gen_site/docs_voice_check.cx' ;;
