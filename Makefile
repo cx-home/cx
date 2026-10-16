@@ -3374,7 +3374,7 @@ test-docs:
 	@$(call GATE_LOCK_TAKE,make test-docs)
 	@$(GATE_LOCK_TRAP) $(MAKE) build-vcx
 	@$(GATE_LOCK_TRAP) $(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) $(DOC_TARGETS)
-	# The summary line is the shape scripts/gate-status.sh reads under "finished
+	# The summary line is the shape scripts/gate-status.cx reads under "finished
 	# steps" (`: <n> passed`) — a doc run writes no V-test summary, so without
 	# this the run reader had nothing to show for a run that had finished every
 	# step. The lock is released by the LAST recipe line, as in `test`.
