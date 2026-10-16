@@ -42,10 +42,9 @@ stamp lang/rust/cxlib/Cargo.toml  "s/^version = \".*\"/version = \"$NEW\"/"
 # `name = "cxlib"` block, then the following `version =`), never other packages'.
 stamp lang/rust/cxlib/Cargo.lock  "/^name = \"cxlib\"\$/{n;s/^version = \".*\"/version = \"$NEW\"/;}"
 stamp lang/python/pyproject.toml  "s/^version = \".*\"/version = \"$NEW\"/"
-# The §1.2 contract-revision stamp derives the toolchain version from VERSION
-# (#1272); `check-contract-revision` refuses a tree where the two disagree, and
-# the v0.18.0-pre.1 cut left it behind (#1435) — regenerate it with the bump.  (version-literal-ok: incident history)
-bash scripts/gen_contract_revision.sh
+# The §1.2 contract-revision stamp (#1272, #1435) is no longer this tree's: its generator
+# and check left with cx-platform-xap's extraction (RULED: RS-12; the Makefile's retired
+# check-contract-revision note), so the bump no longer calls a script that is not here.
 # The generated docs (docs/llm/*, the README badge) stamp the version too and
 # `docs-check` refuses drift; regenerate them with the bump (#1435).
 make docs
