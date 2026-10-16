@@ -1655,8 +1655,11 @@ deps-sync deps-check deps-cx deps-present: CX_BIN ?= $(DEPS_CX_FOUND)
 
 # TOOL_CX (CXMACH-1): the cx that runs this tree's tooling programs (scripts/*.cx) from a recipe
 # that may run before build-vcx — the v-pin lock wraps the V compiler's own rebuild. CX_BIN when
-# given, else the first of DEPS_CX_FOUND's places; a released cx serves (tree_lock.cx runs on one).
-TOOL_CX = $(if $(CX_BIN),$(CX_BIN),$(if $(DEPS_CX_FOUND),$(DEPS_CX_FOUND),cx))
+# given, else the first executable of: this tree's build, the main checkout's build (its deps/), the
+# main checkout's legacy vcx/target/cx, a cx on PATH, ~/.local/bin/cx. A released cx serves too
+# (tree_lock.cx and v_pin_fresh.cx are checked on one).
+TOOL_CX_FOUND = $(shell for c in "$(CURDIR)/deps/cx-core-code/vcx/target/cx" "$(DEPS_CX_MAIN)/deps/cx-core-code/vcx/target/cx" "$(DEPS_CX_MAIN)/vcx/target/cx" "$$(command -v cx 2>/dev/null)" "$(HOME)/.local/bin/cx"; do [ -n "$$c" ] && [ -x "$$c" ] && { echo "$$c"; break; }; done)
+TOOL_CX = $(if $(CX_BIN),$(CX_BIN),$(if $(TOOL_CX_FOUND),$(TOOL_CX_FOUND),cx))
 
 .PHONY: deps-sync deps-check deps-cx
 deps-cx:
