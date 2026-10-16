@@ -2194,7 +2194,7 @@ check-pipefail-pipes:
 # whose damage is silence.
 .PHONY: check-exec-redirect
 check-exec-redirect:
-	@scripts/exec_redirect_gate.sh
+	@$(TOOL_CX) --allow-read scripts/exec_redirect_gate.cx
 
 # ── check-exit-status-probe (#1570) ──────────────────────────────────────────
 # Third of the same family, and the quietest of the three: an exit status read
