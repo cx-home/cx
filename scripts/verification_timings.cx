@@ -15,7 +15,7 @@
 #     load sampled at RUN-START;
 #   * scripts/run_fixture_shards.sh writes `fixture-grader` on an UNSELECTED run — a selected run
 #     grades a handful of corpus files and its seconds say nothing about the bound;
-#   * scripts/premerge_record.sh writes one `premerge-<repo>` row per green pinned repository.
+#   * scripts/premerge_record.cx writes one `premerge-<repo>` row per green pinned repository.
 #
 # write-row writes `[timing name= seconds= load= at=]` into <file> and keeps every other name's
 # rows. Of <name>'s own rows it keeps those among its last four OR among its last QUIET ones

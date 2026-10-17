@@ -132,9 +132,9 @@
            [then [?let [= $_ [$say "  ok   every bound is within the owner's sentence (fixture grader, selected run and union 20 min)"]] true]]
            [else [?let [= $_ [$say [$cat ("  FAIL bounds over the owner's sentence:", $over)]]] false]]]]
   [= $pm [$cat ($t, '/premerge_timings.cxd')]]
-  [= $rp [$run $t [$env:cwd] ('bash', [$cat ($root, '/scripts/premerge_record.sh')])
+  [= $rp [$run $t [$env:cwd] ($cx, '--allow-all', [$cat ($root, '/scripts/premerge_record.cx')])
            {PREMERGE_LOAD: '42', PREMERGE_REPOS: 'cx-core-code cx-no-such-repo', CX_VERIFICATION_TIMINGS: $pm, CX_BIN: $cx}]]
-  [= $rq [$run $t [$env:cwd] ('bash', [$cat ($root, '/scripts/premerge_record.sh')])
+  [= $rq [$run $t [$env:cwd] ($cx, '--allow-all', [$cat ($root, '/scripts/premerge_record.cx')])
            {PREMERGE_LOAD: '3.5', PREMERGE_REPOS: 'cx-no-such-repo', CX_VERIFICATION_TIMINGS: $pm, CX_BIN: $cx}]]
   [= $p0 [?if [and [= $rp@rc 0] [not [$io:exists $pm]]
                    [?let [= $i [$strings:find $rp@out 'premerge-cx-core-code  not run (load 42)']]

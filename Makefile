@@ -2999,7 +2999,7 @@ check-verification-budget:
 .PHONY: premerge-record
 premerge-record: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 premerge-record: build-vcx
-	@CX_BIN="$(CX_BIN)" bash scripts/premerge_record.sh
+	@CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-all scripts/premerge_record.cx
 
 .PHONY: check-verification-budget-selftest
 check-verification-budget-selftest: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
