@@ -665,6 +665,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `dsc-1c` | [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md) | DSC-1c — the graphviz formats require an explicit grant |
 | `durid-1` | [rulings_2026_10_04_owner_decisions_l187_l193.md](rulings_2026_10_04_owner_decisions_l187_l193.md) | DURID-1 — a duration's identity is its written text and its equality its value; time.md §1 says so, with the cases beside it (Letter 193 = (a); DEQ-1's flag) |
 | `dursc-1` | [rulings_2026_09_29_integrator_decisions_l111_l118.md](rulings_2026_09_29_integrator_decisions_l111_l118.md) | DURSC-1 — `time:parse-duration` and `time:duration-*` answer the duration scalar (L112 = (a), delegated; #1681) |
+| `ecsig-1` | [rulings_2026_10_16_ecsig_1.md](rulings_2026_10_16_ecsig_1.md) | Owner decision 2026-10-15: P-256 signing on fiat-crypto in the V fork (ECSIG-1) |
+| `ecsig-1` | [rulings_2026_10_16_ecsig_1.md](rulings_2026_10_16_ecsig_1.md) | ECSIG-1 — (a): vendor fiat-crypto P-256 into the V fork, the download approved, the upstream commit pinned with its license, one fork commit with CI 3/3; the measure is the TLS handshake cell of the #1935 hello-server row |
 | `edl-1` | [rulings_2026_08_21_diagram_vector_data.md](rulings_2026_08_21_diagram_vector_data.md) | EDL-1 — the examples-diagram gate (the #910 suggestion, homed) |
 | `edmap-1` | [rulings_2026_09_30_integrator_decisions_l126_l140.md](rulings_2026_09_30_integrator_decisions_l126_l140.md) | EDMAP-1 — the ruled edit-map step reads each path's owning repository (L133 = (a); #1329) |
 | `en-1` | [rulings_2026_08_31_enum_campaign.md](rulings_2026_08_31_enum_campaign.md) | EN-1 — exhaustiveness: a `[?match]` over a schema-closed set knows when its arms cover it (#1154) |
@@ -1559,6 +1561,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `af-9b` | [partition_I5_audit.md](partition_I5_audit.md) |
 | `arch-0916` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md), [rulings_2026_09_18_owner_decisions_1640z.md](rulings_2026_09_18_owner_decisions_1640z.md) |
 | `bf-1` | [partition_I2_extraction.md](partition_I2_extraction.md), [partition_I5_stream22_cleanroom.md](partition_I5_stream22_cleanroom.md) |
+| `bsd-1` | [rulings_2026_10_16_ecsig_1.md](rulings_2026_10_16_ecsig_1.md) |
 | `choice-1` | [rulings_2026_08_21_array_separator.md](rulings_2026_08_21_array_separator.md), [rulings_2026_09_09_fmt_fingerprint_underscores_1347.md](rulings_2026_09_09_fmt_fingerprint_underscores_1347.md) |
 | `ck-4b` | [rulings_2026_09_14_connector_ingest_1430g.md](rulings_2026_09_14_connector_ingest_1430g.md), [rulings_2026_09_19_cited_ids_without_a_page_1447.md](rulings_2026_09_19_cited_ids_without_a_page_1447.md) |
 | `client-2` | [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md) |
@@ -1595,6 +1598,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `dbvol-1` | [rulings_2026_10_01_owner_decision_l160.md](rulings_2026_10_01_owner_decision_l160.md), [rulings_2026_10_01_owner_decision_overage.md](rulings_2026_10_01_owner_decision_overage.md) |
 | `dist-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) |
 | `dist-2` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md), [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) |
+| `dl-39` | [rulings_2026_10_16_ecsig_1.md](rulings_2026_10_16_ecsig_1.md) |
 | `docs-3` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) |
 | `docs-4` | [rulings_2026_09_28_integrator_decisions_l64_l70.md](rulings_2026_09_28_integrator_decisions_l64_l70.md), [rulings_2026_09_28_owner_decisions_l85.md](rulings_2026_09_28_owner_decisions_l85.md), [rulings_2026_09_29_owner_decisions_l109.md](rulings_2026_09_29_owner_decisions_l109.md), [rulings_2026_09_29_owner_direction_docs_5of5.md](rulings_2026_09_29_owner_direction_docs_5of5.md) |
 | `dr-2` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) |
@@ -1798,4 +1802,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*397 ledger pages; 989 ids declared, 430 cited only.*
+*398 ledger pages; 990 ids declared, 432 cited only.*
