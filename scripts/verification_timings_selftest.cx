@@ -1,6 +1,6 @@
 # scripts/verification_timings_selftest.cx (issue 1583, RULED: RUN-5) — the WRITER of
 # vcx/target/verification_timings.cxd, on planted files under a temp directory. CXMACH-1: the cx
-# rewrite of scripts/verification_timings_selftest.sh, the same seven cases and lines, run on
+# rewrite of scripts/verification_timings_selftest.sh (retired), the same seven cases and lines, run on
 # scripts/verification_timings.cx (the cx twin of verification_timings_lib.sh).
 #
 # #1562's budget step shipped with no writer at all: every bound read NOT MEASURED, so the step

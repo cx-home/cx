@@ -3020,15 +3020,13 @@ check-storm-keep-going:
 
 # ── check-verification-timings (issue 1583, RULED: RUN-5) ────────────────────
 # #1562's budget step shipped with no WRITER: every bound read NOT MEASURED and
-# the step judged nothing. scripts/verification_timings_lib.sh is the writer the
-# fixture grader and premerge-record source; scripts/verification_timings.cx is
-# its cx twin (CXMACH-1, byte-identical documents); this step is the selftest of
-# both, on planted files under a temp directory and never at the real timings
-# path. The shell pair retires once its two users are cx.
+# the step judged nothing. scripts/verification_timings.cx is the writer the
+# fixture grader and premerge-record call (CXMACH-1: the cx rewrite of the shell
+# library, byte-identical documents); this step is its selftest, on planted files
+# under a temp directory and never at the real timings path.
 .PHONY: check-verification-timings
 check-verification-timings: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 check-verification-timings: build-vcx
-	@sh scripts/verification_timings_selftest.sh
 	@"$(CX_BIN)" --allow-all scripts/verification_timings_selftest.cx "$(CX_BIN)"
 
 # ── PER-RING GATE STEPS (#700 structural relief, activated at I4) — run the

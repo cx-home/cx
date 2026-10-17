@@ -1,5 +1,5 @@
 # scripts/verification_timings.cx — the WRITER behind vcx/target/verification_timings.cxd
-# (issue 1583, RULED: RUN-5). CXMACH-1: the cx rewrite of scripts/verification_timings_lib.sh,
+# (issue 1583, RULED: RUN-5). CXMACH-1: the cx rewrite of scripts/verification_timings_lib.sh (retired),
 # whose two shell functions are this program's two commands:
 #
 #   cx --allow-all scripts/verification_timings.cx write-row <file> <name> <seconds> <load> <at>

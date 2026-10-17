@@ -442,7 +442,7 @@ step_globs() {
     check-storm-keep-going)        echo "Makefile scripts/storm_keep_going_selftest.cx scripts/test_changed.sh" ;;
     # issue 1583 (RULED: RUN-5): the timings WRITER selftest reads the library
     # and its own source, and plants everything under mktemp.
-    check-verification-timings)    echo "scripts/verification_timings_lib.sh scripts/verification_timings_selftest.sh scripts/verification_timings.cx scripts/verification_timings_selftest.cx" ;;
+    check-verification-timings)    echo "scripts/verification_timings.cx scripts/verification_timings_selftest.cx" ;;
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
     # ledger-index-check (#1438) regenerates ledger/README.md from the store and
     # compares: its inputs are every ledger page and the generator itself.
