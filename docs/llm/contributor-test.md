@@ -141,10 +141,10 @@ reading what the step checks.
 | 15 | `check-portable-links` |  | `scripts/check_portable_links.cx` |
 | 16 | `check-release-asset-links` |  | `scripts/release_asset_links_gate.cx` |
 | 17 | `check-serial-retry-rosters` |  | — |
-| 18 | `check-fixture-shard-manifest` |  | `scripts/check_fixture_shard_manifest.sh` |
+| 18 | `check-fixture-shard-manifest` |  | `scripts/check_fixture_shard_manifest.cx` |
 | 19 | `check-consolidation-manifests` |  | `scripts/consolidate_tests.sh` |
 | 20 | `check-bare-head-calls` |  | `scripts/bare_head_calls_selftest.cx` |
-| 21 | `test-vcx-suite` |  | `scripts/fixtures_census.sh` |
+| 21 | `test-vcx-suite` |  | `scripts/fixtures_census.cx` |
 | 22 | `test-vcx-code` |  | — |
 | 23 | `test-vcx-cmd` |  | `v test vcx/cmd/` |
 | 24 | `test-vcx-cx` |  | `v test deps/cx-core-data/vcx/fixtures/` |
@@ -161,7 +161,7 @@ reading what the step checks.
 | 35 | `check-no-infix-range` |  | `scripts/check_no_infix_range.cx` |
 | 36 | `check-no-cxl-token` |  | `scripts/check_no_cxl_token.cx` |
 | 37 | `listener-bind-gate` |  | `scripts/listener_bind_gate.cx` |
-| 38 | `check-no-consumer-terms` |  | `scripts/check_no_consumer_terms.sh` |
+| 38 | `check-no-consumer-terms` |  | `scripts/check_no_consumer_terms.cx` |
 | 39 | `secrets-scan` |  | `scripts/secrets_scan.cx` |
 | 40 | `check-version-consistency` | yes | `scripts/check_version_consistency.cx` |
 | 41 | `check-effect-alignment` |  | `v test deps/cx-core-code/vcx/tests/code_units_umbrella_test.v` |
@@ -239,7 +239,7 @@ reading what the step checks.
 | 113 | `check-build-input-roster` |  | `make -C deps/cx-core-code/vcx check-build-input-roster` |
 | 114 | `check-sync-cmd-split` |  | `scripts/sync_cmd_split_selftest.cx` |
 | 115 | `check-gitconfig-home` |  | `scripts/gitconfig_home_selftest.cx` |
-| 116 | `check-selection-manifest` |  | `scripts/check_selection_manifest.sh` |
+| 116 | `check-selection-manifest` |  | `scripts/check_selection_manifest.cx` |
 | 117 | `fmt-sweep-gate` |  | `scripts/fmt_corpus_sweep.cx` |
 | 118 | `test-playground-wasm-traps` |  | `scripts/test_playground_wasm_traps.mjs` |
 | 119 | `test-site-phone-width` |  | `scripts/test_site_phone_width.mjs` |
@@ -250,7 +250,7 @@ reading what the step checks.
 | 124 | `conformance-suites` |  | `scripts/conformance_suites.cx` |
 | 125 | `ledger-index-check` | yes | `scripts/ledger_index.cx` |
 | 126 | `ledger-edit-map-check` | yes | `scripts/ledger_edit_map_check.cx` |
-| 127 | `check-profile-gate-selection` |  | `scripts/profile_gate_selection_selftest.sh` |
+| 127 | `check-profile-gate-selection` |  | `scripts/profile_gate_selection_selftest.cx` |
 | 128 | `check-verification-budget` |  | `scripts/check_verification_budget.cx` |
 | 129 | `check-verification-budget-selftest` |  | `scripts/verification_budget_selftest.cx` |
 | 130 | `check-perf-settle-selftest` |  | `scripts/perf_settle_selftest.cx` |
