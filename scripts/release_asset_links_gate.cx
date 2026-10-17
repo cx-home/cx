@@ -167,7 +167,7 @@
 
 # -- one staged tarball: extract to a scratch dir, run the matching check,
 # clean up. `plat` decides darwin vs linux by the substring in its own name
-# (the release flow and release_linux.sh both spell platforms this way already:
+# (the release flow and release_linux.cx both spell platforms this way already:
 # darwin-arm64, linux-arm64, linux-x86_64). ]
 [?def check-one-tarball scope=private impure [returns string] ($tarball::string)
   [?let [= $base [$last [$strings:split $tarball "/"]]]
