@@ -437,4 +437,5 @@
   [patch sha=bf608da71b0c5b9130ad615cfeda86046d9fe9a4 family=crypto issue='cx-home/v#39']
   [patch sha=50e77fd4e27dd1bc91d41762f2651ee14ab63eae family=crypto issue='cx-home/v#39']
   [patch sha=408bb0bb6591e89190964cb429529ded45ee92aa family=crypto issue='cx-home/v#39']
+  [patch sha=282024d7da18d62d9863fe2b894ddc09425e8a67 family=vlib issue='cx-home/cx-core-code#143']
 ]
