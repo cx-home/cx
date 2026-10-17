@@ -4,7 +4,7 @@
 # it and stamps the static package manifests that must carry a literal version
 # at rest (package managers can't derive it). The code surfaces (vcx/cx/cabi.v,
 # vcx/cmd/main.v) DERIVE the version from the `cx_version` build define and are
-# NOT touched here. The git tag is created from VERSION by scripts/tag_release.sh.
+# NOT touched here. The git tag is created from VERSION by scripts/tag_release.cx.
 #
 # After running, `make check-version-consistency` must pass (CI enforces it).
 #
@@ -32,16 +32,6 @@
 # s/RX/REP/ on every line (the first match on each); the line split keeps a missing last newline.
 [?def each-line scope=public ($t $rx $rep)
   [$strings:join [?to-sequence [?for [in $l [$strings:split $t "\n"]] [yield [$re:replace-first $rx $l $rep]]]] "\n"]]
-# /^name = "cxlib"$/{n;s/^version = ".*"/version = "NEW"/;} — the line after each name line (that
-# line is not itself read as an address); at the end of input n just stops.
-[?def after-name scope=public ($t $new)
-  [?let [= $ls [$strings:split $t "\n"]] [= $n [$count $ls]] [= $rx [$re:compile '^version = ".*"']]
-    [$strings:join [?loop [= $i 1] [= $acc ()]
-                     [?if [> $i $n] [then [break $acc]]
-                       [else [?let [= $l [$nth $ls $i]]
-                         [?if [and [= $l 'name = "cxlib"'] [< $i $n]]
-                           [then [continue [+ $i 2] ([?splice $acc], $l, [$re:replace-first $rx [$nth $ls [+ $i 1]] [$cat ('version = "', $new, '"')]])]]
-                           [else [continue [+ $i 1] ([?splice $acc], $l)]]]]]]] "\n"]]]
 
 [?def stamp scope=public impure ($root $f0 $edit)
   [?let [= $f [$cat ($root, '/', $f0)]]
@@ -64,25 +54,24 @@
            [else [?let [= $_e [$cry [$cat ('bad version: ', $new, ' (want X.Y.Z[-pre])')]]] [$env:exit 2]]]]]
   [= $_w [$io:write-file [$cat ($root, '/VERSION')] [$cat ($new, "\n")]]]
   [= $_h [$say [$cat ('Stamping static manifests to ', $new, ' (VERSION is the source of truth):')]]]
-  [= $_1 [$stamp $root 'cx.pc.in' [?fn ($t) [$each-line $t [$re:compile '^Version: .*'] [$cat ('Version: ', $new)]]]]]
+  # cx-private#1952: since the split the stamped manifests live in the pinned core checkout
+  # (deps/cx-core-code), where check_version_consistency.cx reads them; lang/v, lang/rust and
+  # lang/python left the tree with the bindings, so they are no longer named.
+  [= $_1 [$stamp $root 'deps/cx-core-code/cx.pc.in' [?fn ($t) [$each-line $t [$re:compile '^Version: .*'] [$cat ('Version: ', $new)]]]]]
   # v.mod is tab-indented `version: '...'`; the leading whitespace is kept.
   [= $vm [?fn ($t) [$each-line $t [$re:compile "^([[:space:]]*version:[[:space:]]*)'.*'"] [$cat ('${1}', "'", $new, "'")]]]]
-  [= $_2 [$stamp $root 'vcx/v.mod' $vm]]
-  [= $_3 [$stamp $root 'lang/v/v.mod' $vm]]
-  [= $toml [?fn ($t) [$each-line $t [$re:compile '^version = ".*"'] [$cat ('version = "', $new, '"')]]]]
-  [= $_4 [$stamp $root 'lang/rust/cxlib/Cargo.toml' $toml]]
-  # Cargo.lock records the cxlib package's own version too; ONLY the cxlib package's version line.
-  [= $_5 [$stamp $root 'lang/rust/cxlib/Cargo.lock' [?fn ($t) [$after-name $t $new]]]]
-  [= $_6 [$stamp $root 'lang/python/pyproject.toml' $toml]]
+  [= $_2 [$stamp $root 'deps/cx-core-code/vcx/v.mod' $vm]]
   # The generated docs (docs/llm/*, the README badge) stamp the version too and `docs-check`
   # refuses drift; regenerate them with the bump (#1435).
   [= $d [$process:run ('make', 'docs') cwd=$root capture={stdout: :inherit, stderr: :inherit} timeout-ms=7200000]]
   [= $_d [?match $d [case [err$e] [?let [= $_x [$cry [$string $e@message]]] [$env:exit 127]]]
            [else [?if [= $d@exit-code 0] [then null] [else [$env:exit $d@exit-code]]]]]]
   # The shields badge is the one narrative token that carries the version (check_version_consistency.cx).
-  [= $badge [?fn ($t) [$each-line $t [$re:compile 'badge/version-v[0-9.]*-blue'] [$cat ('badge/version-v', $new, '-blue')]]]]
+  # cx-private#1952: a pre-release badge (version-vX.Y.Z-pre.N-blue) carries letters and a dash; the
+  # old [0-9.]* never matched it, so a bump from a pre-release left the badge behind.
+  [= $badge [?fn ($t) [$each-line $t [$re:compile 'badge/version-v[0-9A-Za-z.-]*?-blue'] [$cat ('badge/version-v', $new, '-blue')]]]]
   [= $_7 [$stamp $root 'README.md' $badge]]
-  [= $_8 [$stamp $root 'vcx/README.md' $badge]]
+  [= $_8 [$stamp $root 'deps/cx-core-code/vcx/README.md' $badge]]
   # SECURITY.md names the supported minor SERIES (X.Y.x), derived from VERSION.
   [= $series [$cat ([$strings:join [?let [= $p [$strings:split $new '.']] [?to-sequence [?for [in $i [$range 1 [?if [> [$count $p] 2] [then 2] [else [$count $p]]]]] [yield [$nth $p $i]]]]] '.'], '.x')]]
   [= $_9 [$stamp $root 'SECURITY.md' [?fn ($t) [$each-line $t [$re:compile '\*\*[0-9][0-9]*\.[0-9][0-9]*\.x\*\*'] [$cat ('**', $series, '**')]]]]]
@@ -90,5 +79,6 @@
   [= $_e1 [$say '']]
   [= $_e2 [$say [$cat ('VERSION = ', $new, '. Code (cabi.v/main.v) derives via the build define — not stamped.')]]]
   [= $_e3 [$say 'Verify:  make check-version-consistency']]
-  [= $_e4 [$say [$cat ('Release: scripts/tag_release.sh v', $new)]]]
+  [= $_e3b [$say 'The deps/cx-core-code stamps belong to cx-core-code: commit them on its main and repin (deps.cxd + registry/repos.cxd) before the cut.']]
+  [= $_e4 [$say [$cat ('Release: deps/cx-core-code/vcx/target/cx --allow-all scripts/tag_release.cx v', $new)]]]
   [$env:exit 0]]
