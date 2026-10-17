@@ -4867,13 +4867,14 @@ publish-packages-selftest:
 # flows/release.flow.cx, the phases scripts/release.sh ran:
 #   preflight → the gate, bump, tag and build (scripts/tag_release.sh) →
 #   package → merge to main → push (the pivot) → GitHub release →
-#   org page (release-all) → editor extension.
+#   packages (publish-packages: PyPI + Homebrew) → org page (release-all) →
+#   editor extension.
 # The local phases before the push are undone in reverse when a later one
 # refuses. Preview first:
 #   make release-flow TAG=vX.Y.Z MODE=dry
 #   make release-flow TAG=vX.Y.Z
 #   make release-flow TAG=vX.Y.Z FROM_BUMP=<sha>     # D83a: the front door's bumped commit
-# PUBLISH=no skips the org page and the extension. LINUX=no ships no linux
+# PUBLISH=no skips the packages, the org page and the extension. LINUX=no ships no linux
 # tarballs, and says so. TAG is required: the tag is an argument, never
 # derived here. The flow runs under a COPY of this tree's cx, because phase 1
 # rebuilds deps/cx-core-code/vcx/target/cx at the tag, and relinking the

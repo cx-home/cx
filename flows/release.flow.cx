@@ -61,7 +61,10 @@
   [step name="gh-release" needs="push"
         [do 'ci/release-gh' [tag $args/tag] [from-bump $args/from-bump] [mode $args/mode]
                             [publish $args/publish] [linux $args/linux] [preflight $steps/preflight/result]]]
-  [step name="org-page" needs="gh-release"
+  [step name="packages" needs="gh-release"
+        [do 'ci/release-packages' [tag $args/tag] [from-bump $args/from-bump] [mode $args/mode]
+                                  [publish $args/publish] [linux $args/linux]]]
+  [step name="org-page" needs="packages"
         [do 'ci/release-org-page' [tag $args/tag] [from-bump $args/from-bump] [mode $args/mode]
                                   [publish $args/publish] [linux $args/linux]]]
   [step name="vscode" needs="org-page"

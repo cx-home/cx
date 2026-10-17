@@ -729,6 +729,22 @@
           [then [$fail [$concat 'ci/release-gh: ' [$why [?if [not [$ok $a]] [then $a] [else [?if [not [$ok $b]] [then $b] [else $c]]]]]]]]
           [else [released tag=$t assets=[$string [+ [$count $versioned] [$count $flat]]] existed=[$string $exists]]]]]]]]]
 
+# ── ci/release-packages — phase 5b: PyPI + Homebrew (cx-private#1947) ───────
+# scripts/publish_packages.cx over the release just made: it downloads the
+# release's flat tarballs and SHA256SUMS.txt, uploads one cxlib wheel per
+# platform to PyPI and pushes Formula/cx.rb to cx-home/homebrew-cx, with
+# PYPI_TOKEN / HOMEBREW_TAP_TOKEN from the environment. After the pivot, so a
+# red here leaves the flow :incomplete (the release is public; rerun
+# `make publish-packages TAG=... MODE=real`, idempotent, to finish).
+[?def release-packages scope=public impure [effects [read] [write] [subprocess] [env]] [returns element]
+  ($tag='' $from-bump='' $mode='' $publish='' $linux='')
+  [?let [= $t [$str-trim [$string $tag]]]
+    [?if [= [$string $publish] 'no'] [then [packages status='skipped' why='--publish=no']]
+      [else [?if [$dry $mode] [then [would-publish what=[$concat 'make publish-packages TAG=' $t ' MODE=real']]]
+        [else [?let [= $r [$process:run ('make', 'publish-packages', [$concat 'TAG=' $t], 'MODE=real') timeout-ms=[$make-ms]]]
+          [?if [$ok $r] [then [packages status='published' tag=$t]]
+            [else [$fail [$concat 'ci/release-packages: make publish-packages — ' [$why $r]]]]]]]]]]]]
+
 # ── ci/release-org-page — phase 5: the org profile README (best-effort) ──────
 [?def release-org-page scope=public impure [effects [read] [write] [subprocess]] [returns element]
   ($tag='' $from-bump='' $mode='' $publish='' $linux='')
