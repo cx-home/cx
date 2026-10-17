@@ -394,7 +394,7 @@ check-gate-lock:
 # class, plus the questions only a cx can answer (is the repository pinned at
 # all; is its source committed here by mistake). This half stays `grep` so a
 # `make clean` tree with its deps/ still rebuilds with no cx present
-# (scripts/reproduce_release.sh does exactly that).
+# (scripts/reproduce_release.cx does exactly that).
 #
 # THE V HALF (RULED: RS-7, RS-12). A V repository's modules are not embedded,
 # they are COMPILED from the pin through -path (CX_DEPS_VPATH, beside
@@ -1723,7 +1723,7 @@ DEPS_SYNC_RUN = if "$(DEPS_CX)" deps --help >/dev/null 2>&1; then "$(DEPS_CX)" d
 #
 # IT IS DERIVED HERE WITHOUT A cx, by the same grep deps-present uses, because a
 # `make clean` tree with its deps/ must still build with no cx present
-# (scripts/reproduce_release.sh; deps-present's own rule): asking cx at parse
+# (scripts/reproduce_release.cx; deps-present's own rule): asking cx at parse
 # time made the first build of a fresh tree need one. It is not a second
 # reading of §3.3 that can drift: deps-present asks `cx deps sync --vpath`
 # whenever a cx is there and refuses a tree where the two disagree.

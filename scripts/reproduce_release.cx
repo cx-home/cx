@@ -1,0 +1,104 @@
+# scripts/reproduce_release.cx — the reproducible-build runner (BB).
+#
+# Builds libcx / libcx_arrow / cli from a clean checkout with pinned
+# toolchain versions and emits SHA-256 hashes of every release
+# artifact.
+#
+# Usage:
+#   cx --allow-all scripts/reproduce_release.cx [TAG]
+#
+# When TAG is given, the script checks out that ref before building.
+# Without a TAG it builds whatever's currently checked out (useful in
+# CI where the workflow already checked out the tag).
+#
+# Outputs:
+#   dist/SHA256SUMS.reproduced.txt   the per-artifact hash table
+#
+# If dist/SHA256SUMS.txt exists (the published table for the same tag),
+# the script diffs the two and exits non-zero on mismatch. CI uses
+# this for the BB3 reproducibility gate.
+#
+# Run it with a cx OUTSIDE deps/cx-core-code/vcx/target (an installed one, as the workflow does):
+# `make clean` removes that directory before the build.
+#
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of reproduce_release.sh — the same steps, lines
+# and exits (set -euo pipefail: the first failing command's own code). Two findings fixed:
+#   - the artifacts are hashed where the split build lands them, deps/cx-core-code/vcx/target/
+#     (the shell hashed vcx/target/, which has held none of them since the split, so the table
+#     was EMPTY and two runs always "agreed" — BB3 had been vacuous);
+#   - an empty table is now a refusal (exit 1): nothing hashed is nothing reproduced.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+# $(cmd): rc and stdout with the trailing newlines dropped.
+[?def out scope=public impure ($root $argv $env)
+  [?let [= $r [$process:run $argv cwd=$root env=$env capture={stdout: :pipe, stderr: :discard}]]
+    [?match $r [case [err$e] [res rc=127 out='']]
+      [else [res rc=$r@exit-code out=[$strings:trim-end-chars [$string $r@stdout] "\n"]]]]]]
+# a step under set -e: its output where the script's goes (stdout dropped when $quiet), the
+# script exiting with the step's code when it fails.
+[?def step scope=public impure ($root $argv $env $quiet)
+  [?let [= $r [$process:run $argv cwd=$root env=$env timeout-ms=86400000
+                capture={stdout: [?if $quiet [then :discard] [else :inherit]], stderr: :inherit}]]
+        [= $rc [?match $r [case [err$e] [?let [= $_ [$cry [$string $e@message]]] 127]] [else $r@exit-code]]]
+    [?if [= $rc 0] [then null] [else [$env:exit $rc]]]]]
+# `cmd 2>/dev/null | head -1 || echo FALLBACK` under pipefail.
+[?def first-line scope=public impure ($root $argv $fallback)
+  [?let [= $r [$out $root $argv {}]]
+    [?if [= $r@rc 0] [then [$nth [$strings:split $r@out "\n"] 1]] [else $fallback]]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $root [$path:dirname [$path:dirname [$path:absolute [$nth $argv 1]]]]]
+  [= $tag [?if [> [$count $argv] 1] [then [$nth $argv 2]] [else '']]]
+  [= $_c [?if [= $tag ''] [then null]
+           [else [?let [= $_ [$say [$cat ('[reproduce] checking out ', $tag)]]]
+                   [$step $root ('git', '-c', 'advice.detachedHead=false', 'checkout', $tag) {} false]]]]]
+  # Pinned toolchain — every reproducer must match these exact versions or the hashes won't agree.
+  [= $vv [$first-line $root ('v', '--version') 'V not installed']]
+  [= $cc [$first-line $root ('cc', '--version') 'cc not installed']]
+  [= $sde0 [$env:var-or-default 'SOURCE_DATE_EPOCH' '']]
+  [= $_t [?for [in $l ('[reproduce] toolchain:', [$cat ('    V        : ', $vv)], [$cat ('    cc       : ', $cc)],
+                       [$cat ('    SOURCE_DATE_EPOCH: ', [?if [= $sde0 ''] [then 'unset'] [else $sde0]])])]
+           [yield [$say $l]]]]
+  # Deterministic timestamps: SOURCE_DATE_EPOCH from the tag's (or HEAD's) commit date when unset.
+  [= $sde [?if [not [= $sde0 '']] [then $sde0]
+            [else [?let [= $r [$out $root ('git', 'log', '-1', '--format=%ct', [?if [= $tag ''] [then 'HEAD'] [else $tag]]) {}]]
+                        [= $_f [?if [= $r@rc 0] [then null] [else [$env:exit $r@rc]]]]
+                        [= $_ [$say [$cat ('[reproduce] auto-set SOURCE_DATE_EPOCH=', $r@out)]]]
+                    $r@out]]]]
+  [= $env {SOURCE_DATE_EPOCH: $sde}]
+  # Clean tree, then the three release artifacts.
+  [= $_k [$step $root ('make', 'clean') $env true]]
+  [= $_s [$say '[reproduce] building libcx + cli + libcx_arrow']]
+  [= $_b [$step $root ('make', 'build-vcx', 'build-lib-arrow') $env true]]
+  # Hash the artifacts where the split build lands them, sorted as sort(1) sorts the lines.
+  [= $t [$cat ($root, '/deps/cx-core-code/vcx/target/')]]
+  [= $rows [$sort [?to-array [?for [in $f ('libcx.dylib', 'libcx.so', 'libcx_arrow.dylib', 'libcx_arrow.so', 'cx')]
+                               [where [$io:is-file [$cat ($t, $f)]]]
+                               [yield [?let [= $h [$out $root ('shasum', '-a', '256', [$cat ($t, $f)]) {}]]
+                                        [= $_f [?if [= $h@rc 0] [then null] [else [$env:exit $h@rc]]]]
+                                        [$cat ([$nth [$strings:split-whitespace $h@out] 1], '  ', $f)]]]]]]]
+  [= $_m [$io:make-dirs [$cat ($root, '/dist')]]]
+  [= $table [$strings:join [?to-array [?for [in $r $rows] [yield [$cat ($r, "\n")]]]] '']]
+  [= $_w [$io:write-file [$cat ($root, '/dist/SHA256SUMS.reproduced.txt')] $table]]
+  [= $_h [$say '[reproduce] artifact hashes (dist/SHA256SUMS.reproduced.txt):']]
+  [= $_p [$io:write-string [$env:stdout] $table]]
+  [= $_e [?if [> [$count $rows] 0] [then null]
+           [else [?let [= $_ [$say [$cat ('[reproduce] NO release artifact under deps/cx-core-code/vcx/target/ — nothing was hashed, so nothing is reproduced')]]]
+                   [$env:exit 1]]]]]
+  # Compare against the published table when present.
+  [?if [$io:is-file [$cat ($root, '/dist/SHA256SUMS.txt')]]
+    [then [?let [= $d [$process:run ('diff', '-u', 'dist/SHA256SUMS.txt', 'dist/SHA256SUMS.reproduced.txt') cwd=$root capture={stdout: :inherit, stderr: :inherit}]]
+                [= $rc [?match $d [case [err$e] 2] [else $d@exit-code]]]
+            [?if [= $rc 0] [then [?let [= $_ [$say '[reproduce] match — build is reproducible against published SHA256SUMS.txt']] [$env:exit 0]]]
+              [else [?let [= $_ [$say '[reproduce] MISMATCH — see diff above']] [$env:exit 1]]]]]]
+    [else [?let [= $_ [$say '[reproduce] no published dist/SHA256SUMS.txt to compare against']] [$env:exit 0]]]]]
