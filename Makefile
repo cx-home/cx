@@ -1505,7 +1505,7 @@ ledger-index: build-vcx
 ledger-index-check: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 ledger-index-check: build-vcx
 	@"$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/ledger_index.cx --check
-	@CX_BIN="$(CX_BIN)" sh scripts/ledger_subject_ids_selftest.sh
+	@CX_BIN="$(CX_BIN)" $(TOOL_CX) --allow-all scripts/ledger_subject_ids_selftest.cx
 
 # ── ledger-edit-map-check / ledger-edit-map-status (#1329, RULED: 1329-a,
 # EDMAP-1) ────────────────────────────────────────────────────────────────────
@@ -2291,7 +2291,7 @@ listener-bind-gate:
 # workload language (users / tracked entities / events / deployments).
 .PHONY: check-no-consumer-terms
 check-no-consumer-terms:
-	@bash scripts/check_no_consumer_terms.sh
+	@$(TOOL_CX) --allow-read --allow-write --allow-subprocess --allow-env scripts/check_no_consumer_terms.cx
 
 # ── SECRETS-SCAN gate (K13, RULED: D59a, RS-28, CXF-1) — the other
 # public-flip precondition beside check-no-consumer-terms above: a component
@@ -2963,7 +2963,7 @@ libcx-abi-gate: build-vcx
 # everything — the unselected target and the union are untouched, and a selected
 # run is an ADDITIONAL entry point rather than a narrowing of the merge gate.
 # The selection a branch owes is
-# `sh scripts/profile_gate_files_for_branch.sh origin/release/0.18`, whose rules
+# `$(TOOL_CX) --allow-all scripts/profile_gate_files_for_branch.cx origin/release/0.18`, whose rules
 # are pinned by `make check-profile-gate-selection`.
 PROFILE_GATE_FILES ?=
 test-profile-gate: build-profiles-dev
@@ -2971,7 +2971,7 @@ test-profile-gate: build-profiles-dev
 
 .PHONY: check-profile-gate-selection
 check-profile-gate-selection:
-	@sh scripts/profile_gate_selection_selftest.sh
+	@$(TOOL_CX) --allow-all scripts/profile_gate_selection_selftest.cx
 
 # ── check-verification-budget (#1562, RULED: VCOST-1) ─────────────────────────
 # The owner's sentence — the fixture grader <= 20 min, a selected post-merge run
@@ -3731,7 +3731,7 @@ skip-ledger-reset:
 # ── fixtures-census-reset (#1448, RULED: 1448-a) ────────────────────────────
 # The same property, and the same argument, as skip-ledger-reset above. Each
 # grader shard writes deps/cx-core-code/vcx/target/fixtures/<shard>.census and
-# scripts/fixtures_census.sh sums them into #1026's one `stdlib corpus: …`
+# scripts/fixtures_census.cx sums them into #1026's one `stdlib corpus: …`
 # line; a census left over from an EARLIER run would be summed into this one,
 # and a total that counts cases nobody graded this run is worse than no total,
 # because it is believed. One file per writer, so no writer can lose another's
@@ -4090,8 +4090,8 @@ check-serial-retry-rosters:
 # every shard row names ONE test file, which `make fixtures` launches once.
 .PHONY: check-fixture-shard-manifest
 check-fixture-shard-manifest:
-	@bash scripts/check_fixture_shard_manifest.sh
-	@sh scripts/run_fixture_shards_selftest.sh
+	@$(TOOL_CX) --allow-read --allow-write scripts/check_fixture_shard_manifest.cx
+	@TOOL_CX="$(TOOL_CX)" sh scripts/run_fixture_shards_selftest.sh
 
 # ── fixtures (#1448, RULED: 1448-a) — the grader's ONE-COMMAND form ─────────
 # Before the shard split a pre-merge pipeline graded the corpus with one line
@@ -4114,7 +4114,7 @@ check-fixture-shard-manifest:
 FIXTURE_FILES ?=
 .PHONY: fixtures
 fixtures:
-	@FIXTURE_FILES="$(FIXTURE_FILES)" sh scripts/run_fixture_shards.sh
+	@FIXTURE_FILES="$(FIXTURE_FILES)" TOOL_CX="$(TOOL_CX)" sh scripts/run_fixture_shards.sh
 
 # ── check-no-nested-make (#1520) ──────────────────────────────────────────────
 # No step of the suite may spawn a nested `make test`. Measured twice on
@@ -4252,7 +4252,7 @@ test-vcx-suite: build-vcx-dev check-serial-retry-rosters check-fixture-shard-man
 	  printf '%s\n' "$$skips"; \
 	fi; \
 	if [ "$(SUITE_FILES)" = "deps/cx-core-code/vcx/tests/" ]; then \
-	  bash scripts/fixtures_census.sh || st=1; \
+	  $(TOOL_CX) --allow-read --allow-write scripts/fixtures_census.cx || st=1; \
 	else \
 	  echo "test-vcx-suite: SELECTED run (SUITE_FILES=$(SUITE_FILES)) — NO whole-corpus census, and this line is here so nobody reads one into it. The census sums the grader shards, only the union runs all of them, and \`make test\` plus every exit run are still the union (#1516)."; \
 	fi; \
@@ -4398,8 +4398,8 @@ check-build-input-roster:
 # for, and the selection rules are exactly the kind of thing that rots quietly.
 .PHONY: check-selection-manifest
 check-selection-manifest:
-	@bash scripts/check_selection_manifest.sh
-	@sh scripts/test_changed_selftest.sh
+	@$(TOOL_CX) --allow-read --allow-write scripts/check_selection_manifest.cx
+	@TOOL_CX=$(TOOL_CX) sh scripts/test_changed_selftest.sh
 
 # ── docs-voice-check (RULED: DOCS-43, RS-30) — the docs speak for CX ─────────
 # Counts the word "Python" (any case, whole word) in every served source —

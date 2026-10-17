@@ -1,0 +1,168 @@
+# scripts/ledger_subject_ids_selftest.cx (#1447) — the SUBJECT rule of
+# `ledger-index-check`, on planted subjects under mktemp.
+#
+# A `(RULED: <id>)` in a commit subject claims that a decision governs the
+# change. #1438's part 5 found seven ids claimed that way with no page behind
+# them; a re-measure over every subject on release/0.18 found eleven. This is
+# the rule that stops the twelfth, and these are the properties it rests on.
+#
+#   A  a subject citing a KNOWN id                    → the check passes
+#   B  a subject citing an id with no page            → REFUSED, and it names it
+#   C  a `RULED:` clause that is free prose with no parsable id → passes, by
+#      design: much of the history's clause is prose (`CR-1..CR-6 — #1126`,
+#      `EN-4(i`, `1573 class D`) and refusing it would red the union on three
+#      years of subjects rather than on the thing #1447 is about
+#   D  the real history on release/0.18 resolves — the eleven are closed
+#   E  --allow-env denied                          → REFUSED, exit 2, the flag named (#1738)
+#   F  --allow-subprocess denied                   → REFUSED, exit 2, the flag named (#1738)
+#   G  a planted subjects file that is not there   → REFUSED, exit 2, by name (#1738)
+#   H  two unresolved ids                          → counted as two, one line each (#1738)
+#   I  an id-SHAPED token the id grammar does not parse (CAPADDR-1, seven
+#      letters) → REFUSED, exit 1, the token and the subject quoted (IDSH-1, #1767)
+#   J  the same for a lower-case token (zzqx-9)            (IDSH-1, #1767)
+#   K  the owner-letter shape D<digits><letter>[<digit>] is PARSED: D99z9,
+#      which no page carries, is refused as unresolved by name (IDSH-1, #1767)
+#   L  ... and D59a, which pages declare, resolves (IDSH-1, #1767)
+#   M  a subject dated before IDSH-1 (a `<epoch>\t` prefix, the shape `git log`
+#      is read in) keeps its unparsed prose; the same subject dated after it is
+#      refused (IDSH-1: the rule binds from the decision on; the history before
+#      it carries 89 such tokens, T-1 and sect-6 and CAPADDR-1 among them)
+#   N  under CX_LEDGER_SUBJECTS_FILE the refusal names that file, not
+#      release/0.18 (#1767)
+#   O  an id-shaped token behind a typographic dash or glued to a character
+#      the grammar has no place for (CFG\u2013 1, CAPADDR\u2010 1, CAPADDR-1_, CX2-1)
+#      is refused, never "0 subject ids" (REFUTE-1 l02 l03 l04 l11)
+#   P  a parenthesis inside a new clause does not end it: (RULED: CFG-1 (see
+#      note), CAPADDR-1) refuses CAPADDR-1 (REFUTE-1 l05)
+#   Q  a token a ledger page records as `TOKEN` (unparsed, IDSH-1) is excused
+#      (MYSQLCDC-1 -> MYCDC-1); an unrecorded one is still refused (I)
+#   R  the per-COMMIT exemption (IDSH-EXEMPT): a `<sha>\t<subject>` line whose
+#      commit is 1daef791e (one of the four s2a subjects citing S2A-1934, now
+#      CXBLD-1934) passes; the same subject under any other sha is refused
+#
+# Planted through CX_LEDGER_SUBJECTS_FILE, which is the only input this reader
+# takes other than `git log`, so the rule is proven without a repository.
+# The repository is the one this program sits in (its own path, two levels up); the cx that
+# runs ledger_index.cx is CX_BIN (deps/cx-core-code/vcx/target/cx when unset or empty).
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of ledger_subject_ids_selftest.sh, the
+# same cases, lines (ok on stdout, SELFTEST FAILED on stderr) and exit codes.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat ($parts) [$strings:join $parts '']]
+[?def has ($s $t) [$strings:contains $s $t]]
+[?def pad3 ($c) [$cat ($c, [$strings:slice '   ' 1 [- 3 [$strings:length $c]]])]]
+[?def ok impure ($c $m) [?let [= $_s [$env:write-line [$cat ('  ', [$pad3 $c], ' ok   ', $m)]]] 0]]
+[?def bad impure ($c $m) [?let [= $_s [$io:write-line [$env:stderr] [$cat ('  ', [$pad3 $c], ' SELFTEST FAILED: ', $m)]]] 1]]
+[?def verdict impure ($pass $c $okm $badm) [?if $pass [then [$ok $c $okm]] [else [$bad $c $badm]]]]
+# a line of OUT that is exactly L (grep -qx)
+[?def line-is ($out $l) [> [$count [?for [in $x [$strings:split-lines $out]] [where [= $x $l]] [yield $x]]] 0]]
+# A*B (case "$out" in *A*B*): A, then B somewhere after it
+[?def then-has ($out $a $b)
+  [?let [= $parts [$strings:split $out $a]]
+    [and [> [$count $parts] 1] [$has [$strings:join [?for [in $p [?enumerate $parts]] [where [> [$nth $p 1] 1]] [yield [$nth $p 2]]] $a] $b]]]]
+
+# one run of `ledger_index.cx --check`: {rc, out} (stdout and stderr together, trailing newlines gone)
+[?def run impure ($root $cx $grants $subjects)
+  [?let [= $r [$process:run ($cx, [?splice $grants], 'scripts/ledger_index.cx', '--check') cwd=$root
+                env=[?if [= $subjects ''] [then {}] [else {CX_LEDGER_SUBJECTS_FILE: $subjects}]] timeout-ms=900000]]
+        [= $out [?match $r [case [err$e] [$string $e]] [else [$cat ([$string $r@stdout], [$string $r@stderr])]]]]
+    {rc: [?match $r [case [err$e] 127] [else $r@exit-code]],
+     out: [$strings:trim-end-chars $out "\n"]}]]
+
+[?const ALL-GRANTS ('--allow-read', '--allow-write', '--allow-env', '--allow-subprocess')]
+
+[?let
+  [= $root [$path:dirname [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]]
+  [= $cx-env [$env:var-or-default 'CX_BIN' '']]
+  [= $cx-rel [?if [= $cx-env ''] [then 'deps/cx-core-code/vcx/target/cx'] [else $cx-env]]]
+  [= $cx [?if [$strings:starts-with $cx-rel '/'] [then $cx-rel] [else [$path:join $root $cx-rel]]]]
+  [= $_c [?if [$io:is-file $cx] [then null]
+           [else [?do [$env:write-line [$cat ('ledger-subject-ids self-test: no cx binary at ', $cx-rel, ' — build first')]] [$env:exit 2]]]]]
+  [= $_h [$env:write-line 'ledger-subject-ids self-test (#1447):']]
+  [= $t [$strings:trim [$string [$process:run ('mktemp', '-d')]@stdout]]]
+  [= $plant [?fn ($name $text) [?let [= $p [$cat ($t, '/', $name)]] [= $_w [$io:write-file $p $text]] $p]]]
+  [= $with [?fn $f [$run $root $cx ALL-GRANTS $f]]]
+  [= $fA [?let [= $r [$with [$plant 'known.txt' "fix(x): something real (RULED: CFG-1)\n"]]]
+           [$verdict [= $r.rc 0] 'A' 'a subject citing a declared id passes'
+                     [$cat ('a known id was refused — exit ', [$string $r.rc], ': ', $r.out)]]]]
+  [= $unknown [$plant 'unknown.txt' "fix(x): a token nobody ruled (RULED: 9999-z)\n"]]
+  [= $fB [?let [= $r [$with $unknown]]
+           [$verdict [and [= $r.rc 1] [$has $r.out '9999-z']] 'B' 'an id with no page is refused, and the refusal names it'
+                     [$cat ('wanted exit 1 naming 9999-z — exit ', [$string $r.rc], ': ', $r.out)]]]]
+  [= $fC [?let [= $r [$with [$plant 'prose.txt' "fix(x): an old subject (RULED: 1573 class D)\n"]]]
+           [$verdict [= $r.rc 0] 'C' 'a RULED clause carrying no parsable id passes, as documented'
+                     [$cat ('free prose was refused — exit ', [$string $r.rc], ': ', $r.out)]]]]
+  [= $fD [?let [= $r [$run $root $cx ALL-GRANTS '']]
+           [$verdict [= $r.rc 0] 'D' 'every id cited in a subject on release/0.18 resolves to a page'
+                     [$cat ('the live history does not resolve — exit ', [$string $r.rc], ': ', $r.out)]]]]
+  [= $fE [?let [= $r [$run $root $cx ('--allow-read', '--allow-write', '--allow-subprocess') '']]
+           [$verdict [and [= $r.rc 2] [$has $r.out '--allow-env'] [not [$has $r.out 'resolve to NO page']]]
+                     'E' 'a denied --allow-env is refused (exit 2) naming the flag, never counted as an id'
+                     [$cat ('wanted exit 2 naming --allow-env and no unresolved count — exit ', [$string $r.rc], ': ', $r.out)]]]]
+  [= $fF [?let [= $r [$run $root $cx ('--allow-read', '--allow-write', '--allow-env') '']]
+           [$verdict [and [= $r.rc 2] [$has $r.out '--allow-subprocess'] [not [$has $r.out 'all resolve']]]
+                     'F' 'a denied --allow-subprocess is refused (exit 2) naming the flag, never an empty history that resolves'
+                     [$cat ('wanted exit 2 naming --allow-subprocess and no pass — exit ', [$string $r.rc], ': ', $r.out)]]]]
+  [= $fG [?let [= $r [$with [$cat ($t, '/no-such-subjects.txt')]]]
+           [$verdict [and [= $r.rc 2] [$has $r.out 'no-such-subjects.txt']]
+                     'G' 'a planted subjects file that cannot be read is refused (exit 2) by name, never an empty pass'
+                     [$cat ('wanted exit 2 naming the missing file — exit ', [$string $r.rc], ': ', $r.out)]]]]
+  [= $fH [?let [= $r [$with [$plant 'two.txt' "fix(x): two tokens nobody ruled (RULED: 9999-z, 9998-y)\n"]]]
+           [$verdict [and [= $r.rc 1] [$line-is $r.out '    9999-z'] [$line-is $r.out '    9998-y'] [$has $r.out '2 decision id(s)']]
+                     'H' 'two unresolved ids are counted as two and each printed on its own line'
+                     [$cat ('wanted exit 1, a count of 2 and one line per id — exit ', [$string $r.rc], ': ', $r.out)]]]]
+  [= $fIJ [?for [in $tok ('CAPADDR-1', 'zzqx-9')]
+            [yield [?let [= $c [?if [= $tok 'CAPADDR-1'] [then 'I'] [else 'J']]]
+                         [= $subj [$cat ('chore: x (RULED: ', $tok, ')')]]
+                         [= $r [$with [$plant 'shape.txt' [$cat ($subj, "\n")]]]]
+                     [$verdict [and [= $r.rc 1] [$then-has $r.out $tok $subj]] $c
+                               [$cat ('an id-shaped token the grammar does not parse (', $tok, ') is refused, the token and the subject quoted')]
+                               [$cat ('wanted exit 1 quoting ', $tok, ' and its subject — exit ', [$string $r.rc], ': ', $r.out)]]]]]]
+  [= $fK [?let [= $r [$with [$plant 'dbad.txt' "chore: x (RULED: D99z9)\n"]]]
+           [$verdict [and [= $r.rc 1] [$line-is $r.out '    d99z9']]
+                     'K' 'D99z9 parses as an owner-letter id and, declared by no page (the IDSH-1 page only quotes it), is refused by name'
+                     [$cat ('wanted exit 1 naming d99z9 as undeclared — exit ', [$string $r.rc], ': ', $r.out)]]]]
+  [= $fL [?let [= $r [$with [$plant 'dgood.txt' "chore: x (RULED: D59a)\n"]]]
+           [$verdict [and [= $r.rc 0] [$has $r.out ' 1 subject id(s)']]
+                     'L' 'D59a parses as an owner-letter id and resolves to the pages that declare it'
+                     [$cat ('wanted exit 0 with one subject id resolved — exit ', [$string $r.rc], ': ', $r.out)]]]]
+  [= $fM [?let [= $r1 [$with [$plant 'old.txt' "1791000000\tchore: old prose (RULED: T-1/T-2, sect-6)\n"]]]
+               [= $r2 [$with [$plant 'new.txt' "1791100000\tchore: new prose (RULED: T-1/T-2, sect-6)\n"]]]
+           [$verdict [and [= $r1.rc 0] [= $r2.rc 1] [$then-has $r2.out 'T-1' 'sect-6']]
+                     'M' 'a subject dated before IDSH-1 keeps its unparsed prose; the same subject dated after it is refused'
+                     [$cat ('wanted exit 0 then exit 1 naming T-1 and sect-6 — exit ', [$string $r1.rc], ' / ', [$string $r2.rc], ': ',
+                            $r1.out, ' / ', $r2.out)]]]]
+  [= $fN [?let [= $r [$with $unknown]]
+           [$verdict [and [= $r.rc 1] [$has $r.out 'unknown.txt'] [not [$has $r.out 'on release/0.18']]]
+                     'N' 'under CX_LEDGER_SUBJECTS_FILE the refusal names the file, not release/0.18'
+                     [$cat ('wanted the planted file named and no release/0.18 — exit ', [$string $r.rc], ': ', $r.out)]]]]
+  [= $fO [?for [in $tok ("CFG–1", "CAPADDR‐1", 'CAPADDR-1_', 'CX2-1')]
+           [yield [?let [= $r [$with [$plant 'glued.txt' [$cat ('chore: x (RULED: ', $tok, ")\n")]]]]
+                    [$verdict [and [= $r.rc 1] [$has $r.out 'id-shaped token']] 'O'
+                              [$cat ($tok, ' is refused as an id-shaped token the grammar does not parse')]
+                              [$cat ('wanted exit 1 refusing ', $tok, ' — exit ', [$string $r.rc], ': ', $r.out)]]]]]]
+  [= $fP [?let [= $r [$with [$plant 'paren.txt' "chore: x (RULED: CFG-1 (see note), CAPADDR-1)\n"]]]
+           [$verdict [and [= $r.rc 1] [$has $r.out 'CAPADDR-1 -- in:']]
+                     'P' 'a parenthesis inside a new RULED clause does not end it; CAPADDR-1 after it is refused'
+                     [$cat ('wanted exit 1 refusing CAPADDR-1 — exit ', [$string $r.rc], ': ', $r.out)]]]]
+  [= $fQ [?let [= $r [$with [$plant 'alias.txt' "chore: x (RULED: STREAM-1, MYSQLCDC-1)\n"]]]
+           [$verdict [= $r.rc 0] 'Q' 'MYSQLCDC-1, recorded by its ledger page as renamed MYCDC-1, is excused; unrecorded tokens stay refused (I)'
+                     [$cat ('wanted exit 0 for the page-recorded MYSQLCDC-1 — exit ', [$string $r.rc], ': ', $r.out)]]]]
+  [= $subj 'pin(cx-core-code): main 67a843f8 (RULED: S2A-1934)']
+  [= $fR [?let [= $r1 [$with [$plant 'exempt.txt' [$cat ("1daef791e6e759ec0c46cfab68f40b67fcbb728e\t", $subj, "\n")]]]]
+               [= $r2 [$with [$plant 'notexempt.txt' [$cat ("1daef791e6e759ec0c46cfab68f40b67fcbb7280\t", $subj, "\n")]]]]
+           [$verdict [and [= $r1.rc 0] [= $r2.rc 1] [$has $r2.out 'S2A-1934 -- in:']]
+                     'R' 'S2A-1934 in exempt commit 1daef791e passes; the same subject under another sha is refused'
+                     [$cat ('wanted exit 0 for the exempt sha and exit 1 naming S2A-1934 otherwise — exit ', [$string $r1.rc], '/',
+                            [$string $r2.rc], ': ', $r1.out, ' / ', $r2.out)]]]]
+  [= $_rm [$process:run ('rm', '-rf', $t)]]
+  [= $fails [$sum ($fA, $fB, $fC, $fD, $fE, $fF, $fG, $fH, [?splice $fIJ], $fK, $fL, $fM, $fN, [?splice $fO], $fP, $fQ, $fR)]]
+  [?if [> $fails 0]
+    [then [?do [$io:write-line [$env:stderr] [$cat ('ledger-subject-ids self-test: ', [$string $fails], ' case(s) FAILED')]] [$env:exit 1]]]
+    [else [?do [$env:write-line "ledger-subject-ids self-test: 21/21 (a known id passes; an id with no page is refused by name; a prose clause passes; the live history resolves; a denied env or subprocess grant and an unreadable planted file are refused, never counted; unresolved ids print one per line; an id-shaped token the grammar does not parse is refused with its subject (IDSH-1); the owner-letter D-shape parses and resolves; the rule binds from IDSH-1 on; the refusal names its source; typographic dashes and glued characters are refused; a parenthesis inside a new clause does not end it; a token its ledger page records as renamed is excused; the IDSH-EXEMPT commits are exempt by sha alone)"]
+               [$env:exit 0]]]]]

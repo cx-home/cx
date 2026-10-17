@@ -744,6 +744,19 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/v_pin_fresh.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/vcache_soundness_memo_selftest.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/gitconfig_home_selftest.cx', .program, reason_attr},
+	// CXMACH-1 batch 2: exit_status_probe_selftest.cx's spawn row
+	// `out=[…]`, a computed attribute (RULED: STREAM-1).
+	AcceptedByOne{'scripts/exit_status_probe_selftest.cx', .program, reason_attr},
+	// CXMACH-1 batch 2: a `[$process:run (…) …]` call beside its ws-delimited
+	// argv literal, the 1536-a class (RULED: STREAM-1).
+	AcceptedByOne{'scripts/check_no_consumer_terms.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/corpus_audit.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/ledger_subject_ids_selftest.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/profile_gate_files_for_branch.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/profile_gate_selection_selftest.cx', .program, reason_1536},
+	// CXMACH-1 batch 2: gates_manifest_gate.cx, a `[?loop]` body the data
+	// balancer cannot close (RULED: STREAM-1).
+	AcceptedByOne{'scripts/gates_manifest_gate.cx', .program, reason_prog},
 	// ── recorded exception — a program document the data balancer cannot read (3) ──
 	// 8 -> 9: scripts/docs_fragment.cx, the RS-9 fragment contract (a `"#]"` literal).
 	// 9 -> 8: scripts/flow_vocabulary_gate.cx left with the flow extraction (RS-12).

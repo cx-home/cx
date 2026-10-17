@@ -34,7 +34,7 @@ set -u
 HERE="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 # verification_timings_lib.sh: the wrapper sources it for its RUN-5 timing row
 # (issue 1583); without it every case exited 1 before resolving anything.
-for f in run_fixture_shards.sh fixtures_census.sh verification_timings_lib.sh; do
+for f in run_fixture_shards.sh fixtures_census.cx verification_timings_lib.sh; do
 	[ -f "$HERE/$f" ] || { echo "SELFTEST FAILED: no $f beside this script" >&2; exit 1; }
 done
 
@@ -46,7 +46,7 @@ fails=0
 # census directory live in the pinned cx-core-code checkout under deps/.
 mkdir -p "$T/scripts" "$T/deps/cx-core-code/vcx/tests/fixtures_grader" "$T/deps/cx-core-code/vcx/target" \
 	"$T/conformance/platform" "$T/conformance/stdlib" "$T/conformance/xap"
-cp "$HERE/run_fixture_shards.sh" "$HERE/fixtures_census.sh" "$HERE/verification_timings_lib.sh" "$T/scripts/"
+cp "$HERE/run_fixture_shards.sh" "$HERE/fixtures_census.cx" "$HERE/verification_timings_lib.sh" "$T/scripts/"
 
 # A manifest in the real row shape, with DECOYS inside the prose block: a
 # reader that reads its own documentation as data grades a shard that does not

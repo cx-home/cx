@@ -1,0 +1,70 @@
+# scripts/profile_gate_selection_selftest.cx (#1560, RULED: VCOST-1) — the selection
+# self-test VCOST-1 asks for: a touched file IS selected, an untouched one is
+# NOT, and a `vcx/cx` change selects everything.
+#
+# It drives scripts/profile_gate_files_for_branch.cx with `git` shadowed by a
+# stub that reports a planted change set, so each rule is exercised in a second
+# rather than by making a commit. The same shim technique the nested-make probe
+# uses (#1520); the stub answers only the two subcommands the helper calls and
+# forwards nothing.
+# The cases, and why rule (2b) has no live example left (every source=/code=/half= in
+# registry/modules.cxd reads none or a deps/… pin since the extractions, RULED: RS-12, RS-8,
+# K7a, K3, D65d, RS-31): see the RETIRED notes this program's shell predecessor carried, in
+# git history at the commit that retired it. The fail-safe direction (an unmapped source, or
+# a source with no registry row, answers ALL) is checked live against real local paths.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of profile_gate_selection_selftest.sh, the
+# same lines and exit code; it runs the selection program with this program's own cx.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat ($parts) [$strings:join $parts '']]
+[?def say impure ($s) [$env:write-line $s]]
+
+# the git stub: answers only the two subcommands the helper calls and forwards nothing
+[?def GIT-STUB () "#!/bin/sh\ncase \"$1 $2\" in\n  \"rev-parse --verify\") exit 0 ;;\nesac\ncase \"$1\" in\n  diff)      cat \"$PLANTED\" ;;\n  \"ls-files\") : ;;\n  *)         : ;;\nesac\n"]
+
+# the helper's line as the shell compared it: runs of spaces squeezed, trailing spaces and
+# trailing newlines gone
+[?def norm ($s) [$re:replace [$re:compile " +$"] [$re:replace [$re:compile " +"] [$re:replace [$re:compile "\n+$"] $s ''] ' '] '']]
+
+[?def check impure ($root $work $want $name $files)
+  [?let [= $_p [$io:write-file [$cat ($work, '/planted')] [$strings:join [?for [in $f $files] [yield [$cat ($f, "\n")]]] '']]]
+        [= $r [$process:run ([$env:executable-path], '--allow-all', 'scripts/profile_gate_files_for_branch.cx', 'origin/release/0.18')
+                cwd=$root env={PATH: [$cat ($work, '/bin:', [$env:var-or-default 'PATH' '/usr/bin:/bin'])], PLANTED: [$cat ($work, '/planted')]}]]
+        [= $got [$norm [?match $r [case [err$e] ''] [else [$string $r@stdout]]]]]
+    [?if [= $got $want]
+      [then [?let [= $_s [$say [$cat ('  ok   ', $name, " → '", $got, "'")]]] 0]]
+      [else [?let [= $_s [$say [$cat ('  FAIL ', $name, " → '", $got, "' (want '", $want, "')")]]] 1]]]]]
+
+[?let
+  [= $root [$path:dirname [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]]
+  [= $work [$strings:trim [$string [$process:run ('mktemp', '-d')]@stdout]]]
+  [= $_b [$process:run ('mkdir', '-p', [$cat ($work, '/bin')])]]
+  [= $_g [$io:write-file [$cat ($work, '/bin/git')] [$GIT-STUB]]]
+  [= $_x [$process:run ('chmod', '+x', [$cat ($work, '/bin/git')])]]
+  [= $_h [$say 'profile-gate selection self-test (#1560):']]
+  [= $cases (('db.cxd', 'one touched corpus file', ('conformance/platform/db.cxd')),
+             ('code.cxd db.cxd', 'two touched corpus files', ('conformance/platform/db.cxd', 'conformance/code.cxd')),
+             ('', 'a docs-only change selects nothing', ('docs-src/llm/primer.md.tmpl')),
+             ('ALL', 'a vcx/cx change selects everything', ('vcx/cx/program_lexer.v')),
+             ('ALL', 'an engine change selects everything', ('vcx/code/eval.v')),
+             ('ALL', 'an evaluator core file still selects everything', ('vcx/code/eval_core.v')),
+             ('ALL', 'a product file belonging to no module row selects everything', ('vcx/fabric/stdlib_unregistered_xyz.v')),
+             ('ALL', 'a stdlib source with no registry row selects everything', ('stdlib/not-a-registered-module.cx')),
+             ('code.cxd', 'conformance/code.cxd stays selectable by name, as #1560 made it', ('conformance/code.cxd')),
+             ('ALL', 'an x/ surface still selects everything', ('x/ux-web.cx')),
+             ('ALL', 'a module source beside an ENGINE change is still ALL', ('stdlib/map.cx', 'vcx/cx/program_lexer.v')),
+             ('ALL', 'the runner itself selects everything', ('vcx/tests/runners/profile_gate/profile_gate.v')),
+             ('ALL', 'the gate policy selects everything', ('conformance/gates.cxd')),
+             ('ALL', 'engine + corpus is ALL, not the corpus alone', ('conformance/platform/db.cxd', 'vcx/cx/program_lexer.v')))]
+  [= $fails [$sum [?for [in $c $cases] [yield [$check $root $work [$nth $c 1] [$nth $c 2] [$nth $c 3]]]]]]
+  [= $_c [$process:run ('rm', '-rf', $work)]]
+  [?if [> $fails 0]
+    [then [?do [$say [$cat ('profile-gate selection self-test: ', [$string $fails], ' failure(s)')]] [$env:exit 1]]]
+    [else [?do [$say "profile-gate selection self-test OK — 14 rules (#1560 + #1587's module-to-corpus map, now demonstrated only by its fail-safe direction: K7a left rule 2b with no local module-source example, see the RETIRED comments above)"]
+               [$env:exit 0]]]]]

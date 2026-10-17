@@ -421,7 +421,7 @@ step_globs() {
     # CLI/cmd side, the embed estate beyond stdlib/, and the conformance files
     # no shard grades: a CSS byte in an x/ module and a docs/llm regeneration
     # grade nothing here, and they were selecting an 11-minute serial step.
-    test-profile-gate)             echo "$RING_LIB stdlib/* conformance/code.cxd conformance/stdlib/* conformance/platform/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/runners/profile_gate/* vcx/tests/fixtures_grader/* scripts/profile_gate_files_for_branch.sh third_party/*" ;;
+    test-profile-gate)             echo "$RING_LIB stdlib/* conformance/code.cxd conformance/stdlib/* conformance/platform/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/runners/profile_gate/* vcx/tests/fixtures_grader/* scripts/profile_gate_files_for_branch.cx third_party/*" ;;
     # #1560 (RULED: VCOST-1): the selection self-test reads only the helper it
     # pins and its own source, so it runs when either moves and not otherwise.
     # #1598 adds the profile gate's runner directory: the helper's ALL rule is
@@ -429,7 +429,7 @@ step_globs() {
     # row by name, so the directory's shape — a file added to it, the directory
     # renamed — is part of the pair's surface. One second of step, and the
     # manifest over-includes on doubt.
-    check-profile-gate-selection)  echo "scripts/profile_gate_files_for_branch.sh scripts/profile_gate_selection_selftest.sh vcx/tests/runners/profile_gate/*" ;;
+    check-profile-gate-selection)  echo "scripts/profile_gate_files_for_branch.cx scripts/profile_gate_selection_selftest.cx vcx/tests/runners/profile_gate/*" ;;
     # #1562 (RULED: VCOST-1): the budget step reads the bounds manifest and the
     # timings a run leaves behind; the self-test reads the step and its own
     # source. Neither reads the tree, so neither runs when the tree moves.
@@ -446,7 +446,7 @@ step_globs() {
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
     # ledger-index-check (#1438) regenerates ledger/README.md from the store and
     # compares: its inputs are every ledger page and the generator itself.
-    ledger-index-check)            echo 'ledger/* scripts/ledger_index.cx scripts/ledger_subject_ids_selftest.sh' ;;
+    ledger-index-check)            echo 'ledger/* scripts/ledger_index.cx scripts/ledger_subject_ids_selftest.cx' ;;
     # ledger-edit-map-check (#1329, RULED: 1329-a, EDMAP-1) reads every edit map
     # against the owning repository's history: the pages, the allocation that
     # names the owner, the pins that name its sha, and the step with its selftest.
@@ -594,7 +594,7 @@ step_globs() {
     check-serial-retry-rosters)    echo 'Makefile vcx/*' ;;
     # #1448: the partition guard reads the manifest, the corpus it partitions
     # and the shard test files it holds to it.
-    check-fixture-shard-manifest)  echo 'vcx/tests/fixtures_grader/fixture_shards.cxd conformance/stdlib/* conformance/platform/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/code_eval_fixtures_shards_test.v scripts/check_fixture_shard_manifest.sh' ;;
+    check-fixture-shard-manifest)  echo 'vcx/tests/fixtures_grader/fixture_shards.cxd conformance/stdlib/* conformance/platform/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/code_eval_fixtures_shards_test.v scripts/check_fixture_shard_manifest.cx' ;;
     # #1370: the shim archives' alignment — the rules that write them and the checker.
     check-shim-archives)           echo 'vcx/Makefile scripts/check_archive_alignment.cx vcx/deps/re2_shim/* vcx/arrow/shim/*' ;;
     # pure shell over canned logs — its only inputs are the classifier and the
@@ -636,7 +636,7 @@ step_globs() {
     # the adversarial -usecache proof (scripts/vcache_soundness_gate.sh): it
     # REBUILDS the tree from source under mutated inputs and compares behaviour,
     # so its surface is the whole compiled closure plus the gate itself.
-    check-selection-manifest)      echo 'Makefile scripts/test_changed.sh scripts/check_selection_manifest.sh scripts/test_changed_selftest.sh vcx/tests/* conformance/*' ;;
+    check-selection-manifest)      echo 'Makefile scripts/test_changed.sh scripts/check_selection_manifest.cx scripts/test_changed_selftest.sh vcx/tests/* conformance/*' ;;
     check-vcache-soundness)        echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/vcache_soundness_gate.sh scripts/vcache_soundness_memo.cx" ;;
     # #1675: the concurrency fixture over the same gate, plus its own script.
     check-vcache-soundness-selftest) echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/vcache_soundness_gate.sh scripts/vcache_soundness_selftest.sh scripts/vcache_soundness_memo.cx scripts/vcache_soundness_memo_selftest.cx" ;;

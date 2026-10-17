@@ -30,7 +30,8 @@
 #      under the liveness watch (#1787) — ci-acts' pool-run;
 #   4. the storm's load-SENSITIVE steps (flows/load.cxd's rows), one at a time
 #      on the post-merge runner itself, the box quiet;
-#   5. the serial tail, in its order, only after every step before it passed
+#   5. the serial tail, in its order, whatever the steps before it read (#1946
+#      (a), THE TAIL ALWAYS RUNS below: a red step still reds the run)
 #      (site-live-check last: SITER-1); a site reader after a site step that
 #      passed reads that step's site/ (`make -o site`, THE TAIL'S SITE below).
 # Every step is red or green on its own and every red one is named (-k, RUN-2):
@@ -317,19 +318,19 @@
 [?def red-names scope=private pure [returns any] ($es)
   [?to-sequence [?for [in $e $es] [where [not [= [$string $e@rc] '0']]] [yield [$string $e@name]]]]]
 
-# THE REPORT STEPS (cx-private#1946). check-verification-budget judges the
-# timings rows EARLIER runs wrote, not this tree, and the verdict writes this
-# run's row only when the serial tail ran (flows/private-acts.cx tail-skipped:
-# a run without its tail is partial and writes none). Its red stopping the tail
-# was a lock: from 2026-10-15T17:11Z every run on a head whose selected-run
-# median stood over the bound was red on that step alone, ran no tail, wrote no
-# row, and so the median (26m15s) could never move again, whatever a cut did to
-# the run. A report step's red still reds the run (exit 2, named); it no longer
-# stops the tail, so the run is whole and its row is written.
-[?const REPORT-STEPS ('check-verification-budget',)]
-
-[?def tail-blockers scope=private pure [returns any] ($es)
-  [?to-sequence [?for [in $n [$red-names $es]] [where [not [$c:member $n REPORT-STEPS]]] [yield $n]]]]
+# THE TAIL ALWAYS RUNS (cx-private#1946, option (a)). The verdict writes this
+# run's timings row only when the serial tail ran (flows/private-acts.cx
+# tail-skipped: a run without its tail is partial and writes none). A red step
+# before the tail stopping it was a lock on the rows: first a red
+# check-verification-budget (it judges the rows EARLIER runs wrote; from
+# 2026-10-15T17:11Z every run on a head whose median stood over the bound was
+# red on it alone, ran no tail, wrote no row, so the median could never move),
+# then any other red pool step (the tick on 75c23fea8 ran 958 s red on
+# guide-check alone, tail skipped, no row). Once the prebuild passed, the tail
+# runs whatever the steps before it read: every red step still reds the run
+# (exit 2, each named), and the run is whole, so it writes its row. A red
+# prebuild still stops the run before any step: nothing is built, no step
+# (tail included) ran, the run is partial and writes no row.
 
 [?def finish scope=private impure ($es $why)
   [?let [= $reds [$red-names $es]]
@@ -417,7 +418,7 @@
                               [?splice [?to-sequence [?for [in $w [$c:cat2 $slotsh [$pre-words $t]]] [yield [arg v=$w]]]]]]]]]]
         [= $pb [?if [= [$string $re@rc] '0'] [then [$c:pool-run $pjobs0 [$count $pjobs0] $slot $vj 60000]] [else ()]]]
         [= $pre [$c:cat2 ($ds, $re) $pb]]
-        [?if [> [$count [$red-names $pre]] 0] [then [$finish $pre 'the prebuild is red: no step ran']]
+        [?if [> [$count [$red-names $pre]] 0] [then [$finish $pre 'the prebuild is red: no step ran, the serial tail did not run']]
         [else [?let
         [= $sens [$ci:sensitive]]
         [= $own [?to-sequence [?for [in $t $storm] [where [not [$c:member $t $sens]]] [yield $t]]]]
@@ -455,7 +456,5 @@
         [= $sp [?if [> [$count $ports] 0] [then [$c:pool-run $pjobs $sn $slot [?if [< [$floor [/ [$cores] $sn]] 1] [then 1] [else [$floor [/ [$cores] $sn]]]] 60000]] [else ()]]]
         [= $sh [$c:cat2 $sp [?to-sequence [?for [in $t $alone] [yield [$serial-step $c $t [$make-words $t [$string $p@suite] $po] 'post-merge']]]]]]
         [= $before [$c:cat2 [$c:cat2 $pre $par] $sh]]
-        [= $tl [?if [> [$count [$tail-blockers $before]] 0] [then ()]
-                 [else [$run-tail $c $tail [$string $p@suite] $po]]]]
-        [$finish [$c:cat2 $before $tl]
-                 [?if [and [> [$count [$tail-blockers $before]] 0] [> [$count $tail] 0]] [then 'the serial tail did not run: a step before it is red'] [else '']]]]]]]]]]]]]]]]]]]]]]]]
+        [= $tl [$run-tail $c $tail [$string $p@suite] $po]]
+        [$finish [$c:cat2 $before $tl] '']]]]]]]]]]]]]]]]]]]]]]

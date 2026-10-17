@@ -1,0 +1,210 @@
+# scripts/check_no_consumer_terms.cx
+#
+# NO-CONSUMER-TERMS gate — downstream-consumer identity must never appear in
+# the repo tree, because this repository is the one that is published (the
+# allowlist mirror retired, RULED: RS-11) and anything here flows out with it.
+# The standing policy (2026-07-24 owner ruling): CX addresses platform
+# concerns independent of specific users;
+# every artifact speaks in CX-generic workload terms (users, tracked
+# entities, events, streams, deployments) — never a consumer's name,
+# product, org, or business-domain vocabulary.
+#
+# The denylist is deliberately literal and case-insensitive. Extend it when
+# a new consumer engagement begins — the term goes in HERE the same day.
+# Bare short tokens with false-positive surface (e.g. a lone "pb") are
+# intentionally excluded; the multi-char forms below catch real leaks.
+#
+# ENUMERATION IS THE WEAK POINT, and it failed once. `pb-ae` sat in shipped
+# engine source and a test for three weeks (from #567, 2026-07-21) while
+# this gate reported clean, because the list carried `pb-engine`, `pb-xap`,
+# `pb-hq`, `x-pb-` … and not that particular spelling — even though
+# `ae-queue` and `account executive` were already banned, so it was exactly
+# the vocabulary the list exists to stop, in a spelling nobody thought to
+# add. Guessing every suffix is not a strategy.
+#
+# So `pb-<word>` is matched as a CLASS — any suffix, present or future.
+# Verified against the whole tracked tree: zero legitimate uses, so the
+# false-positive surface the comment above worries about does not exist for
+# the hyphenated form (a lone "pb" is still excluded, and still should be).
+#
+# It failed a SECOND time on 2026-09-07 (#1191), in the DOT spelling:
+# `pb.store` shipped in the composition spec, in the `feature.cxs` comment and
+# in `conformance/xap/xap-compose.cxd` as the worked publisher-qualified
+# example, while `pb-[a-z]` reported clean — the hyphen class does not see a
+# dot. A blanket `pb\.[a-z]` class is NOT viable and was measured before being
+# rejected: eight tracked files use it innocently (`pb.bytesize`, `pb.len`,
+# `pb.count` in the archived Ruby/Swift bindings and in five engine sources),
+# so it would cry wolf exactly the way `ae-` did.
+#
+# What makes `pb.store` a leak and `pb.len` not is that the leak is a NAME —
+# it appears QUOTED, as a publisher-qualified identifier or as prose in
+# backticks. So the class is anchored on the quote: `'pb.`, `"pb.`, `` `pb. ``.
+# Verified against the whole tracked tree: it matched all eight leak sites and
+# nothing else, before or after the sanitization.
+#
+# `ae-<word>` was tried as a class too and REVERTED, which is worth
+# recording so nobody repeats it. It fires on `mem://ae-origin` /
+# `mem://ae-rep` / `shred-ae-N` in the journal erasure examples, where `ae`
+# abbreviates apply-erasures — an innocent, unrelated use, and one whose ids
+# appear in expected fixture output. A gate that cries wolf gets ignored or
+# gets exclusions bolted on, and either way stops protecting anything. `ae`
+# is too short and too common to class-match; the specific consumer spelling
+# stays enumerated below.
+#
+# Exit 0 when clean; exit 1 listing every offending file:line.
+
+# --root <path>: grade a DIFFERENT tree than the one this script ships in
+# (K13, RULED: D59a, RS-28) -- each component repository flips public after
+# its own check-no-consumer-terms run, and this script lives only in `cx`
+# (scripts/ is tracked in cx-private and reaches `cx` through the D83a
+# filter). Self-exclusion below stays keyed to this script's OWN
+# repo-relative path, which is correct in a foreign tree too: a tree that
+# does not carry scripts/check_no_consumer_terms.cx at all has nothing there
+# to exclude, and one that does (a future vendoring) is excluded the same
+# way `cx` is.
+#
+# --gh-metadata (audit C10; owner-authorized 2026-08-05): the tracked-file gate is
+# structurally blind to GitHub METADATA — labels, issue/PR bodies, and comments — which a
+# future export tool might carry. This mode scans all of it via the bulk REST endpoints
+# (`gh api --paginate`). It needs `gh` + network, so it is SCHEDULED / on-demand, never
+# wired into per-commit TEST_TARGETS:
+#
+#   cx --allow-all scripts/check_no_consumer_terms.cx --gh-metadata
+#
+# Scope: every label name+description, every issue and PR body+title (the /issues listing
+# includes PRs), every issue comment, every PR review comment.
+#
+# SELF-TEST (both scans read the same vocabulary): every term must match its own probe in
+# this program's own matcher (the --gh-metadata scan) AND under `git grep -E` (the
+# tracked-file scan), and no term may use \b, which `git grep -E` silently ignores — else
+# exit 2 before any scan.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of check_no_consumer_terms.sh, the same
+# lines and exit codes: 0 clean; 1 a hit; 2 the gate cannot vouch (selftest, git grep or
+# gh errored).
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat ($parts) [$strings:join $parts '']]
+[?def say impure ($s) [$env:write-line $s]]
+[?def hit ($m) [> [?else $m@start -1] -1]]
+[?def matches ($term $s) [$hit [$re:find [$re:compile [$cat ('(?i)', $term)]] $s]]]
+[?def lines-of ($s) [?for [in $l [$strings:split-lines $s]] [yield $l]]]
+[?def first-n ($xs $n) [?for [in $p [?enumerate $xs]] [where [<= [$nth $p 1] $n]] [yield [$nth $p 2]]]]
+
+[?const SELF 'scripts/check_no_consumer_terms.cx']
+
+# The two CLASS patterns: `pb-[a-z]`, any suffix, so a new spelling cannot slip through the way
+# `pb-ae` did (it subsumes pb-engine, pb-xap, pb-hq, pb-roadmap, x-pb-); and the dotted form (#1191),
+# anchored on the quote, since a publisher qualification is a NAME (see the header for why the
+# unanchored `pb\.[a-z]` was measured and rejected). The git grep runs from INSIDE the selftest's
+# temp dir: it refuses a path outside the repository, and the probe lives outside so the real
+# scan never reads it.
+[?def TERMS ()
+  ('powerband',
+   'pbengine',
+   'client-acme',
+   'account executive',
+   'ae-queue',
+   'pb-[a-z]',
+   "['\"`]pb\\.[a-z]")]
+
+[?def PROBES ()
+  ('powerband',
+   'pbengine',
+   'client-acme',
+   'account executive',
+   'ae-queue',
+   'pb-x',
+   "'pb.x")]
+
+# the selftest's lines for one term (none when it holds)
+[?def probe-term impure ($dir $term $probe)
+  [?let [= $_w [$io:write-file [$cat ($dir, '/probe.txt')] [$cat ($probe, "\n")]]]
+        [= $b [?if [$strings:contains $term '\b']
+                [then ([$cat ("check-no-consumer-terms: FAIL — term '", $term, "' uses \\b, which `git grep -E` silently ignores.")],
+                       '  portable form: (^|[^a-z])term($|[^a-z])')]
+                [else ()]]]
+        [= $m [?if [$matches $term $probe] [then ()]
+                [else ([$cat ("check-no-consumer-terms: FAIL — term '", $term, "' does not match its own probe '", $probe,
+                              "' under this program's matcher (the --gh-metadata scan)")])]]]
+        [= $g [?let [= $r [$process:run ('git', 'grep', '--no-index', '-qiE', $term, '--', 'probe.txt') cwd=$dir]]
+                [?if [?match $r [case [err$e] false] [else [= $r@exit-code 0]]] [then ()]
+                  [else ([$cat ("check-no-consumer-terms: FAIL — term '", $term, "' does not match its own probe '", $probe,
+                                "' under `git grep -E` (the tracked-file scan)")],
+                         "  the gate's two scans disagree about its own vocabulary; neither can be trusted")]]]]
+    ([?splice $b], [?splice $m], [?splice $g])]]
+
+# one --gh-metadata scan: (status lines...) where status 0 clean, 1 hits, 2 fetch error
+[?def gh-scan impure ($name $jq $endpoint $pattern)
+  [?let [= $r [$process:run ('gh', 'api', $endpoint, '--paginate', '-q', $jq) timeout-ms=900000]]
+        [= $ok [?match $r [case [err$e] false] [else [= $r@exit-code 0]]]]
+        [= $out [?match $r [case [err$e] [$string $e]] [else [$cat ([$string $r@stdout], [$string $r@stderr])]]]]
+    [?if [not $ok]
+      [then (2, [$cat ('check-no-consumer-terms(gh): FAIL — ', $name, ' fetch errored; refusing a vacuous pass')],
+                [?splice [$first-n [$lines-of $out] 3]])]
+      [else [?let [= $hits [?for [in $p [?enumerate [$lines-of $out]]] [where [$matches $pattern [$nth $p 2]]]
+                             [yield [$cat ([$string [$nth $p 1]], ':', [$nth $p 2])]]]]
+              [?if [= [$count $hits] 0] [then (0)]
+                [else (1, [$cat ('check-no-consumer-terms(gh): FAIL — consumer-identifying terms in ', $name, ':')],
+                          [?splice [$first-n $hits 20]])]]]]]]]
+
+[?def gh-mode impure ($root $pattern)
+  [?let [= $gh-probe [$process:run ('sh', '-c', 'command -v gh')]]
+        [= $have-gh [?match $gh-probe [case [err$e] false] [else [= $gh-probe@exit-code 0]]]]
+        [= $_g [?if $have-gh [then null] [else [?do [$say 'check-no-consumer-terms(gh): FAIL — gh CLI not available'] [$env:exit 2]]]]]
+        [= $rv [$process:run ('gh', 'repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner') cwd=$root]]
+        [= $repo [?match $rv [case [err$e] ''] [else [?if [= $rv@exit-code 0] [then [$strings:trim [$string $rv@stdout]]] [else '']]]]]
+        [= $_r [?if [= $repo ''] [then [?do [$say 'check-no-consumer-terms(gh): FAIL — cannot resolve repo'] [$env:exit 2]]] [else null]]]
+        [= $scans [?for [in $s (('labels', '.[] | "label \(.name) :: \(.description // "")"', [$cat ('repos/', $repo, '/labels')]),
+                                ('issue/PR bodies', '.[] | "#\(.number) \(.title) :: \(.body // "" | gsub("\n"; " "))"', [$cat ('repos/', $repo, '/issues?state=all')]),
+                                ('issue comments', '.[] | "comment \(.id) (\(.html_url)) :: \(.body // "" | gsub("\n"; " "))"', [$cat ('repos/', $repo, '/issues/comments')]),
+                                ('PR review comments', '.[] | "review-comment \(.id) (\(.html_url)) :: \(.body // "" | gsub("\n"; " "))"', [$cat ('repos/', $repo, '/pulls/comments')]))]
+                    [yield [?let [= $res [$gh-scan [$nth $s 1] [$nth $s 2] [$nth $s 3] $pattern]]
+                                 [= $_p [?for [in $q [?enumerate $res]] [where [> [$nth $q 1] 1]] [yield [$say [$nth $q 2]]]]]
+                             [$nth $res 1]]]]]
+        # the shell's fail was the LAST failing scan's status
+        [= $fail [?for [in $s $scans] [where [> $s 0]] [yield $s]]]
+    [?if [> [$count $fail] 0]
+      [then [?do [$say '(policy: sanitize to CX-generic wording; edit the offending metadata in place)']
+                 [$env:exit [$nth $fail [$count $fail]]]]]
+      [else [?do [$say 'check-no-consumer-terms(gh): OK — no consumer-identifying terms in labels, issue/PR bodies, or comments']
+                 [$env:exit 0]]]]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $args [?for [in $p [?enumerate $argv]] [where [> [$nth $p 1] 1]] [yield [$nth $p 2]]]]
+  [= $rooted [and [> [$count $args] 1] [= [$nth $args 1] '--root']]]
+  [= $root [?if $rooted [then [$path:absolute [$nth $args 2]]]
+             [else [$path:dirname [$path:dirname [$path:absolute [$nth $argv 1]]]]]]]
+  [= $rest [?if $rooted [then [?for [in $p [?enumerate $args]] [where [> [$nth $p 1] 2]] [yield [$nth $p 2]]]] [else $args]]]
+  [= $terms [$TERMS]]
+  [= $probes [$PROBES]]
+  [= $_n [?if [= [$count $terms] [$count $probes]] [then null]
+           [else [?do [$say [$cat ('check-no-consumer-terms: FAIL — TERMS (', [$string [$count $terms]], ') and PROBES (',
+                                   [$string [$count $probes]], ') are out of step; every term needs a probe')]]
+                      [$env:exit 2]]]]]
+  [= $tmp [$strings:trim [$string [$process:run ('mktemp', '-d')]@stdout]]]
+  [= $self [?for [in $p [?enumerate $terms]] [in $l [$probe-term $tmp [$nth $p 2] [$nth $probes [$nth $p 1]]]] [yield $l]]]
+  [= $_c [$process:run ('rm', '-rf', $tmp)]]
+  [= $_s [?if [> [$count $self] 0] [then [?do [?for [in $l $self] [yield [$say $l]]] [$env:exit 2]]] [else null]]]
+  [= $pattern [$strings:join $terms '|']]
+  [= $_m [?if [and [> [$count $rest] 0] [= [$nth $rest 1] '--gh-metadata']] [then [$gh-mode $root $pattern]] [else null]]]
+  [= $r [$process:run ('git', 'grep', '-inE', $pattern, '--', ':(exclude)third_party', ':(exclude)_gate_evidence',
+                       [$cat (':(exclude)', SELF)]) cwd=$root]]
+  [= $status [?match $r [case [err$e] 128] [else $r@exit-code]]]
+  [= $_e [?if [> $status 1]
+           [then [?do [$say [$cat ('check-no-consumer-terms: FAIL — git grep errored (status ', [$string $status], '); refusing a vacuous pass')]]
+                      [$env:exit 2]]]
+           [else null]]]
+  [= $hits [?if [= $status 0] [then [$lines-of [$string $r@stdout]]] [else ()]]]
+  [?if [> [$count $hits] 0]
+    [then [?do [$say 'check-no-consumer-terms: FAIL — downstream-consumer identity in tracked content:']
+               [?for [in $h $hits] [yield [$say $h]]]
+               [$say '(policy: sanitize to CX-generic workload language; see the gate header)']
+               [$env:exit 1]]]
+    [else [?do [$say 'check-no-consumer-terms: OK — no consumer-identifying terms in tracked content'] [$env:exit 0]]]]]

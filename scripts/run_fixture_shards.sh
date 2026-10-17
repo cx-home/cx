@@ -78,7 +78,7 @@ GRADER_LOAD=$(sample_load_1m)
 
 # The manifest documents its own row shapes inside a [doc [# … #]] block, so
 # the prose is dropped before the rows are read — a reader that reads its own
-# documentation as data has a false row in it (check_fixture_shard_manifest.sh
+# documentation as data has a false row in it (check_fixture_shard_manifest.cx
 # makes the same cut). What comes out is one `<shard> <test> <file>` triple per
 # [file] row, in manifest order.
 OWNERS=$(sed '/\[doc \[#/,/#\]\]/d' "$MANIFEST" \
@@ -151,7 +151,7 @@ if [ -n "$SELECTION" ]; then
   # refused every name no shard owns, so a shard finding an EMPTY intersection
   # is a disagreement about the partition and panics rather than passing.
   export CX_FIXTURE_FILES="$canon"
-  # scripts/fixtures_census.sh sums the shards named here instead of every
+  # scripts/fixtures_census.cx sums the shards named here instead of every
   # shard in the manifest: under a selection an unlaunched shard writing no
   # census is the expected case, not the missing-shard refusal.
   printf '%s\n' "$OWNERS" \
@@ -188,7 +188,7 @@ done
 
 # The census is the evidence, so it prints even when a shard failed — a run
 # that graded 4,000 of 5,000 cases should say which 4,000.
-sh scripts/fixtures_census.sh || st=1
+"${TOOL_CX:-cx}" --allow-read --allow-write scripts/fixtures_census.cx || st=1
 
 # The measurement, unselected runs only (issue 1583, RULED: RUN-5). It is
 # written whatever the verdict: a red shard does not make the wall clock a
