@@ -1,0 +1,111 @@
+# scripts/publish_packages_selftest.cx — scripts/publish_packages.cx on fixture releases (cx-private#1947).
+#
+#   make publish-packages-selftest      (cx --allow-all scripts/publish_packages_selftest.cx)
+#
+# Each case builds a release directory of its own (cx-<os>-<arch>.tar.gz packed
+# with cx-stdlib/tar + gzip, and its SHA256SUMS.txt), runs the publisher DRY on
+# it with a fixture PyPI answer, and reads its exit and its lines. No network:
+# a dry run uploads and pushes nothing, and --pypi-json stands for PyPI.
+#   A  two platforms, sums right, PyPI never saw the version: exit 0, two wheels
+#      (py3-none-macosx_11_0_arm64, py3-none-manylinux_2_28_x86_64) each holding
+#      its tarball's libcx byte for byte, the formula names both urls and sha256s
+#   B  -pre.1 tag: the PEP 440 version rc1 in every name
+#   C  a tarball whose bytes are not SHA256SUMS.txt's: exit 1, named
+#   D  a tag that is not a release tag: exit 2
+#   E  PyPI already holds the wheel, same sha256: skipped, exit 0
+#   F  PyPI holds the file name with other bytes: exit 1, never re-uploaded
+#   G  --mode=real with no tokens: exit 2 before anything is read
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/bytes'   as=bytes]
+[?lib 'cx-stdlib/hash'    as=hash]
+[?lib 'cx-stdlib/tar'     as=tar]
+[?lib 'cx-stdlib/zip'     as=zip]
+[?lib 'cx-stdlib/process' as=process]
+
+[?def cat scope=public pure ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def hex scope=public pure ($b) [$hash:format-hex [$hash:sha256 $b]]]
+
+[?def tgz scope=public pure ($lib $libdata)
+  [$bytes:gzip-compress [$tar:pack ({name: 'cx', data: 'fake cx', mode: 33261}, {name: 'cx.h', data: '/* cx.h */', mode: 33188},
+                                    {name: $lib, data: $libdata, mode: 33261}, {name: 'LICENSE-re2.txt', data: 'license', mode: 33188})]]]
+
+# release: a fixture release dir; $bad names a tarball whose sum line lies.
+[?def release scope=public impure ($dir $bad)
+  [?let [= $_m [$io:make-dirs $dir]]
+        [= $mac [$tgz 'libcx.dylib' [$bytes:from-string-utf8 'MACHO-libcx-fixture']]]
+        [= $lin [$tgz 'libcx.so' [$bytes:from-string-utf8 'ELF-libcx-fixture']]]
+        [= $_a [$io:write-file-bytes [$cat ($dir, '/cx-darwin-arm64.tar.gz')] $mac]]
+        [= $_b [$io:write-file-bytes [$cat ($dir, '/cx-linux-x86_64.tar.gz')] $lin]]
+        [= $sm [?if [= $bad 'cx-darwin-arm64.tar.gz'] [then [$hex [$bytes:from-string-utf8 'other']]] [else [$hex $mac]]]]
+    [$io:write-file [$cat ($dir, '/SHA256SUMS.txt')]
+      [$cat ($sm, "  cx-darwin-arm64.tar.gz\n", [$hex $lin], "  cx-linux-x86_64.tar.gz\n")]]]]
+
+[?def pub scope=public impure ($argl $envs)
+  [?let [= $argv ([$env:executable-path], '--allow-all', 'scripts/publish_packages.cx', [?splice $argl])]
+        [= $r [$process:run $argv env=$envs timeout-ms=300000]]
+    [?match $r [case [err$e] {rc: 99, out: [$string $e]}]
+      [else {rc: [+ $r@exit-code 0], out: [$cat ([$string $r@stdout], [$string $r@stderr])]}]]]]
+
+[?def check scope=public impure ($id $ok $msg)
+  [?let [= $_ [$say [$cat ([?if $ok [then '  ok   '] [else '  RED  ']], $id, ' ', $msg)]]] $ok]]
+
+[?def has scope=public pure ($s $n) [$strings:contains $s $n]]
+
+[?let
+  [= $tmp [$io:temp-dir 'publish-packages-selftest']]
+  [= $none {PYPI_TOKEN: null, HOMEBREW_TAP_TOKEN: null}]
+  [= $rel [$cat ($tmp, '/rel')]] [= $_r [$release $rel '']]
+  [= $nojs [$cat ($tmp, '/absent.json')]]
+  # A
+  [= $oa [$cat ($tmp, '/a')]]
+  [= $a [$pub ('--tag=v9.8.7', '--mode=dry', [$cat ('--assets=', $rel)], [$cat ('--pypi-json=', $nojs)], [$cat ('--out=', $oa)]) $none]]
+  [= $wm [$cat ($oa, '/wheels/cxlib-9.8.7-py3-none-macosx_11_0_arm64.whl')]]
+  [= $wl [$cat ($oa, '/wheels/cxlib-9.8.7-py3-none-manylinux_2_28_x86_64.whl')]]
+  [= $rb [?else [$io:read-file [$cat ($oa, '/cx.rb')]] '']]
+  [= $libm [?if [$io:is-file $wm] [then [$bytes:to-string-utf8 [$zip:extract [$io:read-file-bytes $wm] 'cxlib/libcx.dylib']]] [else '']]]
+  [= $libl [?if [$io:is-file $wl] [then [$bytes:to-string-utf8 [$zip:extract [$io:read-file-bytes $wl] 'cxlib/libcx.so']]] [else '']]]
+  [= $sha-m [$hex [$io:read-file-bytes [$cat ($rel, '/cx-darwin-arm64.tar.gz')]]]]
+  [= $c1 [$check 'A' [and [= $a.rc 0] [= $libm 'MACHO-libcx-fixture'] [= $libl 'ELF-libcx-fixture']
+                          [$has $a.out 'pypi: would upload cxlib-9.8.7-py3-none-macosx_11_0_arm64.whl']
+                          [$has $rb 'url "https://github.com/cx-home/cx/releases/download/v9.8.7/cx-darwin-arm64.tar.gz"']
+                          [$has $rb [$cat ('sha256 "', $sha-m, '"')]] [$has $rb 'on_linux do'] [$has $rb 'version "9.8.7"']]
+               [$cat ('two platforms: exit ', [$string $a.rc], ", both wheels carry their tarball's libcx, the formula names both")]]]
+  # B
+  [= $ob [$cat ($tmp, '/b')]]
+  [= $b [$pub ('--tag=v9.8.7-pre.1', '--mode=dry', [$cat ('--assets=', $rel)], [$cat ('--pypi-json=', $nojs)], [$cat ('--out=', $ob)]) $none]]
+  [= $c2 [$check 'B' [and [= $b.rc 0] [$io:is-file [$cat ($ob, '/wheels/cxlib-9.8.7rc1-py3-none-manylinux_2_28_x86_64.whl')]]]
+               [$cat ('v9.8.7-pre.1 -> cxlib 9.8.7rc1: exit ', [$string $b.rc])]]]
+  # C
+  [= $relc [$cat ($tmp, '/relc')]] [= $_c [$release $relc 'cx-darwin-arm64.tar.gz']]
+  [= $c [$pub ('--tag=v9.8.7', '--mode=dry', [$cat ('--assets=', $relc)], [$cat ('--pypi-json=', $nojs)], [$cat ('--out=', $tmp, '/c')]) $none]]
+  [= $c3 [$check 'C' [and [= $c.rc 1] [$has $c.out 'cx-darwin-arm64.tar.gz reads sha256']]
+               [$cat ('a lying sum line: exit ', [$string $c.rc])]]]
+  # D
+  [= $d [$pub ('--tag=v9.8', '--mode=dry', [$cat ('--assets=', $rel)]) $none]]
+  [= $c4 [$check 'D' [and [= $d.rc 2] [$has $d.out 'is not a release tag']] [$cat ('--tag=v9.8: exit ', [$string $d.rc])]]]
+  # E / F: PyPI's answer for the version, read from a fixture.
+  [= $wsha [?if [$io:is-file $wm] [then [$hex [$io:read-file-bytes $wm]]] [else '']]]
+  [= $js-e [$cat ($tmp, '/e.json')]]
+  [= $_e [$io:write-file $js-e [$cat ('{"urls": [{"filename": "cxlib-9.8.7-py3-none-macosx_11_0_arm64.whl", "digests": {"sha256": "', $wsha, '"}}]}')]]]
+  [= $e [$pub ('--tag=v9.8.7', '--mode=dry', [$cat ('--assets=', $rel)], [$cat ('--pypi-json=', $js-e)], [$cat ('--out=', $tmp, '/e')]) $none]]
+  [= $c5 [$check 'E' [and [= $e.rc 0] [$has $e.out 'macosx_11_0_arm64.whl already published (same sha256)']
+                          [$has $e.out 'would upload cxlib-9.8.7-py3-none-manylinux_2_28_x86_64.whl']]
+               [$cat ('same bytes on PyPI: skipped, the other wheel still planned: exit ', [$string $e.rc])]]]
+  [= $js-f [$cat ($tmp, '/f.json')]]
+  [= $_f [$io:write-file $js-f '{"urls": [{"filename": "cxlib-9.8.7-py3-none-manylinux_2_28_x86_64.whl", "digests": {"sha256": "00"}}]}']]
+  [= $f [$pub ('--tag=v9.8.7', '--mode=dry', [$cat ('--assets=', $rel)], [$cat ('--pypi-json=', $js-f)], [$cat ('--out=', $tmp, '/f')]) $none]]
+  [= $c6 [$check 'F' [and [= $f.rc 1] [$has $f.out 'never re-uploaded']] [$cat ('other bytes on PyPI: exit ', [$string $f.rc])]]]
+  # G
+  [= $g [$pub ('--tag=v9.8.7', '--mode=real', [$cat ('--assets=', $rel)], [$cat ('--out=', $tmp, '/g')]) $none]]
+  [= $c7 [$check 'G' [and [= $g.rc 2] [$has $g.out 'needs PYPI_TOKEN and HOMEBREW_TAP_TOKEN'] [not [$io:exists [$cat ($tmp, '/g/wheels')]]]]
+               [$cat ('a real run with no tokens: exit ', [$string $g.rc], ', nothing built')]]]
+  [= $all ($c1, $c2, $c3, $c4, $c5, $c6, $c7)]
+  [= $red [$count [?to-sequence [?for [in $x $all] [where [not $x]] [yield $x]]]]]
+  [= $_x [$io:remove-tree $tmp]]
+  [?if [= $red 0]
+    [then [?do [$say 'publish-packages-selftest OK (7 cases)'] [$env:exit 0]]]
+    [else [?do [$say [$cat ('publish-packages-selftest RED: ', [$string $red], ' of 7')]] [$env:exit 1]]]]]

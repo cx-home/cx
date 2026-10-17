@@ -7,5 +7,6 @@
   [step name="merge-main" status=:done [result [would-merge from=line into=main how=plan]]]
   [step name="push" status=:done [result [would-push to=origin refs="main line vX.Y.Z"]]]
   [step name="gh-release" status=:done [result [would-release tag=vX.Y.Z title="CX vX.Y.Z" notes=RELEASE_NOTES_vX.Y.Z.md]]]
+  [step name="packages" status=:done [result [would-publish what="make publish-packages TAG=vX.Y.Z MODE=real"]]]
   [step name="org-page" status=:done [result [would-sync what="make release-all"]]]
   [step name="vscode" status=:done [result [would-attach what=plan]]]]

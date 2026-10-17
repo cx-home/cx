@@ -4854,18 +4854,35 @@ publish-org:
 
 release-all: publish-org
 
+# ── publish-packages — the release's PyPI wheels + Homebrew formula (cx-private#1947) ──
+# scripts/publish_packages.cx: one cxlib platform wheel per release tarball
+# (the pinned cx-binding-python's tooling/wheel.cx, the tarball's own libcx
+# inside) uploaded to PyPI, and Formula/cx.rb of cx-home/homebrew-cx from the
+# release's SHA256SUMS.txt. MODE=dry (the default) builds and renders into
+# vcx/target/publish/ and uploads/pushes nothing; MODE=real needs PYPI_TOKEN
+# and HOMEBREW_TAP_TOKEN in the environment (never in a file). Idempotent.
+#   make publish-packages TAG=vX.Y.Z [MODE=dry|real] [ASSETS=<dir>]
+.PHONY: publish-packages publish-packages-selftest
+publish-packages:
+	@test -n "$(TAG)" || { echo "publish-packages: TAG=vX.Y.Z is required" >&2; exit 2; }
+	@$(TOOL_CX) --allow-all scripts/publish_packages.cx --tag=$(TAG) --mode=$(or $(MODE),dry) $(if $(ASSETS),--assets=$(ASSETS))
+
+publish-packages-selftest:
+	@$(TOOL_CX) --allow-all scripts/publish_packages_selftest.cx
+
 # ── release-flow — the ONE end-to-end local release command (RULED: RFLOW-1
 # L103) ──────────────────────────────────────────────────────────────────────
 # flows/release.flow.cx, the phases scripts/release.sh ran:
 #   preflight → the gate, bump, tag and build (scripts/tag_release.cx) →
 #   package → merge to main → push (the pivot) → GitHub release →
-#   org page (release-all) → editor extension.
+#   packages (publish-packages: PyPI + Homebrew) → org page (release-all) →
+#   editor extension.
 # The local phases before the push are undone in reverse when a later one
 # refuses. Preview first:
 #   make release-flow TAG=vX.Y.Z MODE=dry
 #   make release-flow TAG=vX.Y.Z
 #   make release-flow TAG=vX.Y.Z FROM_BUMP=<sha>     # D83a: the front door's bumped commit
-# PUBLISH=no skips the org page and the extension. LINUX=no ships no linux
+# PUBLISH=no skips the packages, the org page and the extension. LINUX=no ships no linux
 # tarballs, and says so. TAG is required: the tag is an argument, never
 # derived here. The flow runs under a COPY of this tree's cx, because phase 1
 # rebuilds deps/cx-core-code/vcx/target/cx at the tag, and relinking the
