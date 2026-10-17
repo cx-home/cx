@@ -37,7 +37,7 @@ Two ratchets, each read by a step:
        comparison's one section, the quickstart's host-language step ]
     [page path='docs-src/canonical/sections/10-migration.cxd' allow=5 why='the migration page is the bridge for a reader arriving from Python']
     [page path='docs-src/canonical/sections/13-comparison.cxd' allow=13 why='the comparison states the case beside Python in one section (cx-vs-python) and three tooling rows; wave 5 narrows it to the one section']
-    [page path='docs-src/canonical/sections/00-quickstart.cxd' allow=8 why='the host-language step (first-binding) shows the four bindings; wave 5 narrows the rest to that step']
+    [page path='docs-src/canonical/sections/00-quickstart.cxd' allow=7 why='the host-language step (first-binding) shows the four bindings; wave 5 narrows the rest to that step']
     [; the hand-authored about page: the owner writes it, nobody regenerates it ]
     [page path='docs-src/canonical/about.html' allow=3 why='hand-authored by the owner; the page names what CX was measured against']
     [; the primer's §0a, the coming-from-Python bridge (GAPS-1, cx-private#1813
