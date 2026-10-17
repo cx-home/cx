@@ -471,7 +471,7 @@
 # ══ release.flow.cx — a release cut, as acts (RULED: RFLOW-1 L103) ═══════════
 #
 # The phases of the retired scripts/release.sh, one act each, in its order,
-# over the same tools underneath: scripts/tag_release.sh (the gate, the bump,
+# over the same tools underneath: scripts/tag_release.cx (the gate, the bump,
 # the tag and the build at the tag), scripts/lib/r22_profile_gate.sh (the R2.2
 # staging and the blocking install gate, PGL-1), scripts/release_linux.sh
 # (the docker build), scripts/release_asset_links_gate.cx (#1670), git, gh and
@@ -482,7 +482,7 @@
 #                          door's refresh of cx-private's bump). No gate, no
 #                          bump, no merge. Fail-closed: HEAD must be <sha>,
 #                          and VERSION must already be the tag's version;
-#   --mode=real|dry        dry runs the preflight for real (and tag_release.sh
+#   --mode=real|dry        dry runs the preflight for real (and tag_release.cx
 #                          --dry-run), then every later act answers
 #                          `[would-… …]`. That is release.sh's --dry-run;
 #   --publish=yes|no       no skips the org page and the editor extension
@@ -571,7 +571,7 @@
 [?def c-member scope=private pure [returns bool] ($x $xs) [$member $x $xs]]
 
 # ── ci/release-tag — phase 1: gate + bump + tag (+ the build at the tag) ─────
-# tag_release.sh runs make test and verify-doc-links, bumps VERSION through
+# tag_release.cx runs make test and verify-doc-links, bumps VERSION through
 # bump_version.cx, commits the bump, TAGS it, and builds at the tag (#979,
 # CO-4). Under --from-bump the gate and the bump already happened in
 # cx-private, so the tag alone is made here, signed when a key is configured.
@@ -583,17 +583,17 @@
     [?if [$dry $mode]
       [then [?if $fb
         [then [would-tag tag=$t on=[$string $from-bump] how='an annotated tag, signed if a key is configured; no gate, no bump (D83a)']]
-        [else [?let [= $r [$process:run ('devbox', 'run', '--', 'scripts/tag_release.sh', '--dry-run', $t) timeout-ms=[$net-ms]]]
-          [?if [not [$ok $r]] [then [$fail [$concat 'ci/release-tag: tag_release.sh --dry-run ' $t ' — ' [$why $r]]]]
-            [else [would-tag tag=$t on=$before how='scripts/tag_release.sh: make test + verify-doc-links, the bump, the tag, the build at the tag'
+        [else [?let [= $r [$process:run ('devbox', 'run', '--', 'deps/cx-core-code/vcx/target/cx', '--allow-all', 'scripts/tag_release.cx', '--dry-run', $t) timeout-ms=[$net-ms]]]
+          [?if [not [$ok $r]] [then [$fail [$concat 'ci/release-tag: tag_release.cx --dry-run ' $t ' — ' [$why $r]]]]
+            [else [would-tag tag=$t on=$before how='scripts/tag_release.cx: make test + verify-doc-links, the bump, the tag, the build at the tag'
                              checks=[$tail-of [$string $r@stdout] 2]]]]]]]]
       [else [?let
         [= $msg [$concat 'CX ' $t ' release. See RELEASE_NOTES_' [$strings:replace $t '.' '_'] '.md for full release notes.']]
         [= $signed [and [$ok [$git '.' ('config', '--get', 'user.signingkey') [$git-ms]]] [$ok [$ran ('gpg', '--list-secret-keys') 60000]]]]
         [= $r [?if $fb
                 [then [$git '.' ('tag', [?if $signed [then '-s'] [else '-a']], $t, '-m', $msg) [$git-ms]]]
-                [else [$process:run ('devbox', 'run', '--', 'scripts/tag_release.sh', $t) timeout-ms=28800000]]]]
-        [?if [not [$ok $r]] [then [$fail [$concat 'ci/release-tag: ' [?if $fb [then 'git tag'] [else 'scripts/tag_release.sh']] ' — ' [$why $r]]]]
+                [else [$process:run ('devbox', 'run', '--', 'deps/cx-core-code/vcx/target/cx', '--allow-all', 'scripts/tag_release.cx', $t) timeout-ms=28800000]]]]
+        [?if [not [$ok $r]] [then [$fail [$concat 'ci/release-tag: ' [?if $fb [then 'git tag'] [else 'scripts/tag_release.cx']] ' — ' [$why $r]]]]
           [else [tagged tag=$t sha=[$out [$git '.' ('rev-parse', [$concat $t '^{commit}']) [$git-ms]]]
                         before=$before bumped=[$string [not $fb]]]]]]]]]]
 

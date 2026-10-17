@@ -209,7 +209,7 @@
            [$cry '  pipelines compiling beside it, tooling.fmt_8k_ms read 1902 ms against a hot 1304'],
            [$cry '  and four unrelated rows regressed 36-457 % (#1450, impl/cx-A-1433 run 4).'],
            [$cry '  This is a REFUSAL, not a regression: wait for the box, or raise CX_BENCH_MAX_LOAD'],
-           [$cry '  deliberately. scripts/tag_release.sh waits for the bound rather than aborting.'],
+           [$cry '  deliberately. scripts/tag_release.cx waits for the bound rather than aborting.'],
            [$env:exit REFUSED-EXIT], null)]
     [else null]]]
 

@@ -1990,7 +1990,7 @@ bench-compare:
 # #1249 (RULED: 1249-Q1a) — the perf RATCHET the release cut runs after the
 # gate: measure (bench-json → bench/current.json) and compare against the
 # committed floor (bench/baseline.json) at the STRICT 10% threshold. Red
-# aborts the cut like a red gate; on green tag_release.sh promotes
+# aborts the cut like a red gate; on green tag_release.cx promotes
 # bench/current.json to bench/baseline.json in the bump commit, so every cut
 # re-pins the floor to its own measurement. Wall-clock and machine-bound, so
 # NOT a TEST_TARGETS member — a decision instrument the cut invokes.
@@ -2004,7 +2004,7 @@ bench-compare:
 # 12-core box) and records the load either side of the run in the artifact, and
 # compare_bench.cx REFUSES TO JUDGE a current reading taken over that bound.
 # Both refusals exit 3, which is neither a pass nor a regression — and
-# scripts/tag_release.sh WAITS for the box rather than aborting a cut on one.
+# scripts/tag_release.cx WAITS for the box rather than aborting a cut on one.
 .PHONY: perf-ratchet
 perf-ratchet: build-vcx
 	@"$(CURDIR)/deps/cx-core-code/vcx/target/cx" --allow-read --allow-write --allow-subprocess --allow-clock --allow-env scripts/run_bench_json.cx -o bench/current.json
@@ -4857,7 +4857,7 @@ release-all: publish-org
 # ── release-flow — the ONE end-to-end local release command (RULED: RFLOW-1
 # L103) ──────────────────────────────────────────────────────────────────────
 # flows/release.flow.cx, the phases scripts/release.sh ran:
-#   preflight → the gate, bump, tag and build (scripts/tag_release.sh) →
+#   preflight → the gate, bump, tag and build (scripts/tag_release.cx) →
 #   package → merge to main → push (the pivot) → GitHub release →
 #   org page (release-all) → editor extension.
 # The local phases before the push are undone in reverse when a later one
