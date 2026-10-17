@@ -54,7 +54,7 @@
 #
 # Graded by `make test-docs-fragment`
 # (scripts/check_docs_fragment_fixtures.cx), which is the claim
-# check_conformance_coverage.sh carries for this suite.
+# check_conformance_coverage.cx carries for this suite.
 #]]
  [case id=frag-001-a-conforming-fragment level=core under=cx-platform-sso
   [tags fragment contract output suites]

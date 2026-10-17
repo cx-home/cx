@@ -1,0 +1,115 @@
+# scripts/gate-status.cx — what the post-merge run is doing right now, and for
+# how long. The words are the delivery grammar's
+# (spec/03-approved/process/delivery-grammar.md §4): run, step, passed, failed,
+# cancelled. The file name stays gate-status until the rename step.
+#
+# A post-merge run is 60-120 minutes of near-silence: `make` buffers, V runs
+# under $(VQUIET) (`-n -w`, silent on success), and the -j12 storm's processes
+# live 1-18 seconds each, so consecutive `ps` snapshots show almost entirely
+# different pids. The honest reading of "CPUs pegged, nothing showing up" is
+# that a snapshot is the wrong instrument. This prints the durable facts
+# instead: which step, how long, what has finished, and whether anything failed.
+#
+# Both marker spellings are read: RUN-EXIT= is what the post-merge run writes
+# now (flows/postmerge.flow.cx's run act, which replaced gate.sh),
+# GATE-EXIT= is what the logs already on disk carry.
+#
+# Usage:  scripts/gate-status.sh            # once
+#         cx --allow-all scripts/gate-status.cx -w         # refresh every 30s until the status
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of gate-status.sh — the same sections, lines
+# and exits read from the same log; ps(1), date(1) and uptime(1) are asked as the shell asked them.
+# Two readings are live and differ run to run by nature (the process count and load, the
+# elapsed seconds); the count still includes the one grep the shell's pipeline counted.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/bytes'   as=bytes]
+[?lib 'cx-stdlib/math'    as=math]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def out scope=public impure ($argv)
+  [?let [= $r [$process:run $argv capture={stdout: :pipe, stderr: :discard}]]
+    [?match $r [case [err$e] [res rc=127 out='']] [else [res rc=$r@exit-code out=[$string $r@stdout]]]]]]
+[?def lines scope=public ($t)
+  [?let [= $ls [$strings:split $t "\n"]]
+    [?if [= $t ''] [then ()]
+      [else [?if [$strings:ends-with $t "\n"] [then [?to-sequence [?for [in $i [$range 1 [- [$count $ls] 1]]] [yield [$nth $ls $i]]]]] [else $ls]]]]]]
+[?def grep scope=public ($rx $ls) [?let [= $r [$re:compile $rx]] [?to-sequence [?for [in $l $ls] [where [$present [$re:find $r $l]]] [yield $l]]]]]
+[?def first scope=public ($xs) [?if [= [$count $xs] 0] [then ''] [else [$nth $xs 1]]]]
+[?def last scope=public ($xs) [?if [= [$count $xs] 0] [then ''] [else [$nth $xs [$count $xs]]]]]
+[?def tail-n scope=public ($xs $n) [?let [= $c [$count $xs]] [?to-sequence [?for [in $i [$range [?if [> $c $n] [then [+ [- $c $n] 1]] [else 1]] $c]] [yield [$nth $xs $i]]]]]]
+# cut -c1-100 in the C locale: the first 100 bytes of each line, written as bytes (a multi-byte
+# character at the cut is cut as cut cuts it)
+[?def say-cut scope=public impure ($ls)
+  [?for [in $l $ls] [yield [?let [= $b [$bytes:from-string-utf8 $l]]
+                             [$io:write-bytes [$env:stdout] [$bytes:concat ([?if [<= [$bytes:length $b] 100] [then $b] [else [$bytes:slice $b 0 100]]], [$bytes:from-string-utf8 "\n"])]]]]]]
+
+[?def show scope=public impure ($log)
+  [?if [not [$io:is-file $log]] [then [?let [= $_ [$say [$cat ('no run log at ', $log)]]] 1]]
+    [else [?let
+      [= $ls [$lines [?else [$io:read-file $log] '']]]
+      [= $marker [$last [$grep '^(RUN|GATE)-EXIT=' $ls]]]
+      # the exit code alone, so the status word can be derived for a log written before the run
+      # wrapper printed one (sed leaves a marker it cannot read as it is)
+      [= $code [?let [= $m [$re:find [$re:compile '^(RUN|GATE)-EXIT=([0-9]+).*$'] $marker]] [?if [$present $m] [then [$re:group $m 2]] [else $marker]]]]
+      [= $state [?match $code [case '' ''] [case '0' 'passed'] [case '129' 'cancelled'] [case '130' 'cancelled'] [case '143' 'cancelled'] [else 'failed']]]
+      # the RUN only: the tick's exact argv words `flow run flows/postmerge.flow.cx`
+      [= $pid [$first [?to-sequence [?for [in $l [$lines [$out ('ps', '-eo', 'pid,args')]@out]]
+                                         [where [?let [= $w [$strings:split-whitespace $l]]
+                                                  [and [>= [$count $w] 5] [= [$nth $w 3] 'flow'] [= [$nth $w 4] 'run'] [= [$nth $w 5] 'flows/postmerge.flow.cx']]]]
+                                         [yield [$nth [$strings:split-whitespace $l] 1]]]]]]
+      [= $started [?let [= $l [$first [$grep '^(run|gate): started' $ls]]] [$re:replace-first [$re:compile '^(run|gate): started '] $l '']]]
+      [= $elapsed [?if [= $started '']
+                    [then '']
+                    [else [?let [= $a [$out ('date', '-j', '-u', '-f', '%Y-%m-%dT%H:%M:%SZ', $started, '+%s')]]
+                                [= $b [?if [= $a@rc 0] [then $a] [else [$out ('date', '-u', '-d', $started, '+%s')]]]]
+                                [= $s0 [?if [= $b@rc 0] [then [$strings:trim-end-chars $b@out "\n"]] [else '']]]
+                            [?if [= $s0 ''] [then '']
+                              [else [- [$strings:to-int [$strings:trim-end-chars [$out ('date', '-u', '+%s')]@out "\n"]] [$strings:to-int $s0]]]]]]]]
+      [= $_1 [$say '── post-merge run ────────────────────────────────────']]
+      [= $_2 [$say [$cat ('target   ', [$re:replace-first [$re:compile '^(run|gate): '] [$first [$grep '^(run|gate): ' $ls]] ''])]]]
+      [= $_3 [$say [?if [not [= $state '']] [then [$cat ('state    ', $state, '   marker ', $marker)]]
+                     [else [?if [not [= $pid '']] [then [$cat ('state    running   pid ', $pid)]]
+                       [else 'state    gone with no marker — the tick was killed; the next tick reaps it as RUN-EXIT=70']]]]]]
+      [= $_4 [?if [= [$string $elapsed] ''] [then null]
+               [else [$say [$cat ('elapsed  ', [$string [$math:truncate [/ $elapsed 60]]], 'm ', [$string [- $elapsed [* 60 [$math:truncate [/ $elapsed 60]]]]], 's   (a full post-merge run is typically 60-120m)')]]]]]
+      [= $_5 [$say [$cat ('log      ', [$string [$count $ls]], ' lines, ', $log)]]]
+      [= $_6 [$say "\n── failing steps ─────────────────────────────────────"]]
+      # `make: *** [<target>] Error N` names the STEP, deduplicated (a serial retry reports it twice)
+      [= $mrx [$re:compile '^make(\[[0-9]+\])?: \*\*\* \[[^]]+\]']]
+      [= $failing [$sort [$map-keys-of [?to-sequence [?for [in $l $ls] [in $m [?let [= $f [$re:find $mrx $l]] [?if [$present $f] [then ($f,)] [else ()]]]]
+                                                         [yield [$re:replace [$re:compile '\]$'] [$re:replace-first [$re:compile '^.*\['] [$re:group $m 0] ''] '']]]]]]]
+      [= $_7 [?if [> [$count $failing] 0] [then [$say [$strings:join [?for [in $f $failing] [yield [$cat ('  ', $f)]]] "\n"]]] [else [$say '  (none)']]]]
+      [= $_8 [$say [$cat ('  ', [$string [$count [$grep '^FAIL' $ls]]], ' FAIL line(s), ', [$string [$count [$grep '^make(\[[0-9]+\])?: \*\*\*' $ls]]], ' make error(s) in the log')]]]
+      [= $_9 [$say "\n── finished steps ────────────────────────────────────"]]
+      [= $sums [$grep 'Summary for all V _test.v|passed, [0-9]+ failed|: [0-9]+ passed' $ls]]
+      [= $_10 [?if [> [$count $sums] 0] [then [$say-cut [?for [in $l [$tail-n $sums 8]] [yield [$cat ('  ', $l)]]]]] [else null]]]
+      [= $_11 [?if [= [$count $sums] 0] [then [$say '  (none yet — still building)']] [else null]]]
+      [= $_12 [$say "\n── steps running now ─────────────────────────────────"]]
+      [= $procs [$lines [$out ('ps', '-eo', 'args')]@out]]
+      [= $n [+ 1 [$count [$grep 'third_party/v/v |clang|/cc |[a-z_]+_test$' $procs]]]]
+      [= $load [$re:replace-first [$re:compile '^.*averages*:* *'] [$strings:trim-end-chars [$out ('uptime',)]@out "\n"] '']]
+      [= $_13 [$say [$cat ('  ', [$string $n], ' compiler/test processes alive; load ', $load)]]]
+      [= $vs [$tail-n [$sort [$grep '[/]third_party/v/v ' [$lines [$out ('ps', '-eo', 'etime,args')]@out]]] 3]]
+      [= $_14 [?if [> [$count $vs] 0] [then [$say-cut [?for [in $l $vs] [yield [$cat ('  ', $l)]]]]] [else null]]]
+      [= $_15 [$say '']]
+      0]]]]
+[?def map-keys-of scope=public ($xs) [?let [= $m [?to-sequence [?for [in $i [$range 1 [$count $xs]]] [where [not [> [$count [?for [in $j [$range 1 [- $i 1]]] [where [= [$nth $xs $j] [$nth $xs $i]]] [yield 1]]] 0]]] [yield [$nth $xs $i]]]]] $m]]
+
+[?let
+  [= $root [$path:dirname [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]]
+  [= $log [$env:var-or-default 'GATE_LOG' [$cat ($root, '/vcx/target/gate.log')]]]
+  [= $w [and [> [$count [$env:argv]] 1] [= [$nth [$env:argv] 2] '-w']]]
+  [?if $w
+    [then [?loop [= $k 0]
+            [?let [= $_c [$process:run ('clear',) capture={stdout: :inherit, stderr: :discard}]]
+                  [= $rc [$show $log]]
+              [?if [not [= $rc 0]] [then [$env:exit 1]]
+                [else [?if [> [$count [$grep '^(RUN|GATE)-EXIT=' [$lines [?else [$io:read-file $log] '']]]] 0] [then [$env:exit 0]]
+                        [else [?let [= $_s [$process:run ('sleep', '30') capture=:none]] [continue [+ $k 1]]]]]]]]]]
+    [else [$env:exit [$show $log]]]]]

@@ -263,7 +263,7 @@
       """**Python:**"""]
 
     [example lang=shell
-      """pip install cxlib   [# when published — pre-publish: pip install -e lang/python/ #]"""]
+      """pip install cxlib"""]
 
     [example lang=python
       """import cxlib

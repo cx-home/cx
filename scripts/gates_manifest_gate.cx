@@ -1,0 +1,120 @@
+# scripts/gates_manifest_gate.cx — validate conformance/gates.cxd (corpus audit G17).
+#
+# gates.cxd is policy that governs whether EVERY other fixture blocks its gate; a stale or typo'd
+# row silently downgrades a step. This gate checks, suite-aware:
+#   1. it parses (well-formed CX) — an absent cx binary FAILS LOUD (#721 item 2);
+#   2. every gate= AND default= value — bare, single- or double-quoted — is in the enum
+#      {enforced, advisory, pending, skip} (M36: a quoted or capitalized value cannot hide);
+#   3. every [suite name=S] names a KNOWN suite (code, stdlib, packages, connectors,
+#      xpath-31-parity) — an unknown one used to skip all module-row validation under it (#721);
+#   4. every [module name=X] row resolves to a real fixture per its enclosing suite
+#      (stdlib -> deps/cx-core-code/conformance/stdlib/X.cxd or conformance/{stdlib,platform,x,xap}/X.cxd,
+#      RULED: 1427-c, K7a; packages -> packages/X/X.test.cxd; connectors -> the cx-platform-connector
+#      pin's reference/connectors/X/X.test.cxd, RULED: 1430-f; code and xpath-31-parity carry no
+#      module rows and their one fixture must exist, #945, RULED: VC-7);
+#   5. the register is DERIVED (D49a, #1633; RULED: RS-27): conformance/gates_register.cxd is graded
+#      with `cx corpus` first, then scripts/gates_register_check.cx checks the tree.
+#
+# The policy rows are TRUNCATED at `reason=` before any value is read: a quoted-string strip stopped
+# at a CX single-quoted string's own `\'` escape and exposed prose (`(gate=pending).`) to the enum
+# check — a measured false red, 2026-09-08. Every value this gate reads is written before reason=.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of gates_manifest_gate.sh, the same lines.
+#   $(TOOL_CX) --allow-read --allow-write --allow-env --allow-subprocess scripts/gates_manifest_gate.cx
+# Exit: 0 = valid; 1 = any violation.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def KNOWN scope=public () ('code', 'stdlib', 'packages', 'connectors', 'xpath-31-parity')]
+[?def ENUM scope=public () ('enforced', 'advisory', 'pending', 'skip')]
+[?def member scope=public ($x $xs) [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+[?def has scope=public ($rx $s) [$present [$re:find [$re:compile $rx] $s]]]
+[?def unquote scope=public ($v)
+  [?if [and [> [$strings:length $v] 1] [or [and [$strings:starts-with $v "'"] [$strings:ends-with $v "'"]]
+                                           [and [$strings:starts-with $v '"'] [$strings:ends-with $v '"']]]]
+    [then [$strings:slice $v 2 [- [$strings:length $v] 1]]] [else $v]]]
+[?def VAL scope=public () "('[^']*'|\"[^\"]*\"|[^][:space:]\"']+)"]
+[?def NAME scope=public () "('[^']*'|\"[^\"]*\"|[A-Za-z0-9_-]+)"]
+
+# policy-rows — the [gate-policy]/[suite]/[module] lines, each cut at `reason=`.
+[?def policy-rows scope=public ($lines)
+  [?to-sequence [?for [in $l $lines] [where [$has '^[[:space:]]*\[(gate-policy|suite|module)[[:space:]]' $l]]
+                  [yield [?let [= $i [$strings:find $l 'reason=']] [?if [not [$present $i]] [then $l] [else [?if [<= $i 1] [then ''] [else [$strings:slice $l 1 [- $i 1]]]]]]]]]]]
+
+# attr-values — every ATTR= value on a policy row, quotes stripped (grep -o: every occurrence).
+[?def attr-values scope=public ($rows $attr)
+  [?to-sequence [?for [in $r $rows] [in $m [$re:find-all [$re:compile [$cat ($attr, '=', [$VAL])]] $r]]
+                  [yield [$unquote [$re:group $m 1]]]]]]
+
+# name-of — sed's `s/.*\[KIND name=(VALUE).*/\1/`: the LAST such occurrence on the line (greedy .*),
+# the line itself when none parses.
+[?def name-of scope=public ($kind $l)
+  [?let [= $ms [?to-sequence [$re:find-all [$re:compile [$cat ('\[', $kind, ' name=', [$NAME])]] $l]]]
+    [$unquote [?if [= [$count $ms] 0] [then $l] [else [$re:group [$nth $ms [$count $ms]] 1]]]]]]
+
+# walk — the suite-aware findings, one line each, in file order.
+[?def walk scope=public impure ($root $lines)
+  [?loop [= $i 1] [= $cur ''] [= $acc ()]
+    [?if [> $i [$count $lines]] [then [break $acc]]
+      [else [?let [= $l [$nth $lines $i]]
+                  [= $is-suite [$strings:contains $l '[suite name=']]
+                  [= $suite [?if $is-suite [then [$name-of 'suite' $l]] [else $cur]]]
+                  [= $sf [?match $suite [case 'code' 'deps/cx-core-code/conformance/code.cxd']
+                                        [case 'xpath-31-parity' 'deps/cx-core-code/conformance/xpath_31_parity.cxd'] [else '']]]
+                  [= $s1 [?if [not $is-suite] [then ()]
+                           [else ([?splice [?if [$member $suite [$KNOWN]] [then ()]
+                                             [else ([$cat ('GATE-UNKNOWN-SUITE: [suite name=', $suite, '] is not a known suite {', [$strings:join [$KNOWN] ', '],
+                                                           '} — every module row under it would be silently unvalidated AND silently unconsumed by the runner')],)]]],
+                                  [?splice [?if [or [= $sf ''] [$io:is-file [$cat ($root, '/', $sf)]]] [then ()]
+                                             [else ([$cat ('GATE-DANGLING: suite ', "'", $suite, "'", ' governs ', $sf, ', which does not exist')],)]]])]]]
+                  [= $m1 [?if [not [$strings:contains $l '[module name=']] [then ()]
+                           [else [?let [= $mod [$name-of 'module' $l]] [= $q [$cat ("'", $mod, "'")]]
+                                   [= $f [?fn ($p) [$io:is-file [$cat ($root, '/', $p)]]]]
+                             [?match $suite
+                               [case 'stdlib' [?if [or [$f [$cat ('deps/cx-core-code/conformance/stdlib/', $mod, '.cxd')]] [$f [$cat ('conformance/stdlib/', $mod, '.cxd')]]
+                                                       [$f [$cat ('conformance/platform/', $mod, '.cxd')]] [$f [$cat ('conformance/x/', $mod, '.cxd')]] [$f [$cat ('conformance/xap/', $mod, '.cxd')]]]
+                                                [then ()]
+                                                [else ([$cat ('GATE-DANGLING: stdlib module ', $q, ' has no corpus under deps/cx-core-code/conformance/stdlib/', $mod, '.cxd or conformance/{stdlib,platform,x,xap}/', $mod, ".cxd (RULED: 1427-c, K7a — Ring 1's stdlib corpus now lives in the pinned cx-core-code checkout)")],)]]]
+                               [case 'packages' [?if [$f [$cat ('packages/', $mod, '/', $mod, '.test.cxd')]] [then ()]
+                                                  [else ([$cat ('GATE-DANGLING: packages module ', $q, ' has no packages/', $mod, '/', $mod, '.test.cxd')],)]]]
+                               [case 'connectors' [?if [$f [$cat ('deps/cx-platform-connector/reference/connectors/', $mod, '/', $mod, '.test.cxd')]] [then ()]
+                                                    [else ([$cat ('GATE-DANGLING: connectors module ', $q, ' has no deps/cx-platform-connector/reference/connectors/', $mod, '/', $mod, '.test.cxd')],)]]]
+                               [case 'code' ([$cat ('GATE-UNEXPECTED: module row ', $q, " under suite 'code' (code.cxd uses the suite default, no module rows)")],)]
+                               [case 'xpath-31-parity' ([$cat ('GATE-UNEXPECTED: module row ', $q, " under suite 'xpath-31-parity' (xpath_31_parity.cxd uses the suite default, no module rows)")],)]
+                               [case '' ([$cat ('GATE-ORPHAN: module row ', $q, ' with no enclosing [suite]')],)]
+                               [else ([$cat ('GATE-ORPHAN: module row ', $q, ' under unknown suite ', "'", $suite, "'")],)]]]]]]
+        [continue [+ $i 1] $suite ([?splice $acc], [?splice $s1], [?splice $m1])]]]]]]
+
+[?let
+  [= $root [$env:var-or-default 'GATES_ROOT' '.']]
+  [= $gates [$cat ($root, '/conformance/gates.cxd')]]
+  [= $cx [$env:var-or-default 'CX_BIN' [$cat ($root, '/deps/cx-core-code/vcx/target/cx')]]]
+  [?if [not [$io:is-file $cx]]
+    [then [?do [$say [$cat ('gates_manifest_gate: FAILED — cx binary absent at ', $cx, ' (set CX_BIN or build vcx); the parse check cannot run and MUST not be skipped silently')]]
+               [$env:exit 1]]]
+    [else [?let [= $p [$process:run ($cx, $gates, '--to=cx') capture=:discard]]
+      [?if [not [?match $p [case [err$e] false] [else [= $p@exit-code 0]]]]
+        [then [?do [$say 'gates_manifest_gate: gates.cxd does not parse'] [$env:exit 1]]]
+        [else [?let
+          [= $lines [?let [= $t [?else [$io:read-file $gates] '']] [= $ps [$strings:split $t "\n"]]
+                      [?if [$strings:ends-with $t "\n"] [then [?to-sequence [?for [in $i [$range 1 [- [$count $ps] 1]]] [yield [$nth $ps $i]]]]] [else $ps]]]]
+          [= $rows [$policy-rows $lines]]
+          [= $bad [?to-sequence [?for [in $a ('gate', 'default')] [in $v [$attr-values $rows $a]] [where [not [$member $v [$ENUM]]]]
+                                  [yield [$cat ('GATE-BADVALUE: ', $a, '=', $v, ' is not in {enforced,advisory,pending,skip}')]]]]]
+          [= $w [$walk $root $lines]]
+          [= $_1 [?for [in $x ([?splice $bad], [?splice $w])] [yield [$say $x]]]]
+          # (5) the derived register: its own corpus first, then the tree (both from the checkout root, #1604)
+          [= $corpus [$process:run ($cx, 'corpus', '--quiet', 'conformance/gates_register.cxd') cwd=$root capture=:none]]
+          [= $c-ok [?match $corpus [case [err$e] false] [else [= $corpus@exit-code 0]]]]
+          [= $_2 [?if $c-ok [then null] [else [$say "GATE-REGISTER-CORPUS: conformance/gates_register.cxd does not pass — the drift check's pinned verdicts do not hold"]]]]
+          [= $chk [$process:run ($cx, '--allow-read', '--allow-write', 'scripts/gates_register_check.cx') cwd=$root capture=:none]]
+          [= $k-ok [?match $chk [case [err$e] false] [else [= $chk@exit-code 0]]]]
+          [?if [and [= [$count $bad] 0] [= [$count $w] 0] $c-ok $k-ok]
+            [then [?do [$say "gates_manifest_gate: OK — gates.cxd parses, every gate=/default= is in-enum, every suite is known, every single-file suite's fixture exists, every module row resolves to a real fixture, and every row agrees with its suite's [test-suite] element (the register is derived, D49a)."]
+                       [$env:exit 0]]]
+            [else [?do [$say 'gates_manifest_gate: FAILED'] [$env:exit 1]]]]]]]]]]]

@@ -1,0 +1,219 @@
+# bench_isolation_selftest.cx — #1450's isolation guard, on planted artifacts
+# under mktemp.
+#
+# WHY THE GUARD. Holding the runner is not enough: it serialises what goes
+# through it, not the box. Measured on impl/cx-A-1433 (2026-09-14, run 4) with
+# `.build-slot-impl` HELD and six pre-merge pipelines compiling beside it,
+# `tooling.fmt_8k_ms` read 1902.1 ms against a hot 1304 and four unrelated rows
+# regressed 36-457 %. The cut's own ratchet (RULED: 1249-Q1a) had no such guard,
+# and INT-6's addendum already records one cut re-pinning to a cold-vs-hot
+# difference.
+#
+#   A  run_bench_json REFUSES to measure over the bound — exit 3, and it
+#      refuses BEFORE the first harness, so the refusal costs seconds
+#   B  compare_bench REFUSES TO JUDGE a current reading taken over the bound
+#   C  the same pair under the bound is judged normally
+#   D  a pre-#1450 artifact (no load keys at all) is judged exactly as before
+#   E  a loaded reading that WOULD have regressed is refused, not failed — the
+#      direction that costs, because a false regression aborts a good cut and a
+#      false pass re-pins the floor to a number that was never real
+#   F  the fmt and convert rows time the cx RUNNING the script (#1751): its
+#      `--harness-cx` resolution is that binary, and no harness spawn names the
+#      retired `vcx/target/cx` (#1682) — absent in every worktree, where it
+#      turned perf-ratchet's artifact into an err with no `benchmarks`, and a
+#      stale different build in the main checkout
+#   G  the peak-RSS reader (#1884) reads BSD `-l` (bytes) and GNU `-v`
+#      (kbytes) /usr/bin/time reports, takes the largest of several, and
+#      answers -1 — which refuses the run — when there is none
+#   H  the paired judgement (#1884): time 17 % faster with peak RSS 17 %
+#      higher (webhook-saga's trade, cx-private#1882) is a regression at the
+#      strict 10 % — each twin is judged on its own, whatever the other did
+#   I  under load the memory half is still judged (#1884): a loaded reading
+#      with a clean peak-RSS row exits 3 (time unjudged), one whose peak-RSS
+#      row grew 17 % exits 1, and a head recorded over the bound has its time
+#      rows left unjudged even when the current reading is quiet, as is a
+#      peak the runner marks load_sensitive
+#   J  the collector rows (cx-private#1910, ruling 2026-10-12 01:42Z): the runner
+#      carries workload.json_codec_1mb_x100_peak_rss_mb and
+#      workload.pi_digits_3000_peak_rss_mb, and their answer checks pass a right
+#      output and refuse a wrong or empty one (a misanswer is no reading)
+#   K  a reading is loaded when the load at EITHER end of it is over the bound
+#      (cx-private#1917's union-row rule, applied to perf-pair; priv 2026-10-12):
+#      a run that started at 7.8 and ended at 27.6 read flow_saga +64 % and
+#      fmt_8k's peak +29 % on a tree with no runtime change. Its time rows and
+#      load_sensitive peaks are refused (exit 3) and a load-independent peak is
+#      still judged; a head recorded with a loaded end is a loaded head. The
+#      code_streaming peak is the median of five runs, not one (the same binary
+#      read 513-931 MB at one load).
+#   Q  the streaming time rows' quiet bound (cx-private#1942): streaming.*_ms and
+#      code_streaming.*_mbps are judged only under load 4.0. At 4.0 and over
+#      (here 4.0 and 6.0, both under the bound of 8) a +14 % streaming_ms and a
+#      -10 % for_mbps are QUIET, not judged (exit 0). At 6.0 another time row
+#      (+20 %) and a streaming peak RSS (+17 %) are still judged (exit 1). At 3.9
+#      the same streaming slowdown is a regression (exit 1).
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of bench_isolation_selftest.sh — the same
+# planted artifacts byte for byte, the same runs of run_bench_json.cx and compare_bench.cx on the
+# same cx (each run's output read as $(... 2>&1) read it: both streams in arrival order, trailing
+# newlines cut), the same ok/FAILED lines on the same streams and the same exits.
+#   CX_BIN=<cx> $(TOOL_CX) --allow-all scripts/bench_isolation_selftest.cx
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def ok scope=public impure ($id $s) [?let [= $_ [$say [$cat ('  ', [$strings:pad-end $id 3 ' '], ' ok   ', $s)]]] true]]
+[?def bad scope=public impure ($id $s) [?let [= $_ [$cry [$cat ('  ', [$strings:pad-end $id 3 ' '], ' SELFTEST FAILED: ', $s)]]] false]]
+[?def has scope=public ($s $n) [$strings:contains $s $n]]
+
+# run — $(ARGV 2>&1) and $?: the merged output, trailing newlines cut, and the exit code.
+[?def run scope=public impure ($root $t $argv $env)
+  [?let [= $log [$cat ($t, '/.run.log')]]
+        [= $_c [$io:write-file $log '']]
+        [= $r [$process:run $argv cwd=$root env=$env capture={stdout: {append: $log}, stderr: :stdout}]]
+        [= $rc [?match $r [case [err$e] 127] [else $r@exit-code]]]
+    [res rc=$rc out=[$strings:trim-end-chars [?else [$io:read-file $log] ''] "\n"]]]]
+
+[?def artifact scope=public impure ($f $load $fmt)
+  [$io:write-file $f [$cat ("{\n  \"schema_version\": 1,\n  \"run_id\": \"2026-09-14T04:00:00Z\",\n  \"cx_commit\": \"deadbee\",\n  \"uname\": \"Darwin 25.6.0 arm64\",",
+                            $load, "\n  \"benchmarks\": {\n    \"tooling.fmt_8k_ms\": { \"median\": ", $fmt, ", \"unit\": \"ms\" }\n  }\n}\n")]]]
+[?def LOADED scope=public () "\n  \"load_1m_start\": 21.4,\n  \"load_1m_end\": 18.9,\n  \"load_1m_bound\": 8.0,"]
+[?def pair scope=public impure ($f $ms $rss)
+  [$io:write-file $f [$cat ("{\n  \"schema_version\": 1,\n  \"run_id\": \"2026-10-08T04:00:00Z\",\n  \"cx_commit\": \"deadbee\",\n  \"uname\": \"Darwin 25.6.0 arm64\",\n  \"load_1m_start\": 0.9,\n  \"load_1m_end\": 1.0,\n  \"load_1m_bound\": 8.0,\n  \"benchmarks\": {\n    \"workload.saga_ms\":          { \"median\": ", $ms, ", \"unit\": \"ms\" },\n    \"workload.saga_peak_rss_mb\": { \"median\": ", $rss, ", \"unit\": \"MB\" }\n  }\n}\n")]]]
+[?def pairl scope=public impure ($f $load $ms $rss)
+  [$io:write-file $f [$cat ("{\n  \"schema_version\": 1,\n  \"run_id\": \"2026-10-08T04:00:00Z\",\n  \"cx_commit\": \"deadbee\",\n  \"uname\": \"Darwin 25.6.0 arm64\",\n  \"load_1m_start\": ", $load, ",\n  \"load_1m_end\": ", $load, ",\n  \"load_1m_bound\": 8.0,\n  \"benchmarks\": {\n    \"workload.saga_ms\":          { \"median\": ", $ms, ", \"unit\": \"ms\" },\n    \"workload.saga_peak_rss_mb\": { \"median\": ", $rss, ", \"unit\": \"MB\" }\n  }\n}\n")]]]
+[?def pairk scope=public impure ($f $ls $le $ms $rss $srss)
+  [$io:write-file $f [$cat ("{\n  \"schema_version\": 1,\n  \"run_id\": \"2026-10-12T08:28:07Z\",\n  \"cx_commit\": \"deadbee\",\n  \"uname\": \"Darwin 25.5.0 arm64\",\n  \"load_1m_start\": ", $ls, ",\n  \"load_1m_end\": ", $le, ",\n  \"load_1m_bound\": 8.0,\n  \"benchmarks\": {\n    \"workload.saga_ms\":          { \"median\": ", $ms, ", \"unit\": \"ms\" },\n    \"workload.saga_peak_rss_mb\": { \"median\": ", $rss, ", \"unit\": \"MB\" },\n    \"tooling.fmt_peak_rss_mb\":   { \"median\": ", $srss, ", \"unit\": \"MB\", \"load_sensitive\": true }\n  }\n}\n")]]]
+[?def pairq scope=public impure ($f $load $sms $mbps $saga $srss)
+  [$io:write-file $f [$cat ("{\n  \"schema_version\": 1,\n  \"run_id\": \"2026-10-15T06:37:49Z\",\n  \"cx_commit\": \"deadbee\",\n  \"uname\": \"Darwin 25.5.0 arm64\",\n  \"load_1m_start\": ", $load, ",\n  \"load_1m_end\": ", $load, ",\n  \"load_1m_bound\": 8.0,\n  \"benchmarks\": {\n    \"streaming.streaming_ms\":      { \"median\": ", $sms, ", \"unit\": \"ms\" },\n    \"code_streaming.for_mbps\":     { \"median\": ", $mbps, ", \"unit\": \"MB/s\" },\n    \"workload.saga_ms\":            { \"median\": ", $saga, ", \"unit\": \"ms\" },\n    \"streaming.peak_rss_mb\":       { \"median\": ", $srss, ", \"unit\": \"MB\" }\n  }\n}\n")]]]
+
+[?let
+  [= $root [$path:dirname [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]]
+  [= $cx0 [$env:var-or-default 'CX_BIN' 'deps/cx-core-code/vcx/target/cx']]
+  [= $cx-at [?if [$strings:starts-with $cx0 '/'] [then $cx0] [else [$cat ($root, '/', $cx0)]]]]
+  [= $_x [?if [and [$io:is-file $cx-at] [= [$strings:slice [$string [$io:stat $cx-at]@permissions] 3 3] 'x']] [then null]
+           [else [?let [= $_ [$say [$cat ('bench-isolation self-test: no cx binary at ', $cx0, ' — build first')]]] [$env:exit 2]]]]]
+  [= $cx [$cat ([$path:dirname [$path:absolute $cx-at]], '/', [$path:basename $cx-at])]]
+  [= $_h [$say 'bench-isolation self-test (#1450):']]
+  [= $t [$string [$io:temp-dir 'bench_isolation_selftest.']]]
+  [= $base [$cat ($t, '/baseline.json')]]
+  [= $_b [$artifact $base '' '1304.0']]
+  [= $RW ('--allow-read', '--allow-write', '--allow-env')]
+  [= $RUN ('--allow-read', '--allow-write', '--allow-subprocess', '--allow-clock', '--allow-env')]
+  [= $cmp2 [?fn ($a $b) [$run $root $t ($cx, [?splice $RW], 'scripts/compare_bench.cx', $a, $b, '--strict') {}]]]
+  [= $compare [?fn ($f) [$cmp2 $base $f]]]
+  [= $f [?fn ($n) [$cat ($t, '/', $n)]]]
+  # A — the measure side refuses over the bound (where the box reports vm.loadavg)
+  [= $a [?if [= [$run $root $t ('sysctl', '-n', 'vm.loadavg') {}]@rc 0]
+          [then [?let [= $r [$run $root $t ($cx, [?splice $RUN], 'scripts/run_bench_json.cx', '-o', [$f 'never-written.json']) {CX_BENCH_MAX_LOAD: '0'}]]
+                  [?if [and [= $r@rc 3] [not [$io:exists [$f 'never-written.json']]] [$has $r@out 'REFUSING TO MEASURE']]
+                    [then [$ok 'A' 'over the bound the runner refuses (exit 3) and writes no artifact']]
+                    [else [$bad 'A' [$cat ('wanted exit 3 and no artifact — exit ', [$string $r@rc], ': ', $r@out)]]]]]]
+          [else [$ok 'A' 'skipped — this box does not report vm.loadavg, where the guard measures by design']]]]
+  [= $_bl [$artifact [$f 'loaded.json'] [$LOADED] '1330.0']]
+  [= $rb [$compare [$f 'loaded.json']]]
+  [= $b [?if [and [= $rb@rc 3] [$has $rb@out 'REFUSING TO JUDGE']] [then [$ok 'B' 'a current reading taken at load 21.4 is refused, not judged']]
+          [else [$bad 'B' [$cat ('wanted exit 3 with a named refusal — exit ', [$string $rb@rc], ': ', $rb@out)]]]]]
+  [= $_cq [$artifact [$f 'quiet.json'] "\n  \"load_1m_start\": 0.8,\n  \"load_1m_end\": 1.1,\n  \"load_1m_bound\": 8.0," '1330.0']]
+  [= $rc [$compare [$f 'quiet.json']]]
+  [= $c [?if [and [= $rc@rc 0] [$has $rc@out 'load     0.8']] [then [$ok 'C' 'under the bound the run is judged, with the load printed beside it']]
+          [else [$bad 'C' [$cat ('wanted exit 0 and the load on the header — exit ', [$string $rc@rc], ': ', $rc@out)]]]]]
+  [= $_dl [$artifact [$f 'legacy.json'] '' '1330.0']]
+  [= $rd [$compare [$f 'legacy.json']]]
+  [= $d [?if [and [= $rd@rc 0] [$has $rd@out 'not recorded']] [then [$ok 'D' 'an artifact with no load recorded is judged as before, and says so']]
+          [else [$bad 'D' [$cat ('a pre-#1450 artifact changed behaviour — exit ', [$string $rd@rc], ': ', $rd@out)]]]]]
+  [= $_el [$artifact [$f 'loaded_slow.json'] [$LOADED] '1902.1']]
+  [= $re [$compare [$f 'loaded_slow.json']]]
+  [= $e [?if [and [= $re@rc 3] [$has $re@out 'REFUSING TO JUDGE']] [then [$ok 'E' 'the 1902 ms reading of run 4 is refused (3), not reported as a regression (1)']]
+          [else [$bad 'E' [$cat ('a loaded reading was judged as a regression — exit ', [$string $re@rc], ': ', $re@out)]]]]]
+  [= $_e2 [$artifact [$f 'quiet_slow.json'] "\n  \"load_1m_start\": 0.9,\n  \"load_1m_end\": 1.0,\n  \"load_1m_bound\": 8.0," '1902.1']]
+  [= $re2 [$compare [$f 'quiet_slow.json']]]
+  [= $e2 [?if [= $re2@rc 1] [then [$ok 'E2' 'the same number on a QUIET box is still a regression (exit 1) — the guard classifies, it does not excuse']]
+           [else [$bad 'E2' [$cat ('a real regression on a quiet box was not reported — exit ', [$string $re2@rc], ': ', $re2@out)]]]]]
+  # F — the harness rows time the cx running the script
+  [= $rf [$run $root $t ($cx, [?splice $RUN], 'scripts/run_bench_json.cx', '--harness-cx') {}]]
+  [= $rbj [?else [$io:read-file [$cat ($root, '/scripts/run_bench_json.cx')]] '']]
+  [= $retired [$count [?for [in $l [$strings:split $rbj "\n"]] [where [$has $l "process:run ('vcx/target/cx'"]] [yield 1]]]]
+  [= $fx [?if [and [= $rf@rc 0] [= $rf@out $cx] [$io:is-file $rf@out] [= $retired 0]]
+           [then [$ok 'F' [$cat ('the fmt and convert rows time the cx running the script (', $cx, '), never the retired vcx/target/cx')]]]
+           [else [$bad 'F' [$cat ('wanted --harness-cx = ', $cx, " (exit 0) and no vcx/target/cx spawn — exit ", [$string $rf@rc], ", printed '", $rf@out, "', ", [$string $retired], ' retired-path spawn(s)')]]]]]
+  # G — the peak-RSS reader
+  [= $rg [$run $root $t ($cx, [?splice $RUN], 'scripts/run_bench_json.cx', '--rss-selftest') {}]]
+  [= $g [?if [= $rg@rc 0] [then [$ok 'G' 'the peak-RSS reader reads BSD and GNU /usr/bin/time reports and refuses a missing one (#1884)']]
+          [else [$bad 'G' [$cat ('run_bench_json --rss-selftest — exit ', [$string $rg@rc], ': ', $rg@out)]]]]]
+  # H — a time win that hides a memory loss is refused on the memory row
+  [= $_h1 [$pair [$f 'pair_base.json'] '550.0' '359.0']]
+  [= $_h2 [$pair [$f 'pair_trade.json'] '456.0' '421.0']]
+  [= $rh [$cmp2 [$f 'pair_base.json'] [$f 'pair_trade.json']]]
+  [= $h [?if [and [= $rh@rc 1] [$has $rh@out 'workload.saga_peak_rss_mb: baseline=']]
+          [then [$ok 'H' '17 % faster at 17 % more peak RSS (cx-private#1882) is refused on the memory row (#1884)']]
+          [else [$bad 'H' [$cat ('a time win hid a memory loss — exit ', [$string $rh@rc], ': ', $rh@out)]]]]]
+  # I — the memory half under load
+  [= $_i1 [$pairl [$f 'i_base.json'] '0.9' '550.0' '359.0']]
+  [= $_i2 [$pairl [$f 'i_slow_clean.json'] '40.0' '900.0' '360.0']]
+  [= $_i3 [$pairl [$f 'i_grown.json'] '40.0' '540.0' '421.0']]
+  [= $_i4 [$pairl [$f 'i_head_loaded.json'] '40.0' '550.0' '359.0']]
+  [= $_i5 [$pairl [$f 'i_quiet_slow.json'] '0.9' '900.0' '359.0']]
+  [= $o1 [$cmp2 [$f 'i_base.json'] [$f 'i_slow_clean.json']]]
+  [= $o2 [$cmp2 [$f 'i_base.json'] [$f 'i_grown.json']]]
+  [= $o3 [$cmp2 [$f 'i_head_loaded.json'] [$f 'i_quiet_slow.json']]]
+  [= $_i6 [$io:write-file [$f 'i_grown_sensitive.json']
+            [$strings:replace [$io:read-file [$f 'i_grown.json']] '"workload.saga_peak_rss_mb": { "median": 421.0, "unit": "MB" }' '"workload.saga_peak_rss_mb": { "median": 421.0, "unit": "MB", "load_sensitive": true }']]]
+  [= $o4 [$cmp2 [$f 'i_base.json'] [$f 'i_grown_sensitive.json']]]
+  [= $i [?if [and [= $o1@rc 3] [$has $o1@out 'peak-RSS and arena rows are judged'] [= $o2@rc 1] [$has $o2@out 'workload.saga_peak_rss_mb: baseline=']
+                  [= $o3@rc 3] [= $o4@rc 3] [$has [$io:read-file [$f 'i_grown_sensitive.json']] '"load_sensitive": true']]
+          [then [$ok 'I' "under load the peak-RSS row is still judged (clean -> 3, +17 % -> 1); a loaded head's time rows and a load_sensitive peak are not (#1884)"]]
+          [else [$bad 'I' [$cat ('loaded memory judgement — clean exit ', [$string $o1@rc], ', grown exit ', [$string $o2@rc], ', loaded-head exit ', [$string $o3@rc],
+                                 ', load_sensitive exit ', [$string $o4@rc], ': ', $o1@out, ' / ', $o2@out, ' / ', $o3@out)]]]]]
+  # J — the collector rows
+  [= $rj [$run $root $t ($cx, [?splice $RUN], 'scripts/run_bench_json.cx', '--workload-selftest') {}]]
+  [= $j [?if [and [= $rj@rc 0] [$has $rbj "'workload.json_codec_1mb_x100_peak_rss_mb'"] [$has $rbj "'workload.pi_digits_3000_peak_rss_mb'"]
+                  [$has $rbj '[$run-json-codec-bench], [$run-pi-digits-bench]']]
+          [then [$ok 'J' 'the json-codec 1 MB x100 and pi-digits 3000 peak-RSS rows are measured and their answer checks grade planted outputs (#1910)']]
+          [else [$bad 'J' [$cat ('run_bench_json --workload-selftest — exit ', [$string $rj@rc], ' (or a collector row is gone from the runner): ', $rj@out)]]]]]
+  # K — a loaded END makes a loaded reading; code_streaming's peak is a median of five
+  [= $_k1 [$pairk [$f 'k_base.json'] '0.9' '1.1' '550.0' '359.0' '307.0']]
+  [= $_k2 [$pairk [$f 'k_end_loaded.json'] '7.8' '27.6' '900.0' '360.0' '396.0']]
+  [= $_k3 [$pairk [$f 'k_end_grown.json'] '7.8' '27.6' '550.0' '421.0' '307.0']]
+  [= $_k4 [$pairk [$f 'k_head_end_loaded.json'] '0.9' '27.6' '550.0' '359.0' '307.0']]
+  [= $_k5 [$pairk [$f 'k_quiet_slow.json'] '0.9' '1.1' '900.0' '359.0' '307.0']]
+  [= $k1 [$cmp2 [$f 'k_base.json'] [$f 'k_end_loaded.json']]]
+  [= $k2 [$cmp2 [$f 'k_base.json'] [$f 'k_end_grown.json']]]
+  [= $k3 [$cmp2 [$f 'k_head_end_loaded.json'] [$f 'k_quiet_slow.json']]]
+  [= $k4 [$cmp2 [$f 'k_base.json'] [$f 'k_quiet_slow.json']]]
+  [= $k [?if [and [= $k1@rc 3] [= $k2@rc 1] [$has $k2@out 'workload.saga_peak_rss_mb: baseline='] [= $k3@rc 3] [= $k4@rc 1]
+                  [$has $rbj "'vcx/target/bench/code_streaming_throughput_bench'"]
+                  [$has $rbj "'make bench-code-streaming' ([$peak-rss-mb [$string $r@stderr]], [?splice $more])"]]
+          [then [$ok 'K' "a loaded end refuses the time rows and the load_sensitive peaks (exit 3) and still judges a peak (+17 % -> 1); a head with a loaded end is a loaded head; quiet both ends still fails a slowdown; code_streaming's peak is a median of five (cx-private#1917)"]]
+          [else [$bad 'K' [$cat ('end-load judgement — end-loaded exit ', [$string $k1@rc], ', end-loaded grown exit ', [$string $k2@rc], ', head end-loaded exit ', [$string $k3@rc],
+                                 ', quiet slow exit ', [$string $k4@rc], ' (want 3 1 3 1), or the code_streaming median-of-five is gone: ', $k1@out, ' / ', $k2@out, ' / ', $k3@out)]]]]]
+  # Q — the streaming time rows are judged only on a quiet box
+  [= $_q1 [$pairq [$f 'q_base.json'] '2.1' '90.0' '291.5' '550.0' '56.0']]
+  [= $_q2 [$pairq [$f 'q_six_stream.json'] '6.0' '103.0' '262.0' '550.0' '56.0']]
+  [= $_q3 [$pairq [$f 'q_four_stream.json'] '4.0' '103.0' '262.0' '550.0' '56.0']]
+  [= $_q4 [$pairq [$f 'q_six_saga.json'] '6.0' '103.0' '262.0' '660.0' '56.0']]
+  [= $_q5 [$pairq [$f 'q_six_rss.json'] '6.0' '103.0' '262.0' '550.0' '65.5']]
+  [= $_q6 [$pairq [$f 'q_quiet_stream.json'] '3.9' '103.0' '262.0' '550.0' '56.0']]
+  [= $j1 [$cmp2 [$f 'q_base.json'] [$f 'q_six_stream.json']]]
+  [= $j2 [$cmp2 [$f 'q_base.json'] [$f 'q_four_stream.json']]]
+  [= $j3 [$cmp2 [$f 'q_base.json'] [$f 'q_six_saga.json']]]
+  [= $j4 [$cmp2 [$f 'q_base.json'] [$f 'q_six_rss.json']]]
+  [= $j5 [$cmp2 [$f 'q_base.json'] [$f 'q_quiet_stream.json']]]
+  [= $q [?if [and [= $j1@rc 0]
+                  [?let [= $p [$strings:find $j1@out 'streaming.streaming_ms']] [and [$present $p] [$has [$strings:slice $j1@out $p [$strings:length $j1@out]] 'QUIET']]]
+                  [$has $j1@out 'cx-private#1942'] [not [$has $j1@out 'REGRES']] [= $j2@rc 0]
+                  [= $j3@rc 1] [$has $j3@out 'workload.saga_ms: baseline='] [not [$has $j3@out 'streaming.streaming_ms: baseline=']]
+                  [= $j4@rc 1] [$has $j4@out 'streaming.peak_rss_mb: baseline=']
+                  [= $j5@rc 1] [$has $j5@out 'streaming.streaming_ms: baseline='] [$has $j5@out 'code_streaming.for_mbps: baseline=']]
+          [then [$ok 'Q' 'streaming.*_ms / code_streaming.*_mbps are QUIET (not judged) at load 4.0 and 6.0, judged at 3.9; other time rows and the streaming peak RSS are still judged at 6.0 (cx-private#1942)']]
+          [else [$bad 'Q' [$cat ('the streaming quiet bound — load 6 exit ', [$string $j1@rc], ', load 4 exit ', [$string $j2@rc], ', load-6 saga exit ', [$string $j3@rc],
+                                 ', load-6 rss exit ', [$string $j4@rc], ', load-3.9 exit ', [$string $j5@rc], ' (want 0 0 1 1 1): ', $j1@out, ' / ', $j5@out)]]]]]
+  [= $_rm [?else [$io:remove-tree $t] null]]
+  [= $fails [$count [?for [in $v ($a, $b, $c, $d, $e, $e2, $fx, $g, $h, $i, $j, $k, $q)] [where [not $v]] [yield 1]]]]
+  [?if [> $fails 0]
+    [then [?let [= $_ [$cry [$cat ('bench-isolation self-test: ', [$string $fails], ' case(s) FAILED')]]] [$env:exit 1]]]
+    [else [?let [= $_ [$say "bench-isolation self-test: 13/13 (measure-side refusal; judge-side refusal; judged under the bound; a pre-#1450 artifact unchanged; a loaded regression refused and the same number on a quiet box still failing; the harness rows time the running cx, #1751; the peak-RSS reader, the paired judgement and the memory half under load, #1884; the collector rows, #1910; a loaded end and the code_streaming median, #1917; the streaming rows' quiet bound, #1942)"]] [$env:exit 0]]]]]

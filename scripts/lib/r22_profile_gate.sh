@@ -5,7 +5,7 @@
 #
 # RULED: PGL-1 (#741, ledger/rulings_2026_08_22_profile_gate_lane.md).
 # The gate loop below existed VERBATIM TWICE — scripts/release.sh phase 2
-# (darwin) and the scripts/release_linux.sh in-container body — and ran
+# (darwin) and the scripts/release_linux.cx in-container body — and ran
 # ONLY inside a real cut: release.sh's copy sits in the `else` arm of the
 # --dry-run test, so `release.sh --dry-run` printed a plan line and never
 # executed a single assertion. A gate that exists twice can drift in one
@@ -260,7 +260,7 @@ r22_profile_load() {
 # darwin cut, "/linux" in the container, "/precut" for the standalone
 # step. Failure calls `exit 1`, exactly as both original copies did: in
 # the release flow's package act, aborting the cut before the phase-3 push, and in the
-# container it fails the container, which fails release_linux.sh, which
+# container it fails the container, which fails release_linux.cx, which
 # fails the release flow.
 r22_profile_gate() {
   local pubdir="$1" plat="$2" label="${3:-}"

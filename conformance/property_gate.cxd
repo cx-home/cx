@@ -25,7 +25,7 @@
 # its advisory mark comes off, and the class enforces.
 #
 # Graded by `make property-gate` (`cx corpus conformance/property_gate.cxd`
-# before the step runs), which is the claim check_conformance_coverage.sh
+# before the step runs), which is the claim check_conformance_coverage.cx
 # carries for this suite.
 #]]
 

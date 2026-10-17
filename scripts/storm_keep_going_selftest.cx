@@ -1,0 +1,174 @@
+# storm_keep_going_selftest.cx — the -j STORM of `make test` runs with `-k`
+# (RULED: RUN-2).
+#
+# WHY. `make` stops at the first red step ("Waiting for unfinished jobs"), so a
+# failed post-merge run named ONE class and the next run found the next one. On
+# 2026-09-18 ten failed runs at about 1.5 h each found seventeen classes —
+# under two per run — and the fix branch for a red head could only ever carry
+# what the last log happened to name. With `-k` the storm runs every step it
+# can, so ONE failed run names EVERY red step and the fix branch carries them
+# all before the next tip.
+#
+# The five serial tail lines (test-profile-gate, test-vcx-timing,
+# test-code-diagram — wall-clock steps — and test-playground-primer and
+# test-site-phone-width, which assemble and read the site/ tree the storm's
+# site-check and guide-render-gate remove and rewrite, #1758, #1762)
+# still run only after a GREEN storm: `-k` is on the storm's own sub-make, and
+# the recipe line's non-zero status still stops `test:`.
+#
+# Two properties:
+#
+#   A  the SEMANTICS, on two tiny planted targets through a scratch makefile:
+#      `make -k -j2` over a red target and two green ones runs BOTH greens and
+#      still exits non-zero. The control — the same makefile WITHOUT `-k` —
+#      leaves the second green unbuilt, so the fixture discriminates rather
+#      than passing on any make at all.
+#   B  the REAL recipe: `test:`'s storm line carries `-k`, and the five serial
+#      tail lines are still separate recipe lines after it (so a red storm
+#      still stops the gate before the tail).
+#
+#   C  the selftest's OWN environment cannot decide its answer: it re-runs
+#      itself under MAKEFLAGS='-k -j2' — the environment `make test`'s storm
+#      hands its children — and that run must pass too.
+#
+#   sh scripts/storm_keep_going_selftest.sh
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of storm_keep_going_selftest.sh — the same
+# planted Makefile and the same reads of the real Makefile and SERIAL_TAIL (awk's recipe span,
+# grep -F's lines, sed's greedy filter-out capture, LC_ALL=C sort), the same ok/FAILED lines on
+# the same streams, and the inner run under an inherited MAKEFLAGS re-runs this program.
+#   $(TOOL_CX) --allow-all scripts/storm_keep_going_selftest.cx
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def ok scope=public impure ($id $s) [?let [= $_ [$say [$cat ('  ', [$strings:pad-end $id 3 ' '], ' ok   ', $s)]]] true]]
+[?def bad scope=public impure ($id $s) [?let [= $_ [$cry [$cat ('  ', [$strings:pad-end $id 3 ' '], ' SELFTEST FAILED: ', $s)]]] false]]
+[?def lines scope=public ($t)
+  [?let [= $ls [$strings:split $t "\n"]]
+    [?if [= $t ''] [then ()]
+      [else [?if [$strings:ends-with $t "\n"] [then [?to-sequence [?for [in $i [$range 1 [- [$count $ls] 1]]] [yield [$nth $ls $i]]]]] [else $ls]]]]]]
+[?def nl scope=public ($ls) [$strings:join $ls "\n"]]
+[?def grep-f scope=public ($ls $needle) [?to-sequence [?for [in $l $ls] [where [$strings:contains $l $needle]] [yield $l]]]]
+# the first 1-based index of a line holding NEEDLE, 0 when none
+[?def first-n scope=public ($ls $needle)
+  [?let [= $hits [?to-sequence [?for [in $i [$range 1 [$count $ls]]] [where [$strings:contains [$nth $ls $i] $needle]] [yield $i]]]]
+    [?if [= [$count $hits] 0] [then 0] [else [$nth $hits 1]]]]]
+[?def words scope=public ($s) [?to-sequence [?for [in $w [$strings:split-whitespace $s]] [where [not [= $w '']]] [yield $w]]]]
+# tr ' ' '\n' | grep . | LC_ALL=C sort | tr '\n' ' ' — the words, byte-sorted, each followed by a space
+[?def sorted-line scope=public ($s) [$cat [?to-sequence [?for [in $w [$sort [?to-sequence [?for [in $x [$strings:split $s ' ']] [where [not [= $x '']]] [yield $x]]]]] [yield [$cat ($w, ' ')]]]]]]
+[?def serial-tail scope=public impure ($root)
+  [?let [= $rx [$re:compile "^SERIAL_TAIL='(.*)'$"]]
+    [$strings:join [?to-sequence [?for [in $l [$lines [?else [$io:read-file [$cat ($root, '/scripts/test_changed.sh')]] '']]]
+                                       [in $m [?let [= $f [$re:find $rx $l]] [?if [$present $f] [then ($f,)] [else ()]]]]
+                                       [yield [$re:group $m 1]]]] "\n"]]]
+[?def is-file-at scope=public impure ($t $n) [$io:is-file [$cat ($t, '/', $n)]]]
+[?def yn scope=public impure ($t $n) [?if [$is-file-at $t $n] [then 'yes'] [else 'no']]]
+
+[?def run-planted scope=public impure ($t $make $extra)
+  [?let [= $_1 [?else [$io:remove [$cat ($t, '/g1.built')]] null]]
+        [= $_2 [?else [$io:remove [$cat ($t, '/g2.built')]] null]]
+        [= $r [$process:run ('env', '-u', 'MAKEFLAGS', '-u', 'MFLAGS', '-u', 'MAKELEVEL', $make, [?splice $extra], '-j2', 'all') cwd=$t capture=:both]]
+    [?match $r [case [err$e] 127] [else $r@exit-code]]]]
+
+[?let
+  [= $self [$path:absolute [$nth [$env:argv] 1]]]
+  [= $root [$path:dirname [$path:dirname $self]]]
+  [= $makefile [$cat ($root, '/Makefile')]]
+  [= $make [$env:var-or-default 'MAKE' 'make']]
+  [= $_h [$say 'storm keep-going selftest (RULED: RUN-2):']]
+  [= $t [$string [$io:temp-dir 'storm_keep_going_selftest.']]]
+  [= $_m [$io:write-file [$cat ($t, '/Makefile')] ".PHONY: all red g1 g2\nall: red g1 g2\nred:\n\t@exit 1\ng1:\n\t@sleep 2; : > g1.built\ng2:\n\t@: > g2.built\n"]]
+  # A — the planted fixture: -k runs past a red target; the control without -k does not.
+  [= $rc1 [$run-planted $t $make ('-k',)]]
+  [= $a1 [?if [and [not [= $rc1 0]] [$is-file-at $t 'g1.built'] [$is-file-at $t 'g2.built']]
+           [then [$ok 'A1' [$cat ('-k -j2 ran BOTH green targets past the red one and still exited ', [$string $rc1])]]]
+           [else [$bad 'A1' [$cat ('wanted a non-zero exit with g1.built and g2.built — exit ', [$string $rc1], ', g1=', [$yn $t 'g1.built'], ' g2=', [$yn $t 'g2.built'])]]]]]
+  [= $rc2 [$run-planted $t $make ()]]
+  [= $a2 [?if [and [not [= $rc2 0]] [not [$is-file-at $t 'g2.built']]]
+           [then [$ok 'A2' 'the control WITHOUT -k stopped before g2 (the fixture discriminates)']]
+           [else [$bad 'A2' [$cat ('without -k the run should have left g2 unbuilt — exit ', [$string $rc2], ', g2=', [$yn $t 'g2.built'])]]]]]
+  [= $_b0 [?if [$io:is-file $makefile] [then null]
+            [else [?let [= $_ [$cry [$cat ('  B  SELFTEST FAILED: no Makefile at ', $makefile)]]] [= $_x [?else [$io:remove-tree $t] null]] [$env:exit 1]]]]]
+  [= $mk [$lines [$io:read-file $makefile]]]
+  # the test: recipe — the lines after `test:` up to the first non-blank line that is not a recipe line
+  [= $recipe [?loop [= $i 1] [= $in false] [= $acc ()]
+               [?if [> $i [$count $mk]] [then [break $acc]]
+                 [else [?let [= $l [$nth $mk $i]]
+                   [?if [not $in] [then [continue [+ $i 1] [= $l 'test:'] $acc]]
+                     [else [?if [and [not [$strings:starts-with $l "\t"]] [> [$count [$words $l]] 0]] [then [break $acc]]
+                             [else [continue [+ $i 1] true ([?splice $acc], $l)]]]]]]]]]]
+  [= $_b1 [?if [> [$count $recipe] 0] [then null]
+            [else [?let [= $_ [$cry '  B  SELFTEST FAILED: could not read the test: recipe']] [= $_x [?else [$io:remove-tree $t] null]] [$env:exit 1]]]]]
+  [= $storm-ls [$grep-f $recipe '$(MAKE) -k -j$(TEST_JOBS)']]
+  [= $storm [$nl $storm-ls]]
+  [= $b1 [?if [not [= $storm '']] [then [$ok 'B1' 'the storm line runs -k']]
+           [else [$bad 'B1' [$cat ('the -j storm line does not carry -k: ', [$nl [$grep-f [$grep-f $recipe '$(MAKE)'] '-j$(TEST_JOBS)']])]]]]]
+  [= $storm-n [$first-n $recipe '$(MAKE) -k -j$(TEST_JOBS)']]
+  [= $tails ('test-profile-gate', 'test-vcx-timing', 'test-code-diagram', 'test-playground-primer', 'test-site-phone-width', 'nav-shape-check', 'site-live-check')]
+  [= $tail-ok [= [$count [?for [in $s $tails]
+                           [where [not [and [> $storm-n 0]
+                                            [?let [= $tn [$first-n $recipe [$cat ('$(MAKE) ', $s)]]] [and [> $tn 0] [> $tn $storm-n]]]
+                                            [> [$count [?for [in $l $storm-ls] [where [$present [$re:find [$re:compile [$cat ('filter-out ([^,]* )?', $s, '[ ,]')]] $l]]] [yield 1]]] 0]]]]
+                           [yield 1]]] 0]]
+  [= $b2 [?if $tail-ok [then [$ok 'B2' 'the seven serial tail lines follow the storm on their own lines, each filtered out of the storm']]
+           [else [$bad 'B2' 'the serial tail (test-profile-gate, test-vcx-timing, test-code-diagram, test-playground-primer, test-site-phone-width, nav-shape-check, site-live-check) is not seven lines after the storm, each filtered out of it']]]]
+  # B3 — the tail is SERIAL_TAIL exactly, each a TEST_TARGETS step, each line re-raising its status
+  [= $targets-line [?let [= $hit [?to-sequence [?for [in $l $mk] [where [$strings:starts-with $l 'TEST_TARGETS :=']] [yield $l]]]]
+                     [?if [= [$count $hit] 0] [then ''] [else [$strings:replace-first [$nth $hit 1] 'TEST_TARGETS := ' '']]]]]
+  [= $fo-rx [$re:compile '^.*filter-out ([^,]*),.*$']]
+  [= $filtered [$sorted-line [$strings:join [?to-sequence [?for [in $l $storm-ls] [in $m [?let [= $f [$re:find $fo-rx $l]] [?if [$present $f] [then ($f,)] [else ()]]]] [yield [$re:group $m 1]]]] ' ']]]
+  [= $serial-raw [$serial-tail $root]]
+  [= $serial [$sorted-line [$strings:replace $serial-raw "\n" ' ']]]
+  [= $b3-0 [?if [and [not [= $filtered '']] [= $filtered $serial]] [then '']
+             [else [$cat (" [SERIAL_TAIL '", $serial, "' != the storm's filter-out '", $filtered, "']")]]]]
+  [= $b3-rest [$cat [?to-sequence [?for [in $s [$words $filtered]]
+               [yield [?let [= $in-t [$strings:contains [$cat (' ', $targets-line, ' ')] [$cat (' ', $s, ' ')]]]
+                            [= $m1 [?if $in-t [then ''] [else [$cat (' [', $s, ' is not in TEST_TARGETS]')]]]]
+                            [= $hits [$grep-f $recipe [$cat ('$(MAKE) ', $s, ';')]]]
+                        [?if [= [$count $hits] 0] [then [$cat ($m1, ' [', $s, ' has no tail line of the form $(MAKE) ', $s, '; …]')]]
+                          [else [?let [= $line [$nth $hits 1]]
+                                  [$cat ($m1,
+                                         [?if [or [$strings:starts-with $line "\t-"] [$strings:starts-with $line "\t@-"] [$strings:contains $line '|| true'] [$strings:contains $line '|| :']]
+                                           [then [$cat (' [', $s, "'s tail line swallows its status]")]] [else '']],
+                                         [?if [$strings:contains $line 'exit $$cx_step_rc'] [then ''] [else [$cat (' [', $s, "'s tail line does not re-raise its status]")]]])]]]]]]]]]]
+  [= $b3s [$cat ($b3-0, $b3-rest)]]
+  [= $b3 [?if [= $b3s ''] [then [$ok 'B3' 'the tail is SERIAL_TAIL exactly, every member a TEST_TARGETS step, every line re-raising its status']] [else [$bad 'B3' $b3s]]]]
+  # B4 — no storm step has the prerequisite site; site-live-check ends the tail and SERIAL_TAIL
+  [= $b4-pre [$cat [?to-sequence [?for [in $s [$words $targets-line]]
+               [where [not [$strings:contains [$cat (' ', $filtered, ' ')] [$cat (' ', $s, ' ')]]]]
+               [yield [?let [= $rx [$re:compile [$cat ('^', $s, ':[^=]*$')]]]
+                            [= $pre [$cat [?to-sequence [?for [in $l $mk] [where [$present [$re:find $rx $l]]] [yield [$cat ([$strings:slice $l [+ [$strings:length $s] 2] [$strings:length $l]], ' ')]]]]]]
+                        [?if [$strings:contains [$cat (' ', $pre, ' ')] ' site '] [then [$cat (' [', $s, ' in the storm has the prerequisite site]')]] [else '']]]]]]]]
+  [= $last-line [?let [= $ls [?to-sequence [?for [in $l [$grep-f $recipe '$(MAKE) ']] [where [not [$strings:contains $l '-j$(TEST_JOBS)']]] [yield $l]]]]
+                  [?if [= [$count $ls] 0] [then ''] [else [$nth $ls [$count $ls]]]]]]
+  [= $b4-last [?if [$strings:contains $last-line '$(MAKE) site-live-check;'] [then ''] [else " [the last tail line is not site-live-check's]"]]]
+  [= $last-serial [?let [= $ws [?to-sequence [?for [in $x [$strings:split [$strings:replace $serial-raw "\n" ' '] ' ']] [where [not [= $x '']]] [yield $x]]]]
+                    [?if [= [$count $ws] 0] [then ''] [else [$nth $ws [$count $ws]]]]]]
+  [= $b4-ser [?if [= $last-serial 'site-live-check'] [then ''] [else [$cat (" [SERIAL_TAIL ends '", $last-serial, "', not site-live-check]")]]]]
+  [= $b4s [$cat ($b4-pre, $b4-last, $b4-ser)]]
+  [= $b4 [?if [= $b4s ''] [then [$ok 'B4' 'no storm step has the prerequisite site, and site-live-check is the last tail line and the last of SERIAL_TAIL']] [else [$bad 'B4' $b4s]]]]
+  # C — the whole selftest again under the MAKEFLAGS the storm hands its children
+  [= $c [?if [= [$env:var-or-default 'CX_STORM_SELFTEST_INNER' ''] '']
+          [then [?let [= $r [$process:run ([$string [$env:executable-path]], '--allow-all', $self)
+                                          env={MAKEFLAGS: '-k -j2', MFLAGS: '-k -j2', MAKELEVEL: '1', CX_STORM_SELFTEST_INNER: '1'}
+                                          capture={stdout: {append: [$cat ($t, '/inner.log')]}, stderr: :stdout}]]
+                      [= $okc [?match $r [case [err$e] false] [else [= $r@exit-code 0]]]]
+                      # > inner.log 2>&1: both streams in arrival order
+                      [= $log [?else [$io:read-file [$cat ($t, '/inner.log')]] '']]
+                  [?if $okc [then [$ok 'C' "it passes again under MAKEFLAGS='-k -j2' — the environment the storm hands its children"]]
+                    [else [$bad 'C' [$cat ('under an inherited MAKEFLAGS the selftest fails: ',
+                                           [?let [= $ls [$lines $log]] [= $n [$count $ls]]
+                                             [$cat [?to-sequence [?for [in $i [$range [?if [> $n 3] [then [- $n 2]] [else 1]] $n]] [yield [$cat ([$nth $ls $i], ' ')]]]]]])]]]]]]
+          [else [$ok 'C' 'inner run under an inherited MAKEFLAGS (the outer row is what grades it)']]]]
+  [= $_x [?else [$io:remove-tree $t] null]]
+  [= $fails [$count [?for [in $v ($a1, $a2, $b1, $b2, $b3, $b4, $c)] [where [not $v]] [yield 1]]]]
+  [?if [> $fails 0]
+    [then [?let [= $_ [$cry [$cat ('storm keep-going selftest: ', [$string $fails], ' case(s) FAILED')]]] [$env:exit 1]]]
+    [else [?let [= $_ [$say "storm keep-going selftest: 7/7 (planted -k runs past a red target and exits non-zero; the control without -k does not; the storm line carries -k; the serial tail is unchanged; the tail is SERIAL_TAIL, in TEST_TARGETS, never swallowed; no storm step needs site and site-live-check ends the tail; and it holds under the storm's own MAKEFLAGS)"]] [$env:exit 0]]]]]

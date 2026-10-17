@@ -1,0 +1,129 @@
+# scripts/check_selection_manifest.cx (#1516, RULED: RUN-1) — every TEST_TARGETS entry
+# has an input-glob row in scripts/test_changed.sh.
+#
+# WHY IT EXISTS. `test_changed.sh` is DENY-BY-DEFAULT: a step with no row always
+# runs. That direction is right and it stays — a false skip costs correctness —
+# but it is SILENT. Thirteen steps sat rowless for months and the only thing
+# that said so was one line in a run log nobody reads, while every post-merge
+# run paid for them. This step is what says so: a step joining TEST_TARGETS
+# without a row fails here, so deny-by-default is the fallback for a step in
+# FLIGHT and never the resting state of the manifest.
+#
+# It derives BOTH sides and REFUSES TO VOUCH when either derivation comes up
+# empty — the vcx/Makefile:597 idiom that check-build-input-roster (#1065) and
+# check-editor-surface-parity (#1171) follow, because a check that silently ran
+# over the empty set would pass forever.
+#
+# A row naming a step that is NOT in TEST_TARGETS is reported as a NOTE, not a
+# failure: `test-vcx` is deliberately kept as a row for the human entry point
+# the Makefile still defines.
+#
+# The repository is the one this program sits in (its own path, two levels up), so a
+# copy in a synthetic tree checks that tree (test_changed_selftest.sh case G).
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of check_selection_manifest.sh, the same
+# lines and exit codes. Exit 0 OK; 1 a missing row, a leaked private step, or no vouching.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat ($parts) [$strings:join $parts '']]
+[?def say impure ($s) [$env:write-line $s]]
+[?def cry impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def die impure ($s) [?do [$cry $s] [$env:exit 1]]]
+
+[?def words ($s) [?for [in $w [$strings:split [$strings:replace [$strings:trim $s] "\t" ' '] ' ']] [where [not [= $w '']]] [yield $w]]]
+[?def hit ($m) [> [?else $m@start -1] -1]]
+[?def member ($x $xs) [> [$count [?for [in $y $xs] [where [= $y $x]] [yield $y]]] 0]]
+
+# the words after `<prefix>` on the lines that start with it (all of them, or the first)
+[?def after-prefix ($lines $prefix)
+  [?for [in $l $lines] [where [$strings:starts-with $l $prefix]] [yield [$strings:replace-first $l $prefix '']]]]
+
+# the lines of step_globs(): from `step_globs()` at the head of a line to the first `}` there
+[?def globs-block ($lines $in)
+  [?if [= [$count $lines] 0] [then ()]
+    [else [?let [= $l [$nth $lines 1]]
+                [= $rest [?for [in $p [?enumerate $lines]] [where [> [$nth $p 1] 1]] [yield [$nth $p 2]]]]
+      [?if $in
+        [then [?if [$strings:starts-with $l '}'] [then ($l)] [else ($l, [?splice [$globs-block $rest true]])]]]
+        [else [?if [$strings:starts-with $l 'step_globs()'] [then ($l, [?splice [$globs-block $rest true]])] [else [$globs-block $rest false]]]]]]]]]
+
+[?let
+  [= $root [$path:dirname [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]]
+  [= $manifest 'scripts/test_changed.sh']
+  [= $makefile 'Makefile']
+  [= $private-mk 'flows/private.mk']
+  [= $mf [$path:join $root $manifest]]
+  [= $mk [$path:join $root $makefile]]
+  [= $pm [$path:join $root $private-mk]]
+  [= $_1 [?if [$io:is-file $mf] [then null] [else [$die [$cat ('check-selection-manifest: no ', $manifest)]]]]]
+  [= $_2 [?if [$io:is-file $mk] [then null] [else [$die [$cat ('check-selection-manifest: no ', $makefile)]]]]]
+  [= $mk-lines [$strings:split-lines [$io:read-file $mk]]]
+  [= $has-pm [$io:is-file $pm]]
+  [= $pm-lines [?if $has-pm [then [$strings:split-lines [$io:read-file $pm]]] [else ()]]]
+  # The authoritative step list, the same line test_changed.sh itself reads.
+  [= $public-hits [?for [in $l $mk-lines] [where [$strings:starts-with $l 'TEST_TARGETS :=']] [yield [$strings:replace-first $l 'TEST_TARGETS := ' '']]]]
+  [= $public-line [?if [> [$count $public-hits] 0] [then [$nth $public-hits 1]] [else '']]]
+  # ...plus the private flow steps flows/private.mk adds with `TEST_TARGETS +=`
+  # (RULED: PRIVMK-1), when this tree carries that file. The public tree does
+  # not, and there neither the steps nor their rows exist.
+  [= $private-steps [?for [in $s [$after-prefix $pm-lines 'TEST_TARGETS += ']] [in $w [$words $s]] [yield $w]]]
+  [= $targets ([?splice [$words $public-line]], [?splice $private-steps])]
+  [= $_3 [?if [= [$count $targets] 0]
+           [then [$die [$cat ('check-selection-manifest: derived NO targets from ', $makefile, ' — refusing to vouch')]]] [else null]]]
+  # The row set: the `case` labels inside step_globs(). A label is a step name at
+  # the head of a line, followed by `)` and the `echo` that prints its globs. The
+  # catch-all `*)` is excluded by the character class.
+  [= $label-rx [$re:compile "^[ \\t]+([a-zA-Z0-9][a-zA-Z0-9_.-]*)\\)[ \\t]+echo"]]
+  [= $glob-rows [?for [in $l [$globs-block [$strings:split-lines [$io:read-file $mf]] false]]
+                  [where [$hit [$re:find $label-rx $l]]]
+                  [yield [$re:group [$re:find $label-rx $l] 1]]]]
+  # ...plus the `<step>.globs := …` rows flows/private.mk carries for its own
+  # steps (PRIVMK-1): the same row, kept beside the target it selects.
+  [= $pm-rx [$re:compile "^([a-zA-Z0-9][a-zA-Z0-9_-]*)\\.globs := "]]
+  [= $pm-rows [?for [in $l $pm-lines] [where [$hit [$re:find $pm-rx $l]]] [yield [$re:group [$re:find $pm-rx $l] 1]]]]
+  [= $rows ([?splice $glob-rows], [?splice $pm-rows])]
+  [= $_4 [?if [= [$count $rows] 0]
+           [then [$die [$cat ('check-selection-manifest: derived NO rows from ', $manifest, ' — refusing to vouch')]]] [else null]]]
+  # PRIVMK-1: a step flows/private.mk adds must NOT also sit on the Makefile's
+  # own `TEST_TARGETS :=` line. That line is the PUBLIC roster: the public tree's
+  # `make test` runs it, and scripts/gen_docs/contributor_facts.cx projects it into
+  # docs/llm/contributor-test.md. A private step there is a `make test` step with
+  # no rule in the public tree, and a roster row whose bytes differ between the
+  # trees (cx main cb0b22a78's Site run: docs-check DRIFT). A merge that
+  # resolves the line against an older side re-adds them silently.
+  [= $leaked [?for [in $p $private-steps] [where [$strings:contains [$cat (' ', $public-line, ' ')] [$cat (' ', $p, ' ')]]] [yield $p]]]
+  [= $_5 [?if [> [$count $leaked] 0]
+           [then [?do [$say [$cat ("check-selection-manifest: private step(s) on the Makefile's public TEST_TARGETS := line:",
+                                   [?splice [?for [in $p $leaked] [yield [$cat (' ', $p)]]]])]]
+                      [$say "  They belong to flows/private.mk's TEST_TARGETS += alone (RULED: PRIVMK-1)."]
+                      [$env:exit 1]]]
+           [else null]]]
+  [= $missing [?for [in $t $targets] [where [not [$member $t $rows]]] [yield $t]]]
+  # a row is an orphan when " <row> " is not inside " <targets> " as the shell built that string
+  # (the public line as written, then each private line and a space): a tab on the line is not a space
+  [= $tstr [$cat (' ', $public-line, [?if $has-pm [then [$cat (' ', [?splice [?for [in $s [$after-prefix $pm-lines 'TEST_TARGETS += ']] [yield [$cat ($s, ' ')]]]])]] [else '']], ' ')]]
+  [= $orphans [?for [in $r $rows] [where [not [$strings:contains $tstr [$cat (' ', $r, ' ')]]]] [yield $r]]]
+  [= $_6 [?if [> [$count $orphans] 0]
+           [then [?do [$say [$cat ('check-selection-manifest: NOTE — row(s) for a step TEST_TARGETS does not name:',
+                                   [?splice [?for [in $r $orphans] [yield [$cat (' ', $r)]]]])]]
+                      [$say '  (kept on purpose for a human entry point the Makefile still defines;']
+                      [$say '   delete the row when the target goes away.)']]]
+           [else null]]]
+  [= $_7 [?if [> [$count $missing] 0]
+           [then [?do [$say 'check-selection-manifest: TEST_TARGETS entr(ies) with NO manifest row —']
+                      [?for [in $t $missing] [yield [$say [$cat ('    ', $t)]]]]
+                      [$say '  A rowless step runs on EVERY head by deny-by-default: correct, but it']
+                      [$say '  is the pace of every post-merge run and nothing announces it. Add a']
+                      [$say [$cat ('  row to step_globs() in ', $manifest, ' naming the directories and files the')]]
+                      [$say '  step actually reads — derive them from the recipe and from the script']
+                      [$say '  it runs, and over-include on doubt. A row that skips a step whose']
+                      [$say '  input changed is the one failure this manifest must not have.']
+                      [$env:exit 1]]]
+           [else null]]]
+  [?do [$say [$cat ('check-selection-manifest OK — ', [$string [$count $targets]], ' TEST_TARGETS entries, ',
+                     [$string [$count $rows]], ' manifest rows, none missing')]]
+       [$env:exit 0]]]

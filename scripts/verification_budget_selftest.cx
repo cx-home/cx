@@ -1,0 +1,150 @@
+# verification_budget_selftest.cx (#1562, RULED: VCOST-1; issue 1582, RULED:
+# RUN-5) — the fixture the decision asks for: "a planted over-budget timing that
+# fails the step".
+#
+# ── WHERE IT PLANTS (issue 1582) ─────────────────────────────────────────────
+#
+# It used to plant its cases at vcx/target/verification_timings.cxd — the REAL
+# path — while `check-verification-budget` ran beside it in the same -j storm.
+# An over-bound idle row planted by this self-test and read by the step next to
+# it reds a union on a measurement nobody took, and a test that writes what
+# another step is reading is a test of neither. Now:
+#
+#   * every case is planted under one `mktemp -d`;
+#   * the step runs in a MIRROR directory (a real vcx/target/ and a symlink to
+#     the repo's scripts/), so even the cases that exercise the DEFAULT path
+#     write inside the temporary tree and never in the checkout;
+#   * the path is chosen with $CX_VERIFICATION_TIMINGS, which is why the step
+#     takes `--allow-env`.
+#
+# ── THE PROPERTIES ───────────────────────────────────────────────────────────
+#
+#   0. an over-bound file at the DEFAULT path is NOT read when the override
+#      names an empty file                          → passes, NOT MEASURED
+#   1. five QUIET rows (load <= 8) whose median is over the bound → FAILS (exit 1)
+#   2. five quiet rows under it, one slow among them → passes, ok
+#   3. five LOADED rows over the bound → passes, each "not judged (load N)"
+#      (BUDGET-LOAD = (a), owner 2026-10-10: a loaded tick is recorded, never red)
+#   4. loaded rows between quiet ones neither judge nor push the quiet ones out
+#      of the median: five quiet under the bound among three loaded far over → ok
+#   5. a measurement with no `load` at all → passes, "not judged (load ?)"
+#   6. four quiet rows judge nothing yet; only the last five quiet count;
+#      no measurement at all → NOT MEASURED; the premerge-* family per repository
+#   7. with NO override the DEFAULT path is still what is read — the override
+#      moves the path and nothing else
+#  10. ROWS-FROM (#1917): union/selected-run rows stamped before their bound's
+#      rows-from (or with no at=) are reported "not judged (written before …)"
+#      and fill none of the five; rows since it judge and are never masked
+#   9. premerge-record over the load bound runs nothing: one "not run (load N)"
+#      line per repository, exit 0, no timings row (integrator 2026-10-10 22:06Z)
+#
+# (3) and (5) are the reason this can be a gate rather than a coin flip: the same
+# `make fixtures` read 3,168 s and 2,898 s on one corpus hours apart because
+# another agent had a core, so a number taken on a busy box judges nothing and
+# must never red a run. (4) is the same discipline one step out — a gate that
+# reds because nobody measured punishes the wrong run.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of verification_budget_selftest.sh — the same
+# eighteen properties planted under a temp directory (the mirror with its scripts symlink, the
+# over-bound default file, the thirteen planted timing files in the same order), each step's
+# output read as $(... 2>&1) read it, the same sed reads of the writers and the bounds, the same
+# lines and exit.
+#   CX_BIN=<cx> $(TOOL_CX) --allow-all scripts/verification_budget_selftest.cx
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def has scope=public ($s $n) [$strings:contains $s $n]]
+# printf '%s\n' "$out" | sed 's/^/        /'
+[?def indent scope=public impure ($s) [$say [$strings:join [?for [in $l [$strings:split $s "\n"]] [yield [$cat ('        ', $l)]]] "\n"]]]
+# run — $(... 2>&1) and $?: both streams in arrival order, trailing newlines cut
+[?def run scope=public impure ($t $cwd $argv $env)
+  [?let [= $log [$cat ($t, '/.run.log')]] [= $_c [$io:write-file $log '']]
+        [= $r [$process:run $argv cwd=$cwd env=$env capture={stdout: {append: $log}, stderr: :stdout}]]
+    [res rc=[?match $r [case [err$e] 127] [else $r@exit-code]] out=[$strings:trim-end-chars [?else [$io:read-file $log] ''] "\n"]]]]
+# sed -n "s/RX/\1/p" FILE: every matching line's group, newline-joined ('' when none)
+[?def sed-group scope=public impure ($rx $file)
+  [?let [= $r [$re:compile $rx]] [= $t [?else [$io:read-file $file] '']] [= $ls [$strings:split $t "\n"]]
+        [= $ls2 [?if [$strings:ends-with $t "\n"] [then [?to-sequence [?for [in $i [$range 1 [- [$count $ls] 1]]] [yield [$nth $ls $i]]]]] [else $ls]]]
+    [$strings:join [?to-sequence [?for [in $l $ls2] [in $m [?let [= $f [$re:find $r $l]] [?if [$present $f] [then ($f,)] [else ()]]]] [yield [$re:group $m 1]]]] "\n"]]]
+
+[?let
+  [= $root [$path:dirname [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]]
+  [= $cx0 [$env:var-or-default 'CX_BIN' 'deps/cx-core-code/vcx/target/cx']]
+  [= $cx-at [?if [$strings:starts-with $cx0 '/'] [then $cx0] [else [$cat ($root, '/', $cx0)]]]]
+  [= $_x [?if [and [$io:exists $cx-at] [= [$strings:slice [$string [$io:stat $cx-at]@permissions] 3 3] 'x']] [then null]
+           [else [?let [= $_ [$say [$cat ('verification-budget self-test: no cx binary at ', $cx0, ' — build first')]]] [$env:exit 2]]]]]
+  [= $cx [$cat ([$path:dirname [$path:absolute $cx-at]], '/', [$path:basename $cx-at])]]
+  [= $t [$string [$io:temp-dir 'verification_budget_selftest.']]]
+  [= $m [$cat ($t, '/mirror')]]
+  [= $_m [$io:make-dirs [$cat ($m, '/vcx/target')]]]
+  [= $_l [$io:symlink [$cat ($root, '/scripts')] [$cat ($m, '/scripts')]]]
+  [= $default-path [$cat ($m, '/vcx/target/verification_timings.cxd')]]
+  [= $step [?fn ($p) [$run $t $m ($cx, '--allow-read', '--allow-write', '--allow-env', 'scripts/check_verification_budget.cx')
+                       [?if [= $p ''] [then {}] [else {CX_VERIFICATION_TIMINGS: $p}]]]]]
+  [= $check [?fn ($n $want-exit $want-text $name $body)
+    [?let [= $p [$cat ($t, '/timings_', [$string $n], '.cxd')]]
+          [= $_w [?if [= $body ''] [then [?else [$io:remove $p] null]] [else [$io:write-file $p [$cat ($body, "\n")]]]]]
+          [= $r [$step $p]]
+          [= $ok [and [= $r@rc $want-exit] [$has $r@out $want-text]]]
+      [?if $ok [then [?let [= $_ [$say [$cat ('  ok   ', $name, ' (exit ', [$string $r@rc], ", says '", $want-text, "')")]]] true]]
+        [else [?let [= $_1 [$say [$cat ('  FAIL ', $name, ' — exit ', [$string $r@rc], ' (want ', [$string $want-exit], '), output:')]]] [= $_2 [$indent $r@out]] false]]]]]]
+  [= $_h [$say 'verification-budget self-test (#1562, issue 1582):']]
+  [= $_d [$io:write-file $default-path "[verification-timings\n  [timing name=fixture-grader seconds=4000 load=0.8 at=2026-10-09T10:00:00Z]\n  [timing name=fixture-grader seconds=4000 load=3.4 at=2026-10-09T11:00:00Z]\n  [timing name=fixture-grader seconds=4000 load=1.2 at=2026-10-09T12:00:00Z]\n  [timing name=fixture-grader seconds=4000 load=8 at=2026-10-09T13:00:00Z]\n  [timing name=fixture-grader seconds=4000 load=4.5 at=2026-10-09T14:00:00Z]]\n"]]
+  [= $_e [$io:write-file [$cat ($t, '/empty.cxd')] '']]
+  [= $re [$step [$cat ($t, '/empty.cxd')]]]
+  [= $e0 [?if [and [= $re@rc 0] [$has $re@out 'NOT MEASURED']]
+           [then [?let [= $_ [$say '  ok   an over-bound file at the DEFAULT path is not read when the override names an empty file (exit 0, NOT MEASURED)']] true]]
+           [else [?let [= $_1 [$say [$cat ('  FAIL the override did not displace the default path — exit ', [$string $re@rc], ' (want 0), output:')]]] [= $_2 [$indent $re@out]] false]]]]
+  [= $c0 [$check 1 1 "OVER BOUND" "five quiet rows whose median is over the bound FAIL the step" "[verification-timings\n  [timing name=fixture-grader seconds=4000 load=0.8 at=2026-10-09T10:00:00Z]\n  [timing name=fixture-grader seconds=1300 load=7.9 at=2026-10-09T11:00:00Z]\n  [timing name=fixture-grader seconds=900 load=3.2 at=2026-10-09T12:00:00Z]\n  [timing name=fixture-grader seconds=5000 load=8 at=2026-10-09T13:00:00Z]\n  [timing name=fixture-grader seconds=1250 load=4.5 at=2026-10-09T14:00:00Z]]"]]
+  [= $c1 [$check 2 0 "ok" "five quiet rows whose median is under the bound pass, one slow run among them" "[verification-timings\n  [timing name=fixture-grader seconds=900 load=3.1 at=2026-10-09T10:00:00Z]\n  [timing name=fixture-grader seconds=4000 load=6.0 at=2026-10-09T11:00:00Z]\n  [timing name=fixture-grader seconds=1000 load=2.4 at=2026-10-09T12:00:00Z]\n  [timing name=fixture-grader seconds=800 load=1.9 at=2026-10-09T13:00:00Z]\n  [timing name=fixture-grader seconds=1100 load=5.0 at=2026-10-09T14:00:00Z]]"]]
+  [= $c2 [$check 3 0 "not judged (load 26.92): 37m46s" "five LOADED rows over the bound are recorded, each reported not judged with its load, and never red the step" "[verification-timings\n  [timing name=union seconds=6189 load=11.2 at=2026-10-12T12:26:10Z]\n  [timing name=union seconds=5786 load=18.95 at=2026-10-12T14:04:52Z]\n  [timing name=union seconds=2266 load=26.92 at=2026-10-12T14:45:18Z]\n  [timing name=union seconds=4000 load=8.01 at=2026-10-12T15:18:55Z]\n  [timing name=union seconds=9000 load=110 at=2026-10-12T16:00:00Z]]"]]
+  [= $c3 [$check 4 0 "median 15m0s of 5 quiet" "loaded rows among quiet ones neither judge nor push the quiet ones out of the median" "[verification-timings\n  [timing name=union seconds=900 load=1.9 at=2026-10-12T08:00:00Z]\n  [timing name=union seconds=9999 load=55 at=2026-10-12T09:00:00Z]\n  [timing name=union seconds=1000 load=2.0 at=2026-10-12T10:00:00Z]\n  [timing name=union seconds=800 load=3.0 at=2026-10-12T11:00:00Z]\n  [timing name=union seconds=9999 load=90 at=2026-10-12T12:00:00Z]\n  [timing name=union seconds=1100 load=1.5 at=2026-10-12T13:00:00Z]\n  [timing name=union seconds=9999 load=26 at=2026-10-12T14:00:00Z]\n  [timing name=union seconds=900 load=1.7 at=2026-10-12T15:00:00Z]]"]]
+  [= $c4 [$check 5 0 "not judged (load ?)" "a row with no load at all is loaded: reported not judged, never red" "[verification-timings\n  [timing name=selected-run seconds=9999 at=2026-10-12T10:00:00Z]\n  [timing name=selected-run seconds=9999 at=2026-10-12T11:00:00Z]\n  [timing name=selected-run seconds=9999 at=2026-10-12T12:00:00Z]\n  [timing name=selected-run seconds=9999 at=2026-10-12T13:00:00Z]\n  [timing name=selected-run seconds=9999 at=2026-10-12T14:00:00Z]]"]]
+  [= $c5 [$check 6 0 "MEASURING" "four quiet rows judge nothing yet, however slow" "[verification-timings\n  [timing name=union seconds=99999 load=1.0 at=2026-10-12T10:00:00Z]\n  [timing name=union seconds=99999 load=1.0 at=2026-10-12T11:00:00Z]\n  [timing name=union seconds=99999 load=1.0 at=2026-10-12T12:00:00Z]\n  [timing name=union seconds=99999 load=1.0 at=2026-10-12T13:00:00Z]]"]]
+  [= $c6 [$check 7 1 "OVER BOUND" "only the LAST five quiet rows of a name count: old fast rows do not mask five slow ones" "[verification-timings\n  [timing name=selected-run seconds=100 load=5 at=2026-10-12T10:00:00Z]\n  [timing name=selected-run seconds=100 load=5 at=2026-10-12T11:00:00Z]\n  [timing name=selected-run seconds=100 load=5 at=2026-10-12T12:00:00Z]\n  [timing name=selected-run seconds=4000 load=5 at=2026-10-12T13:00:00Z]\n  [timing name=selected-run seconds=4000 load=5 at=2026-10-12T14:00:00Z]\n  [timing name=selected-run seconds=4000 load=5 at=2026-10-12T15:00:00Z]\n  [timing name=selected-run seconds=4000 load=5 at=2026-10-12T16:00:00Z]\n  [timing name=selected-run seconds=4000 load=5 at=2026-10-12T17:00:00Z]]"]]
+  [= $c7 [$check 8 0 "NOT MEASURED" "a bound with no measurement does not fail the step" ""]]
+  [= $c8 [$check 9 0 "not judged (written before 2026-10-11T14:49:40Z): 178m53s at 2026-10-10T21:39:51Z" "union rows stamped before the bound's rows-from are reported, never judged (the 2ddbf280c file)" "[verification-timings\n  [timing name=union seconds=1882 load=1.71 at=2026-10-10T19:00:00Z]\n  [timing name=union seconds=10733 load=3.25 at=2026-10-10T21:39:51Z]\n  [timing name=union seconds=1694 load=1.65 at=2026-10-11T00:42:57Z]\n  [timing name=union seconds=2253 load=4.01 at=2026-10-11T04:10:47Z]\n  [timing name=union seconds=956 load=2.91 at=2026-10-11T11:03:36Z]\n  [timing name=union seconds=3580 load=68.41 at=2026-10-11T14:27:15Z]\n  [timing name=union seconds=1210 load=7.42 at=2026-10-11T14:49:39Z]]"]]
+  [= $c9 [$check 10 0 "MEASURING — 1 of 5" "the one union row since rows-from measures; the early quiet rows do not fill the five" "[verification-timings\n  [timing name=union seconds=1882 load=1.71 at=2026-10-10T19:00:00Z]\n  [timing name=union seconds=10733 load=3.25 at=2026-10-10T21:39:51Z]\n  [timing name=union seconds=1694 load=1.65 at=2026-10-11T00:42:57Z]\n  [timing name=union seconds=2253 load=4.01 at=2026-10-11T04:10:47Z]\n  [timing name=union seconds=956 load=2.91 at=2026-10-11T11:03:36Z]\n  [timing name=union seconds=1210 load=7.42 at=2026-10-11T14:49:39Z]\n  [timing name=union seconds=1010 load=3.10 at=2026-10-11T18:20:00Z]]"]]
+  [= $c10 [$check 11 1 "OVER BOUND" "five quiet union rows since rows-from over the bound FAIL; fast early rows do not mask them" "[verification-timings\n  [timing name=union seconds=300 load=1.0 at=2026-10-11T10:00:00Z]\n  [timing name=union seconds=300 load=1.0 at=2026-10-11T11:00:00Z]\n  [timing name=union seconds=300 load=1.0 at=2026-10-11T12:00:00Z]\n  [timing name=union seconds=1500 load=2.0 at=2026-10-11T14:49:40Z]\n  [timing name=union seconds=1500 load=2.0 at=2026-10-11T15:00:00Z]\n  [timing name=union seconds=1500 load=2.0 at=2026-10-11T16:00:00Z]\n  [timing name=union seconds=300 load=2.0 at=2026-10-11T17:00:00Z]\n  [timing name=union seconds=1500 load=2.0 at=2026-10-11T18:00:00Z]]"]]
+  [= $c11 [$check 12 0 "NO ROW SINCE 2026-10-11T14:49:40Z (5 written before it" "selected-run rows with no at= or before rows-from judge nothing" "[verification-timings\n  [timing name=selected-run seconds=9999 load=1.0]\n  [timing name=selected-run seconds=9999 load=1.0]\n  [timing name=selected-run seconds=9999 load=1.0 at=2026-10-06T00:07:46Z]\n  [timing name=selected-run seconds=9999 load=1.0 at=2026-10-07T00:07:46Z]\n  [timing name=selected-run seconds=9999 load=1.0 at=2026-10-11T14:49:39Z]]"]]
+  [= $c12 [$check 13 1 "premerge-cx-slow  bound 20m0s  median 25m0s" "the premerge-* family judges each repository on its own: one slow repository FAILS, its fast sibling reads ok" "[verification-timings\n  [timing name=premerge-cx-fast seconds=30 load=4.0 at=2026-10-09T10:00:00Z]\n  [timing name=premerge-cx-fast seconds=30 load=4.0 at=2026-10-09T11:00:00Z]\n  [timing name=premerge-cx-fast seconds=30 load=4.0 at=2026-10-09T12:00:00Z]\n  [timing name=premerge-cx-fast seconds=30 load=4.0 at=2026-10-09T13:00:00Z]\n  [timing name=premerge-cx-fast seconds=30 load=4.0 at=2026-10-09T14:00:00Z]\n  [timing name=premerge-cx-slow seconds=1500 load=4.0 at=2026-10-09T10:00:00Z]\n  [timing name=premerge-cx-slow seconds=1500 load=4.0 at=2026-10-09T11:00:00Z]\n  [timing name=premerge-cx-slow seconds=1500 load=4.0 at=2026-10-09T12:00:00Z]\n  [timing name=premerge-cx-slow seconds=1500 load=4.0 at=2026-10-09T13:00:00Z]\n  [timing name=premerge-cx-slow seconds=1500 load=4.0 at=2026-10-09T14:00:00Z]]"]]
+  [= $rd [$step '']]
+  [= $d0 [?if [and [= $rd@rc 1] [$has $rd@out 'OVER BOUND']]
+           [then [?let [= $_ [$say '  ok   with no override the DEFAULT path is still what is read (exit 1, OVER BOUND)']] true]]
+           [else [?let [= $_1 [$say [$cat ('  FAIL the default path was not read with the override unset — exit ', [$string $rd@rc], ' (want 1), output:')]]] [= $_2 [$indent $rd@out]] false]]]]
+  [= $want [$sed-group "^\\[\\?const TIMINGS-DEFAULT '(.*)'\\]$" [$cat ($root, '/scripts/check_verification_budget.cx')]]]
+  [= $grader [$sed-group '^TIMINGS=\$ROOT/(.*)$' [$cat ($root, '/scripts/run_fixture_shards.sh')]]]
+  [= $verdict [$sed-group ".*pm-timings scope=private pure.*\\[\\$concat \\$c '/(.*)'\\]\\]$" [$cat ($root, '/flows/private-acts.cx')]]]
+  [= $w0 [?if [and [not [= $want '']] [= $grader $want] [= $verdict $want]]
+           [then [?let [= $_ [$say [$cat ('  ok   the fixture grader and the post-merge verdict write the file the step reads (', $want, ')')]]] true]]
+           [else [?let [= $_ [$say [$cat ("  FAIL the writers and the reader disagree — step reads '", $want, "', the fixture grader writes '", $grader, "', the post-merge verdict writes '", $verdict, "'")]]] false]]]]
+  [= $over [$cat [?to-sequence [?for [in $nm ('fixture-grader', 'selected-run', 'union')]
+             [yield [?let [= $g [$sed-group [$cat ('.*\[bound name=', $nm, ' seconds=([0-9][0-9]*).*')] [$cat ($root, '/scripts/verification_budget.cxd')]]]
+                      [?if [= $g ''] [then [$cat (' ', $nm, '=missing>1200')]]
+                        [else [?if [and [not [$has $g "\n"]] [> [$strings:to-int $g] 1200]] [then [$cat (' ', $nm, '=', $g, '>1200')]] [else '']]]]]]]]]]
+  [= $b0 [?if [= $over '']
+           [then [?let [= $_ [$say "  ok   every bound is within the owner's sentence (fixture grader, selected run and union 20 min)"]] true]]
+           [else [?let [= $_ [$say [$cat ("  FAIL bounds over the owner's sentence:", $over)]]] false]]]]
+  [= $pm [$cat ($t, '/premerge_timings.cxd')]]
+  [= $rp [$run $t [$env:cwd] ('bash', [$cat ($root, '/scripts/premerge_record.sh')])
+           {PREMERGE_LOAD: '42', PREMERGE_REPOS: 'cx-core-code cx-no-such-repo', CX_VERIFICATION_TIMINGS: $pm, CX_BIN: $cx}]]
+  [= $rq [$run $t [$env:cwd] ('bash', [$cat ($root, '/scripts/premerge_record.sh')])
+           {PREMERGE_LOAD: '3.5', PREMERGE_REPOS: 'cx-no-such-repo', CX_VERIFICATION_TIMINGS: $pm, CX_BIN: $cx}]]
+  [= $p0 [?if [and [= $rp@rc 0] [not [$io:exists $pm]]
+                   [?let [= $i [$strings:find $rp@out 'premerge-cx-core-code  not run (load 42)']]
+                     [and [$present $i] [$has [$strings:slice $rp@out [+ $i 1] [$strings:length $rp@out]] 'premerge-cx-no-such-repo  not run (load 42)']]]
+                   [$has $rq@out 'rc=clone-failed']]
+           [then [?let [= $_ [$say "  ok   premerge-record over the load bound runs nothing: each repository 'not run (load 42)', no row written; at load 3.5 it runs"]] true]]
+           [else [?let [= $_1 [$say [$cat ('  FAIL premerge-record', "'", 's load skip — exit ', [$string $rp@rc], ' (want 0), row file ', [?if [$io:exists $pm] [then 'written'] [else 'absent']], ', output:')]]]
+                       [= $_2 [$indent [$cat ($rp@out, "\n--- at load 3.5:\n", $rq@out)]]] false]]]]
+  [= $fails [$count [?for [in $v ($e0, $c0, $c1, $c2, $c3, $c4, $c5, $c6, $c7, $c8, $c9, $c10, $c11, $c12, $d0, $w0, $b0, $p0)] [where [not $v]] [yield 1]]]]
+  [= $_rm [?else [$io:remove-tree $t] null]]
+  [?if [> $fails 0]
+    [then [?let [= $_ [$say [$cat ('verification-budget self-test: ', [$string $fails], ' failure(s)')]]] [$env:exit 1]]]
+    [else [?let [= $_ [$say [$cat ('verification-budget self-test OK — 18 properties, all planted under ', $t, ' (never the real timings path)')]]] [$env:exit 0]]]]]

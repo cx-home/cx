@@ -1,0 +1,84 @@
+# scripts/corpus_audit.cx — the Rosetta corpus cadence audit.
+#
+# Runs each corpus/rosetta/NN-*.cx with `$CX_BIN <file>` (the standing run surface — the legacy
+# `cx eval` alias is never used, AGENTS.md rule 4), computes a live status, and compares it with
+# corpus/rosetta/AUDIT.md's "| slug | hash | status | ..." rows. Exit 0 when every live status
+# matches the recorded one, 1 on drift, 2 when the binary or AUDIT.md is missing.
+#
+# The recorded status is the FIRST token of the Status cell (#957): a cell carrying a parenthetical
+# ("blocked (expected pre-impl)") would otherwise never equal a bare live status. A status is one
+# word by construction: green / workaround / blocked.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of corpus_audit.sh, the same table and lines.
+#   CX_BIN=<cx> CORPUS_DIR=<dir> $(TOOL_CX) --allow-read --allow-env --allow-subprocess scripts/corpus_audit.cx
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def member scope=public ($x $xs) [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+# printf '%-22s %-18s %-12s %s\n'
+[?def row scope=public ($a $b $c $d)
+  [$cat ([$strings:pad-end $a 22 ' '], ' ', [$strings:pad-end $b 18 ' '], ' ', [$strings:pad-end $c 12 ' '], ' ', $d)]]
+
+# recorded — AUDIT.md's rows as [rec slug= status=] (status = the cell's first token), in file order.
+[?def recorded scope=public impure ($file)
+  [?to-sequence [?for [in $l [$strings:split-lines [?else [$io:read-file $file] '']]]
+                  [where [and [$present [$re:find [$re:compile '^\|[[:space:]]*[0-9]+-'] $l]]
+                              [not [$strings:starts-with $l '| Program ']] [not [$strings:starts-with $l '|---']]]]
+                  [yield [?let [= $cells [$strings:split $l '|']]
+                               [= $slug [?if [> [$count $cells] 1] [then [$strings:trim [$nth $cells 2]]] [else '']]]
+                               [= $st [?if [> [$count $cells] 3] [then [$strings:trim [$nth $cells 4]]] [else '']]]
+                           [rec slug=$slug status=[?if [= $st ''] [then ''] [else [$nth [$strings:split-whitespace $st] 1]]]]]]]]]
+[?def lookup scope=public ($recs $slug)
+  [?let [= $hits [?for [in $r $recs] [where [and [not [= $r@slug '']] [not [= $r@status '']] [= $r@slug $slug]]] [yield $r@status]]]
+    [?if [= [$count $hits] 0] [then ''] [else [$nth $hits 1]]]]]
+
+# live — [live status= notes=] for one program, as the bash computed it.
+[?def live scope=public impure ($bin $dir $base)
+  [?let [= $md [$cat ($dir, '/', $base, '.md')]]
+    [?if [not [$io:is-file $md]] [then [live status='missing' notes='no sibling .md']]
+      [else [?let [= $r [$process:run ($bin, [$cat ($dir, '/', $base, '.cx')]) timeout-ms=600000]]
+                  [= $rc [?match $r [case [err$e] 127] [else $r@exit-code]]]
+                  [= $out [?match $r [case [err$e] ''] [else [$cat ([$string $r@stdout], [$string $r@stderr])]]]]
+                  [= $mh [?for [in $l [$strings:split-lines [?else [$io:read-file $md] '']]]
+                           [where [$present [$re:find [$re:compile '^\*\*Status:\*\* [A-Z]+'] $l]]]
+                           [yield [$strings:lower [$re:group [$re:find [$re:compile '^\*\*Status:\*\* ([A-Z]+)'] $l] 1]]]]]
+                  [= $mds [?if [= [$count $mh] 0] [then ''] [else [$nth $mh 1]]]]
+              [?if [not [= $rc 0]] [then [live status='blocked' notes=[$cat ('exit=', [$string $rc])]]]
+                [else [?if [$strings:contains $out '[err code='] [then [live status='workaround' notes='err-value in stdout']]
+                  [else [?if [= $mds 'workaround'] [then [live status='workaround' notes='md records workaround']]
+                    [else [?if [= $mds 'blocked'] [then [live status='blocked' notes='md records blocked (ran but wrong output)']]
+                      [else [live status='green' notes='exit=0 + md=green']]]]]]]]]]]]]]
+
+[?let
+  [= $bin [$env:var-or-default 'CX_BIN' 'deps/cx-core-code/vcx/target/cx']]
+  [= $dir [$env:var-or-default 'CORPUS_DIR' 'corpus/rosetta']]
+  [= $audit [$cat ($dir, '/AUDIT.md')]]
+  [?if [not [$io:is-file $bin]] [then [?do [$say [$cat ('corpus-audit: missing ', $bin, " — run 'make build-vcx' first")]] [$env:exit 2]]]
+  [else [?if [not [$io:is-file $audit]] [then [?do [$say [$cat ('corpus-audit: missing ', $audit)]] [$env:exit 2]]]
+  [else [?let
+    [= $recs [$recorded $audit]]
+    [= $progs [$sort [?for [in $n [$io:list-dir $dir]]
+                       [where [and [$re:matches [$re:compile '^[0-9].*-.*\.cx$'] $n] [$io:is-file [$cat ($dir, '/', $n)]]]]
+                       [yield [$strings:replace-n $n '.cx' '' 1]]]]]
+    [= $_h [?do [$say [$row 'PROGRAM-SLUG' 'LIVE-STATUS' 'RECORDED' 'NOTES']] [$say [$row '------------' '-----------' '--------' '-----']]]]
+    [= $rows [?to-sequence [?for [in $base $progs]
+               [yield [?let [= $l [$live $bin $dir $base]] [= $rec [$lookup $recs $base]]
+                        [= $st [?if [= $rec ''] [then 'missing-from-audit'] [else $l@status]]]
+                        [= $drift [or [= $rec ''] [not [= $rec $l@status]]]]
+                        [= $_ [$say [$row $base $st [?if [= $rec ''] [then '<absent>'] [else $rec]] $l@notes]]]
+                    $drift]]]]]
+    [= $orphans [?to-sequence [?for [in $r $recs] [where [and [not [= $r@slug '']] [not [= $r@status '']] [not [$member $r@slug $progs]]]]
+                  [yield [$say [$row $r@slug 'missing-program' [$lookup $recs $r@slug] 'row has no .cx']]]]]]
+    [= $drift [or [> [$count [?for [in $d $rows] [where $d] [yield 1]]] 0] [> [$count $orphans] 0]]]
+    [= $_b [$say '']]
+    [?if [not $drift]
+      [then [?do [$say [$cat ('AUDIT: ALL ', [$string [$count $progs]], ' programs match recorded status')]] [$env:exit 0]]]
+      [else [?do [$say [$cat ('STATUS DRIFT — live status differs from recorded in ', $audit)]]
+                 [$say [$cat ('Resolution: either fix the program / status detector, or update ', $audit, '.')]]
+                 [$env:exit 1]]]]]]]]]]

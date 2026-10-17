@@ -26,7 +26,7 @@
 # absent gate= is enforced, and so is an absent register row.
 #
 # Graded by `make gates-manifest-gate` (`cx corpus conformance/gates_register.cxd`
-# from the checkout root), which is the claim check_conformance_coverage.sh
+# from the checkout root), which is the claim check_conformance_coverage.cx
 # carries for this suite.
 #]]
 

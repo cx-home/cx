@@ -1,0 +1,256 @@
+# scripts/release_linux.cx — the CXMACH-1 port of release_linux.sh (--help prints lines 2-30)
+#
+# scripts/release_linux.cx — build the LINUX release tarball(s) from this
+# checkout via Docker (#520: the GitHub org cannot allocate Actions runners,
+# so releases are cut locally on macOS — which left the public mirror with
+# only cx-darwin-arm64.tar.gz; downstream deployments need cx-linux-arm64
+# for containerized/appliance deployment and CI-on-Linux).
+#
+# Produces, per platform:
+#   dist/public/cx-linux-<arch>.tar.gz     (flat: cx, cx.h, libcx.so — the
+#                                           stable public name the quickstart
+#                                           curl resolves)
+#   dist/cx-<tag>-linux-<arch>.tar.gz      (nested internal artifact)
+#
+# The build runs in ubuntu-22.04 (the same base as .github/workflows/
+# release.yml) with the same dep set: build-essential + libsqlite3-dev (the
+# CX_ENGINES default carries -d cx_db_sqlite, which links -lsqlite3). RE2
+# is vendored (third_party/re2, #573) and builds in-tree. The checkout is
+# bind-mounted read-only and copied inside, so the artifact is built from
+# exactly this tree (submodules included) without dirtying the host's
+# vcx/target.
+#
+# Usage:
+#   cx --allow-all scripts/release_linux.cx vX.Y.Z            # linux-arm64 (native on Apple Silicon)
+#   cx --allow-all scripts/release_linux.cx --amd64 vX.Y.Z    # + linux-x86_64 (qemu emulation; slow)
+#   cx --allow-all scripts/release_linux.cx --dev vX.Y.Z      # dev-shape build (fast; build validation only:
+#                                               # stages and gates nothing)
+#
+# Docker-on-this-machine note: pulls hang behind the credsStore=desktop
+# helper; this script exports the documented bypass (anonymous auths config
+# + explicit Desktop socket) automatically when the default config would
+# hang. Read-only docker calls are unaffected.
+
+#
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of release_linux.sh — the same arguments, the
+# credsStore bypass, the #1674 pre-flight, the host-side stamps (CX_COMMIT, CX_VFORK, and CX_RELEASE
+# read from the pin's Makefile, failing closed), the same docker run per platform with the SAME
+# container program byte for byte (it runs in ubuntu:22.04, where no cx exists yet: it is the
+# bash text below, CONTAINER, with the host's values put where the shell spliced them), the same
+# lines and the same exits (set -euo pipefail: a failing step's own code). The container sources
+# scripts/lib/r22_profile_gate.sh, the shared staging library (CXMACH-1 batch 5 group (1)).
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+# $(cmd): rc and stdout with the trailing newlines dropped; stderr dropped.
+[?def out scope=public impure ($root $argv $env)
+  [?let [= $r [$process:run $argv cwd=$root env=$env capture={stdout: :pipe, stderr: :discard}]]
+    [?match $r [case [err$e] [res rc=127 out='']]
+      [else [res rc=$r@exit-code out=[$strings:trim-end-chars [$string $r@stdout] "\n"]]]]]]
+# a step under set -e: output where the script's goes; a failure exits with its code.
+[?def step scope=public impure ($root $argv $env)
+  [?let [= $r [$process:run $argv cwd=$root env=$env timeout-ms=86400000 capture={stdout: :inherit, stderr: :inherit}]]
+        [= $rc [?match $r [case [err$e] [?let [= $_ [$cry [$string $e@message]]] 127]] [else $r@exit-code]]]
+    [?if [= $rc 0] [then null] [else [$env:exit $rc]]]]]
+
+# The container program (bash in ubuntu:22.04), @@NAME@@ where the shell spliced '"$NAME"'. Every line
+# carries a leading | (the raw string would otherwise drop its first newline and its common
+# indentation); the bar is cut off line by line, so the text is the shell's byte for byte.
+[?def CONTAINER-TEXT scope=public () """|
+|      # pipefail: the lean copy is a `tar | tar` pipeline, and without it a
+|      # member the first tar cannot read exits 2 while the pipeline answers 0.
+|      set -o pipefail
+|      export DEBIAN_FRONTEND=noninteractive
+|      apt-get update -qq
+|      apt-get install -y -qq build-essential libsqlite3-dev git make >/dev/null
+|      # Lean copy: only what the build consumes (the full checkout is ~13 GB
+|      # with .git/bindings/build outputs — copying it fills the Docker VM).
+|      # Since RS-12 (#1674) that is the front door`s build files — Makefile,
+|      # VERSION, deps.cxd, registry/ (deps-present derives the bundled
+|      # sources from modules.cxd), vcx/ (the module-main stay-files the build
+|      # links into the cx-core-code pin), scripts/, conformance/ and docs/llm —
+|      # and deps/: every pinned checkout, WITH its .git (deps-present asks git
+|      # for each V pin`s tracked modules and the core line of the version
+|      # stamp is the pin`s own HEAD), without its build output. A symlink with
+|      # an absolute target is a link into the HOST tree (sync-cmd-split`s
+|      # stay-file links, the nested deps/ farm) and dangles here, so it is
+|      # dropped and the build recreates it; third_party/v is the patched fork
+|      # the build contract requires.
+|      mkdir -p /build && cd /src
+|      tar cf - \
+|        --exclude="deps/*/vcx/target" \
+|        --exclude=third_party/v/v \
+|        --exclude=third_party/re2/obj \
+|        Makefile VERSION deps.cxd registry vcx scripts conformance docs/llm deps third_party \
+|        | tar xf - -C /build
+|      find /build/deps -type l -lname "/*" -delete
+|      for tp in v re2; do
+|        if [ -d "/src-tp/$tp" ]; then
+|          rm -rf "/build/third_party/$tp"; mkdir -p "/build/third_party/$tp"
+|          ( cd "/src-tp/$tp" && tar cf - --exclude=./v --exclude=./obj --exclude=./.git . ) | tar xf - -C "/build/third_party/$tp"
+|        fi
+|      done
+|      # A host V that was BUILT carries thirdparty/tcc as a detached checkout of the host
+|      # architecture. Without vc/v.c (local=0) the fork refreshes that tree with
+|      # `git pull --rebase`, which refuses a detached HEAD and stops the build before cx
+|      # (core 10-13, PGO-1 proof run 1): drop it, and the fork clones tccbin at its pin.
+|      if [ @@V_LOCAL@@ != 1 ]; then rm -rf /build/third_party/v/thirdparty/tcc; fi
+|      cd /build
+|      git config --global --add safe.directory "*"
+|      # local=1: build V from the vendored vc/tcc checkouts as-is when the
+|      # host carried them (the copied tcc tree is on a detached HEAD, so the
+|      # default refresh would fail on it); otherwise the fork fetches both at
+|      # its pinned commits.
+|      if [ @@V_LOCAL@@ = 1 ]; then make -C third_party/v local=1; else make -C third_party/v; fi
+|      make @@BUILD_TARGET@@ CX_COMMIT=@@CX_COMMIT@@ CX_VFORK=@@CX_VFORK@@ CX_RELEASE=@@CX_RELEASE@@
+|      # I4 (#651/#516): the §4 profile builds, through the front door`s own
+|      # target (vcx/ has no Makefile since RS-12; the sub-make is the pin`s).
+|      # PROFILE_BUILD_JOBS=1: the profile matrix builds serially here, as the
+|      # pre-split build step did. Measured in an 8 GB Docker VM: the root Makefile`s
+|      # default five concurrent -prod V compiles were OOM-killed (cli-cli,
+|      # cli-embed: "Killed"), _gate_evidence/pipeline_batchh2/1674-linux-build.log.
+|      # -o build-vcx (PGO-1): build-profiles depends on build-vcx, whose -O2 recipe would
+|      # relink the PGO cx just built over it (a different PROD_CFLAGS is a different build
+|      # id), and the platform tarball below would ship the plain build.
+|      make @@PROFILES_TARGET@@ @@PROFILES_OLD@@ PROFILE_BUILD_JOBS=1 CX_COMMIT=@@CX_COMMIT@@ CX_VFORK=@@CX_VFORK@@ CX_RELEASE=@@CX_RELEASE@@
+|      if [ @@DEV@@ = 1 ]; then
+|        echo "-- dev build: the -dev artifacts built; nothing staged, R2.2 not run (build validation only)"
+|        exit 0
+|      fi
+|      # Staging is the shared implementation (RULED: PGL-1, #741): the same
+|      # r22_* functions the release flow`s package act stages the darwin
+|      # assets with, which read the artifacts where the split build lands
+|      # them (r22_vcx_target, r22_include_dir — #1670).
+|      . scripts/lib/r22_profile_gate.sh
+|      T=linux-@@arch@@
+|      mkdir -p "/tmp/$T"
+|      r22_collect_platform_files "/tmp/$T"
+|      ( cd /tmp && tar czf "/out/cx-@@TAG@@-$T.tar.gz" "$T/" )
+|      r22_tar_platform "/tmp/$T" /out/public "$T"
+|      # I4: the profile tarballs — cx-<profile>-linux-<arch>.tar.gz.
+|      r22_stage_profiles /out/public "$T"
+|      echo "-- engines probe:"; "/tmp/$T/cx" -v || true
+|      # R2.2 (#651/#516 remediation register, ruled (a) 2026-08-09): BLOCKING
+|      # per-profile install verification, linux build — the same contract as
+|      # the package act of the release flow: every staged tarball must extract the way the
+|      # installer extracts it and its binary must report the expected profile
+|      # line, or the cut dies here (this script failing fails the release flow).
+|      # RULED: PGL-1 (#741) — ONE implementation, shared with the release flow and
+|      # with the standalone pre-cut step. RLOAD-1 (#1131): R2.2 loads every
+|      # staged library through the extraction probe, built here from the pin.
+|      make build-extraction-probe
+|      r22_profile_gate /out/public "$T" /linux
+|      echo "-- release gate (R2.2/linux): per-profile install verification PASSED ($T platform/data/embed/cli)"
+|    """]
+[?def CONTAINER scope=public ()
+  [$strings:join [?to-array [?for [in $l [$strings:split [$CONTAINER-TEXT] "\n"]] [yield [$strings:slice $l 2 [$strings:length $l]]]]] "\n"]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $self [$path:absolute [$nth $argv 1]]]
+  [= $root [$path:dirname [$path:dirname $self]]]
+  [= $args [?to-array [?for [in $i [$range 2 [$count $argv]]] [yield [$nth $argv $i]]]]]
+  [= $opt [?loop [= $i 1] [= $acc [o amd64='0' dev='0' tag='']]
+            [?if [> $i [$count $args]] [then [break $acc]]
+              [else [?let [= $a [$nth $args $i]]
+                [?if [= $a '--amd64'] [then [continue [+ $i 1] [o amd64='1' dev=$acc@dev tag=$acc@tag]]]
+                  [else [?if [= $a '--dev'] [then [continue [+ $i 1] [o amd64=$acc@amd64 dev='1' tag=$acc@tag]]]
+                    [else [?if [or [= $a '-h'] [= $a '--help']]
+                      [then [?let [= $ls [$strings:split [$io:read-file $self] "\n"]]
+                                  [= $_ [?for [in $j [$range 2 [?if [< [$count $ls] 30] [then [$count $ls]] [else 30]]]] [yield [$say [$nth $ls $j]]]]]
+                              [$env:exit 0]]]
+                      [else [?if [$re:find [$re:compile '^v[0-9]'] $a]
+                        [then [continue [+ $i 1] [o amd64=$acc@amd64 dev=$acc@dev tag=$a]]]
+                        [else [?let [= $_ [$cry [$cat ('Unknown arg: ', $a)]]] [$env:exit 2]]]]]]]]]]]]]]]
+  [= $amd64 [= $opt@amd64 '1']]
+  [= $dev [= $opt@dev '1']]
+  [= $tag [?if [not [= $opt@tag '']] [then $opt@tag]
+            [else [$cat ('v', [$strings:replace [$strings:replace [$strings:replace [$strings:replace [$io:read-file [$cat ($root, '/VERSION')]] ' ' ''] "\n" ''] "\t" ''] "\r" ''])]]]]
+  # credsStore=desktop hangs every pull on this machine — the anonymous bypass config when the user
+  # config would invoke the helper.
+  [= $home [$env:var-or-default 'HOME' '']]
+  [= $creds [$strings:contains [?else [$io:read-file [$cat ($home, '/.docker/config.json')]] ''] '"credsStore"']]
+  [= $dh [$env:var-or-default 'DOCKER_HOST' '']]
+  [= $dc [$env:var-or-default 'DOCKER_CONFIG' '']]
+  [= $denv [?if $creds
+             [then {DOCKER_HOST: [?if [= $dh ''] [then [$cat ('unix://', $home, '/.docker/run/docker.sock')]] [else $dh]],
+                    DOCKER_CONFIG: [?if [= $dc ''] [then '/tmp/cx-docker-anon'] [else $dc]]}]
+             [else {}]]]
+  [= $_dc [?if $creds
+            [then [?let [= $d [?if [= $dc ''] [then '/tmp/cx-docker-anon'] [else $dc]]]
+                        [= $_m [$io:make-dirs $d]]
+                    [?if [$io:is-file [$cat ($d, '/config.json')]] [then null]
+                      [else [$io:write-file [$cat ($d, '/config.json')] "{\"auths\":{\"https://index.docker.io/v1/\":{}}}\n"]]]]]
+            [else null]]]
+  # Pre-flight (#1674): deps/ must hold the pinned checkouts; the container has no cx to fetch them.
+  [= $_pf [?if [and [$io:is-directory [$cat ($root, '/deps/cx-core-code/vcx')]]
+                    [= [$out $root ('make', '-s', '--no-print-directory', 'deps-present') $denv]@rc 0]]
+            [then null]
+            [else [?let [= $_a [$cry 'release_linux.cx: deps/ does not hold the pinned checkouts deps.cxd names']]
+                        [= $_b [$cry '(make deps-present refuses). Run `make deps-sync` first: the container']]
+                        [= $_c [$cry 'copies deps/ from this tree and has no cx of its own to fetch them with.']]
+                    [$env:exit 2]]]]]
+  [= $vlocal [?if [$io:is-file [$cat ($root, '/third_party/v/vc/v.c')]] [then '1'] [else '0']]]
+  # A worktree's third_party/<x> may be a SYMLINK to the main checkout's submodule: its real path
+  # is mounted beside /src and copied in from there.
+  [= $tpm [?to-array [?for [in $tp ('v', 're2')]
+                        [where [$io:is-symlink [$cat ($root, '/third_party/', $tp)]]]
+                        [yield [$cat ([$out [$cat ($root, '/third_party/', $tp)] ('pwd', '-P') {}]@out, ':/src-tp/', $tp, ':ro')]]]]]
+  [= $build-target [?if $dev [then 'build-vcx-dev'] [else 'build-vcx-pgo']]]
+  [= $profiles-target [?if $dev [then 'build-profiles-dev'] [else 'build-profiles']]]
+  [= $profiles-old [?if $dev [then ''] [else '-o build-vcx']]]
+  [= $sde [?let [= $r [$out $root ('git', 'log', '-1', '--format=%ct') {}]] [?if [= $r@rc 0] [then $r@out] [else [$env:exit $r@rc]]]]]
+  [= $commit [?let [= $r [$out $root ('git', 'rev-parse', '--short', 'HEAD') {}]] [?if [= $r@rc 0] [then $r@out] [else 'unknown']]]]
+  [= $vfork [?let [= $r [$out $root ('git', '-C', 'third_party/v', 'rev-parse', '--short', 'HEAD') {}]] [?if [= $r@rc 0] [then $r@out] [else 'unknown']]]]
+  # Release provenance (#979, RULED: CO-4): read from the pin's Makefile on the host, where the tag
+  # and the working tree are; only release|dev accepted; a failing probe exits with its code, as the
+  # shell's set -e did on the assignment.
+  [= $rel0 [?let [= $r [$out $root ('make', '-s', '--no-print-directory', '-C', 'deps/cx-core-code/vcx', [$cat ('CX_STAMP_ROOT=', $root)], 'print-CX_RELEASE') $denv]]
+             [?if [not [= $r@rc 0]] [then [$env:exit $r@rc]]
+               [else [?let [= $ls [$strings:split $r@out "\n"]]
+                       [$strings:replace [$strings:replace [$strings:replace [$nth $ls [$count $ls]] ' ' ''] "\t" ''] "\r" '']]]]]]
+  [= $rel1 [?if [or [= $rel0 'release'] [= $rel0 'dev']] [then $rel0] [else '']]]
+  [= $rel [?if [not [= $rel1 '']] [then $rel1]
+            [else [?if $dev [then 'dev']
+              [else [?let [= $_a [$cry 'release_linux.cx: could not read CX_RELEASE from deps/cx-core-code/vcx/Makefile']]
+                          [= $_b [$cry '(make -C deps/cx-core-code/vcx print-CX_RELEASE answered neither release nor dev);']]
+                          [= $_c [$cry 'refusing to stamp release artifacts with a guessed provenance.']]
+                      [$env:exit 2]]]]]]]
+  [= $build-one [?fn ($platform $arch)
+    [?let [= $pub [$cat ('cx-linux-', $arch, '.tar.gz')]]
+          [= $nested [$cat ('cx-', $tag, '-linux-', $arch, '.tar.gz')]]
+          [= $_h [$say [$cat ('== linux-', $arch, ' (', $platform, ', ', $build-target, ') ==')]]]
+          [= $_m [$io:make-dirs [$cat ($root, '/dist/public')]]]
+          [= $prog [?let [= $kv (('V_LOCAL', $vlocal), ('BUILD_TARGET', $build-target), ('CX_COMMIT', $commit), ('CX_VFORK', $vfork),
+                                ('CX_RELEASE', $rel), ('PROFILES_TARGET', $profiles-target), ('PROFILES_OLD', $profiles-old),
+                                ('DEV', [?if $dev [then '1'] [else '0']]), ('arch', $arch), ('TAG', $tag))]
+                     [?loop [= $i 1] [= $s [$CONTAINER]]
+                       [?if [> $i [$count $kv]] [then [break $s]]
+                         [else [continue [+ $i 1] [$strings:replace $s [$cat ('@@', [$nth [$nth $kv $i] 1], '@@')] [$nth [$nth $kv $i] 2]]]]]]]]
+          [= $mounts [?loop [= $i 1] [= $acc ()]
+                     [?if [> $i [$count $tpm]] [then [break $acc]]
+                       [else [continue [+ $i 1] ([?splice $acc], '-v', [$nth $tpm $i])]]]]]
+          [= $dargv ('docker', 'run', '--rm', '--platform', $platform, '-v', [$cat ($root, ':/src:ro')],
+                     [?splice $mounts], '-v', [$cat ($root, '/dist:/out')],
+                     '-e', [$cat ('SOURCE_DATE_EPOCH=', $sde)],
+                     '-e', [$cat ('R22_EXPECT_HEADLINE=', [$env:var-or-default 'R22_EXPECT_HEADLINE' ''])],
+                     'ubuntu:22.04', 'bash', '-euc', $prog)]
+          [= $_d [$step $root $dargv $denv]]
+      [?if $dev [then [$say '   → dev build validated; nothing staged']]
+        [else [?let [= $_s [$process:run ('shasum', '-a', '256', $pub) cwd=[$cat ($root, '/dist/public')] capture={stdout: :inherit, stderr: :inherit}]]
+                [$say [$cat ('   → dist/public/', $pub, ' + dist/', $nested)]]]]]]]]
+  [= $_a [$build-one 'linux/arm64' 'arm64']]
+  [= $_x [?if $amd64 [then [$build-one 'linux/amd64' 'x86_64']] [else null]]]
+  [= $_e [?for [in $l ('', [$cat ('Done. Upload with the release: gh release upload ', $tag, ' dist/public/cx-*linux*.tar.gz --clobber')],
+                       "(and refresh dist/SHA256SUMS.txt — the release flow's package act does — to include the linux tarballs before uploading it)")]
+           [yield [$say $l]]]]
+  [$env:exit 0]]

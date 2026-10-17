@@ -164,7 +164,7 @@ printf '%s\n' "$CHANGED" | sed 's/^/  /'
 #   - conformance/** feeds every corpus-consuming step;
 #   - spec/** feeds the doc/consistency gates.
 # ── The ring DAG, once (RULED: VC-22) ────────────────────────────────────
-# Authority: scripts/ring_import_gate.sh, which enforces these edges
+# Authority: scripts/ring_import_gate.cx, which enforces these edges
 # grep-level with zero tolerance. Stated here so a step's input set is
 # derived from the import contract rather than re-guessed per row.
 #
@@ -252,7 +252,7 @@ step_globs() {
     # vcx/tests/ is `module main` importing code + platform + cx + fixtures.
     test-vcx-suite)                echo "$RING_LIB vcx/tests/* $RING_SUP conformance/* $RING_EMBED ledger/* _gate_evidence/*" ;;
     # #1216: the serial wall-clock step — the binary-driving closure plus its own dir.
-    check-conformance-coverage)    echo 'conformance/* scripts/check_conformance_coverage.sh vcx/tests/runners/conformance/*' ;;
+    check-conformance-coverage)    echo 'conformance/* scripts/check_conformance_coverage.cx vcx/tests/runners/conformance/*' ;;
     # ── THE SERIAL TAIL, narrowed (#1516, RULED: RUN-1) ─────────────────────
     # These two run ALONE after the -j storm drains, so their minutes are
     # wall-clock minutes nothing else overlaps: 660 s for the profile gate,
@@ -421,7 +421,7 @@ step_globs() {
     # CLI/cmd side, the embed estate beyond stdlib/, and the conformance files
     # no shard grades: a CSS byte in an x/ module and a docs/llm regeneration
     # grade nothing here, and they were selecting an 11-minute serial step.
-    test-profile-gate)             echo "$RING_LIB stdlib/* conformance/code.cxd conformance/stdlib/* conformance/platform/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/runners/profile_gate/* vcx/tests/fixtures_grader/* scripts/profile_gate_files_for_branch.sh third_party/*" ;;
+    test-profile-gate)             echo "$RING_LIB stdlib/* conformance/code.cxd conformance/stdlib/* conformance/platform/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/runners/profile_gate/* vcx/tests/fixtures_grader/* scripts/profile_gate_files_for_branch.cx third_party/*" ;;
     # #1560 (RULED: VCOST-1): the selection self-test reads only the helper it
     # pins and its own source, so it runs when either moves and not otherwise.
     # #1598 adds the profile gate's runner directory: the helper's ALL rule is
@@ -429,24 +429,24 @@ step_globs() {
     # row by name, so the directory's shape — a file added to it, the directory
     # renamed — is part of the pair's surface. One second of step, and the
     # manifest over-includes on doubt.
-    check-profile-gate-selection)  echo "scripts/profile_gate_files_for_branch.sh scripts/profile_gate_selection_selftest.sh vcx/tests/runners/profile_gate/*" ;;
+    check-profile-gate-selection)  echo "scripts/profile_gate_files_for_branch.cx scripts/profile_gate_selection_selftest.cx vcx/tests/runners/profile_gate/*" ;;
     # #1562 (RULED: VCOST-1): the budget step reads the bounds manifest and the
     # timings a run leaves behind; the self-test reads the step and its own
     # source. Neither reads the tree, so neither runs when the tree moves.
     check-verification-budget)     echo "scripts/check_verification_budget.cx scripts/verification_budget.cxd" ;;
     premerge-record)               echo "scripts/premerge_record.sh scripts/verification_timings_lib.sh deps.cxd" ;;
-    check-verification-budget-selftest) echo "scripts/check_verification_budget.cx scripts/verification_budget_selftest.sh" ;;
+    check-verification-budget-selftest) echo "scripts/check_verification_budget.cx scripts/verification_budget_selftest.cx" ;;
     check-perf-settle-selftest) echo "flows/private-acts.cx scripts/perf_settle_selftest.cx" ;;
     # RULED: RUN-2: the keep-going selftest reads the `test:` recipe, its own
     # source and (#1758, B3) scripts/test_changed.sh's SERIAL_TAIL.
-    check-storm-keep-going)        echo "Makefile scripts/storm_keep_going_selftest.sh scripts/test_changed.sh" ;;
+    check-storm-keep-going)        echo "Makefile scripts/storm_keep_going_selftest.cx scripts/test_changed.sh" ;;
     # issue 1583 (RULED: RUN-5): the timings WRITER selftest reads the library
     # and its own source, and plants everything under mktemp.
     check-verification-timings)    echo "scripts/verification_timings_lib.sh scripts/verification_timings_selftest.sh" ;;
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
     # ledger-index-check (#1438) regenerates ledger/README.md from the store and
     # compares: its inputs are every ledger page and the generator itself.
-    ledger-index-check)            echo 'ledger/* scripts/ledger_index.cx scripts/ledger_subject_ids_selftest.sh' ;;
+    ledger-index-check)            echo 'ledger/* scripts/ledger_index.cx scripts/ledger_subject_ids_selftest.cx' ;;
     # ledger-edit-map-check (#1329, RULED: 1329-a, EDMAP-1) reads every edit map
     # against the owning repository's history: the pages, the allocation that
     # names the owner, the pins that name its sha, and the step with its selftest.
@@ -466,7 +466,7 @@ step_globs() {
     test-deps-pins)                echo 'conformance/deps_pins.cxd scripts/check_deps_pins_fixtures.cx scripts/deps_pins.cx scripts/deps_sync.cx scripts/deps_pins_render.cx scripts/deps_old_cx_selftest.cx scripts/bundle_check.cx scripts/bundle_sources.cx deps.cxd spec/03-approved/process/repository-dependency-pins.md' ;;
     # SITE-1: the bootstrap script and its own selftest -- nothing else
     # changes what this step grades.
-    check-deps-bootstrap-token)    echo 'scripts/deps_bootstrap.sh scripts/deps_bootstrap_selftest.sh' ;;
+    check-deps-bootstrap-token)    echo 'scripts/deps_bootstrap.sh scripts/deps_bootstrap_selftest.cx' ;;
     # the bundled-source table and the grader that reads it -- the corpus is
     # pure described trees, so nothing else changes what it asserts (#1589 item 23).
     test-bundle-sources)           echo 'conformance/bundle_sources.cxd scripts/check_bundle_sources_fixtures.cx scripts/bundle_sources.cx spec/03-approved/process/repository-dependency-pins.md' ;;
@@ -527,7 +527,7 @@ step_globs() {
     check-build-slot)              echo 'scripts/build-slot.sh scripts/build_slot_selftest.cx' ;;
     # #1450: the isolation guard reads the two bench scripts and its own source;
     # it plants its artifacts, so nothing else in the tree is an input.
-    check-bench-isolation)         echo 'scripts/run_bench_json.cx scripts/compare_bench.cx scripts/bench_isolation_selftest.sh' ;;
+    check-bench-isolation)         echo 'scripts/run_bench_json.cx scripts/compare_bench.cx scripts/bench_isolation_selftest.cx' ;;
     # #1884: the paired perf record — the runtime it measures (pin rows, front-door
     # modules, the V fork), the two bench scripts and the recipe; the same set
     # the landing gate calls a runtime diff.
@@ -582,7 +582,7 @@ step_globs() {
     # a cx-core-code runner compiled -prod with this tree's V.
     # #1730: the two programs whose def calls were bare heads, and their selftest.
     check-bare-head-calls)         echo 'scripts/bare_head_calls_selftest.cx bench/parallel-alloc/measure.cx scripts/consolidate_tests.cx' ;;
-    test-web-component-offline)    echo 'scripts/test_web_component_offline.sh scripts/gen_guide/playground/vendor/* deps.cxd registry/modules.cxd' ;;
+    test-web-component-offline)    echo 'scripts/test_web_component_offline.cx scripts/gen_guide/playground/vendor/* deps.cxd registry/modules.cxd' ;;
     bench-code-pattern-compile)    echo 'deps.cxd registry/modules.cxd vcx/* third_party/*' ;;
     # the db corpus on sqlite, postgres and mysql against real servers in
     # containers, run from the pinned checkout by a cx binary this tree builds
@@ -594,12 +594,12 @@ step_globs() {
     check-serial-retry-rosters)    echo 'Makefile vcx/*' ;;
     # #1448: the partition guard reads the manifest, the corpus it partitions
     # and the shard test files it holds to it.
-    check-fixture-shard-manifest)  echo 'vcx/tests/fixtures_grader/fixture_shards.cxd conformance/stdlib/* conformance/platform/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/code_eval_fixtures_shards_test.v scripts/check_fixture_shard_manifest.sh' ;;
+    check-fixture-shard-manifest)  echo 'vcx/tests/fixtures_grader/fixture_shards.cxd conformance/stdlib/* conformance/platform/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/code_eval_fixtures_shards_test.v scripts/check_fixture_shard_manifest.cx' ;;
     # #1370: the shim archives' alignment — the rules that write them and the checker.
-    check-shim-archives)           echo 'vcx/Makefile scripts/check_archive_alignment.sh vcx/deps/re2_shim/* vcx/arrow/shim/*' ;;
+    check-shim-archives)           echo 'vcx/Makefile scripts/check_archive_alignment.cx vcx/deps/re2_shim/* vcx/arrow/shim/*' ;;
     # pure shell over canned logs — its only inputs are the classifier and the
     # SKIP_UNUSED_ESCAPE_PROBE that consumes it (\#1337).
-    check-build-failure-classifier) echo 'Makefile scripts/classify_v_build_failure.sh' ;;
+    check-build-failure-classifier) echo 'Makefile scripts/classify_v_build_failure.cx' ;;
     # 1170-f: every playground diagram parses and has no structural fault. Inputs:
     # the engine (the wasm bundle is built from it), the emitters, the playground
     # page and its example corpus, the gate itself.
@@ -608,7 +608,7 @@ step_globs() {
     # corpus-audit (RULED: VC-28) runs every rosetta program through the built
     # binary and fails on drift from AUDIT.md, so it depends on the corpus AND
     # on anything that changes the binary's behaviour.
-    corpus-audit)                  echo "corpus/* $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/corpus_audit.sh" ;;
+    corpus-audit)                  echo "corpus/* $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/corpus_audit.cx" ;;
     # bench/repr (#1119 W1) compiles the `cx` module as SOURCE and measures the
     # live tree it builds, so it depends on Ring 0 and on nothing above it.
     # A cx-core-data pin move (deps.cxd) moves the module it compiles (#1822).
@@ -636,7 +636,7 @@ step_globs() {
     # the adversarial -usecache proof (scripts/vcache_soundness_gate.sh): it
     # REBUILDS the tree from source under mutated inputs and compares behaviour,
     # so its surface is the whole compiled closure plus the gate itself.
-    check-selection-manifest)      echo 'Makefile scripts/test_changed.sh scripts/check_selection_manifest.sh scripts/test_changed_selftest.sh vcx/tests/* conformance/*' ;;
+    check-selection-manifest)      echo 'Makefile scripts/test_changed.sh scripts/check_selection_manifest.cx scripts/test_changed_selftest.sh vcx/tests/* conformance/*' ;;
     check-vcache-soundness)        echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/vcache_soundness_gate.sh scripts/vcache_soundness_memo.cx" ;;
     # #1675: the concurrency fixture over the same gate, plus its own script.
     check-vcache-soundness-selftest) echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/vcache_soundness_gate.sh scripts/vcache_soundness_selftest.sh scripts/vcache_soundness_memo.cx scripts/vcache_soundness_memo_selftest.cx" ;;
@@ -645,15 +645,15 @@ step_globs() {
     check-contract-revision)       echo 'spec/* vcx/* scripts/check_contract_revision.sh scripts/gen_contract_revision.sh' ;;
     # reads the BUILT artifacts' link surface (vcx/target/cx, libcx.dylib), so
     # anything that changes what is linked into them is an input.
-    check-portable-links)          echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/check_portable_links.cx" ;;
+    check-portable-links)          echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/check_portable_links.cx scripts/portable_links.cx" ;;
     # #1670: reads whatever is CURRENTLY STAGED under dist/public/ (usually
     # nothing — it SKIPs then) plus the gate itself and the release scripts
     # that stage/call it, so a change to the staging shape or the gate logic
     # re-runs it.
-    check-release-asset-links)     echo 'dist/public/* scripts/release_asset_links_gate.cx scripts/lib/r22_profile_gate.sh flows/release.flow.cx flows/ci-acts.cx scripts/release_linux.sh scripts/release_profile_gate.sh' ;;
+    check-release-asset-links)     echo 'dist/public/* scripts/release_asset_links_gate.cx scripts/lib/r22_profile_gate.sh flows/release.flow.cx flows/ci-acts.cx scripts/release_linux.cx scripts/release_profile_gate.sh' ;;
     # #1012's resurrection guards over the umbrella manifests: the manifests,
     # the driver and its selftest, and the umbrella test files they hold to.
-    check-consolidation-manifests) echo 'scripts/consolidation/* scripts/consolidate_tests.sh scripts/consolidate_tests.cx scripts/consolidate_tests_selftest.sh vcx/tests/*' ;;
+    check-consolidation-manifests) echo 'scripts/consolidation/* scripts/consolidate_tests.sh scripts/consolidate_tests.cx scripts/consolidate_tests_selftest.cx vcx/tests/*' ;;
     # the seam register against the platform + stdlib spec pages it is derived
     # from (scripts/check_composition_seams.cx reads spec/03-approved/{platform,stdlib}).
     check-composition-seams)       echo 'spec/* scripts/check_composition_seams.cx' ;;

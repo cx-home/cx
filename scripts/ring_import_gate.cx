@@ -1,0 +1,192 @@
+# scripts/ring_import_gate.cx — the §3 import contract, enforced grep-level, zero-tolerance.
+#
+# Partition spec (cx-decisions:spec/03-approved/core/cx_partition.md §3): rings are pure import
+# contracts. This gate lands at I0 BEFORE any code moves, so the seam can never regress silently —
+# a synthetic violation MUST fail the step.
+#
+# Two rings, then groups (partition spec §2–§3, RULED: RS-1):
+#   Ring 0  = vcx/cx        — imports nothing internal (V stdlib only).
+#   Ring 1  = vcx/code      — MAY import Ring 0 (cx) only.
+#   platform group = the V product modules (RS-24: each vcx/<vmodule>/ registry/repos.cxd declares;
+#                    the residue vcx/platform they split out of is gone) — MAY import the rings (cx,
+#                    code) and what its manifest declares: the leaf siblings the spec names for
+#                    platform consumption (cxstore, arrow, transport) and one another. Nothing else.
+#   leaves  = vcx/arrow, vcx/transport — consumed FROM the platform group; themselves import Ring 0
+#                    (cx) only (+ their own submodules).
+#   engine  = vcx/cxstore   — Ring-0-only AND evaluator-free (spec §2).
+#   cli lyr = vcx/cli, vcx/cmd_data — the data/cli-profile surface: MUST stay platform-FREE (no
+#                    platform-group import), or the data/cli profiles would pull the daemon stack (§4).
+#   grading = cx-core-data's corpus grading cores (RULED: D56a) — the document, diff, lint, fmt and
+#                    streaming-write cores and the `cx corpus` body both profiles run: MAY import cx and
+#                    fixtures only (never code), so the data profile can link it; cmd_data may import it.
+# The pin direction BETWEEN platform products is not this gate's: that is
+# scripts/product_import_gate.cx (RULED: RS-24).
+#
+# Hardened per the adversarial audits:
+#   M34  — deny-sets are DERIVED from the live sibling-dir set under vcx/, so a future sibling can
+#          never escape by omission.
+#   M35  — `import` is not the only edge: `#flag`/`#include` can link a ring's objects against a
+#          sibling's C artifacts.
+#   F-17 (R3.10) — the C-edge check is widened to EVERY way a sibling path can be named, and to the
+#          C sources themselves:
+#            • `@VMODROOT/<sib>`                (V #flag/#include)
+#            • `@VMODROOT/../vcx/<sib>`         (up-and-back-down escape)
+#            • `../<sib>` and `../../vcx/<sib>` (relative includes, incl. .c/.h)
+#          `.c`/`.h` files in a ring dir are scanned too (a raw C include of a sibling header
+#          bypassed the .v-only scan). The regex_re2.v allowlist is narrowed to the TWO EXACT edge
+#          PATHS (deps/re2_shim, target), not the whole sibling dir. arrow/transport and the
+#          platform-free cli/cmd_data checks are added. Each new class is red-on-synthetic
+#          (scripts/ring_import_gate_selftest.cx).
+#
+# Tests (*_test.v) may import anything — spec §3.
+#
+# RING_GATE_ROOT: the selftest points the gate at an ISOLATED fake tree — synthetic violation files
+# must never touch the live vcx/ (a probe file in vcx/cx/ would be COMPILED by any concurrently-
+# running build job; that race broke test-extraction-gate under parallel make, 2026-08-07).
+# cx-core-data's modules (cx, cli, cmd_data, arrow, fixtures, grading) left vcx/ for its pinned
+# checkout (RULED: RS-7, RS-12). They are still cx's rings and still scanned: ring-dir answers where
+# a module lives, and a module in NEITHER place is a failure — scan skips a missing directory, and a
+# ring the gate silently stopped reading would pass every tree. RING_GATE_PIN moves the pin's vcx/.
+# The files are listed by find(1) in its own order, so the findings read in the order they always did.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of ring_import_gate.sh, the same lines and exits.
+#   $(TOOL_CX) --allow-read --allow-env --allow-subprocess scripts/ring_import_gate.cx
+# Exit: 0 = clean; 1 = a ring module imports or links outside its contract.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def has scope=public ($rx $s) [$present [$re:find [$re:compile $rx] $s]]]
+[?def member scope=public ($x $xs) [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+# lines-of — a file's lines as grep reads them (split on \n only; no trailing empty line); () when
+# the file cannot be read (grep's 2>/dev/null || true).
+[?def lines-of scope=public impure ($f)
+  [?let [= $t [?else [$io:read-file $f] '']]
+        [= $ls [$strings:split $t "\n"]]
+    [?if [= $t ''] [then ()]
+      [else [?if [$strings:ends-with $t "\n"]
+              [then [?to-sequence [?for [in $i [$range 1 [- [$count $ls] 1]]] [yield [$nth $ls $i]]]]]
+              [else $ls]]]]]]
+
+# found — find(1)'s NUL-separated listing under a directory, in find's order.
+[?def found scope=public impure ($argv)
+  [?let [= $r [$process:run $argv capture={stdout: :pipe, stderr: :discard}]]
+    [?match $r [case [err$e] ()]
+      [else [?to-sequence [?for [in $p [$strings:split [$string $r@stdout] [$strings:from-code-point 0]]] [where [not [= $p '']]] [yield $p]]]]]]]
+
+# hits-sibling — does this #flag/#include line reference the vcx sibling dir by ANY spellable form?
+# (F-17: the pre-repair gate matched only the bare @VMODROOT/<sib> form.) The relative forms (from a
+# file inside vcx/<ring>/: ../<sib> reaches a sibling; ../../vcx/<sib> is the up-two escape) are
+# bounded on the left so ".../foo" and "xdeps" do not match.
+[?def hits-sibling scope=public ($line $sib)
+  [or [$has [$cat ('@VMODROOT/', $sib, '(/|[[:space:]]|$)')] $line]
+      [$has [$cat ('@VMODROOT/\.\./vcx/', $sib, '(/|[[:space:]]|$)')] $line]
+      [$has [$cat ("(^|[[:space:]=\"'/])\\.\\./", $sib, '(/|[[:space:]]|"|$)')] $line]
+      [$has [$cat ("(^|[[:space:]=\"'/])\\.\\./\\.\\./vcx/", $sib, '(/|[[:space:]]|"|$)')] $line]]]
+
+# c-edge-allowed — the ONLY acknowledged C edges into a non-module dir, keyed to the EXACT path (F-17:
+# narrowed from whole-sibling-dir to these paths). `deps/` is vendored C shim source and `target/` is
+# the shared build-output dir where shim libs land — neither is a ring MODULE (nothing imports them),
+# but a stray edge into any OTHER sibling via them must still fail, so they stay policed and only
+# these exact edges pass:
+#   cx/regex_re2.v  → deps/re2_shim (RE2 header), target (RE2 -L / shim lib)
+#   arrow/*         → target/libcx_arrow_shim.a (the arrow native shim)
+# spelled @VMODROOT/<sib> or, since the module compiles from a pinned checkout where @VMODROOT names
+# nothing, @DIR/../<sib> (RULED: RS-7, RS-12). Anything else — a NEW edge, or an edge into a
+# code/platform/… source — fails.
+[?def c-edge-allowed scope=public ($base $sib $line)
+  [?match $base
+    [case 'regex_re2.v'
+      [?match $sib [case 'deps' [$has '(@VMODROOT|@DIR/\.\.)/deps/re2_shim(/|[[:space:]]|$)' $line]]
+                   [case 'target' [$has "(@VMODROOT|@DIR/\\.\\.)/target(/|[[:space:]]|'|$)" $line]]
+                   [else false]]]
+    [case 'arrow_files_d_cx_arrow_files.v'
+      [?match $sib [case 'target' [$has "(@VMODROOT|@DIR/\\.\\.)/target/libcx_arrow_shim\\.a(/|[[:space:]]|'|$)" $line]] [else false]]]
+    [else false]]]
+
+# scan — the findings (two lines each) for any import or C edge from DIR into a denied sibling. Scans
+# .v (import + C edges) and .c/.h (C edges only); *_test.v skip.
+[?def scan scope=public impure ($dir $label $allow-c $deny)
+  [?if [not [$io:is-directory $dir]] [then ()]
+    [else [?let
+      [= $imports [?to-sequence
+        [?for [in $f [$found ('find', $dir, '-name', '*.v', '-not', '-name', '*_test.v', '-print0')]]
+              [in $line [?to-sequence [?for [in $l [$lines-of $f]] [where [$has '^[[:space:]]*import[[:space:]]+' $l]] [yield $l]]]]
+              [in $internal $deny]
+          [where [= [?let [= $m [$re:find [$re:compile '^[[:space:]]*import[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)'] $line]]
+                      [?if [$present $m] [then [$re:group $m 1]] [else $line]]]
+                    $internal]]
+          [yield ([$cat ('RING-VIOLATION: ', $label, ' module ', [$path:basename $f], " imports denied sibling '", $internal, "'")],
+                  [$cat ('  → ', $f, ': ', $line)])]]]]
+      [= $edges [?to-sequence
+        [?for [in $f [$found ('find', $dir, '(', '-name', '*.v', '-o', '-name', '*.c', '-o', '-name', '*.h', ')', '-not', '-name', '*_test.v', '-print0')]]
+              [in $line [?to-sequence [?for [in $l [$lines-of $f]] [where [$has '^[[:space:]]*#(flag|include)' $l]] [yield $l]]]]
+              [in $internal $deny]
+          [where [and [$hits-sibling $line $internal]
+                      [not [and $allow-c [$c-edge-allowed [$path:basename $f] $internal $line]]]]]
+          [yield ([$cat ('RING-VIOLATION: ', $label, ' source ', [$path:basename $f], " carries a C edge into denied sibling '", $internal, "'")],
+                  [$cat ('  → ', $f, ': ', $line)])]]]]
+      ([?splice [?for [in $p $imports] [in $l $p] [yield $l]]], [?splice [?for [in $p $edges] [in $l $p] [yield $l]]])]]]]
+
+[?let
+  [= $root [?let [= $g [$env:var-or-default 'RING_GATE_ROOT' '']]
+             [?if [= $g ''] [then [$path:dirname [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]] [else $g]]]]
+  [= $vcx [$cat ($root, '/vcx')]]
+  [= $pin [$env:var-or-default 'RING_GATE_PIN' [$cat ($root, '/deps/cx-core-data/vcx')]]]
+  [= $ring-dir [?fn ($m) [?if [$io:is-directory [$cat ($vcx, '/', $m)]] [then [$cat ($vcx, '/', $m)]]
+                           [else [?if [$io:is-directory [$cat ($pin, '/', $m)]] [then [$cat ($pin, '/', $m)]] [else [$cat ($vcx, '/', $m)]]]]]]]
+  [= $absent [?to-sequence [?for [in $m ('cx', 'arrow', 'cli', 'cmd_data', 'grading')]
+                             [where [and [not [$io:is-directory [$cat ($vcx, '/', $m)]]] [not [$io:is-directory [$cat ($pin, '/', $m)]]]]]
+                             [yield [$cat ("ring_import_gate: FAILED -- module '", $m, "' is neither ", $vcx, '/', $m, ' nor ', $pin, '/', $m, ' (run `make deps-sync`)')]]]]]
+  # deny-but — every internal sibling under vcx/ (and the pin's vcx/) EXCEPT the kept names; real
+  # directories only (find -type d: a symlink is not one), byte-sorted.
+  [= $subdirs [?fn ($d) [?if [not [$io:is-directory $d]] [then ()]
+                          [else [?for [in $n [$io:list-dir $d]] [where [and [$io:is-directory [$cat ($d, '/', $n)]] [not [$io:is-symlink [$cat ($d, '/', $n)]]]]] [yield $n]]]]]]
+  [= $siblings [?let [= $all [$sort ([?splice [$subdirs $vcx]], [?splice [$subdirs $pin]])]]
+                 [?to-sequence [?for [in $i [$range 1 [$count $all]]] [where [or [= $i 1] [not [= [$nth $all $i] [$nth $all [- $i 1]]]]]] [yield [$nth $all $i]]]]]]
+  [= $deny-but [?fn ($keep) [?to-sequence [?for [in $d $siblings] [where [not [$member $d $keep]]] [yield $d]]]]]
+  # The V product modules (RULED: RS-24), read grep-level from the registry so a product split is
+  # gated the moment its row declares it; a tree with no registry has no products. xap is the one
+  # product above the others (RS-24, D31a): it pins every one, so xap may import every product, and
+  # no other product may import xap.
+  [= $reg [$cat ($root, '/registry/repos.cxd')]]
+  [= $products [?if [not [$io:is-file $reg]] [then ()]
+                 [else [?let [= $all [$sort [?for [in $m [$re:find-all [$re:compile 'vmodule=([a-z_][a-z0-9_]*)'] [?else [$io:read-file $reg] '']]] [yield [$re:group $m 1]]]]]
+                         [?to-sequence [?for [in $i [$range 1 [$count $all]]] [where [or [= $i 1] [not [= [$nth $all $i] [$nth $all [- $i 1]]]]]] [yield [$nth $all $i]]]]]]]]
+  [= $below [?to-sequence [?for [in $p $products] [where [not [= $p 'xap']]] [yield $p]]]]
+  [= $base ('cx', 'code', 'cxstore', 'arrow', 'transport')]
+  [= $findings ([?splice $absent],
+    # Ring 0 (vcx/cx): strict sink — imports/links nothing internal but cx, save the two
+    # acknowledged re2 C edges.
+    [?splice [$scan [$ring-dir 'cx'] 'Ring-0 (cx)' true [$deny-but ('cx',)]]],
+    # Store engine (vcx/cxstore): Ring-0-only + evaluator-free (spec §2).
+    [?splice [$scan [$cat ($vcx, '/cxstore')] 'store engine (cxstore)' false [$deny-but ('cx', 'cxstore')]]],
+    # Ring 1 (vcx/code): MAY import Ring 0 (cx) only.
+    [?splice [$scan [$cat ($vcx, '/code')] 'Ring-1 (code)' false [$deny-but ('cx', 'code')]]],
+    # Each product: the rings, cxstore/arrow/transport, plus the products below xap (xap: all).
+    [?splice [?for [in $p $products]
+               [in $l [$scan [$cat ($vcx, '/', $p)] [$cat ('platform group product (', $p, ')')] false
+                             [$deny-but ([?splice $base], [?splice [?if [= $p 'xap'] [then $products] [else $below]]])]]]
+               [yield $l]]],
+    # Leaf siblings (vcx/arrow, vcx/transport): import cx (Ring 0) only, plus their own submodules.
+    [?splice [$scan [$ring-dir 'arrow'] 'leaf (arrow)' true [$deny-but ('cx', 'arrow')]]],
+    [?splice [$scan [$cat ($vcx, '/transport')] 'leaf (transport)' false [$deny-but ('cx', 'transport')]]],
+    # Platform-free profile surface (vcx/cli, vcx/cmd_data): the data/cli profiles MUST NOT pull the
+    # platform group. (F-17: was manual, now gated.)
+    [?splice [$scan [$ring-dir 'cli'] 'platform-free (cli)' false [$deny-but ('cx', 'code', 'cli', 'cmd_data')]]],
+    [?splice [$scan [$ring-dir 'cmd_data'] 'platform-free (cmd_data)' false [$deny-but ('cx', 'code', 'cli', 'cmd_data', 'grading')]]],
+    # The corpus grading cores (RULED: D56a): Ring 0, so the data profile links them -- cx and the
+    # fixture loader only, never the evaluator.
+    [?splice [$scan [$ring-dir 'grading'] 'Ring-0 grading (grading)' false [$deny-but ('cx', 'fixtures', 'grading')]]])]
+  [?do [?if [= [$count $findings] 0] [then null] [else [$say [$strings:join $findings "\n"]]]]
+       [?if [> [$count $findings] 0]
+         [then [?do [$say 'ring_import_gate: FAILED — a ring module violates its §3 import contract.'] [$env:exit 1]]]
+         [else [?do [$say [$cat ('ring_import_gate: OK — Ring-0 strict sink; cxstore Ring-0-only+evaluator-free; code→cx only; each platform-group product (',
+                                 [$strings:join $products ' '], ') within the rings + cxstore/arrow/transport + the products, none into xap; arrow/transport→cx only; cli/cmd_data platform-free; grading→cx+fixtures only')]]
+                    [$env:exit 0]]]]]]

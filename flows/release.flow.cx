@@ -9,7 +9,7 @@
 #   make release-flow TAG=vX.Y.Z [FROM_BUMP=<sha>] [MODE=dry] [PUBLISH=no] [LINUX=no]
 #
 # The make target runs this document under a COPY of the tree's cx. Phase 1
-# (scripts/tag_release.sh) rebuilds deps/cx-core-code/vcx/target/cx at the
+# (scripts/tag_release.cx) rebuilds deps/cx-core-code/vcx/target/cx at the
 # tag, and relinking the binary a running flow executes is the 'Exec format
 # error' class. The target then runs:
 #
@@ -18,13 +18,13 @@
 #     --allow-read --allow-write --allow-subprocess --allow-env
 #
 # MODE=dry is what `release.sh --dry-run` was. The preflight runs for real,
-# and so does tag_release.sh --dry-run. Every later act answers `[would-… …]`,
+# and so does tag_release.cx --dry-run. Every later act answers `[would-… …]`,
 # and nothing is bumped, tagged, built, pushed or published. The tag is an
 # argument: no version is written anywhere here.
 #
 # THE ORDER.
 #   0. preflight: observe.
-#   1. tag: tag_release.sh — gate, bump, tag, build at the tag.
+#   1. tag: tag_release.cx — gate, bump, tag, build at the tag.
 #   2. package: 2 and 2b, every artifact at the tag (CO-4).
 #   3. merge-main: 2c, local.
 #   4. push: phase 3, THE PIVOT.
@@ -61,7 +61,10 @@
   [step name="gh-release" needs="push"
         [do 'ci/release-gh' [tag $args/tag] [from-bump $args/from-bump] [mode $args/mode]
                             [publish $args/publish] [linux $args/linux] [preflight $steps/preflight/result]]]
-  [step name="org-page" needs="gh-release"
+  [step name="packages" needs="gh-release"
+        [do 'ci/release-packages' [tag $args/tag] [from-bump $args/from-bump] [mode $args/mode]
+                                  [publish $args/publish] [linux $args/linux]]]
+  [step name="org-page" needs="packages"
         [do 'ci/release-org-page' [tag $args/tag] [from-bump $args/from-bump] [mode $args/mode]
                                   [publish $args/publish] [linux $args/linux]]]
   [step name="vscode" needs="org-page"

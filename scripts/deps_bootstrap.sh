@@ -49,7 +49,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 if [ "${1:-}" = "--selftest" ]; then
-  exec sh "$ROOT/scripts/deps_bootstrap_selftest.sh"
+  exec "${CX_BIN:-$ROOT/deps/cx-core-code/vcx/target/cx}" --allow-all "$ROOT/scripts/deps_bootstrap_selftest.cx"
 fi
 
 DEPS_CXD="${1:-deps.cxd}"

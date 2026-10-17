@@ -1,0 +1,233 @@
+# cxer_registry_report.cx — CXER registry completeness report (corpus audit G18).
+#
+# Cross-checks every numeric CXER code EMITTED or ASSERTED in the tree against
+# the ranges registered in governance.md §9.6, and cross-checks band CLAIMS
+# across specs for the two-owners-in-one-range class (#723 / audit C5 — the
+# original tool answered only "inside some range" and could not see a second
+# owner inside an approved band).
+#
+# Scope (hardened per #723, M38):
+#   emissions  — every *.v under ALL of vcx/ (code, cx, cxstore, cmd,
+#                transport, arrow, deps, tools, ...), with //-comment text
+#                stripped so commented codes don't count; every stdlib/*.cx
+#                bundle (#-comment text stripped).
+#   assertions — every conformance/**/*.cxd fixture (out-err codes are
+#                normative claims and must be registered like emissions).
+#   registry   — §9.6 rows, honoring sparse-list parentheticals: a
+#                "(NNNN–NNNN excluded)" / "(NNNN excluded)" note SUBTRACTS
+#                from the row's coverage instead of widening it.
+#   spec bands — every `CXER<lo>–<hi>` RANGE claim anywhere under spec/
+#                (single-code references are cross-spec citations, not
+#                claims; ranges are allocation-shaped). Intersecting range
+#                claims from two different files are reported for review.
+#
+# Known blind spot (recorded, not solved here): codes composed at runtime
+# ("CXER${num}" string interpolation) are invisible to a static scan.
+#
+# REPORTING tool, not a hard gate: known gaps are tracked (#717) and their
+# registry repair is ruled campaign work (audit C5 repair). `--strict` exits 1
+# on any emitted-but-unregistered code or any registry-internal row overlap
+# (the mechanical certainties; spec-vs-spec intersections stay review items) —
+# wire --strict into TEST_TARGETS once the C5 registry-repair PR lands.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of cxer_registry_report.sh — the same scopes,
+# the same lines and exits. Files are listed by find(1) with the shell's arguments (no descent
+# through a symlinked directory); the scanned stream is the shell's, in its order (a file with no
+# last newline runs into the next, as cat and sed concatenate); the registry's ranges keep sort
+# -n -u's reading (one row per numeric lo, the first in the table's order).
+#   $(TOOL_CX) --allow-all scripts/cxer_registry_report.cx [--strict]
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/bytes'   as=bytes]
+[?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+# --strict is declared so cx does not warn that it spells one of its own flags after FILE; the
+# argument itself is read as the shell read $1 (only the exact word --strict is strict).
+[?const ARG_SPEC [argspec [flag name="strict" type=bool]]]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def pair scope=public ($a $b) [$map:put [$map:put {} 'a' $a] 'b' $b]]
+[?def fst scope=public ($p) [$map:get $p 'a']]
+[?def snd scope=public ($p) [$map:get $p 'b']]
+# The en-dash as the byte-wise reader sees it (every file is read one byte per character, as awk,
+# grep and sed read them in the C locale).
+[?def DASH scope=public () [$bytes:to-string-latin1 [$bytes:from-string-utf8 '–']]]
+[?def d4 scope=public ($n) [$strings:pad-start [$string $n] 4 '0']]
+# awk's $1+0 / sort -n's key: the leading digit run, 0 when there is none.
+[?def num scope=public ($s)
+  [?let [= $m [$re:find [$re:compile '^[0-9]+'] $s]] [?if [$present $m] [then [$strings:to-int [$re:group $m 0]]] [else 0]]]]
+[?def lines scope=public ($t)
+  [?let [= $ls [$strings:split $t "\n"]]
+    [?if [= $t ''] [then ()]
+      [else [?if [$strings:ends-with $t "\n"] [then [?to-sequence [?for [in $i [$range 1 [- [$count $ls] 1]]] [yield [$nth $ls $i]]]]] [else $ls]]]]]]
+
+# found — find(1)'s NUL-separated listing, in find's order.
+[?def found scope=public impure ($argv)
+  [?let [= $r [$process:run $argv capture={stdout: :pipe, stderr: :discard}]]
+    [?match $r [case [err$e] ()]
+      [else [?to-sequence [?for [in $p [$strings:split [$string $r@stdout] [$strings:from-code-point 0]]] [where [not [= $p '']]] [yield $p]]]]]]]
+# A file's bytes as one byte per character ('' when sed/cat could not read it: a directory, a
+# dangling link, no permission — their errors went to /dev/null).
+[?def bytes-of scope=public impure ($f)
+  [?if [not [$io:is-file $f]] [then '']
+    [else [?let [= $b [?else [$io:read-file-bytes $f] null]] [?if [= $b null] [then ''] [else [$bytes:to-string-latin1 $b]]]]]]]
+
+# scan — awk's scan(): every NNNN–NNNN / NNNN-NNNN token, then every remaining NNNN, each taken out
+# of the text before the next search (as the awk did, so a removal can join a new token).
+[?def scan scope=public ($s0)
+  [?let [= $rr [$re:compile [$cat ('[0-9]{4}(', [$DASH], '|-)[0-9]{4}')]]] [= $rs [$re:compile '[0-9]{4}']]
+        [= $a [?loop [= $s $s0] [= $acc ()]
+                [?let [= $m [$re:find $rr $s]]
+                  [?if [$present $m]
+                    [then [?let [= $p [$re:split [$re:compile [$cat ([$DASH], '|-')]] [$re:group $m 0]]]
+                      [continue [$re:replace-first $rr $s ''] ([?splice $acc], [$cat ([$nth $p 1], "\t", [$nth $p 2])])]]]
+                    [else [break [$pair $s $acc]]]]]]]
+    [?loop [= $s [$fst $a]] [= $acc [$snd $a]]
+      [?let [= $m [$re:find $rs $s]]
+        [?if [$present $m]
+          [then [continue [$re:replace-first $rs $s ''] ([?splice $acc], [$cat ([$re:group $m 0], "\t", [$re:group $m 0])])]]
+          [else [break $acc]]]]]]]
+
+# The registry rows (§9.6): (ranges excluded), each "lo<TAB>hi" in the table's order.
+[?def registry scope=public ($gov)
+  [?let [= $rows [?to-sequence [?for [in $l [$lines $gov]] [where [$strings:contains $l '| `CXER']] [yield $l]]]]
+        [= $per [?to-sequence [?for [in $l $rows]
+                  [yield [?let [= $sp [$re:find [$re:compile '\(sparse:[^)]*\)'] $l]]
+                    [?if [$present $sp] [then [$pair [$scan [$re:group $sp 0]] ()]]
+                      [else [?let [= $parts [$strings:split $l '|']]
+                                  [= $col0 [$strings:replace [?if [> [$count $parts] 1] [then [$nth $parts 2]] [else '']] 'CXER' '']]
+                                  [= $rx [$re:compile '\([^)]*(excluded|reserved)[^)]*\)']]
+                                  [= $pe [?loop [= $col $col0] [= $x ()]
+                                           [?let [= $m [$re:find $rx $col]]
+                                             [?if [$present $m]
+                                               [then [continue [$re:replace-first $rx $col ''] ([?splice $x], [?splice [$scan [$re:group $m 0]]])]]
+                                               [else [break [$pair $col $x]]]]]]]
+                              [$pair [$scan [$fst $pe]] [$snd $pe]]]]]]]]]]
+    [$pair [?to-sequence [?for [in $p $per] [in $e [$fst $p]] [yield $e]]]
+     [?to-sequence [?for [in $p $per] [in $e [$snd $p]] [yield $e]]]]]]
+
+# sort -n -u: one line per numeric key (the first in input order), ascending.
+[?def sort-nu scope=public ($ls)
+  [?let [= $first [$fp:fold $ls {} [?fn ($m $l) [?let [= $k [$num $l]] [?if [$map:contains $m $k] [then $m] [else [$map:put $m $k $l]]]]]]]
+    [?to-sequence [?for [in $k [$sort [$map:keys $first]]] [yield [$map:get $first $k]]]]]]
+[?def lohi scope=public ($l) [?let [= $f [$strings:split $l "\t"]] [res lo=[$num [$nth $f 1]] hi=[$num [?if [> [$count $f] 1] [then [$nth $f 2]] [else '']]]]]]
+
+# The scanned stream: the pins' and this tree's vcx/*.v (// comments stripped), stdlib/*.cx
+# (# comments stripped), conformance/**/*.cxd (as cat gives them), in the shell's order.
+[?def strip-v scope=public ($t) [$re:replace [$re:compile '//[^\n]*'] $t '']]
+[?def strip-cx scope=public ($t) [$re:replace [$re:compile "(?m)(^|[\t\x0b\x0c\r ])#[^\n]*"] $t '']]
+[?def chunks scope=public impure ($d)
+  [?let [= $v [$cat ($d, '/vcx')]] [= $s [$cat ($d, '/stdlib')]] [= $c [$cat ($d, '/conformance')]]
+    ([?splice [?if [$io:is-directory $v]
+                [then [?to-sequence [?for [in $f [$found ('find', $v, '-name', '*.v', '-not', '-path', [$cat ($v, '/target/*')], '-print0')]] [yield [$strip-v [$bytes-of $f]]]]]]
+                [else ()]]],
+     [?splice [?if [$io:is-directory $s]
+                [then [?to-sequence [?for [in $f [$found ('find', $s, '-name', '*.cx', '-print0')]] [yield [$strip-cx [$bytes-of $f]]]]]]
+                [else ()]]],
+     [?splice [?if [$io:is-directory $c]
+                [then [?to-sequence [?for [in $f [$found ('find', $c, '-name', '*.cxd', '-print0')]] [yield [$bytes-of $f]]]]]
+                [else ()]]])]]
+
+[?def pins scope=public impure ($root)
+  [?let [= $dd [$cat ($root, '/deps')]]
+    [?if [not [$io:is-directory $dd]] [then ()]
+      [else [?to-sequence [?for [in $n [$sort [?else [$io:list-dir $dd] ()]]]
+                                [where [and [not [$strings:starts-with $n '.']] [$io:is-directory [$cat ($dd, '/', $n)]]]]
+                                [yield [$cat ($dd, '/', $n, '/')]]]]]]]]
+
+# The spec-side band claims: every CXER range under spec/ (governance.md's rows excluded), as grep
+# -rno | sed gave them — "lo<TAB>hi<TAB>file", or the raw line when the path holds a colon.
+[?def claims scope=public impure ($root)
+  [?let [= $rx [$re:compile [$cat ('CXER[0-9]{4}(', [$DASH], '|-)(CXER)?[0-9]{4}')]]]
+        [= $sx [$re:compile [$cat ('^([^:]+):[0-9]+:CXER([0-9]{4})(', [$DASH], '|-)(CXER)?([0-9]{4})$')]]]
+        [= $sp [$cat ($root, '/spec')]]
+        [= $files [?if [$io:is-directory $sp] [then [$found ('find', $sp, '-type', 'f', '-print0')]] [else ()]]]
+        [= $raw [?to-sequence [?for [in $f $files]
+                  [yield [?let [= $t [$bytes-of $f]]
+                    # grep reads a file with a NUL in its first buffer (32 KiB) as binary: one line for it.
+                    [?if [$strings:contains [$strings:slice $t 0 [?if [> [$strings:length $t] 32768] [then 32768] [else [$strings:length $t]]]] [$strings:from-code-point 0]]
+                      [then [?if [$present [$re:find $rx $t]] [then ([$cat ('Binary file ', $f, ' matches')],)] [else ()]]]
+                      [else [?let [= $ls [$lines $t]]
+                        [?to-sequence [?for [in $ix [$range 1 [$count $ls]]] [in $m [$re:find-all $rx [$nth $ls $ix]]]
+                                            [yield [$cat ($f, ':', [$string $ix], ':', [$re:group $m 0])]]]]]]]]]]]]
+        [= $kept [?to-sequence [?for [in $g $raw] [in $l $g] [where [not [$strings:contains $l 'process/governance.md:']]]
+                   [yield [?let [= $m [$re:find $sx $l]]
+                            [?if [$present $m] [then [$cat ([$re:group $m 2], "\t", [$re:group $m 5], "\t", [$re:group $m 1])]] [else $l]]]]]]]
+        [= $uniq [$sort [$map:keys [$fp:fold $kept {} [?fn ($m $l) [$map:put $m $l true]]]]]]
+    [?to-sequence [?for [in $k [$sort [?for [in $l $uniq] [yield [$cat ([$strings:pad-start [$string [$num $l]] 12 '0'], "\t", $l)]]]]]
+                        [yield [$strings:slice $k 14 [$strings:length $k]]]]]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $strict [?if [> [$count $argv] 1] [then [$nth $argv 2]] [else '']]]
+  [= $root [$path:dirname [$path:dirname [$path:absolute [$nth $argv 1]]]]]
+  [= $gov [$cat ($root, '/spec/03-approved/process/governance.md')]]
+  [= $_g [?if [$io:is-file $gov] [then null]
+           [else [?do [$io:write-line [$env:stderr] [$cat ("awk: can't open file ", $gov, "\n source line number 29")]] [$env:exit 2]]]]]
+  [= $reg [$registry [$bytes-of $gov]]]
+  [= $ranges [$sort-nu [$fst $reg]]]
+  [= $excluded [$sort-nu [$snd $reg]]]
+  [= $rng [?to-sequence [?for [in $l $ranges] [yield [$lohi $l]]]]]
+  [= $exc [?to-sequence [?for [in $l $excluded] [yield [$lohi $l]]]]]
+  [= $stream [$strings:join [?to-sequence [?for [in $d ([?splice [$pins $root]], $root)] [in $c [$chunks $d]] [yield $c]]] '']]
+  [= $codes [$sort [$map:keys [$fp:fold [$re:find-all [$re:compile 'CXER([0-9]{4})'] $stream] {}
+              [?fn ($m $x) [?let [= $c [$re:group $x 1]] [?if [or [= $c '0000'] [= $c '9999']] [then $m] [else [$map:put $m [$strings:to-int $c] true]]]]]]]]]
+  [= $in [?fn ($c $rs) [> [$count [?for [in $r $rs] [where [and [>= $c $r@lo] [<= $c $r@hi]]] [yield 1]]] 0]]]
+  [= $unreg [?to-sequence [?for [in $c $codes] [where [not [and [$in $c $rng] [not [$in $c $exc]]]]] [yield $c]]]]
+  [= $cl [$claims $root]]
+  [= $rootp [$cat ($root, '/')]]
+  [= $crec [?to-sequence [?for [in $l $cl]
+             [yield [?let [= $f [$strings:split $l "\t"]] [= $src0 [?if [> [$count $f] 2] [then [$nth $f 3]] [else '']]]
+                      [res lo=[$num [$nth $f 1]] hi=[$num [?if [> [$count $f] 1] [then [$nth $f 2]] [else '']]]
+                           src=[$strings:replace-first $src0 $rootp '']]]]]]]
+  [= $groups [$fp:fold $crec {} [?fn ($m $r) [?let [= $k [$cat ([$d4 $r@lo], '-', [$d4 $r@hi])]]
+                                   [$map:put $m $k [?if [$map:contains $m $k] [then ([?splice [$map:get $m $k]], $r@src)] [else ($r@src,)]]]]]]]
+  [= $equal [$sort [?for [in $k [$map:keys $groups]] [where [> [$count [$map:get $groups $k]] 1]]
+                     [yield [$cat ('  ', $k, ' cited by: ', [$strings:join [$map:get $groups $k] ', '])]]]]]
+  [= $nc [$count $crec]]
+  [= $overlaps [$sort [$map:keys [$fp:fold
+                 [?to-sequence [?for [in $i [$range 1 $nc]] [in $j [$range [+ $i 1] $nc]]
+                   [where [?let [= $a [$nth $crec $i]] [= $b [$nth $crec $j]]
+                            [and [<= $b@lo $a@hi] [<= $a@lo $b@hi] [not [and [= $a@lo $b@lo] [= $a@hi $b@hi]]] [not [= $a@src $b@src]]]]]
+                   [yield [?let [= $a [$nth $crec $i]] [= $b [$nth $crec $j]]
+                            [$cat ('  ', [$d4 $a@lo], '-', [$d4 $a@hi], ' (', $a@src, ') ∩ ', [$d4 $b@lo], '-', [$d4 $b@hi], ' (', $b@src, ')')]]]]]
+                 {} [?fn ($m $l) [$map:put $m $l true]]]]]]
+  [= $nr [$count $rng]]
+  [= $regov [?to-sequence [?for [in $i [$range 1 $nr]] [in $j [$range [+ $i 1] $nr]]
+              [where [?let [= $a [$nth $rng $i]] [= $b [$nth $rng $j]]
+                       [and [<= $b@lo $a@hi] [<= $a@lo $b@hi] [not [and [= $a@lo $b@lo] [= $a@hi $b@hi]]]]]]
+              [yield [?let [= $a [$nth $rng $i]] [= $b [$nth $rng $j]] [$cat ('  ', [$d4 $a@lo], '-', [$d4 $a@hi], ' ∩ ', [$d4 $b@lo], '-', [$d4 $b@hi])]]]]]]
+  [= $_h [$say [$cat ('cxer_registry_report: ', [$string [$count $codes]], ' distinct codes emitted/asserted (all vcx/*.v, stdlib/*.cx, conformance/**/*.cxd of this tree and every pin; comments stripped); ',
+                      [$string [$count $ranges]], ' registered ranges (', [$string [$count $excluded]], ' sparse-list exclusions honored).')]]]
+  [= $nu [$count $unreg]]
+  [= $_u [?if [> $nu 0]
+           [then [?let [= $_1 [$say [$cat ('UNREGISTERED (emitted/asserted but outside every effective §9.6 range) — ', [$string $nu], ' codes, shown as consecutive runs:')]]]
+                       [= $runs [?loop [= $i 1] [= $lo 0] [= $hi 0] [= $acc ()]
+                                  [?if [> $i $nu] [then [break ([?splice $acc], [$cat ('  CXER', [$d4 $lo], '-', [$d4 $hi])])]]
+                                    [else [?let [= $c [$nth $unreg $i]]
+                                      [?if [= $i 1] [then [continue [+ $i 1] $c $c $acc]]
+                                        [else [?if [= $c [+ $hi 1]] [then [continue [+ $i 1] $lo $c $acc]]
+                                                [else [continue [+ $i 1] $c $c ([?splice $acc], [$cat ('  CXER', [$d4 $lo], '-', [$d4 $hi])])]]]]]]]]]]
+                       [= $_2 [$say [$strings:join $runs "\n"]]]
+                       [= $_3 [$say '  → tracked as #717; registry repair is ruled campaign work (audit C5).']] null]]
+           [else [$say 'cxer_registry_report: OK — every emitted/asserted code is registered.']]]]
+  [= $_r [?if [> [$count $regov] 0]
+           [then [?let [= $_1 [$say 'REGISTRY-INTERNAL OVERLAP (§9.6 rows intersect — append-only violation):']] [= $_2 [$say [$strings:join $regov "\n"]]] null]]
+           [else null]]]
+  [= $_o [?if [> [$count $overlaps] 0]
+           [then [?let [= $_1 [$say 'SPEC BAND-CLAIM PARTIAL INTERSECTIONS (two files claim intersecting-but-unequal ranges — the C5 two-owners class; review each):']]
+                       [= $_2 [$say [$strings:join $overlaps "\n"]]] null]]
+           [else null]]]
+  [= $_e [?if [> [$count $equal] 0]
+           [then [?let [= $_1 [$say 'Equal-range cross-citations (informational — several specs citing one band):']] [= $_2 [$say [$strings:join $equal "\n"]]] null]]
+           [else null]]]
+  [= $fail [or [> $nu 0] [> [$count $regov] 0]]]
+  [?if [and [= $strict '--strict'] $fail]
+    [then [?let [= $_s [$say 'cxer_registry_report: STRICT FAIL']] [$env:exit 1]]]
+    [else [$env:exit 0]]]]

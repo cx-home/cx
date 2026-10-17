@@ -1,0 +1,95 @@
+# scripts/exit_status_probe_gate.cx — #1570.
+#
+# Fails on an exit status read through `devbox run … sh -c '<cmd>; … $? …'`. That shape answers
+# 0 — success — for a program that exited non-zero (measured on 5a897f485 with `[$env:exit 7]`:
+# `devbox run -- sh -c 'vcx/target/cx p2.cx; echo $?'` -> 0, while the bare program, `sh -c` alone,
+# `devbox run` alone and `devbox run -- sh -c 'exit 7'` each read 7). `devbox run` executes its
+# arguments through a generated `.devbox/gen/scripts/.cmd.sh`, and in that path the inner command's
+# status is lost. It is QUIET — it reports success — and on 2026-09-18 it cost a wrong prio:high
+# issue (#1569, withdrawn).
+#
+# WHAT IS FINE: a pipeline script that captures `"$@" > log 2>&1; echo "EXIT=$?"` INSIDE the script
+# devbox runs is sound. So the gate matches `devbox run`, `sh -c` and a `$?` on the SAME line,
+# exactly the ad-hoc shape and never the script.
+#
+# Scanned: Makefile, vcx/Makefile, every regular *.sh under scripts/ and every
+# _gate_evidence/**/pipeline*.sh (as find(1) -type f: no symlinked file and no file under a
+# symlinked directory — io:walk follows links, cx-core-code#146). A line is read as `read -r` reads
+# it: a last line with no newline is not read. The escape hatch is an inline marker (assembled below
+# so the gate never flags its own documentation), counted in the summary.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of exit_status_probe_gate.sh, the same lines.
+#   $(TOOL_CX) --allow-read --allow-env scripts/exit_status_probe_gate.cx            # the tree
+#   $(TOOL_CX) --allow-read --allow-env scripts/exit_status_probe_gate.cx <root>     # a planted root
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def OK-MARKER scope=public () [$cat ('exit-status-probe', '-ok')]]
+[?def Q scope=public () [$cat ('$', '?')]]
+
+# uniq-sorted — `sort -u` over an already sorted sequence: adjacent duplicates dropped.
+[?def uniq-sorted scope=public ($xs)
+  [?to-sequence [?for [in $i [$range 1 [$count $xs]]]
+                  [where [or [= $i 1] [not [= [$nth $xs $i] [$nth $xs [- $i 1]]]]]]
+                  [yield [$nth $xs $i]]]]]
+
+# regular-files — the regular files under $root/$dir (relative names `dir/...`), never through a link.
+[?def regular-files scope=public impure ($root $dir)
+  [?if [not [$io:is-directory [$cat ($root, '/', $dir)]]] [then ()]
+    [else [?let [= $base [$cat ($root, '/')]]
+                [= $all [?to-sequence [$io:walk [$cat ($root, '/', $dir)]]]]
+                [= $links [?to-sequence [?for [in $e $all] [where [and $e@is-directory [$io:is-symlink $e@path]]] [yield [$cat ($e@path, '/')]]]]]
+      [?to-sequence [?for [in $e $all]
+                      [where [and $e@is-file [not [$io:is-symlink $e@path]]
+                                  [= [$count [?for [in $l $links] [where [$strings:starts-with $e@path $l]] [yield 1]]] 0]]]
+                      [yield [$strings:replace-first $e@path $base '']]]]]]]]
+
+# read-lines — the lines `while IFS= read -r line` yields: a final line without a newline is not read.
+[?def read-lines scope=public impure ($f)
+  [?let [= $t [?else [$io:read-file $f] '']]
+        [= $parts [$strings:split $t "\n"]]
+    [?if [= [$count $parts] 0] [then ()] [else [?to-sequence [?for [in $i [$range 1 [- [$count $parts] 1]]] [yield [$nth $parts $i]]]]]]]]
+
+[?def findings scope=public impure ($root $f)
+  [?let [= $ls [$read-lines [$cat ($root, '/', $f)]]]
+    [?to-sequence [?for [in $i [$range 1 [$count $ls]]]
+                    [where [?let [= $line [$nth $ls $i]] [= $body [$strings:trim-start $line]]
+                             [and [not [$strings:starts-with $body '#']] [not [$strings:contains $line [$OK-MARKER]]]
+                                  [$strings:contains $line 'devbox run'] [$strings:contains $line 'sh -c'] [$strings:contains $line [$Q]]]]]
+                    [yield [hit file=$f at=$i body=[$strings:trim-start [$nth $ls $i]]]]]]]]
+
+[?let
+  [= $argv [$env:argv]]
+  # the root as io:walk spells its entries: no doubled and no trailing slash
+  [= $root [?let [= $r0 [?if [> [$count $argv] 1] [then [$nth $argv 2]] [else '.']]]
+                  [= $r1 [?loop [= $s $r0] [?if [$strings:contains $s '//'] [then [continue [$strings:replace $s '//' '/']]] [else [break $s]]]]]
+              [?if [and [> [$strings:length $r1] 1] [$strings:ends-with $r1 '/']] [then [$strings:trim-end-chars $r1 '/']] [else $r1]]]]
+  [= $mk [?to-sequence [?for [in $m ('Makefile', 'vcx/Makefile')] [where [$io:is-file [$cat ($root, '/', $m)]]] [yield $m]]]]
+  [= $sh [?to-sequence [?for [in $f [$regular-files $root 'scripts']] [where [$strings:ends-with $f '.sh']] [yield $f]]]]
+  [= $pl [?to-sequence [?for [in $f [$regular-files $root '_gate_evidence']]
+                         [where [?let [= $b [$path:basename $f]] [and [$strings:starts-with $b 'pipeline'] [$strings:ends-with $b '.sh']]]]
+                         [yield $f]]]]
+  [= $files [$uniq-sorted [$sort ([?splice $mk], [?splice $sh], [?splice $pl])]]]
+  [= $hits [?to-sequence [?for [in $f $files] [in $h [$findings $root $f]] [yield $h]]]]
+  [= $_p [?for [in $h $hits]
+           [yield [?do [$say [$cat ('exit-status-probe-gate: ', $h@file, ':', [$string $h@at], ' — #1570: this line reads an exit status out of an inner')]]
+                       [$say "  shell that `devbox run` wraps, and that shape reports 0 for a program that FAILED:"]
+                       [$say [$cat ('    ', $h@body)]]
+                       [$say "  Read the status DIRECTLY from devbox run's own command word, or from INSIDE the"]
+                       [$say '  script devbox runs — a pipeline that captures it in its own file is sound.']]]]]
+  [?if [= [$count $files] 0]
+    [then [?do [$say [$cat ('exit-status-probe-gate: scanned NO file under ', $root, ' — refusing to vouch')]] [$env:exit 1]]]
+    [else [?let
+      # the marker count is grep -rl over Makefile, vcx/Makefile, scripts/ and _gate_evidence/: every file, any name
+      [= $pool ([?splice $mk], [?splice [$regular-files $root 'scripts']], [?splice [$regular-files $root '_gate_evidence']])]
+      [= $allowed [$count [?for [in $f $pool] [where [$strings:contains [?else [$io:read-file [$cat ($root, '/', $f)]] ''] [$OK-MARKER]]] [yield 1]]]]
+      [?if [> [$count $hits] 0]
+        [then [?do [$say [$cat ('exit-status-probe-gate: ', [$string [$count $hits]], ' violation(s) across ', [$string [$count $files]], ' file(s).')]]
+                   [$env:exit 1]]]
+        [else [?do [$say [$cat ('exit-status-probe-gate OK — ', [$string [$count $files]], " file(s) scanned, no exit status read through a devbox-wrapped `sh -c` (",
+                                [$string $allowed], ' file(s) carry the marker)')]]
+                   [$env:exit 0]]]]]]]]

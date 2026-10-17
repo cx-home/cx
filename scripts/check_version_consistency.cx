@@ -9,7 +9,7 @@
 #
 # Four checks (same contract as the retired Python):
 #   1. STATIC MANIFESTS equal VERSION exactly (stamped by
-#      scripts/bump_version.sh).
+#      scripts/bump_version.cx).
 #   2. CODE SURFACES derive via the `cx_version` build define
 #      (`$d('cx_version', …)`) — never hardcode.
 #   2b. THE DEFINE IS ACTUALLY PASSED to every shared-library recipe,
@@ -149,7 +149,7 @@
       [where [not [$strings:contains $line STRAY-MARKER]]]
       [where [$stray-line $line]]
       [where [not [and $blocks [$in-history-block $lines $i]]]]
-      [; the README version badge is check 3's: stamped by bump_version.sh, equal to VERSION ]
+      [; the README version badge is check 3's: stamped by bump_version.cx, equal to VERSION ]
       [where [not [$strings:contains $line "badge/version-v"]]]
       [yield [$concat $p ":" [$string $i] ": " [$strings:trim-end $line]]]]]]
 [?def stray-hits-in scope=public impure ($p)
@@ -390,7 +390,7 @@
                   [?let
                     [= $_h [$say [$concat "VERSION-CONSISTENCY: FAIL (source of truth: VERSION = " $version ")"]]]
                     [= $_l [?for [in $f $fails] [yield [$say [$concat "  - " $f]]]]]
-                    [= $_f [$say [$concat "\nFix: stamped manifests → run  scripts/bump_version.sh <version>; "
+                    [= $_f [$say [$concat "\nFix: stamped manifests → run  cx --allow-all scripts/bump_version.cx <version>; "
                       "code version surfaces → derive via $d('cx_version', …); "
                       "stray `vX.Y.Z` literals in code/spec → genericize the prose "
                       "(an error/status describes CURRENT behavior, never a release), "

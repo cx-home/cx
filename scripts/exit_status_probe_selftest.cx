@@ -1,0 +1,72 @@
+# scripts/exit_status_probe_selftest.cx — #1570's gate, on PLANTED roots under a temp directory.
+#
+# The gate is deny-on-match over a whole tree, and the failure mode of that shape is the vacuous
+# gate: one scanned over 73 files and found nothing because its pattern could not match anything
+# (#1542's note). So the red proof is part of the gate.
+#
+#   A  the ad-hoc probe — `devbox run -- sh -c '<cmd>; echo $?'` — is REFUSED
+#   B  a pipeline script's own `"$@" …; echo "EXIT=$?"` is ACCEPTED
+#   C  `devbox run -- <cmd>; echo $?` (no inner sh -c) is ACCEPTED
+#   D  the inline marker exempts a line, and the summary counts it
+#   E  a root with nothing to scan REFUSES TO VOUCH rather than passing
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of exit_status_probe_selftest.sh.
+#   $(TOOL_CX) --allow-all scripts/exit_status_probe_selftest.cx [CX]      (from the repo root)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def check scope=public impure ($id $label $ok $detail)
+  [?let [= $_ [$say [?if $ok [then [$cat ('  ', $id, '   ok   ', $label)]] [else [$cat ('  ', $id, '   SELFTEST FAILED: ', $detail)]]]]] $ok]]
+
+# The probe's three tokens are assembled, so this file never trips the gate it tests.
+[?def Q scope=public () [$cat ('$', '?')]]
+
+[?def plant scope=public impure ($t $case $rel $content)
+  [?let [= $p [$cat ($t, '/', $case, '/', $rel)]]
+        [= $_d [$io:make-dirs [$cat ($t, '/', $case, '/scripts')]]]
+    [$io:write-file $p [$cat ($content, "\n")]]]]
+
+[?def gate scope=public impure ($cx $t $case)
+  [?let [= $r [$process:run ($cx, '--allow-read', '--allow-env', 'scripts/exit_status_probe_gate.cx', [$cat ($t, '/', $case)])]]
+    [?match $r [case [err$e] [res rc=-1 out=[$string $e@message]]]
+      [else [res rc=$r@exit-code out=[$cat ([$string $r@stdout], [$string $r@stderr])]]]]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $cx [?if [> [$count $argv] 1] [then [$nth $argv 2]] [else [$string [$env:executable-path]]]]]
+  [= $_h [$say 'exit-status-probe gate selftest (#1570):']]
+  [= $t [$string [$io:temp-dir 'cx-exit-status-probe.']]]
+
+  [= $_a [$plant $t 'a' 'scripts/probe.sh' [$cat ('devbox run -- sh -c "vcx/target/cx p2.cx; echo ', [$Q], '"')]]]
+  [= $ra [$gate $cx $t 'a']]
+  [= $a [$check 'A' 'the devbox-wrapped `sh -c` probe is refused'
+          [and [not [= $ra@rc 0]] [$strings:contains $ra@out '#1570']] [$cat ('the probe was not refused — exit ', [$string $ra@rc], ': ', $ra@out)]]]
+
+  [= $_b [$plant $t 'b' 'scripts/pipeline.sh' [$cat ('run() { "$@" > log 2>&1; echo "EXIT=', [$Q], '"; }')]]]
+  [= $rb [$gate $cx $t 'b']]
+  [= $b [$check 'B' "a pipeline script's own \"$@\"; echo EXIT=$? is accepted" [= $rb@rc 0] [$cat ('a sound in-script capture was refused — ', $rb@out)]]]
+
+  [= $_c [$plant $t 'c' 'scripts/direct.sh' [$cat ('devbox run -- vcx/target/cx p2.cx; echo ', [$Q])]]]
+  [= $rc [$gate $cx $t 'c']]
+  [= $c [$check 'C' "a direct read from devbox run's own command word, with no inner shell, is accepted" [= $rc@rc 0]
+          [$cat ('the direct read was refused — ', $rc@out)]]]
+
+  [= $_d [$plant $t 'd' 'scripts/marked.sh' [$cat ('devbox run -- sh -c "cmd; echo ', [$Q], '"   # exit-status-probe', '-ok')]]]
+  [= $rd [$gate $cx $t 'd']]
+  [= $d [$check 'D' 'the inline marker exempts the line and the summary counts it'
+          [and [= $rd@rc 0] [$strings:contains $rd@out '1 file(s) carry the marker']] [$cat ('the marker did not exempt-and-report — exit ', [$string $rd@rc], ': ', $rd@out)]]]
+
+  [= $_e [$io:make-dirs [$cat ($t, '/e')]]]
+  [= $re [$gate $cx $t 'e']]
+  [= $e [$check 'E' 'a root with no file refuses to vouch'
+          [and [not [= $re@rc 0]] [$strings:contains $re@out 'refusing to vouch']] [$cat ('an empty root passed — exit ', [$string $re@rc], ': ', $re@out)]]]
+
+  [= $_r [?else [$io:remove-tree $t] null]]
+  [?if [and $a $b $c $d $e]
+    [then [?do [$say 'exit-status-probe gate selftest: 5/5 (the probe refused; an in-script capture, a direct read and a marked line accepted; an empty root refuses to vouch)']
+               [$env:exit 0]]]
+    [else [?do [$say 'exit-status-probe gate selftest: case(s) FAILED'] [$env:exit 1]]]]]

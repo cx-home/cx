@@ -1,0 +1,263 @@
+# scripts/tag_release.cx — the release-tag procedure (CXMACH-1 port of tag_release.sh; --help prints lines 2-30)
+#
+# CX release-tag procedure (version-agnostic).
+#
+# Runs on the maintainer's local machine when the release branch is merged to
+# main and the gate is green. Performs:
+#   1. Sanity: on the release branch, working tree clean, tag does not exist
+#   4. Run `make test`  (the authoritative gate — all TEST_TARGETS)
+#   5. Run `make verify-doc-links`
+#   2. Bump version strings (VERSION + manifests via bump_version.cx)
+#   3. Commit the bump, CREATE THE ANNOTATED TAG on it, then build libcx + cli
+#      and verify the artifact's provenance stamp (#666, #979/CO-4 — the tag
+#      must exist BEFORE the build, because the build derives release-ness
+#      from HEAD-at-the-tag; a failure after tagging deletes the tag)
+#   7. Print push instructions (does NOT push automatically)
+#
+# (The step NUMBERS are historical — the list above is the execution order.)
+#
+# With --dry-run: exercises step 1 (sanity), confirms steps 4/5 targets
+# exist (without running them — heavy + may flake on dev branches),
+# reports what 2/3/6 would do; skips any state-changing operation. No
+# git commits, no tags, no pushes. Useful as a CI sanity gate ahead of an
+# actual tag commit. The real tag run still executes make test and make
+# verify-doc-links in full.
+#
+# Usage (CX = deps/cx-core-code/vcx/target/cx):
+#   $CX --allow-all scripts/tag_release.cx vX.Y.Z            # full tag procedure
+#   $CX --allow-all scripts/tag_release.cx --dry-run vX.Y.Z  # exercise checks only
+#   $CX --allow-all scripts/tag_release.cx --dry-run         # defaults to v$(cat VERSION)
+#
+# Prerequisites:
+#   - On branch `main` (or `<tag>-dev` for dry-run)
+#   - GPG signing key configured (optional; unsigned annotated tag otherwise)
+#   - `make test` and `make verify-doc-links` pass locally
+#
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of tag_release.sh — the same steps in the same
+# order, the same lines on the same streams, the same exits (2 usage / bad version, 1 a FAIL:). The
+# step comments of the shell (the #666 topology, the gates-never-piped log, the #1450 ratchet wait,
+# the CO-4 tag-before-build order) hold here unchanged; read them in git history of tag_release.sh.
+# Three changes, each a finding (cx-private#1952):
+#   - the binary is deps/cx-core-code/vcx/target/cx (vcx/target/cx is the pre-split path);
+#   - the dry run names the manifests bump_version.cx stamps that EXIST (VERSION,
+#     deps/cx-core-code/cx.pc.in + vcx/v.mod + vcx/README.md, README.md, SECURITY.md), not the
+#     lang/* and root manifests that left with the split;
+#   - the stamped core manifests live in the pin, which this tree's commit does not carry: a cut
+#     whose pin does not already read the version would tag a tree that does not reproduce, so the
+#     real run refuses before any state change (the dry run warns) — bump cx-core-code, repin, cut.
+# The #1450 retry now fires: make answers 2 for the ratchet's exit 3, so the shell never retried; a
+# failed `make perf-ratchet` whose output carries run_bench_json's or compare_bench's REFUSING line is
+# the refusal (exit 3) and waits for the box.
+# A failing bump_version.cx now fails the cut (the shell ran on past it, set -e being off).
+# --help prints this file's lines 2-30, as the shell printed its own.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def fail scope=public impure ($s) [?let [= $_ [$cry [$cat ('FAIL: ', $s)]]] [$env:exit 1]]]
+
+# $(cmd): stdout with the trailing newlines dropped; rc beside it.
+[?def out scope=public impure ($root $argv)
+  [?let [= $r [$process:run $argv cwd=$root]]
+    [?match $r [case [err$e] [res rc=127 out='']]
+      [else [res rc=$r@exit-code out=[$strings:trim-end-chars [$string $r@stdout] "\n"]]]]]]
+# a command whose output goes where the script's goes; its exit code.
+[?def loud scope=public impure ($root $argv)
+  [?let [= $r [$process:run $argv cwd=$root capture={stdout: :inherit, stderr: :inherit} timeout-ms=86400000]]
+    [?match $r [case [err$e] [?let [= $_ [$cry [$string $e@message]]] 127]] [else $r@exit-code]]]]
+# `cmd 2>&1 > FILE`: both streams into one file, in order; the exit code.
+[?def into scope=public impure ($root $argv $file)
+  [?let [= $h [$process:spawn $argv cwd=$root stdin=:discard stdout=$file stderr=:stdout]]
+    [?else [$process:wait $h] 127]]]
+# tail -N of a file, printed as tail prints it.
+[?def tail scope=public impure ($file $n)
+  [?let [= $t [?else [$io:read-file $file] '']]
+        [= $ls [$strings:split $t "\n"]]
+        [= $nl [$strings:ends-with $t "\n"]]
+        [= $body [?if $nl [then [?to-array [?for [in $i [$range 1 [- [$count $ls] 1]]] [yield [$nth $ls $i]]]]] [else $ls]]]
+        [= $k [$count $body]]
+        [= $from [?if [> $k $n] [then [+ [- $k $n] 1]] [else 1]]]
+        [= $keep [?to-array [?for [in $i [$range $from $k]] [yield [$nth $body $i]]]]]
+    [?if [= $t ''] [then null]
+      [else [$io:write-string [$env:stdout] [$cat ([$strings:join $keep "\n"], [?if $nl [then "\n"] [else '']])]]]]]]
+# `cmd 2>&1 | tail -N`: the command's exit code (PIPESTATUS[0]).
+[?def tailrun scope=public impure ($root $argv $n)
+  [?let [= $f [$cat ([$strings:trim-end-chars [$out '/' ('mktemp', '/tmp/tag-release-tail.XXXXXX')]@out "\n"], '')]]
+        [= $rc [$into $root $argv $f]]
+        [= $_t [$tail $f $n]]
+        [= $_r [?else [$io:remove $f] null]]
+    $rc]]
+
+# the ratchet through make (#1450): make answers 2 for any failed recipe, so the refusal's own exit 3
+# never reached the shell's retry; the refusal is read from the two refusing programs' own lines.
+[?def ratchet-run scope=public impure ($root)
+  [?let [= $f [$out '/' ('mktemp', '/tmp/tag-release-ratchet.XXXXXX')]@out]
+        [= $rc [$into $root ('make', 'perf-ratchet') $f]]
+        [= $_t [$tail $f 30]]
+        [= $t [?else [$io:read-file $f] '']]
+        [= $_r [?else [$io:remove $f] null]]
+    [?if [and [not [= $rc 0]] [or [$strings:contains $t 'REFUSING TO MEASURE'] [$strings:contains $t 'REFUSING TO JUDGE']]] [then 3] [else $rc]]]]
+
+[?def have-target scope=public impure ($root $t)
+  [?let [= $rx [$re:compile [$cat ('^', $t, ':')]]]
+    [> [$count [?to-array [?for [in $l [$strings:split-lines [?else [$io:read-file [$cat ($root, '/Makefile')]] '']]] [where [$re:find $rx $l]] [yield 1]]]] 0]]]
+
+# the version a pinned core manifest carries ('' when absent or unread).
+[?def pin-version scope=public impure ($root $f $rx)
+  [?let [= $p [$cat ($root, '/deps/cx-core-code/', $f)]]
+    [?if [not [$io:is-file $p]] [then '']
+      [else [?let [= $m [$re:find [$re:compile $rx] [$io:read-file $p]]]
+              [?if [$present $m] [then [$re:group $m 1]] [else '']]]]]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $self [$nth $argv 1]]
+  [= $root [$path:dirname [$path:dirname [$path:absolute $self]]]]
+  [= $args [?to-array [?for [in $i [$range 2 [$count $argv]]] [yield [$nth $argv $i]]]]]
+  [= $vfile [?fn () [$strings:replace [$strings:replace [$strings:replace [?else [$io:read-file [$cat ($root, '/VERSION')]] ''] ' ' ''] "\n" ''] "\t" '']]]
+  # the arguments, in order: help exits where it stands, an unknown one exits 2 where it stands.
+  [= $opt [?loop [= $i 1] [= $acc [o dry='n' tag='']]
+            [?if [> $i [$count $args]] [then [break $acc]]
+              [else [?let [= $a [$nth $args $i]]
+                [?if [= $a '--dry-run'] [then [continue [+ $i 1] [o dry='y' tag=$acc@tag]]]
+                  [else [?if [or [= $a '-h'] [= $a '--help']]
+                    [then [?let [= $ls [$strings:split [$io:read-file [$path:absolute $self]] "\n"]]
+                                [= $_ [?for [in $j [$range 2 [?if [< [$count $ls] 30] [then [$count $ls]] [else 30]]]] [yield [$say [$nth $ls $j]]]]]
+                            [$env:exit 0]]]
+                    [else [?if [$re:find [$re:compile '^v[0-9]'] $a] [then [continue [+ $i 1] [o dry=$acc@dry tag=$a]]]
+                      [else [?let [= $_ [$cry [$cat ('Unknown arg: ', $a)]]] [$env:exit 2]]]]]]]]]]]]]
+  [= $dry [= $opt@dry 'y']]
+  [= $tag [?if [not [= $opt@tag '']] [then $opt@tag]
+            [else [?if $dry [then [$cat ('v', [$vfile])]]
+              [else [?let [= $_ [$cry [$cat ('Usage: ', $self, ' [--dry-run] <tag>  (e.g. v', [$vfile], ')')]]] [$env:exit 2]]]]]]]
+  [= $version [$strings:slice $tag 2 [$strings:length $tag]]]
+  [= $_v [?if [$re:matches [$re:compile '^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$'] $version] [then null]
+           [else [?let [= $_ [$cry [$cat ('Bad version: ', $version)]]] [$env:exit 2]]]]]
+  [= $note [?fn ($s) [$say [?if $dry [then [$cat ('[dry-run] ', $s)]] [else [$cat ('== ', $s, ' ==')]]]]]]
+  [= $cx [$cat ($root, '/deps/cx-core-code/vcx/target/cx')]]
+
+  # -- Step 1: sanity (#666 topology: vX.Y.Z and vX.Y.Z-pre.N cut from release/X.Y) --
+  [= $cur [$out $root ('git', 'rev-parse', '--abbrev-ref', 'HEAD')]@out]
+  [= $expect [$cat ('release/', [$re:replace-first [$re:compile '^([0-9]+\.[0-9]+)\..*$'] $version '${1}'])]]
+  [= $_b [?if [not $dry]
+           [then [?if [not [= $cur $expect]] [then [$fail [$cat ('Not on ', $expect, ' (currently on ', $cur, '); v', $version, ' cuts from its release branch (#666).')]]] [else null]]]
+           [else [?if [not [= $cur $expect]]
+                   [then [$say [$cat ('[dry-run] WARNING: the real tag would REFUSE here — on ', $cur, ', ', $tag, ' requires ', $expect)]]]
+                   [else [$say [$cat ('[dry-run] current branch: ', $cur, '  (matches what the real tag requires)')]]]]]]]
+  [= $_d [?if [= [$out $root ('git', 'diff-index', '--quiet', 'HEAD')]@rc 0] [then null]
+           [else [?if $dry [then [$say '[dry-run] working tree dirty (real tag would refuse here)']]
+                   [else [$fail 'Working tree dirty; commit or stash first.']]]]]]
+  [= $_t [?if [= [$out $root ('git', 'rev-parse', '-q', '--verify', [$cat ('refs/tags/', $tag)])]@rc 0]
+           [then [$fail [$cat ('Tag ', $tag, ' already exists.')]]] [else null]]]
+  [= $_s [$note [$cat ('sanity OK (branch=', $cur, ', tree clean, ', $tag, ' not yet taken)')]]]
+  # cx-private#1952: the stamped core manifests are the pin's; the pin must already read the version.
+  [= $pv [?to-array [?for [in $m ([f path='cx.pc.in' rx='(?m)^Version:[ \t]*([^ \t\n]+)[ \t]*$'], [f path='vcx/v.mod' rx="version:\\s*'([^']+)'"])]
+                       [where [not [= [$pin-version $root $m@path $m@rx] $version]]]
+                       [yield [$cat ('deps/cx-core-code/', $m@path, ' reads ', [?let [= $g [$pin-version $root $m@path $m@rx]] [?if [= $g ''] [then '(absent)'] [else $g]]])]]]]]
+  [= $_p [?if [= [$count $pv] 0] [then null]
+           [else [?let [= $why [$cat ('the core pin does not carry ', $version, ' (', [$strings:join $pv '; '], ') — stamp it with bump_version.cx, commit deps/cx-core-code on cx-core-code main, repin deps.cxd + registry/repos.cxd, then cut (cx-private#1952)')]]
+                   [?if $dry [then [$say [$cat ('[dry-run] WARNING: the real tag would REFUSE here — ', $why)]]] [else [$fail $why]]]]]]]
+
+  # -- Step 4: make test (full log KEPT, never piped through tail) --
+  [= $_4 [$note "running 'make test'"]]
+  [= $_4b [?if $dry
+            [then [?if [$have-target $root 'test'] [then [$say "[dry-run] target 'make test' declared in Makefile; skipping execution"]] [else [$fail 'make test target missing']]]]
+            [else [?let [= $log [$out '/' ('mktemp', '/tmp/tag-release-make-test.log.XXXXXX')]@out]
+                        [= $_n [$note [$cat ("full 'make test' log: ", $log)]]]
+                        [= $rc [$into $root ('make', 'test') $log]]
+              [?if [= $rc 0] [then [$tail $log 3]]
+                [else [?let [= $rx [$re:compile 'make(\[[0-9]+\])?: \*\*\*|FAIL|Error']]
+                            [= $hits [?to-array [?for [in $l [$strings:split-lines [$io:read-file $log]]] [where [$re:find $rx $l]] [yield $l]]]]
+                            [= $from [?if [> [$count $hits] 20] [then [- [$count $hits] 19]] [else 1]]]
+                            [= $_g [?for [in $i [$range $from [$count $hits]]] [yield [$say [$nth $hits $i]]]]]
+                        [$fail [$cat ('make test failed — full log: ', $log)]]]]]]]]]
+
+  # -- Step 5: doc-link verification --
+  [= $_5 [$note "running 'make verify-doc-links'"]]
+  [= $_5b [?if $dry
+            [then [?if [$have-target $root 'verify-doc-links'] [then [$say "[dry-run] target 'make verify-doc-links' declared in Makefile; skipping execution"]] [else [$fail 'make verify-doc-links target missing']]]]
+            [else [?if [= [$tailrun $root ('make', 'verify-doc-links') 10] 0] [then null] [else [$fail 'make verify-doc-links failed']]]]]]
+
+  # -- Step 4b: perf ratchet (#1249, RULED: 1249-Q1a; #1450: a refusal on a loaded box retries) --
+  [= $_r [$note "running 'make perf-ratchet'"]]
+  [= $_rb [?if $dry
+            [then [?if [$have-target $root 'perf-ratchet'] [then [$say "[dry-run] target 'make perf-ratchet' declared in Makefile; skipping execution"]] [else [$fail 'make perf-ratchet target missing']]]]
+            [else [?let [= $tries [?else [$strings:to-int [$env:var-or-default 'CX_RATCHET_TRIES' '12']] 12]]
+                        [= $wait [$env:var-or-default 'CX_RATCHET_WAIT' '300']]
+                        [= $rc [?loop [= $attempt 1]
+                                 [?if [> $attempt $tries] [then [break 3]]
+                                   [else [?let [= $rc [$ratchet-run $root]]
+                                     [?if [not [= $rc 3]] [then [break $rc]]
+                                       [else [?if [< $attempt $tries]
+                                               [then [continue [?let [= $_ [$note [$cat ('perf ratchet REFUSED to measure on a loaded box (#1450) — attempt ', [$string $attempt], ' of ', [$string $tries], '; waiting ', $wait, 's for the box')]]]
+                                                                     [= $_z [$process:run ('sleep', $wait)]]
+                                                                 [+ $attempt 1]]]]
+                                               [else [break 3]]]]]]]]]]
+              [?if [= $rc 3] [then [$fail [$cat ('make perf-ratchet refused on every one of ', [$string $tries], ' attempts — the box never went quiet (one-minute load over CX_BENCH_MAX_LOAD). Cut on an idle machine; never raise the bound to get a number.')]]]
+                [else [?if [not [= $rc 0]] [then [$fail 'make perf-ratchet failed — a benchmark regressed past 10% of the previous cut (bench/baseline.json); fix or rule before cutting']]
+                  [else [?let [= $_c [$io:write-file [$cat ($root, '/bench/baseline.json')] [$io:read-file [$cat ($root, '/bench/current.json')]]]]
+                          [$note 'perf ratchet green — bench/baseline.json re-pinned to this cut\'s measurement']]]]]]]]]]
+
+  # -- Step 2: version bump (skipped on dry-run) --
+  [= $_2 [?if $dry
+           [then [?let [= $_h [$say [$cat ('[dry-run] would bump version strings to ', $version, ' in:')]]]
+                   [?for [in $f ('VERSION', 'deps/cx-core-code/cx.pc.in', 'deps/cx-core-code/vcx/v.mod', 'README.md', 'deps/cx-core-code/vcx/README.md', 'SECURITY.md')]
+                     [where [$io:is-file [$cat ($root, '/', $f)]]] [yield [$say [$cat ('          ', $f)]]]]]]
+           [else [?let [= $_n [$note [$cat ('stamping version to ', $version, ' (VERSION file + manifests via bump_version.cx)')]]]
+                       [= $_b [?if [= [$loud $root ($cx, '--allow-all', 'scripts/bump_version.cx', $version)] 0] [then null] [else [$fail 'bump_version.cx failed']]]]
+                       [= $_c [$note 'verifying version consistency']]
+                       [= $_k [?if [= [$loud $root ($cx, '--allow-read', '--allow-write', 'scripts/check_version_consistency.cx')] 0] [then null] [else [$fail 'version inconsistent after bump']]]]
+                   [?if [= [$loud $root ('make', 'docs-check')] 0] [then null] [else [$fail 'generated docs drifted from the bumped VERSION (#1435)']]]]]]]
+
+  # -- Step 3: commit the bump, TAG it, THEN rebuild (#666, #979/CO-4: the order is load-bearing) --
+  [= $_3 [?if $dry
+           [then [$say [$cat ('[dry-run] would commit version bump, create the annotated tag ', $tag, ' on it, then run: make build-vcx-pgo')]]]
+           [else [?let [= $_n [$note 'committing version bump']]
+                       [= $_a [$process:run ('git', 'add', '-u') cwd=$root capture={stdout: :inherit, stderr: :discard}]]
+                       [= $_c [$loud $root ('git', 'commit', '-m', [$cat ('chore(release): bump version strings to ', $version)])]]
+                       [= $msg [$cat ('CX ', $tag, ' release. See RELEASE_NOTES_', [$strings:replace $tag '.' '_'], '.md for full release notes.')]]
+                       [= $signed [and [= [$out $root ('git', 'config', '--get', 'user.signingkey')]@rc 0] [= [$out $root ('gpg', '--list-secret-keys')]@rc 0]]]
+                       [= $_t [?if $signed
+                                [then [?let [= $_ [$note [$cat ('creating signed tag ', $tag, ' on the bump commit (before the build — CO-4)')]]]
+                                        [?if [= [$loud $root ('git', 'tag', '-s', $tag, '-m', $msg)] 0] [then null] [else [$fail [$cat ('could not create tag ', $tag)]]]]]]
+                                [else [?let [= $_ [$note [$cat ('no GPG signing key configured — creating an annotated (unsigned) tag ', $tag, ' on the bump commit (matches the prior CX tags)')]]]
+                                        [?if [= [$loud $root ('git', 'tag', '-a', $tag, '-m', $msg)] 0] [then null] [else [$fail [$cat ('could not create tag ', $tag)]]]]]]]]
+                       [= $untag [?fn ($s) [?let [= $_ [$process:run ('git', 'tag', '-d', $tag) cwd=$root]] [$fail $s]]]]
+                       [= $_p [$note 'rebuilding libcx + cli with PGO (at the tag — the artifacts stamp as the release)']]
+                       [= $_m [?if [= [$loud $root ('make', 'build-vcx-pgo')] 0] [then null] [else [$untag 'make build-vcx-pgo failed']]]]
+                       # Provenance gate (#666, #979/CO-4): the binary reports exactly this version at this clean commit.
+                       [= $st0 [$out $root ($cx, 'version')]]
+                       [= $stamp [?if [= $st0@rc 0] [then $st0@out] [else [$out $root ($cx, '-v')]@out]]]
+                       [= $headline [$nth [$strings:split $stamp "\n"] 1]]
+                       [= $want [$out $root ('git', 'rev-parse', '--short', 'HEAD')]@out]
+                       [= $_h [?if [= $headline [$cat ('cx v', $version)]] [then null]
+                                [else [$untag [$cat ("provenance stamp: binary reports '", $headline, "', expected exactly 'cx v", $version, "' (a '-dev+' headline means the build did not see HEAD at an annotated ", $tag, ' with a clean tree — RULED: CO-4)')]]]]]
+                       [= $crx [$re:compile [$cat ('commit[[:space:]]+', $want, '$')]]]
+                       [= $sl [$strings:split $stamp "\n"]]
+                       [= $_k [?if [> [$count [?to-array [?for [in $l $sl] [where [$re:find $crx $l]] [yield 1]]]] 0] [then null]
+                                [else [$untag [$cat ("provenance stamp: binary's commit is not clean '", $want, "' — got: ",
+                                                     [$strings:join [?to-array [?for [in $l $sl] [where [$strings:contains $l 'commit']] [yield $l]]] "\n"])]]]]]
+                   [$note [$cat ('provenance stamp verified: cx v', $version, ' @ ', $want, ' (clean, at ', $tag, ')')]]]]]]
+
+  # -- Step 6: report (the tag was created in step 3b) --
+  [= $_6 [?if $dry
+           [then [?let [= $_a [$say '[dry-run] would print push instructions']] [= $_b [$say '']]
+                       [= $_c [$say '[dry-run] all checks passed — real tag would proceed cleanly.']]
+                   [$env:exit 0]]]
+           [else null]]]
+  [= $us [$strings:replace $tag '.' '_']]
+  [= $_o [?for [in $l ('', '== ready to push ==', 'Next steps:',
+                       [$cat ('  1. Review the commit + tag: git show ', $tag)],
+                       [$cat ('  2. Push:                    git push origin main && git push origin ', $tag)],
+                       '  3. Wait for .github/workflows/release.yml to publish the draft release',
+                       [$cat ('  4. Edit the draft release body to reference RELEASE_NOTES_', $us, '.md')],
+                       '  5. Publish the GitHub release')]
+           [yield [$say $l]]]]
+  [$env:exit 0]]

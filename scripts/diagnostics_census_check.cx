@@ -8,7 +8,7 @@
 # said 784. This step regenerates the census into a temporary file and
 # refuses
 #   - a census whose observed codes (emitted or asserted, every root it reads)
-#     are not the codes scripts/cxer_registry_report.sh counts — the two read
+#     are not the codes scripts/cxer_registry_report.cx counts — the two read
 #     the same roots, this tree's and every pin's, or one of them is stale;
 #   - a tracked census that is not the regenerated one (drift: run
 #     `make diagnostics-census` and commit the file), as ledger-index-check
@@ -38,7 +38,7 @@
       [= $fresh [?else [$io:read-file $tmp] '']]
       [= $_rm [$io:remove-tree $d]]
       [= $tracked [?else [$io:read-file TRACKED] '']]
-      [= $r [$process:run ('bash', 'scripts/cxer_registry_report.sh') timeout-ms=900000]]
+      [= $r [$process:run ([$env:executable-path], '--allow-read', '--allow-subprocess', 'scripts/cxer_registry_report.cx') timeout-ms=900000]]
       [= $reg [$first-group 'cxer_registry_report: ([0-9]+) distinct codes' [$string $r@stdout]]]
       [= $obs [$first-group '\[summary [^]]*observed=([0-9]+)' $fresh]]
       [= $refusals [?to-sequence [?concat

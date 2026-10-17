@@ -28,7 +28,7 @@
 #
 #  (1) ALL when the branch changes what grades, rather than what is graded:
 #      vcx/tests/fixtures_grader/**, vcx/tests/code_eval_fixtures*,
-#      scripts/run_fixture_shards.sh, scripts/fixtures_census.sh, or the V pin
+#      scripts/run_fixture_shards.sh, scripts/fixtures_census.cx, or the V pin
 #      third_party/v, or deps.cxd (a moved pin moves the Ring 0 module every
 #      case is parsed and evaluated through; RULED: RS-7, RS-12). A branch that
 #      changes the grader must grade everything —
@@ -134,7 +134,7 @@ else
 fi
 
 # The corpus this grader walks — derived from the directories, never listed, the
-# same way check_fixture_shard_manifest.sh derives it. A .cxd that lands in a
+# same way check_fixture_shard_manifest.cx derives it. A .cxd that lands in a
 # ring directory is in the walk the moment it lands.
 corpus=$(for d in stdlib platform x xap; do
 	for f in conformance/$d/*.cxd; do [ -e "$f" ] && echo "$f"; done
@@ -250,7 +250,7 @@ ROWS
 
 	# (1) what grades, rather than what is graded
 	case "$f" in
-	vcx/tests/fixtures_grader/* | vcx/tests/code_eval_fixtures* | scripts/run_fixture_shards.sh | scripts/fixtures_census.sh | third_party/v | third_party/v/* | deps.cxd)
+	vcx/tests/fixtures_grader/* | vcx/tests/code_eval_fixtures* | scripts/run_fixture_shards.sh | scripts/fixtures_census.cx | third_party/v | third_party/v/* | deps.cxd)
 		all=1
 		continue
 		;;

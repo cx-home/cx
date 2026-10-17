@@ -1,0 +1,134 @@
+#
+# The #1015 no-CDN gate for the <cx-diagram> web component — the sibling of
+# the playground's #1007 assertions in scripts/test_playground_smoke.sh, for
+# the other surface that was still loading mermaid@10 from jsDelivr.
+#
+# What it asserts, and why each one is here:
+#
+#   1. tooling/web/cx-diagram.js carries NO off-origin URL of any kind. The
+#      component's whole defect was a `https://cdn.jsdelivr.net/npm/mermaid@10`
+#      default — a floating range (jsDelivr served whatever the newest 10.x was
+#      that day), fetched at runtime, dead on a plane or behind a proxy. There
+#      is no allowlist here: this file is 200 lines of component logic and has
+#      no business naming a remote host at all.
+#
+#   2. demo.html loads no off-origin <script>, and no off-origin reference of
+#      any kind. Executable third-party code is the class that BREAKS a feature
+#      when the network is absent — it does not degrade, the pane just dies.
+#      Checking every reference (not only scripts) means a NEW CDN of any shape
+#      trips this on arrival, which is the #1007 rule.
+#
+#   3. The staged renderer is the ONE vendored bundle, byte-for-byte. This is
+#      the assertion that keeps the repo from growing a SECOND mermaid pin that
+#      drifts from the playground's — the exact failure #1007 closed when the
+#      validity gate and the page turned out to resolve different copies. It is
+#      compared against scripts/gen_guide/playground/vendor/mermaid.min.js by
+#      hash, not merely by size, so a stale staged copy cannot pass.
+#
+#   4. That bundle is real (≥1 MB) and its MIT license travels with it — a
+#      placeholder file that merely exists must not read as green.
+#
+# Deliberately dependency-free: one cx program (CXMACH-1; it was shell + shasum). No node, no npm, no
+# http server, no emcc. The component is static files, so the gate that guards
+# it should be runnable anywhere, including in a release checkout.
+#
+# Run via `make test-web-component-offline` (which stages the docroot first).
+
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of test_web_component_offline.sh — the same
+# five checks in the same order, every line and exit (2 a missing input, 1 a finding, 0 OK); the
+# files are read line by line as grep reads them.
+#   $(TOOL_CX) --allow-all scripts/test_web_component_offline.cx
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/hash'    as=hash]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def lines scope=public ($t)
+  [?let [= $ls [$strings:split $t "\n"]]
+    [?if [= $t ''] [then ()]
+      [else [?if [$strings:ends-with $t "\n"] [then [?to-sequence [?for [in $i [$range 1 [- [$count $ls] 1]]] [yield [$nth $ls $i]]]]] [else $ls]]]]]]
+# grep -nE RX FILE: "N:line" for each matching line, newline-joined ('' when none).
+[?def grep-n scope=public ($rx $t)
+  [?let [= $ls [$lines $t]] [= $r [$re:compile $rx]]
+    [$strings:join [?to-sequence [?for [in $i [$range 1 [$count $ls]]] [where [$present [$re:find $r [$nth $ls $i]]]]
+                                       [yield [$cat ([$string $i], ':', [$nth $ls $i])]]]] "\n"]]]
+# grep -oE RX FILE: every match on every line, one per line ('' when none).
+[?def grep-o scope=public ($rx $t)
+  [?let [= $r [$re:compile $rx]]
+    [$strings:join [?to-sequence [?for [in $l [$lines $t]] [in $m [$re:find-all $r $l]] [yield [$re:group $m 0]]]] "\n"]]]
+[?def fail scope=public impure ($why) [?let [= $_ [$say [$cat ('web-component offline gate FAIL — ', $why)]]] [$env:exit 1]]]
+[?def say-all scope=public impure ($ls) [?for [in $l $ls] [yield [$say $l]]]]
+
+[?let
+  [= $root [$path:dirname [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]]
+  [= $at [?fn ($p) [$cat ($root, '/', $p)]]]
+  # The component and its demo page left with cx-tooling (RULED: RS-12, D59a) and are read from
+  # its pinned checkout; the vendored mermaid they must match stays here.
+  [= $component 'deps/cx-tooling/tooling/web/cx-diagram.js']
+  [= $demo 'deps/cx-tooling/tooling/web/demo.html']
+  [= $vendor-src 'scripts/gen_guide/playground/vendor/mermaid.min.js']
+  [= $vendor-license-src 'scripts/gen_guide/playground/vendor/LICENSE-mermaid.txt']
+  [= $stage 'dist/web-component-preview']
+  # ── 0. preconditions: a missing input is a LOUD setup failure (exit 2), never a skip.
+  [= $_0 [?for [in $f ($component, $demo, $vendor-src, $vendor-license-src)]
+           [yield [?if [$io:is-file [$at $f]] [then null]
+                    [else [?let [= $_ [$say [$cat ('web-component offline gate SETUP FAILURE — ', $f, ' is missing')]]] [$env:exit 2]]]]]]]
+  [= $_s [?if [$io:is-directory [$at $stage]] [then null]
+           [else [?let [= $_1 [$say [$cat ('web-component offline gate SETUP FAILURE — ', $stage, ' not staged.')]]]
+                       [= $_2 [$say '  Run: make stage-web-component']] [$env:exit 2]]]]]
+  [= $comp [$io:read-file [$at $component]]]
+  [= $demo-t [$io:read-file [$at $demo]]]
+  # ── 1. the component names no remote host
+  [= $off [$grep-n 'https?://' $comp]]
+  [= $_1 [?if [= $off ''] [then null]
+           [else [?let [= $_ [$say-all ([$cat ('web-component offline gate FAIL — ', $component, ' names off-origin URL(s) (#1015):')],
+                                        [$cat ('    ', $off)],
+                                        '  The renderer is same-origin by design: the component resolves',
+                                        '  ./vendor/mermaid.min.js against its own script URL, and',
+                                        '  cxDiagramConfig.mermaidUrl is the documented injection point.',
+                                        '  A CDN URL here is the #1007 defect, one surface over.')]]
+                   [$env:exit 1]]]]]
+  # ── 2. the demo page loads nothing off-origin
+  [= $ds [$grep-o '<script[^>]+src="https?://[^"]+"' $demo-t]]
+  [= $_2 [?if [= $ds ''] [then null]
+           [else [?let [= $_ [$say-all ([$cat ('web-component offline gate FAIL — ', $demo, ' loads script(s) from off-origin (#1015):')], [$cat ('    ', $ds)])]]
+                   [$env:exit 1]]]]]
+  [= $do [$grep-o '(src|href)="https?://[^"]+"' $demo-t]]
+  [= $_3 [?if [= $do ''] [then null]
+           [else [?let [= $_ [$say-all ([$cat ('web-component offline gate FAIL — ', $demo, ' carries off-origin reference(s) (#1015):')], [$cat ('    ', $do)],
+                                        [$cat ('  Stage the asset under ', $stage, '/vendor/ instead, or extend this gate')],
+                                        '  with the named reason it may stay remote (the #1007 allowlist rule).')]]
+                   [$env:exit 1]]]]]
+  # ── 3. the staged renderer IS the one vendored artifact
+  [= $staged-bundle [$cat ($stage, '/vendor/mermaid.min.js')]]
+  [= $staged-license [$cat ($stage, '/vendor/LICENSE-mermaid.txt')]]
+  [= $_4 [?if [$io:is-file [$at $staged-bundle]] [then null] [else [$fail [$cat ($staged-bundle, ' not staged')]]]]]
+  [= $_5 [?if [$io:is-file [$at $staged-license]] [then null] [else [$fail [$cat ($staged-license, ' not staged (the MIT license travels with the bundle)')]]]]]
+  [= $src-hash [$hash:sha256-hex [$io:read-file-bytes [$at $vendor-src]]]]
+  [= $stg-bytes [$io:read-file-bytes [$at $staged-bundle]]]
+  [= $stg-hash [$hash:sha256-hex $stg-bytes]]
+  [= $_6 [?if [= $src-hash $stg-hash] [then null]
+           [else [?let [= $_ [$say-all ('web-component offline gate FAIL — the staged renderer is NOT the vendored one (#1015):',
+                                        [$cat ('    ', $vendor-src, '     ', $src-hash)],
+                                        [$cat ('    ', $staged-bundle, '  ', $stg-hash)],
+                                        '  Two mermaid copies that can drift apart is exactly what #1007 closed.',
+                                        '  Re-run: make stage-web-component')]]
+                   [$env:exit 1]]]]]
+  # ── 4. it is a real bundle, not a placeholder that merely exists
+  [= $n [$io:size [$at $staged-bundle]]]
+  [= $_7 [?if [< $n 1000000] [then [$fail [$cat ($staged-bundle, ' is only ', [$string $n], ' bytes — not a mermaid bundle')]]] [else null]]]
+  # ── 5. the component still resolves the vendored path it stages
+  [= $_8 [?if [= [$grep-n 'vendor/mermaid.min.js' $comp] '']
+           [then [$fail [$cat ($component, " no longer references ./vendor/mermaid.min.js — the staged layout and the component's default have diverged")]]]
+           [else null]]]
+  [= $_9 [$say-all ('web-component offline gate: OK',
+                    [$cat ('  - ', $component, ' names no off-origin URL')],
+                    [$cat ('  - ', $demo, ' loads no off-origin script and no off-origin reference')],
+                    [$cat ('  - staged renderer matches the ONE vendored bundle (sha256 ', [$strings:slice $src-hash 1 16], '…, ', [$string $n], ' bytes)')],
+                    '  - LICENSE-mermaid.txt staged beside it')]]
+  [$env:exit 0]]

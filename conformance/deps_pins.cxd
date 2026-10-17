@@ -25,7 +25,7 @@
 # file rather than a discretionary omission.
 #
 # Graded by `make test-deps-pins` (scripts/check_deps_pins_fixtures.cx), which
-# is the claim check_conformance_coverage.sh carries for this suite.
+# is the claim check_conformance_coverage.cx carries for this suite.
 #
 # THE SYNC CASES (deps-02x, #1617). A case carrying a [sync] child is not a
 # document to validate: it is a scenario run against scripts/deps_sync.cx
