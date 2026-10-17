@@ -1,0 +1,284 @@
+# scripts/build_slot.cx <command…> — the machine-wide RUNNER (CXMACH-1: the cx rewrite of
+# scripts/build-slot.sh; the lock protocol is the same byte for byte, so a holder started by
+# the shell script and one started here share one slot during the change-over).
+#
+# Only one build, test step or pipeline run may execute on this box at a time: a full
+# post-merge run is load-sensitive (false reds in the http/pty steps when anything else
+# compiles), test steps bind fixed ports, and every worktree shares the V object cache in
+# /tmp/v_$UID. Editing, reading and diagnosing are free and never wait; anything that
+# COMPILES or RUNS TESTS goes through this wrapper:
+#
+#   cx --allow-all scripts/build_slot.cx make test-changed
+#   cx --allow-all scripts/build_slot.cx devbox run -- make build-vcx-dev
+#
+# The runner is a directory (make-dir is atomic) shared by every worktree: $CX_RUNNER (or its
+# older spelling $CX_BUILD_SLOT), default ~/git-repos/cx/.build-slot — the PARENT of all cx
+# worktrees, so a worktree's own copy of this program finds the same lock. It records the
+# holder's pid, command, cwd and start time. A holder whose pid is dead is stale and is broken
+# by the next waiter. Waiting is bounded (BUILD_SLOT_TIMEOUT seconds, default 4 h); on timeout
+# the wrapper exits 75 (EX_TEMPFAIL) without running the command. The command runs with the
+# resolved directory exported as CX_BUILD_SLOT (the Makefile's check-gate-lock exempts a step
+# a pre-merge runner holds, RULED: INT-1); CX_RUNNER is deliberately not exported (the
+# Makefile uses that name for the cx binary test-code-diagram drives).
+#
+# READING AN EXIT STATUS THROUGH THIS WRAPPER (#1570): read it from the command word, or from
+# INSIDE the script devbox runs — never from an inner shell `devbox run` wraps (its generated
+# .devbox/gen/scripts/.cmd.sh loses the inner status; scripts/exit_status_probe_gate.cx holds
+# this line). The wrapper's own exit is the command's.
+#
+# THE SHARED SLOT WAITS FOR THE LOOP'S GAP OUTSIDE ITSELF (#1749; RULED: INT-8, D17a, CXF-1,
+# AGENTS-1, REFUTE-1). `.build-slot-impl` (its basename in any case: APFS folds case) is the
+# one shared slot for load-sensitive steps, and those run only in a gap of the post-merge loop:
+# the last RUN line of the MAIN checkout's vcx/target/gate-loop.log a RUN-EXIT line. On that
+# slot this wrapper REFUSES, exit 2, naming the cause and the rule — never a silent wait —
+#   (a) while that last RUN line is RUN-START, read on arrival and again the moment the slot
+#       is taken;
+#   (b) when the loop's log cannot be found or read, or holds no RUN line;
+#   (c) for a command that reads the loop's log in ANY shape: every argument and every text
+#       file an argument names — and every file THOSE name, four levels down — is scanned for
+#       the log's name or a RUN-START/RUN-EXIT read.
+# CX_GATE_LOOP_LOG names the log (scripts/build_slot_selftest.cx plants one); by default it is
+# the first row of `git worktree list` of the tree THIS PROGRAM lives in — the main checkout —
+# whatever the caller's cwd.
+#
+# FIFO: every waiter files a ticket <slot>.queue/<epoch>.<pid>; only the OLDEST live ticket may
+# take the runner (measured 2026-09-08 02:29: waiters racing on mkdir starved one for an hour).
+# A TERM / HUP / INT to the holder frees the slot and exits 143 / 129 / 130 — once the command
+# it waits on has ended, as the shell's trap did (measured: a TERM during `sleep 47` answered 143
+# after 47 s, the slot gone); a signal taken outside that wait also stops the command first, so
+# no command ever runs on without the slot. A waiter's signal drops its ticket.
+#
+# Proof (CXMACH-1, byte for byte against the shell script on the same plants, the script's own
+# name and the temp root normalised): build_slot_selftest.cx A-M (17 runs), and usage, timeout
+# at 0 s, a stale holder broken, CX_RUNNER over CX_BUILD_SLOT, an empty CX_RUNNER, a 15 s wait
+# with an 80-character holder line, two FIFO waiters behind a holder, a SIGKILLed command (137),
+# a TERM to the holder (143, slot freed).
+# Deviations, stated: a named file is "text" (scanned) when it reads as UTF-8 and is not empty
+# (`grep -I` also called a NUL-bearing UTF-8 file binary); the shell's own job notice for a
+# signalled command (`line 200: N Killed: 9 "$@"`) is not printed; a command that cannot start
+# answers 127 with `runner: cannot run …` in place of the shell's `not found` line; cwd is the
+# process's working directory as the OS reports it (`pwd` printed the logical path).
+# Exit: the command's own; 2 a #1749 refusal; 64 usage; 75 timeout; 127 the command cannot run.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/time'    as=time]
+[?lib 'cx-stdlib/path'    as=path]
+
+# The forwarded command is often a cx command line (`cx --allow-read wait.cx`): every flag
+# cx's run surface takes is declared here so cx's post-FILE flag warning (#1424) stays quiet on
+# the forwarded words — the shell runner printed nothing there either (cx-home/cx-core-code#144).
+# The spec is never parsed against argv: argv is read positionally.
+[?const ARG_SPEC [argspec
+                         [flag name="allow-all"]
+                         [flag name="allow-common"]
+                         [flag name="allow-read"]
+                         [flag name="allow-write"]
+                         [flag name="allow-net"]
+                         [flag name="allow-env"]
+                         [flag name="allow-clock"]
+                         [flag name="allow-random"]
+                         [flag name="allow-subprocess"]
+                         [flag name="allow-eval"]
+                         [flag name="allow-secret-reveal"]
+                         [flag name="compact"]
+                         [flag name="lossless"]
+                         [flag name="probe"]
+                         [flag name="strict"]
+                         [flag name="manual-clock"]
+                         [flag name="data"]
+                         [flag name="from"]
+                         [flag name="to"]
+                         [flag name="include-root"]
+                         [flag name="ast"]
+                         [flag name="cx"]
+                         [flag name="xml"]
+                         [flag name="json"]
+                         [flag name="yaml"]
+                         [flag name="toml"]
+                         [flag name="md"]
+                         [flag name="csv"]
+                         [flag name="tsv"]
+                         [flag name="psv"]
+                         [flag name="cxcol"]]]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def text-of scope=public impure ($p) [$strings:trim [?else [$io:read-file $p] '']]]
+[?def now-s scope=public impure () [$time:to-unix [$time:utc-now]]]
+[?def iso scope=public impure () [$time:format-with-format [$time:utc-now] "yyyy-MM-dd'T'HH:mm:ss'Z'"]]
+# alive — the shell's `kill -0`: process:pid-alive probes any pid, not only a spawned one
+# (#1706, the reason this program was once kept shell).
+[?def alive scope=public impure ($pidtext)
+  [?let [= $n [?else [$strings:to-int $pidtext] 0]]
+    [and [> $n 0] [?else [$process:pid-alive $n] false]]]]
+# var — an environment variable, '' when unset or empty (the shell's ${X:-…} reads both as unset).
+[?def var scope=public impure ($n) [$env:var-or-default $n '']]
+[?def git-out scope=public impure ($argv)
+  [?let [= $r [$process:run $argv]]
+    [?match $r [case [err$e] ''] [else [?if [= $r@exit-code 0] [then [$strings:trim [$string $r@stdout]]] [else '']]]]]]
+
+[?const WORD-RX [$re:compile "[\\s\"`;()<>|&=']+"]]
+
+# loop-log — CX_GATE_LOOP_LOG, else the main checkout's log of the tree at $root ('' = none).
+[?def loop-log scope=public impure ($root)
+  [?let [= $l [$var 'CX_GATE_LOOP_LOG']]
+    [?if [not [= $l '']] [then $l]
+      [else [?if [= $root ''] [then '']
+        [else [?let [= $wl [$git-out ('git', '-C', $root, 'worktree', 'list', '--porcelain')]]
+                    [= $first [?let [= $ls [$strings:split-lines $wl]] [?if [= [$count $ls] 0] [then ''] [else [$nth $ls 1]]]]]
+                [?if [$strings:starts-with $first 'worktree ']
+                  [then [$cat ([$strings:slice $first 10 [$strings:length $first]], '/vcx/target/gate-loop.log')]]
+                  [else '']]]]]]]]]
+
+# loop-state — st=0 running (RUN-START), 1 a gap (RUN-EXIT), 2 cannot tell; msg says which.
+[?def loop-state scope=public impure ($root)
+  [?let [= $log [$loop-log $root]]
+    [?if [= $log '']
+      [then [res st=2 msg=[$cat ('the loop log cannot be found: CX_GATE_LOOP_LOG is unset and ', [?if [= $root ''] [then 'this script'] [else $root]], ' is in no git worktree')]]]
+      [else [?if [not [$io:is-file $log]]
+        [then [res st=2 msg=[$cat ('the loop log ', $log, ' is not there to read')]]]
+        [else [?let [= $txt [?else [$io:read-file $log] '']]
+                    [= $runs [?to-array [?for [in $x [$strings:split-lines $txt]] [where [$strings:contains $x ' RUN-']] [yield $x]]]]
+                    [= $line [?if [= [$count $runs] 0] [then ''] [else [$nth $runs [$count $runs]]]]]
+                [?if [$strings:contains $line ' RUN-START']
+                  [then [res st=0 msg=[$cat ('the last RUN line of ', $log, ' is `', $line, '`')]]]
+                  [else [?if [$strings:contains $line ' RUN-EXIT']
+                    [then [res st=1 msg=$line]]
+                    [else [res st=2 msg=[$cat ('the loop log ', $log, ' holds no RUN-START or RUN-EXIT line')]]]]]]]]]]]]]
+
+[?def refuse scope=public impure ($slot $why)
+  [?do [$cry [$cat ('runner: REFUSED (#1749) — ', $why)]]
+       [$cry [$cat ('runner: the shared slot ', $slot, ' is taken only in a gap of the post-merge loop: wait for RUN-EXIT in YOUR foreground `until` loop BEFORE taking it, never inside the slot-held command (AGENT-STANDING-RULES 2026-09-24 rule 5; RULED: INT-8, CXF-1, AGENTS-1)')]]
+       [$env:exit 2]]]
+
+# scan — does $text, or a text file it names (to depth 4), read the loop's log? Depth-first as
+# the shell's scan_text: the result's hit is '' (no), '-' (the text itself), or the deepest
+# named file whose own text reads the log; seen is the space-framed list of files looked at.
+[?def scan scope=public impure ($depth $text $seen)
+  [?if [or [$strings:contains $text 'gate-loop.log'] [$strings:contains $text 'RUN-START'] [$strings:contains $text 'RUN-EXIT']]
+    [then [res hit='-' seen=$seen]]
+    [else [?if [>= $depth 4]
+      [then [res hit='' seen=$seen]]
+      [else [?let [= $ws [?to-array [?for [in $w [$re:split $WORD-RX $text]] [where [not [= $w '']]] [yield $w]]]]
+              [?loop [= $s [res i=1 hit='' seen=$seen]]
+                [?let [= $i [$strings:to-int [$string $s@i]]]
+                      [= $sn [$string $s@seen]]
+                  [?if [> $i [$count $ws]]
+                    [then [break [res hit='' seen=$sn]]]
+                    [else [?let [= $w [$nth $ws $i]]
+                                [= $look [and [$io:is-file $w]
+                                              [not [or [= [$path:basename $w] 'build-slot.sh'] [= [$path:basename $w] 'build_slot.cx']]]
+                                              [not [$strings:contains $sn [$cat (' ', $w, ' ')]]]]]
+                            [?if [not $look]
+                              [then [continue [res i=[+ $i 1] hit='' seen=$sn]]]
+                              [else [?let [= $sn2 [$cat ($sn, $w, ' ')]]
+                                          [= $t [?if [> [?else [$io:size $w] 0] 1048576] [then ''] [else [?else [$io:read-file $w] '']]]]
+                                      [?if [= $t '']
+                                        [then [continue [res i=[+ $i 1] hit='' seen=$sn2]]]
+                                        [else [?let [= $r [$scan [+ $depth 1] $t $sn2]]
+                                                    [= $h [$string $r@hit]]
+                                                [?if [= $h '']
+                                                  [then [continue [res i=[+ $i 1] hit='' seen=[$string $r@seen]]]]
+                                                  [else [break [res hit=[?if [= $h '-'] [then $w] [else $h]] seen=[$string $r@seen]]]]]]]]]]]]]]]]]]]]]]
+
+# tickets — the queue's live tickets, oldest first (epoch, then pid); dead holders' tickets go.
+[?def ticket-key scope=public ($n)
+  [?let [= $p [$strings:split $n '.']]
+    [$cat ([$strings:pad-start [$nth $p 1] 14 '0'], '.', [$strings:pad-start [$nth $p [$count $p]] 10 '0'], '|', $n)]]]
+[?def tickets scope=public impure ($q)
+  [?let [= $all [?else [$io:list-dir $q] ()]]
+        [= $live [?to-array [?for [in $n $all]
+                   [where [?let [= $p [$strings:split [$string $n] '.']]
+                            [?if [$alive [$nth $p [$count $p]]] [then true]
+                              [else [?let [= $_ [?else [$io:remove [$cat ($q, '/', [$string $n])]] null]] false]]]]]
+                   [yield [$string $n]]]]]
+    [?to-array [?for [in $k [$sort [?to-array [?for [in $n $live] [yield [$ticket-key $n]]]]]]
+                 [yield [?let [= $bar [$strings:find $k '|']] [$strings:slice $k [+ $bar 1] [$strings:length $k]]]]]]]]
+
+[?def position scope=public ($xs $x)
+  [?let [= $hit [?to-array [?for [in $i [$range 1 [$count $xs]]] [where [= [$nth $xs $i] $x]] [yield $i]]]]
+    [?if [= [$count $hit] 0] [then 0] [else [$nth $hit 1]]]]]
+
+# run — the command, stdio inherited, CX_BUILD_SLOT exported; a TERM/HUP/INT frees the slot and
+# exits 143/129/130 (after the command, which is stopped first when it still runs).
+[?def run scope=public impure ($cmd $slot)
+  [?let [= $h [$process:spawn $cmd env=[map CX_BUILD_SLOT=$slot] stdin=:inherit stdout=:inherit stderr=:inherit]]
+        [= $_t [$env:on-signal (:term, :hup, :int)
+                 [?fn ($s) [?let [= $_k [?match $h [case [err$e] null] [else [?else [$process:terminate $h] null]]]]
+                                 [= $_w [?match $h [case [err$e] null] [else [?else [$process:wait-timeout $h 10000] null]]]]
+                                 [= $_r [?else [$io:remove-tree $slot] null]]
+                             [$env:exit [?if [= $s :int] [then 130] [else [?if [= $s :hup] [then 129] [else 143]]]]]]]]]
+    [?match $h [case [err$e] [?let [= $_ [$cry [$cat ('runner: cannot run ', [$string $e@message])]]] 127]]
+      [else [?else [$process:wait $h] 127]]]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $self [$path:absolute [$nth $argv 1]]]
+  [= $root [?let [= $d [$path:dirname [$path:dirname $self]]] [?if [$io:is-directory $d] [then $d] [else '']]]]
+  [= $home [$env:var-or-default 'HOME' '']]
+  [= $slot [?if [not [= [$var 'CX_RUNNER'] '']] [then [$var 'CX_RUNNER']]
+            [else [?if [not [= [$var 'CX_BUILD_SLOT'] '']] [then [$var 'CX_BUILD_SLOT']] [else [$cat ($home, '/git-repos/cx/.build-slot')]]]]]]
+  [= $timeout [?else [$strings:to-int [$var 'BUILD_SLOT_TIMEOUT']] 14400]]
+  [= $_u [?if [< [$count $argv] 2]
+           [then [?let [= $_ [$cry [$cat ('runner: usage: ', [$nth $argv 1], ' <command…>')]]] [$env:exit 64]]] [else null]]]
+  [= $cmd [?to-array [?for [in $i [$range 2 [$count $argv]]] [yield [$nth $argv $i]]]]]
+  [= $cmdline [$strings:join $cmd ' ']]
+  [= $shared [= [$strings:lower [$path:basename $slot]] '.build-slot-impl']]
+  [= $_s [?if [not $shared] [then null]
+           [else [?let [= $sc [$scan 0 $cmdline ' ']] [= $h [$string $sc@hit]]
+                       [= $_a [?if [= $h ''] [then null]
+                                [else [$refuse $slot [$cat ("the command reads the post-merge loop's log", [?if [= $h '-'] [then ''] [else [$cat (' (through ', $h, ')')]]],
+                                                            ': a wait for the loop inside the shared slot is the 2026-10-01 deadlock')]]]]]
+                       [= $ls [$loop-state $root]] [= $st [$strings:to-int [$string $ls@st]]]
+                   [?if [= $st 0] [then [$refuse $slot [$cat ('the post-merge loop is running: ', [$string $ls@msg])]]]
+                     [else [?if [= $st 2] [then [$refuse $slot [$cat ([$string $ls@msg], " — set CX_GATE_LOOP_LOG to the main checkout's vcx/target/gate-loop.log")]]]
+                       [else null]]]]]]]]
+  [= $q [$cat ($slot, '.queue')]]
+  [= $_q [?else [$io:make-dirs $q] null]]
+  [= $me [$cat ([$string [$now-s]], '.', [$string [$env:pid]])]]
+  [= $ticket [$cat ($q, '/', $me)]]
+  [= $_k [$io:write-file $ticket '']]
+  [= $drop [?fn () [?else [$io:remove $ticket] null]]]
+  [= $_sig [$env:on-signal (:term, :hup, :int)
+             [?fn ($s) [?let [= $_ [$drop]] [$env:exit [?if [= $s :int] [then 130] [else [?if [= $s :hup] [then 129] [else 143]]]]]]]]]
+  [= $got [?loop [= $w 0]
+            [?let [= $ts [$tickets $q]]
+                  [= $oldest [?if [= [$count $ts] 0] [then ''] [else [$nth $ts 1]]]]
+                  [= $took [and [= $oldest $me] [not [$io:is-directory $slot]]
+                                [?match [$io:make-dir $slot] [case [err$e] false] [else true]]]]
+              [?if $took [then [break true]]
+                [else [?let [= $holder [$text-of [$cat ($slot, '/pid')]]]
+                        [?if [and [$io:is-directory $slot] [not [= $holder '']] [not [$alive $holder]]]
+                          [then [?let [= $_ [$cry [$cat ('runner: holder ', $holder, ' is dead — breaking the stale lock')]]]
+                                      [= $_r [?else [$io:remove-tree $slot] null]]
+                                  [continue $w]]]
+                          [else [?if [>= $w $timeout]
+                            [then [?let [= $_ [$cry [$cat ('runner: waited ', [$string $w], 's for ', [$text-of [$cat ($slot, '/cmd')]],
+                                                           ' (pid ', [?if [= $holder ''] [then '?'] [else $holder]], ') — giving up')]]]
+                                    [break false]]]
+                            [else [?let [= $_m [?if [> $w 0] [then null]
+                                                 [else [$cry [$cat ('runner: waiting (queue position ', [$string [$position $ts $me]], ') — held by pid ',
+                                                                    [?if [= $holder ''] [then '?'] [else $holder]], ': ',
+                                                                    [?let [= $c [$text-of [$cat ($slot, '/cmd')]]] [$strings:slice $c 0 [?if [> [$strings:length $c] 80] [then 80] [else [$strings:length $c]]]]])]]]]]
+                                        [= $_p [$process:run ('sleep', '15')]]
+                                    [continue [+ $w 15]]]]]]]]]]]]]
+  [= $_d [$drop]]
+  [= $_t [?if $got [then null] [else [$env:exit 75]]]]
+  # the loop may have started while this waiter queued: read the line again now that the slot
+  # is held, and give it back rather than run inside a RUN-START.
+  [= $_r [?if [not $shared] [then null]
+           [else [?let [= $ls [$loop-state $root]]
+                   [?if [= [$strings:to-int [$string $ls@st]] 1] [then null]
+                     [else [?let [= $_ [?else [$io:remove-tree $slot] null]]
+                             [$refuse $slot [$cat ('while this command queued: ', [$string $ls@msg])]]]]]]]]]
+  [= $_w [?do [$io:write-file [$cat ($slot, '/pid')] [$cat ([$string [$env:pid]], "\n")]]
+              [$io:write-file [$cat ($slot, '/cmd')] [$cat ($cmdline, "\n")]]
+              [$io:write-file [$cat ($slot, '/cwd')] [$cat ([$env:cwd], "\n")]]
+              [$io:write-file [$cat ($slot, '/since')] [$cat ([$iso], "\n")]]]]
+  [= $rc [$run $cmd $slot]]
+  [= $_x [?else [$io:remove-tree $slot] null]]
+  [$env:exit $rc]]

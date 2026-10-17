@@ -1,0 +1,124 @@
+# scripts/verification_timings_selftest.cx (issue 1583, RULED: RUN-5) — the WRITER of
+# vcx/target/verification_timings.cxd, on planted files under a temp directory. CXMACH-1: the cx
+# rewrite of scripts/verification_timings_selftest.sh, the same seven cases and lines, run on
+# scripts/verification_timings.cx (the cx twin of verification_timings_lib.sh).
+#
+# #1562's budget step shipped with no writer at all: every bound read NOT MEASURED, so the step
+# judged nothing. These are the properties the writers (the post-merge runner at RUN-EXIT,
+# scripts/run_fixture_shards.sh on an unselected grader run, scripts/premerge_record.sh) rest on.
+#
+#   A  an ABSENT file → the document is created with exactly the row asked for
+#   B  a planted log with two other rows → a second write JOINS its own name's row, oldest first,
+#      and keeps the others, unchanged and in place
+#   C  a name that is not in the file yet is ADDED, replacing nothing
+#   D  the document stays well formed — one [verification-timings … ] wrapper, balanced
+#      brackets, every row one [timing name= seconds= load= at=]
+#   E  sample-load prints a bare number
+#   F  the last five rows of a name are kept, oldest dropped
+#   G  loaded rows (load over 8) never push the last five QUIET rows of a name out: five quiet,
+#      then six loaded, then one quiet → the last five quiet and the last four loaded
+#      (BUDGET-LOAD = (a), owner 2026-10-10)
+#
+# Everything is planted under a temp directory: this selftest never writes the real timings path.
+#   cx --allow-all scripts/verification_timings_selftest.cx [CX]      (from the repo root)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/re'      as=re]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+# one case's verdict, printed as the shell printed it: `  %-3s ok   %s` on stdout, the failure on stderr.
+[?def judge scope=public impure ($id $held $ok-what $bad-what)
+  [?if $held
+    [then [?let [= $_ [$say [$cat ('  ', [$strings:pad-end $id 3 ' '], ' ok   ', $ok-what)]]] true]]
+    [else [?let [= $_ [$cry [$cat ('  ', [$strings:pad-end $id 3 ' '], ' SELFTEST FAILED: ', $bad-what)]]] false]]]]
+
+[?def write scope=public impure ($cx $f $name $secs $load $at)
+  [$process:run ($cx, '--allow-all', 'scripts/verification_timings.cx', 'write-row', $f, $name, $secs, $load, $at)]]
+
+[?def text scope=public impure ($f) [?if [$io:is-file $f] [then [?else [$io:read-file $f] '']] [else '']]]
+[?def rows scope=public impure ($f)
+  [?to-array [?for [in $m [$re:find-all [$re:compile "\\[timing [^]]*\\]"] [$text $f]]] [yield [$re:group $m 0]]]]]
+[?def rows-of scope=public impure ($f $name)
+  [?to-array [?for [in $m [$re:find-all [$re:compile [$cat ("\\[timing name=", $name, " [^]]*\\]")]] [$text $f]]] [yield [$re:group $m 0]]]]]
+[?def secs-of scope=public impure ($f $name)
+  [$strings:join [?to-array [?for [in $r [$rows-of $f $name]]
+                   [yield [$cat ([$re:replace [$re:compile ".*seconds=([0-9]+).*"] $r '$1'], ' ')]]]] '']]
+[?def chars scope=public ($s $c) [- [$count [$strings:split $s $c]] 1]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $cx [?if [> [$count $argv] 1] [then [$nth $argv 2]] [else [$string [$env:executable-path]]]]]
+  [= $_h [$say 'verification-timings writer selftest (issue 1583):']]
+  [= $t [$string [$io:temp-dir 'vt-selftest.']]]
+  [= $f [$cat ($t, '/nested/verification_timings.cxd')]]
+
+  # A — an absent file (and an absent directory)
+  [= $_a0 [$write $cx $f 'union' '5400' '1.2' '2026-09-19T04:01:51Z']]
+  [= $wa '[timing name=union seconds=5400 load=1.2 at=2026-09-19T04:01:51Z]']
+  [= $ga [$strings:join [$rows $f] "\n"]]
+  [= $a [$judge 'A' [= $ga $wa] 'an absent file → the document is created with exactly that row'
+                    [$cat ("wanted one row '", $wa, "', got: ", $ga)]]]
+
+  # B — a planted log with two other rows: the named row joins its own name
+  [= $_b0 [$io:write-file $f "[verification-timings\n  [timing name=fixture-grader seconds=1384 load=0.9 at=2026-09-17T22:10:00Z]\n  [timing name=union seconds=10440 load=7.1 at=2026-09-19T04:01:51Z]\n  [timing name=selected-run seconds=900 load=0.4 at=2026-09-19T02:00:00Z]]\n"]]
+  [= $fg0 [$rows-of $f 'fixture-grader']]
+  [= $sr0 [$rows-of $f 'selected-run']]
+  [= $_b1 [$write $cx $f 'union' '3210' '1.1' '2026-09-19T06:00:00Z']]
+  [= $u [$strings:join [?to-array [?for [in $r [$rows-of $f 'union']] [yield [$cat ($r, ' ')]]]] '']]
+  [= $b [$judge 'B' [and [= $u '[timing name=union seconds=10440 load=7.1 at=2026-09-19T04:01:51Z] [timing name=union seconds=3210 load=1.1 at=2026-09-19T06:00:00Z] ']
+                         [= [$rows-of $f 'fixture-grader'] $fg0] [= [$rows-of $f 'selected-run'] $sr0] [= [$count [$rows $f]] 4]]
+                    'a second write joined the union row, oldest first; the other two are untouched'
+                    [$cat ('the write disturbed the file: ', [$strings:join [$rows $f] ' '], ' ')]]]
+
+  # C — a name not in the file yet is ADDED
+  [= $_c0 [$write $cx $f 'grader-probe' '61' '0.2' '2026-09-19T06:05:00Z']]
+  [= $c [$judge 'C' [and [= [$count [$rows $f]] 5]
+                         [= [$strings:join [$rows-of $f 'grader-probe'] "\n"] '[timing name=grader-probe seconds=61 load=0.2 at=2026-09-19T06:05:00Z]']]
+                    'a new name is added, replacing nothing'
+                    [$cat ('a new name did not simply join the file: ', [$strings:join [$rows $f] ' '], ' ')]]]
+
+  # D — the document is still well formed
+  [= $doc [$text $f]]
+  [= $opens [$chars $doc '[']] [= $closes [$chars $doc ']']]
+  [= $head1 [$nth [$strings:split $doc "\n"] 1]]
+  [= $nrows [$count [?to-array [?for [in $l [$strings:split-lines $doc]] [where [$re:matches [$re:compile "\\s*\\[timing .*"] $l]] [yield $l]]]]]
+  [= $d [$judge 'D' [and [= $opens $closes] [= $head1 '[verification-timings'] [= $nrows 5]]
+                    'balanced brackets, one wrapper, five well-formed rows'
+                    [$cat ('opens=', [$string $opens], ' closes=', [$string $closes], " head='", $head1, "' rows=", [$string $nrows])]]]
+
+  # F — the last FIVE of a name are kept, oldest dropped
+  [= $_f0 [?to-array [?for [in $i [$range 1 6]] [yield [$write $cx $f 'union' [$string [+ 1000 $i]] '2.0' [$cat ('2026-09-20T0', [$string $i], ':00:00Z')]]]]]]
+  [= $kept [$secs-of $f 'union']]
+  [= $ff [$judge 'F' [and [= $kept '1002 1003 1004 1005 1006 '] [= [$count [$rows-of $f 'grader-probe']] 1]]
+                     'seven union writes keep the last five, in order; other names untouched'
+                     [$cat ("kept union rows: '", $kept, "'")]]]
+
+  # G — loaded writes keep the quiet ones (BUDGET-LOAD = (a))
+  [= $g [$cat ($t, '/vt-g.cxd')]]
+  [= $_g0 [?to-array [?for [in $i [$range 1 5]] [yield [$write $cx $g 'union' [$string [+ 100 $i]] '2.0' [$cat ('2026-10-10T0', [$string $i], ':00:00Z')]]]]]]
+  [= $_g1 [?to-array [?for [in $i [$range 1 6]] [yield [$write $cx $g 'union' [$string [+ 900 $i]] '30.5' [$cat ('2026-10-10T1', [$string $i], ':00:00Z')]]]]]]
+  [= $g1 [$secs-of $g 'union']]
+  [= $_g2 [$write $cx $g 'union' '107' '1.0' '2026-10-10T20:00:00Z']]
+  [= $g2 [$secs-of $g 'union']]
+  [= $gg [$judge 'G' [and [= $g1 '101 102 103 104 105 902 903 904 905 906 '] [= $g2 '102 103 104 105 903 904 905 906 107 ']]
+                     'six loaded writes keep the five quiet rows; a quiet write then drops the oldest quiet one'
+                     [$cat ("after six loaded: '", $g1, "'; after one more quiet: '", $g2, "'")]]]
+
+  # E — the load sample
+  [= $lr [$process:run ($cx, '--allow-all', 'scripts/verification_timings.cx', 'sample-load')]]
+  [= $load [?match $lr [case [err$x] ''] [else [$strings:trim [$string $lr@stdout]]]]]
+  [= $e [$judge 'E' [$re:matches [$re:compile "[0-9.]+"] $load] [$cat ('sample-load printed ', $load)]
+                    [$cat ("sample-load printed '", $load, "', not a bare number")]]]
+
+  [= $_rm [$io:remove-tree $t]]
+  [= $fails [$count [?to-array [?for [in $x ($a, $b, $c, $d, $ff, $gg, $e)] [where [not $x]] [yield $x]]]]]
+  [?if [> $fails 0]
+    [then [?do [$cry [$cat ('verification-timings writer selftest: ', [$string $fails], ' case(s) FAILED')]] [$env:exit 1]]]
+    [else [?do [$say 'verification-timings writer selftest: 7/7 (created; joins its own name; adds a new name; well formed; the load sample is a number; the last five per name; loaded rows keep the last five quiet)']
+               [$env:exit 0]]]]]

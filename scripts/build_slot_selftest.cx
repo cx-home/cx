@@ -8,12 +8,12 @@
 # that needed the box quiet and the agent's waiter slept until the loop
 # finished: neither could, for 95 minutes. The rule (AGENT-STANDING-RULES
 # 2026-09-24 rule 5) was that the RUN-EXIT wait happens BEFORE the slot is
-# taken; nothing held it. scripts/build-slot.sh now does: on the shared slot it
+# taken; nothing held it. scripts/build_slot.cx (CXMACH-1: the cx rewrite of scripts/build-slot.sh) does: on the shared slot it
 # refuses, exit 2, naming the RUN line and the rule, while the loop's last RUN
 # line is RUN-START or cannot be read, and it refuses a command that reads the
 # loop's log in any shape — a shell, a CX program, nested, through env.
 #
-# THE CASES. Each runs a REAL scripts/build-slot.sh with a clean environment,
+# THE CASES. Each runs a REAL scripts/build_slot.cx with a clean environment,
 # a slot directory under a temp root, and a planted loop log — never the main
 # checkout's, so a run of this step under the live loop grades the script:
 #   A  shared slot, last RUN line RUN-START   REFUSED, exit 2, the RUN line and
@@ -66,7 +66,7 @@
 # $log is not '', the loop log), so neither the caller's CX_RUNNER nor its
 # CX_BUILD_SLOT nor its CX_GATE_LOOP_LOG can leak in.
 [?def wrap-at scope=private impure [returns element] ($script $cwd $root $slot $log $argv)
-  [$process:run [$cat2 ('sh', $script) $argv] cwd=$cwd
+  [$process:run [$cat2 [?if [$strings:ends-with $script '.cx'] [then ([$env:executable-path], '--allow-all', $script)] [else ('sh', $script)]] $argv] cwd=$cwd
                 env=[?if [= $log '']
                       [then {HOME: $root, PATH: [$path-env], CX_BUILD_SLOT: [$cat ($root, '/', $slot)], BUILD_SLOT_TIMEOUT: '30'}]
                       [else {HOME: $root, PATH: [$path-env], CX_BUILD_SLOT: [$cat ($root, '/', $slot)], CX_GATE_LOOP_LOG: $log,
@@ -74,7 +74,7 @@
                 env-clear=true timeout-ms=60000]]
 
 [?def wrap scope=private impure [returns element] ($root $slot $log $argv)
-  [$wrap-at [$cat ([$env:cwd], '/scripts/build-slot.sh')] $root $root $slot $log $argv]]
+  [$wrap-at [$cat ([$env:cwd], '/scripts/build_slot.cx')] $root $root $slot $log $argv]]
 
 [?def said scope=private pure [returns string] ($r) [$cat ([$string $r@stdout], [$string $r@stderr])]]
 
@@ -186,23 +186,23 @@
       [= $pw [$cat ($root, '/planted-wt')]]
       [= $other [$cat ($root, '/other-repo')]]
       [= $_l0 [$io:make-dirs [$cat ($pm, '/scripts')]]]
-      [= $_l1 [$io:write-file [$cat ($pm, '/scripts/build-slot.sh')] [$io:read-file 'scripts/build-slot.sh']]]
+      [= $_l1 [$io:write-file [$cat ($pm, '/scripts/build_slot.cx')] [$io:read-file 'scripts/build_slot.cx']]]
       [= $_l2 [$git $root ('init', '-q', $pm)]]
-      [= $_l3 [$git $pm ('add', 'scripts/build-slot.sh')]]
+      [= $_l3 [$git $pm ('add', 'scripts/build_slot.cx')]]
       [= $_l4 [$git $pm ('commit', '-q', '-m', 'the planted main checkout')]]
       [= $_l5 [$git $pm ('worktree', 'add', '-q', '--detach', $pw)]]
       [= $_l6 [$io:make-dirs [$cat ($pm, '/vcx/target')]]]
       [= $_l7 [$io:write-file [$cat ($pm, '/vcx/target/gate-loop.log')] [$run-start]]]
       [= $_l8 [$git $root ('init', '-q', $other)]]
-      [= $rl [$wrap-at [$cat ($pw, '/scripts/build-slot.sh')] $other $root $shared '' $touch]]
+      [= $rl [$wrap-at [$cat ($pw, '/scripts/build_slot.cx')] $other $root $shared '' $touch]]
       [= $l [$judge 'L' [and [$refused $rl] [$strings:contains [$said $rl] [$cat ($pm, '/vcx/target/gate-loop.log')]] [not [$io:exists $ran]]]
                     "with no CX_GATE_LOOP_LOG the main checkout's log is found from the script's own tree, whatever the cwd" $rl]]
 
       # M — no CX_GATE_LOOP_LOG and no repository: refused
       [= $lone [$cat ($root, '/lone')]]
       [= $_m0 [$io:make-dirs $lone]]
-      [= $_m1 [$io:write-file [$cat ($lone, '/build-slot.sh')] [$io:read-file 'scripts/build-slot.sh']]]
-      [= $rm [$wrap-at [$cat ($lone, '/build-slot.sh')] $lone $root $shared '' $touch]]
+      [= $_m1 [$io:write-file [$cat ($lone, '/build_slot.cx')] [$io:read-file 'scripts/build_slot.cx']]]
+      [= $rm [$wrap-at [$cat ($lone, '/build_slot.cx')] $lone $root $shared '' $touch]]
       [= $m [$judge 'M' [and [$refused $rm] [not [$io:exists $ran]]]
                     'with no CX_GATE_LOOP_LOG and the script in no repository the shared slot is refused: the log cannot be found' $rm]]
 

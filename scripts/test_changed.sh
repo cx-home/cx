@@ -447,7 +447,7 @@ step_globs() {
     check-storm-keep-going)        echo "Makefile scripts/storm_keep_going_selftest.cx scripts/test_changed.sh" ;;
     # issue 1583 (RULED: RUN-5): the timings WRITER selftest reads the library
     # and its own source, and plants everything under mktemp.
-    check-verification-timings)    echo "scripts/verification_timings_lib.sh scripts/verification_timings_selftest.sh" ;;
+    check-verification-timings)    echo "scripts/verification_timings_lib.sh scripts/verification_timings_selftest.sh scripts/verification_timings.cx scripts/verification_timings_selftest.cx" ;;
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
     # ledger-index-check (#1438) regenerates ledger/README.md from the store and
     # compares: its inputs are every ledger page and the generator itself.
@@ -529,7 +529,7 @@ step_globs() {
     # #1749: the shared slot's refusal — the runner and its planted-log
     # selftest are the step's whole input (the selftest plants its own loop
     # log and slot, so no other path in the tree can move its verdict).
-    check-build-slot)              echo 'scripts/build-slot.sh scripts/build_slot_selftest.cx' ;;
+    check-build-slot)              echo 'scripts/build-slot.sh scripts/build_slot.cx scripts/build_slot_selftest.cx' ;;
     # #1450: the isolation guard reads the two bench scripts and its own source;
     # it plants its artifacts, so nothing else in the tree is an input.
     check-bench-isolation)         echo 'scripts/run_bench_json.cx scripts/compare_bench.cx scripts/bench_isolation_selftest.cx' ;;
