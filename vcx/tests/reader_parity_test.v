@@ -721,6 +721,7 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/reproduce_release.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/release_linux.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/build_slot.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/verification_timings_selftest.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/verification_timings.cx', .program, reason_attr},
 	// DOCS-4 wave 1 (RULED: DOCS-42, DOCS-43): the plug-in figure's
 	// `height=[- ROW-H 4]` and the voice step's `path=[$attr $p "path" ""]`,
