@@ -701,6 +701,28 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/repo_paths.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/ring_query.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/secrets_scan.cx', .program, reason_attr},
+	// CXMACH-1 batches 3-5 (cxmach stream): the ports carry computed attributes
+	// on constructed rows and spawn options (`kind=[$name $x]`, `stdout=[$cat …]`,
+	// `env=[map …]`), program forms (RULED: STREAM-1).
+	AcceptedByOne{'scripts/bench_isolation_selftest.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/bump_version.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/consolidate_tests_selftest.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/cxer_registry_report.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/deps_bootstrap_selftest.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/gate-status.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/head_is_docs_only.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/head_is_docs_only_selftest.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/ring_import_gate_selftest.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/spec_freeze_gate.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/spec_freeze_gate_selftest.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/storm_keep_going_selftest.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/verification_budget_selftest.cx', .program, reason_attr},
+	// priv's CXMACH-1 batch 2 ports this branch carries from 23494061e; priv's
+	// ada929a08 names the same three with the same classes (a duplicate row is a
+	// map overwrite in judge_accepted_by_one, so the union reads alike).
+	AcceptedByOne{'scripts/exit_status_probe_selftest.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/corpus_audit.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/gates_manifest_gate.cx', .program, reason_prog},
 	// DOCS-4 wave 1 (RULED: DOCS-42, DOCS-43): the plug-in figure's
 	// `height=[- ROW-H 4]` and the voice step's `path=[$attr $p "path" ""]`,
 	// both computed attributes on a constructed row.
