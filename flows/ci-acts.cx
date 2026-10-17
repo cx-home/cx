@@ -18,7 +18,7 @@
 # `nothing-to-undo`.
 #
 # EVERY IDIOM IS A TOOL UNDERNEATH, never a second copy of a recipe: git, make
-# targets through scripts/build-slot.sh (the runner lock live agents share,
+# targets through scripts/build_slot.cx (the runner lock live agents share,
 # L102), and the process module's bounded subprocess. The helpers are
 # scope=public with no [effects] clause. That makes them callable from an
 # importing module, but they are not commands, so no flow can name one as an
@@ -172,12 +172,14 @@
   [?let [= $l [$first [$nonblank-lines [$out [$git '.' ('worktree', 'list', '--porcelain') [$git-ms]]]]]]
     [$str-trim [$strings:replace-first [$string $l] 'worktree ' '']]]]
 
-# run make under a runner: the lock stays scripts/build-slot.sh's (L102;
-# its stale-holder break needs #1706), the toolchain devbox's, the output a
+# run make under a runner: the lock stays the runner program's (L102; its
+# stale-holder break needs #1706) — scripts/build_slot.cx on this flow's own
+# cx (CXMACH-1; the same lock protocol as the retired scripts/build-slot.sh, so
+# holders of either share one slot) — the toolchain devbox's, the output a
 # log file per step so no capture is held in memory. The make runs under the
 # liveness watch below (#1787), stall-ms quiet before it is killed.
 [?def slot-make scope=public impure [returns element] ($runner $words $log $stall-ms)
-  [$watched-run [$cat2 ('sh', 'scripts/build-slot.sh', 'devbox', 'run', '--', 'make', '--no-print-directory') $words]
+  [$watched-run [$cat2 ([$env:executable-path], '--allow-all', 'scripts/build_slot.cx', 'devbox', 'run', '--', 'make', '--no-print-directory') $words]
                 {CX_BUILD_SLOT: $runner} $log [$concat $runner '/pid'] $stall-ms 60000 [$make-ms]]]
 
 # ── the liveness watch on a step (#1787) ─────────────────────────────────────
@@ -196,7 +198,7 @@
 # appended to the step's .log.err and the STALLED line after it, last, so the
 # red's cause names the hang (c4); the answer is exit 124 with stalled=true —
 # the red names the hang by step instead of the run sitting for hours. The
-# runner's own processes (build-slot.sh, devbox and its .cmd.sh) are left out
+# runner's own processes (build_slot.cx, devbox and its .cmd.sh) are left out
 # of the signature on purpose: a runtime that ticks while its child sleeps is
 # not the step working. stall-ms 0 turns the watch off (ci/make never passes
 # it: flows/load.cxd's bounds are refused unless positive, private-acts'
@@ -228,8 +230,9 @@
 
 [?def group-rows scope=public impure [returns any] ($pgid) [?else [$group-look $pgid] ()]]
 
-# the runner's own processes: build-slot.sh's shell, devbox, devbox's .cmd.sh.
-[?const RUNNER-PROC '(scripts/build-slot\.sh devbox |^devbox |\.devbox/gen/scripts/\.cmd\.sh)']
+# the runner's own processes: the runner program (scripts/build_slot.cx on a
+# cx, or the shell script it replaced), devbox, devbox's .cmd.sh.
+[?const RUNNER-PROC '(scripts/build_slot\.cx devbox |scripts/build-slot\.sh devbox |^devbox |\.devbox/gen/scripts/\.cmd\.sh)']
 
 [?def work-signature scope=public pure [returns string] ($rows)
   [$strings:join [?to-sequence [?for [in $w $rows]

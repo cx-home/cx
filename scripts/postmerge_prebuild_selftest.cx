@@ -14,8 +14,9 @@
 #      serial tail still runs, so the run is whole and writes its timings row.
 #   F: any other red pool step reds the run (exit 2, named) and the tail still runs (#1946
 #      (a)): the run is whole and writes its row.
-# Exit 0 = all six hold. The planted checkout's scripts/test_changed.sh and scripts/build-slot.sh
-# are the shell stubs the runner invokes by those names (their own rewrites are CXMACH-1 items).
+# Exit 0 = all six hold. The planted checkout's scripts/test_changed.sh (a shell stub) and
+# scripts/build_slot.cx (a cx stub that runs its arguments) are what the runner invokes by those
+# names; the real runner's lock is check-build-slot's.
 # CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of postmerge_prebuild_selftest.sh.
 #   $(TOOL_CX) --allow-all scripts/postmerge_prebuild_selftest.cx [CX]      (from the repo root)
 
@@ -26,6 +27,8 @@
 [?lib 'cx-stdlib/strings' as=strings]
 
 [?def cat scope=public ($parts) [$strings:join $parts '']]
+# the planted runner: run the arguments, stdio inherited, and answer their exit code.
+[?const SLOT-STUB "[?lib 'cx-stdlib/env' as=env]\n[?lib 'cx-stdlib/process' as=process]\n[?let [= $a [$env:argv]]\n  [$env:exit [?else [$process:wait [$process:spawn [?to-array [?for [in $i [$range 2 [$count $a]]] [yield [$nth $a $i]]]] stdin=:inherit stdout=:inherit stderr=:inherit]] 127]]]\n"]
 [?def say scope=public impure ($s) [$env:write-line $s]]
 [?def check scope=public impure ($label $ok $detail)
   [?let [= $_ [$say [?if $ok [then [$cat ('  ok   ', $label)]] [else [$cat ('  FAIL ', $label, ': ', $detail)]]]]] $ok]]
@@ -79,7 +82,7 @@
   [= $co [$cat ($t, '/co')]]
   [= $_m [?do [$io:make-dirs [$cat ($t, '/bin')]] [$io:make-dirs [$cat ($co, '/scripts')]] [$io:make-dirs [$cat ($co, '/vcx/target')]]]]
   [= $_s [?do [$io:write-file [$cat ($t, '/bin/make')] [$MAKE-STUB $cx]] [$process:run ('chmod', '+x', [$cat ($t, '/bin/make')])]]]
-  [= $_b [$io:write-file [$cat ($co, '/scripts/build-slot.sh')] "#!/bin/sh\nexec \"$@\"\n"]]
+  [= $_b [$io:write-file [$cat ($co, '/scripts/build_slot.cx')] $SLOT-STUB]]
 
   # A
   [= $_pa [$plan $co 'check-a test-flow-umbrella test-db-real' 'test-profile-gate']]

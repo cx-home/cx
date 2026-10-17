@@ -269,7 +269,7 @@ define GATE_LOCK_WAIT_LOOP
 	    echo "  A step started now perturbs it — the http/pty steps fail under"; \
 	    echo "  concurrent load and a -j storm can deadlock. Wait for it, or run"; \
 	    echo "  your step under the pre-merge runner:"; \
-	    echo "    CX_BUILD_SLOT=\$$HOME/git-repos/cx/.build-slot-impl sh scripts/build-slot.sh make <target>"; \
+	    echo "    CX_BUILD_SLOT=\$$HOME/git-repos/cx/.build-slot-impl cx --allow-all scripts/build_slot.cx make <target>"; \
 	    echo "  If you are certain the run is dead:  make gate-lock-status"; \
 	    echo "  To QUEUE instead of refusing, leave CX_GATE_LOCK_WAIT unset."; \
 	    exit 1; \
@@ -354,7 +354,7 @@ gate-lock-status:
 # INT-1 the lock refused every `make` in every worktree with an EXIT=2 that
 # never named the caller's branch; four pre-merge runs were lost to it on
 # 2026-09-12. The test is on the runner directory the caller is holding, which
-# scripts/build-slot.sh exports as CX_BUILD_SLOT: anything but `.build-slot`
+# scripts/build_slot.cx exports as CX_BUILD_SLOT: anything but `.build-slot`
 # itself is a pre-merge runner and passes.
 #
 # Since #1346 a step that is NOT exempt QUEUES rather than exiting 1 — see
@@ -2222,7 +2222,7 @@ check-exit-status-probe:
 # The shared slot, .build-slot-impl, is taken only in a gap of the post-merge
 # loop, and the wait for that gap is the CALLER's, before the slot is taken —
 # a waiter inside the slot-held command deadlocked the loop's run on
-# dfc9f12f9 for 95 minutes (2026-10-01). scripts/build-slot.sh refuses, exit 2,
+# dfc9f12f9 for 95 minutes (2026-10-01). scripts/build_slot.cx refuses, exit 2,
 # on the shared slot while the loop's last RUN line is RUN-START and for a
 # shell reading the loop's log; the selftest proves it on planted logs and
 # slots under a temp root, never the main checkout's, so the step grades the

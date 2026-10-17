@@ -121,10 +121,12 @@ and runs the one test file, stopping at the FIRST tip whose run fails.
 
 # slot-run: one command through the build slot, so two agents never build at
 # once (the standing rules' one-runner discipline). Answers the exit code as
-# text.
+# text. The runner is the CALLER's tree's scripts/build_slot.cx (this
+# program's cwd) on this program's own cx, never the bisected tip's: a tip
+# older than CXMACH-1 has only the shell runner, and the lock is one protocol.
 [?def slot-run scope=public impure ($slot $dir $rest $what)
   [?let [= $argv [$cat-seq (('env', [$cat ('CX_BUILD_SLOT=', $slot)],
-                             'sh', [$path:join $dir 'scripts/build-slot.sh'],
+                             [$env:executable-path], '--allow-all', [$path:join [$env:cwd] 'scripts/build_slot.cx'],
                              'devbox', 'run', '--'), $rest)]]
         [= $r [$run $argv $what]]
     [$string $r@exit-code]]]
