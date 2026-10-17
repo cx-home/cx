@@ -432,8 +432,13 @@ step_globs() {
     check-profile-gate-selection)  echo "scripts/profile_gate_files_for_branch.cx scripts/profile_gate_selection_selftest.cx vcx/tests/runners/profile_gate/*" ;;
     # #1562 (RULED: VCOST-1): the budget step reads the bounds manifest and the
     # timings a run leaves behind; the self-test reads the step and its own
-    # source. Neither reads the tree, so neither runs when the tree moves.
-    check-verification-budget)     echo "scripts/check_verification_budget.cx scripts/verification_budget.cxd" ;;
+    # source. cx-private#1946 (VCOST-2 (a)): a union run judges union and the
+    # premerge rows and only reports selected-run, so a SELECTED tick is where
+    # selected-run is judged, and the step runs on every selected tick (any
+    # path; one second). Before, it ran there only when its own two files moved,
+    # and a bound no run judges is a wish. The self-test still runs only when
+    # the step or its source moves.
+    check-verification-budget)     echo '*' ;;
     premerge-record)               echo "scripts/premerge_record.sh scripts/verification_timings_lib.sh deps.cxd" ;;
     check-verification-budget-selftest) echo "scripts/check_verification_budget.cx scripts/verification_budget_selftest.cx" ;;
     check-perf-settle-selftest) echo "flows/private-acts.cx scripts/perf_settle_selftest.cx" ;;
