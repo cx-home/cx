@@ -1,0 +1,129 @@
+# scripts/verification_timings.cx — the WRITER behind vcx/target/verification_timings.cxd
+# (issue 1583, RULED: RUN-5). CXMACH-1: the cx rewrite of scripts/verification_timings_lib.sh,
+# whose two shell functions are this program's two commands:
+#
+#   cx --allow-all scripts/verification_timings.cx write-row <file> <name> <seconds> <load> <at>
+#   cx --allow-all scripts/verification_timings.cx sample-load
+#
+# #1562 shipped `check-verification-budget` — the bounds, the idle/loaded rule, the refusal —
+# with NOTHING producing its input: every bound read NOT MEASURED and the step judged nothing,
+# which is a sentence rather than a measurement (issue 1583; the owner's 1562-a kept #1562 open
+# until this landed). The writers:
+#
+#   * the post-merge runner writes `union` or `selected-run` at RUN-EXIT (flows/private-acts.cx's
+#     verdict act, the same row in cx, RULED: RFLOW-1), seconds counted from RUN-START and the
+#     load sampled at RUN-START;
+#   * scripts/run_fixture_shards.sh writes `fixture-grader` on an UNSELECTED run — a selected run
+#     grades a handful of corpus files and its seconds say nothing about the bound;
+#   * scripts/premerge_record.sh writes one `premerge-<repo>` row per green pinned repository.
+#
+# write-row writes `[timing name= seconds= load= at=]` into <file> and keeps every other name's
+# rows. Of <name>'s own rows it keeps those among its last four OR among its last QUIET ones
+# (load <= $CX_BENCH_MAX_LOAD, else 8) — four when the new row is quiet, five when it is not:
+# with the new row, the last five and the last five quiet per name. check-verification-budget
+# judges the median of the last five quiet rows (cx-private#1903; BUDGET-LOAD = (a), owner
+# 2026-10-10), and a file that kept only the last five would let five loaded ticks push every
+# quiet one out before it judged. A row with no readable load is loaded (999). Rows are read back
+# with a bracket-scan rather than by line, so a file a hand has reflowed still round-trips; the
+# document (and its directory) is created when absent, and it is rewritten whole through a
+# temporary file moved into place, so a reader never sees a half-written manifest —
+# check-verification-budget can be running in the same storm.
+#
+# sample-load prints the one-minute load average as a bare number. It is sampled at the START of
+# a run: the budget step's idle/loaded rule is about the box the measurement was taken on. An
+# unreadable load prints 999, which the step reads as loaded — the fail-safe direction, because
+# a number nobody can defend must never red a run.
+#
+# Proof (CXMACH-1): scripts/verification_timings_selftest.cx A-G on planted files, and the written
+# document byte-identical to the shell library's after every one of 19 writes over a planted file
+# (two names sharing a prefix, a row with no load, a double-spaced row, loads n/a, -1, 8, 8.01,
+# 1e1), at CX_BENCH_MAX_LOAD unset and 2, and on an absent file in an absent directory.
+# Deviations, stated: a row a hand split across lines is KEPT as written (the shell's line-wise
+# `grep -o` dropped it, silently, against this header's round-trip promise; flows/private-acts.cx's
+# verdict writer kept it too); a load is printed as `vm.loadavg` / /proc/loadavg gives it with trailing
+# fraction zeros dropped (awk printed `$1 + 0` in %.6g; the kernel's two decimals never need more).
+# Exit: 0 written / printed; 1 the document cannot be written; 64 usage.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/path'    as=path]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+# num — awk's `x + 0`: the leading number of a text, 0 when it has none.
+[?const NUM-RX [$re:compile "^[-+]?([0-9]+[.]?[0-9]*|[.][0-9]+)([eE][-+]?[0-9]+)?"]]
+[?def first-match scope=public ($rx $s)
+  [?let [= $ms [?to-array [$re:find-all $rx $s]]] [?if [= [$count $ms] 0] [then ''] [else [$re:group [$nth $ms 1] 0]]]]]
+[?def num scope=public ($s)
+  [?let [= $t [$first-match $NUM-RX $s]]
+    [?if [= $t ''] [then 0.0e0] [else [* [?else [$strings:to-float $t] 0.0e0] 1.0e0]]]]]
+
+# a row's load: its `load=` field, 999 when it carries none.
+[?const LOAD-RX [$re:compile "load=[-0-9.eE+]+"]]
+[?def row-load scope=public ($row)
+  [?let [= $t [$first-match $LOAD-RX $row]]
+    [?if [= $t ''] [then 999.0e0] [else [$num [$strings:slice $t 6 [$strings:length $t]]]]]]]
+
+[?def quiet scope=public ($l $lb) [and [>= $l 0.0e0] [<= $l $lb]]]
+
+# write-row — the shell library's write_timing_row, row for row.
+[?def write-row scope=public impure ($file $name $secs $load $at)
+  [?let [= $lb [$num [?let [= $v [$env:var-or-default 'CX_BENCH_MAX_LOAD' '']] [?if [= $v ''] [then '8'] [else $v]]]]]
+        [= $nl [?if [$re:matches [$re:compile "-?[0-9.eE+]+"] $load] [then [$num $load]] [else 999.0e0]]]
+        [= $kq [?if [$quiet $nl $lb] [then 4] [else 5]]]
+        [= $old [?if [$io:is-file $file] [then [?else [$io:read-file $file] '']] [else '']]]
+        [= $rows [?to-array [?for [in $m [$re:find-all [$re:compile "\\[timing [^]]*\\]"] $old]] [yield [$re:group $m 0]]]]]
+        [= $mine-rx [$re:compile [$cat ("\\[timing[[:space:]]+name=", $name, "([[:space:]]|\\]).*")]]]
+        [= $others [?to-array [?for [in $t $rows] [where [not [$re:matches $mine-rx $t]]] [yield $t]]]]
+        [= $mine [?to-array [?for [in $t $rows] [where [$re:matches $mine-rx $t]] [yield $t]]]]
+        [= $n [$count $mine]]
+        # nq(i) = the quiet rows of $mine from i to the newest; keep i when it is among the last
+        # four, or quiet with nq(i) <= kq — the shell's awk END loop, newest first.
+        [= $q [?to-array [?for [in $t $mine] [yield [$quiet [$row-load $t] $lb]]]]]
+        [= $nq-from [?fn ($i) [$count [?to-array [?for [in $j [$range $i $n]] [where [$nth $q $j]] [yield $j]]]]]]
+        [= $kept [?to-array [?for [in $i [$range 1 $n]]
+                   [where [or [< [- $n $i] 4] [and [$nth $q $i] [<= [$nq-from $i] $kq]]]]
+                   [yield [$nth $mine $i]]]]]
+        [= $keep [?to-array [?for [in $xs ($others, $kept)] [in $x $xs] [yield $x]]]]
+        [= $dir [$path:dirname $file]]
+        [= $_d [?if [$io:is-directory $dir] [then null] [else [$io:make-dirs $dir]]]]
+        [= $tmp [$cat ($file, '.', [$string [$env:pid]], '.tmp')]]
+        [= $doc [$cat ("[verification-timings\n",
+                       [$strings:join [?to-array [?for [in $k $keep] [yield [$cat ('  ', $k, "\n")]]]] ''],
+                       '  [timing name=', $name, ' seconds=', $secs, ' load=', $load, ' at=', $at, "]]\n")]]
+        [= $w [$io:write-file $tmp $doc]]
+    [?match $w [case [err$e] [?let [= $_ [$cry [$cat ('verification-timings: cannot write ', $tmp, ': ', [$string $e@message])]]] 1]]
+      [else [?match [$io:rename $tmp $file] [case [err$e] [?let [= $_ [$cry [$cat ('verification-timings: cannot move ', $tmp, ' to ', $file)]]] 1]]
+              [else 0]]]]]]
+
+# a load as awk printed `$1 + 0` for the kernel's two-decimal text: trailing fraction zeros dropped.
+[?def load-text scope=public ($s)
+  [?let [= $t0 [$first-match $NUM-RX $s]]
+    [?if [= $t0 ''] [then '0']
+      [else [?let [= $t $t0]
+              [?if [not [$strings:contains $t '.']] [then [$re:replace [$re:compile "^[+]"] $t '']]
+                [else [$re:replace [$re:compile "[.]$"] [$re:replace [$re:compile "0+$"] [$re:replace [$re:compile "^[+]"] $t ''] ''] '']]]]]]]]
+
+# sample-load — the shell library's sample_load_1m.
+[?def sample-load scope=public impure ()
+  [?let [= $r [$process:run ('sysctl', '-n', 'vm.loadavg')]]
+        [= $raw [?match $r [case [err$e] ''] [else [?if [= $r@exit-code 0] [then [$string $r@stdout]] [else '']]]]]
+        [= $words [$strings:split-whitespace [$strings:replace [$strings:replace $raw '{' ''] '}' '']]]
+    [?if [> [$count $words] 0] [then [$load-text [$nth $words 1]]]
+      [else [?if [$io:is-file '/proc/loadavg']
+        [then [?let [= $w2 [$strings:split-whitespace [?else [$io:read-file '/proc/loadavg'] '']]]
+                [?if [> [$count $w2] 0] [then [$load-text [$nth $w2 1]]] [else '0']]]]
+        [else '999']]]]]]
+
+[?let [= $av [$env:argv]] [= $n [$count $av]]
+      [= $cmd [?if [> $n 1] [then [$nth $av 2]] [else '']]]
+  [?if [and [= $cmd 'write-row'] [= $n 7]]
+    [then [$env:exit [$write-row [$nth $av 3] [$nth $av 4] [$nth $av 5] [$nth $av 6] [$nth $av 7]]]]
+    [else [?if [and [= $cmd 'sample-load'] [= $n 2]]
+      [then [?do [$io:write-line [$env:stdout] [$sample-load]] [$env:exit 0]]]
+      [else [?do [$cry 'usage: verification_timings.cx write-row <file> <name> <seconds> <load> <at> | sample-load']
+                 [$env:exit 64]]]]]]]
