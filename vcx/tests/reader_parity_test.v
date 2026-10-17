@@ -717,6 +717,9 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/spec_freeze_gate_selftest.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/storm_keep_going_selftest.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/verification_budget_selftest.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/tag_release.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/reproduce_release.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/release_linux.cx', .program, reason_attr},
 	// priv's CXMACH-1 batch 2 ports this branch carries from 23494061e; priv's
 	// ada929a08 names the same three with the same classes (a duplicate row is a
 	// map overwrite in judge_accepted_by_one, so the union reads alike).
