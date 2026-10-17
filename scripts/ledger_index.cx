@@ -106,10 +106,13 @@
 # not judged, and every id it does parse must still resolve (#1447).
 #   4b845faed 132657bb3 eca8df2a9 1daef791e -- cx-private#1934 s2a cited
 #   `S2A-1934`; the decision is CXBLD-1934 (its ledger page says so).
+#   dafeffc0f -- the ECSIG-1 + cx-home/v#22 fork pin names the curve `P-256`
+#   and the fork commit `d08976b286`, neither of them an id (landed f43dd9b6f).
 [?const IDSH-EXEMPT ('4b845faed9c078e1e2c83d0df7ef5334179fdc54',
                      '132657bb30bacfd51a19088cad71694f38ee49a7',
                      'eca8df2a9139a319b637b1e96c8386d6aaaea590',
-                     '1daef791e6e759ec0c46cfab68f40b67fcbb728e')]
+                     '1daef791e6e759ec0c46cfab68f40b67fcbb728e',
+                     'dafeffc0f326a0f8ddf9362935f1a26861288a44')]
 
 [?def git-new-argv scope=private pure [returns any] () ('git', 'log', SUBJECT-REF, [$concat '^' IDSH-COMMIT], '--format=%H%x09%s')]
 [?def git-old-argv scope=private pure [returns any] () ('git', 'log', IDSH-COMMIT, '--format=%H%x09%s')]
