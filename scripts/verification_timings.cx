@@ -13,7 +13,7 @@
 #   * the post-merge runner writes `union` or `selected-run` at RUN-EXIT (flows/private-acts.cx's
 #     verdict act, the same row in cx, RULED: RFLOW-1), seconds counted from RUN-START and the
 #     load sampled at RUN-START;
-#   * scripts/run_fixture_shards.sh writes `fixture-grader` on an UNSELECTED run — a selected run
+#   * scripts/run_fixture_shards.cx writes `fixture-grader` on an UNSELECTED run — a selected run
 #     grades a handful of corpus files and its seconds say nothing about the bound;
 #   * scripts/premerge_record.cx writes one `premerge-<repo>` row per green pinned repository.
 #

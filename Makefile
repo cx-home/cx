@@ -4089,13 +4089,13 @@ check-serial-retry-rosters:
 # while every step stays green — and this refuses it, together with a file in
 # two shards, a row naming a file that does not exist, a shard row naming a
 # test file that does not exist, and a shard test file with no manifest row.
-# It also runs scripts/run_fixture_shards_selftest.sh (no compile, ~1 s): the
+# It also runs scripts/run_fixture_shards_selftest.cx (no compile, ~1 s): the
 # wrapper's resolution on a synthetic tree, including cx-private#1917's shape —
 # every shard row names ONE test file, which `make fixtures` launches once.
 .PHONY: check-fixture-shard-manifest
 check-fixture-shard-manifest:
 	@$(TOOL_CX) --allow-read --allow-write scripts/check_fixture_shard_manifest.cx
-	@TOOL_CX="$(TOOL_CX)" sh scripts/run_fixture_shards_selftest.sh
+	@$(TOOL_CX) --allow-all scripts/run_fixture_shards_selftest.cx
 
 # ── fixtures (#1448, RULED: 1448-a) — the grader's ONE-COMMAND form ─────────
 # Before the shard split a pre-merge pipeline graded the corpus with one line
@@ -4118,7 +4118,7 @@ check-fixture-shard-manifest:
 FIXTURE_FILES ?=
 .PHONY: fixtures
 fixtures:
-	@FIXTURE_FILES="$(FIXTURE_FILES)" TOOL_CX="$(TOOL_CX)" sh scripts/run_fixture_shards.sh
+	@FIXTURE_FILES="$(FIXTURE_FILES)" TOOL_CX="$(TOOL_CX)" $(TOOL_CX) --allow-all scripts/run_fixture_shards.cx
 
 # ── check-no-nested-make (#1520) ──────────────────────────────────────────────
 # No step of the suite may spawn a nested `make test`. Measured twice on
@@ -4801,7 +4801,7 @@ V_MODULE_PATH := $(CX_V_SEARCH)
 VFLAGS_VCX := -cc cc -path "$(V_MODULE_PATH)" $(CX_NATIVE_DEFINES)
 # VFLAGS is already `export`ed beside DEPS_CX (-path "$(CX_V_SEARCH)" plus the
 # native defines) — every script this Makefile shells out to, including
-# scripts/run_fixture_shards.sh which invokes `v test` itself and reads no
+# scripts/run_fixture_shards.cx which invokes `v test` itself and reads no
 # Makefile variable, inherits the pinned search path from the environment.
 
 # test-v / test-vcx-api RETIRED with the V binding (RULED: RS-12, RS-8;

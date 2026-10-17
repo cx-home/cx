@@ -7,7 +7,7 @@
 # `make fixtures` grades 91 module files and ~5,800 cases and took 15-35 minutes
 # of every pre-merge run whatever the branch touched, one branch at a time on a
 # shared runner. What a branch can actually move is a short list, and this
-# prints it. The wrapper (scripts/run_fixture_shards.sh) then grades exactly
+# prints it. The wrapper (scripts/run_fixture_shards.cx) then grades exactly
 # those files, each through the shard that owns it, and REFUSES a name no shard
 # owns — so an over-selection is a failure, never a silent skip.
 #
@@ -28,7 +28,7 @@
 #
 #  (1) ALL when the branch changes what grades, rather than what is graded:
 #      vcx/tests/fixtures_grader/**, vcx/tests/code_eval_fixtures*,
-#      scripts/run_fixture_shards.sh, scripts/fixtures_census.cx, or the V pin
+#      scripts/run_fixture_shards.cx, scripts/fixtures_census.cx, or the V pin
 #      third_party/v, or deps.cxd (a moved pin moves the Ring 0 module every
 #      case is parsed and evaluated through; RULED: RS-7, RS-12). A branch that
 #      changes the grader must grade everything —
@@ -250,7 +250,7 @@ ROWS
 
 	# (1) what grades, rather than what is graded
 	case "$f" in
-	vcx/tests/fixtures_grader/* | vcx/tests/code_eval_fixtures* | scripts/run_fixture_shards.sh | scripts/fixtures_census.cx | third_party/v | third_party/v/* | deps.cxd)
+	vcx/tests/fixtures_grader/* | vcx/tests/code_eval_fixtures* | scripts/run_fixture_shards.cx | scripts/fixtures_census.cx | third_party/v | third_party/v/* | deps.cxd)
 		all=1
 		continue
 		;;

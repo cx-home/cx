@@ -13,7 +13,7 @@
 #   F  vcx/cx/ only                           → code.cxd             (rule 4)
 #   G  the grader itself                      → ALL                  (rule 1)
 #   H  a shard test file                      → ALL                  (rule 1)
-#   I  scripts/run_fixture_shards.sh          → ALL                  (rule 1)
+#   I  scripts/run_fixture_shards.cx          → ALL                  (rule 1)
 #   J  the V pin third_party/v                → ALL                  (rule 1)
 #   K  stdlib/<x>.cx with NO corpus file      → ALL   (shared by every module)
 #   L  a conformance file OUTSIDE the walk    → empty + a stderr note (rule 2)
@@ -72,7 +72,7 @@ printf 'source\n' > vcx/code/stdlib_json.v
 printf 'source\n' > vcx/cx/parser.v
 printf 'source\n' > vcx/tests/fixtures_grader/grader.v
 printf 'source\n' > vcx/tests/code_eval_fixtures_shards_test.v
-printf 'wrapper\n' > scripts/run_fixture_shards.sh
+printf 'wrapper\n' > scripts/run_fixture_shards.cx
 printf 'pin\n' > third_party/v/keep
 printf 'module source\n' > stdlib/flow.cx
 printf 'module source\n' > stdlib/codec.cx
@@ -153,7 +153,7 @@ git add -A && git commit -qm H
 check H "ALL"
 
 # I — the wrapper
-printf 'a line\n' >> scripts/run_fixture_shards.sh
+printf 'a line\n' >> scripts/run_fixture_shards.cx
 git add -A && git commit -qm I
 check I "ALL"
 

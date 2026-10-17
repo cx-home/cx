@@ -957,7 +957,7 @@ tests_importing() {
 }
 
 # shard_test_for <conformance-path…> — the vcx/tests/ file that grades each, read
-# from the shard manifest scripts/run_fixture_shards.sh reads, with the same cut
+# from the shard manifest scripts/run_fixture_shards.cx reads, with the same cut
 # of its own [doc] block.
 shard_test_for() {
   local manifest="$SUITE_DIR/fixtures_grader/fixture_shards.cxd" owners c rel hit

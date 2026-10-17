@@ -119,7 +119,7 @@
            [then [?let [= $_ [$say '  ok   with no override the DEFAULT path is still what is read (exit 1, OVER BOUND)']] true]]
            [else [?let [= $_1 [$say [$cat ('  FAIL the default path was not read with the override unset — exit ', [$string $rd@rc], ' (want 1), output:')]]] [= $_2 [$indent $rd@out]] false]]]]
   [= $want [$sed-group "^\\[\\?const TIMINGS-DEFAULT '(.*)'\\]$" [$cat ($root, '/scripts/check_verification_budget.cx')]]]
-  [= $grader [$sed-group '^TIMINGS=\$ROOT/(.*)$' [$cat ($root, '/scripts/run_fixture_shards.sh')]]]
+  [= $grader [$sed-group "^\\[\\?const TIMINGS-REL '(.*)'\\]$" [$cat ($root, '/scripts/run_fixture_shards.cx')]]]
   [= $verdict [$sed-group ".*pm-timings scope=private pure.*\\[\\$concat \\$c '/(.*)'\\]\\]$" [$cat ($root, '/flows/private-acts.cx')]]]
   [= $w0 [?if [and [not [= $want '']] [= $grader $want] [= $verdict $want]]
            [then [?let [= $_ [$say [$cat ('  ok   the fixture grader and the post-merge verdict write the file the step reads (', $want, ')')]]] true]]
