@@ -720,12 +720,6 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/tag_release.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/reproduce_release.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/release_linux.cx', .program, reason_attr},
-	// priv's CXMACH-1 batch 2 ports this branch carries from 23494061e; priv's
-	// ada929a08 names the same three with the same classes (a duplicate row is a
-	// map overwrite in judge_accepted_by_one, so the union reads alike).
-	AcceptedByOne{'scripts/exit_status_probe_selftest.cx', .program, reason_attr},
-	AcceptedByOne{'scripts/corpus_audit.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/gates_manifest_gate.cx', .program, reason_prog},
 	// DOCS-4 wave 1 (RULED: DOCS-42, DOCS-43): the plug-in figure's
 	// `height=[- ROW-H 4]` and the voice step's `path=[$attr $p "path" ""]`,
 	// both computed attributes on a constructed row.
