@@ -76,11 +76,15 @@
     [$concat [$nth $parts 1] "." [$string [+ [$strings:to-int [$nth $parts 2]] 1]]]]]
 [?def major-of scope=public ($rel)
   [$strings:trim-start-chars [$nth [$strings:split $rel "."] 1] "vV"]]
-# version-rx: a version of this line, `v<major>.<n>` (any case of v) or
-# `<major>.<n>.<n>`, as one group.
+# version-rx: a version of this line, `v<major>.<n>[.<n>…]` (any case of v) or
+# `<major>.<n>.<n>`, as group 1. The dotted run must stand alone: no word
+# character or dot before it, no word character or dot-and-digit after it —
+# so an IPv4 address is not a version (with the line's major 0, 127.0.0.1
+# holds 0.0.1 and 0.0.0.0 holds 0.0.0; cx-platform-fabric#6 read RED on it).
+# RE2 has no look-around, hence the bounding non-capturing groups.
 [?def version-rx scope=public ($rel)
   [?let [= $mj [$major-of $rel]]
-    [$re:compile [$concat "(\\b[vV]" $mj "\\.[0-9]+\\b|\\b" $mj "\\.[0-9]+\\.[0-9]+\\b)"]]]]
+    [$re:compile [$concat "(?:^|[^0-9A-Za-z_.])([vV]" $mj "\\.[0-9]+(?:\\.[0-9]+)*|" $mj "\\.[0-9]+\\.[0-9]+)(?:$|[^0-9A-Za-z_.]|\\.$|\\.[^0-9])"]]]]
 
 # ── one issue, as GitHub answers it ──────────────────────────────────────
 [?def num    scope=public ($i) [$string [$map:get $i "number"]]]

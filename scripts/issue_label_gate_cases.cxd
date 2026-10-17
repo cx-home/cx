@@ -53,6 +53,15 @@ want='' is a case the gate passes.
     [issues repo=cx-private '[{"number": 1945, "created_at": "2026-10-15T09:00:00Z", "title": "the keystore in v7.7", "body": "v7.7 7.7.0", "milestone": {"title": "v7.7"}}]']]
   [case id=t-other-versions-are-not-the-line want=''
     [issues repo=cx-private '[{"number": 1951, "created_at": "2026-10-16T01:00:00Z", "title": "Python 3.12.15 vs Go 1.27.0", "body": "TLS 1.3, 0.90x at W=1, sqlite-3.53.3, UCD 16.0.0, v17.1, 77.7.1, v7", "milestone": {"title": "v7.7"}}]']]
+  [; an IPv4 address is not a version: with the line's major 0, 127.0.0.1 holds 0.0.1 and a bind on 0.0.0.0 holds 0.0.0
+     (cx-platform-fabric#6's 'bind health 127.0.0.1:49647' read RED); the table's major is 7 ]
+  [case id=t-ipv4-is-not-a-version want=''
+    [issues repo=cx-platform-fabric '[{"number": 6, "created_at": "2026-10-17T03:37:49Z", "title": "x", "body": "bind health 127.7.7.1:49647, then 7.7.7.7:80, 10.7.7.1 and 7.7.0.1", "milestone": {"title": "v7.7"}}]']]
+  [case id=t-version-beside-punctuation want='t:cx-private#1960 t:cx-private#1961 t:cx-private#1962 t:cx-private#1963'
+    [issues repo=cx-private '[{"number": 1960, "created_at": "2026-10-17T01:00:00Z", "title": "x", "body": "seen on 7.7.0.", "milestone": {"title": "v7.7"}},
+                              {"number": 1961, "created_at": "2026-10-17T01:00:00Z", "title": "x", "body": "the v7.7.0 tag", "milestone": {"title": "v7.7"}},
+                              {"number": 1962, "created_at": "2026-10-17T01:00:00Z", "title": "x", "body": "line one\\nv7.7: line two", "milestone": {"title": "v7.7"}},
+                              {"number": 1963, "created_at": "2026-10-17T01:00:00Z", "title": "before 7.7.1", "body": "", "milestone": {"title": "v7.7"}}]']]
   [case id=t-body-null want=''
     [issues repo=cx-private '[{"number": 1952, "created_at": "2026-10-16T01:00:00Z", "title": "x", "body": null, "milestone": {"title": "v7.7"}}]']]
   [case id=t-created-at-null-is-judged want='t:cx-private#1953'
