@@ -254,9 +254,9 @@ reading what the step checks.
 | 128 | `check-verification-budget` |  | `scripts/check_verification_budget.cx` |
 | 129 | `check-verification-budget-selftest` |  | `scripts/verification_budget_selftest.cx` |
 | 130 | `check-perf-settle-selftest` |  | `scripts/perf_settle_selftest.cx` |
-| 131 | `premerge-record` |  | `scripts/premerge_record.sh` |
+| 131 | `premerge-record` |  | `scripts/premerge_record.cx` |
 | 132 | `check-storm-keep-going` |  | `scripts/storm_keep_going_selftest.cx` |
-| 133 | `check-verification-timings` |  | `scripts/verification_timings_selftest.sh` |
+| 133 | `check-verification-timings` |  | `scripts/verification_timings_selftest.cx` |
 | 134 | `check-bench-runners-compile` |  | `bench/probe` |
 | 135 | `check-flow-doc-lines` |  | `scripts/check_flow_doc_lines_selftest.cx` |
 | 136 | `perf-pair` |  | `scripts/compare_bench.cx` |

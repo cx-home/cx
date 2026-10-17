@@ -723,6 +723,9 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/build_slot.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/verification_timings_selftest.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/verification_timings.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/premerge_record.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/run_fixture_shards.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/run_fixture_shards_selftest.cx', .program, reason_attr},
 	// DOCS-4 wave 1 (RULED: DOCS-42, DOCS-43): the plug-in figure's
 	// `height=[- ROW-H 4]` and the voice step's `path=[$attr $p "path" ""]`,
 	// both computed attributes on a constructed row.
