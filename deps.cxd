@@ -65,7 +65,7 @@ unchanged.
   [dep repo=cx-platform-xap sha=06e20b204f819c5f1e9985ac4608b26aea25f700 module='cx-platform/xap' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-registry sha=a70cbe92722f18c9dee52a947431ece6e58a01be module=cx-registry]
   [dep repo=cx-decisions sha=03c77ec221d295aa22901ef62f3bb62f370c7c94 module=cx-decisions]
-  [dep repo=cx-binding-python sha=4e779ceb58464bab90ed4aaf014acce7d9d8f385 module=cx-binding-python]
+  [dep repo=cx-binding-python sha=71971bbcf69ab2fc6435d21f381fac494220503d module=cx-binding-python]
   [dep repo=cx-binding-go sha=96392afa67f38a1c2d32877af9908c07a25c4245 module=cx-binding-go]
   [dep repo=cx-binding-rust sha=941f9621ab8900c8578c24e3ecd1ae856c37b758 module=cx-binding-rust]
   [dep repo=cx-binding-v sha=ea14483a90c29f2241d5223be00ab5ee66d50822 module=cx-binding-v]

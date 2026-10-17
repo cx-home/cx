@@ -4846,6 +4846,22 @@ publish-org:
 
 release-all: publish-org
 
+# ── publish-packages — the release's PyPI wheels + Homebrew formula (cx-private#1947) ──
+# scripts/publish_packages.cx: one cxlib platform wheel per release tarball
+# (the pinned cx-binding-python's tooling/wheel.cx, the tarball's own libcx
+# inside) uploaded to PyPI, and Formula/cx.rb of cx-home/homebrew-cx from the
+# release's SHA256SUMS.txt. MODE=dry (the default) builds and renders into
+# vcx/target/publish/ and uploads/pushes nothing; MODE=real needs PYPI_TOKEN
+# and HOMEBREW_TAP_TOKEN in the environment (never in a file). Idempotent.
+#   make publish-packages TAG=vX.Y.Z [MODE=dry|real] [ASSETS=<dir>]
+.PHONY: publish-packages publish-packages-selftest
+publish-packages:
+	@test -n "$(TAG)" || { echo "publish-packages: TAG=vX.Y.Z is required" >&2; exit 2; }
+	@$(TOOL_CX) --allow-all scripts/publish_packages.cx --tag=$(TAG) --mode=$(or $(MODE),dry) $(if $(ASSETS),--assets=$(ASSETS))
+
+publish-packages-selftest:
+	@$(TOOL_CX) --allow-all scripts/publish_packages_selftest.cx
+
 # ── release-flow — the ONE end-to-end local release command (RULED: RFLOW-1
 # L103) ──────────────────────────────────────────────────────────────────────
 # flows/release.flow.cx, the phases scripts/release.sh ran:

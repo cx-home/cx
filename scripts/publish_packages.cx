@@ -1,0 +1,232 @@
+# scripts/publish_packages.cx — the release's package-manager publish (cx-private#1947; DIST-1947 = (a)).
+#
+# ONE step, after the GitHub release and before the org page
+# (spec/03-approved/process/release-process.md §2, row 5b): the release's own
+# flat tarballs become
+#   - one cxlib platform wheel per tarball, built by the pinned binding's
+#     tooling/wheel.cx with the tarball's libcx inside, uploaded to PyPI;
+#   - the Homebrew formula Formula/cx.rb of the tap cx-home/homebrew-cx, its
+#     url + sha256 per platform read from the release's SHA256SUMS.txt.
+# Nothing is rebuilt: every byte published is a release asset, checked against
+# SHA256SUMS.txt first. Credentials come from the environment only (PYPI_TOKEN,
+# HOMEBREW_TAP_TOKEN) and are never written to a file, a log or an argv.
+# Idempotent: a wheel PyPI already holds with the same sha256 is skipped (one
+# with a DIFFERENT sha256 is refused: PyPI never takes a file name twice), and
+# a formula identical to the tap's is not committed.
+#
+#   cx --allow-all scripts/publish_packages.cx --tag=vX.Y.Z [--mode=dry|real]
+#        [--assets=DIR] [--out=DIR] [--pypi-json=FILE] [--tap=DIR]
+#
+# --assets: a directory holding the release's cx-<os>-<arch>.tar.gz and
+#   SHA256SUMS.txt (default: `gh release download` of the tag from cx-home/cx
+#   into OUT/assets). --pypi-json: PyPI's /pypi/cxlib/<v>/json answer read from a
+#   file instead of the network (the self-test). --tap: a checkout of the tap to
+#   write into (default: a clone into OUT/tap; dry mode only renders).
+# Exit 0 published (or, dry, everything rendered); 1 refused; 2 a usage error.
+
+[?lib 'cx-stdlib/io'          as=io]
+[?lib 'cx-stdlib/env'         as=env]
+[?lib 'cx-stdlib/strings'     as=strings]
+[?lib 'cx-stdlib/bytes'       as=bytes]
+[?lib 'cx-stdlib/hash'        as=hash]
+[?lib 'cx-stdlib/tar'         as=tar]
+[?lib 'cx-stdlib/re'          as=re]
+[?lib 'cx-stdlib/json'        as=json]
+[?lib 'cx-stdlib/process'     as=process]
+[?lib 'cx-stdlib/http-client' as=http]
+
+[?def cat scope=public pure ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def die scope=public impure ($code $s) [?do [$io:write-line [$env:stderr] [$cat ('publish-packages: ', $s)]] [$env:exit $code]]]
+
+[?def flag scope=public impure ($name $d)
+  [?let [= $p [$cat ('--', $name, '=')]]
+        [= $hits [?to-sequence [?for [in $a [$env:argv]] [where [$strings:starts-with $a $p]]
+                   [yield [$strings:slice $a [+ [$strings:length $p] 1] [$strings:length $a]]]]]]
+    [?if [= [$count $hits] 0] [then $d] [else [$nth $hits 1]]]]]
+
+# ── the pure half ────────────────────────────────────────────────────────────
+
+# pep440: a release tag's version as PyPI spells it. vX.Y.Z -> X.Y.Z;
+# -pre.N / -rc.N -> rcN, -beta.N -> bN, -alpha.N -> aN; anything else ''.
+[?def pep440 scope=public pure [returns string] ($tag)
+  [?let [= $rx [$re:compile '^v([0-9]+\.[0-9]+\.[0-9]+)(-(pre|rc|beta|alpha)\.([0-9]+))?$']]
+        [= $m [?if [$re:matches $rx $tag] [then [$re:find $rx $tag]] [else null]]]
+    [?if [= $m null] [then '']
+      [else [?let [= $grp [?fn ($i) [?let [= $v [?else [$re:group $m $i] '']] [?if [= $v null] [then ''] [else [$string $v]]]]]]
+                  [= $g [$grp 1]] [= $k [$grp 3]] [= $n [$grp 4]]
+        [?if [= $k ''] [then $g]
+          [else [$cat ($g, [?match $k [case 'pre' 'rc'] [case 'rc' 'rc'] [case 'beta' 'b'] [else 'a']], $n)]]]]]]]]
+
+# the release platforms: tarball <os>-<arch> -> wheel tag, library, brew block.
+[?def plats scope=public pure [returns [sequence element]] ()
+  ([plat id='darwin-arm64'  wheel='macosx_11_0_arm64'      lib='libcx.dylib' os='macos' cpu='arm'],
+   [plat id='darwin-x86_64' wheel='macosx_11_0_x86_64'     lib='libcx.dylib' os='macos' cpu='intel'],
+   [plat id='linux-x86_64'  wheel='manylinux_2_28_x86_64'  lib='libcx.so'    os='linux' cpu='intel'],
+   [plat id='linux-aarch64' wheel='manylinux_2_28_aarch64' lib='libcx.so'    os='linux' cpu='arm'])]
+
+# SHA256SUMS.txt -> [sum file= sha=] rows (`shasum -a 256` lines: hex, two spaces, name).
+[?def sums scope=public pure [returns [sequence element]] ($text)
+  [?to-sequence [?for [in $l [$strings:split-lines $text]]
+    [where [$re:matches [$re:compile '^[0-9a-f]{64}  [^ ]+$'] $l]]
+    [yield [sum file=[$strings:slice $l 67 [$strings:length $l]] sha=[$strings:slice $l 1 64]]]]]]
+[?def sum-of scope=public pure [returns string] ($rows $file)
+  [?let [= $h [?to-sequence [?for [in $r $rows] [where [= [$string $r@file] $file]] [yield [$string $r@sha]]]]]
+    [?if [= [$count $h] 0] [then ''] [else [$nth $h 1]]]]]
+
+# the formula: one url + sha256 per platform the release ships.
+[?def formula scope=public pure [returns string] ($tag $ver $have)
+  [?let [= $base [$cat ('https://github.com/cx-home/cx/releases/download/', $tag, '/cx-')]]
+        [= $blk [?fn ($os) [$strings:join [?to-sequence [?for [in $p $have] [where [= [$string $p@os] $os]]
+                   [yield [$cat ('    on_', [$string $p@cpu], " do\n",
+                                 '      url "', $base, [$string $p@id], ".tar.gz\"\n",
+                                 '      sha256 "', [$string $p@sha], "\"\n",
+                                 "    end\n")]]]] '']]]
+        [= $mac [$blk 'macos']] [= $lin [$blk 'linux']]
+    [$cat ("# Formula/cx.rb — written by cx-private scripts/publish_packages.cx at each release; do not edit by hand.\n",
+           "class Cx < Formula\n",
+           "  desc \"CX: one language for data, code and documents\"\n",
+           "  homepage \"https://github.com/cx-home/cx\"\n",
+           '  version "', $ver, "\"\n",
+           "  license \"Apache-2.0\"\n",
+           [?if [= $mac ''] [then ''] [else [$cat ("\n  on_macos do\n", $mac, "  end\n")]]],
+           [?if [= $lin ''] [then ''] [else [$cat ("\n  on_linux do\n", $lin, "  end\n")]]],
+           "\n  def install\n",
+           "    bin.install \"cx\"\n",
+           "    lib.install Dir[\"libcx.*\"]\n",
+           "    include.install \"cx.h\"\n",
+           "  end\n",
+           "\n  test do\n",
+           "    assert_match version.to_s, shell_output(\"#{bin}/cx --version\")\n",
+           "  end\n",
+           "end\n")]]]
+
+# pypi-plan: what PyPI's answer for the version says about one wheel —
+# 'upload' (absent), 'skip' (present, same sha256) or 'refuse' (present, other bytes).
+[?def pypi-plan scope=public pure [returns string] ($answer $file $sha)
+  [?let [= $urls [?if [= $answer null] [then ()] [else [?else $answer.urls ()]]]]
+        [= $hit [?to-sequence [?for [in $u $urls] [where [= [$string $u.filename] $file]] [yield [$string $u.digests.sha256]]]]]
+    [?if [= [$count $hit] 0] [then 'upload'] [else [?if [= [$nth $hit 1] $sha] [then 'skip'] [else 'refuse']]]]]]
+
+# ── the impure half ──────────────────────────────────────────────────────────
+
+[?def run scope=public impure ($argv $cwd $envs)
+  [?let [= $r [$process:run $argv cwd=$cwd env=$envs timeout-ms=900000]]
+    [?match $r
+      [case [err$e] {ok: false, out: '', why: [$string $e]}]
+      [else [?if [= $r@exit-code 0] [then {ok: true, out: [$strings:trim [$string $r@stdout]], why: ''}]
+              [else {ok: false, out: '', why: [$cat ([$nth $argv 1], ' ', [$nth $argv 2], ': exit ', [$string $r@exit-code], ' ',
+                                                    [$strings:trim [$string $r@stderr]])]}]]]]]]
+
+[?def sha-file scope=public impure ($p) [$hash:format-hex [$hash:sha256 [$io:read-file-bytes $p]]]]
+
+# pypi-answer: the JSON for name/version, null on a 404 (never published).
+[?def pypi-answer scope=public impure ($fixture $ver)
+  [?if [not [= $fixture '']] [then [?if [$io:is-file $fixture] [then [$json:parse [$io:read-file $fixture]]] [else null]]]
+    [else [?let [= $r [$http:get [$cat ('https://pypi.org/pypi/cxlib/', $ver, '/json')] {}]]
+      [?if [= [$http:status $r] 200] [then [$json:parse [$http:body-text $r]]] [else null]]]]]]
+
+# upload: PyPI's upload API (multipart/form-data), the token as the
+# __token__ user's password in an Authorization header — never an argv.
+[?def upload scope=public impure ($whl $file $ver $sha $tok)
+  [?let [= $b 'cxpublishboundary1947']
+        [= $field [?fn ($k $v) [$cat ('--', $b, "\r\nContent-Disposition: form-data; name=\"", $k, "\"\r\n\r\n", $v, "\r\n")]]]
+        [= $head [$cat ([$field ':action' 'file_upload'], [$field 'protocol_version' '1'], [$field 'name' 'cxlib'],
+                        [$field 'version' $ver], [$field 'filetype' 'bdist_wheel'], [$field 'pyversion' 'py3'],
+                        [$field 'metadata_version' '2.1'], [$field 'sha256_digest' $sha],
+                        '--', $b, "\r\nContent-Disposition: form-data; name=\"content\"; filename=\"", $file,
+                        "\"\r\nContent-Type: application/octet-stream\r\n\r\n")]]
+        [= $body [$bytes:concat ([$bytes:from-string-utf8 $head], [$io:read-file-bytes $whl],
+                                 [$bytes:from-string-utf8 [$cat ("\r\n--", $b, "--\r\n")]])]]
+        [= $r [$http:post 'https://upload.pypi.org/legacy/' $body
+                {content-type: [$cat ('multipart/form-data; boundary=', $b)],
+                 headers: {Authorization: [$cat ('Basic ', [$bytes:to-base64 [$bytes:from-string-utf8 [$cat ('__token__:', $tok)]]])]}}]]
+    [?if [= [$http:status $r] 200] [then '']
+      [else [$cat ('PyPI answered ', [$string [$http:status $r]], ' for ', $file, ': ',
+                   [$strings:slice [$http:body-text $r] 1 [$math-min 300 [$strings:length [$http:body-text $r]]]])]]]]]
+[?def math-min scope=public pure ($a $b) [?if [< $a $b] [then $a] [else $b]]]
+[?def c-member scope=public pure ($x $xs) [> [$count [?to-sequence [?for [in $y $xs] [where [= $y $x]] [yield $y]]]] 0]]
+
+[?let
+  [= $tag [$flag 'tag' '']]
+  [= $mode [$flag 'mode' 'dry']]
+  [= $out [$flag 'out' 'vcx/target/publish']]
+  [= $assets0 [$flag 'assets' '']]
+  [= $fixture [$flag 'pypi-json' '']]
+  [= $tap0 [$flag 'tap' '']]
+  [= $ver [$pep440 $tag]]
+  [= $_u [?if [= $ver ''] [then [$die 2 [$cat ('--tag=', $tag, ' is not a release tag (vX.Y.Z or vX.Y.Z-pre.N / -rc.N / -beta.N / -alpha.N)')]]] [else null]]]
+  [= $_m [?if [not [$c-member $mode ('dry', 'real')]] [then [$die 2 [$cat ('--mode=', $mode, ' is not dry or real')]]] [else null]]]
+  [= $real [= $mode 'real']]
+  [= $pytok [$env:var-or-default 'PYPI_TOKEN' '']]
+  [= $taptok [$env:var-or-default 'HOMEBREW_TAP_TOKEN' '']]
+  [= $_t [?if [and $real [or [= $pytok ''] [= $taptok '']]]
+           [then [$die 2 "a real publish needs PYPI_TOKEN and HOMEBREW_TAP_TOKEN in the environment (the owner's tokens; never in a file)"]] [else null]]]
+  [= $_o [$io:make-dirs $out]]
+  [= $assets [?if [not [= $assets0 '']] [then $assets0]
+               [else [?let [= $d [$cat ($out, '/assets')]]
+                           [= $g [$run ('gh', 'release', 'download', $tag, '--repo', 'cx-home/cx', '--clobber', '-D', $d,
+                                        '-p', 'cx-*-*.tar.gz', '-p', 'SHA256SUMS.txt') '.' {}]]
+                       [?if $g.ok [then $d] [else [$die 1 [$cat ('the release assets of ', $tag, ': ', $g.why)]]]]]]]]
+  [= $rows [$sums [?else [$io:read-file [$cat ($assets, '/SHA256SUMS.txt')]] '']]]
+  [= $have [?to-sequence [?for [in $p [$plats]]
+             [where [$io:is-file [$cat ($assets, '/cx-', [$string $p@id], '.tar.gz')]]]
+             [yield [?let [= $f [$cat ('cx-', [$string $p@id], '.tar.gz')]]
+                          [= $want [$sum-of $rows $f]] [= $got [$sha-file [$cat ($assets, '/', $f)]]]
+                      [?if [= $want ''] [then [$die 1 [$cat ('SHA256SUMS.txt names no ', $f)]]]
+                        [else [?if [not [= $want $got]] [then [$die 1 [$cat ($f, ' reads sha256 ', $got, '; SHA256SUMS.txt says ', $want)]]]
+                          [else [plat id=[$string $p@id] wheel=[$string $p@wheel] lib=[$string $p@lib] os=[$string $p@os]
+                                      cpu=[$string $p@cpu] sha=$got]]]]]]]]]]
+  [= $_h [?if [= [$count $have] 0] [then [$die 1 [$cat ('no cx-<os>-<arch>.tar.gz in ', $assets)]]] [else null]]]
+  # the wheels: the libcx of each tarball, packed by the pinned binding's wheel.cx.
+  [= $binding 'deps/cx-binding-python']
+  [= $wheels [?to-sequence [?for [in $p $have]
+               [yield [?let [= $pd [$cat ($out, '/', [$string $p@id])]]
+                            [= $_d [$io:make-dirs $pd]]
+                            [= $tgz [$io:read-file-bytes [$cat ($assets, '/cx-', [$string $p@id], '.tar.gz')]]]
+                            [= $lib [?else [$tar:extract [$bytes:gzip-decompress $tgz] [$string $p@lib]] null]]
+                            [= $_l [?if [= $lib null] [then [$die 1 [$cat ('cx-', [$string $p@id], '.tar.gz holds no ', [$string $p@lib])]]]
+                                     [else [$io:write-file-bytes [$cat ($pd, '/', [$string $p@lib])] $lib]]]]
+                            [= $w [$run ([$env:executable-path], '--allow-all', [$cat ($binding, '/tooling/wheel.cx')],
+                                         [$cat ('--libcx=', $pd, '/', [$string $p@lib])], [$cat ('--version=', $ver)],
+                                         [$cat ('--platform=', [$string $p@wheel])], [$cat ('--out=', $out, '/wheels')]) '.' {}]]
+                        [?if [not $w.ok] [then [$die 1 [$cat ('the ', [$string $p@id], ' wheel: ', $w.why)]]]
+                          [else [?let [= $path [$nth [$strings:split-lines $w.out] 1]]
+                                      [= $file [$nth [$strings:split [$cat ('/', $path)] '/'] [$count [$strings:split [$cat ('/', $path)] '/']]]]
+                                  [wheel path=$path file=$file sha=[$sha-file $path]]]]]]]]]]
+  [= $answer [$pypi-answer $fixture $ver]]
+  [= $plans [?to-sequence [?for [in $w $wheels] [yield [?let [= $k [$pypi-plan $answer [$string $w@file] [$string $w@sha]]]
+                [wheel path=[$string $w@path] file=[$string $w@file] sha=[$string $w@sha] plan=$k]]]]]]
+  [= $bad [?to-sequence [?for [in $w $plans] [where [= [$string $w@plan] 'refuse']] [yield [$string $w@file]]]]]
+  [= $_b [?if [> [$count $bad] 0]
+           [then [$die 1 [$cat ('PyPI already holds ', [$strings:join $bad ', '], ' with other bytes: a file name is never re-uploaded; cut a new version')]]] [else null]]]
+  [= $rb [$formula $tag $ver $have]]
+  [= $_f [$io:write-file [$cat ($out, '/cx.rb')] $rb]]
+  [= $_p [?for [in $w $plans]
+           [yield [?if [= [$string $w@plan] 'skip'] [then [$say [$cat ('pypi: ', [$string $w@file], ' already published (same sha256) — skipped')]]]
+                    [else [?if [not $real] [then [$say [$cat ('pypi: would upload ', [$string $w@file], ' sha256 ', [$string $w@sha])]]]
+                      [else [?let [= $e [$upload [$string $w@path] [$string $w@file] $ver [$string $w@sha] $pytok]]
+                        [?if [= $e ''] [then [$say [$cat ('pypi: uploaded ', [$string $w@file])]]] [else [$die 1 $e]]]]]]]]]]]
+  [= $_r [?if [not $real]
+           [then [$say [$cat ('brew: would write Formula/cx.rb (', $out, '/cx.rb: ', [$string [$count $have]], ' platform(s)) to cx-home/homebrew-cx')]]]
+           [else [?let
+             [= $tap [?if [not [= $tap0 ''] ] [then $tap0] [else [$cat ($out, '/tap')]]]]
+             [= $genv {GH_TOKEN: $taptok, GIT_TERMINAL_PROMPT: '0'}]
+             [= $cred ('-c', 'credential.helper=', '-c', 'credential.helper=!gh auth git-credential')]
+             [= $c [?if [$io:is-directory [$cat ($tap, '/.git')]] [then {ok: true, why: ''}]
+                     [else [$run ('git', [?splice $cred], 'clone', '-q', 'https://github.com/cx-home/homebrew-cx', $tap) '.' $genv]]]]
+             [= $_c [?if [not $c.ok] [then [$die 1 [$cat ('the tap clone: ', $c.why)]]] [else null]]]
+             [= $fp [$cat ($tap, '/Formula/cx.rb')]]
+             [= $same [and [$io:is-file $fp] [= [$io:read-file $fp] $rb]]]
+             [?if $same [then [$say 'brew: Formula/cx.rb already reads this release — nothing to push']]
+               [else [?let
+                 [= $_d [$io:make-dirs [$cat ($tap, '/Formula')]]]
+                 [= $_w [$io:write-file $fp $rb]]
+                 [= $a [$run ('git', 'add', 'Formula/cx.rb') $tap {}]]
+                 [= $m [?if $a.ok [then [$run ('git', 'commit', '-q', '-m', [$cat ('cx ', $ver, ': the formula of ', $tag)]) $tap {}]] [else $a]]]
+                 [= $p [?if $m.ok [then [$run ('git', [?splice $cred], 'push', '-q', 'origin', 'HEAD:main') $tap $genv]] [else $m]]]
+                 [?if $p.ok [then [$say [$cat ('brew: pushed Formula/cx.rb for ', $tag)]]] [else [$die 1 [$cat ('the tap push: ', $p.why)]]]]]]]]]]]
+  [= $_e [$say [$cat ('publish-packages ', [?if $real [then 'DONE'] [else 'DRY'] ], ': ', $tag, ' = cxlib ', $ver, ', ',
+                      [$string [$count $wheels]], ' wheel(s), the formula for ', [$string [$count $have]], ' platform(s)')]]]
+  [$env:exit 0]]
+
