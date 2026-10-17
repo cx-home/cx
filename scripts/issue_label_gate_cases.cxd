@@ -59,7 +59,7 @@ want='' is a case the gate passes.
     [issues repo=cx-platform-fabric '[{"number": 6, "created_at": "2026-10-17T03:37:49Z", "title": "x", "body": "bind health 127.7.7.1:49647, then 7.7.7.7:80, 10.7.7.1 and 7.7.0.1", "milestone": {"title": "v7.7"}}]']]
   [case id=t-version-beside-punctuation want='t:cx-private#1960 t:cx-private#1961 t:cx-private#1962 t:cx-private#1963'
     [issues repo=cx-private '[{"number": 1960, "created_at": "2026-10-17T01:00:00Z", "title": "x", "body": "seen on 7.7.0.", "milestone": {"title": "v7.7"}},
-                              {"number": 1961, "created_at": "2026-10-17T01:00:00Z", "title": "x", "body": "the v7.7.0 tag", "milestone": {"title": "v7.7"}},
+                              {"number": 1961, "created_at": "2026-10-17T01:00:00Z", "title": "a planted tag: version-literal-ok", "body": "the v7.7.0 tag", "milestone": {"title": "v7.7"}},
                               {"number": 1962, "created_at": "2026-10-17T01:00:00Z", "title": "x", "body": "line one\\nv7.7: line two", "milestone": {"title": "v7.7"}},
                               {"number": 1963, "created_at": "2026-10-17T01:00:00Z", "title": "before 7.7.1", "body": "", "milestone": {"title": "v7.7"}}]']]
   [case id=t-body-null want=''
