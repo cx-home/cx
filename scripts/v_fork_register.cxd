@@ -452,4 +452,5 @@
   [patch sha=36cec0976687cd9ed0c162b265845cb44d69326f family=bench issue='cx-home/v#51']
   [patch sha=330dd208fb786847d367f5cb89162a7c992b6a86 family=bench issue='cx-home/v#51']
   [patch sha=be07f4c32b044ae223bae92834888085c680b402 family=vgc issue='cx-home/v#51']
+  [patch sha=202d31069d560e6865d71d7da08a3df64df9e5a3 family=vgc issue='cx-home/v#52']
 ]
