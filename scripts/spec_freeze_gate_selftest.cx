@@ -12,7 +12,8 @@
 #      recorded-match check)
 #   I  a file re-entering the LEGACY ledger namespace (spec/02-working/partition_*) at HEAD
 #                                               → MUST FAIL  (R6.1 tree check)
-#   J  the RANGE scan names exactly the three violations; K  a clean range passes.
+#   L  a line-wrapped recorded token passes; M  a line-wrapped bogus one is refused (df1238bd1).
+#   J  the RANGE scan names exactly the four violations; K  a clean range passes.
 # The gate runs on the cx running this program (TOOL_CX from the Makefile), in the planted repo.
 # CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of spec_freeze_gate_selftest.sh, the same scenarios
 # and lines.
@@ -86,6 +87,12 @@
   # H — mixed, parenthesized bogus token → gate must REFUSE
   [= $h [$mixed 'mixed change with a bogus token (RULED: NOPE-77)']]
   [= $_H [?let [= $g [$one $h]] [?if $g@ok [then [$die 'SELFTEST FAILED: scenario H (parenthesized unrecorded token) passed the gate']] [else [$io:write-string [$env:stdout] $g@out]]]]]
+  # L — mixed, a recorded token the message's line wrap split after "RULED:" → must pass (df1238bd1)
+  [= $l [$mixed "mixed change under an express ruling (a rename is the row's own; RULED:\nTST-1). More prose."]]
+  [= $_L [?let [= $g [$one $l]] [= $_s [$shown $g]] [?if $g@ok [then null] [else [$die 'SELFTEST FAILED: scenario L (line-wrapped recorded token) was refused']]]]]
+  # M — mixed, a bogus token split the same way → gate must REFUSE
+  [= $m [$mixed "mixed change with a bogus token; RULED:\nNOPE-55. More prose."]]
+  [= $_M [?let [= $g [$one $m]] [?if $g@ok [then [$die 'SELFTEST FAILED: scenario M (line-wrapped unrecorded token) passed the gate']] [else [$io:write-string [$env:stdout] $g@out]]]]]
   # I — a file re-entering the legacy ledger namespace at HEAD → default-mode gate must REFUSE (R6.1
   # tree check; the per-commit classifier deliberately treats the legacy spelling as ledger-class for
   # history, so the tree check is the only thing standing between the carve-out and a loophole)
@@ -99,15 +106,15 @@
   # tokens) are named, the recorded and single-class commits are not.
   [= $_J [?let [= $seed [$git $t ('rev-list', '--max-parents=0', 'HEAD')]] [= $g [$gate $script $t () $seed]]
                [= $out [$cat ($g@out, $g@err)]]
-           [?if $g@ok [then [$die 'SELFTEST FAILED: scenario J (range with three violations) passed the default-mode gate']]
+           [?if $g@ok [then [$die 'SELFTEST FAILED: scenario J (range with four violations) passed the default-mode gate']]
              [else [?do
-               [?for [in $v ($a, $c, $h)] [where [not [$strings:contains $out [$cat ('commit ', $v, ' ')]]]]
+               [?for [in $v ($a, $c, $h, $m)] [where [not [$strings:contains $out [$cat ('commit ', $v, ' ')]]]]
                  [yield [?do [$cry [$cat ('SELFTEST FAILED: scenario J did not name violation ', $v, ':')]] [$cry $out] [$env:exit 1]]]]
-               [?for [in $ok ($b, $f, $gs)] [where [$strings:contains $out [$cat ('commit ', $ok, ' ')]]]
+               [?for [in $ok ($b, $f, $gs, $l)] [where [$strings:contains $out [$cat ('commit ', $ok, ' ')]]]
                  [yield [$die [$cat ('SELFTEST FAILED: scenario J named the recorded-token commit ', $ok)]]]]]]]]]
-  # K — a range holding only clean commits (after H) passes the range scan.
-  [= $_K [?let [= $g [$gate $script $t () $h]] [= $_e [?if [= $g@err ''] [then null] [else [$io:write-string [$env:stderr] $g@err]]]]
+  # K — a range holding only clean commits (after M) passes the range scan.
+  [= $_K [?let [= $g [$gate $script $t () $m]] [= $_e [?if [= $g@err ''] [then null] [else [$io:write-string [$env:stderr] $g@err]]]]
            [?if $g@ok [then null] [else [$die 'SELFTEST FAILED: scenario K (clean range after H) was refused']]]]]
   [= $_rm [$io:remove-tree $t]]
-  [?do [$say 'spec-freeze-gate selftest: 11/11 (tokenless-mixed RED, unrecorded-token RED plain+parenthesized, recorded plain/parenthesized/qualified green, spec-only/impl-only green, legacy-namespace RED, range scan names exactly the three violations, clean range green)']
+  [?do [$say 'spec-freeze-gate selftest: 13/13 (tokenless-mixed RED, unrecorded-token RED plain+parenthesized+line-wrapped, recorded plain/parenthesized/qualified/line-wrapped green, spec-only/impl-only green, legacy-namespace RED, range scan names exactly the four violations, clean range green)']
        [$env:exit 0]]]
