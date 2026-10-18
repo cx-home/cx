@@ -729,6 +729,10 @@ const accepted_by_one_table = [
 	// scripts/r22_profile_gate.cx (R22-1 = (a)): `[$process:run ($probe, …) stdin=:discard]`, a
 	// call-shaped head beside a ws-delimited `(…)` literal — the 1536-a property.
 	AcceptedByOne{'scripts/r22_profile_gate.cx', .program, reason_1536},
+	// scripts/fixture_files_for_branch.cx (CXMACH-1): `[$process:run ('git', …) cwd=$root …]`, the same
+	// 1536-a shape; its selftest is head_is_docs_only_selftest.cx's twin (a computed attribute).
+	AcceptedByOne{'scripts/fixture_files_for_branch.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/fixture_files_for_branch_selftest.cx', .program, reason_attr},
 	// DOCS-4 wave 1 (RULED: DOCS-42, DOCS-43): the plug-in figure's
 	// `height=[- ROW-H 4]` and the voice step's `path=[$attr $p "path" ""]`,
 	// both computed attributes on a constructed row.

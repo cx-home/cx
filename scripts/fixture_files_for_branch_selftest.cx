@@ -1,0 +1,165 @@
+# scripts/fixture_files_for_branch_selftest.cx — proves the #1513 selection's detection
+# power on a SYNTHETIC repo (mktemp; never the live tree — the same rule
+# head_is_docs_only_selftest.cx and the spec-freeze-gate selftest follow). One
+# case per rule in the helper's own header, and the cases that matter most are
+# the ones where it must NOT shrink the step:
+#
+#   A  a corpus file in the walk              → that file            (rule 2)
+#   B  vcx/<product>/stdlib_<m>.v          → <m>.cxd              (rule 3)
+#   C  vcx/<product>/stdlib_<m>_*.v        → <m>.cxd, by dropping the tail
+#   D  vcx/code/stdlib_<m>.v                  → code.cxd AND <m>.cxd (3 + 4)
+#   E  stdlib/<m>.cx                          → <m>.cxd              (rule 3)
+#   F  vcx/cx/ only                           → code.cxd             (rule 4)
+#   G  the grader itself                      → ALL                  (rule 1)
+#   H  a shard test file                      → ALL                  (rule 1)
+#   I  scripts/run_fixture_shards.cx          → ALL                  (rule 1)
+#   J  the V pin third_party/v                → ALL                  (rule 1)
+#   K  stdlib/<x>.cx with NO corpus file      → ALL   (shared by every module)
+#   L  a conformance file OUTSIDE the walk    → empty + a stderr note (rule 2)
+#   M  a base that is not a commit            → ALL                  (rule 0)
+#   N  a module source with a FAMILY and no exact file (stdlib_xap.v) → the family
+#   O  docs only                              → empty (the branch owes nothing)
+#   P  two corpus files at once               → both, sorted, deduplicated
+#   Q  a deps.cxd pin bump (#1641)            → every walked corpus file that
+#                                                imports a module the row provides
+#   R  deps.cxd's doc block only              → empty (no row moved)
+#   S  a deps.cxd row that names no module=   → ALL   (it cannot tell)
+#   T  deps.cxd from --changed-files          → ALL   (no base to compare rows with)
+#   U  a V repository's row moves (v-fork=)   → ALL   (its modules are compiled into
+#                                                the binary every case runs through)
+#
+# Exit 0 and the count line only when every case matches.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of fixture_files_for_branch_selftest.sh — the
+# same twenty-one cases on the same synthetic repo, the helper copied beside it and run on the cx
+# running this, the same lines on the same streams and the same exit.
+#   $(TOOL_CX) --allow-all scripts/fixture_files_for_branch_selftest.cx
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$env:write-line $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def run scope=public impure ($t $argv)
+  [?let [= $r [$process:run $argv cwd=$t capture=:both]]
+    [?match $r [case [err$e] [r rc=127 out='' err='']] [else [r rc=$r@exit-code out=[$string $r@stdout] err=[$string $r@stderr]]]]]]
+[?def git scope=public impure ($t $args) [$run $t ('git', [?splice $args])]]
+[?def chomp scope=public ($s) [$strings:trim-end-chars $s "\n"]]
+[?def put scope=public impure ($t $rel $s) [?let [= $p [$cat ($t, '/', $rel)]] [= $_d [$io:make-dirs [$path:dirname $p]]] [$io:write-file $p $s]]]
+[?def add scope=public impure ($t $rel $s) [$io:append-file [$cat ($t, '/', $rel)] $s]]
+# sub — the first FROM in REL replaced by TO (the shell's `sed -i 's/…/…/'`)
+[?def sub scope=public impure ($t $rel $from $to)
+  [?let [= $p [$cat ($t, '/', $rel)]] [$io:write-file $p [$strings:replace-first [$io:read-file $p] $from $to]]]]
+[?def commit scope=public impure ($t $msg) [?let [= $_a [$git $t ('add', '-A')]] [$git $t ('commit', '-qm', $msg)]]]
+[?def sel scope=public impure ($t $sel $args) [$run $t ([$string [$env:executable-path]], '--allow-all', $sel, [?splice $args])]]
+[?def verdict scope=public impure ($name $got $want)
+  [?if [= $got $want]
+    [then [?let [= $_ [$say [$cat ('  ', [$strings:pad-end $name 3 ' '], ' ok   ', [?if [= $got ''] [then '<empty>'] [else $got]])]]] true]]
+    [else [?let [= $_ [$cry [$cat ('  ', [$strings:pad-end $name 3 ' '], ' SELFTEST FAILED: got [', $got, '], wanted [', $want, ']')]]] false]]]]
+
+# check — one case: the helper on BASE...HEAD, its stdout against WANT; then back to the base
+# commit (every case starts from the same base). The verdict: true when it matched.
+[?def check scope=public impure ($t $sel $base0 $name $want $base)
+  [?let [= $ok [$verdict $name [$chomp [$sel $t $sel ($base)]@out] $want]]
+        [= $_r [$git $t ('reset', '-q', '--hard', $base0)]]
+        [= $_c [$git $t ('clean', '-qfd')]]
+    $ok]]
+
+[?let
+  [= $here [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]
+  [= $sel0 [$cat ($here, '/fixture_files_for_branch.cx')]]
+  [= $_0 [?if [$io:is-file $sel0] [then null] [else [?let [= $_ [$cry [$cat ('SELFTEST FAILED: no helper at ', $sel0)]]] [$env:exit 1]]]]]
+  [= $t [$string [$io:temp-dir 'fixture_files_for_branch_selftest.']]]
+  # the helper resolves its repo from its OWN path, so the synthetic repo gets a scripts/ copy —
+  # which also proves it is relocatable, the way the pipelines invoke it from a worktree
+  [= $sel [$cat ($t, '/scripts/fixture_files_for_branch.cx')]]
+  [= $_1 [$put $t 'scripts/fixture_files_for_branch.cx' [$io:read-file $sel0]]]
+  [= $_g [$git $t ('init', '-q', '.')]]
+  [= $_u1 [$git $t ('config', 'user.email', 't@t')]]
+  [= $_u2 [$git $t ('config', 'user.name', 't')]]
+  # a synthetic corpus with the shapes the rules turn on: an exact name, the same name in two
+  # rings, a family with no exact file, and a file OUTSIDE the walk
+  [= $_s1 [?to-array [?for [in $f ('conformance/stdlib/saml.cxd', 'conformance/stdlib/json.cxd',
+                                   'conformance/stdlib/term.cxd', 'conformance/x/term.cxd',
+                                   'conformance/platform/connector.cxd', 'conformance/platform/flow.cxd',
+                                   'conformance/platform/http.cxd', 'conformance/xap/xap-on.cxd',
+                                   'conformance/xap/xap-compose.cxd', 'conformance/xap/xap-dist.cxd',
+                                   'conformance/code.cxd', 'conformance/core.cxd', 'conformance/llm/prompts.cxd')]
+                       [yield [$put $t $f "[test-suite ring=1]\n"]]]]]
+  [= $_s2 [?to-array [?for [in $f ('vcx/store/stdlib_connector.v', 'vcx/store/stdlib_saml_binding.v', 'vcx/xap/stdlib_xap.v',
+                                   'vcx/store/stdlib_iowatch.v', 'vcx/code/stdlib_json.v', 'vcx/cx/parser.v',
+                                   'vcx/tests/fixtures_grader/grader.v', 'vcx/tests/code_eval_fixtures_shards_test.v')]
+                       [yield [$put $t $f "source\n"]]]]]
+  [= $_s3 [$put $t 'scripts/run_fixture_shards.cx' "wrapper\n"]]
+  [= $_s4 [$put $t 'third_party/v/keep' "pin\n"]]
+  [= $_s5 [$put $t 'stdlib/flow.cx' "module source\n"]] [= $_s6 [$put $t 'stdlib/codec.cx' "module source\n"]]
+  [= $_s7 [$put $t 'docs/index.html' "prose\n"]]
+  # #1641: a pinned module and the corpus files that import it — diagram.cxd imports
+  # cx-platform/flow (as the real one does), http.cxd imports nothing pinned, and flow-extra
+  # names a DIFFERENT module that only shares the prefix
+  [= $_s8 [$put $t 'conformance/platform/diagram.cxd' "[test-suite ring=1]\n[case id=d [in-code [?lib 'cx-platform/flow' as=flow] 1]]\n"]]
+  [= $_s9 [$put $t 'conformance/stdlib/json.cxd' "[test-suite ring=1]\n[case id=e [in-code [?lib 'cx-platform/flow-extra'] 1]]\n"]]
+  [= $_sa [$put $t 'deps.cxd' [$cat ("[deps\n  [doc [#\nThe repositories this tree pins.\n#]]\n",
+                                     "  [dep repo=cx-platform-flow sha=78ea045510278dee3b0a522ab7f168e42e020fab module='cx-platform/flow']\n",
+                                     "  [dep repo=cx-platform-sso sha=c43dc5cd9c804dc3d34e3e1a5a1e4fa6969b5598 module='cx-platform/sso']\n]\n")]]]
+  [= $_sc [$commit $t 'seed']]
+  [= $base [$chomp [$git $t ('rev-parse', '--short', 'HEAD')]@out]]
+  [= $ck [?fn ($name $want $b) [$check $t $sel $base $name $want $b]]]
+  [= $_h [$say 'fixture_files_for_branch selftest:']]
+  [= $a [?let [= $_1 [$add $t 'conformance/xap/xap-on.cxd' "a case\n"]] [= $_c [$commit $t 'A']] [$ck 'A' 'conformance/xap/xap-on.cxd' $base]]]
+  [= $b [?let [= $_1 [$add $t 'vcx/store/stdlib_connector.v' "a fn\n"]] [= $_c [$commit $t 'B']] [$ck 'B' 'conformance/platform/connector.cxd' $base]]]
+  # C — saml-binding has no corpus file, saml does
+  [= $c [?let [= $_1 [$add $t 'vcx/store/stdlib_saml_binding.v' "a fn\n"]] [= $_c [$commit $t 'C']] [$ck 'C' 'conformance/stdlib/saml.cxd' $base]]]
+  # D — vcx/code/stdlib_<m>.v is BOTH rules at once
+  [= $d [?let [= $_1 [$add $t 'vcx/code/stdlib_json.v' "a fn\n"]] [= $_c [$commit $t 'D']] [$ck 'D' 'conformance/code.cxd conformance/stdlib/json.cxd' $base]]]
+  [= $e [?let [= $_1 [$add $t 'stdlib/flow.cx' "a verb\n"]] [= $_c [$commit $t 'E']] [$ck 'E' 'conformance/platform/flow.cxd' $base]]]
+  [= $f [?let [= $_1 [$add $t 'vcx/cx/parser.v' "a fn\n"]] [= $_c [$commit $t 'F']] [$ck 'F' 'conformance/code.cxd' $base]]]
+  [= $g [?let [= $_1 [$add $t 'vcx/tests/fixtures_grader/grader.v' "a fn\n"]] [= $_c [$commit $t 'G']] [$ck 'G' 'ALL' $base]]]
+  [= $h [?let [= $_1 [$add $t 'vcx/tests/code_eval_fixtures_shards_test.v' "a fn\n"]] [= $_c [$commit $t 'H']] [$ck 'H' 'ALL' $base]]]
+  [= $i [?let [= $_1 [$add $t 'scripts/run_fixture_shards.cx' "a line\n"]] [= $_c [$commit $t 'I']] [$ck 'I' 'ALL' $base]]]
+  [= $j [?let [= $_1 [$add $t 'third_party/v/keep' "moved\n"]] [= $_c [$commit $t 'J']] [$ck 'J' 'ALL' $base]]]
+  # K — a stdlib/*.cx with no corpus file of its own name: shared by every module
+  [= $k [?let [= $_1 [$add $t 'stdlib/codec.cx' "a verb\n"]] [= $_c [$commit $t 'K']] [$ck 'K' 'ALL' $base]]]
+  # L — a conformance file the grader does not walk: left out, named on stderr
+  [= $l [?let [= $_1 [$add $t 'conformance/core.cxd' "a case\n"]] [= $_c [$commit $t 'L']]
+              [= $noted [$strings:contains [$sel $t $sel ($base)]@err 'conformance/core.cxd']]
+              [= $_e [?if $noted [then null] [else [$cry '  L   SELFTEST FAILED: core.cxd was dropped with no note on stderr']]]]
+          [+ [?if $noted [then 0] [else 1]] [?if [$ck 'L' '' $base] [then 0] [else 1]]]]]
+  # M — a base that is not a commit
+  [= $m [?let [= $_1 [$add $t 'conformance/xap/xap-on.cxd' "a case\n"]] [= $_c [$commit $t 'M']] [$ck 'M' 'ALL' 'deadbee']]]
+  # N — a module source with a FAMILY and no exact file
+  [= $n [?let [= $_1 [$add $t 'vcx/xap/stdlib_xap.v' "a fn\n"]] [= $_c [$commit $t 'N']]
+          [$ck 'N' 'conformance/xap/xap-compose.cxd conformance/xap/xap-dist.cxd conformance/xap/xap-on.cxd' $base]]]
+  # O — docs only: the branch owes this step no selection
+  [= $o [?let [= $_1 [$add $t 'docs/index.html' "<p>more</p>\n"]] [= $_c [$commit $t 'O']] [$ck 'O' '' $base]]]
+  # P — two corpus files at once, sorted and deduplicated (the same file named by its own edit
+  #     AND by its module source appears once)
+  [= $p [?let [= $_1 [$add $t 'conformance/platform/connector.cxd' "a case\n"]] [= $_2 [$add $t 'vcx/store/stdlib_connector.v' "a fn\n"]]
+              [= $_3 [$add $t 'conformance/stdlib/saml.cxd' "a case\n"]] [= $_c [$commit $t 'P']]
+          [$ck 'P' 'conformance/platform/connector.cxd conformance/stdlib/saml.cxd' $base]]]
+  # Q — a pin bump: the flow row's sha moves; diagram.cxd imports cx-platform/flow (each case
+  #     edits the base's deps.cxd: every check resets to the base)
+  [= $q [?let [= $_1 [$sub $t 'deps.cxd' '78ea045510278dee3b0a522ab7f168e42e020fab' '1111111111111111111111111111111111111111']]
+              [= $_c [$commit $t 'Q']] [$ck 'Q' 'conformance/platform/diagram.cxd' $base]]]
+  # R — the doc block alone moves: no row changed, nothing to grade
+  [= $rr [?let [= $_1 [$sub $t 'deps.cxd' 'The repositories this tree pins.' 'The repositories this tree pins, each at a sha.']]
+               [= $_c [$commit $t 'R']] [$ck 'R' '' $base]]]
+  # S — a changed row that names no module=: the helper cannot tell who imports it
+  [= $s [?let [= $_1 [$sub $t 'deps.cxd' " module='cx-platform/sso'" '']]
+              [= $_2 [$sub $t 'deps.cxd' 'c43dc5cd9c804dc3d34e3e1a5a1e4fa6969b5598' '2222222222222222222222222222222222222222']]
+              [= $_c [$commit $t 'S']] [$ck 'S' 'ALL' $base]]]
+  # U — a V repository's row (v-fork=, module= a repository name rather than a '<ns>/<name>'
+  #     spelling): what it provides is compiled into the binary every case runs through
+  [= $u [?let [= $_1 [$sub $t 'deps.cxd' "\n]\n" "\n  [dep repo=cx-core-data sha=3333333333333333333333333333333333333333 module=cx-core-data v-fork=d51c31ccb2d49b2117215aee11ac38ef520e1ece]\n]\n"]]
+              [= $_c [$commit $t 'U']] [$ck 'U' 'ALL' $base]]]
+  # T — deps.cxd named by --changed-files: no base to compare its rows with
+  [= $tt [?let [= $cf [$cat ($t, '/changed.txt')]] [= $_1 [$io:write-file $cf "deps.cxd\n"]]
+           [$verdict 'T' [$chomp [$sel $t $sel ('--changed-files', $cf)]@out] 'ALL']]]
+  [= $_x [?else [$io:remove-tree $t] null]]
+  [= $fails [+ $l [$count [?for [in $v ($a, $b, $c, $d, $e, $f, $g, $h, $i, $j, $k, $m, $n, $o, $p, $q, $rr, $s, $u, $tt)] [where [not $v]] [yield 1]]]]]
+  [?if [> $fails 0]
+    [then [?let [= $_ [$cry [$cat ('fixture_files_for_branch selftest: ', [$string $fails], ' case(s) FAILED')]]] [$env:exit 1]]]
+    [else [?let [= $_ [$say 'fixture_files_for_branch selftest: 21/21 (ALL G/H/I/J/K/M/S/T/U; selections A/B/C/D/E/F/N/P/Q; empty L/O/R)']] [$env:exit 0]]]]]

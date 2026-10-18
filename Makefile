@@ -4094,6 +4094,7 @@ check-serial-retry-rosters:
 check-fixture-shard-manifest:
 	@$(TOOL_CX) --allow-read --allow-write scripts/check_fixture_shard_manifest.cx
 	@$(TOOL_CX) --allow-all scripts/run_fixture_shards_selftest.cx
+	@$(TOOL_CX) --allow-all scripts/fixture_files_for_branch_selftest.cx
 
 # ── fixtures (#1448, RULED: 1448-a) — the grader's ONE-COMMAND form ─────────
 # Before the shard split a pre-merge pipeline graded the corpus with one line
@@ -4112,7 +4113,7 @@ check-fixture-shard-manifest:
 # shard owns FAILS the step. Unset, the target is what it was — which is what
 # the post-merge run, and any branch touching the grader, deps/cx-core-code/vcx/code/,
 # stdlib/*.cx or the V pin, keeps running (INT-5, INT-21). The selection for a
-# branch is `sh scripts/fixture_files_for_branch.sh origin/release/0.18`.
+# branch is `cx --allow-read --allow-write --allow-subprocess --allow-env scripts/fixture_files_for_branch.cx origin/release/0.18`.
 FIXTURE_FILES ?=
 .PHONY: fixtures
 fixtures:

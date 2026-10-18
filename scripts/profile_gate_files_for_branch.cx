@@ -7,7 +7,7 @@
 # compositions and is an 11-18 minute serial tail on EVERY run whatever the
 # branch touched (measured, VCOST-1's page). What a branch can actually move is
 # a short list, and this prints it — the same shape, and the same fail-safe
-# direction, as fixture_files_for_branch.sh (#1513).
+# direction, as fixture_files_for_branch.cx (#1513).
 #
 # Prints, on one line:
 #   * `ALL` — no selection is safe; grade everything. Every doubt resolves here;
