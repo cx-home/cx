@@ -1,0 +1,74 @@
+# scripts/release_profile_gate.cx — run the R2.2 BLOCKING per-profile install verification WITHOUT
+# cutting a release (RULED: PGL-1, #741, ledger/rulings_2026_08_22_profile_gate_lane.md).
+# CXMACH-1: the cx rewrite of scripts/release_profile_gate.sh.
+#
+# Why this exists: the R2.2 gate lived only inside the cut, in the arm that `--dry-run` skips, so its
+# first execution was always inside a real cut — a blocking gate nobody had ever run. This step stages
+# the same four tarballs a cut stages, from the same -prod build targets, and runs the same shared
+# gate (scripts/r22_profile_gate.cx) against them.
+#
+# Deliberately stages into dist/_precut_public/ and NOT dist/public/: a pre-cut run must never be
+# mistakable for real staged release assets.
+#
+#   cx --allow-all scripts/release_profile_gate.cx        (or: make release-profile-gate)
+#
+# No arguments, no escape hatches: the point is to gate the bytes a cut would ship, so the build
+# targets are the cut's own (-prod) targets. A dev-build variant would gate different bytes while
+# reading as green.
+# Proof (CXMACH-1): the output, exit code and staged tarballs identical to the shell script's on a
+# planted tree with a recording `devbox`, green and at each refusal. Exit: 0 passed; else the failed
+# step's own exit (the shell's `set -e` stop, at the same step).
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/path'    as=path]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+# step — one command, its streams through ours; a non-zero exit ends the program with that exit (`set -e`).
+[?def step scope=public impure ($cwd $argv)
+  [?let [= $r [$process:run [?to-sequence [?for [in $x $argv] [yield $x]]] cwd=$cwd stdin=:inherit capture={stdout: :inherit, stderr: :inherit}]]
+        [= $rc [?match $r [case [err$e] [?let [= $_ [$io:write-line [$env:stderr] [$cat ([$nth $argv 1], ': ', [$string $e@message])]]] 127]] [else $r@exit-code]]]
+    [?if [= $rc 0] [then 0] [else [$env:exit $rc]]]]]
+[?def out-of scope=public impure ($cwd $argv)
+  [?let [= $r [$process:run [?to-sequence [?for [in $x $argv] [yield $x]]] cwd=$cwd stdin=:discard capture={stdout: :pipe, stderr: :inherit}]]
+    [?match $r [case [err$e] ''] [else [$strings:trim [$string $r@stdout]]]]]]
+
+[?let [= $root [$path:dirname [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]]
+      [= $cx [$env:executable-path]]
+      [= $r22 [?fn ($args) [$step $root [?to-array [?for [in $xs (($cx, '--allow-all', 'scripts/r22_profile_gate.cx'), $args)] [in $x $xs] [yield $x]]]]]]
+      [= $arch [$out-of $root ('uname', '-m')]]
+      [= $os [$strings:lower [$out-of $root ('uname', '-s')]]]
+      # darwin-arm64 / linux-x86_64 — the release flow's stable public name
+      [= $plat [$cat ($os, '-', $arch)]]
+      [= $pub 'dist/_precut_public']
+      [= $_0 [$say [$cat ("\n== R2.2 pre-cut profile gate (", $plat, ') ==')]]]
+      [= $_1 [$say "-- building the cut's artifacts (-prod: build-vcx-pgo, the shipped PGO build (PGO-1), + build-profiles) and the loading probe"]]
+      [= $_2 [$step $root ('devbox', 'run', '--', 'make', 'build-vcx-pgo')]]
+      # never relink the PGO cx above as plain -O2 (PGO-1)
+      [= $_3 [$step $root ('devbox', 'run', '--', 'make', '-o', 'build-vcx', 'build-profiles')]]
+      [= $_4 [$step $root ('devbox', 'run', '--', 'make', 'build-extraction-probe')]]
+      [= $_5 [$say [$cat ('-- staging the four tarballs the cut stages → ', $pub, '/')]]]
+      [= $pubabs [$cat ($root, '/', $pub)]]
+      [= $_6 [?if [$io:exists $pubabs] [then [$io:remove-tree $pubabs]] [else null]]]
+      [= $_7 [$io:make-dirs [$cat ($pubabs, '/_plat')]]]
+      [= $_8 [$r22 ('collect-platform-files', [$cat ($pub, '/_plat')])]]
+      [= $_9 [$r22 ('tar-platform', [$cat ($pub, '/_plat')], $pubabs, $plat)]]
+      [= $_10 [$io:remove-tree [$cat ($pubabs, '/_plat')]]]
+      [= $_11 [$r22 ('stage-profiles', $pub, $plat)]]
+      [= $_12 [?to-array [?for [in $n [$sort [?to-array [?for [in $e [?else [$io:list-dir $pubabs] ()]] [yield [$string $e]]]]]]
+                [where [and [$strings:starts-with $n 'cx-'] [$strings:ends-with $n '.tar.gz']]]
+                [yield [$say [$cat ('   ', $pub, '/', $n)]]]]]]
+      # #1670 — same placement as the release flow: ahead of R2.2's install verification, which
+      # extracts-and-probes but never reads a Mach-O/ELF dependency graph.
+      [= $_13 [$say '-- running the release-asset-links gate (#1670: no /nix/store dependency)']]
+      [= $tgt [$out-of $root ($cx, '--allow-all', 'scripts/r22_profile_gate.cx', 'vcx-target')]]
+      [= $_14 [$step $root ('devbox', 'run', '--', [$cat ($tgt, '/cx')], '--allow-all', 'scripts/release_asset_links_gate.cx', '--dir', $pub)]]
+      [= $_15 [$say '-- running the BLOCKING gate (extract installer-style + profile probe + each library loaded, RLOAD-1)']]
+      [= $_16 [$r22 ('profile-gate', $pub, $plat, '/precut')]]
+  [?do [$say "   release gate (R2.2/precut): per-profile install verification PASSED (platform/data/embed/cli extract + profile probe; each staged library's inventory and cx_features identical to the build's own)"]
+       [$say '   NOTE: this proves #741 item 1 only. Item 2 (CX_PROFILE= install from the']
+       [$say '         PUBLISHED assets on macOS + Linux) requires the cut to have happened.']
+       [$env:exit 0]]]

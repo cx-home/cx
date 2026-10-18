@@ -38,7 +38,7 @@
    since v0.17.0's linux asset was measured clean; #1670 asks this gate to  (version-literal-ok: incident history)
    MEASURE that claim on every cut rather than assume it forever).
 
-   Wired into the release flow's package act, the R2.2 stage (scripts/lib/r22_profile_gate.sh)
+   Wired into the release flow's package act, the R2.2 stage (scripts/r22_profile_gate.cx)
    immediately after staging and before the per-profile install verification:
    the cut does not proceed on a refusal. Also `make check-release-asset-links`
    (TEST_TARGETS), which runs it against whatever is currently staged, and the

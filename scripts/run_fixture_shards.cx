@@ -1,0 +1,230 @@
+# scripts/run_fixture_shards.cx (#1448, RULED: 1448-a) — the ONE-COMMAND form of the
+# fixture grader, preserved across the shard split.
+#
+# Before 1448-a a pre-merge pipeline graded the corpus with one line:
+#
+#     cd vcx && ../third_party/v/v -cc cc -gc e -d cx_db_sqlite -d cx_db_redis \
+#         tests/code_eval_fixtures_test.v
+#
+# and read the census off its stdout. The corpus is now graded by the driver
+# plus the shard files named in vcx/tests/fixtures_grader/fixture_shards.cxd, so this program
+# is that line: it runs all of them IN PARALLEL under the same flags, prints
+# each one's output in manifest order (so a log is deterministic, not
+# interleaved), and prints the aggregated census line last. `make fixtures` is
+# its make-visible name.
+#
+# The flags are the pipelines' flags, not the Makefile's: `-d cx_db_sqlite -d
+# cx_db_redis` is what keeps db.cxd's cases 010-023 from failing by
+# construction. Extra flags (e.g. `-d cx_grader_ids`) are appended from
+# $FIXTURE_VFLAGS.
+#
+# ── $FIXTURE_FILES — the pre-merge SELECTION (#1513) ─────────────────────────
+#
+#     make fixtures FIXTURE_FILES="conformance/xap/xap-on.cxd conformance/platform/connector.cxd"
+#
+# grades ONLY the named corpus files, each through the shard that owns it,
+# under the same flags and the same grader. The whole corpus is 91 module files
+# and ~5,800 cases and took 15-35 minutes of every pre-merge run whatever the
+# branch touched; a branch's own corpus files take about three.
+#
+# The rules, all of them mechanised below:
+#   * a name is resolved against the manifest, spelled either way
+#     (`conformance/platform/connector.cxd` or `platform/connector.cxd`);
+#   * `conformance/code.cxd` names the DRIVER (code.cxd, the packages and the
+#     four fast-path differs), which is otherwise skipped;
+#   * a shard that owns none of the named files is not launched at all;
+#   * a named file NO shard owns FAILS this step — never a silent skip, which
+#     is the whole failure mode a selection introduces and the reason
+#     `check-fixture-shard-manifest` exists one level up;
+#   * the `stdlib corpus: …` census line is printed restricted to the graded
+#     set, with one `FIXTURE-FILES=<list>` line above it so RESULTS.md states
+#     what was graded rather than leaving it inferred (#1026's argument applied
+#     to the selection).
+#
+# With $FIXTURE_FILES unset or empty NOTHING below changes: the driver and
+# every shard run, and the census is the whole-corpus line. That is what the
+# post-merge run and any branch touching the grader, vcx/code/, stdlib/*.cx or
+# the V pin keep doing (INT-5, INT-21).
+#
+#   cx --allow-all scripts/run_fixture_shards.cx        (or: make fixtures)
+#
+# CXMACH-1: the cx rewrite of scripts/run_fixture_shards.sh. Proof: scripts/run_fixture_shards_selftest.cx
+# (A-K on a synthetic tree) and the output, exit code, census directory and timings row
+# byte-identical to the shell script's on planted trees. Deviations, stated: $TOOL_CX unset runs the
+# census on the cx running this program (the shell ran the first `cx` on PATH); a relative $V is
+# taken from the grader's directory, where the shell's `cd` left it; a $V that cannot start says so
+# in its step's log (the shell's sh printed its own `not found` there).
+# Exit: 0 every step and the census green; 1 otherwise, or a refused selection, or no manifest.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/time'    as=time]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def var scope=public impure ($n $d) [?let [= $v [$env:var-or-default $n '']] [?if [= $v ''] [then $d] [else $v]]]]
+[?def now-s scope=public impure () [$time:to-unix [$time:utc-now]]]
+[?def iso scope=public impure () [$time:format-with-format [$time:utc-now] "yyyy-MM-dd'T'HH:mm:ss'Z'"]]
+[?def read-or-empty scope=public impure ($p) [?if [$io:is-file $p] [then [?else [$io:read-file $p] '']] [else '']]]
+[?def words scope=public ($s) [?to-array [$strings:split-whitespace $s]]]
+# dedupe — `awk '!seen[$0]++'`: the first of each, in order.
+[?def dedupe scope=public ($xs)
+  [?to-array [?for [in $i [$range 1 [$count $xs]]]
+               [where [= [$count [?to-array [?for [in $j [$range 1 [- $i 1]]] [where [= [$nth $xs $j] [$nth $xs $i]]] [yield $j]]]] 0]]
+               [yield [$nth $xs $i]]]]]
+
+# The file check-verification-budget READS and the post-merge verdict writes — the checkout's
+# own vcx/target, not the pin's (#1562: after the split this wrote under deps/cx-core-code/ and
+# the step judged a stale row). scripts/verification_budget_selftest.cx reads this line.
+[?const TIMINGS-REL 'vcx/target/verification_timings.cxd']
+[?const MANIFEST 'deps/cx-core-code/vcx/tests/fixtures_grader/fixture_shards.cxd']
+[?const OUT 'deps/cx-core-code/vcx/target/fixtures']
+[?const DRIVER 'tests/code_eval_fixtures_test.v']
+
+# owners — one {shard test file} per [file] row, in manifest order. The manifest documents its own
+# row shapes inside a [doc [# … #]] block, so the prose is dropped before the rows are read (a
+# reader that reads its own documentation as data has a false row in it; check_fixture_shard_manifest.cx
+# makes the same cut): `sed '/\[doc \[#/,/#\]\]/d'` — from a line holding `[doc [#` through the next
+# LATER line holding `#]]`, to the end when there is none.
+[?const ROW-RX [$re:compile "^[[:space:]]*\\[(shard[[:space:]]+name=[^][:space:]]+[[:space:]]+test=[^][:space:]]+|file[[:space:]]+name=[^][:space:]]+)"]]
+[?def drop-doc scope=public ($lines $i $in $acc)
+  [?if [> $i [$count $lines]] [then $acc]
+    [else [?let [= $l [$nth $lines $i]]
+      [?if $in
+        [then [$drop-doc $lines [+ $i 1] [not [$strings:contains $l '#]]']] $acc]]
+        [else [?if [$strings:contains $l '[doc [#']
+          [then [$drop-doc $lines [+ $i 1] true $acc]]
+          [else [$drop-doc $lines [+ $i 1] false [?to-array [?for [in $xs ($acc, ($l))] [in $x $xs] [yield $x]]]]]]]]]]]]
+[?def strip-pre scope=public ($s $p) [?if [$strings:starts-with $s $p] [then [$strings:slice $s [+ [$strings:length $p] 1] [$strings:length $s]]] [else $s]]]
+[?def owners-of scope=public ($rows $i $sname $stest $acc)
+  [?if [> $i [$count $rows]] [then $acc]
+    [else [?let [= $f [$words [$nth $rows $i]]]
+      [?if [= [$nth $f 1] 'shard']
+        [then [$owners-of $rows [+ $i 1] [$strip-pre [$nth $f 2] 'name='] [$strip-pre [$nth $f 3] 'test='] $acc]]
+        [else [$owners-of $rows [+ $i 1] $sname $stest
+                [?to-array [?for [in $xs ($acc, ({shard: $sname, test: $stest, file: [$strip-pre [$nth $f 2] 'name=']}))] [in $x $xs] [yield $x]]]]]]]]]]
+[?def owners scope=public ($text)
+  [?let [= $ls [$strings:split $text "\n"]]
+        [= $kept [$drop-doc [?to-array $ls] 1 false ()]]
+        [= $rows [?to-array [?for [in $l $kept]
+                   [yield [?let [= $ms [?to-array [$re:find-all $ROW-RX $l]]]
+                            [?if [= [$count $ms] 0] [then ''] [else [$strip-pre [$strings:trim-start [$re:group [$nth $ms 1] 0]] '[']]]]]]]]
+        [= $real [?to-array [?for [in $r $rows] [where [not [= $r '']]] [yield $r]]]]
+    [$owners-of $real 1 '' '' ()]]]
+
+# base-v — `basename "$s" .v`: the last component, a trailing `.v` dropped unless it is the whole name.
+[?def base-v scope=public ($s)
+  [?let [= $b [$path:basename $s]]
+    [?if [and [$strings:ends-with $b '.v'] [> [$strings:length $b] 2]] [then [$strings:slice $b 1 [- [$strings:length $b] 2]]] [else $b]]]]
+[?def has scope=public ($xs $x) [> [$count [?to-array [?for [in $y $xs] [where [= $y $x]] [yield 1]]]] 0]]
+
+[?let [= $self [$path:absolute [$nth [$env:argv] 1]]]
+      [= $root [$path:dirname [$path:dirname $self]]]
+      [= $at [?fn ($p) [$cat ($root, '/', $p)]]]
+      [= $vcx [$at 'deps/cx-core-code/vcx']]
+      [= $v0 [$var 'V' [$at 'third_party/v/v']]]
+      [= $v [?if [or [$strings:starts-with $v0 '/'] [not [$strings:contains $v0 '/']]] [then $v0] [else [$cat ($vcx, '/', $v0)]]]]
+      [= $flags [?to-array [?for [in $xs (('-cc', 'cc', '-gc', 'e', '-d', 'cx_db_sqlite', '-d', 'cx_db_redis'), [$words [$env:var-or-default 'FIXTURE_VFLAGS' '']])] [in $x $xs] [yield $x]]]]
+      [= $selection [$env:var-or-default 'FIXTURE_FILES' '']]
+      [= $timings [$at $TIMINGS-REL]]
+      [= $_mk [?if [$io:is-directory [$at 'vcx/target']] [then null] [else [$io:make-dirs [$at 'vcx/target']]]]]
+      [= $t0 [$now-s]]
+      [= $tool [$var 'TOOL_CX' [$env:executable-path]]]
+      [= $vt [$at 'scripts/verification_timings.cx']]
+      # The `fixture-grader` MEASUREMENT (issue 1583, RULED: RUN-5). #1562's bound is "make
+      # fixtures, unselected — the grader shards over the whole module corpus", so only an
+      # UNSELECTED run writes it: a selected run grades a branch's handful of corpus files in about
+      # three minutes, and filing that under the same name would tell the budget step the whole
+      # corpus had got twenty times faster. The load is sampled HERE, at the start ($t0 orders it),
+      # for the same reason the runner samples it at RUN-START — the idle/loaded rule is about the
+      # box the run was taken on.
+      [= $load [?if [>= $t0 0]
+                 [then [?let [= $r [$process:run ([$env:executable-path], '--allow-all', $vt, 'sample-load') stdin=:discard capture={stdout: :pipe, stderr: :inherit}]]
+                         [?match $r [case [err$e] '999'] [else [$strings:trim [$string $r@stdout]]]]]]
+                 [else '999']]]
+  [?if [not [$io:is-file [$at $MANIFEST]]]
+    [then [?do [$cry [$cat ('make fixtures: no ', $MANIFEST)]] [$env:exit 1]]]
+    [else [?let [= $own [$owners [$read-or-empty [$at $MANIFEST]]]]
+      [?if [= [$count $own] 0]
+        [then [?do [$cry [$cat ('make fixtures: ', $MANIFEST, ' names no shard')]] [$env:exit 1]]]
+        [else [?let
+          # ── resolve the selection ─────────────────────────────────────────────
+          # One launch per TEST FILE, in manifest order: since cx-private#1917 every shard row names
+          # the one binary code_eval_fixtures_shards_test.v, which starts its shards as children
+          # (reading CX_FIXTURE_FILES itself), so a file named by seven rows is still ONE step here.
+          [= $is-sel [not [= $selection '']]]
+          [= $raw [$words $selection]]
+          [= $files [?to-array [?for [in $o $own] [yield $o/file]]]]
+          [= $rels [?to-array [?for [in $r $raw] [yield [$strip-pre $r 'conformance/']]]]]
+          [= $want-driver [?if $is-sel [then [$has $rels 'code.cxd']] [else true]]]
+          [= $canon [?to-array [?for [in $r $rels] [where [and [not [= $r 'code.cxd']] [$has $files $r]]] [yield $r]]]]
+          [= $unowned [?to-array [?for [in $i [$range 1 [$count $raw]]]
+                        [where [and [not [= [$nth $rels $i] 'code.cxd']] [not [$has $files [$nth $rels $i]]]]] [yield [$nth $raw $i]]]]]
+          [?if [> [$count $unowned] 0]
+            [then [?do [$cry 'make fixtures: FIXTURE_FILES names corpus file(s) NO shard owns —']
+                       [?to-array [?for [in $f $unowned] [yield [$cry [$cat ('    ', $f)]]]]]
+                       [$cry '  A name nothing grades must not pass quietly: that is the same vacuous']
+                       [$cry '  shape check-fixture-shard-manifest refuses one level up. Spell the file']
+                       [$cry [$cat ('  the way ', $MANIFEST, ' does (relative to conformance/, e.g.')]]
+                       [$cry '  platform/connector.cxd), name conformance/code.cxd for the driver, or']
+                       [$cry '  add the file to a shard.']
+                       [$env:exit 1]]]
+            [else [?let
+              [= $mine [?if $is-sel [then [?to-array [?for [in $o $own] [where [$has $canon $o/file]] [yield $o]]]] [else $own]]]
+              [= $tests [$dedupe [?to-array [?for [in $o $mine] [yield $o/test]]]]]
+              # A stale census from an earlier run would be summed into this one, so the directory is
+              # rebuilt here. One file per shard, so no writer can lose another's line and none can race.
+              [= $out [$at $OUT]]
+              [= $_rm [?if [$io:exists $out] [then [?else [$io:remove-tree $out] null]] [else null]]]
+              [= $_md [$io:make-dirs $out]]
+              # The driver first, then every shard the manifest names, in manifest order.
+              [= $steps [?to-array [?for [in $xs ([?if $want-driver [then ($DRIVER)] [else ()]],
+                                                 [?to-array [?for [in $t $tests] [yield [$strip-pre $t 'vcx/']]]])]
+                                   [in $x $xs] [yield $x]]]]
+              [= $canon-s [$strings:join $canon ' ']]
+              # The shards read their own intersection from CX_FIXTURE_FILES; the selection was refused
+              # above for every name no shard owns, so a shard finding an EMPTY intersection is a
+              # disagreement about the partition and panics rather than passing. scripts/fixtures_census.cx
+              # sums the shards named in .selected-shards instead of every shard in the manifest.
+              [= $env [?if $is-sel [then {CX_FIXTURE_FILES: $canon-s}] [else {}]]]
+              [= $_sel [?if $is-sel
+                         [then [?do [$io:write-file [$cat ($out, '/.selected-shards')]
+                                      [$strings:join [?to-array [?for [in $s [$dedupe [?to-array [?for [in $o $mine] [yield $o/shard]]]]] [yield [$cat ($s, "\n")]]]] '']]
+                                    [$say [$cat ('FIXTURE-FILES=', $selection)]]
+                                    [?if [= [$count $steps] 0]
+                                      [then [?do [$cry 'make fixtures: FIXTURE_FILES resolved to no step at all'] [$env:exit 1]]]
+                                      [else null]]]]
+                         [else null]]]
+              [= $log-of [?fn ($s) [$cat ($out, '/', [$base-v $s], '.out')]]]
+              [= $jobs [?to-array [?for [in $s $steps]
+                         [yield {s: $s,
+                                 h: [$process:spawn [?to-sequence [?for [in $xs (($v), $flags, ($s))] [in $x $xs] [yield $x]]]
+                                      cwd=$vcx env=$env stdin=:discard stdout=[$log-of $s] stderr=:stdout]}]]]]
+              [= $rcs [?to-array [?for [in $j $jobs]
+                        [yield [?match $j/h
+                                 [case [err$e] [?let [= $_w [$io:write-file [$log-of $j/s] [$cat ($v, ': cannot start: ', [$string $e@message], "\n")]]] 127]]
+                                 [else [?else [$process:wait $j/h] 127]]]]]]]
+              [= $failed [?to-array [?for [in $i [$range 1 [$count $steps]]] [where [not [= [$nth $rcs $i] 0]]]
+                           [yield [$say [$cat ('make fixtures: FAILED ', [$nth $steps $i])]]]]]]
+              [= $_p [?to-array [?for [in $s $steps]
+                       [yield [?do [$say [$cat ('──── ', $s, ' ────')]]
+                                   [$io:write-string [$env:stdout] [$read-or-empty [$log-of $s]]]]]]]]
+              # The census is the evidence, so it prints even when a shard failed — a run that graded
+              # 4,000 of 5,000 cases should say which 4,000.
+              [= $crc [?let [= $r [$process:run ($tool, '--allow-read', '--allow-write', 'scripts/fixtures_census.cx')
+                                    cwd=$root env=$env stdin=:inherit capture={stdout: :pipe, stderr: :inherit}]]
+                        [?match $r [case [err$e] [?let [= $_c [$cry [$cat ($tool, ': cannot start: ', [$string $e@message])]]] 127]]
+                          [else [?let [= $_o [$io:write-string [$env:stdout] [$string $r@stdout]]] $r@exit-code]]]]]
+              # The measurement, unselected runs only (issue 1583, RULED: RUN-5). It is written whatever
+              # the verdict: a red shard does not make the wall clock a different number, and the
+              # budget step judges cost, not correctness.
+              [= $_t [?if $is-sel [then null]
+                       [else [?let [= $secs [- [$now-s] $t0]]
+                               [$process:run ([$env:executable-path], '--allow-all', $vt, 'write-row', $timings, 'fixture-grader',
+                                              [$string $secs], $load, [$iso]) stdin=:discard capture={stdout: :inherit, stderr: :inherit}]]]]]
+              [$env:exit [?if [and [= [$count $failed] 0] [= $crc 0]] [then 0] [else 1]]]]]]]]]]]]]

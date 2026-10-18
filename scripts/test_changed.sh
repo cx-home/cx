@@ -439,7 +439,7 @@ step_globs() {
     # and a bound no run judges is a wish. The self-test still runs only when
     # the step or its source moves.
     check-verification-budget)     echo '*' ;;
-    premerge-record)               echo "scripts/premerge_record.sh scripts/verification_timings_lib.sh deps.cxd" ;;
+    premerge-record)               echo "scripts/premerge_record.cx scripts/verification_timings.cx deps.cxd" ;;
     check-verification-budget-selftest) echo "scripts/check_verification_budget.cx scripts/verification_budget_selftest.cx" ;;
     check-perf-settle-selftest) echo "flows/private-acts.cx scripts/perf_settle_selftest.cx" ;;
     # RULED: RUN-2: the keep-going selftest reads the `test:` recipe, its own
@@ -447,7 +447,7 @@ step_globs() {
     check-storm-keep-going)        echo "Makefile scripts/storm_keep_going_selftest.cx scripts/test_changed.sh" ;;
     # issue 1583 (RULED: RUN-5): the timings WRITER selftest reads the library
     # and its own source, and plants everything under mktemp.
-    check-verification-timings)    echo "scripts/verification_timings_lib.sh scripts/verification_timings_selftest.sh scripts/verification_timings.cx scripts/verification_timings_selftest.cx" ;;
+    check-verification-timings)    echo "scripts/verification_timings.cx scripts/verification_timings_selftest.cx" ;;
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
     # ledger-index-check (#1438) regenerates ledger/README.md from the store and
     # compares: its inputs are every ledger page and the generator itself.
@@ -500,7 +500,7 @@ step_globs() {
     # RULED: RFLOW-1 L103 — the release document's fixture: the document, its env,
     # the one public acts module, its simulate tables, the one gate program, and
     # what can move the vocabulary or the subcommands it drives them through.
-    release-flow-gate)             echo 'flows/release.flow.cx flows/release.env.cx flows/ci-acts.cx flows/sim/release/* scripts/ci_flow_gate.cx scripts/lib/r22_profile_gate.sh scripts/r22_profile_load_selftest.cx deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
+    release-flow-gate)             echo 'flows/release.flow.cx flows/release.env.cx flows/ci-acts.cx flows/sim/release/* scripts/ci_flow_gate.cx scripts/r22_profile_gate.cx scripts/r22_profile_load_selftest.cx deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
     # The private flow gates' rows (merge-flow-gate, premerge-flow-gate, and
     # the ones added after them) live in flows/private.mk, beside their
     # targets (RULED: PRIVMK-1). The catch-all below reads them from there.
@@ -655,7 +655,7 @@ step_globs() {
     # nothing — it SKIPs then) plus the gate itself and the release scripts
     # that stage/call it, so a change to the staging shape or the gate logic
     # re-runs it.
-    check-release-asset-links)     echo 'dist/public/* scripts/release_asset_links_gate.cx scripts/lib/r22_profile_gate.sh flows/release.flow.cx flows/ci-acts.cx scripts/release_linux.cx scripts/release_profile_gate.sh' ;;
+    check-release-asset-links)     echo 'dist/public/* scripts/release_asset_links_gate.cx scripts/r22_profile_gate.cx flows/release.flow.cx flows/ci-acts.cx scripts/release_linux.cx scripts/release_profile_gate.cx' ;;
     # #1012's resurrection guards over the umbrella manifests: the manifests,
     # the driver and its selftest, and the umbrella test files they hold to.
     check-consolidation-manifests) echo 'scripts/consolidation/* scripts/consolidate_tests.sh scripts/consolidate_tests.cx scripts/consolidate_tests_selftest.cx vcx/tests/*' ;;
@@ -962,7 +962,7 @@ tests_importing() {
 }
 
 # shard_test_for <conformance-path…> — the vcx/tests/ file that grades each, read
-# from the shard manifest scripts/run_fixture_shards.sh reads, with the same cut
+# from the shard manifest scripts/run_fixture_shards.cx reads, with the same cut
 # of its own [doc] block.
 shard_test_for() {
   local manifest="$SUITE_DIR/fixtures_grader/fixture_shards.cxd" owners c rel hit

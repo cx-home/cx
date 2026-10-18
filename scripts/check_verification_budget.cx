@@ -192,7 +192,7 @@
   # One verdict per bound.
   # A FAMILY bound (cx-private#1903): a name ending in `*` is one bound per
   # measured name it prefixes — `premerge-*` judges each premerge-<repo> row's
-  # median on its own (scripts/premerge_record.sh writes them). With no
+  # median on its own (scripts/premerge_record.cx writes them). With no
   # measured name under it, the family reports itself unmeasured.
   [= $judged [?to-sequence [?for [in $b $bounds]
     [= $bn [$string $b@name]]

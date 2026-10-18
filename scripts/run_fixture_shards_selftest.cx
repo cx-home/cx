@@ -1,0 +1,202 @@
+# scripts/run_fixture_shards_selftest.cx — proves the #1513 FIXTURE_FILES resolution on a
+# SYNTHETIC repo (a temp directory; never the live tree — the rule head_is_docs_only_selftest.cx
+# and the spec-freeze-gate selftest follow). The selection's whole value is that it SHRINKS the
+# fixtures step, so the cases that must be proved are the ones where it must not shrink it
+# wrongly: a name no shard owns, and a shard that owns none of the named files.
+# CXMACH-1: the cx rewrite of scripts/run_fixture_shards_selftest.sh, the same twelve cases and
+# lines, run on scripts/run_fixture_shards.cx.
+#
+# The synthetic repo carries a copy of the wrapper, the census program and the timings writer, a
+# three-file manifest whose [doc [# … #]] block contains DECOY rows, and a fake `v` that records
+# which steps were launched and writes the census a real shard would write. Nothing is compiled:
+# what is under test is the resolution, the refusal and the census restriction, all of which
+# happen before the first process starts.
+#
+#   A  no FIXTURE_FILES        → the driver and EVERY shard; the whole-corpus
+#                                census; no FIXTURE-FILES= line (unchanged)
+#   B  one file                → only the shard that owns it, no driver
+#   C  files in two shards     → both shards, no driver
+#   D  conformance/code.cxd    → the driver ALONE, no shard
+#   E  a file no shard owns    → EXIT 1, the name on stderr, nothing launched
+#   F  one owned + one unowned → EXIT 1 (one bad name fails the step)
+#   G  spelled without the `conformance/` prefix → same answer as with it
+#   H  the shard process sees CX_FIXTURE_FILES in the MANIFEST spelling
+#   I  the census is restricted to the shards that ran
+#   J  the manifest's own documentation is not read as rows (decoy)
+#   K  two shard rows naming ONE test file (cx-private#1917: every shard is a
+#      child of code_eval_fixtures_shards_test.v) launch that file ONCE,
+#      selected or not, and the census still sums both shards
+#
+#   cx --allow-all scripts/run_fixture_shards_selftest.cx      (make check-fixture-shard-manifest)
+# Exit 0 and the count line only when every case matches.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/path'    as=path]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def text scope=public impure ($f) [?if [$io:is-file $f] [then [?else [$io:read-file $f] '']] [else '']]]
+[?def has scope=public ($s $x) [$strings:contains $s $x]]
+[?def lines scope=public ($s) [?to-array [?for [in $l [$strings:split $s "\n"]] [where [not [= $l '']]] [yield $l]]]]
+[?def bar scope=public ($s) [$strings:replace $s "\n" '|']]
+
+[?const MANIFEST "[fixture-shards
+  [doc [#
+A row is written `[shard name=s-decoy test=vcx/tests/decoy_test.v measured-ms=0 cases=0]`
+and a file row `[file name=platform/decoy.cxd measured-ms=0 cases=0]`. Neither is real.
+#]]
+
+ [shard name=s-1 test=vcx/tests/code_eval_fixtures_shard_1_test.v measured-ms=10 cases=2
+  [file name=platform/alpha.cxd measured-ms=6 cases=1]
+  [file name=stdlib/beta.cxd measured-ms=4 cases=1]
+ ]
+
+ [shard name=s-2 test=vcx/tests/code_eval_fixtures_shard_2_test.v measured-ms=5 cases=1
+  [file name=xap/gamma.cxd measured-ms=5 cases=1]
+ ]
+]
+"]
+
+# The fake `v`: run from vcx/ with the step as its last argument. It records the launch and
+# writes the census a real shard writes, so the census program has something true to sum.
+[?const FAKE-V "#!/bin/sh
+step=\"\"
+for a in \"$@\"; do step=$a; done
+root=$(cd \"$(dirname \"$0\")\" && pwd)
+echo \"LAUNCHED $step CX_FIXTURE_FILES=[${CX_FIXTURE_FILES-<unset>}]\" >> \"$root/launched\"
+case \"$step\" in
+*shard_1_test.v) s=s-1 ;;
+*shard_2_test.v) s=s-2 ;;
+*shards_test.v)
+	for s in s-1 s-2; do
+		printf 'shard=%s\\nfiles=1\\nran=7\\nout_err_ran=3\\nmodule:%s=3\\n' \"$s\" \"$s\" \\
+			> \"$root/deps/cx-core-code/vcx/target/fixtures/$s.census\"
+	done
+	exit 0 ;;
+*) exit 0 ;;
+esac
+printf 'shard=%s\\nfiles=1\\nran=7\\nout_err_ran=3\\nmodule:%s=3\\n' \"$s\" \"$s\" \\
+	> \"$root/deps/cx-core-code/vcx/target/fixtures/$s.census\"
+"]
+
+[?let
+  [= $here [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]
+  [= $cx [$string [$env:executable-path]]]
+  [= $need ('run_fixture_shards.cx', 'fixtures_census.cx', 'verification_timings.cx')]
+  [= $missing [?to-array [?for [in $f $need] [where [not [$io:is-file [$cat ($here, '/', $f)]]]] [yield $f]]]]
+  [= $_n [?if [> [$count $missing] 0]
+           [then [?do [$cry [$cat ('SELFTEST FAILED: no ', [$nth $missing 1], ' beside this program')]] [$env:exit 1]]]
+           [else null]]]
+  [= $t [$string [$io:temp-dir 'rfs-selftest.']]]
+  [= $at [?fn ($p) [$cat ($t, '/', $p)]]]
+  [= $grader [$at 'deps/cx-core-code/vcx/tests']]
+  # The tree is the post-split one (RULED: RS-7): the grader, its manifest and the census
+  # directory live in the pinned cx-core-code checkout under deps/.
+  [= $_d [?to-array [?for [in $d ('scripts', 'deps/cx-core-code/vcx/tests/fixtures_grader', 'deps/cx-core-code/vcx/target',
+                                  'conformance/platform', 'conformance/stdlib', 'conformance/xap')]
+           [yield [$io:make-dirs [$at $d]]]]]]
+  [= $_c [?to-array [?for [in $f $need] [yield [$io:write-file [$at [$cat ('scripts/', $f)]] [$text [$cat ($here, '/', $f)]]]]]]]
+  [= $mf [$cat ($grader, '/fixtures_grader/fixture_shards.cxd')]]
+  [= $_m [$io:write-file $mf $MANIFEST]]
+  [= $_f [?to-array [?for [in $f ('conformance/platform/alpha.cxd', 'conformance/stdlib/beta.cxd', 'conformance/xap/gamma.cxd')]
+           [yield [$io:write-file [$at $f] "[test-suite ring=1]\n"]]]]]
+  [= $_v [?to-array [?for [in $f ('code_eval_fixtures_test.v', 'code_eval_fixtures_shard_1_test.v', 'code_eval_fixtures_shard_2_test.v')]
+           [yield [$io:write-file [$cat ($grader, '/', $f)] '']]]]]
+  [= $fake [$at 'fake-v']]
+  [= $_w [$io:write-file $fake $FAKE-V]]
+  [= $_x [$process:run ('chmod', '+x', $fake)]]
+  [= $launched [$at 'launched']]
+  # run — the wrapper on the synthetic tree with the fake v; {rc out err launched}.
+  [= $run [?fn ($sel)
+            [?let [= $_z [$io:write-file $launched '']]
+                  [= $r [$process:run ($cx, '--allow-all', 'scripts/run_fixture_shards.cx') cwd=$t stdin=:discard
+                          env=[?if [= $sel ''] [then {V: $fake, TOOL_CX: $cx, FIXTURE_FILES: ''}] [else {V: $fake, TOOL_CX: $cx, FIXTURE_FILES: $sel}]]]]
+              [?match $r [case [err$e] {rc: -1, out: '', err: [$string $e@message], launched: ''}]
+                [else {rc: $r@exit-code, out: [$string $r@stdout], err: [$string $r@stderr], launched: [$text $launched]}]]]]]
+  [= $n-launched [?fn ($r) [$count [?to-array [?for [in $l [$lines $r/launched]] [where [$strings:starts-with $l 'LAUNCHED']] [yield 1]]]]]]
+  # want — one case's line: `  %-3s ok   %s` on stdout, the failure and the run's streams on stderr.
+  [= $want [?fn ($id $what $r $held)
+             [?if $held
+               [then [?let [= $_ [$say [$cat ('  ', [$strings:pad-end $id 3 ' '], ' ok   ', $what)]]] true]]
+               [else [?let [= $_1 [$cry [$cat ('  ', [$strings:pad-end $id 3 ' '], ' SELFTEST FAILED: ', $what)]]]
+                           [= $_2 [$cry [$cat ('        stdout: ', [$bar $r/out])]]]
+                           [= $_3 [$cry [$cat ('        stderr: ', [$bar $r/err])]]]
+                           [= $_4 [$cry [$cat ('        launched: ', [$bar $r/launched])]]]
+                       false]]]]]
+  # exit — a case whose run exits other than wanted fails on that alone, as the shell's run_case did.
+  [= $exit-ok [?fn ($id $r $wanted)
+                [?if [= $r/rc $wanted] [then true]
+                  [else [?let [= $_ [$cry [$cat ('  ', [$strings:pad-end $id 3 ' '], ' SELFTEST FAILED: exit ', [$string $r/rc], ', wanted ', [$string $wanted])]]] false]]]]]
+  [= $_h [$say 'run_fixture_shards selftest:']]
+  # A — no selection: the driver and every shard, the whole-corpus census, and NO FIXTURE-FILES=
+  #     line. This is the property the post-merge run depends on. J rides on A: a decoy row would
+  #     have launched a fourth step.
+  [= $ra [$run '']]
+  [= $va [?if [$exit-ok 'A' $ra 0]
+           [then ([$want 'A' 'unselected: driver + both shards, census 14, no FIXTURE-FILES line' $ra
+                    [and [$has $ra/launched 'code_eval_fixtures_test.v'] [$has $ra/launched 'shard_1_test.v'] [$has $ra/launched 'shard_2_test.v']
+                         [= [$n-launched $ra] 3] [$has $ra/out 'stdlib corpus: 14 fixtures ran across 2 module file(s)'] [not [$has $ra/out 'FIXTURE-FILES=']]]],
+                  [$want 'J' "the manifest's [doc [# … #]] rows are not read as data" $ra [not [$has $ra/launched 'decoy']]])]
+           [else (false)]]]
+  # B — one file: only its shard, and no driver. H: the shard is handed the MANIFEST spelling.
+  #     I: the census counts the one shard that ran, not the manifest's two.
+  [= $rb [$run 'conformance/xap/gamma.cxd']]
+  [= $vb [?if [$exit-ok 'B' $rb 0]
+           [then ([$want 'B' 'one named file launches its shard alone, under a FIXTURE-FILES line' $rb
+                    [and [$has $rb/launched 'shard_2_test.v'] [= [$n-launched $rb] 1]
+                         [> [$count [?to-array [?for [in $l [$lines $rb/out]] [where [= $l 'FIXTURE-FILES=conformance/xap/gamma.cxd']] [yield 1]]]] 0]]],
+                  [$want 'H' 'the shard process sees CX_FIXTURE_FILES in the manifest spelling' $rb [$has $rb/launched 'CX_FIXTURE_FILES=[xap/gamma.cxd]']],
+                  [$want 'I' 'the census is restricted to the shards that ran' $rb [$has $rb/out 'stdlib corpus: 7 fixtures ran across 1 module file(s)']])]
+           [else (false)]]]
+  # C — files owned by two different shards
+  [= $rc [$run 'conformance/platform/alpha.cxd conformance/xap/gamma.cxd']]
+  [= $vc [?if [$exit-ok 'C' $rc 0]
+           [then ([$want 'C' 'two shards, no driver' $rc [and [$has $rc/launched 'shard_1_test.v'] [$has $rc/launched 'shard_2_test.v'] [= [$n-launched $rc] 2]]])]
+           [else (false)]]]
+  # D — the driver's own corpus
+  [= $rd [$run 'conformance/code.cxd']]
+  [= $vd [?if [$exit-ok 'D' $rd 0]
+           [then ([$want 'D' 'conformance/code.cxd launches the driver alone' $rd [and [$has $rd/launched 'code_eval_fixtures_test.v'] [= [$n-launched $rd] 1]]])]
+           [else (false)]]]
+  # E — a name NO shard owns FAILS; nothing is launched. A silent skip here is the whole failure
+  #     mode a selection introduces.
+  [= $r-e [$run 'conformance/llm/prompts.cxd']]
+  [= $ve [?if [$exit-ok 'E' $r-e 1]
+           [then ([$want 'E' 'an unowned name fails the step and launches nothing' $r-e [and [$has $r-e/err 'conformance/llm/prompts.cxd'] [= [$n-launched $r-e] 0]]])]
+           [else (false)]]]
+  # F — one good name does not rescue a bad one
+  [= $rf [$run 'conformance/xap/gamma.cxd conformance/nope.cxd']]
+  [= $vf [?if [$exit-ok 'F' $rf 1]
+           [then ([$want 'F' 'one unowned name among owned ones still fails the step' $rf [and [$has $rf/err 'conformance/nope.cxd'] [= [$n-launched $rf] 0]]])]
+           [else (false)]]]
+  # G — the manifest spelling is accepted directly
+  [= $rg [$run 'xap/gamma.cxd']]
+  [= $vg [?if [$exit-ok 'G' $rg 0]
+           [then ([$want 'G' 'a name spelled without the conformance/ prefix resolves the same' $rg
+                    [and [$has $rg/launched 'shard_2_test.v'] [= [$n-launched $rg] 1] [$has $rg/launched 'CX_FIXTURE_FILES=[xap/gamma.cxd]']]])]
+           [else (false)]]]
+  # K — the one-binary shape (cx-private#1917): both shard rows name the same test file; it is
+  #     launched once, never once per row.
+  [= $_k [$io:write-file $mf [$re:replace [$re:compile "test=vcx/tests/code_eval_fixtures_shard_[12]_test.v"] [$text $mf] 'test=vcx/tests/code_eval_fixtures_shards_test.v']]]
+  [= $_k2 [$io:write-file [$cat ($grader, '/code_eval_fixtures_shards_test.v')] '']]
+  [= $rk [$run '']]
+  [= $vk [?if [$exit-ok 'K' $rk 0]
+           [then ([$want 'K' 'two rows naming one test file: driver + that file ONCE, census over both shards' $rk
+                    [and [= [$n-launched $rk] 2]
+                         [= [$count [?to-array [?for [in $l [$lines $rk/launched]] [where [$has $l 'shards_test.v']] [yield 1]]]] 1]
+                         [$has $rk/out 'stdlib corpus: 14 fixtures ran across 2 module file(s)']]])]
+           [else (false)]]]
+  [= $rk2 [$run 'conformance/platform/alpha.cxd conformance/xap/gamma.cxd']]
+  [= $vk2 [?if [$exit-ok 'K' $rk2 0]
+            [then ([$want 'K' 'selected files of both shards: that file ONCE, no driver' $rk2 [and [$has $rk2/launched 'shards_test.v'] [= [$n-launched $rk2] 1]]])]
+            [else (false)]]]
+  [= $fails [$count [?to-array [?for [in $vs ($va, $vb, $vc, $vd, $ve, $vf, $vg, $vk, $vk2)] [in $v $vs] [where [not $v]] [yield 1]]]]]
+  [= $_rm [?else [$io:remove-tree $t] null]]
+  [?if [> $fails 0]
+    [then [?do [$cry [$cat ('run_fixture_shards selftest: ', [$string $fails], ' case(s) FAILED')]] [$env:exit 1]]]
+    [else [?do [$say 'run_fixture_shards selftest: 12/12 (A/J/K unselected; B/C/D/G/H/I/K selected; E/F refused)'] [$env:exit 0]]]]]

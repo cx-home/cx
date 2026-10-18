@@ -1,7 +1,7 @@
 # scripts/r22_profile_load_selftest.cx — the case table of the R2.2 release
 # step's library load (RULED: RLOAD-1, cx-private #1131; CR-3, CR-6).
 #
-# R2.2 (scripts/lib/r22_profile_gate.sh) checked that a staged library was
+# R2.2 (scripts/r22_profile_gate.cx) checked that a staged library was
 # PRESENT and never loaded one, so a libcx-core that could not parse json
 # shipped green through the blocking cut gate. `r22_profile_load` now loads
 # each staged library through the extraction step's probe (`--artifact`) and
@@ -20,8 +20,8 @@
 # <probe> is the built extraction probe; <build target dir> holds the build's
 # real libcx (the match-real case stages a copy of it). `--fn` runs the cases
 # against another function of the library with the same arguments and `--lib`
-# against another copy of the library: `--fn r22_profile_payload --lib
-# <the head's r22_profile_gate.sh>` is the red-first proof on the pinned step,
+# against another copy of the library: `--fn profile-payload` (or `--fn r22_profile_payload --lib
+# <an older head's scripts/lib/r22_profile_gate.sh>`) is the red-first proof on the pinned step,
 # where the presence check waves the json-lacking, unloadable and mismatched
 # libraries through.
 #
@@ -78,13 +78,17 @@
         [= $_b [$io:write-file [$concat $dir '/cx.h'] "/* cx.h */\n"]]
     [$io:write-file [$concat $dir '/LICENSE-re2.txt'] "re2\n"]]]
 
-# run-step — `. <lib> && <fn> <dir> <prof> <vtar> /selftest <target>` under
-# bash, R22_PROBE set; answers [got exit= out=] with the scratch root written <root>.
+# run-step — `cx <lib> <fn> <dir> <prof> <vtar> /selftest <target>` (a .cx program: the
+# commands of scripts/r22_profile_gate.cx), or `. <lib> && <fn> …` under bash for a shell library
+# (the retired scripts/lib/r22_profile_gate.sh, for the red-first proof on an older head), R22_PROBE
+# set; answers [got exit= out=] with the scratch root written <root>.
 [?def run-step scope=private impure ($lib::string $fn::string $probe::string $root::string
                                       $dir::string $prof::string $target::string)
-  [?let [= $r [$process:run ('bash', '-c', [$concat '. "' $lib '" && "$0" "$@"'], $fn,
-                             $dir, $prof, [$concat 'cx-' $prof '-selftest.tar.gz'], '/selftest', $target)
-                  env={R22_PROBE: $probe} timeout-ms=120000]]
+  [?let [= $tail ($dir, $prof, [$concat 'cx-' $prof '-selftest.tar.gz'], '/selftest', $target)]
+        [= $argv [?if [$strings:ends-with $lib '.cx']
+                   [then [?to-sequence [?for [in $xs (([$string [$env:executable-path]], '--allow-all', $lib, $fn), $tail)] [in $x $xs] [yield $x]]]]
+                   [else [?to-sequence [?for [in $xs (('bash', '-c', [$concat '. "' $lib '" && "$0" "$@"'], $fn), $tail)] [in $x $xs] [yield $x]]]]]]
+        [= $r [$process:run $argv env={R22_PROBE: $probe} timeout-ms=120000]]
     [got exit=[$string $r@exit-code]
          out=[$strings:replace [$concat [$string $r@stdout] [$string $r@stderr]] $root '<root>']]]]
 
@@ -99,8 +103,8 @@
            [else ()]]]
   [= $probe [$string [$nth $argv 2]]]
   [= $build [$string [$nth $argv 3]]]
-  [= $fn  [$opt $argv '--fn' 'r22_profile_load']]
-  [= $lib [$opt $argv '--lib' 'scripts/lib/r22_profile_gate.sh']]
+  [= $fn  [$opt $argv '--fn' 'profile-load']]
+  [= $lib [$opt $argv '--lib' 'scripts/r22_profile_gate.cx']]
   [= $ext [?if [= [$strings:trim [$string [$sh 'uname -s']@stdout]] 'Darwin'] [then 'dylib'] [else 'so']]]
   [= $core [$concat 'libcx-core.' $ext]]
   [= $mono [$concat 'libcx.' $ext]]

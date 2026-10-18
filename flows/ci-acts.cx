@@ -475,7 +475,7 @@
 #
 # The phases of the retired scripts/release.sh, one act each, in its order,
 # over the same tools underneath: scripts/tag_release.cx (the gate, the bump,
-# the tag and the build at the tag), scripts/lib/r22_profile_gate.sh (the R2.2
+# the tag and the build at the tag), scripts/r22_profile_gate.cx (the R2.2
 # staging and the blocking install gate, PGL-1), scripts/release_linux.cx
 # (the docker build), scripts/release_asset_links_gate.cx (#1670), git, gh and
 # make. The fields:
@@ -504,11 +504,15 @@
 [?def rel-sh scope=private impure [returns element] ($args $env $ms)
   [$process:run [$cat2 ('bash', '-c') $args] env=$env timeout-ms=$ms]]
 
-# a call into scripts/lib/r22_profile_gate.sh, the R2.2 staging the cut and
-# release_profile_gate.sh share (PGL-1). The library is shell; this sources it
-# and calls one function with its arguments. It is a call, not a recipe.
+# a call into scripts/r22_profile_gate.cx, the R2.2 staging and gate the cut, the
+# pre-cut step (scripts/release_profile_gate.cx) and the linux container share
+# (PGL-1): one command per function of the retired shell library
+# (r22_collect_platform_files -> collect-platform-files), on the tree's cx. It is a
+# call, not a recipe.
 [?def r22 scope=private impure [returns element] ($fn $args $env)
-  [$rel-sh [$cat2 ([$concat '. scripts/lib/r22_profile_gate.sh && ' $fn ' "$@"'], 'r22') $args] $env [$make-ms]]]
+  [$process:run [$cat2 ('deps/cx-core-code/vcx/target/cx', '--allow-all', 'scripts/r22_profile_gate.cx',
+                        [$strings:replace [$strings:replace-first $fn 'r22_' ''] '_' '-']) $args]
+                env=$env timeout-ms=[$make-ms]]]
 
 [?def rel-version scope=private pure [returns string] ($tag) [$strings:replace-first [$str-trim [$string $tag]] 'v' '']]
 [?def rel-notes scope=private pure [returns string] ($tag) [$concat 'RELEASE_NOTES_' [$str-trim [$string $tag]] '.md']]

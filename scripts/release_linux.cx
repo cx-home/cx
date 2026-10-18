@@ -37,8 +37,8 @@
 # read from the pin's Makefile, failing closed), the same docker run per platform with the SAME
 # container program byte for byte (it runs in ubuntu:22.04, where no cx exists yet: it is the
 # bash text below, CONTAINER, with the host's values put where the shell spliced them), the same
-# lines and the same exits (set -euo pipefail: a failing step's own code). The container sources
-# scripts/lib/r22_profile_gate.sh, the shared staging library (CXMACH-1 batch 5 group (1)).
+# lines and the same exits (set -euo pipefail: a failing step's own code). The container runs
+# scripts/r22_profile_gate.cx, the shared staging and gate, on the cx it builds (PGL-1, R22-1).
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
@@ -127,17 +127,18 @@
 |        exit 0
 |      fi
 |      # Staging is the shared implementation (RULED: PGL-1, #741): the same
-|      # r22_* functions the release flow`s package act stages the darwin
-|      # assets with, which read the artifacts where the split build lands
-|      # them (r22_vcx_target, r22_include_dir — #1670).
-|      . scripts/lib/r22_profile_gate.sh
+|      # scripts/r22_profile_gate.cx commands the release flow`s package act
+|      # stages the darwin assets with, which read the artifacts where the split
+|      # build lands them (vcx-target, include-dir — #1670), run on the cx just
+|      # built here (R22-1: one implementation, no shell copy).
+|      r22() { deps/cx-core-code/vcx/target/cx --allow-all scripts/r22_profile_gate.cx "$@"; }
 |      T=linux-@@arch@@
 |      mkdir -p "/tmp/$T"
-|      r22_collect_platform_files "/tmp/$T"
+|      r22 collect-platform-files "/tmp/$T"
 |      ( cd /tmp && tar czf "/out/cx-@@TAG@@-$T.tar.gz" "$T/" )
-|      r22_tar_platform "/tmp/$T" /out/public "$T"
+|      r22 tar-platform "/tmp/$T" /out/public "$T"
 |      # I4: the profile tarballs — cx-<profile>-linux-<arch>.tar.gz.
-|      r22_stage_profiles /out/public "$T"
+|      r22 stage-profiles /out/public "$T"
 |      echo "-- engines probe:"; "/tmp/$T/cx" -v || true
 |      # R2.2 (#651/#516 remediation register, ruled (a) 2026-08-09): BLOCKING
 |      # per-profile install verification, linux build — the same contract as
@@ -148,7 +149,7 @@
 |      # with the standalone pre-cut step. RLOAD-1 (#1131): R2.2 loads every
 |      # staged library through the extraction probe, built here from the pin.
 |      make build-extraction-probe
-|      r22_profile_gate /out/public "$T" /linux
+|      r22 profile-gate /out/public "$T" /linux
 |      echo "-- release gate (R2.2/linux): per-profile install verification PASSED ($T platform/data/embed/cli)"
 |    """]
 [?def CONTAINER scope=public ()

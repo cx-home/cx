@@ -1,0 +1,209 @@
+# scripts/premerge_record.cx (cx-private#1903) — every pinned repository's PRE-MERGE run, measured: for
+# each deps/<repo> whose Makefile has a `check:` target, a fresh clone at its pin (origin = its
+# GitHub URL, so its own deps-sync derives its pins' URLs as a stream clone does), then
+# `make deps` + `make check CX_BIN=<this tree's cx>`, timed together. A GREEN run writes a
+# `premerge-<repo>` row (seconds, load, at) to the timings file check-verification-budget judges
+# (its `premerge-*` family bound: the median of each repository's last five). A red run writes
+# nothing and is named: the repository's stream owns that red, and a wall cut short by a failure
+# is not the run's wall.
+#
+#   cx --allow-all scripts/premerge_record.cx          (or: make premerge-record)
+#   PREMERGE_REPOS='cx-platform-net cx-core-code' PREMERGE_JOBS=4 cx --allow-all scripts/premerge_record.cx
+#   PREMERGE_ANY_LOAD=1 cx --allow-all scripts/premerge_record.cx   (run over the load bound too)
+#
+# CXMACH-1: the cx rewrite of scripts/premerge_record.sh. The PREMERGE_JOBS slots are children of
+# this program (`premerge_record.cx --one <repo>`, each printing its one `<repo> <rc> <seconds>
+# <load>` line), started longest first and refilled as each one exits, in place of the shell's
+# `xargs -P`; the rows are written, and named, in the order the repositories finish, as xargs
+# printed them. Rows go through scripts/verification_timings.cx (write-row), the load through its
+# sample-load. Every repository's `make` sees the environment the shell exported to it: W, ROOT, CX,
+# RUN_LOAD, RE2_DIR, LIBCX_PATH, LIBCX_LIB_DIR, DB_REAL_CX, RUSTUP_HOME.
+# Proof: the output and the written timings file byte-identical to the shell script's on planted
+# trees (repositories green, red at `make deps`, red at `make check`, absent; the longest-first
+# order from a planted file; PREMERGE_REPOS; the load bound at PREMERGE_LOAD 42 / 8 / 8.01 / n/a and
+# CX_BENCH_MAX_LOAD; PREMERGE_ANY_LOAD; no cx), seconds and the temporary directory normalised.
+# Deviations, stated: PREMERGE_JOBS that is not a positive number runs 4 slots, and a plan with no
+# repository at all prints its 0-row line and exits 0 (the shell's xargs refused the first, both
+# then died on `set -u`'s empty array and exited 1 with nothing written).
+#
+# Exit 0 when it measured (whatever it found); 2 when it cannot run at all.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/time'    as=time]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+# var — the shell's ${X:-default}: unset and empty both take the default.
+[?def var scope=public impure ($n $d) [?let [= $v [$env:var-or-default $n '']] [?if [= $v ''] [then $d] [else $v]]]]
+[?def now-s scope=public impure () [$time:to-unix [$time:utc-now]]]
+[?def iso scope=public impure () [$time:format-with-format [$time:utc-now] "yyyy-MM-dd'T'HH:mm:ss'Z'"]]
+# at-root — a relative path names a file under the tree (the shell ran from `cd "$ROOT"`).
+[?def at-root scope=public ($root $p) [?if [$strings:starts-with $p '/'] [then $p] [else [$cat ($root, '/', $p)]]]]
+# executable — the shell's `[ -x ]`, read as the owner's execute bit of a regular file.
+[?def executable scope=public impure ($p)
+  [?let [= $st [$io:stat $p]] [?match $st [case [err$e] false] [else [and $st@is-file [= [$strings:slice $st@permissions 3 3] 'x']]]]]]
+[?def read-or-empty scope=public impure ($p) [?if [$io:is-file $p] [then [?else [$io:read-file $p] '']] [else '']]]
+# awk's `x + 0`: the leading number of a text, 0 when it has none.
+[?const NUM-RX [$re:compile "^[-+]?([0-9]+[.]?[0-9]*|[.][0-9]+)([eE][-+]?[0-9]+)?"]]
+[?def num scope=public ($s)
+  [?let [= $ms [?to-array [$re:find-all $NUM-RX [$strings:trim-start $s]]]]
+    [?if [= [$count $ms] 0] [then 0.0e0] [else [* [?else [$strings:to-float [$re:group [$nth $ms 1] 0]] 0.0e0] 1.0e0]]]]]
+# a command's exit code with its output into one file (`cmd > FILE 2>&1`); 127 when it cannot start.
+[?def into scope=public impure ($argv $cwd $file)
+  [?let [= $h [$process:spawn $argv cwd=$cwd stdin=:discard stdout=$file stderr=:stdout]]
+    [?match $h [case [err$e] 127] [else [?else [$process:wait $h] 127]]]]]
+[?def quiet-run scope=public impure ($argv)
+  [?let [= $r [$process:run $argv stdin=:discard capture={stdout: :discard, stderr: :inherit}]] [?match $r [case [err$e] 127] [else $r@exit-code]]]]
+
+# ── one repository (the child: `premerge_record.cx --one <repo>`, its environment from the parent) ──
+# Prints `<repo> <rc> <seconds> <load>`; a clone that fails prints `<repo> clone-failed 0 0`.
+[?def one scope=public impure ($r)
+  [?let [= $w [$env:var-or-default 'W' '']] [= $root [$env:var-or-default 'ROOT' '']]
+        [= $c [$cat ($w, '/', $r)]]
+        [= $db [$env:var-or-default 'DB_REAL_CX' '']]
+        [= $x [?if [and [= $r 'cx-platform-db'] [$executable $db]] [then $db] [else [$env:var-or-default 'CX' '']]]]
+        [= $cl [?let [= $k [$process:run ('git', 'clone', '-q', [$cat ($root, '/deps/', $r)], $c) stdin=:discard capture={stdout: :discard, stderr: :discard}]]
+                 [?match $k [case [err$e] 127] [else $k@exit-code]]]]
+        [= $ok [and [= $cl 0]
+                    [= [$quiet-run ('git', '-C', $c, 'remote', 'set-url', 'origin', [$cat ('https://github.com/cx-home/', $r, '.git')])] 0]]]
+    [?if [not $ok] [then [$say [$cat ($r, ' clone-failed 0 0')]]]
+      [else [?let [= $l [$env:var-or-default 'RUN_LOAD' '']]
+                  [= $log [$cat ($w, '/', $r, '.log')]]
+                  [= $t0 [$now-s]]
+                  # ordered by data: $t0 gates the first make, the second clock read sits behind $rc
+                  [= $drc [?if [> $t0 0] [then [$into ('make', 'deps', [$cat ('CX_BIN=', $x)]) $c $log]] [else 127]]]
+                  [= $rc [?if [not [= $drc 0]] [then $drc]
+                           [else [?let [= $ck [$cat ($log, '.check')]]
+                                       [= $k [$into ('make', 'check', [$cat ('CX_BIN=', $x)],
+                                                     [$cat ('RE2_DIR=', [$env:var-or-default 'RE2_DIR' ''])],
+                                                     [$cat ('LIBCX_PATH=', [$env:var-or-default 'LIBCX_PATH' ''])],
+                                                     [$cat ('LIBCX_LIB_DIR=', [$env:var-or-default 'LIBCX_LIB_DIR' ''])]) $c $ck]]
+                                   [?let [= $_a [$io:append-file $log [$read-or-empty $ck]]] [= $_r [$io:remove $ck]] $k]]]]]
+                  [= $secs [?if [>= $rc 0] [then [- [$now-s] $t0]] [else [- [$now-s] $t0]]]]
+              [$say [$cat ($r, ' ', [$string $rc], ' ', [$string $secs], ' ', $l)]]]]]]]
+
+# ── the plan ────────────────────────────────────────────────────────────────
+# PREMERGE_REPOS as given (its order kept); else deps/*/ whose Makefile has a line starting `check:`,
+# in name order, then longest first by each one's last recorded seconds when the timings file is
+# readable (no row = 0; plan order kept among equals, as `sort -s -k1,1nr`).
+[?const CHECK-RX [$re:compile "(^|\n)check:"]]
+[?def plan scope=public impure ($root $timings)
+  [?let [= $given [$var 'PREMERGE_REPOS' '']]
+    [?if [not [= $given '']] [then [?to-array [$strings:split-whitespace $given]]]
+      [else [?let [= $all [?to-array [?for [in $d [$sort [?to-array [?for [in $e [?else [$io:list-dir [$cat ($root, '/deps')]] ()]] [yield [$string $e]]]]]]
+                                   [where [and [$io:is-directory [$cat ($root, '/deps/', $d)]]
+                                               [> [$count [?to-array [$re:find-all $CHECK-RX [$read-or-empty [$cat ($root, '/deps/', $d, '/Makefile')]]]]] 0]]]
+                                   [yield $d]]]]
+                  [= $t [$read-or-empty $timings]]
+              [?if [not [$io:is-file $timings]] [then $all]
+                [else [?let [= $secs [?fn ($r) [?let [= $ms [?to-array [$re:find-all [$re:compile [$cat ("\\[timing name=premerge-", $r, " seconds=([0-9]+)")]] $t]]]
+                                                 [?if [= [$count $ms] 0] [then 0]
+                                                   [else [?else [$strings:to-int [$re:group [$nth $ms [$count $ms]] 1]] 0]]]]]]
+                            [= $keys [$sort [?to-array [?for [in $i [$range 1 [$count $all]]]
+                                       [yield [$cat ([$strings:pad-start [$string [- 999999999999 [$secs [$nth $all $i]]]] 12 '0'], '.',
+                                                     [$strings:pad-start [$string $i] 6 '0'], '|', [$nth $all $i])]]]]]]
+                        [?to-array [?for [in $k $keys] [yield [$strings:slice $k 21 [$strings:length $k]]]]]]]]]]]]]
+
+# ── the slots ───────────────────────────────────────────────────────────────
+# pool — start repositories while a slot is free, longest first; when none is free (or none is left
+# to start), collect every child that has exited, in that order; block up to 2 s on the oldest when
+# none has. Answers the result lines in finishing order.
+[?def start scope=public impure ($self $w $env $r)
+  {r: $r,
+   h: [$process:spawn ([$env:executable-path], '--allow-all', $self, '--one', $r)
+        env=$env stdin=:discard stdout=[$cat ($w, '/', $r, '.res')] stderr=:inherit]}]
+[?def exited scope=public impure ($j) [?match $j/h [case [err$e] true] [else [not [= [?else [$process:poll $j/h] -99999] -99999]]]]]
+[?def pool scope=public impure ($self $w $env $jobs $queue $running $done)
+  [?if [and [= [$count $queue] 0] [= [$count $running] 0]] [then $done]
+    [else [?if [and [> [$count $queue] 0] [< [$count $running] $jobs]]
+      [then [?let [= $j [$start $self $w $env [$nth $queue 1]]]
+                  [= $rest [?to-array [?for [in $i [$range 2 [$count $queue]]] [yield [$nth $queue $i]]]]]
+              [?let [= $_e [?match $j/h [case [err$e] [$cry [$cat ('premerge-record: cannot start ', $j/r, ': ', [$string $e@message])]]] [else null]]]
+                [$pool $self $w $env $jobs $rest [?to-array [?for [in $xs ($running, ($j))] [in $x $xs] [yield $x]]] $done]]]]
+      [else [?let [= $st [?to-array [?for [in $j $running] [yield {j: $j, x: [$exited $j]}]]]]
+                  [= $fin [?to-array [?for [in $s $st] [where $s/x] [yield $s/j]]]]
+                  [= $live [?to-array [?for [in $s $st] [where [not $s/x]] [yield $s/j]]]]
+              [?if [= [$count $fin] 0]
+                [then [?let [= $_b [?else [$process:wait-timeout [$nth $live 1]/h 2000] null]]
+                        [$pool $self $w $env $jobs $queue $live $done]]]
+                [else [?let [= $lines [?to-array [?for [in $j $fin]
+                                         [yield [?let [= $_w [?match $j/h [case [err$e] null] [else [?else [$process:wait $j/h] null]]]]
+                                                  [$strings:trim [$read-or-empty [$cat ($w, '/', $j/r, '.res')]]]]]]]]
+                        [$pool $self $w $env $jobs $queue $live [?to-array [?for [in $xs ($done, $lines)] [in $x $xs] [yield $x]]]]]]]]]]]]]
+
+# tail -3 of a file, each line prefixed as `sed 's/^/      /'` prints it; nothing when it is absent.
+[?def tail3 scope=public impure ($file)
+  [?let [= $t [$read-or-empty $file]]
+        [= $ls [$strings:split $t "\n"]]
+        [= $body [?if [$strings:ends-with $t "\n"] [then [?to-array [?for [in $i [$range 1 [- [$count $ls] 1]]] [yield [$nth $ls $i]]]]] [else $ls]]]
+        [= $k [$count $body]]
+        [= $from [?if [> $k 3] [then [- $k 2]] [else 1]]]
+    [?if [= $t ''] [then null]
+      [else [?to-array [?for [in $i [$range $from $k]] [yield [$say [$cat ('      ', [$nth $body $i])]]]]]]]]]
+
+[?def main scope=public impure ($self)
+  [?let [= $root [$path:dirname [$path:dirname $self]]]
+        [= $cx [$var 'CX_BIN' [$cat ($root, '/deps/cx-core-code/vcx/target/cx')]]]
+        [= $timings [$var 'CX_VERIFICATION_TIMINGS' [$cat ($root, '/vcx/target/verification_timings.cxd')]]]
+        [= $tfile [$at-root $root $timings]]
+        [= $vt [$cat ($root, '/scripts/verification_timings.cx')]]
+    [?if [not [$executable [$at-root $root $cx]]] [then [?do [$cry [$cat ('premerge-record: no cx at ', $cx, ' — build first')]] [$env:exit 2]]]
+      [else [?let
+        [= $jobs [?let [= $n [?else [$strings:to-int [$var 'PREMERGE_JOBS' '4']] 4]] [?if [> $n 0] [then $n] [else 4]]]]
+        [= $repos [$plan $root $tfile]]
+        [= $run-load [$var 'PREMERGE_LOAD'
+                       [?let [= $r [$process:run ([$env:executable-path], '--allow-all', $vt, 'sample-load') stdin=:discard]]
+                         [?match $r [case [err$e] '999'] [else [$strings:trim [$string $r@stdout]]]]]]]
+        [= $bound [$var 'CX_BENCH_MAX_LOAD' '8']]
+        [= $quiet [and [$re:matches [$re:compile "[0-9.]+"] $run-load] [<= [$num $run-load] [$num $bound]]]]
+        [?if [and [not [= [$var 'PREMERGE_ANY_LOAD' '0'] '1']] [not $quiet]]
+          [then [?do [?to-array [?for [in $r $repos] [yield [$say [$cat ('  premerge-', $r, '  not run (load ', $run-load, ')')]]]]]
+                     [$say [$cat ('premerge-record: not run (load ', $run-load, ' over the bound ', $bound, '): 0 row(s) to ', $timings)]]
+                     [$env:exit 0]]]
+          [else [?let
+            [= $w [$io:temp-dir 'cx-premerge.']]
+            [= $_t [$env:on-signal (:term, :hup, :int)
+                     [?fn ($s) [?do [?else [$io:remove-tree $w] null]
+                                    [$env:exit [?if [= $s :int] [then 130] [else [?if [= $s :hup] [then 129] [else 143]]]]]]]]]
+            [= $libdir [$var 'LIBCX_LIB_DIR' [$cat ($root, '/deps/cx-core-code/vcx/target')]]]
+            [= $libcx [$var 'LIBCX_PATH'
+                        [?let [= $hits [?to-array [?for [in $f ([$cat ($libdir, '/libcx.dylib')], [$cat ($libdir, '/libcx.so')])] [where [$io:exists $f]] [yield $f]]]]
+                          [?if [= [$count $hits] 0] [then ''] [else [$nth $hits 1]]]]]]
+            [= $env [map W=$w ROOT=$root CX=$cx RUN_LOAD=$run-load
+                         RE2_DIR=[$var 'RE2_DIR' [$cat ($root, '/third_party/re2')]]
+                         LIBCX_PATH=$libcx LIBCX_LIB_DIR=$libdir
+                         DB_REAL_CX=[$var 'DB_REAL_CX' [$cat ($root, '/deps/cx-core-code/vcx/target/cx-db-real')]]
+                         RUSTUP_HOME=[$var 'RUSTUP_HOME' [$cat ([$env:var-or-default 'HOME' ''], '/.cache/cx-devbox/rustup')]]]]
+            [= $results [$pool $self $w $env $jobs $repos () ()]]
+            [= $at [?if [>= [$count $results] 0] [then [$iso]] [else '']]]
+            [= $outs [?to-array [?for [in $line $results]
+                       [yield [?let [= $f [?to-array [$strings:split-whitespace $line]]]
+                                    [= $nf [$count $f]]
+                                    [= $r [?if [> $nf 0] [then [$nth $f 1]] [else '']]]
+                                    [= $rc [?if [> $nf 1] [then [$nth $f 2]] [else '']]]
+                                    [= $secs [?if [> $nf 2] [then [$nth $f 3]] [else '']]]
+                                    [= $load [?if [> $nf 3] [then [$nth $f 4]] [else '']]]
+                                [?if [= $r ''] [then {rec: 0, red: ''}]
+                                  [else [?if [= $rc '0']
+                                    [then [?let [= $_w [$process:run ([$env:executable-path], '--allow-all', $vt, 'write-row', $tfile, [$cat ('premerge-', $r)], $secs, $load, $at) stdin=:discard]]
+                                                [= $_s [$say [$cat ('  premerge-', $r, '  ', $secs, 's  load ', $load, '  recorded')]]]
+                                            {rec: 1, red: ''}]]
+                                    [else [?let [= $_s [$say [$cat ('  premerge-', $r, '  ', $secs, 's  rc=', $rc, '  NOT recorded (its check is red: tail below)')]]]
+                                                [= $_t3 [$tail3 [$cat ($w, '/', $r, '.log')]]]
+                                            {rec: 0, red: [$cat (' ', $r)]}]]]]]]]]]]
+            [= $rec [$sum [?to-array [?for [in $o $outs] [yield $o/rec]]]]]
+            [= $red [$cat [?to-array [?for [in $o $outs] [yield $o/red]]]]]
+            [?do [$say [$cat ('premerge-record: ', [$string $rec], ' row(s) to ', $timings, [?if [= $red ''] [then ''] [else [$cat ('; red, not recorded:', $red)]]])]]
+                 [?else [$io:remove-tree $w] null]
+                 [$env:exit 0]]]]]]]]]]
+
+[?let [= $av [$env:argv]] [= $self [$path:absolute [$nth $av 1]]]
+  [?if [and [= [$count $av] 3] [= [$nth $av 2] '--one']]
+    [then [?do [$one [$nth $av 3]] [$env:exit 0]]]
+    [else [$main $self]]]]

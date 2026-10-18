@@ -1,11 +1,11 @@
 # scripts/verification_timings_selftest.cx (issue 1583, RULED: RUN-5) — the WRITER of
 # vcx/target/verification_timings.cxd, on planted files under a temp directory. CXMACH-1: the cx
-# rewrite of scripts/verification_timings_selftest.sh, the same seven cases and lines, run on
+# rewrite of scripts/verification_timings_selftest.sh (retired), the same seven cases and lines, run on
 # scripts/verification_timings.cx (the cx twin of verification_timings_lib.sh).
 #
 # #1562's budget step shipped with no writer at all: every bound read NOT MEASURED, so the step
 # judged nothing. These are the properties the writers (the post-merge runner at RUN-EXIT,
-# scripts/run_fixture_shards.sh on an unselected grader run, scripts/premerge_record.sh) rest on.
+# scripts/run_fixture_shards.cx on an unselected grader run, scripts/premerge_record.cx) rest on.
 #
 #   A  an ABSENT file → the document is created with exactly the row asked for
 #   B  a planted log with two other rows → a second write JOINS its own name's row, oldest first,

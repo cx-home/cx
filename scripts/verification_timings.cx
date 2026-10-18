@@ -1,5 +1,5 @@
 # scripts/verification_timings.cx — the WRITER behind vcx/target/verification_timings.cxd
-# (issue 1583, RULED: RUN-5). CXMACH-1: the cx rewrite of scripts/verification_timings_lib.sh,
+# (issue 1583, RULED: RUN-5). CXMACH-1: the cx rewrite of scripts/verification_timings_lib.sh (retired),
 # whose two shell functions are this program's two commands:
 #
 #   cx --allow-all scripts/verification_timings.cx write-row <file> <name> <seconds> <load> <at>
@@ -13,9 +13,9 @@
 #   * the post-merge runner writes `union` or `selected-run` at RUN-EXIT (flows/private-acts.cx's
 #     verdict act, the same row in cx, RULED: RFLOW-1), seconds counted from RUN-START and the
 #     load sampled at RUN-START;
-#   * scripts/run_fixture_shards.sh writes `fixture-grader` on an UNSELECTED run — a selected run
+#   * scripts/run_fixture_shards.cx writes `fixture-grader` on an UNSELECTED run — a selected run
 #     grades a handful of corpus files and its seconds say nothing about the bound;
-#   * scripts/premerge_record.sh writes one `premerge-<repo>` row per green pinned repository.
+#   * scripts/premerge_record.cx writes one `premerge-<repo>` row per green pinned repository.
 #
 # write-row writes `[timing name= seconds= load= at=]` into <file> and keeps every other name's
 # rows. Of <name>'s own rows it keeps those among its last four OR among its last QUIET ones
