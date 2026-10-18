@@ -17,12 +17,12 @@ time; there is one runner per pipeline.
 | Runner | Directory | Runs | Who starts it |
 |---|---|---|---|
 | post-merge | the default, `~/git-repos/cx/.build-slot` | all of `make test` (or the RUN-1 selection, or the doc pipeline) on every new head of the integration branch | `ai.cx.postmerge-flow`, a launchd job that runs one tick of `flows/postmerge.flow.cx` every 120 s |
-| pre-merge, own | `~/git-repos/cx/.build-slot-<worktree>` | a branch's load-insensitive steps: builds, lints, the fixtures grader, umbrella tests, docs and registry checks (RULED: D17a) | an agent, through `scripts/build-slot.sh` with `CX_BUILD_SLOT` naming it (or `make premerge-flow`) |
+| pre-merge, own | `~/git-repos/cx/.build-slot-<worktree>` | a branch's load-insensitive steps: builds, lints, the fixtures grader, umbrella tests, docs and registry checks (RULED: D17a) | an agent, through `scripts/build_slot.cx` with `CX_BUILD_SLOT` naming it (or `make premerge-flow`) |
 | pre-merge, shared | `~/git-repos/cx/.build-slot-impl` | memory gauges (`repr-guard`, cmp-005), the perf ratchet and `bench-compare`, every real-socket test, each only in a gap of the post-merge runner | the same, by the step's class (RULED: INT-8, L98) |
 
 A runner is a directory. `mkdir` is atomic, and the holder records its pid,
 command, cwd and start time. A holder whose pid is dead is broken by the next
-waiter. [`scripts/build-slot.sh`](../build-slot.sh) is the wrapper, and its
+waiter. [`scripts/build_slot.cx`](../build_slot.cx) is the wrapper, and its
 header carries the full contract. The directories sit in the PARENT of every
 worktree, so a worktree's own copy of the wrapper finds the same lock.
 
@@ -55,7 +55,7 @@ A tick is five steps:
    front of a new tip is one `PENDING` line. It checks the tree is clean,
    fast-forwards the checkout, and re-checks the tip if the tick has taken
    longer than one poll. It writes `RUN-START`, then runs make under
-   `scripts/build-slot.sh` with both streams in `vcx/target/gate.log`.
+   `scripts/build_slot.cx` with both streams in `vcx/target/gate.log`.
 4. **verdict** writes `RUN-EXIT=<n> <status>` and the RUN-5 timings row. After
    a pass it refreshes the runner's own copy of cx.
 5. **merge-queue** (RULED: MQUE-1, MADM-1) consumes `flows/merge-queue.cxd`, the
@@ -74,7 +74,7 @@ merge queue adds `QUEUE` lines, which carry no `RUN-` token. So every
 reader of it keeps working: the merge gap, the load-sensitive steps' gap
 check, `scripts/gate-status.sh`, and the boards. A tick that was killed
 mid-run leaves a `RUN-START` with no `RUN-EXIT`. The next tick finds the
-runner's holder dead, which build-slot.sh's own stale-holder check decides,
+runner's holder dead, which build_slot.cx's own stale-holder check decides,
 and writes `RUN-EXIT=70 failed` for it. `touch vcx/target/gate-loop.rerun`
 forces the full union on an unchanged tip, as before.
 

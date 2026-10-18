@@ -109,7 +109,7 @@ other guide page (`guide_build.cx`'s `wrap-page`). That is a site-wide
 typography decision, not the playground's renderer, and it degrades cleanly: the
 CSS carries a full local fallback stack (`ui-monospace, "SF Mono", Menlo,
 Consolas, monospace`), so an offline visitor gets a working playground in a
-system mono face. `scripts/test_playground_smoke.sh` allowlists exactly those
+system mono face. `scripts/test_playground_smoke.cx` allowlists exactly those
 three font URLs and fails on any *other* off-origin reference — so the exception
 is named and bounded rather than a hole, and a new CDN dependency cannot slip in
 unnoticed.

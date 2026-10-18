@@ -1,0 +1,103 @@
+# scripts/backend_equality.cx — the walker == compiled == native equality check (owner DIVERGE-1,
+# 2026-10-18 11:2xZ; the landing-gate step GATEPG-1 names; CXMACH-1: in cx).
+#
+# WHAT IT HOLDS. cx is one language with one semantics across its three BACKENDS — the walker, the
+# compiled backend and the native backend — on one resolution IR; the only sanctioned difference is
+# speed and memory. A backend may choose its own storage for a value only behind this check. It runs
+# the ten Benchmarks Game programs of cx-core-code (bench/game/<p>.run.cx, each at the fixed small N
+# of bench/game/game.cxd) once per backend and requires every answer byte-identical to the answer
+# game.cxd records (its sha256) and every run to exit 0:
+#   walker    CX_COMPILED_DEFS=0 CX_NATIVE=0   every def on the walker
+#   compiled  CX_NATIVE=0                      the compiled backend, no native code
+#   native    CX_NATIVE=sync                   the native backend in process (defs go native after two runs)
+#   image     `cx build --native` then the image (only when the link kit is present: make build-vcx-kit;
+#             without it the row reads `image: no kit` and the check is RED unless BACKEND_EQ_NO_IMAGE=1)
+# A refusal of a form by a backend is not a difference here (the program still answers through the
+# backend below it); each refused form is an issue on its own (DIVERGE-1), named by CX_NATIVE_TRACE runs.
+#
+# Run (the make step check-backend-equality, from the tree root):
+#   cx --allow-all scripts/backend_equality.cx [CX_BIN] [GAME_DIR]
+# CX_BIN defaults to deps/cx-core-code/vcx/target/cx, GAME_DIR to deps/cx-core-code/bench/game.
+# BACKEND_EQ_PROGRAMS (space-separated names) narrows the set (the selftest's knob).
+# Prints one row per program and backend and a last line `backend-equality: GREEN n/n` or
+# `backend-equality: RED <program>/<backend> ...`. Exit 0 green, 1 red, 2 usage / missing input.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/hash'    as=hash]
+[?lib 'cx-stdlib/bytes'   as=bytes]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?const ROW-RX [$re:compile "\\[program name=([a-z-]+) n=([0-9]+) sha256=([0-9a-f]{64})"]]
+
+# programs — (name, n, sha256) rows of game.cxd, narrowed by BACKEND_EQ_PROGRAMS.
+[?def programs scope=public impure ($dir)
+  [?let [= $text [?else [$io:read-file [$cat ($dir, '/game.cxd')]] '']]
+        [= $only [$strings:split-whitespace [$env:var-or-default 'BACKEND_EQ_PROGRAMS' '']]]
+    [?to-array [?for [in $m [$re:find-all ROW-RX $text]]
+                 [where [or [= [$count $only] 0]
+                            [> [$count [?for [in $o $only] [where [= $o [$re:group $m 1]]] [yield 1]]] 0]]]
+                 [yield [row name=[$re:group $m 1] n=[$re:group $m 2] sha=[$re:group $m 3]]]]]]]
+
+# answer — one run's (exit code, sha256 of its stdout bytes — mandelbrot's answer is a binary PBM —, first stderr line).
+[?def answer scope=public impure ($argv $cwd $env)
+  [?let [= $r [$process:run $argv cwd=$cwd env=$env timeout-ms=600000 encoding=:bytes]]
+    [?match $r
+      [case [err$e] [ans rc='127' sha='' err=[$string $e@message]]]
+      [else [ans rc=[$string $r@exit-code]
+                 sha=[$hash:sha256-hex $r@stdout]
+                 err=[?let [= $ls [$strings:split-lines [?else [$bytes:to-string-utf8 $r@stderr] '']]] [?if [= [$count $ls] 0] [then ''] [else [$nth $ls 1]]]]]]]]]
+
+[?def ARMS scope=public () ('walker', 'compiled', 'native')]
+[?def arm-env scope=public ($arm)
+  [?if [= $arm 'walker'] [then [map CX_COMPILED_DEFS='0' CX_NATIVE='0']]
+    [else [?if [= $arm 'compiled'] [then [map CX_NATIVE='0']] [else [map CX_NATIVE='sync']]]]]]
+
+[?def judge scope=public impure ($p $arm $a)
+  [?let [= $ok [and [= [$string $a@rc] '0'] [= [$string $a@sha] [$string $p@sha]]]]
+        [= $_ [$say [$cat ('  ', [$strings:pad-end [$string $p@name] 20 ' '], ' n=', [$strings:pad-end [$string $p@n] 6 ' '], ' ',
+                           [$strings:pad-end $arm 9 ' '], [?if $ok [then 'same']
+                             [else [$cat ('DIFFERS rc=', [$string $a@rc], ' sha=', [$strings:slice [$string $a@sha] 1 16], ' ', [$string $a@err])]]])]]]
+    [?if $ok [then ''] [else [$cat ([$string $p@name], '/', $arm)]]]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $cwd [$env:cwd]]
+  [= $cx [?if [> [$count $argv] 1] [then [$nth $argv 2]] [else [$cat ($cwd, '/deps/cx-core-code/vcx/target/cx')]]]]
+  [= $dir [?if [> [$count $argv] 2] [then [$nth $argv 3]] [else [$cat ($cwd, '/deps/cx-core-code/bench/game')]]]]
+  [= $_u [?if [and [$io:is-file $cx] [$io:is-file [$cat ($dir, '/game.cxd')]]] [then null]
+           [else [?do [$cry [$cat ('backend-equality: needs a built cx (', $cx, ') and bench/game/game.cxd under ', $dir, ' — make deps-sync build-vcx')]]
+                      [$env:exit 2]]]]]
+  [= $ps [$programs $dir]]
+  [= $_e [?if [> [$count $ps] 0] [then null] [else [?do [$cry 'backend-equality: no program rows read from game.cxd'] [$env:exit 2]]]]]
+  [= $kit [?let [= $k [$env:var-or-default 'CX_NATIVE_KIT' [$cat ([$strings:slice $cx 1 [- [$strings:length $cx] 3]], '/native-kit')]]]
+            [?if [$io:is-file [$cat ($k, '/libcx-cli.a')]] [then $k] [else '']]]]
+  [= $no-image [not [= [$env:var-or-default 'BACKEND_EQ_NO_IMAGE' ''] '']]]
+  [= $tmp [$io:temp-dir 'backend-equality']]
+  [= $_h [$say [$cat ('backend-equality: ', [$string [$count $ps]], ' programs x walker/compiled/native',
+                      [?if [= $kit ''] [then ' (image: no kit)'] [else ' + the cx build --native image']], ', cx ', $cx)]]]
+  [= $reds [?to-array [?for [in $p $ps]
+             [in $r [?let [= $run [$cat ($dir, '/', [$string $p@name], '.run.cx')]]
+                          [= $three [?to-array [?for [in $a [$ARMS]]
+                                      [yield [$judge $p $a [$answer ($cx, '--allow-all', $run, [$string $p@n]) $dir [$arm-env $a]]]]]]]
+                          [= $img [?if [= $kit '']
+                                    [then [?if $no-image [then ''] [else [$cat ([$string $p@name], '/image(no kit)')]]]]
+                                    [else [?let [= $out [$cat ($tmp, '/', [$string $p@name])]]
+                                                [= $b [$answer ($cx, 'build', '--native', '--allow-all', $run, '-o', $out, '--', [$string $p@n]) $dir [map CX_NATIVE_KIT=$kit]]]
+                                            [?if [not [= [$string $b@rc] '0']]
+                                              [then [$judge $p 'image' $b]]
+                                              [else [$judge $p 'image' [$answer ($out, [$string $p@n]) $dir [map]]]]]]]]]
+                      ([?splice $three], $img)]]
+             [where [not [= $r '']]]
+             [yield $r]]]]
+  [= $_rm [?else [$io:remove-tree $tmp] null]]
+  [?if [= [$count $reds] 0]
+    [then [?do [$say [$cat ('backend-equality: GREEN ', [$string [$count $ps]], '/', [$string [$count $ps]],
+                            ' — every backend answers each program byte for byte as game.cxd records')]] [$env:exit 0]]]
+    [else [?do [$say [$cat ('backend-equality: RED ', [$strings:join $reds ' '])]] [$env:exit 1]]]]]
