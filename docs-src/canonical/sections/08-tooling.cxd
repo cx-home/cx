@@ -147,8 +147,11 @@
            so the machine it runs on needs no cx, no V and no C
            compiler — only the same operating system and architecture
            as the cx that built it. The run flags (capability grants,
-           `--data`, `--from` / `--to`, …) are fixed at build time;
-           every argument OUT is started with reaches the program's
+           `--data`, `--from` / `--to`, …) are recorded at build time.
+           OUT also takes capability grants when it runs, ahead of its
+           own arguments, as `cx` does (`OUT --allow-read notes.txt`;
+           `--` ends them): a recorded grant is a default, not a
+           ceiling. The arguments after the grants reach the program's
            `$env:argv`, whose first member is OUT's own path. OUT
            carries the program, not the files it reads. A program that
            does not parse is refused at build time (exit 1).
@@ -160,7 +163,7 @@
            defs to machine code. It runs PROG once first (the training
            run: the same run flags, its output discarded, so a
            program's effects happen at build time), compiles the C the
-           native tier generated for each def and the argument shapes
+           native backend generated for each def and the argument shapes
            it saw, and links it into OUT with cx's link kit
            (`native-kit/` beside cx, written by `make cli-kit`;
            `CX_NATIVE_KIT` names another). The C compiler is needed
