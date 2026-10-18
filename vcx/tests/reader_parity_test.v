@@ -726,6 +726,9 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/premerge_record.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/run_fixture_shards.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/run_fixture_shards_selftest.cx', .program, reason_attr},
+	// scripts/r22_profile_gate.cx (R22-1 = (a)): `[$process:run ($probe, …) stdin=:discard]`, a
+	// call-shaped head beside a ws-delimited `(…)` literal — the 1536-a property.
+	AcceptedByOne{'scripts/r22_profile_gate.cx', .program, reason_1536},
 	// DOCS-4 wave 1 (RULED: DOCS-42, DOCS-43): the plug-in figure's
 	// `height=[- ROW-H 4]` and the voice step's `path=[$attr $p "path" ""]`,
 	// both computed attributes on a constructed row.
