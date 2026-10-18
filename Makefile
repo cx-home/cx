@@ -702,7 +702,7 @@ build-wasm: v-pin-fresh
 	DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
 
 # Gate 17 — stage the playground bundle under dist/playground-preview/
-# so scripts/test_playground_smoke.sh has a docroot to boot Python's
+# so scripts/test_playground_smoke.cx has a docroot to boot Python's
 # http.server against. The layout matches the URL probes the smoke
 # script issues: playground.{html,js,css} at the root, wasm artifacts
 # under dist/wasm/ (nested), so a `cd dist/playground-preview &&
@@ -711,7 +711,7 @@ build-wasm: v-pin-fresh
 # exact set the smoke check curl-probes. Depends on build-wasm so the
 # wasm artifacts exist before we copy. When emcc is unavailable,
 # build-wasm fails noisily upstream and this target is never reached;
-# scripts/test_playground_smoke.sh then reports its documented
+# scripts/test_playground_smoke.cx then reports its documented
 # "playground-preview not built" failure.
 build-playground: v-pin-fresh
 	@echo "[build-playground] (re)building libcx-async + libcx-pthreads variants"
@@ -782,7 +782,7 @@ build-playground: v-pin-fresh
 	@if [ -f dist/wasm/libcx-pthreads.js ]; then cp dist/wasm/libcx-pthreads.js dist/playground-preview/wasm/libcx-pthreads.js; fi
 	@if [ -f dist/wasm/libcx-pthreads.wasm ]; then cp dist/wasm/libcx-pthreads.wasm dist/playground-preview/wasm/libcx-pthreads.wasm; fi
 	@# Smoke-test compatibility: also stage flat copies under dist/wasm/
-	@# so scripts/test_playground_smoke.sh (which queries dist/wasm/*
+	@# so scripts/test_playground_smoke.cx (which queries dist/wasm/*
 	@# directly) keeps working alongside the absolute-URL layout that
 	@# matches docs/guide/ deployment.
 	@cp dist/wasm/cxlib.js dist/playground-preview/dist/wasm/cxlib.js
@@ -1242,7 +1242,7 @@ verify-playground-examples: build-vcx
 # dist/wasm/, plus one npm install for jsdom. Both preconditions FAIL
 # LOUD (exit 2) rather than skipping, so this step can never report a vacuous
 # pass. It is deliberately NOT in TEST_TARGETS — that step must not require
-# emcc or a network fetch — and belongs with scripts/test_playground_smoke.sh as
+# emcc or a network fetch — and belongs with scripts/test_playground_smoke.cx as
 # the playground release step.
 .PHONY: test-playground-mermaid
 # RULED: 1170-e / 1170-f. The step grades a bundle it BUILDS or PROVES FRESH,
@@ -1342,7 +1342,7 @@ test-site-phone-width: site
 # (CX_CHROME overrides). Both preconditions FAIL LOUD (exit 2) rather than
 # skipping, so this step can never report a vacuous pass. Deliberately NOT in
 # TEST_TARGETS — that step must not require emcc or a browser — and belongs with
-# test-playground-mermaid and scripts/test_playground_smoke.sh as the playground
+# test-playground-mermaid and scripts/test_playground_smoke.cx as the playground
 # release step. Every wait is bounded (WASM_EVAL_DEADLINE, default 900s); the
 # server and browser are reaped on every exit path.
 .PHONY: test-playground-wasm-eval
@@ -1378,7 +1378,7 @@ test-playground-wasm-eval:
 # and both preconditions FAIL LOUD (exit 2) rather than skipping, so this step
 # can never report a vacuous pass. Deliberately NOT in TEST_TARGETS — that step
 # must not require emcc or a browser — and belongs with test-playground-mermaid,
-# test-playground-wasm-eval and scripts/test_playground_smoke.sh as the
+# test-playground-wasm-eval and scripts/test_playground_smoke.cx as the
 # playground release step. Every wait is bounded (TREE_GATE_DEADLINE, default
 # 600s); server and browser are reaped on every exit path.
 .PHONY: test-playground-tree
