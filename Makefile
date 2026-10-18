@@ -1469,7 +1469,7 @@ check-portable-links: build-vcx
 # TEST_TARGETS member so a plain `make check`/`make test-changed` always
 # runs it — SKIPping cleanly when nothing is staged (the common case outside
 # a release), and blocking for real inside the release flow's package act (R2.2)
-# and scripts/release_profile_gate.sh (both call it directly; this target
+# and scripts/release_profile_gate.cx (both call it directly; this target
 # is the ad hoc / CI entry point onto the same script). See RESULTS.md
 # _gate_evidence/pipeline_1670 for the red proof against v0.17.0's real
 # darwin asset and the green proof against this tree's own staged build.
@@ -2113,7 +2113,7 @@ bump-version-check: build-vcx
 # that --dry-run skips, so its first execution was always the real cut.
 .PHONY: release-profile-gate
 release-profile-gate:
-	@scripts/release_profile_gate.sh
+	@$(TOOL_CX) --allow-all scripts/release_profile_gate.cx
 
 # Full pre-tag check — runs everything in the release process + §0.5.
 # Defaults to the VERSION file (single source of truth).

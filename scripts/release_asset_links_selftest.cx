@@ -9,7 +9,7 @@
    release's own SHA256SUMS.txt, and cx-stdlib/io writes it -- so the whole
    self-test is cx (#1672 closed by this file). The one shell left is the
    staging library the release flow itself sources
-   (scripts/lib/r22_profile_gate.sh), reached through process:run exactly as
+   (scripts/r22_profile_gate.cx), reached through process:run exactly as
    the flow reaches it.
 
    What this proves, run against THIS tree:
@@ -126,7 +126,7 @@
                     [$string $b@stdout]
                     [$string $b@stderr]]]]
               [else null]]]
-          [; the release flow's own staging, as scripts/lib/r22_profile_gate.sh writes it ]
+          [; the release flow's own staging, as scripts/r22_profile_gate.cx writes it ]
           [= $s
             [$process:run ('sh',
                 '-c',
@@ -134,11 +134,11 @@
                   $dir
                   '; mkdir -p '
                   $dir
-                  '/_plat; . scripts/lib/r22_profile_gate.sh; '
-                  'r22_collect_platform_files '
+                  '/_plat; r22() { "$0" --allow-all scripts/r22_profile_gate.cx "$@"; }; '
+                  'r22 collect-platform-files '
                   $dir
                   '/_plat; '
-                  'r22_tar_platform '
+                  'r22 tar-platform '
                   $dir
                   '/_plat '
                   [$env:cwd]
@@ -147,9 +147,9 @@
                   ' darwin-arm64; '
                   'rm -rf '
                   $dir
-                  '/_plat; r22_stage_profiles '
+                  '/_plat; r22 stage-profiles '
                   $dir
-                  ' darwin-arm64'])]]
+                  ' darwin-arm64'], [$string $cx])]]
           [= $_
             [?if [$not [= $s@exit-code 0]]
               [then [$die [$concat 'staging failed:\n'

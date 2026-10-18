@@ -495,7 +495,7 @@ step_globs() {
     # RULED: RFLOW-1 L103 — the release document's fixture: the document, its env,
     # the one public acts module, its simulate tables, the one gate program, and
     # what can move the vocabulary or the subcommands it drives them through.
-    release-flow-gate)             echo 'flows/release.flow.cx flows/release.env.cx flows/ci-acts.cx flows/sim/release/* scripts/ci_flow_gate.cx scripts/lib/r22_profile_gate.sh scripts/r22_profile_load_selftest.cx deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
+    release-flow-gate)             echo 'flows/release.flow.cx flows/release.env.cx flows/ci-acts.cx flows/sim/release/* scripts/ci_flow_gate.cx scripts/r22_profile_gate.cx scripts/r22_profile_load_selftest.cx deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
     # The private flow gates' rows (merge-flow-gate, premerge-flow-gate, and
     # the ones added after them) live in flows/private.mk, beside their
     # targets (RULED: PRIVMK-1). The catch-all below reads them from there.
@@ -650,7 +650,7 @@ step_globs() {
     # nothing — it SKIPs then) plus the gate itself and the release scripts
     # that stage/call it, so a change to the staging shape or the gate logic
     # re-runs it.
-    check-release-asset-links)     echo 'dist/public/* scripts/release_asset_links_gate.cx scripts/lib/r22_profile_gate.sh flows/release.flow.cx flows/ci-acts.cx scripts/release_linux.cx scripts/release_profile_gate.sh' ;;
+    check-release-asset-links)     echo 'dist/public/* scripts/release_asset_links_gate.cx scripts/r22_profile_gate.cx flows/release.flow.cx flows/ci-acts.cx scripts/release_linux.cx scripts/release_profile_gate.cx' ;;
     # #1012's resurrection guards over the umbrella manifests: the manifests,
     # the driver and its selftest, and the umbrella test files they hold to.
     check-consolidation-manifests) echo 'scripts/consolidation/* scripts/consolidate_tests.sh scripts/consolidate_tests.cx scripts/consolidate_tests_selftest.cx vcx/tests/*' ;;

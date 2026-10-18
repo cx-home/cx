@@ -1,0 +1,256 @@
+# scripts/r22_profile_gate.cx — the R2.2 per-profile install verification and the asset staging it
+# verifies, in ONE place (RULED: PGL-1, #741, ledger/rulings_2026_08_22_profile_gate_lane.md).
+# CXMACH-1: the cx rewrite of scripts/lib/r22_profile_gate.sh, whose functions are this program's
+# commands:
+#
+#   cx --allow-all scripts/r22_profile_gate.cx vcx-target
+#   cx --allow-all scripts/r22_profile_gate.cx include-dir
+#   cx --allow-all scripts/r22_profile_gate.cx collect-platform-files <destdir>
+#   cx --allow-all scripts/r22_profile_gate.cx tar-platform <srcdir> <pubdir_abs> <plat>
+#   cx --allow-all scripts/r22_profile_gate.cx stage-profiles <pubdir> <plat>
+#   cx --allow-all scripts/r22_profile_gate.cx profile-gate <pubdir> <plat> [label]
+#   cx --allow-all scripts/r22_profile_gate.cx profile-payload <dir> <prof> <vtar> [label]
+#   cx --allow-all scripts/r22_profile_gate.cx profile-load <dir> <prof> <vtar> [label] [build target dir]
+#
+# The gate loop existed VERBATIM TWICE — the darwin cut and the linux container body — and ran ONLY
+# inside a real cut. A gate that exists twice can drift in one copy, and a gate whose first execution
+# is the irreversible step is indistinguishable from an unmeasured one. Every caller runs this
+# program: the release flow's package act (flows/ci-acts.cx), scripts/release_profile_gate.sh (the
+# pre-cut step, no cut) and scripts/release_linux.cx's container body (on the cx it builds there).
+# Every command expects the CWD to be the repo root (the container's /build copy carries scripts/).
+# The container arm (RULED: R22-1 = (a), integrator 2026-10-17T22:31Z) is proven by its rendered text
+# only (bash -n, and the diff of the container program against the shell-library calls it replaced):
+# no Docker here (cx-private#1956). Its first real run is the first Docker run after #1956 is resolved,
+# and it must come BEFORE any cut. The darwin arms are proven on planted trees against the shell
+# library (every command, green and at every refusal) and by scripts/r22_profile_load_selftest.cx.
+#
+# R22_EXPECT_HEADLINE (env, optional) — when set, profile-gate additionally requires every staged
+# binary's `cx -v` FIRST LINE to equal it exactly. A cut sets it to "cx vX.Y.Z" so an artifact built
+# off the release tag cannot ship (#979, RULED: CO-4); the standalone pre-cut step leaves it unset.
+# R22_PROBE (env, optional) — the loading probe; else <build target>/extraction_gate/probe.
+#
+# Deviations from the shell library, stated: a REQUIRED copy that fails (the binary, the header, the
+# re2 licence, a profile's binary) fails the command with exit 1 — the shell's function answered its
+# last copy's status, so under the release flow's `bash -c` a missing cx staged green and only the
+# tar step after it failed; the tolerant .dylib/.so copies stay tolerant (PGL-1 point 4).
+# Exit: 0 done / passed; 1 a refusal (RELEASE GATE FAILED … on stderr) or a failed staging step; 64 usage.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/path'    as=path]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def text scope=public impure ($f) [?if [$io:is-file $f] [then [?else [$io:read-file $f] '']] [else '']]]
+[?def seq scope=public ($xs) [?to-sequence [?for [in $x $xs] [yield $x]]]]
+[?def lines scope=public ($s)
+  [?let [= $ls [?to-array [$strings:split $s "\n"]]]
+    [?if [$strings:ends-with $s "\n"] [then [?to-array [?for [in $i [$range 1 [- [$count $ls] 1]]] [yield [$nth $ls $i]]]]] [else $ls]]]]
+# run — a tool's exit code (127 when it cannot start), its stderr to ours (`cp …` in the shell).
+[?def run scope=public impure ($argv)
+  [?let [= $r [$process:run [$seq $argv] stdin=:discard capture={stdout: :inherit, stderr: :inherit}]]
+    [?match $r [case [err$e] [?let [= $_ [$cry [$cat ([$nth $argv 1], ': ', [$string $e@message])]]] 127]] [else $r@exit-code]]]]
+[?def run-in scope=public impure ($cwd $argv)
+  [?let [= $r [$process:run [$seq $argv] cwd=$cwd stdin=:discard capture={stdout: :inherit, stderr: :inherit}]]
+    [?match $r [case [err$e] [?let [= $_ [$cry [$cat ([$nth $argv 1], ': ', [$string $e@message])]]] 127]] [else $r@exit-code]]]]
+[?def quiet scope=public impure ($argv)
+  [?let [= $r [$process:run [$seq $argv] stdin=:discard capture={stdout: :discard, stderr: :discard}]]
+    [?match $r [case [err$e] 127] [else $r@exit-code]]]]
+[?def fail scope=public impure ($msgs) [?do [?to-array [?for [in $m $msgs] [yield [$cry $m]]]] [$env:exit 1]]]
+[?def must scope=public impure ($rc) [?if [= $rc 0] [then 0] [else [$env:exit 1]]]]
+
+# glob — a shell glob of one directory level, `<dir>/<prefix>*` style patterns as the library uses
+# them: the names of <dir> (no dotfiles) whose name matches the anchored pattern, sorted.
+[?def glob-rx scope=public ($pat) [$re:compile [$cat ('^', [$strings:replace [$strings:replace $pat '.' '[.]'] '*' '.*'], '$')]]]
+[?def names scope=public impure ($dir)
+  [$sort [?to-array [?for [in $e [?else [$io:list-dir $dir] ()]] [where [not [$strings:starts-with [$string $e] '.']]] [yield [$string $e]]]]]]
+[?def glob scope=public impure ($dir $pat)
+  [?to-array [?for [in $n [$names $dir]] [where [$re:matches [$glob-rx $pat] $n]] [yield $n]]]]
+
+# vcx-target — where build-vcx lands its artifacts: the cx-core-code pin's vcx/target since RS-12's
+# extraction, the front door's vcx/target before it (#1670).
+[?def vcx-target scope=public impure ()
+  [?if [$io:is-directory 'deps/cx-core-code/vcx/target'] [then 'deps/cx-core-code/vcx/target'] [else 'vcx/target']]]
+# include-dir — cx.h moved with vcx/ into the cx-core-code pin (#1670, second instance).
+[?def include-dir scope=public impure ()
+  [?if [$io:is-file 'deps/cx-core-code/include/cx.h'] [then 'deps/cx-core-code/include'] [else 'include']]]
+
+# collect-platform-files — the platform-profile payload: the binary, the shared lib under whichever
+# extension this host produces, the public header, and the vendored re2 licence (#573).
+[?def collect-platform-files scope=public impure ($dest)
+  [?let [= $t [$vcx-target]]
+        [= $a [$must [$run ('cp', [$cat ($t, '/cx')], [$cat ($dest, '/')])]]]
+        [= $b [$quiet ('cp', [$cat ($t, '/libcx.dylib')], [$cat ($dest, '/')])]]
+        [= $c [$quiet ('cp', [$cat ($t, '/libcx.so')], [$cat ($dest, '/')])]]
+        [= $d [$must [$run ('cp', [$cat ([$include-dir], '/cx.h')], [$cat ($dest, '/')])]]]
+    [$must [$run ('cp', 'third_party/re2/LICENSE', [$cat ($dest, '/LICENSE-re2.txt')])]]]]
+
+# tar-platform — the FLAT, stable-named public artifact: `cx` at the tar ROOT (the quickstart does
+# `tar xz && mv cx`). pubdir must be ABSOLUTE: the tar runs inside srcdir.
+[?def tar-platform scope=public impure ($src $pub $plat)
+  [?let [= $libs [$glob $src 'libcx.*']]
+    [$must [$run-in $src [?to-array [?for [in $xs (('tar', 'czf', [$cat ($pub, '/cx-', $plat, '.tar.gz')], 'cx', 'cx.h'),
+                                                    [?if [= [$count $libs] 0] [then ('libcx.*')] [else $libs]],
+                                                    ('LICENSE-re2.txt'))] [in $x $xs] [yield $x]]]]]]]
+
+# stage-profiles — the I4 lean profile tarballs, cx-<profile>-<plat>.tar.gz (CX_PROFILE=data|embed|cli):
+#   data  — cx (cannot-execute) + libcx-core + cx.h
+#   embed — cx + the embed-shape libcx (Rings 0-1, no local-effect packs) + cx.h
+#   cli   — cx only (the binary is the deliverable)
+[?def stage-profiles scope=public impure ($pubrel $plat)
+  [?let [= $pub [$path:absolute $pubrel]] [= $t [$vcx-target]] [= $inc [$include-dir]]
+    [?to-array [?for [in $prof ('data', 'embed', 'cli')]
+      [yield [?let [= $pdir [$cat ($pub, '/_prof_', $prof)]]
+                   [= $_r [?if [$io:exists $pdir] [then [$io:remove-tree $pdir]] [else null]]]
+                   [= $_m [$io:make-dirs $pdir]]
+                   [= $_c [$must [$run ('cp', [$cat ($t, '/profiles/', $prof, '/cx')], [$cat ($pdir, '/')])]]]
+                   [= $_l [$must [$run ('cp', 'third_party/re2/LICENSE', [$cat ($pdir, '/LICENSE-re2.txt')])]]]
+                   [= $_h [?if [= $prof 'cli'] [then 0] [else [$must [$run ('cp', [$cat ($inc, '/cx.h')], [$cat ($pdir, '/')])]]]]]
+                   [= $_x [?if [= $prof 'data']
+                            [then ([$quiet ('cp', [$cat ($t, '/libcx-core.dylib')], [$cat ($pdir, '/')])],
+                                   [$quiet ('cp', [$cat ($t, '/libcx-core.so')], [$cat ($pdir, '/')])])]
+                            [else [?if [= $prof 'embed']
+                              [then ([$quiet ('cp', [$cat ($t, '/profiles/embed/libcx.dylib')], [$cat ($pdir, '/')])],
+                                     [$quiet ('cp', [$cat ($t, '/profiles/embed/libcx.so')], [$cat ($pdir, '/')])])]
+                              [else ()]]]]]
+                   [= $_t [$must [$run-in $pdir [?to-array [?for [in $xs (('tar', 'czf', [$cat ($pub, '/cx-', $prof, '-', $plat, '.tar.gz')]),
+                                                                            [?to-array [?for [in $n [$names $pdir]] [yield [$cat ('./', $n)]]]])]
+                                                              [in $x $xs] [yield $x]]]]]]
+               [$io:remove-tree $pdir]]]]]]]
+
+# profile-payload — RULED: PGC-1 (#915). The library and header a profile exists to deliver, by GLOB
+# on either extension (`libcx.*` cannot match `libcx-core.dylib`); `cli` is checked by EXCLUSION too.
+[?def profile-payload scope=public impure ($dir $prof $vtar $label)
+  [?let [= $has [?fn ($p) [> [$count [$glob $dir $p]] 0]]]
+        [= $need [?if [or [= $prof 'platform'] [= $prof 'embed']] [then ('cx', 'LICENSE-re2.txt', 'cx.h', 'libcx.*')]
+                   [else [?if [= $prof 'data'] [then ('cx', 'LICENSE-re2.txt', 'cx.h', 'libcx-core.*')] [else ('cx', 'LICENSE-re2.txt')]]]]]
+        [= $miss [?to-array [?for [in $p $need] [where [not [$has $p]]] [yield $p]]]]
+        [= $extra [?if [= $prof 'cli']
+                    [then [?let [= $ns [$names $dir]]
+                            [?if [= [$count $ns] 0] [then ('*')]
+                              [else [?to-array [?for [in $n $ns] [where [not [or [= $n 'cx'] [= $n 'LICENSE-re2.txt']]]] [yield $n]]]]]]]
+                    [else ()]]]
+    [?if [and [= [$count $miss] 0] [= [$count $extra] 0]] [then 0]
+      [else [$fail [?to-array [?for [in $xs (([$cat ('RELEASE GATE FAILED (R2.2', $label, '): ', $vtar, " payload wrong for profile '", $prof, "'")]),
+                                             [?if [> [$count $miss] 0] [then ([$cat ('  MISSING: ', [$strings:join $miss ' '])])] [else ()]],
+                                             [?if [> [$count $extra] 0] [then ([$cat ('  UNEXPECTED (cli ships the binary only): ', [$strings:join $extra ' '])])] [else ()]],
+                                             ('  tarball contains:'),
+                                             [?to-array [?for [in $n [$names $dir]] [yield [$cat ('    ', $n)]]]])]
+                                [in $x $xs] [yield $x]]]]]]]]
+
+# the probe's answer, read as the shell read it: the codec rows (lines holding a TAB from a line
+# ending `#cx_codec_inventory` through the next line starting `»»» `) and cx_features (the line two
+# after each line ending `#cx_features`).
+[?def inventory-rows scope=public ($ls $i $in $n)
+  [?if [> $i [$count $ls]] [then $n]
+    [else [?let [= $l [$nth $ls $i]]
+                [= $tab [?if [$strings:contains $l "\t"] [then 1] [else 0]]]
+      [?if $in
+        [then [$inventory-rows $ls [+ $i 1] [not [$strings:starts-with $l '»»» ']] [+ $n $tab]]]
+        [else [?if [$strings:ends-with $l '#cx_codec_inventory']
+                [then [$inventory-rows $ls [+ $i 1] true [+ $n $tab]]]
+                [else [$inventory-rows $ls [+ $i 1] false $n]]]]]]]]]
+[?def features scope=public ($ls)
+  [$strings:join [?to-array [?for [in $i [$range 1 [$count $ls]]]
+                   [where [and [$strings:ends-with [$nth $ls $i] '#cx_features'] [<= [+ $i 2] [$count $ls]]]]
+                   [yield [$nth $ls [+ $i 2]]]]] "\n"]]
+
+# probe — `"$probe" --artifact <lib>`: {rc out err}.
+[?def probe scope=public impure ($probe $lib)
+  [?let [= $r [$process:run ($probe, '--artifact', $lib) stdin=:discard]]
+    [?match $r [case [err$e] {rc: 127, out: '', err: [$cat ($probe, ': ', [$string $e@message], "\n")]}]
+      [else {rc: $r@exit-code, out: [$string $r@stdout], err: [$string $r@stderr]}]]]]
+[?def indent scope=public ($s) [?to-array [?for [in $l [$lines $s]] [yield [$cat ('    ', $l)]]]]]
+
+# profile-load — RULED: RLOAD-1 (#1131; CR-3, CR-6): every staged library loaded through the
+# extraction step's probe (`--artifact`), and its answer byte-identical to the build's own library's.
+[?def profile-load scope=public impure ($dir $prof $vtar $label $t0)
+  [?let [= $t [?if [= $t0 ''] [then [$vcx-target]] [else $t0]]]
+        [= $probe [?let [= $p [$env:var-or-default 'R22_PROBE' '']] [?if [= $p ''] [then [$cat ($t, '/extraction_gate/probe')]] [else $p]]]]
+        [= $pat [?if [or [= $prof 'platform'] [= $prof 'embed']] [then 'libcx.*'] [else [?if [= $prof 'data'] [then 'libcx-core.*'] [else '']]]]]
+        [= $sub [?if [= $prof 'embed'] [then 'profiles/embed/'] [else '']]]
+    [?if [= $pat ''] [then 0]
+      [else [?let [= $st [$io:stat $probe]]
+                  [= $exec [?match $st [case [err$e] false] [else [and $st@is-file [= [$strings:slice $st@permissions 3 3] 'x']]]]]
+        [?if [not $exec]
+          [then [$fail ([$cat ('RELEASE GATE FAILED (R2.2', $label, '): the loading probe ', $probe, ' is not built (make build-extraction-probe) — no staged library of ', $vtar, ' was loaded')])]]
+          [else [?to-array [?for [in $base [$glob $dir $pat]]
+            [yield [?let [= $lib [$cat ($dir, '/', $base)]]
+                         [= $ref [$cat ($t, '/', $sub, $base)]]
+                         [= $_a [?if [$io:exists $ref] [then null]
+                                  [else [$fail ([$cat ('RELEASE GATE FAILED (R2.2', $label, '): ', $vtar, ' stages ', $base, " but the build's own ", $ref, ' is absent — nothing to compare it with')])]]]]
+                         [= $s [$probe $probe $lib]]
+                         [= $_s [?if [= $s/rc 0] [then null]
+                                  [else [$fail [?to-array [?for [in $xs (([$cat ('RELEASE GATE FAILED (R2.2', $label, '): ', $vtar, ' — the probe refused the staged ', $base, ' (exit ', [$string $s/rc], "): it cannot be loaded, lacks an entry, or its cx_features disagrees with its own exports")]), [$indent $s/err])] [in $x $xs] [yield $x]]]]]]]
+                         [= $b [$probe $probe $ref]]
+                         [= $_b [?if [= $b/rc 0] [then null]
+                                  [else [$fail [?to-array [?for [in $xs (([$cat ('RELEASE GATE FAILED (R2.2', $label, "): the probe refused the build's own ", $ref, ' (exit ', [$string $b/rc], "): it cannot be loaded, lacks an entry, or its cx_features disagrees with its own exports")]), [$indent $b/err])] [in $x $xs] [yield $x]]]]]]]
+                         [= $_d [?if [= $b/out $s/out] [then null]
+                                  [else [?let [= $w [$io:temp-dir 'r22-load.']]
+                                              [= $_1 [$io:write-file [$cat ($w, '/build')] $b/out]]
+                                              [= $_2 [$io:write-file [$cat ($w, '/staged')] $s/out]]
+                                              [= $d [$process:run ('diff', [$cat ($w, '/build')], [$cat ($w, '/staged')]) stdin=:discard]]
+                                              [= $dt [?match $d [case [err$e] ''] [else [$string $d@stdout]]]]
+                                              [= $_3 [$io:remove-tree $w]]
+                                          [$fail [?to-array [?for [in $xs (([$cat ('RELEASE GATE FAILED (R2.2', $label, '): ', $vtar, ' — the staged ', $base, " answers cx_codec_inventory / cx_features differently from the build's own ", $ref)],
+                                                                            "  (< the build's own, > the staged library)"),
+                                                                           [$indent $dt])] [in $x $xs] [yield $x]]]]]]]]
+                         [= $ls [$lines $s/out]]
+                     [$say [$cat ('   R2.2', $label, ' load: ', [$path:basename $vtar], ' ', $base, ' — ', [$string [$inventory-rows $ls 1 false 0]],
+                                  ' codecs, cx_features ', [$features $ls], " — identical to the build's own ", $ref)]]]]]]]]]]]]]
+
+# profile-gate — R2.2 (#651/#516 remediation register, ruled (a) BY OWNER 2026-08-09): BLOCKING
+# per-profile install verification. EVERY staged tarball (default platform + the three lean profiles)
+# extracts the way the installer extracts it, carries an executable `cx` at the tar root, reports the
+# expected profile line (captured ONCE, AMENDED: PGL-1a), carries its payload and loads its libraries.
+[?def profile-gate scope=public impure ($pub $plat $label)
+  [?to-array [?for [in $prof ('platform', 'data', 'embed', 'cli')]
+    [yield [?let [= $vtar [?if [= $prof 'platform'] [then [$cat ($pub, '/cx-', $plat, '.tar.gz')]] [else [$cat ($pub, '/cx-', $prof, '-', $plat, '.tar.gz')]]]]
+                 [= $vdir [$string [$io:temp-dir 'r22-gate.']]]
+                 [= $_x [?if [= [$run ('tar', 'xzf', $vtar, '-C', $vdir)] 0] [then null]
+                          [else [$fail ([$cat ('RELEASE GATE FAILED (R2.2', $label, '): ', $vtar, ' does not extract')])]]]]
+                 [= $st [$io:stat [$cat ($vdir, '/cx')]]]
+                 [= $_e [?if [?match $st [case [err$e] false] [else [= [$strings:slice $st@permissions 3 3] 'x']]] [then null]
+                          [else [$fail ([$cat ('RELEASE GATE FAILED (R2.2', $label, '): ', $vtar, ' carries no executable cx at the tar root')])]]]]
+                 # `"$vdir/cx" -v 2>&1`, captured ONCE: both streams in arrival order, through a file
+                 [= $pw [$string [$io:temp-dir 'r22-probe.']]]
+                 [= $r [$process:run ([$cat ($vdir, '/cx')], '-v') stdin=:discard capture={stdout: [$cat ($pw, '/out')], stderr: :stdout}]]
+                 [= $rc [?match $r [case [err$e] 126] [else $r@exit-code]]]
+                 [= $out0 [?match $r [case [err$e] [$string $e@message]] [else [$text [$cat ($pw, '/out')]]]]]
+                 [= $_pw [$io:remove-tree $pw]]
+                 # $(…) drops the trailing newlines
+                 [= $out [$re:replace [$re:compile "\n+$"] $out0 '']]
+                 [= $_p [?if [$strings:contains $out [$cat ('profile  ', $prof)]] [then null]
+                          [else [$fail [?to-array [?for [in $xs (([$cat ('RELEASE GATE FAILED (R2.2', $label, '): ', $vtar, " cx -v does not report 'profile  ", $prof, "'")],
+                                                                  [$cat ('  probe exit status: ', [$string $rc])],
+                                                                  [$cat ('  probe output (', [$string [$strings:length $out]], ' bytes):')]),
+                                                                 [$indent [$cat ($out, "\n")]])] [in $x $xs] [yield $x]]]]]]]
+                 [= $want [$env:var-or-default 'R22_EXPECT_HEADLINE' '']]
+                 [= $head [$nth [?to-array [$strings:split $out "\n"]] 1]]
+                 [= $_h [?if [or [= $want ''] [= $head $want]] [then null]
+                          [else [$fail ([$cat ('RELEASE GATE FAILED (R2.2', $label, '): ', $vtar, ' provenance headline is wrong')],
+                                        [$cat ('  expected: ', $want)],
+                                        [$cat ('  got:      ', $head)],
+                                        "  A '-dev+' headline means this artifact was NOT built from a clean",
+                                        '  checkout of the annotated release tag (RULED: CO-4, #979).')]]]]
+                 [= $_y [$profile-payload $vdir $prof $vtar $label]]
+                 [= $_z [$profile-load $vdir $prof $vtar $label '']]
+             [$io:remove-tree $vdir]]]]]]
+
+[?let [= $av [$env:argv]] [= $n [$count $av]]
+      [= $a [?fn ($i) [?if [>= $n $i] [then [$string [$nth $av $i]]] [else '']]]]
+      [= $cmd [$a 2]]
+  [?if [= $cmd 'vcx-target'] [then [?do [$say [$vcx-target]] [$env:exit 0]]]
+  [else [?if [= $cmd 'include-dir'] [then [?do [$say [$include-dir]] [$env:exit 0]]]
+  [else [?if [and [= $cmd 'collect-platform-files'] [= $n 3]] [then [$env:exit [$collect-platform-files [$a 3]]]]
+  [else [?if [and [= $cmd 'tar-platform'] [= $n 5]] [then [$env:exit [$tar-platform [$a 3] [$a 4] [$a 5]]]]
+  [else [?if [and [= $cmd 'stage-profiles'] [= $n 4]] [then [?do [$stage-profiles [$a 3] [$a 4]] [$env:exit 0]]]
+  [else [?if [and [= $cmd 'profile-gate'] [>= $n 4] [<= $n 5]] [then [?do [$profile-gate [$a 3] [$a 4] [$a 5]] [$env:exit 0]]]
+  [else [?if [and [= $cmd 'profile-payload'] [>= $n 5] [<= $n 7]] [then [$env:exit [$profile-payload [$a 3] [$a 4] [$a 5] [$a 6]]]]
+  [else [?if [and [= $cmd 'profile-load'] [>= $n 5] [<= $n 7]] [then [?do [$profile-load [$a 3] [$a 4] [$a 5] [$a 6] [$a 7]] [$env:exit 0]]]
+  [else [?do [$cry 'usage: r22_profile_gate.cx vcx-target | include-dir | collect-platform-files <dest> | tar-platform <src> <pub_abs> <plat> | stage-profiles <pub> <plat> | profile-gate <pub> <plat> [label] | profile-payload <dir> <prof> <vtar> [label] | profile-load <dir> <prof> <vtar> [label] [target]']
+             [$env:exit 64]]]]]]]]]]]]]]]]]]]
