@@ -53,7 +53,7 @@ while [ $# -gt 0 ]; do
     # ci/select writes them). They never escalate here: the union they would
     # cause is the post-merge run's. But a scripts/ path among them still
     # selects the steps whose OWN rows name it — a new scripts/*.cx is
-    # reader-parity's input, scripts/build-slot.sh is check-build-slot's — so
+    # reader-parity's input, scripts/build_slot.cx is check-build-slot's — so
     # the strip cannot hide a script from the step that reads it (ff8ebdc35's
     # two new scripts, 7a82287c4's playground program). The Makefile, VERSION
     # and devbox lines are ignored: every row would name them. --dry-run only.
@@ -529,7 +529,7 @@ step_globs() {
     # #1749: the shared slot's refusal — the runner and its planted-log
     # selftest are the step's whole input (the selftest plants its own loop
     # log and slot, so no other path in the tree can move its verdict).
-    check-build-slot)              echo 'scripts/build-slot.sh scripts/build_slot.cx scripts/build_slot_selftest.cx' ;;
+    check-build-slot)              echo 'scripts/build_slot.cx scripts/build_slot_selftest.cx' ;;
     # #1450: the isolation guard reads the two bench scripts and its own source;
     # it plants its artifacts, so nothing else in the tree is an input.
     check-bench-isolation)         echo 'scripts/run_bench_json.cx scripts/compare_bench.cx scripts/bench_isolation_selftest.cx' ;;

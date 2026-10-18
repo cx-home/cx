@@ -672,7 +672,7 @@ run_infra() { # run_infra <changed-path> <stripped-path…>
 	for p in "$@"; do echo "$p" >> "$T/infra"; done
 	( cd "$ROOT" && sh scripts/test_changed.sh HEAD --dry-run --changed-files "$T/changed" --infra-rows "$T/infra" 2>&1 )
 }
-run_infra ledger/README.md scripts/new_tool.cx scripts/build-slot.sh > "$T/r"
+run_infra ledger/README.md scripts/new_tool.cx scripts/build_slot_selftest.cx > "$T/r"
 r_t=" $(targets "$T/r") "
 r_miss=""
 for st in reader-parity check-build-slot; do
@@ -682,7 +682,7 @@ run_infra ledger/README.md Makefile VERSION devbox.json > "$T/r2"
 r_extra=""
 grep -q "own rows (#1659): none$" "$T/r2" || r_extra="$(grep -m1 -E "own rows|unknown argument" "$T/r2")"
 if [ -z "$r_miss" ] && [ -z "$r_extra" ] && ! grep -q 'running the FULL step union' "$T/r"; then
-	ok R "a stripped scripts/*.cx selects reader-parity and scripts/build-slot.sh check-build-slot, nothing escalates, and a stripped Makefile, VERSION or devbox selects nothing"
+	ok R "a stripped scripts/*.cx selects reader-parity and scripts/build_slot_selftest.cx check-build-slot, nothing escalates, and a stripped Makefile, VERSION or devbox selects nothing"
 else
 	bad R "--infra-rows: missing:${r_miss:- none}; extra: ${r_extra:-none} — $(grep -m1 -E 'RUN:|unknown argument|FULL' "$T/r")"
 fi

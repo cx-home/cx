@@ -202,7 +202,7 @@ session can see, with its output going to a log file you can read and an exit
 marker the log ends with:
 
 ```sh
-scripts/build-slot.sh make test-changed BASE=origin/release/0.18 > run.log 2>&1; echo "RUN-EXIT=$?" >> run.log
+cx --allow-all scripts/build_slot.cx make test-changed BASE=origin/release/0.18 > run.log 2>&1; echo "RUN-EXIT=$?" >> run.log
 ```
 
 The idiom to avoid is a detached wrapper whose output is discarded —
@@ -237,7 +237,7 @@ steps have finished, and what is running now.
 The post-merge runner runs the post-merge pipeline on every new head. It is a
 launchd job, `ai.cx.postmerge-flow`, that runs one tick of a flow document
 every 120 seconds (RULED: RFLOW-1). The document classifies the head, runs make
-under `scripts/build-slot.sh`, and writes the verdict lines. It is the
+under `scripts/build_slot.cx`, and writes the verdict lines. It is the
 integrator protocol's, kept with the orchestration repository.
 [`scripts/runner/`](scripts/runner/README.md) describes it, the three runner
 directories, and the install / status / stop verbs. A new box joins with
