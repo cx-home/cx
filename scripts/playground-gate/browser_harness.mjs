@@ -142,7 +142,7 @@ export function createHarness({ label, deadlineMs }) {
       let stderr = '';
       p.stderr.on('data', d => { stderr += String(d); });
       // serve_static.cx exits rc 1 fast on a busy port, so a failed boot IS
-      // the busy check (the same contract test_playground_smoke.sh relies on).
+      // the busy check (the same contract test_playground_smoke.cx relies on).
       const up = await new Promise(res => {
         let settled = false;
         p.once('exit', () => { if (!settled) { settled = true; res(false); } });

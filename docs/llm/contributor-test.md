@@ -107,7 +107,7 @@ lost with one that was added (RULED: RS-12).
 
 | Runner | Runs | Holds |
 |---|---|---|
-| pre-merge — the branch's own | its builds, lints, graders, umbrellas and docs checks, under its own `CX_BUILD_SLOT` through `scripts/build-slot.sh`; load-sensitive steps (memory gauges, bench, real-socket tests) one at a time on the shared slot | the branch's own tree: every own step passed once on the final tree before merge (RULED: INT-8, OL-3) |
+| pre-merge — the branch's own | its builds, lints, graders, umbrellas and docs checks, under its own `CX_BUILD_SLOT` through `scripts/build_slot.cx`; load-sensitive steps (memory gauges, bench, real-socket tests) one at a time on the shared slot | the branch's own tree: every own step passed once on the final tree before merge (RULED: INT-8, OL-3) |
 | post-merge — the loop on each new head | `make test-changed BASE=<last passed head>`, escalating to the full union on an infra change; the full union daily on an idle runner | the integration branch: a failed run gets a fix, never a revert of the gate (RULED: RUN-1, RUN-3) |
 
 Read a status directly, never through an inner shell that `devbox run` wraps

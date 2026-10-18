@@ -53,7 +53,7 @@ while [ $# -gt 0 ]; do
     # ci/select writes them). They never escalate here: the union they would
     # cause is the post-merge run's. But a scripts/ path among them still
     # selects the steps whose OWN rows name it — a new scripts/*.cx is
-    # reader-parity's input, scripts/build-slot.sh is check-build-slot's — so
+    # reader-parity's input, scripts/build_slot.cx is check-build-slot's — so
     # the strip cannot hide a script from the step that reads it (ff8ebdc35's
     # two new scripts, 7a82287c4's playground program). The Makefile, VERSION
     # and devbox lines are ignored: every row would name them. --dry-run only.
@@ -529,7 +529,7 @@ step_globs() {
     # #1749: the shared slot's refusal — the runner and its planted-log
     # selftest are the step's whole input (the selftest plants its own loop
     # log and slot, so no other path in the tree can move its verdict).
-    check-build-slot)              echo 'scripts/build-slot.sh scripts/build_slot.cx scripts/build_slot_selftest.cx' ;;
+    check-build-slot)              echo 'scripts/build_slot.cx scripts/build_slot_selftest.cx' ;;
     # #1450: the isolation guard reads the two bench scripts and its own source;
     # it plants its artifacts, so nothing else in the tree is an input.
     check-bench-isolation)         echo 'scripts/run_bench_json.cx scripts/compare_bench.cx scripts/bench_isolation_selftest.cx' ;;
@@ -599,7 +599,7 @@ step_globs() {
     check-serial-retry-rosters)    echo 'Makefile vcx/*' ;;
     # #1448: the partition guard reads the manifest, the corpus it partitions
     # and the shard test files it holds to it.
-    check-fixture-shard-manifest)  echo 'vcx/tests/fixtures_grader/fixture_shards.cxd conformance/stdlib/* conformance/platform/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/code_eval_fixtures_shards_test.v scripts/check_fixture_shard_manifest.cx' ;;
+    check-fixture-shard-manifest)  echo 'vcx/tests/fixtures_grader/fixture_shards.cxd conformance/stdlib/* conformance/platform/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/code_eval_fixtures_shards_test.v scripts/check_fixture_shard_manifest.cx scripts/fixture_files_for_branch.cx scripts/fixture_files_for_branch_selftest.cx' ;;
     # #1370: the shim archives' alignment — the rules that write them and the checker.
     check-shim-archives)           echo 'vcx/Makefile scripts/check_archive_alignment.cx vcx/deps/re2_shim/* vcx/arrow/shim/*' ;;
     # pure shell over canned logs — its only inputs are the classifier and the
@@ -760,7 +760,7 @@ step_globs() {
 #
 #  * THE CORPUS. A module's cases are graded by the shard that owns its corpus
 #    file, and which shard that is already has one authority:
-#    scripts/fixture_files_for_branch.sh resolves a module source or a corpus
+#    scripts/fixture_files_for_branch.cx resolves a module source or a corpus
 #    path to conformance/… files (its rules 1-4), and
 #    vcx/tests/fixtures_grader/fixture_shards.cxd maps those to shard test files.
 #    Both are reused rather than restated — a second copy of that resolution is a
@@ -1044,7 +1044,11 @@ suite_files() {
   # (b) the corpus side, through the one resolver that owns it.
   cs=$(mktemp) || { echo ALL; return 0; }
   printf '%s\n' "$CHANGED" > "$cs"
-  corpus=$(sh scripts/fixture_files_for_branch.sh --changed-files "$cs" 2>/dev/null)
+  # The resolver is a cx program (CXMACH-1): this tree's build, else a cx on PATH. No cx, or a
+  # cx that refuses the program, is ALL — the fail-safe direction, never an empty selection.
+  ffb_cx=deps/cx-core-code/vcx/target/cx
+  [ -x "$ffb_cx" ] || ffb_cx=$(command -v cx 2>/dev/null)
+  if [ -n "$ffb_cx" ] && corpus=$("$ffb_cx" --allow-read --allow-write --allow-subprocess --allow-env scripts/fixture_files_for_branch.cx --changed-files "$cs" 2>/dev/null); then :; else corpus=ALL; fi
   rm -f "$cs"
   case "$corpus" in
     ALL) echo ALL; return 0 ;;

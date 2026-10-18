@@ -18,7 +18,7 @@
 # program: the release flow's package act (flows/ci-acts.cx), scripts/release_profile_gate.sh (the
 # pre-cut step, no cut) and scripts/release_linux.cx's container body (on the cx it builds there).
 # Every command expects the CWD to be the repo root (the container's /build copy carries scripts/).
-# The container arm (RULED: R22-1 = (a), integrator 2026-10-17T22:31Z) is proven by its rendered text
+# The container arm (RULED: RPG-1 = (a), integrator 2026-10-17T22:31Z, first spelled R22) is proven by its rendered text
 # only (bash -n, and the diff of the container program against the shell-library calls it replaced):
 # no Docker here (cx-private#1956). Its first real run is the first Docker run after #1956 is resolved,
 # and it must come BEFORE any cut. The darwin arms are proven on planted trees against the shell

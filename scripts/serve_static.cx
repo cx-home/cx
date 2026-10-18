@@ -2,7 +2,7 @@
 #
 # CX replacement for `python3 -m http.server` in the test harnesses
 # (RULED: PYE-5, ledger/rulings_2026_08_22_python_eradication.md; #922 —
-# discovered instance: scripts/test_playground_smoke.sh). Serves the files
+# discovered instance: scripts/test_playground_smoke.cx). Serves the files
 # under --root on 127.0.0.1:--port through `[$serve-file]` (http.md
 # §"Static files"): raw octets, Content-Type by extension.
 #

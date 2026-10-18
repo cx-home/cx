@@ -43,6 +43,18 @@
 #                                             REFUSED, the main log named
 #   M  no CX_GATE_LOOP_LOG and the script in no repository
 #                                             REFUSED: the log cannot be found
+# and SLOT-1 (owner 2026-10-18, (a); RULED: BSLOT-1): the program itself waits while the box is
+# held, on ANY slot (an own slot here), with a planted CX_STREAMS_STATE and BUILD_SLOT_TIMEOUT=0 so
+# a wait answers at once:
+#   N  a live pid holds gate-slots/1           waits, exit 75, the holder named, NOT run
+#   O  a live pid holds perf-slot               waits, exit 75, NOT run
+#   P  an open QUIET (QUIET-START after the last QUIET-END, stamped now)
+#                                             waits, exit 75, NOT run
+#   Q  each hold above with CX_SLOT1_EXEMPT=1   runs (a holder's own commands)
+#   R  a dead gate-slot pid, a closed QUIET, a QUIET-START older than QUIET_STALE_S, no state dir
+#                                             each runs
+#   S  the program in the main checkout (CX_SLOT1_MAIN = its own tree) under an open QUIET
+#                                             runs: the loop's tick is what a QUIET is for
 #
 # Run via:  cx --allow-read --allow-write --allow-subprocess --allow-env scripts/build_slot_selftest.cx
 # (make check-build-slot). Exit 0 and the count line only when every case holds.
@@ -72,6 +84,20 @@
                       [else {HOME: $root, PATH: [$path-env], CX_BUILD_SLOT: [$cat ($root, '/', $slot)], CX_GATE_LOOP_LOG: $log,
                              BUILD_SLOT_TIMEOUT: '30'}]]
                 env-clear=true timeout-ms=60000]]
+
+# one run with a planted streams state (SLOT-1): an own slot, a gap's loop log, timeout 0.
+[?def wrap-st scope=private impure [returns element] ($root $st $exempt $argv) [$wrap-main $root $st $exempt [$cat ($root, '/not-the-main-checkout')] $argv]]
+[?def wrap-main scope=private impure [returns element] ($root $st $exempt $main $argv)
+  [$process:run [$cat2 ([$env:executable-path], '--allow-all', [$cat ([$env:cwd], '/scripts/build_slot.cx')]) $argv] cwd=$root
+                env=[?if $exempt
+                      [then {HOME: $root, PATH: [$path-env], CX_BUILD_SLOT: [$cat ($root, '/.build-slot-own')],
+                             CX_GATE_LOOP_LOG: [$cat ($root, '/gate-loop.log')], CX_STREAMS_STATE: $st, BUILD_SLOT_TIMEOUT: '0',
+                             CX_SLOT1_EXEMPT: '1', CX_SLOT1_MAIN: $main}]
+                      [else {HOME: $root, PATH: [$path-env], CX_BUILD_SLOT: [$cat ($root, '/.build-slot-own')],
+                             CX_GATE_LOOP_LOG: [$cat ($root, '/gate-loop.log')], CX_STREAMS_STATE: $st, BUILD_SLOT_TIMEOUT: '0', CX_SLOT1_MAIN: $main}]]
+                env-clear=true timeout-ms=60000]]
+[?def slot1-waited scope=private pure [returns bool] ($r)
+  [and [= [$string $r@exit-code] '75'] [$strings:contains [$said $r] '(SLOT-1)']]]
 
 [?def wrap scope=private impure [returns element] ($root $slot $log $argv)
   [$wrap-at [$cat ([$env:cwd], '/scripts/build_slot.cx')] $root $root $slot $log $argv]]
@@ -206,8 +232,62 @@
       [= $m [$judge 'M' [and [$refused $rm] [not [$io:exists $ran]]]
                     'with no CX_GATE_LOOP_LOG and the script in no repository the shared slot is refused: the log cannot be found' $rm]]
 
+      # N-R — SLOT-1: the wait on a gate slot, the perf slot and an open QUIET (this selftest's own
+      # pid is the live holder; 999999 a dead one)
+      [= $st [$cat ($root, '/streams-state')]]
+      [= $_n0 [$io:write-file $log [$run-exit]]]
+      [= $_n1 [$io:make-dirs [$cat ($st, '/gate-slots/1')]]]
+      [= $_n2 [$io:write-file [$cat ($st, '/gate-slots/1/pid')] [$cat ([$string [$env:pid]], "\n")]]]
+      [= $rn [$wrap-st $root $st false $touch]]
+      [= $n [$judge 'N' [and [$slot1-waited $rn] [$strings:contains [$said $rn] 'gate-slots/1'] [not [$io:exists $ran]]]
+                    'a live gate-slot holder makes the program wait (exit 75 at timeout 0, the slot named), the command not run' $rn]]
+      [= $rq1 [$wrap-st $root $st true $touch]]
+      [= $q1 [and [= [$string $rq1@exit-code] '0'] [$io:exists $ran]]]
+      [= $_n3 [$unran]]
+      [= $_n4 [$io:write-file [$cat ($st, '/gate-slots/1/pid')] "999999\n"]]
+      [= $rr1 [$wrap-st $root $st false $touch]]
+      [= $r1 [and [= [$string $rr1@exit-code] '0'] [$io:exists $ran]]]
+      [= $_n5 [$unran]]
+      [= $_o0 [$io:make-dirs [$cat ($st, '/perf-slot')]]]
+      [= $_o1 [$io:write-file [$cat ($st, '/perf-slot/pid')] [$cat ([$string [$env:pid]], "\n")]]]
+      [= $ro [$wrap-st $root $st false $touch]]
+      [= $o [$judge 'O' [and [$slot1-waited $ro] [$strings:contains [$said $ro] 'perf-slot'] [not [$io:exists $ran]]]
+                    'a live perf-slot holder makes the program wait (exit 75), the command not run' $ro]]
+      [= $rq2 [$wrap-st $root $st true $touch]]
+      [= $q2 [and [= [$string $rq2@exit-code] '0'] [$io:exists $ran]]]
+      [= $_o2 [$unran]]
+      [= $_o3 [$io:remove-tree [$cat ($st, '/perf-slot')]]]
+      [= $now [$strings:trim [$string [$process:run ('date', '-u', '+%Y-%m-%dT%H:%M:%SZ')]@stdout]]]
+      [= $claims [$cat ($st, '/claims.txt')]]
+      [= $_p0 [$io:write-file $claims [$cat ("QUIET-END integrator 2026-10-18T09:08:39Z: the tick\nQUIET-START integrator ", $now, ": (QUIET-1917 planted)\n")]]]
+      [= $rp [$wrap-st $root $st false $touch]]
+      [= $p [$judge 'P' [and [$slot1-waited $rp] [$strings:contains [$said $rp] 'QUIET period is open'] [not [$io:exists $ran]]]
+                    'an open QUIET period (QUIET-START after the last QUIET-END) makes the program wait (exit 75), the command not run' $rp]]
+      [= $rq3 [$wrap-st $root $st true $touch]]
+      [= $q3 [and [= [$string $rq3@exit-code] '0'] [$io:exists $ran]]]
+      [= $_p1 [$unran]]
+      [= $q [$judge 'Q' [and $q1 $q2 $q3] 'CX_SLOT1_EXEMPT=1 runs through each hold (a gate slot, the perf slot, an open QUIET)' $rq3]]
+      [= $_r0 [$io:append-file $claims "QUIET-END integrator x: closed\n"]]
+      [= $rr2 [$wrap-st $root $st false $touch]]
+      [= $r2 [and [= [$string $rr2@exit-code] '0'] [$io:exists $ran]]]
+      [= $_r1 [$unran]]
+      [= $_r2 [$io:append-file $claims "QUIET-START integrator 2026-10-17T01:00:00Z: never closed\n"]]
+      [= $rr3 [$wrap-st $root $st false $touch]]
+      [= $r3 [and [= [$string $rr3@exit-code] '0'] [$io:exists $ran]]]
+      [= $_r3 [$unran]]
+      [= $rr4 [$wrap-st $root [$cat ($root, '/no-such-state')] false $touch]]
+      [= $r4 [and [= [$string $rr4@exit-code] '0'] [$io:exists $ran]]]
+      [= $_r5 [$unran]]
+      # S — the program in the MAIN checkout (the loop's) never waits: CX_SLOT1_MAIN = its own tree
+      [= $_s0 [$io:write-file $claims [$cat ("QUIET-START integrator ", $now, ": (QUIET-1917 planted, the loop's tick)\n")]]]
+      [= $rs [$wrap-main $root $st false [$env:cwd] $touch]]
+      [= $s [$judge 'S' [and [= [$string $rs@exit-code] '0'] [$io:exists $ran]]
+                    "the program in the main checkout (the post-merge loop's) runs through an open QUIET: the period is for the loop's tick" $rs]]
+      [= $_s1 [$unran]]
+      [= $r [$judge 'R' [and $r1 $r2 $r3 $r4] 'a dead gate-slot pid, a closed QUIET, a QUIET-START past QUIET_STALE_S and no state directory each run' $rr4]]
+
       [= $_rm [$io:remove-tree $root]]
-      [= $all ($a, $b, $c, $d, $e, $f, $g, $h, $i, $j, $k, $l, $m)]
+      [= $all ($a, $b, $c, $d, $e, $f, $g, $h, $i, $j, $k, $l, $m, $n, $o, $p, $q, $r, $s)]
       [= $bad [?to-sequence [?for [in $x $all] [where [= [$name $x] 'bad']] [yield $x]]]]
       [= $_say [?to-sequence [?for [in $x $all]
                  [yield [$io:write-line [$env:stdout]
@@ -216,7 +296,7 @@
   [?if [= [$count $bad] 0]
     [then ([$io:write-line [$env:stdout]
              [$cat ('build-slot selftest (#1749): ', [$string [$count $all]], '/', [$string [$count $all]],
-                    ' — the shared slot (in any case) refuses a RUN-START, an unreadable or unfound loop log, and a command that reads the log in any shape (a shell, nested, through env, a CX program); an own slot and a gap are admitted; the status is the command')]],
+                    ' — the shared slot (in any case) refuses a RUN-START, an unreadable or unfound loop log, and a command that reads the log in any shape (a shell, nested, through env, a CX program); an own slot and a gap are admitted; the status is the command; SLOT-1: a live gate slot, perf slot or open QUIET holds every slot unless CX_SLOT1_EXEMPT or the main checkout')]],
            [$env:exit 0], ())]
     [else ([$io:write-line [$env:stderr]
              [$cat ('build-slot selftest (#1749): ', [$string [$count $bad]], ' of ', [$string [$count $all]], ' case(s) FAILED')]],

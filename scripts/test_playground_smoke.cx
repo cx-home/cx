@@ -1,0 +1,207 @@
+# scripts/test_playground_smoke.cx — Gate 17 helper — playground live-integration smoke test.
+#
+# Boots the static playground via scripts/serve_static.cx (pure CX on
+# [?http-service] — RULED: PYE-5, #922; this replaced python3's
+# http.server), then issues a headless curl against the served
+# playground.html to confirm:
+#   - dist/wasm/libcx-async.js, libcx-pthreads.js and cxlib.js are
+#     reachable (HTTP 200)
+#   - playground.html loads without 404s on its asset references
+#   - the vendored diagram renderer (playground/vendor/mermaid.min.js) and
+#     its MIT license are both served, and the bundle is real-sized
+#   - playground.html loads NO off-origin <script>, and its only
+#     off-origin references at all are the allowlisted Google Fonts
+#     URLs — the assertion that keeps §8.11.3's offline promise honest
+#     for the Graph pane as well as for evaluation (#1007)
+#   - libcx-pthreads.js exposes the _cx_code_eval / _cx_code_diagram
+#     export symbols (loader-JS grep; full boot needs a real browser)
+#
+# Port: honors PORT=<n> if set (fails loudly if that port is busy);
+# otherwise picks a free port by try-binding candidates — the CX server
+# exits rc 1 fast on a busy port, so the failed boot IS the busy check.
+#
+# Binary: CX_BIN overrides; default is the tree's vcx/target/cx. A
+# missing binary is a loud failure, never a PATH fallback (#929).
+#
+# Full live-integration testing is browser-driven and lives in the three
+# gates beside this one — `scripts/test_playground_browser.js` was the
+# Phase 7 placeholder for them and was never authored:
+#
+#   make test-playground-mermaid    every diagram the page can emit parses
+#   make test-playground-wasm-eval  the corpus evaluates as native does (#1033)
+#   make test-playground-tree       the Tree pane and its bidirectional
+#                                   source bridge, per rung (#1049)
+#
+# Exit 0 on pass; 1 on any failure. The server is killed on every exit
+# path (pass, fail, signal) — no orphans.
+#
+# BOUNDED RUN (#988). This script was reported HANGING under `devbox run
+# --` (3/3) while passing bare, sampled in bash's wait_for/__wait4. It no
+# longer reproduces: 6/6 green under devbox, 2/2 bare. The cause was NOT
+# identified — #973 (vgc STW deadlock once a second thread blocks in a
+# syscall) was the leading suspect and would fit a server wedged
+# mid-response, but that is UNPROVEN here: #988's sibling symptom in
+# gen_examples.cx is green at the pre-#973 baseline too, so the shared
+# explanation is more likely machine load than either defect.
+#
+# Which is the point of this guard. The reason an unidentified wedge could
+# cost 3/3 runs and a bisect is that NOTHING here was bounded: no curl
+# carried a timeout, so a slow or wedged server produced an unkillable
+# gate instead of a failed one. A gate that hangs is worse than a gate
+# that fails. Every curl now carries --max-time, a watchdog terminates
+# the run past SMOKE_DEADLINE, and the server is reaped with a bounded
+# escalation to SIGKILL — so the next occurrence is a diagnosis, not a
+# hang.
+
+#
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of test_playground_smoke.sh — the same probes in
+# the same order, the same lines and the same exit. curl stays the HTTP client (as git stays the
+# VCS elsewhere): its -f/--max-time/-w answers are what the probes judge. The bounded run is the
+# same two bounds: every curl carries --max-time, and the run checks SMOKE_DEADLINE before every
+# probe (a cx program has no second thread for the shell's sleeping watchdog; each step between
+# two checks is itself bounded by --max-time). The server is terminated, then killed, on every
+# exit path the program takes. The port candidates come from the pid (the shell used $RANDOM).
+#   $(TOOL_CX) --allow-all scripts/test_playground_smoke.cx
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/time'    as=time]
+
+[?def cat ($parts) [$strings:join $parts '']]
+[?def say impure ($s) [$env:write-line $s]]
+[?def cry impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def rx ($s) [$re:compile $s]]
+[?def found ($r $s) [$present [$re:find [$rx $r] $s]]]
+# curl — {rc out}: rc 127 when curl cannot run
+[?def curl impure ($args)
+  [?let [= $r [$process:run ('curl', [?splice $args]) stdin=:discard capture=:both]]
+    [?match $r [case [err$e] {rc: 127, out: ''}] [else {rc: $r@exit-code, out: [$string $r@stdout]}]]]]
+[?def sleep1 impure () [$process:run ('sleep', '1') capture=:none]]
+# stop — the bounded reap: terminate, up to ten half-second waits, then kill
+[?def stop impure ($h)
+  [?if [= $h null] [then null]
+    [else [?let [= $_t [?else [$process:terminate $h] null]]
+                [= $_w [?else [$process:wait-timeout $h 5000] null]]
+            [?else [$process:kill $h] null]]]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $root [$path:dirname [$path:dirname [$path:absolute [$nth $argv 1]]]]]
+  [= $deadline-s [?else [$strings:to-int [$env:var-or-default 'SMOKE_DEADLINE' '240']] 240]]
+  [= $cmax [$env:var-or-default 'CURL_MAX_TIME' '30']]
+  [= $t0 [$time:monotonic-now]]
+  [= $playground [$path:join $root 'dist/playground-preview']]
+  [= $cxbin [$env:var-or-default 'CX_BIN' [$path:join $root 'deps/cx-core-code/vcx/target/cx']]]
+  [= $bail [?fn ($msg) [?do [$say $msg] [$env:exit 1]]]]
+  [= $_b [?if [$io:is-file $cxbin] [then null]
+           [else [$bail [$cat ('Gate 17 FAIL — CX binary not found at ', $cxbin, '. Run make build-vcx first (or set CX_BIN).')]]]]]
+  [= $_p [?if [$io:is-directory $playground] [then null]
+           [else [$bail [$cat ('Gate 17 FAIL — ', $playground, ' not built. Run make build-playground first.')]]]]]
+  [= $_w [?if [$io:is-file [$path:join $playground 'dist/wasm/libcx-async.js']] [then null]
+           [else [$bail [$cat ('Gate 17 FAIL — wasm artifacts missing under ', $playground, '.')]]]]]
+  # boot — start the static server on PORT; {rc h}: 0 once playground.html answers, 1 when the
+  # server died (bind refused / busy port), 2 on a readiness timeout (the server left running)
+  [= $boot [?fn ($port)
+    [?let [= $h [$process:spawn ($cxbin, '--allow-read', '--allow-net', '--allow-clock',
+                                 [$path:join $root 'scripts/serve_static.cx'], '--port', [$string $port], '--root', $playground)
+                                stdin=:discard stdout=:discard stderr=:discard]]
+      [?match $h [case [err$e] {rc: 1, h: null}]
+        [else [?loop [= $try 1]
+                [?if [> $try 5] [then [break {rc: 2, h: $h}]]
+                  [else [?if [= [$curl ('-sf', '--max-time', $cmax, '-o', '/dev/null', [$cat ('http://127.0.0.1:', [$string $port], '/playground.html')])].rc 0]
+                          [then [break {rc: 0, h: $h}]]
+                          [else [?if [not [= [?else [$process:poll $h] -99999] -99999]]
+                                  [then [break {rc: 1, h: null}]]
+                                  [else [?let [= $_s [$sleep1]] [continue [+ $try 1]]]]]]]]]]]]]]]
+  [= $fixed [$env:var-or-default 'PORT' '']]
+  [= $pid [$env:pid]]
+  [= $server [?if [not [= $fixed '']]
+    [then [?let [= $b [$boot [?else [$strings:to-int $fixed] 0]]]
+            [?if [= $b.rc 1] [then [$bail [$cat ('Gate 17 FAIL — port ', $fixed, ' busy (server bind refused); pass a free PORT=<n> or unset PORT to auto-pick.')]]]
+              [else [?if [not [= $b.rc 0]]
+                      [then [?do [$stop $b.h] [$bail [$cat ('Gate 17 FAIL — playground.html not reachable on http://127.0.0.1:', $fixed, ' after 5 tries.')]]]]
+                      [else {port: $fixed, h: $b.h}]]]]]]
+    [else [?loop [= $attempt 1]
+            [?if [> $attempt 10] [then [$bail 'Gate 17 FAIL — no free port found in 10 candidates (20000-49999).']]
+              [else [?let [= $port [+ 20000 [% [+ [* $pid 7919] [* $attempt 104729]] 30000]]]
+                          [= $b [$boot $port]]
+                      [?if [= $b.rc 0] [then [break {port: [$string $port], h: $b.h}]]
+                        [else [?if [= $b.rc 2]
+                                [then [?do [$stop $b.h] [$bail [$cat ('Gate 17 FAIL — server on port ', [$string $port], ' booted but playground.html not reachable after 5 tries.')]]]]
+                                [else [continue [+ $attempt 1]]]]]]]]]]]]]
+  [= $base [$cat ('http://127.0.0.1:', $server.port, '/')]]
+  # every exit from here stops the server first
+  [= $fail [?fn ($msg) [?do [$stop $server.h] [$say [$cat ('Gate 17 FAIL — ', $msg)]] [$env:exit 1]]]]
+  [= $quit [?fn ($lines) [?do [$stop $server.h] [?to-array [?for [in $l $lines] [yield [$say $l]]]] [$env:exit 1]]]]
+  [= $bound [?fn () [?if [> [- [$time:monotonic-now] $t0] [* $deadline-s 1000000000]]
+                      [then [?do [$stop $server.h]
+                                 [$cry [$cat ('Gate 17 FAIL — smoke run exceeded ', [$string $deadline-s], 's (bounded-run guard, #988).')]]
+                                 [$env:exit 143]]]
+                      [else null]]]]
+  # probe each required asset
+  [= $_assets [?to-array [?for [in $asset ('playground.html', 'playground/playground.js', 'playground/playground.css',
+                                           'playground/playground.examples.js',
+                                           'playground/vendor/mermaid.min.js', 'playground/vendor/LICENSE-mermaid.txt',
+                                           'dist/wasm/libcx-async.js', 'dist/wasm/cxlib.js')]
+    [yield [?do [$bound]
+                [?if [= [$curl ('-sf', '--max-time', $cmax, '-o', '/dev/null', [$cat ($base, $asset)])].rc 0] [then null]
+                  [else [$fail [$cat ($asset, ' returned non-200 (or exceeded ', $cmax, 's)')]]]]]]]]]
+  # ── no-CDN assertion (#1007): ZERO off-origin <script>, and every remaining off-origin
+  # reference of any kind on the named allowlist (Google Fonts only) ──
+  [= $_b1 [$bound]]
+  [= $page [$curl ('-sf', '--max-time', $cmax, [$cat ($base, 'playground.html')])]]
+  [= $_h [?if [= $page.rc 0] [then null] [else [$fail 'could not re-fetch playground.html for the no-CDN assertion']]]]
+  [= $html $page.out]
+  [= $offsite [?to-array [?for [in $m [$re:find-all [$rx "(<script[^>]+src=\"https?://[^\"]+\")"] $html]] [yield [$re:group $m 1]]]]]
+  [= $_o [?if [= [$count $offsite] 0] [then null]
+           [else [$quit ('Gate 17 FAIL — playground.html loads script(s) from off-origin (#1007):',
+                         [?splice [?to-array [?for [in $s $offsite] [yield [$cat ('    ', $s)]]]]],
+                         '  The diagram renderer is vendored at scripts/gen_guide/playground/vendor/.',
+                         '  A CDN <script> here means the page needs the network to work.')]]]]
+  [= $refs [$sort [$distinct [?to-array [?for [in $m [$re:find-all [$rx "(src|href)=\"(https?://[^\"]+)\""] $html]] [yield [$re:group $m 2]]]]]]]
+  [= $unexpected [?to-array [?for [in $u $refs] [where [not [$found "^https://fonts\\.(googleapis|gstatic)\\.com" $u]]] [yield $u]]]]
+  [= $_x [?if [= [$count $unexpected] 0] [then null]
+           [else [$quit ('Gate 17 FAIL — playground.html carries off-origin reference(s) that are not',
+                         '  on the #1007 allowlist (Google Fonts only):',
+                         [?splice [?to-array [?for [in $u $unexpected] [yield [$cat ('    ', $u)]]]]],
+                         '  Vendor the asset under scripts/gen_guide/playground/vendor/, or extend the',
+                         '  allowlist here with the reason it may stay remote.')]]]]
+  # the vendored bundle must be the real thing, not a placeholder that 200s
+  [= $_b2 [$bound]]
+  [= $mmd [$curl ('-sf', '-o', '/dev/null', '-w', '%{size_download}', [$cat ($base, 'playground/vendor/mermaid.min.js')])]]
+  [= $mmd-bytes [$strings:trim $mmd.out]]
+  [= $_m [?if [>= [?else [$strings:to-int $mmd-bytes] 0] 1000000] [then null]
+           [else [$fail [$cat ('playground/vendor/mermaid.min.js served only ', $mmd-bytes, ' bytes — not a mermaid bundle')]]]]]
+  # symbol smoke check — the pthreads loader JS (not SINGLE_FILE) names the export symbols as text
+  [= $_b3 [$bound]]
+  [= $js [$curl ('-sf', '--max-time', $cmax, [$cat ($base, 'dist/wasm/libcx-pthreads.js')])].out]
+  [= $_j [?if [= $js ''] [then [$fail [$cat ('libcx-pthreads.js fetch returned nothing within ', $cmax, 's')]]] [else null]]]
+  [= $_e [?if [$strings:contains $js '_cx_code_eval'] [then null]
+           [else [$fail '_cx_code_eval not present in libcx-pthreads.js — wasm not rebuilt against the current ABI']]]]
+  [= $_d [?if [$strings:contains $js '_cx_code_diagram'] [then null]
+           [else [$fail '_cx_code_diagram not present in libcx-pthreads.js — diagram export missing']]]]
+  # cxlib.js JS surface — the Layer-1 method names of spec/03-approved/misc/bindings.md
+  [= $_b4 [$bound]]
+  [= $cxlib [$curl ('-sf', '--max-time', $cmax, [$cat ($base, 'dist/wasm/cxlib.js')])].out]
+  [= $_c [?if [= $cxlib ''] [then [$fail [$cat ('cxlib.js fetch returned nothing within ', $cmax, 's')]]] [else null]]]
+  [= $_l [?to-array [?for [in $method ('eval', 'selectAll', 'modify', 'findAll', 'parse', 'bytes', 'hash', 'equals')]
+           [yield [?if [$found [$cat ("\\b", $method, "\\b")] $cxlib] [then null]
+                    [else [$fail [$cat ('cxlib.js missing Layer-1 method: ', $method)]]]]]]]]
+  [= $_z [$stop $server.h]]
+  [= $_s [?to-array [?for [in $l ([$cat ('Gate 17 smoke: ✅  (served on http://127.0.0.1:', $server.port, ')')],
+                                  '  - playground.html / playground.js / playground.css all 200',
+                                  [$cat ('  - playground/vendor/mermaid.min.js 200 (', $mmd-bytes, ' bytes) + LICENSE-mermaid.txt 200')],
+                                  '  - no off-origin <script> in playground.html; off-origin refs limited to Google Fonts',
+                                  '  - dist/wasm/libcx-pthreads.js exports _cx_code_eval + _cx_code_diagram',
+                                  '  - dist/wasm/cxlib.js has all 8 sampled Layer-1 methods',
+                                  '',
+                                  'Browser-level verification (these run a real Chrome on this bundle):',
+                                  '  - make test-playground-mermaid    diagrams parse',
+                                  '  - make test-playground-wasm-eval  corpus evaluates as native does',
+                                  '  - make test-playground-tree       Tree pane + source bridge, per rung')]
+           [yield [$say $l]]]]]
+  [$env:exit 0]]
