@@ -18,9 +18,9 @@
   [?let [= $_ [$say [$cat ([?if $ok [then '  ok   '] [else '  FAIL ']], $label)]]] $ok]]
 [?def G scope=public () ('--allow-read', '--allow-write', '--allow-subprocess', '--allow-env', '--allow-clock')]
 
-# holder — `build-slot.sh sleep 600` under slot dir $slot, in its own process group or the caller's.
-[?def holder scope=public impure ($t $slot $own-group $log)
-  [$process:spawn ('sh', 'scripts/build-slot.sh', 'sleep', '600')
+# holder — `build_slot.cx sleep 600` on $cx under slot dir $slot, in its own process group or the caller's.
+[?def holder scope=public impure ($cx $t $slot $own-group $log)
+  [$process:spawn ($cx, '--allow-all', 'scripts/build_slot.cx', 'sleep', '600')
     env={'CX_BUILD_SLOT': [$cat ($t, '/', $slot)]} new-process-group=$own-group
     stdin=:discard stdout=[$cat ($t, '/', $log)] stderr=:discard]]
 
@@ -39,8 +39,8 @@
   [= $cx [?if [> [$count $argv] 1] [then [$nth $argv 2]] [else [$string [$env:executable-path]]]]]
   [= $here [$env:cwd]]
   [= $t [$string [$io:temp-dir 'cx-reap-selftest.']]]
-  [= $h2 [$holder $t '.slot-own2' true 'o2.log']]
-  [= $h4 [$holder $t '.slot-own4' false 'o4.log']]
+  [= $h2 [$holder $cx $t '.slot-own2' true 'o2.log']]
+  [= $h4 [$holder $cx $t '.slot-own4' false 'o4.log']]
   [= $_w [$wait-pids $t]]
   [= $p2 [$text-of [$cat ($t, '/.slot-own2/pid')]]]
   [= $p4 [$text-of [$cat ($t, '/.slot-own4/pid')]]]
@@ -50,7 +50,7 @@
   [= $aout [?match $ra [case [err$e] [$string $e@message]] [else [$cat ([$string $ra@stdout], [$string $ra@stderr])]]]]
   [= $a [$check [$cat ('A: outside the runner nothing is reaped', [?if [$strings:contains $aout 'no own-runner reap'] [then ''] [else [$cat (': ', $aout)]]])]
            [and [$alive $p2] [$alive $p4] [$strings:contains $aout 'no own-runner reap']]]]
-  [= $rb [$process:run ('sh', 'scripts/build-slot.sh', $cx, [?splice [$G]], 'scripts/postmerge_steps.cx', [$cat ('--checkout=', $here)], 'reap')
+  [= $rb [$process:run ($cx, '--allow-all', 'scripts/build_slot.cx', $cx, [?splice [$G]], 'scripts/postmerge_steps.cx', [$cat ('--checkout=', $here)], 'reap')
            env={'CX_BUILD_SLOT': [$cat ($t, '/.slot')], 'BUILD_SLOT_TIMEOUT': '5'}]]
   [= $bout [?match $rb [case [err$e] [$string $e@message]] [else [$cat ([$string $rb@stdout], [$string $rb@stderr])]]]]
   [= $_s [$process:run ('sleep', '1')]]

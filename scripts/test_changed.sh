@@ -432,8 +432,13 @@ step_globs() {
     check-profile-gate-selection)  echo "scripts/profile_gate_files_for_branch.cx scripts/profile_gate_selection_selftest.cx vcx/tests/runners/profile_gate/*" ;;
     # #1562 (RULED: VCOST-1): the budget step reads the bounds manifest and the
     # timings a run leaves behind; the self-test reads the step and its own
-    # source. Neither reads the tree, so neither runs when the tree moves.
-    check-verification-budget)     echo "scripts/check_verification_budget.cx scripts/verification_budget.cxd" ;;
+    # source. cx-private#1946 (VCOST-2 (a)): a union run judges union and the
+    # premerge rows and only reports selected-run, so a SELECTED tick is where
+    # selected-run is judged, and the step runs on every selected tick (any
+    # path; one second). Before, it ran there only when its own two files moved,
+    # and a bound no run judges is a wish. The self-test still runs only when
+    # the step or its source moves.
+    check-verification-budget)     echo '*' ;;
     premerge-record)               echo "scripts/premerge_record.sh scripts/verification_timings_lib.sh deps.cxd" ;;
     check-verification-budget-selftest) echo "scripts/check_verification_budget.cx scripts/verification_budget_selftest.cx" ;;
     check-perf-settle-selftest) echo "flows/private-acts.cx scripts/perf_settle_selftest.cx" ;;
@@ -442,7 +447,7 @@ step_globs() {
     check-storm-keep-going)        echo "Makefile scripts/storm_keep_going_selftest.cx scripts/test_changed.sh" ;;
     # issue 1583 (RULED: RUN-5): the timings WRITER selftest reads the library
     # and its own source, and plants everything under mktemp.
-    check-verification-timings)    echo "scripts/verification_timings_lib.sh scripts/verification_timings_selftest.sh" ;;
+    check-verification-timings)    echo "scripts/verification_timings_lib.sh scripts/verification_timings_selftest.sh scripts/verification_timings.cx scripts/verification_timings_selftest.cx" ;;
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
     # ledger-index-check (#1438) regenerates ledger/README.md from the store and
     # compares: its inputs are every ledger page and the generator itself.
@@ -524,7 +529,7 @@ step_globs() {
     # #1749: the shared slot's refusal — the runner and its planted-log
     # selftest are the step's whole input (the selftest plants its own loop
     # log and slot, so no other path in the tree can move its verdict).
-    check-build-slot)              echo 'scripts/build-slot.sh scripts/build_slot_selftest.cx' ;;
+    check-build-slot)              echo 'scripts/build-slot.sh scripts/build_slot.cx scripts/build_slot_selftest.cx' ;;
     # #1450: the isolation guard reads the two bench scripts and its own source;
     # it plants its artifacts, so nothing else in the tree is an input.
     check-bench-isolation)         echo 'scripts/run_bench_json.cx scripts/compare_bench.cx scripts/bench_isolation_selftest.cx' ;;

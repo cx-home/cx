@@ -2,7 +2,7 @@
 # 1817, Letter 201 (a)(1); RULED: STREAM-1, RFLOW-1, CXF-1).
 #
 # ci/postmerge-run (flows/private-acts.cx) runs this under the post-merge
-# runner, scripts/build-slot.sh holding it for the run's life, with the
+# runner, scripts/build_slot.cx holding it for the run's life, with the
 # program's two streams appended to the checkout's vcx/target/gate.log, in
 # place of the one `make test` / `make test-changed BASE=<sha>` it ran before.
 # That make was a `-k -j<cores>` storm (make test's storm line,
@@ -26,7 +26,7 @@
 #      list, never a second copy.
 #   3. the storm's load-INSENSITIVE steps, in parallel: flows/load.cxd's
 #      [parallel steps=N] at a time, each on its own runner (<slot>-own<k>,
-#      under scripts/build-slot.sh), with VJOBS = the box's cores / N, each
+#      under scripts/build_slot.cx), with VJOBS = the box's cores / N, each
 #      under the liveness watch (#1787) — ci-acts' pool-run;
 #   4. the storm's load-SENSITIVE steps (flows/load.cxd's rows), one at a time
 #      on the post-merge runner itself, the box quiet;
@@ -104,9 +104,14 @@
 
 # one step's make words: -o of both binaries and the docs targets' own builds
 # (ci/make's BUILT), -o of what this run's prebuild built besides them ($po,
-# THE PREBUILD'S OVERLAP below), SUITE_FILES for a narrowed test-vcx-suite, the target.
-[?def make-words scope=private pure [returns any] ($t $suite $po)
-  [$c:cat2 [$c:cat2 [$c:cat2 ('make', '--no-print-directory') [$ci:built-flags]] $po]
+# THE PREBUILD'S OVERLAP below), SUITE_FILES for a narrowed test-vcx-suite,
+# CX_VERIFICATION_RUN=<the run's kind> for check-verification-budget ($kind: union |
+# selected-run, '' for the idle rows; cx-private#1946, VCOST-2 (a): a union run judges
+# union and the premerge rows and only reports selected-run, a selected run judges
+# selected-run), the target.
+[?def make-words scope=private pure [returns any] ($t $suite $po $kind)
+  [$c:cat2 [$c:cat2 [$c:cat2 [$c:cat2 ('make', '--no-print-directory') [$ci:built-flags]] $po]
+                    [?if [and [= $t 'check-verification-budget'] [not [= $kind '']]] [then ([$concat 'CX_VERIFICATION_RUN=' $kind])] [else ()]]]
            [?if [and [= $t 'test-vcx-suite'] [not [= $suite '']]] [then ([$concat 'SUITE_FILES=' $suite], $t)] [else ($t)]]]]
 
 # a step run on the post-merge runner, alone: the liveness watch, the block.
@@ -302,11 +307,11 @@
 [?const SITE-BUILDERS ('test-playground-primer', 'test-site-phone-width', 'nav-shape-check')]
 [?const SITE-READERS ('test-site-phone-width', 'nav-shape-check')]
 
-[?def run-tail scope=private impure [returns any] ($c $tail $suite $po)
+[?def run-tail scope=private impure [returns any] ($c $tail $suite $po $kind)
   [?loop [= $i 1] [= $acc ()] [= $fresh '']
     [?if [> $i [$count $tail]] [then [break $acc]]
       [else [?let [= $t [$string [$nth $tail $i]]]
-                  [= $w [$make-words $t $suite $po]]
+                  [= $w [$make-words $t $suite $po $kind]]
                   [= $reuse [and [not [= $fresh '']] [$c:member $t SITE-READERS]]]
                   [= $_s [?if $reuse [then [$say [$concat 'postmerge-steps: ' $t ' reads the site ' $fresh ' assembled (make -o site)']]] [else null]]]
                   [= $e [$serial-step $c $t [?if $reuse [then [$c:cat2 ('make', '-o', 'site') [?to-sequence [?drop 1 $w]]]] [else $w]] 'tail']]
@@ -367,7 +372,7 @@
                               [?if [= [$count $ts] 0] [then 'none'] [else [$strings:join $ts ' ']]] ', one at a time on the post-merge runner']]]
         [= $_r [?to-sequence [?for [in $t $ts] [in $x ('.log', '.log.err')] [= $f [$concat $c '/vcx/target/steps/' $t $x]]
                  [yield [?if [$io:is-file $f] [then [$io:remove $f]] [else null]]]]]]
-        [= $es [?to-sequence [?for [in $t $ts] [yield [?let [= $_p [$wait-perf-slot $t]] [$serial-step $c $t [$make-words $t '' ()] 'post-merge']]]]]]
+        [= $es [?to-sequence [?for [in $t $ts] [yield [?let [= $_p [$wait-perf-slot $t]] [$serial-step $c $t [$make-words $t '' () ''] 'post-merge']]]]]]
     [$finish $es '']]]
 
 [?let [= $argv [?to-sequence [?for [in $a [$env:argv]] [yield [$string $a]]]]]
@@ -393,6 +398,7 @@
     [?if [> [$count [$red-names ($ds)]] 0] [then [$finish ($ds) 'the prebuild is red: no step ran']]
     [else [?let
       [= $p [$plan $c $rest]]
+      [= $kind [?if [$c:member 'test' $rest] [then 'union'] [else 'selected-run']]]
       [?if [= [$name $p] 'plan-refused'] [then [?let [= $_e [$say [$concat 'postmerge-steps: ' [$string $p@why]]]] [$env:exit 2]]]
       [else [?let
         [= $idle [$ci:idle-steps]]
@@ -407,7 +413,7 @@
                                       [$strings:join $left ' '] ' — the loop runs them once the tip passed']]]]]
         [= $n [$ci:parallel-steps]]
         [= $vj [?if [< [$floor [/ [$cores] $n]] 1] [then 1] [else [$floor [/ [$cores] $n]]]]]
-        [= $slotsh ('sh', [$concat $c '/scripts/build-slot.sh'])]
+        [= $slotsh ([$env:executable-path], '--allow-all', [$concat $c '/scripts/build_slot.cx'])]
         [= $pts [$pre-targets [$c:cat2 $storm $tail]]]
         [= $po [$pre-old $pts]]
         [= $_reap0 [$reap-own $slot $n]]
@@ -436,7 +442,7 @@
         [= $jobs [?to-sequence [?for [in $t $ord]
                    [yield [job name=$t log=[$concat $c '/vcx/target/steps/' $t '.log'] stall-ms=[$string [$ci:stall-ms $t]] cwd=$c
                             vjobs=[$string [?if [$c:member $t WIDE] [then $vw] [else $vj]]]
-                            [?splice [?to-sequence [?for [in $w [$c:cat2 $slotsh [$make-words $t [$string $p@suite] $po]]]
+                            [?splice [?to-sequence [?for [in $w [$c:cat2 $slotsh [$make-words $t [$string $p@suite] $po $kind]]]
                                        [yield [arg v=$w]]]]]]]]]]
         [= $_reap [$reap-own $slot $n]]
         [= $par [$c:pool-run $jobs $n $slot $vj 60000]]
@@ -447,14 +453,14 @@
         [= $alone [?to-sequence [?for [in $t $shared] [where [not [$c:member $t $ports]]] [yield $t]]]]
         [= $pjobs [?to-sequence [?for [in $t $ports]
                     [yield [job name=$t log=[$concat $c '/vcx/target/steps/' $t '.log'] stall-ms=[$string [$ci:stall-ms $t]] cwd=$c
-                             [?splice [?to-sequence [?for [in $w [$c:cat2 $slotsh [$make-words $t [$string $p@suite] $po]]]
+                             [?splice [?to-sequence [?for [in $w [$c:cat2 $slotsh [$make-words $t [$string $p@suite] $po $kind]]]
                                         [yield [arg v=$w]]]]]]]]]]
         [= $_ph [?if [> [$count $ports] 0]
                   [then [$say [$concat 'postmerge-steps: ' [$string [$count $ports]] ' load-sensitive socket step(s), ' [$string $sn]
                                        ' at a time (cx-private#1903): ' [$strings:join $ports ' '] '; then alone: ' [$strings:join $alone ' ']]]]
                   [else null]]]
         [= $sp [?if [> [$count $ports] 0] [then [$c:pool-run $pjobs $sn $slot [?if [< [$floor [/ [$cores] $sn]] 1] [then 1] [else [$floor [/ [$cores] $sn]]]] 60000]] [else ()]]]
-        [= $sh [$c:cat2 $sp [?to-sequence [?for [in $t $alone] [yield [$serial-step $c $t [$make-words $t [$string $p@suite] $po] 'post-merge']]]]]]
+        [= $sh [$c:cat2 $sp [?to-sequence [?for [in $t $alone] [yield [$serial-step $c $t [$make-words $t [$string $p@suite] $po $kind] 'post-merge']]]]]]
         [= $before [$c:cat2 [$c:cat2 $pre $par] $sh]]
-        [= $tl [$run-tail $c $tail [$string $p@suite] $po]]
+        [= $tl [$run-tail $c $tail [$string $p@suite] $po $kind]]
         [$finish [$c:cat2 $before $tl] '']]]]]]]]]]]]]]]]]]]]]]
