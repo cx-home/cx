@@ -441,4 +441,7 @@
   [patch sha=2af683fc9bab70395addca94780f9308a1fc735e family=crypto issue='cx-home/v#39']
   [patch sha=0c4a40c053ce294e3a0aa4d8ed609d05870273c2 family=bench issue='cx-home/v#53']
   [patch sha=2f0f2d17cd8cc3f3283dc0661f12e3226691c809 family=vgc issue='cx-home/v#51']
+  [patch sha=2cada919fb5d1fa8e2b4b4038b038cd14f56babc family=vgc issue='cx-home/v#51']
+  [patch sha=7392e7ca4ff92af37ff185ebeace900005c9dc1e family=vgc issue='cx-home/v#54']
+  [patch sha=b28f21cda9142b56b53e70021a271030898b64f8 family=bench issue='cx-home/v#51']
 ]
