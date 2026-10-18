@@ -38,6 +38,22 @@
 # timings_lib.sh, flows/private-acts.cx), so loaded ticks never push the quiet
 # ones out of the file before five of them exist.
 #
+# THE RUN'S KIND (cx-private#1946, VCOST-2 (a), integrator 2026-10-17 09:40Z; the
+# bounds and #1946's bar unchanged). $CX_VERIFICATION_RUN names the run this step
+# is a step OF, as scripts/postmerge_steps.cx passes it to this one step:
+#   * `union`        — a full union: it judges `union`, the premerge-* rows and
+#     the rest, and REPORTS `selected-run` without judging it;
+#   * `selected-run` — a selected tick: it judges `selected-run` and REPORTS
+#     `union` without judging it;
+#   * unset or empty — the step on its own (a gate, a person): every bound judges.
+# Why: only a selected run writes a selected-run row, and only a union a union
+# row. A full union red on the selected-run median (frozen, since no selected
+# run can write a row while RUN-1 owes today's full pass) never passes, so no
+# selected run ever runs and the median never moves (the 4e5bfcb0a tick and the
+# two before it). A run judges the class it measures; the other class is
+# printed with its median and "REPORTED, NOT JUDGED". Any other value is a
+# malformed call: exit 2.
+#
 # A bound with NO timing is reported as unmeasured and does not fail — a gate
 # that reds because a measurement is missing punishes the run that did not take
 # one, and the runs that take them are post-merge.
@@ -129,6 +145,13 @@
   [?let [= $s [?to-sequence [$sort $xs]]] [= $n [$count $s]]
     [$nth $s [+ [$div [- $n 1] 2] 1]]]]
 
+# off-run: the bound this run reports and does not judge (VCOST-2 (a), above).
+[?def off-run scope=public pure ($name $kind)
+  [or [and [= $kind 'union'] [= $name 'selected-run']]
+      [and [= $kind 'selected-run'] [= $name 'union']]]]
+[?def judged-by scope=public pure ($name)
+  [?if [= $name 'union'] [then 'a full union judges it'] [else 'a selected tick judges it']]]
+
 [?def mins scope=public ($s) [$cat ([$string [$div $s 60]], 'm', [$string [$mod $s 60]], 's')]]
 
 [?let
@@ -151,10 +174,20 @@
   [= $timings [?if [= $tsrc ''] [then ()]
     [else [?to-sequence [?for [in $t $tdoc//timing] [yield $t]]]]]]
 
+  # VCOST-2 (a): the kind of run this step is a step of (the header above).
+  [= $run-kind [$env:var-or-default 'CX_VERIFICATION_RUN' '']]
+  [= $_rk [?if [or [= $run-kind ''] [= $run-kind 'union'] [= $run-kind 'selected-run']] [then ()]
+    [else ([$cry [$cat ('check-verification-budget: CX_VERIFICATION_RUN=', $run-kind,
+                         ' names no run kind (union | selected-run, or unset for every bound)')]],
+           [$env:exit 2])]]]
+
   [= $_h [$say [$cat ('check-verification-budget: ', [$string [$count $bounds]], ' bound(s), ',
                       [$string [$count $timings]], ' measurement(s), the median of the last ', [$string RUNS],
                       ' quiet ones (load <= ', [$load-bound-text], ') judges',
-                      ', timings ', $timings-file)]]]
+                      ', timings ', $timings-file,
+                      [?if [= $run-kind ''] [then '']
+                        [else [$cat ('; a ', $run-kind, ' run: ', [?if [= $run-kind 'union'] [then 'selected-run'] [else 'union']],
+                                      ' is reported, not judged (VCOST-2 (a))')]]])]]]
 
   # One verdict per bound.
   # A FAMILY bound (cx-private#1903): a name ending in `*` is one bound per
@@ -175,6 +208,7 @@
   [= $lb [$load-bound]]
   [= $over [?to-sequence [?for [in $b $judged]
     [= $name [$string $b@name]]
+    [= $off [$off-run $name $run-kind]]
     [= $limit [$str-to-int [$string $b@seconds]]]
     [= $from [$string [?else $b@rows-from '']]]
     [= $all [?to-sequence [?for [in $t $timings]
@@ -187,7 +221,7 @@
     [= $ss [?to-sequence [?for [in $t $hits] [yield [$str-to-int [$string $t@seconds]]]]]]
     [= $secs [?if [= [$count $hits] 0] [then 0] [else [$median-int $ss]]]]
     [= $loads [$strings:join [?to-sequence [?for [in $t $hits] [yield [$string [?else $t@load '?']]]]] ' ']]
-    [= $judges [>= [$count $hits] RUNS]]
+    [= $judges [and [>= [$count $hits] RUNS] [not $off]]]
     [= $line [?if [= [$count $all] 0]
       [then [$cat ('  ', $name, '  bound ', [$mins $limit], '  — NOT MEASURED (nothing to judge)')]]
       [else [?if [= [$count $cur] 0]
@@ -199,9 +233,11 @@
         [else [$cat ('  ', $name, '  bound ', [$mins $limit], '  median ', [$mins $secs],
                    ' of ', [$string [$count $hits]], ' quiet (', [$strings:join [?to-sequence [?for [in $x $ss] [yield [$mins $x]]]] ' '],
                    ')  loads ', $loads,
-                   [?if $judges
+                   [?if $off
+                     [then [$cat ('  REPORTED, NOT JUDGED (', [?if [= $run-kind 'union'] [then 'a union run'] [else 'a selected tick']], ' cannot measure ', $name, '; ', [$judged-by $name], ', VCOST-2 (a))')]]
+                     [else [?if $judges
                      [then [?if [> $secs $limit] [then '  OVER BOUND'] [else '  ok']]]
-                     [else [$cat ('  (MEASURING — ', [$string [$count $hits]], ' of ', [$string RUNS], ' quiet runs; judges nothing yet)')]]])]]]]]]]]
+                     [else [$cat ('  (MEASURING — ', [$string [$count $hits]], ' of ', [$string RUNS], ' quiet runs; judges nothing yet)')]]]]])]]]]]]]]
     [= $_p [$say $line]]
     [= $_e [?for [in $t $early]
       [yield [$say [$cat ('    not judged (written before ', $from, '): ',
