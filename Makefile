@@ -2232,6 +2232,24 @@ check-build-slot: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 check-build-slot: build-vcx
 	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-env scripts/build_slot_selftest.cx
 
+# ── check-gate-extra-steps / check-backend-equality (owner GATE-PG (a) + DIVERGE-1, 2026-10-18;
+# RULED: GATEPG-1) ──────────────────────────────────────────────────────────────
+# scripts/gate_extra_steps.cx BASE names the steps a landing gate adds by ruling: the four playground
+# and site steps whenever the diff touches the wasm32 backend, the playground or docs-src, and
+# check-backend-equality whenever it touches a backend (STREAMS/bin/landing_gate.cx runs them after
+# its parallel set). check-gate-extra-steps is that selection's selftest on planted diffs.
+# check-backend-equality is the walker == compiled == native check: the ten bench/game programs of
+# cx-core-code, each answer byte-identical across the walker, the compiled backend, the native backend
+# in process and the `cx build --native` image (the kit: build-vcx-kit) — scripts/backend_equality.cx.
+.PHONY: check-gate-extra-steps check-backend-equality
+check-gate-extra-steps: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+check-gate-extra-steps: build-vcx
+	@"$(CX_BIN)" --allow-all scripts/gate_extra_steps_selftest.cx
+
+check-backend-equality: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+check-backend-equality: build-vcx build-vcx-kit
+	@"$(CX_BIN)" --allow-all scripts/backend_equality.cx "$(CX_BIN)"
+
 # ── check-bench-isolation (#1450) ────────────────────────────────────────────
 # `perf-ratchet` itself is wall-clock and machine-bound and is deliberately NOT
 # a TEST_TARGETS member. Its ISOLATION GUARD is neither: it plants artifacts

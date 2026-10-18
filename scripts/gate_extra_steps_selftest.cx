@@ -1,0 +1,61 @@
+# scripts/gate_extra_steps_selftest.cx — scripts/gate_extra_steps.cx's selection on planted diffs
+# (RULED: GATEPG-1; CXMACH-1). Each case runs the REAL program in this tree with BASE = HEAD (so the
+# code pin reads as unmoved unless a case plants its diff) and GATE_EXTRA_FILES / GATE_EXTRA_CORE_FILES
+# planted, and reads the last line:
+#   A  docs-src/ only                               the four playground steps
+#   B  scripts/wasm/ (the wasm build)               the four playground steps
+#   C  the V fork moved (third_party/v)             the playground steps and check-backend-equality
+#   D  the code pin touches vcx/code/ (a backend)   the playground steps and check-backend-equality
+#   E  the code pin touches only vcx/tests/ and *_test.v
+#                                                   none
+#   F  the code pin touches stdlib/ only            the playground steps (stdlib is in the wasm build)
+#   G  the code pin touches bench/ only             none
+#   H  the code pin moved, its diff unreadable      both sets (never an empty selection)
+#   I  README.md only, the pin unmoved              none
+#   J  the code pin touches a path naming emcc outside vcx/
+#                                                   the playground steps
+# Run via: cx --allow-all scripts/gate_extra_steps_selftest.cx (make check-gate-extra-steps).
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=private ($parts) [$strings:join $parts '']]
+[?def PG scope=private () 'test-playground-mermaid test-playground-primer test-playground-wasm-traps test-site-phone-width']
+[?def BOTH scope=private () [$cat ([$PG], ' check-backend-equality')]]
+
+[?def last-line scope=private ($text)
+  [?let [= $ls [?to-array [?for [in $l [$strings:split-lines $text]] [where [not [= $l '']]] [yield $l]]]]
+    [?if [= [$count $ls] 0] [then ''] [else [$nth $ls [$count $ls]]]]]]
+
+[?def run scope=private impure ($files $core)
+  [?let [= $r [$process:run ([$env:executable-path], '--allow-all', 'scripts/gate_extra_steps.cx', 'HEAD')
+                            env=[map GATE_EXTRA_FILES=$files GATE_EXTRA_CORE_FILES=$core] timeout-ms=60000]]
+    [?match $r [case [err$e] [$cat ('cannot run: ', [$string $e@message])]]
+      [else [$last-line [$string $r@stdout]]]]]]
+
+[?def case scope=private impure ($id $what $files $core $want)
+  [?let [= $got [$run $files $core]]
+        [= $ok [= $got [$cat ('gate-extra-steps: ', $want)]]]
+        [= $_ [$io:write-line [$env:stdout] [$cat ('  ', $id, [?if $ok [then '   ok   '] [else '   FAILED ']], $what,
+                                                   [?if $ok [then ''] [else [$cat (' — got `', $got, '`')]]])]]]
+    $ok]]
+
+[?let
+  [= $all ([$case 'A' 'docs-src/ selects the playground steps' "docs-src/guide/start.md\nREADME.md" '' [$PG]],
+           [$case 'B' 'the wasm build scripts select the playground steps' 'scripts/wasm/build.sh' '' [$PG]],
+           [$case 'C' 'a V fork move selects both sets' "third_party/v\ndeps.cxd" '' [$BOTH]],
+           [$case 'D' 'a code pin touching vcx/code/ selects both sets' 'deps.cxd' "vcx/code/compiled_def.v\nvcx/tests/x_test.v" [$BOTH]],
+           [$case 'E' 'a code pin touching only tests selects none' 'deps.cxd' "vcx/tests/a_test.v\nvcx/code/b_test.v" 'none'],
+           [$case 'F' 'a code pin touching stdlib/ selects the playground steps' 'deps.cxd' 'stdlib/strings.cx' [$PG]],
+           [$case 'G' 'a code pin touching bench/ selects none' 'deps.cxd' 'bench/game/game.cxd' 'none'],
+           [$case 'H' 'a moved code pin with an unreadable diff selects both sets' 'deps.cxd' '?' [$BOTH]],
+           [$case 'I' 'README.md alone selects none' 'README.md' '' 'none'],
+           [$case 'J' 'a code-pin path naming emcc selects the playground steps' 'deps.cxd' 'scripts/emcc_flags.txt' [$PG]])]
+  [= $bad [$count [?for [in $x $all] [where [not $x]] [yield 1]]]]
+  [?if [= $bad 0]
+    [then [?do [$io:write-line [$env:stdout] [$cat ('gate-extra-steps selftest (GATEPG-1): ', [$string [$count $all]], '/', [$string [$count $all]],
+                                                   ' — docs-src, the wasm build, a fork move and a code pin in vcx/ or stdlib/ select the playground steps; vcx/code/, vcx/cmd/ and a fork move select the backend equality check; tests and bench alone select none; an unreadable pin diff selects both')]]
+               [$env:exit 0]]]
+    [else [?do [$io:write-line [$env:stderr] [$cat ('gate-extra-steps selftest: ', [$string $bad], ' of ', [$string [$count $all]], ' case(s) FAILED')]]
+               [$env:exit 1]]]]]

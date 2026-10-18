@@ -1,0 +1,103 @@
+# scripts/gate_extra_steps.cx BASE — the steps a stream or union landing gate adds by ruling, on top of
+# scripts/test_changed.sh's selection (owner GATE-PG (a) and DIVERGE-1, 2026-10-18; RULED: GATEPG-1;
+# CXMACH-1: in cx). STREAMS/bin/landing_gate.cx runs it when the tree carries it and runs what it
+# names one at a time after the parallel set; a red among them is a red of the gate.
+#
+#   playground  test-playground-mermaid test-playground-primer test-playground-wasm-traps
+#               test-site-phone-width — whenever the diff BASE...HEAD touches the wasm32 backend, the
+#               playground or docs-src. The landing gate otherwise leaves those four to the loop (they
+#               render a site and drive a browser), and U7 reached release with the playground's wasm
+#               build broken (its tick, 2026-10-18 09:09Z) because no gate ran them.
+#   backends    check-backend-equality (scripts/backend_equality.cx: the walker == compiled == native
+#               answers of bench/game) — whenever the diff touches a backend.
+#
+# WHAT TOUCHES WHAT. In this tree: docs-src/, the playground and wasm build scripts
+# (scripts/gen_guide/playground/, scripts/wasm/, scripts/playground-gate/, the playground and
+# phone-width drivers) touch the playground; a move of the V fork (third_party/v) touches every
+# backend, the wasm32 one included. In the code pin (deps.cxd's cx-core-code sha moved): the wasm32
+# backend is all of vcx/ and stdlib/ built for wasm32 with emcc, so any non-test file under vcx/ or
+# stdlib/, or any path naming wasm or emcc, touches it (the U7 red came from a file whose build tag
+# says it is NOT in the wasm build); a non-test file under vcx/code/ or vcx/cmd/ touches a backend.
+# When the code pin moved and its diff cannot be read (the old sha not fetched), both sets are
+# selected: a selection that cannot be computed is never empty.
+#
+# Output: one `gate-extra: <set>: <why>` line per set, then the last line
+# `gate-extra-steps: <step> ...` (or `gate-extra-steps: none`). Exit 0; 2 usage / not a git tree.
+# GATE_EXTRA_FILES (newline-separated paths) and GATE_EXTRA_CORE_FILES replace the two diffs (the
+# selftest's knobs; GATE_EXTRA_CORE_FILES='?' plants an unreadable code diff).
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/re'      as=re]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+
+[?def PLAYGROUND scope=public () ('test-playground-mermaid', 'test-playground-primer', 'test-playground-wasm-traps', 'test-site-phone-width')]
+[?def BACKENDS scope=public () ('check-backend-equality',)]
+
+# git — trimmed stdout of a git command in $cwd; ('ok', text) or ('no', '').
+[?def git scope=public impure ($cwd $args)
+  [?let [= $r [$process:run ('git', '-C', $cwd, [?splice $args])]]
+    [?match $r [case [err$e] ('no', '')]
+      [else [?if [= $r@exit-code 0] [then ('ok', [$strings:trim [$string $r@stdout]])] [else ('no', '')]]]]]]
+[?def lines scope=public ($text) [?to-array [?for [in $l [$strings:split-lines $text]] [where [not [= [$strings:trim $l] '']]] [yield [$strings:trim $l]]]]]
+
+[?const CORE-RX [$re:compile "\\[dep repo=cx-core-code sha=([0-9a-f]{40})"]]
+[?def core-sha scope=public ($deps)
+  [?let [= $ms [$re:find-all CORE-RX $deps]] [?if [= [$count $ms] 0] [then ''] [else [$re:group [$nth $ms 1] 1]]]]]
+
+[?def starts-any scope=public ($p $prefixes) [> [$count [?for [in $x $prefixes] [where [$strings:starts-with $p $x]] [yield 1]]] 0]]
+[?def is-test scope=public ($p)
+  [or [$strings:starts-with $p 'vcx/tests/'] [$strings:ends-with $p '_test.v'] [$strings:contains $p '/testdata/']]]
+[?def names-wasm scope=public ($p) [or [$strings:contains $p 'wasm'] [$strings:contains $p 'emcc']]]
+
+[?def PG-PATHS scope=public () ('docs-src/', 'scripts/gen_guide/playground/', 'scripts/wasm/', 'scripts/playground-gate/',
+                                'scripts/test_playground_', 'scripts/test_site_phone_width.mjs')]
+
+# first-hit — the first path of $ps for which $f holds, or ''.
+[?def first-hit scope=public ($ps $f)
+  [?let [= $h [?to-array [?for [in $p $ps] [where [$f $p]] [yield $p]]]] [?if [= [$count $h] 0] [then ''] [else [$nth $h 1]]]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $base [?if [> [$count $argv] 1] [then [$nth $argv 2]] [else 'origin/release/0.18']]]
+  [= $cwd [$env:cwd]]
+  [= $top [$git $cwd ('rev-parse', '--show-toplevel')]]
+  [= $_t [?if [= [$nth $top 1] 'ok'] [then null] [else [?do [$say 'gate-extra: not a git tree'] [$env:exit 2]]]]]
+  [= $root [$nth $top 2]]
+  [= $planted [$env:var-or-default 'GATE_EXTRA_FILES' '']]
+  [= $files [?if [not [= $planted '']] [then [$lines $planted]]
+              [else [$lines [$nth [$git $root ('diff', '--name-only', [$cat ($base, '...HEAD')])] 2]]]]]
+  [= $old [$core-sha [$nth [$git $root ('show', [$cat ($base, ':deps.cxd')])] 2]]]
+  [= $new [$core-sha [?else [$io:read-file [$cat ($root, '/deps.cxd')]] '']]]
+  [= $pin-moved [or [not [= [$env:var-or-default 'GATE_EXTRA_CORE_FILES' ''] '']] [not [= $old $new]]]]
+  # the code pin's own diff: ('ok', paths) or ('no', ()) when it cannot be read
+  [= $core [?if [not $pin-moved] [then ('ok', ())]
+             [else [?let [= $pc [$env:var-or-default 'GATE_EXTRA_CORE_FILES' '']]
+                     [?if [= $pc '?'] [then ('no', ())]
+                       [else [?if [not [= $pc '']] [then ('ok', [$lines $pc])]
+                         [else [?let [= $d [$git [$cat ($root, '/deps/cx-core-code')] ('diff', '--name-only', $old, $new)]]
+                                 [?if [= [$nth $d 1] 'ok'] [then ('ok', [$lines [$nth $d 2]])] [else ('no', ())]]]]]]]]]]]
+  [= $core-ok [= [$nth $core 1] 'ok']]
+  [= $cfiles [$nth $core 2]]
+  [= $fork [$first-hit $files [?fn ($p) [= $p 'third_party/v']]]]
+  [= $pg-here [$first-hit $files [?fn ($p) [$starts-any $p [$PG-PATHS]]]]]
+  [= $pg-core [$first-hit $cfiles [?fn ($p) [and [not [$is-test $p]]
+                                                  [or [$names-wasm $p] [$strings:starts-with $p 'stdlib/']
+                                                      [and [$strings:starts-with $p 'vcx/'] [not [$strings:starts-with $p 'vcx/bench/']]]]]]]]
+  [= $be-core [$first-hit $cfiles [?fn ($p) [and [not [$is-test $p]] [or [$strings:starts-with $p 'vcx/code/'] [$strings:starts-with $p 'vcx/cmd/']]]]]]
+  [= $pg-why [?if [not $core-ok] [then [$cat ('the code pin moved (', $old, ' -> ', $new, ') and its diff cannot be read: selected')]]
+               [else [?if [not [= $pg-here '']] [then [$cat ('touches ', $pg-here)]]
+                 [else [?if [not [= $pg-core '']] [then [$cat ('the code pin touches ', $pg-core, ' (the wasm32 backend)')]]
+                   [else [?if [not [= $fork '']] [then 'the V fork moved (third_party/v)'] [else '']]]]]]]]]
+  [= $be-why [?if [not $core-ok] [then [$cat ('the code pin moved (', $old, ' -> ', $new, ') and its diff cannot be read: selected')]]
+               [else [?if [not [= $be-core '']] [then [$cat ('the code pin touches ', $be-core, ' (a backend)')]]
+                 [else [?if [not [= $fork '']] [then 'the V fork moved (third_party/v)'] [else '']]]]]]]
+  [= $_1 [$say [$cat ('gate-extra: playground: ', [?if [= $pg-why ''] [then 'not touched'] [else $pg-why]])]]]
+  [= $_2 [$say [$cat ('gate-extra: backends: ', [?if [= $be-why ''] [then 'not touched'] [else $be-why]])]]]
+  [= $steps ([?splice [?if [= $pg-why ''] [then ()] [else [$PLAYGROUND]]]], [?splice [?if [= $be-why ''] [then ()] [else [$BACKENDS]]]])]
+  [?do [$say [$cat ('gate-extra-steps: ', [?if [= [$count $steps] 0] [then 'none'] [else [$strings:join $steps ' ']]])]]
+       [$env:exit 0]]]
