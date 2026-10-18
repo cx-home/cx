@@ -1,0 +1,185 @@
+# scripts/test_binding_api_parity.cx — CX Gates 28.6 + 28.9: Layer-1 binding-API parity.
+#
+# Drives every fixture in conformance/binding_api.txt through the
+# Layer-1 surface of every active binding (V / Python / Go / Rust) and
+# asserts byte-identical output across all four.
+#
+# Architecture:
+#
+#   1. scripts/compile_binding_api_fixtures.cx parses the fixture file
+#      and emits a JSONL stream — one self-contained `{id, in_cx, ops,
+#      ...}` per line.
+#
+#   2. For each fixture, the JSON record is piped on stdin to each
+#      driver:
+#        - lang/python/cmd/binding_api_driver.py
+#        - lang/go/binding_api_driver/main.go         (compiled once)
+#        - lang/v/binding_api_driver/main.v           (compiled once)
+#        - lang/rust/cxlib/src/bin/binding_api_driver.rs (compiled once)
+#
+#   3. Driver outputs are diffed pairwise. Pass iff all four agree
+#      byte-for-byte. Unparseable mini-syntax (spawn / lambda / `{...}`
+#      / `==`) emits "UNSUPPORTED" uniformly across all four — that
+#      still satisfies parity but is reported separately and treated
+#      as failure for gate purposes (don't fake-pass per spec/v0_8_0_
+#      status.md §11.6).
+#
+# Exit codes:
+#   0 — all 4 bindings agree on every fixture (UNSUPPORTED count == 0)
+#   1 — at least one fixture diverges OR mini-syntax unsupported
+#   2 — invocation error (missing build, fixture file, etc.)
+#
+# CXMACH-1 (owner 2026-10-16, (a); RULED: BAP-1 = (a), integrator 2026-10-18T08:23Z): the cx
+# rewrite of test_binding_api_parity.sh — the same prerequisites, builds, stream checks, per-fixture
+# comparison, report lines and exit codes; the .sh is retired with this port. The gate is UNWIRED
+# today (Makefile: RETIRED with the bindings' extraction, RS-12/RS-8, #1591 K3; registry/repos.cxd
+# keeps this path at repo=cx).
+# PROVEN HERE: the prerequisite and stream paths by a run, and the whole drive — builds, the four
+# drivers per fixture, PASS / FAIL / UNSUPP and the summary — on a planted repo whose go, v, cargo
+# and python3 are shims (the commit body lists the cases). NOT PROVEN: a drive of the four REAL
+# bindings; its first real run is the first four-binding drive of the binding milestone.
+# A divergent fixture's four detail lines quote each driver's first three lines the way bash's
+# printf %q does for printable text (a backslash before each shell-special byte; '' when empty;
+# $'…' when the text holds a control byte).
+#   cx --allow-all scripts/test_binding_api_parity.cx
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat ($parts) [$strings:join $parts '']]
+[?def say impure ($s) [$env:write-line $s]]
+[?def cry impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def put-out impure ($s) [?if [= $s ''] [then null] [else [$io:write-string [$env:stdout] $s]]]]
+[?def put-err impure ($s) [?if [= $s ''] [then null] [else [$io:write-string [$env:stderr] $s]]]]
+[?def die impure ($lines) [?do [?to-array [?for [in $l $lines] [yield [$cry $l]]]] [$env:exit 2]]]
+# run — {rc out err}; rc 127 when the command cannot start
+[?def run impure ($argv $cwd $stdin)
+  [?let [= $r [?if [= $stdin null]
+                [then [$process:run $argv cwd=$cwd stdin=:discard capture=:both]]
+                [else [$process:run $argv cwd=$cwd stdin=$stdin capture=:both]]]]
+    [?match $r [case [err$e] {rc: 127, out: '', err: [$cat ([$string $e@message], "\n")]}]
+      [else {rc: $r@exit-code, out: [$string $r@stdout], err: [$string $r@stderr]}]]]]
+# chomp-all — what a shell $(…) keeps: the text without its trailing newlines
+[?def chomp-all ($s) [$re:replace [$re:compile "\n+$"] $s '']]
+# head3 — `printf '%s' X | head -3 | tr '\n' '|'`
+[?def head3 ($s)
+  [?let [= $ls [$strings:split $s "\n"]]
+    [?if [> [$count $ls] 3]
+      [then [$cat ([$strings:join [?to-array [?for [in $i [$range 1 3]] [yield [$nth $ls $i]]]] '|'], '|')]]
+      [else [$strings:join $ls '|']]]]]
+# shq — bash's printf %q for one argument
+[?def shq ($s)
+  [?if [= $s ''] [then "''"]
+    [else [?if [$present [$re:find [$re:compile "[\\x00-\\x1f\\x7f]"] $s]]
+      [then [$cat ("$'", [$strings:replace [$strings:replace [$strings:replace [$re:replace [$re:compile "([\\\\'])"] $s "\\$1"] "\t" "\\t"] "\r" "\\r"] "\n" "\\n"], "'")]]
+      [else [$re:replace [$re:compile "([^A-Za-z0-9_./:=@%+,^-])"] $s "\\$1"]]]]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $root [$path:dirname [$path:dirname [$path:absolute [$nth $argv 1]]]]]
+  [= $fixtures [$path:join $root 'conformance/binding_api.cxd']]
+  [= $compiler [$path:join $root 'scripts/compile_binding_api_fixtures.cx']]
+  [= $py-driver [$path:join $root 'lang/python/cmd/binding_api_driver.py']]
+  [= $go-src [$path:join $root 'lang/go/binding_api_driver']]
+  [= $v-src [$path:join $root 'lang/v/binding_api_driver/main.v']]
+  [= $rust-src [$path:join $root 'lang/rust/cxlib']]
+  [= $work [$string [$io:temp-dir 'cx-binding-api-']]]
+  [= $go-driver [$path:join $work 'binding_api_driver_go']]
+  [= $v-driver [$path:join $work 'binding_api_driver_v']]
+  [= $rust-driver [$path:join $root 'lang/rust/cxlib/target/release/binding_api_driver']]
+  # every exit from here removes the work directory first
+  [= $quit [?fn ($rc) [?do [?else [$io:remove-tree $work] null] [$env:exit $rc]]]]
+  [= $die2 [?fn ($lines) [?do [?to-array [?for [in $l $lines] [yield [$cry $l]]]] [$quit 2]]]]
+  # ── prerequisites ──
+  [= $_f [?if [$io:is-file $fixtures] [then null] [else [$die2 ([$cat ('error: fixture file not found at ', $fixtures)])]]]]
+  [= $_c [?if [$io:is-file $compiler] [then null] [else [$die2 ([$cat ('error: compiler script not found at ', $compiler)])]]]]
+  [= $libcx [?let [= $d [$path:join $root 'vcx/target/libcx.dylib']] [?if [$io:is-file $d] [then $d] [else [$path:join $root 'vcx/target/libcx.so']]]]]
+  [= $_l [?if [$io:is-file $libcx] [then null]
+           [else [$die2 ([$cat ('error: libcx not found at ', $root, '/vcx/target/libcx.{dylib,so}')], '       Build with: devbox run -- make build')]]]]
+  # the fixture compiler IS a CX program (#922 / PYE-5), so cx is a hard prerequisite
+  [= $cxbin [$env:var-or-default 'CX_BIN' [$path:join $root 'deps/cx-core-code/vcx/target/cx']]]
+  [= $_x [?if [$io:is-file $cxbin] [then null]
+           [else [$die2 ([$cat ('error: cx binary missing at ', $cxbin, ' — the fixture compiler needs it')], '       Build with: devbox run -- make build-vcx')]]]]
+  # the drivers load THIS build's libcx (LIBCX_PATH, the shell's export) through the env they inherit
+  [= $env-argv [?fn ($argv) ('env', [$cat ('LIBCX_PATH=', $libcx)], [?splice $argv])]]
+  # ── build per-binding drivers ──
+  [= $_h [$say '[binding-api] compiling drivers...']]
+  [= $_g0 [$say '  go...']]
+  [= $gb [$run [$env-argv ('go', 'build', '-o', $go-driver, '.')] $go-src null]]
+  [= $_g [?if [= $gb.rc 0] [then null] [else [?do [$cry 'error: failed to build Go driver'] [$put-err $gb.err] [$quit 2]]]]]
+  [= $_v0 [$say '  v...']]
+  # -path is test-v's V_MODULE_PATH, exported by the Makefile as CX_V_SEARCH (RULED: RS-12): a
+  # command-line -path REPLACES the exported VFLAGS one, so it names the pinned roots itself
+  [= $vb [$run [$env-argv ('v', '-path', [$env:var-or-default 'CX_V_SEARCH' [$cat ('@vlib|@vmodules|', $root, '/vcx')]], '-o', $v-driver, $v-src)] $root null]]
+  [= $_v [?if [= $vb.rc 0] [then null] [else [?do [$cry 'error: failed to build V driver'] [$put-err $vb.err] [$quit 2]]]]]
+  [= $_r0 [$say '  rust...']]
+  [= $rb [$run [$env-argv ('cargo', 'build', '--release', '--bin', 'binding_api_driver', '--quiet')] $rust-src null]]
+  [= $_r [?if [= $rb.rc 0] [then null] [else [?do [$cry 'error: failed to build Rust driver'] [$put-err $rb.err] [$quit 2]]]]]
+  [= $_r2 [?if [$io:is-file $rust-driver] [then null] [else [$die2 ([$cat ('error: rust driver missing at ', $rust-driver, ' after build')])]]]]
+  [= $_p0 [$say '  python...']]
+  [= $pc [$run [$env-argv ('python3', '-c', [$cat ("import sys; sys.path.insert(0, '", $root, "/lang/python'); import cxlib.code")])] $root null]]
+  [= $_p [?if [= $pc.rc 0] [then null] [else [?do [$cry 'error: Python cxlib.code import failed'] [$put-err $pc.err] [$quit 2]]]]]
+  # ── compile fixtures (flag-first, fixture path positional: cli.md §3 / PYE-2) ──
+  [= $jsonl [$path:join $work 'fixtures.jsonl']]
+  [= $cf [$run [$env-argv ($cxbin, '--allow-read', '--allow-write', $compiler, $fixtures)] $root null]]
+  [= $_cf [?if [= $cf.rc 0] [then [$io:write-file $jsonl $cf.out]]
+            [else [?do [$cry 'error: failed to compile fixtures'] [$put-err $cf.err] [$quit 2]]]]]
+  # #1180: the compiled stream must be USABLE before parity means anything (RULED: PYE-6 — a run
+  # that proved nothing must not report success)
+  [= $ck [$run [$env-argv ($cxbin, '--allow-read', '--allow-write', '--allow-env', [$path:join $root 'scripts/check_binding_api_jsonl.cx'], $jsonl, $fixtures)] $root null]]
+  [= $_k1 [$put-out $ck.out]] [= $_k2 [$put-err $ck.err]]
+  [= $_k [?if [= $ck.rc 0] [then null] [else [$die2 ('error: the compiled fixture stream is unusable — see above')]]]]
+  # `wc -l`: the newline count; an empty run is a failure, never a pass
+  [= $total [- [$count [$strings:split $cf.out "\n"]] 1]]
+  [= $_t [?if [= $total 0] [then [$die2 ('error: no fixtures to run — an empty comparison is not parity')]] [else null]]]
+  [= $_t1 [$say [$cat ('[binding-api] running ', [$string $total], " fixtures × 4 bindings...\n")]]]
+  # ── run + diff each fixture ──
+  [= $records [?let [= $ls [$strings:split $cf.out "\n"]]
+                [?if [= [$last $ls] ''] [then [?to-array [?for [in $i [$range 1 [- [$count $ls] 1]]] [yield [$nth $ls $i]]]]] [else $ls]]]]
+  [= $results [?to-array [?for [in $line $records] [yield
+    [?let [= $idm [$re:find [$re:compile "^\\{\"id\": \"([^\"]*)\""] $line]]
+          [= $id [?if [$present $idm] [then [$re:group $idm 1]] [else '']]]
+          [= $py [$run [$env-argv ('python3', $py-driver)] $root $line]]
+          [= $go [$run [$env-argv ($go-driver)] $root $line]]
+          [= $rs [$run [$env-argv ($rust-driver)] $root $line]]
+          [= $vv [$run [$env-argv ($v-driver)] $root $line]]
+          [= $po [$chomp-all $py.out]] [= $go-o [$chomp-all $go.out]] [= $ro [$chomp-all $rs.out]] [= $vo [$chomp-all $vv.out]]
+      # #1180: the exit STATUS is the discriminator, not the empty output (an empty answer with
+      # exit 0 is legitimate: select-all-empty-result, find-all-no-match)
+      [?if [or [not [= $py.rc 0]] [not [= $go.rc 0]] [not [= $rs.rc 0]] [not [= $vv.rc 0]]]
+        [then [?let [= $_s [$say [$cat ('  FAIL    ', $id, '  (driver exit: py=', [$string $py.rc], ' go=', [$string $go.rc], ' rs=', [$string $rs.rc], ' v=', [$string $vv.rc], ')')]]]
+                {kind: 'fail', id: $id}]]
+        [else [?if [and [= $po $go-o] [= $go-o $ro] [= $ro $vo]]
+                [then [?if [= $po 'UNSUPPORTED']
+                        [then [?let [= $_s [$say [$cat ('  UNSUPP  ', $id)]]] {kind: 'unsupp', id: $id}]]
+                        [else [?let [= $_s [$say [$cat ('  PASS    ', $id)]]] {kind: 'pass', id: $id}]]]]
+                [else [?let [= $_s [$say [$cat ('  FAIL    ', $id)]]]
+                            [= $_p [$say [$cat ('          py:   ', [$shq [$head3 $po]])]]]
+                            [= $_g [$say [$cat ('          go:   ', [$shq [$head3 $go-o]])]]]
+                            [= $_r [$say [$cat ('          rs:   ', [$shq [$head3 $ro]])]]]
+                            [= $_v [$say [$cat ('          v:    ', [$shq [$head3 $vo]])]]]
+                        {kind: 'fail', id: $id}]]]]]]]]]]
+  [= $ids-of [?fn ($k) [?to-array [?for [in $r $results] [where [= $r.kind $k]] [yield $r.id]]]]]
+  [= $fails [$ids-of 'fail']] [= $unsupp [$ids-of 'unsupp']] [= $passes [$ids-of 'pass']]
+  # ── summary ──
+  [= $_s [?to-array [?for [in $l ('', '────────────────────────────────────────────────────────────────',
+                                  '  binding-api parity (gates 28.6 + 28.9)',
+                                  [$cat ('  total:        ', [$string $total])],
+                                  [$cat ('  parity-pass:  ', [$string [$count $passes]])],
+                                  [$cat ('  parity-fail:  ', [$string [$count $fails]])],
+                                  [$cat ('  unsupported:  ', [$string [$count $unsupp]], '  (mini-syntax not parseable — driver gap)')],
+                                  '────────────────────────────────────────────────────────────────')]
+           [yield [$say $l]]]]]
+  [= $_df [?if [> [$count $fails] 0]
+            [then [?do [$say ''] [$say 'Divergent fixtures:'] [?to-array [?for [in $i $fails] [yield [$say [$cat ('  - ', $i)]]]]]]]
+            [else null]]]
+  [= $_du [?if [> [$count $unsupp] 0]
+            [then [?do [$say ''] [$say 'Unsupported fixtures (mini-syntax extension needed):'] [?to-array [?for [in $i $unsupp] [yield [$say [$cat ('  - ', $i)]]]]]]]
+            [else null]]]
+  [?if [or [> [$count $fails] 0] [> [$count $unsupp] 0]]
+    [then [?do [$say ''] [$say 'Gates 28.6 + 28.9 NOT green.'] [$quit 1]]]
+    [else [?do [$say ''] [$say 'Gates 28.6 + 28.9: green.'] [$quit 0]]]]]

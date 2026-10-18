@@ -702,7 +702,7 @@ build-wasm: v-pin-fresh
 	DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps OUTDIR=$(CURDIR)/dist/wasm ./deps/cx-core-code/scripts/wasm/build_libcx_wasm.sh
 
 # Gate 17 — stage the playground bundle under dist/playground-preview/
-# so scripts/test_playground_smoke.sh has a docroot to boot Python's
+# so scripts/test_playground_smoke.cx has a docroot to boot Python's
 # http.server against. The layout matches the URL probes the smoke
 # script issues: playground.{html,js,css} at the root, wasm artifacts
 # under dist/wasm/ (nested), so a `cd dist/playground-preview &&
@@ -711,7 +711,7 @@ build-wasm: v-pin-fresh
 # exact set the smoke check curl-probes. Depends on build-wasm so the
 # wasm artifacts exist before we copy. When emcc is unavailable,
 # build-wasm fails noisily upstream and this target is never reached;
-# scripts/test_playground_smoke.sh then reports its documented
+# scripts/test_playground_smoke.cx then reports its documented
 # "playground-preview not built" failure.
 build-playground: v-pin-fresh
 	@echo "[build-playground] (re)building libcx-async + libcx-pthreads variants"
@@ -782,7 +782,7 @@ build-playground: v-pin-fresh
 	@if [ -f dist/wasm/libcx-pthreads.js ]; then cp dist/wasm/libcx-pthreads.js dist/playground-preview/wasm/libcx-pthreads.js; fi
 	@if [ -f dist/wasm/libcx-pthreads.wasm ]; then cp dist/wasm/libcx-pthreads.wasm dist/playground-preview/wasm/libcx-pthreads.wasm; fi
 	@# Smoke-test compatibility: also stage flat copies under dist/wasm/
-	@# so scripts/test_playground_smoke.sh (which queries dist/wasm/*
+	@# so scripts/test_playground_smoke.cx (which queries dist/wasm/*
 	@# directly) keeps working alongside the absolute-URL layout that
 	@# matches docs/guide/ deployment.
 	@cp dist/wasm/cxlib.js dist/playground-preview/dist/wasm/cxlib.js
@@ -1242,7 +1242,7 @@ verify-playground-examples: build-vcx
 # dist/wasm/, plus one npm install for jsdom. Both preconditions FAIL
 # LOUD (exit 2) rather than skipping, so this step can never report a vacuous
 # pass. It is deliberately NOT in TEST_TARGETS — that step must not require
-# emcc or a network fetch — and belongs with scripts/test_playground_smoke.sh as
+# emcc or a network fetch — and belongs with scripts/test_playground_smoke.cx as
 # the playground release step.
 .PHONY: test-playground-mermaid
 # RULED: 1170-e / 1170-f. The step grades a bundle it BUILDS or PROVES FRESH,
@@ -1342,7 +1342,7 @@ test-site-phone-width: site
 # (CX_CHROME overrides). Both preconditions FAIL LOUD (exit 2) rather than
 # skipping, so this step can never report a vacuous pass. Deliberately NOT in
 # TEST_TARGETS — that step must not require emcc or a browser — and belongs with
-# test-playground-mermaid and scripts/test_playground_smoke.sh as the playground
+# test-playground-mermaid and scripts/test_playground_smoke.cx as the playground
 # release step. Every wait is bounded (WASM_EVAL_DEADLINE, default 900s); the
 # server and browser are reaped on every exit path.
 .PHONY: test-playground-wasm-eval
@@ -1378,7 +1378,7 @@ test-playground-wasm-eval:
 # and both preconditions FAIL LOUD (exit 2) rather than skipping, so this step
 # can never report a vacuous pass. Deliberately NOT in TEST_TARGETS — that step
 # must not require emcc or a browser — and belongs with test-playground-mermaid,
-# test-playground-wasm-eval and scripts/test_playground_smoke.sh as the
+# test-playground-wasm-eval and scripts/test_playground_smoke.cx as the
 # playground release step. Every wait is bounded (TREE_GATE_DEADLINE, default
 # 600s); server and browser are reaped on every exit path.
 .PHONY: test-playground-tree
@@ -2231,6 +2231,24 @@ check-exit-status-probe:
 check-build-slot: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 check-build-slot: build-vcx
 	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-env scripts/build_slot_selftest.cx
+
+# ── check-gate-extra-steps / check-backend-equality (owner GATE-PG (a) + DIVERGE-1, 2026-10-18;
+# RULED: GATEPG-1) ──────────────────────────────────────────────────────────────
+# scripts/gate_extra_steps.cx BASE names the steps a landing gate adds by ruling: the four playground
+# and site steps whenever the diff touches the wasm32 backend, the playground or docs-src, and
+# check-backend-equality whenever it touches a backend (STREAMS/bin/landing_gate.cx runs them after
+# its parallel set). check-gate-extra-steps is that selection's selftest on planted diffs.
+# check-backend-equality is the walker == compiled == native check: the ten bench/game programs of
+# cx-core-code, each answer byte-identical across the walker, the compiled backend, the native backend
+# in process and the `cx build --native` image (the kit: build-vcx-kit) — scripts/backend_equality.cx.
+.PHONY: check-gate-extra-steps check-backend-equality
+check-gate-extra-steps: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+check-gate-extra-steps: build-vcx
+	@"$(CX_BIN)" --allow-all scripts/gate_extra_steps_selftest.cx
+
+check-backend-equality: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
+check-backend-equality: build-vcx build-vcx-kit
+	@"$(CX_BIN)" --allow-all scripts/backend_equality.cx "$(CX_BIN)"
 
 # ── check-bench-isolation (#1450) ────────────────────────────────────────────
 # `perf-ratchet` itself is wall-clock and machine-bound and is deliberately NOT
@@ -3461,7 +3479,7 @@ test-xpath-parity: build-vcx
 # four any more. No successor runs the FOUR-WAY parity check today: each
 # binding repo's own `make check` is deps-check alone (its build is OWED,
 # per its own REPORT-REPO.md) and has no per-binding test wired in yet either
-# — see RESULTS.md's LETTER. `scripts/test_binding_api_parity.sh`,
+# — see RESULTS.md's LETTER. `scripts/test_binding_api_parity.cx` (BAP-1: the cx port),
 # `scripts/check_binding_api_jsonl.cx` and `scripts/compile_binding_api_fixtures.cx`
 # stay tracked here (registry/repos.cxd: repo=cx, not a binding path) but are
 # unwired and unreachable from any Makefile target until a future decision
@@ -4094,6 +4112,7 @@ check-serial-retry-rosters:
 check-fixture-shard-manifest:
 	@$(TOOL_CX) --allow-read --allow-write scripts/check_fixture_shard_manifest.cx
 	@$(TOOL_CX) --allow-all scripts/run_fixture_shards_selftest.cx
+	@$(TOOL_CX) --allow-all scripts/fixture_files_for_branch_selftest.cx
 
 # ── fixtures (#1448, RULED: 1448-a) — the grader's ONE-COMMAND form ─────────
 # Before the shard split a pre-merge pipeline graded the corpus with one line
@@ -4112,7 +4131,7 @@ check-fixture-shard-manifest:
 # shard owns FAILS the step. Unset, the target is what it was — which is what
 # the post-merge run, and any branch touching the grader, deps/cx-core-code/vcx/code/,
 # stdlib/*.cx or the V pin, keeps running (INT-5, INT-21). The selection for a
-# branch is `sh scripts/fixture_files_for_branch.sh origin/release/0.18`.
+# branch is `cx --allow-read --allow-write --allow-subprocess --allow-env scripts/fixture_files_for_branch.cx origin/release/0.18`.
 FIXTURE_FILES ?=
 .PHONY: fixtures
 fixtures:

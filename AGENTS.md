@@ -141,7 +141,7 @@ below all of these and never overrides one of them.
   Rule 8 above is the general form; the exception an agent has is exactly one
   branch, its own.
 - **Long runs.** A run that outlives a single command goes through the
-  runner, [`scripts/build-slot.sh`](scripts/build-slot.sh) (the shared
+  runner, [`scripts/build_slot.cx`](scripts/build_slot.cx) (the shared
   pre-merge runner named in the standing rules). It is started as a
   background job the session can see, writing to a log file that ends with
   its exit marker. Never a detached wrapper whose output is discarded —

@@ -1,0 +1,242 @@
+# scripts/fixture_files_for_branch.cx (#1513) — the FIXTURE_FILES selection a branch
+# owes, derived from its own diff.
+#
+#     make fixtures FIXTURE_FILES="$(cx --allow-read --allow-write --allow-subprocess --allow-env scripts/fixture_files_for_branch.cx origin/release/0.18)"
+#
+# `make fixtures` grades 91 module files and ~5,800 cases and took 15-35 minutes
+# of every pre-merge run whatever the branch touched, one branch at a time on a
+# shared runner. What a branch can actually move is a short list, and this
+# prints it. The wrapper (scripts/run_fixture_shards.cx) then grades exactly
+# those files, each through the shard that owns it, and REFUSES a name no shard
+# owns — so an over-selection is a failure, never a silent skip.
+#
+# Prints, on one line:
+#   * `ALL` — no selection is safe; grade everything (run `make fixtures` with
+#     no FIXTURE_FILES). This is the fail-safe direction and every doubt
+#     resolves to it;
+#   * a space-separated list of `conformance/…` paths;
+#   * nothing at all — the branch edits no corpus file and no module source, so
+#     it owes this step no selection. An empty FIXTURE_FILES is an UNSELECTED
+#     run, which is also the safe direction.
+#
+# THE RULES, in the order they are applied.
+#
+#  (0) A base that is not a commit, or a git that refuses: ALL. The classifier's
+#      value is that it SHRINKS a step, so every failure of it must grow one
+#      (the same fail-safe head_is_docs_only.cx takes).
+#
+#  (1) ALL when the branch changes what grades, rather than what is graded:
+#      vcx/tests/fixtures_grader/**, vcx/tests/code_eval_fixtures*,
+#      scripts/run_fixture_shards.cx, scripts/fixtures_census.cx, or the V pin
+#      third_party/v, or deps.cxd (a moved pin moves the Ring 0 module every
+#      case is parsed and evaluated through; RULED: RS-7, RS-12). A branch that
+#      changes the grader must grade everything —
+#      its own steps are the evidence the partition lost no case (INT-5,
+#      INT-21).
+#
+#  (2) Every `conformance/**/*.cxd` the branch edits that this grader actually
+#      walks: conformance/{stdlib,platform,x,xap}/*.cxd plus the two files that
+#      belong to no ring directory, extended.cxd and xml_codec.cxd, plus
+#      code.cxd (the driver's own corpus). A conformance file OUTSIDE that walk
+#      — core.cxd, fmt.cxd, the llm/ suites — is graded by other steps and by
+#      no shard; naming it would FAIL the wrapper, so it is left out and NAMED
+#      ON STDERR instead. Left out silently it would look like a selection that
+#      covered it.
+#
+#  (3) The module corpus file of every module source the branch edits:
+#      stdlib_<m>.v and stdlib_<m>_*.v under a split product's vcx/cxnet/,
+#      vcx/mail/, vcx/store/, vcx/identity/, vcx/fabric/, vcx/xap/ (RULED: RS-24;
+#      vcx/platform/ is gone since xap's PHASE B),
+#      vcx/code/stdlib_<m>.v and stdlib/<m>.cx (the x/ tier's sources left with
+#      the agent and ux extractions, RS-12). `<m>` is the V spelling with
+#      `_` read as `-`, resolved against the corpus BY NAME:
+#        * an exact `conformance/<ring>/<m>.cxd` (in any ring, and all of them
+#          when two rings carry the name — `term` is in stdlib/ and x/);
+#        * else the family `conformance/<ring>/<m>-*.cxd` — `stdlib_xap.v` has
+#          no xap.cxd and owns xap-compose / xap-dist / xap-on / xap-schema /
+#          xap-serve;
+#        * else the same two questions of `<m>` with its last `-segment`
+#          dropped — `stdlib_saml_binding.v` resolves to saml.cxd and
+#          `stdlib_http_serve.v` to http.cxd;
+#        * else ALL. A module source that resolves to NO corpus file is shared
+#          infrastructure (stdlib_iowatch.v, stdlib_codec.v, stdlib_caps.v),
+#          and so is a stdlib/*.cx with no corpus file of its own name: what
+#          every module sits on cannot be graded by one module's cases.
+#
+#  (4) conformance/code.cxd when anything under vcx/code/ or vcx/cx/ changed —
+#      those are the parser and the evaluator the whole corpus runs through, and
+#      code.cxd is the file that pins them.
+#
+#  (5) deps.cxd (#1641, RULED: RS-7, RS-12): a pinned repository's bundled
+#      source comes from deps/<repo>/, so a pin bump changes a module every file
+#      that imports it runs through, although no path under this tree moved.
+#      The rows that differ between the base's deps.cxd and this one are read,
+#      and every walked corpus file that imports a module one of them provides
+#      (the row's `module=`, spelled `[?lib '<ns>/<name>' …]` in the file) is
+#      selected. A doc-block-only change moves no row and selects nothing. A
+#      changed row that names no `module=`, a V repository's row (`v-fork=`, or
+#      a `module=` that is a repository name: what it provides is compiled into
+#      the binary every case runs through), or a change set given by
+#      --changed-files (no base to compare the rows with), is ALL. The rule is
+#      applied before rule (1) in the loop, so deps.cxd is judged row by row.
+#
+# scripts/fixture_files_for_branch_selftest.cx proves one case per rule on
+# synthetic repos.
+#
+# The repository is the one this program sits in (its own path, two levels up), so the
+# helper is relocatable — the selftest copies it into a synthetic repo and the pipelines run
+# it from a worktree. Every git command runs there. Output order is the byte order of the
+# paths ($sort), which for the corpus's lowercase names is the order `sort -u` printed.
+# CXMACH-1 (owner 2026-10-16, (a)): the cx rewrite of fixture_files_for_branch.sh, the same
+# rules in the same order and the same one line.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat ($parts) [$strings:join $parts '']]
+[?def cry impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def done impure ($s) [?do [$env:write-line $s] [$env:exit 0]]]
+[?def usage impure ()
+  [?do [$cry 'usage: cx scripts/fixture_files_for_branch.cx <base>   (e.g. origin/release/0.18)']
+       [$cry '       cx scripts/fixture_files_for_branch.cx --changed-files <file>']]]
+[?def words ($s) [?for [in $t [$re:split [$re:compile "[ \\t\\r\\n]+"] $s]] [where [not [= $t '']]] [yield $t]]]
+[?def starts ($s $p) [$strings:starts-with $s $p]]
+[?def ends ($s $p) [$strings:ends-with $s $p]]
+[?def strip-tail ($s $t) [?if [$ends $s $t] [then [$strings:slice $s 0 [- [$strings:length $s] [$strings:length $t]]]] [else $s]]]
+# a git command run in ROOT: {ok out}
+[?def git impure ($root $args)
+  [?let [= $r [$process:run ('git', [?splice $args]) cwd=$root stdin=:discard]]
+    [?match $r [case [err$e] {ok: false, out: ''}]
+      [else {ok: [= $r@exit-code 0], out: [$string $r@stdout]}]]]]
+
+# the corpus this grader walks — derived from the directories, never listed, the same way
+# check_fixture_shard_manifest.cx derives it: conformance/<ring>/*.cxd, ring by ring
+[?def corpus impure ($root)
+  [?to-array [?for [in $d ('stdlib', 'platform', 'x', 'xap')]
+                   [in $n [?let [= $dir [$path:join $root [$cat ('conformance/', $d)]]]
+                            [?if [$io:is-directory $dir] [then [$sort [?to-array [?for [in $n [$io:list-dir $dir]] [yield [$string $n]]]]]] [else ()]]]]
+                   [where [and [$ends $n '.cxd'] [not [$starts $n '.']]]]
+               [yield [$cat ('conformance/', $d, '/', $n)]]]]]
+
+# in-walk — is this conformance file one `make fixtures` grades? (a shell `case` `*` crosses `/`)
+[?def in-walk ($f)
+  [or [and [$ends $f '.cxd'] [or [$starts $f 'conformance/stdlib/'] [$starts $f 'conformance/platform/']
+                                 [$starts $f 'conformance/x/'] [$starts $f 'conformance/xap/']]]
+      [= $f 'conformance/extended.cxd'] [= $f 'conformance/xml_codec.cxd'] [= $f 'conformance/code.cxd']]]
+
+# rule (1): what grades, rather than what is graded
+[?def grades ($f)
+  [or [$starts $f 'vcx/tests/fixtures_grader/'] [$starts $f 'vcx/tests/code_eval_fixtures']
+      [= $f 'scripts/run_fixture_shards.cx'] [= $f 'scripts/fixtures_census.cx']
+      [= $f 'third_party/v'] [$starts $f 'third_party/v/'] [= $f 'deps.cxd']]]
+
+# the `[dep …]` rows of a deps.cxd text, leading blanks stripped
+[?def dep-rows ($text)
+  [?to-array [?for [in $l [$strings:split-lines $text]]
+                   [where [$present [$re:find [$re:compile "^[ \\t]*\\[dep "] $l]]]
+               [yield [$re:replace [$re:compile "^[ \\t]+"] $l '']]]]]
+
+# the rows that differ between the two sides (either side's spelling of a moved row)
+[?def changed-rows ($old $new)
+  [$sort [$distinct ([?splice [?for [in $r $old] [where [not [$contains $new $r]]] [yield $r]]],
+                     [?splice [?for [in $r $new] [where [not [$contains $old $r]]] [yield $r]]])]]]
+
+# a row's module=: the quoted form first, else the bare token up to `]` or a blank
+[?def row-module ($row)
+  [?let [= $q [$re:find [$re:compile "module='([^']*)'"] $row]]
+        [= $b [$re:find [$re:compile "module=([^\\] ]*)"] $row]]
+    [?if [and [$present $q] [> [$strings:length [$re:group $q 1]] 0]] [then [$re:group $q 1]]
+      [else [?if [$present $b] [then [$re:group $b 1]] [else '']]]]]]
+
+# the walked corpus files that import the module by that spelling ('…' or "…")
+[?def importers impure ($root $files $spell)
+  [?for [in $f $files]
+        [where [?let [= $p [$path:join $root $f]]
+                 [and [$io:is-file $p]
+                      [?let [= $t [$io:read-file $p]]
+                        [or [$strings:contains $t [$cat ("'", $spell, "'")]] [$strings:contains $t [$cat ('"', $spell, '"')]]]]]]]
+    [yield $f]]]
+
+# resolve — the corpus path(s) a hyphenated module name names, or () when it is shared
+# infrastructure: the exact name in any ring, else the family <m>-*, else the same two
+# questions with the last -segment dropped
+[?def base-of ($p) [$strip-tail [$last [$strings:split $p '/']] '.cxd']]
+[?def resolve ($corpus $m)
+  [?loop [= $mm $m]
+    [?if [= $mm ''] [then [break ()]]
+      [else [?let [= $exact [?to-array [?for [in $c $corpus] [where [= [$base-of $c] $mm]] [yield $c]]]]
+                  [= $family [?to-array [?for [in $c $corpus] [where [$starts [$base-of $c] [$cat ($mm, '-')]]] [yield $c]]]]
+              [?if [> [$count $exact] 0] [then [break $exact]]
+                [else [?if [> [$count $family] 0] [then [break $family]]
+                        [else [continue [?if [$strings:contains $mm '-']
+                                          [then [$strings:join [?let [= $ps [$strings:split $mm '-']]
+                                                                 [?to-array [?for [in $i [$range 1 [- [$count $ps] 1]]] [yield [$nth $ps $i]]]]] '-']]
+                                          [else '']]]]]]]]]]]]
+
+# module-token — the hyphenated module name a source file carries, or ''
+[?def module-token ($f)
+  [?if [and [$starts $f 'stdlib/'] [$ends $f '.cx']]
+    [then [$strip-tail [$strings:replace-first $f 'stdlib/' ''] '.cx']]
+    [else [?if [$re:matches [$re:compile "^vcx/(cxnet|mail|store|identity|fabric|xap|code)/stdlib_.*\\.v$"] $f]
+            [then [$strings:replace [$strip-tail [$strip-tail [$last [$strings:split $f '/stdlib_']] '.v'] '.c'] '_' '-']]
+            [else '']]]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $root [$path:dirname [$path:dirname [$path:absolute [$nth $argv 1]]]]]
+  [= $a1 [?if [> [$count $argv] 1] [then [$nth $argv 2]] [else '']]]
+  # an absent base is rule (0): the caller gets the safe answer AND the usage
+  [= $_u [?if [= $a1 ''] [then [?do [$usage] [$done 'ALL']]] [else null]]]
+  [= $from-file [= $a1 '--changed-files']]
+  [= $src [?if [and $from-file [> [$count $argv] 2]] [then [$nth $argv 3]] [else '']]]
+  [= $_s [?if [and $from-file [or [= $src ''] [not [$io:is-file $src]]]] [then [?do [$usage] [$done 'ALL']]] [else null]]]
+  [= $diff [?if $from-file
+             [then [$words [?else [$io:read-file $src] [$done 'ALL']]]]
+             # --no-renames: both sides of a rename are judged
+             [else [?let [= $g [$git $root ('diff', '--no-renames', '--name-only', [$cat ($a1, '...HEAD')])]]
+                     [?if $g.ok [then [$words $g.out]] [else [$done 'ALL']]]]]]]
+  [= $corpus [$corpus $root]]
+  [= $walked ([?splice $corpus], 'conformance/extended.cxd', 'conformance/xml_codec.cxd', 'conformance/code.cxd')]
+  [= $base-commit [?if $from-file [then false]
+                    [else [$git $root ('rev-parse', '-q', '--verify', [$cat ($a1, '^{commit}')])].ok]]]
+  # one verdict per changed path: {all sel outside}
+  [= $verdicts [?to-array [?for [in $f $diff] [yield
+    [?if [= $f 'deps.cxd']
+      # (5) a pin — judged row by row, before rule (1)
+      [then [?if [not $base-commit] [then {all: true, sel: (), outside: ()}]
+              [else [?let [= $old [$dep-rows [$git $root ('show', [$cat ($a1, ':deps.cxd')])].out]]
+                          [= $new [$dep-rows [?else [$io:read-file [$path:join $root 'deps.cxd']] '']]]
+                          [= $rows [$changed-rows $old $new]]
+                          [= $mods [?to-array [?for [in $r $rows] [yield [$row-module $r]]]]]
+                          [= $nomod [> [$count [?for [in $i [$range 1 [$count $rows]]]
+                                                 [where [or [$strings:contains [$nth $rows $i] ' v-fork=']
+                                                            [not [$strings:contains [$nth $mods $i] '/']]]]
+                                                 [yield $i]]] 0]]
+                      [?if $nomod [then {all: true, sel: (), outside: ()}]
+                        [else {all: false, outside: (),
+                               sel: [?to-array [?for [in $m $mods] [in $h [$importers $root $walked $m]] [yield $h]]]}]]]]]]
+      [else [?if [$grades $f] [then {all: true, sel: (), outside: ()}]
+        [else [?if [and [$starts $f 'conformance/'] [$ends $f '.cxd']]
+          # (2) the branch's own corpus files
+          [then [?if [$in-walk $f] [then {all: false, sel: ($f), outside: ()}] [else {all: false, sel: (), outside: ($f)}]]]
+          [else [?let
+                  # (4) the parser and the evaluator the whole corpus runs through
+                  [= $code [?if [or [$starts $f 'vcx/code/'] [$starts $f 'vcx/cx/']] [then ('conformance/code.cxd')] [else ()]]]
+                  # (3) the module corpus file of an edited module source
+                  [= $m [$module-token $f]]
+                  [= $hits [?if [= $m ''] [then ()] [else [$resolve $corpus $m]]]]
+                  [?if [and [not [= $m '']] [= [$count $hits] 0]]
+                    [then {all: true, sel: $code, outside: ()}]
+                    [else {all: false, sel: [?to-array ([?splice $code], [?splice $hits])], outside: ()}]]]]]]]]]]]]]
+  [= $outside [?to-array [?for [in $v $verdicts] [in $o $v.outside] [yield $o]]]]
+  [= $_o [?if [= [$count $outside] 0] [then null]
+           [else [?do [$cry 'fixture-files: conformance file(s) this grader does not walk, left out of the selection —']
+                      [?to-array [?for [in $o $outside] [yield [$cry [$cat ('    ', $o)]]]]]
+                      [$cry '  they are graded by their own steps (check-code-fixtures, the document']
+                      [$cry '  reading, corpus-audit), not by make fixtures, and naming one would fail it.']]]]]
+  [= $_a [?if [> [$count [?for [in $v $verdicts] [where $v.all] [yield 1]]] 0] [then [$done 'ALL']] [else null]]]
+  [$done [$strings:join [$sort [$distinct [?to-array [?for [in $v $verdicts] [in $s $v.sel] [yield $s]]]]] ' ']]]

@@ -16,7 +16,7 @@
 # The op-tree is a binding-agnostic IR for the Layer-1 mini-syntax used in
 # call sections (spec/03-approved/misc/bindings.md 4.1). Drivers in V / Python / Go / Rust
 # consume one JSON object per invocation and execute it through their
-# Layer-1 surface (scripts/test_binding_api_parity.sh).
+# Layer-1 surface (scripts/test_binding_api_parity.cx).
 #
 # Mini-syntax grammar (unchanged from the Python):
 #

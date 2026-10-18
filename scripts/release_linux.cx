@@ -38,7 +38,7 @@
 # container program byte for byte (it runs in ubuntu:22.04, where no cx exists yet: it is the
 # bash text below, CONTAINER, with the host's values put where the shell spliced them), the same
 # lines and the same exits (set -euo pipefail: a failing step's own code). The container runs
-# scripts/r22_profile_gate.cx, the shared staging and gate, on the cx it builds (PGL-1, R22-1).
+# scripts/r22_profile_gate.cx, the shared staging and gate, on the cx it builds (PGL-1, RPG-1).
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
@@ -130,7 +130,7 @@
 |      # scripts/r22_profile_gate.cx commands the release flow`s package act
 |      # stages the darwin assets with, which read the artifacts where the split
 |      # build lands them (vcx-target, include-dir — #1670), run on the cx just
-|      # built here (R22-1: one implementation, no shell copy).
+|      # built here (RPG-1: one implementation, no shell copy).
 |      r22() { deps/cx-core-code/vcx/target/cx --allow-all scripts/r22_profile_gate.cx "$@"; }
 |      T=linux-@@arch@@
 |      mkdir -p "/tmp/$T"

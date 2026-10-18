@@ -1,6 +1,6 @@
 #
 # The #1015 no-CDN gate for the <cx-diagram> web component — the sibling of
-# the playground's #1007 assertions in scripts/test_playground_smoke.sh, for
+# the playground's #1007 assertions in scripts/test_playground_smoke.cx, for
 # the other surface that was still loading mermaid@10 from jsDelivr.
 #
 # What it asserts, and why each one is here:
