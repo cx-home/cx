@@ -733,6 +733,11 @@ const accepted_by_one_table = [
 	// 1536-a shape; its selftest is head_is_docs_only_selftest.cx's twin (a computed attribute).
 	AcceptedByOne{'scripts/fixture_files_for_branch.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/fixture_files_for_branch_selftest.cx', .program, reason_attr},
+	// GATEPG-1 (cxmach): scripts/backend_equality.cx builds its rows with computed attributes
+	// (`[ans rc=[$string …] sha=[…] err=[…]]`); scripts/gate_extra_steps_selftest.cx calls
+	// `[$process:run ([$env:executable-path], …) env=[map …]]`, the 1536-a shape.
+	AcceptedByOne{'scripts/backend_equality.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/gate_extra_steps_selftest.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/test_playground_smoke.cx', .program, reason_1536},
 	// DOCS-4 wave 1 (RULED: DOCS-42, DOCS-43): the plug-in figure's
 	// `height=[- ROW-H 4]` and the voice step's `path=[$attr $p "path" ""]`,
