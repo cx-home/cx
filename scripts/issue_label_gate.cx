@@ -12,7 +12,8 @@
 #
 #   m  an open issue of a deliverable repository that is not on exactly one
 #      of the milestones <release>, the next minor, `Backlog` (on none, or on
-#      any other milestone);
+#      any other milestone) -- a `board`-labelled issue excepted: boards are
+#      off the milestone (AUDIT-1018 C (a), the owner, 2026-10-18);
 #   t  an open issue created after NOVER-1 whose title or body names a version
 #      of this line: `v<major>.<n>` or `<major>.<n>.<n>` (<major> from
 #      VERSION; a third-party version such as a Python 3.12 or a TLS 1.3 is not
@@ -114,6 +115,13 @@
       [else [$strings:to-int [$concat [$re:group $m 1] [$re:group $m 2] [$re:group $m 3]
                                         [$re:group $m 4] [$re:group $m 5] [$re:group $m 6]]]]]]]
 [?def member scope=public ($seq $x) [> [$count [?for [in $y $seq] [where [= $y $x]] [yield 1]]] 0]]
+# is-board: the issue carries the `board` label. AUDIT-1018 C (a) (the owner,
+# 2026-10-18T15:08:28Z): boards come off the milestone, so a board is not judged
+# by the m rule (its t rule stands).
+[?def is-board scope=public ($i)
+  [> [$count [?for [in $l [?else [$map:get $i "labels"] ()]]
+               [where [= [$string [?else [$map:get $l "name"] ""]] "board"]]
+               [yield 1]]] 0]]
 # version-in: the first version of this line the issue's title, then body, names; '' for none.
 [?def version-in scope=public ($rel $i)
   [?let [= $m [$re:find [$version-rx $rel] [$concat [$title $i] "\n" [$body $i]]]]
@@ -132,7 +140,7 @@
         [= $m [?for [in $p $repos]
                 [= $repo [$string [$map:get $p "repo"]]]
                 [in $i [$map:get $p "issues"]]
-                [where [not [$member $allowed [$milestone $i]]]]
+                [where [and [not [$is-board $i]] [not [$member $allowed [$milestone $i]]]]]
                 [yield [$concat "m:" $repo "#" [$num $i]]]]]
         [= $t [?for [in $p $repos]
                 [= $repo [$string [$map:get $p "repo"]]]

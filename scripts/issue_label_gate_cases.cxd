@@ -27,6 +27,10 @@ want='' is a case the gate passes.
   [case id=m-next-and-backlog want=''
     [issues repo=cx-platform-xap '[{"number": 4, "created_at": "2026-09-01T00:00:00Z", "title": "x", "labels": [], "milestone": {"title": "v7.8"}},
                                    {"number": 5, "created_at": "2026-09-01T00:00:00Z", "title": "y", "labels": [], "milestone": {"title": "Backlog"}}]']]
+  [; m: a board is off the milestone (AUDIT-1018 C (a)); its label exempts it, another label does not ]
+  [case id=m-board-off-milestone want='m:cx-private#1795'
+    [issues repo=cx-private '[{"number": 1591, "created_at": "2026-09-20T00:00:00Z", "title": "repo split board", "labels": [{"name": "v0.18"}, {"name": "board"}], "milestone": null},
+                              {"number": 1795, "created_at": "2026-09-20T00:00:00Z", "title": "not a board", "labels": [{"name": "boardwalk"}], "milestone": null}]']]
   [case id=m-none want='m:cx-private#1791 m:v#22'
     [issues repo=cx-private '[{"number": 1791, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": [{"name": "v7.7"}], "milestone": null}]']
     [issues repo=v '[{"number": 22, "created_at": "2026-10-03T01:00:00Z", "title": "x", "labels": []}]']]
