@@ -726,7 +726,7 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/premerge_record.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/run_fixture_shards.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/run_fixture_shards_selftest.cx', .program, reason_attr},
-	// scripts/r22_profile_gate.cx (R22-1 = (a)): `[$process:run ($probe, …) stdin=:discard]`, a
+	// scripts/r22_profile_gate.cx (RPG-1 = (a)): `[$process:run ($probe, …) stdin=:discard]`, a
 	// call-shaped head beside a ws-delimited `(…)` literal — the 1536-a property.
 	AcceptedByOne{'scripts/r22_profile_gate.cx', .program, reason_1536},
 	// scripts/fixture_files_for_branch.cx (CXMACH-1): `[$process:run ('git', …) cwd=$root …]`, the same
