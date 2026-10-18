@@ -3479,7 +3479,7 @@ test-xpath-parity: build-vcx
 # four any more. No successor runs the FOUR-WAY parity check today: each
 # binding repo's own `make check` is deps-check alone (its build is OWED,
 # per its own REPORT-REPO.md) and has no per-binding test wired in yet either
-# — see RESULTS.md's LETTER. `scripts/test_binding_api_parity.sh`,
+# — see RESULTS.md's LETTER. `scripts/test_binding_api_parity.cx` (BAP-1: the cx port),
 # `scripts/check_binding_api_jsonl.cx` and `scripts/compile_binding_api_fixtures.cx`
 # stay tracked here (registry/repos.cxd: repo=cx, not a binding path) but are
 # unwired and unreachable from any Makefile target until a future decision

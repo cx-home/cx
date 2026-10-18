@@ -347,7 +347,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='spec/03-approved/misc/bindings.md' repo=cx why='cross-binding governance: the parity contract every binding repo pins']
   [path exact='spec/03-approved/misc/parity-matrix.md' repo=cx]
   [path exact='tooling/binding_native_status.json' repo=cx]
-  [path exact='scripts/test_binding_api_parity.sh' repo=cx why='the cross-binding parity gate needs all four; it runs in the distribution']
+  [path exact='scripts/test_binding_api_parity.cx' repo=cx why='the cross-binding parity gate needs all four; it runs in the distribution']
   [path exact='scripts/check_binding_api_jsonl.cx' repo=cx]
   [path exact='scripts/compile_binding_api_fixtures.cx' repo=cx]
   [path exact='tools/verify-binding-quickstarts.sh' repo=cx]
