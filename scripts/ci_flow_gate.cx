@@ -122,9 +122,16 @@
 # (devbox's git-filter-repo for refresh, the make the gate was built with).
 [?const CLEAN-KEYS ('HOME', 'PATH', 'TMPDIR', 'VJOBS')]
 
+# SLOT-1 (scripts/build_slot.cx): the runner waits while <state>/gate-slots names a live gate, and
+# <state> defaults to $HOME/git-repos/cx/STREAMS/state — the box's REAL streams state, which HOME
+# carries in. A world is not the box: run inside a landing gate, every real case's runner waited on
+# the very gate that ran it until the 900 s case timeout (U8's gate, 2026-10-18: exit 143 on every
+# E-* case). So each world names a streams state that does not exist — nothing to wait for.
+[?const WORLD-STREAMS-STATE '/nonexistent/ci-flow-gate/streams-state']
 [?def world-env scope=public impure [returns any] ($c)
-  [?to-map [?for [in $k $CLEAN-KEYS] [where [not [= [$env:var-or-default $k ''] '']]]
-    [yield ($k, [$env:var-or-default $k ''])]]]]
+  [?to-map [$cat-seqs ([?to-sequence [?for [in $k $CLEAN-KEYS] [where [not [= [$env:var-or-default $k ''] '']]]
+                         [yield ($k, [$env:var-or-default $k ''])]]],
+                       (('CX_STREAMS_STATE', $WORLD-STREAMS-STATE),))]]]
 
 [?def run-flow scope=public impure ($bin $flow $env $c $extra)
   [?let [= $r [$process:run [$argv-of $bin $flow $env $c $extra] env=[$world-env $c] env-clear=true timeout-ms=900000]]

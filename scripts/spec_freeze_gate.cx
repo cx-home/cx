@@ -135,8 +135,14 @@ cd025ce4aea894f5c901e5bdb6c404e0c772e84b #1230 — the root Scope copied at spaw
 # ruling stores. Fragments split on + , / and whitespace; each is tried whole and with a trailing (…)
 # qualifier stripped, so "R4.4(a-revised)" matches a store that records either spelling. Fragments
 # shorter than 2 chars are ignored (never let "a" match everything). [t found= infra=]
-[?def token-recorded scope=public impure ($msg $texts)
-  [?let [= $frags [?to-sequence
+# A token the message's line wrap split ("…; RULED:" ending one line, "STREAM-1). …" opening the next) is
+# one token: check-commit's has-a-token test reads the whole message, where [[:space:]]* crosses the
+# newline, so the payload is joined back onto its RULED: line before the per-line read (df1238bd1,
+# 2026-10-18: a recorded STREAM-1 read as "names NO recorded ruling").
+[?def RULED-WRAP-RX scope=public () [$re:compile "RULED:[ \t]*\r?\n[ \t]*"]]
+[?def token-recorded scope=public impure ($msg0 $texts)
+  [?let [= $msg [$re:replace [$RULED-WRAP-RX] $msg0 'RULED: ']]
+        [= $frags [?to-sequence
           [?for [in $l [$strings:split $msg "\n"]] [where [$has 'RULED:[[:space:]]*[A-Za-z0-9]' $l]]
                 [in $w [?to-sequence [?for [in $x [$re:split [$re:compile "[ \t\n]+"] [$strings:translate [$strings:slice $l [+ [$strings:find $l 'RULED:'] 6] [$strings:length $l]] '+,/' '   ']]] [where [not [= $x '']]] [yield $x]]]]
             [yield [?let [= $a [?let [= $i [$strings:find $w ';']] [?if [$present $i] [then [?if [<= $i 1] [then ''] [else [$strings:slice $w 1 [- $i 1]]]]] [else $w]]]]
