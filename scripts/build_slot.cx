@@ -215,6 +215,79 @@
     [?match $h [case [err$e] [?let [= $_ [$cry [$cat ('runner: cannot run ', [$string $e@message])]]] 127]]
       [else [?else [$process:wait $h] 127]]]]]
 
+# SLOT-1 (owner 2026-10-18T11:16:37Z, (a); RULED: BSLOT-1) — this program ITSELF waits, before it
+# queues for any slot (the shared one or an own one), while the box is held for a measurement or a
+# union gate, so no agent has to read claims for QUIET-2:
+#   (1) a landing/union gate holds a gate slot: a directory under <state>/gate-slots whose pid file
+#       names a live process;
+#   (2) a perf run holds <state>/perf-slot (its pid file names a live process);
+#   (3) a QUIET period is open: the last `QUIET-START ` line of <state>/claims.txt comes after the
+#       last `QUIET-END ` line and is under QUIET_STALE_S (default 5400 s: quiet_chain.cx closes
+#       every period within its 80-min cap) old by its own timestamp.
+# <state> is $CX_STREAMS_STATE, default $HOME/git-repos/cx/STREAMS/state; with no such directory
+# there is nothing to wait for. The holders themselves never wait on their own hold: a gate's or a
+# QUIET owner's commands set CX_SLOT1_EXEMPT=1 (landing_gate.cx exports it to its make children),
+# and the post-merge loop is exempt by WHERE it runs: this program in the MAIN checkout (the first
+# row of `git worktree list` of its own tree; CX_SLOT1_MAIN names it instead, the selftest's knob)
+# never waits — a QUIET period exists for the loop's tick, which runs its steps through here.
+# The wait counts against BUILD_SLOT_TIMEOUT like the runner's own: on timeout, exit 75, nothing run.
+[?def state-dir scope=public impure ()
+  [?let [= $s [$var 'CX_STREAMS_STATE']]
+    [?if [not [= $s '']] [then $s] [else [$cat ([$env:var-or-default 'HOME' ''], '/git-repos/cx/STREAMS/state')]]]]]
+[?def live-holders scope=public impure ($dir)
+  [?to-array [?for [in $d [?else [$io:list-dir $dir] ()]]
+               [where [$alive [$text-of [$cat ($dir, '/', [$string $d], '/pid')]]]]
+               [yield [$string $d]]]]]
+[?def last-index scope=public ($lines $prefix)
+  [?reduce [?to-array [?for [in $i [$range 1 [$count $lines]]] [where [$strings:starts-with [$nth $lines $i] $prefix]] [yield $i]]]
+           [using [?fn ($a $b) $b]] [init 0]]]
+# open-quiet — '' when no QUIET period is open, else the opening line's first 100 characters.
+[?def open-quiet scope=public impure ($claims)
+  [?let [= $lines [$strings:split-lines [?else [$io:read-file $claims] '']]]
+        [= $qs [$last-index $lines 'QUIET-START ']]
+        [= $qe [$last-index $lines 'QUIET-END ']]
+    [?if [or [= $qs 0] [< $qs $qe]] [then '']
+      [else [?let [= $line [$nth $lines $qs]]
+                  [= $ws [$strings:split-whitespace $line]]
+                  [= $w3 [?if [< [$count $ws] 3] [then ''] [else [$nth $ws 3]]]]
+                  [= $stamp [?if [$strings:ends-with $w3 ':'] [then [$strings:slice $w3 1 [- [$strings:length $w3] 1]]] [else $w3]]]
+                  [= $at [?else [$time:to-unix [$time:parse-datetime $stamp]] 0]]
+                  [= $stale [?else [$strings:to-int [$var 'QUIET_STALE_S']] 5400]]
+              [?if [> [- [$now-s] $at] $stale] [then '']
+                [else [$strings:slice $line 1 [?if [> [$strings:length $line] 100] [then 100] [else [$strings:length $line]]]]]]]]]]]
+# slot1-busy — '' when the box is free for a build, else the reason, naming the holder.
+[?def slot1-busy scope=public impure ($st)
+  [?let [= $gates [$live-holders [$cat ($st, '/gate-slots')]]]
+        [= $perf [$text-of [$cat ($st, '/perf-slot/pid')]]]
+    [?if [> [$count $gates] 0]
+      [then [$cat ('a gate holds gate-slots/', [$strings:join $gates ','], ' (pid ', [$text-of [$cat ($st, '/gate-slots/', [$nth $gates 1], '/pid')]], ')')]]
+      [else [?if [$alive $perf] [then [$cat ('a perf run holds perf-slot (pid ', $perf, ')')]]
+        [else [?let [= $q [$open-quiet [$cat ($st, '/claims.txt')]]]
+                [?if [= $q ''] [then ''] [else [$cat ('a QUIET period is open: ', $q)]]]]]]]]]]
+# slot1-wait — wait while slot1-busy; true when free, false on timeout. One line per new reason.
+# main-checkout — CX_SLOT1_MAIN, else the first worktree of the tree at $root ('' = none).
+[?def main-checkout scope=public impure ($root)
+  [?let [= $m [$var 'CX_SLOT1_MAIN']]
+    [?if [not [= $m '']] [then $m]
+      [else [?if [= $root ''] [then '']
+        [else [?let [= $first [?let [= $ls [$strings:split-lines [$git-out ('git', '-C', $root, 'worktree', 'list', '--porcelain')]]]
+                                [?if [= [$count $ls] 0] [then ''] [else [$nth $ls 1]]]]]
+                [?if [$strings:starts-with $first 'worktree '] [then [$strings:slice $first 10 [$strings:length $first]]] [else '']]]]]]]]]
+[?def slot1-wait scope=public impure ($timeout $root)
+  [?if [or [not [= [$var 'CX_SLOT1_EXEMPT'] '']] [not [$io:is-directory [$state-dir]]]
+           [and [not [= $root '']] [= [$path:absolute $root] [$path:absolute [$main-checkout $root]]]]]
+    [then true]
+    [else [?loop [= $s [w waited=0 said='']]
+            [?let [= $why [$slot1-busy [$state-dir]]]
+                  [= $waited [$strings:to-int [$string $s@waited]]]
+              [?if [= $why ''] [then [break true]]
+                [else [?if [>= $waited $timeout]
+                  [then [?let [= $_ [$cry [$cat ('runner: waited ', [$string $waited], 's (SLOT-1): ', $why, ' — giving up')]]] [break false]]]
+                  [else [?let [= $_m [?if [= $why [$string $s@said]] [then null]
+                                       [else [$cry [$cat ('runner: waiting (SLOT-1, ', [$iso], '): ', $why)]]]]]
+                              [= $_p [$process:run ('sleep', '15')]]
+                          [continue [w waited=[+ $waited 15] said=$why]]]]]]]]]]]]
+
 [?let
   [= $argv [$env:argv]]
   [= $self [$path:absolute [$nth $argv 1]]]
@@ -237,6 +310,7 @@
                    [?if [= $st 0] [then [$refuse $slot [$cat ('the post-merge loop is running: ', [$string $ls@msg])]]]
                      [else [?if [= $st 2] [then [$refuse $slot [$cat ([$string $ls@msg], " — set CX_GATE_LOOP_LOG to the main checkout's vcx/target/gate-loop.log")]]]
                        [else null]]]]]]]]
+  [= $_slot1 [?if [$slot1-wait $timeout $root] [then null] [else [$env:exit 75]]]]
   [= $q [$cat ($slot, '.queue')]]
   [= $_q [?else [$io:make-dirs $q] null]]
   [= $me [$cat ([$string [$now-s]], '.', [$string [$env:pid]])]]
