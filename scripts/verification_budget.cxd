@@ -16,11 +16,12 @@
     [moved-by 1515]
     [note 'the residue is 260 harness cases waiting out real bounds — 89% of connector.cxd. Lowering this row further is #1515s letter, not a tightening here.']]
 
-  [bound name=selected-run seconds=1200 rows-from='2026-10-11T14:49:40Z'
+  [bound name=selected-run seconds=1200 rows-from='2026-10-16T20:10:00Z'
     [what 'a SELECTED post-merge run — make test-changed BASE=<last passed head> plus the branch steps it selects']
     [measured '817 s on the selected run of 2026-10-04 23:59Z, idle box (load 1.85) — the row the loop wrote; the bound moves DOWN to the owner'"'"'s sentence (20 min) now that an idle run sits under it (#1562, RULED: STREAM-1). Before: 9,263 s, the first row the loop wrote on 884c05469 (2026-09-19), raised to that on the owner'"'"'s word of 2026-09-21']
     [moved-by 1562]
-    [note 'ratchets DOWN only from here; the post-merge run as steps (#1817) is the next change to its time.']]
+    [note 'ratchets DOWN only from here; the post-merge run as steps (#1817) is the next change to its time.']
+    [rows-from-why 'cx-private#1946, integrator ruling SEL1946 (b) of 2026-10-19: rows-from moves from 2026-10-11T14:49:40Z (#1917) to 2026-10-16T20:10:00Z, the first tick after 75c23fea8 landed. That landing carried the budget-lock fix (16087893b) and the -usecache cut (545332023), so every later selected run is the run the bound is about. On 2026-10-19 the quiet median read 26m39s of five quiet rows, and four of them were from 10-14 and 10-15: 3,304, 1,174, 1,599 and 1,575 s. The five selected ticks of 10-19 06:09-09:26Z read 1,051-1,164 s at load 11-16, with one 1,659 s run that was quiet only at its two ends. Earlier rows are reported, never judged; the 1,200 s bound did not move.']]
 
   [bound name=union seconds=1200 rows-from='2026-10-11T14:49:40Z'
     [what 'make test — the whole TEST_TARGETS union, the post-merge run of cx-private (scripts/postmerge_steps.cx)']
