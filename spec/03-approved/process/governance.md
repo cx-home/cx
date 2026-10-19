@@ -453,7 +453,7 @@ and is not duplicated here.
 | `CXER2200–CXER2203` | `cx-stdlib/test` | `spec/03-approved/stdlib/test.md` |
 | `CXER2300–CXER2307` | `cx-stdlib/bytes` | `spec/03-approved/stdlib/bytes.md` |
 | `CXER2400–CXER2405` | `cx-stdlib/log` | `spec/03-approved/stdlib/log.md` |
-| `CXER2500–CXER2504` | `cx-stdlib/env` | `spec/03-approved/stdlib/env.md` |
+| `CXER2500–CXER2505` | `cx-stdlib/env` | `spec/03-approved/stdlib/env.md` |
 | `CXER2600–CXER2603` | `cx-stdlib/path` | `spec/03-approved/stdlib/path.md` |
 | `CXER2700–CXER2702` | `cx-stdlib/format` | `spec/03-approved/stdlib/format.md` |
 | `CXER2800–CXER2804` | `cx-stdlib/mime` | `spec/03-approved/stdlib/mime.md` |

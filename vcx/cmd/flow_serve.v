@@ -168,6 +168,15 @@ mut:
 	store      string // `[store url=…]` — the projected verbs' store slot (RULED: #728 CK-3)
 	authz      string // `[authz principal=…]` — the runner's own acting chain (RULED: HOST-4)
 	authz_caps []string // `[authz capabilities=…]` — the capabilities seeded beside the root grant (RULED: SEED-1)
+	// `[runtime [secrets …] [authz …]]` — the keystore's provider rows and the
+	// grants its PEP decides against, rendered verbatim (secrets.md §2;
+	// cx-platform-secrets#2); '' when the runner holds no keystore.
+	runtime_src string
+	// `[snapshots every=N key='handle:…']` — the anchoring policy and the
+	// signing key's HANDLE, resolved through the keystore at each anchor
+	// (flow.md §4.23); 0 / '' when the runner takes no anchors.
+	snap_every int
+	snap_key   string
 	courier_ns i64
 	bindings   []FlowBinding
 }
@@ -469,6 +478,41 @@ fn flow_serve_row(e cx.Element) FlowBinding {
 // flow_serve_parse reads and VALIDATES a `[runner]` document. Every refusal is
 // CXER4965 (RULED: WF-33) — the document is the invocation's input, which is
 // the class that code already names.
+// flow_serve_keys reads the runner's keystore and signing rows (flow.md
+// §4.23; cx-platform-secrets#2). `[runtime …]` is the deployment's own block
+// — `[secrets [provider …]]` and the `[authz …]` grants the seam's PEP decides
+// against, one grammar with the XAP host's (secrets.md §2) — and
+// `[snapshots every=N key='handle:<provider>/<path>']` names the anchoring
+// policy and the signing key by its HANDLE: the key is resolved through the
+// seam for `cx-platform/flow` at each anchor and never sits in this document.
+fn flow_serve_keys(r cx.Element, mut out FlowRunner) {
+	if rt := flow_serve_child(r, 'runtime') {
+		for n in rt.items {
+			if n.is_element() && n.element().name !in ['secrets', 'authz'] {
+				flow_serve_refuse('[runtime …] carries a [${n.element().name} …] row; a runner\'s runtime block holds the keystore — [secrets …] and the [authz …] grants its PEP decides against (flow.md §4.23, secrets.md §2)')
+			}
+		}
+		if _ := flow_serve_child(rt, 'secrets') {
+		} else {
+			flow_serve_refuse('[runtime …] carries no [secrets [provider …]] row; the block is the keystore (secrets.md §2)')
+		}
+		out.runtime_src = code.render_canonical(cx.mk_element(rt)).trim_space()
+	}
+	sr := flow_serve_child(r, 'snapshots') or { return }
+	ev := sr.attr('every')
+	out.snap_every = ev.int()
+	if out.snap_every <= 0 || out.snap_every.str() != ev {
+		flow_serve_refuse('[snapshots every="${ev}"] is not a positive count of transitions (flow.md §4.23)')
+	}
+	out.snap_key = sr.attr('key')
+	if !out.snap_key.starts_with('handle:') {
+		flow_serve_refuse('[snapshots key="${out.snap_key}"] names the signing key by its secrets handle, handle:<provider>/<path>, never the key itself (flow.md §4.23, secrets.md §3)')
+	}
+	if out.runtime_src == '' {
+		flow_serve_refuse('[snapshots key=…] names a handle and the runner carries no [runtime [secrets …]] block to resolve it through (flow.md §4.23, secrets.md §2)')
+	}
+}
+
 fn flow_serve_parse(src string, path string) FlowRunner {
 	doc := cx.parse(src) or {
 		flow_serve_refuse('${path} does not parse as CX: ${err.msg()}')
@@ -508,7 +552,8 @@ fn flow_serve_parse(src string, path string) FlowRunner {
 	// this row fills — so the row is read here, and the refusal of a runner
 	// whose `[env …]` carries a feature package and no `[store]` is taken in
 	// flow_cli_serve, once the module tree is scanned (it names the package).
-	known := ['journal', 'docs', 'env', 'store', 'ingress', 'on', 'courier', 'authz']
+	known := ['journal', 'docs', 'env', 'store', 'ingress', 'on', 'courier', 'authz', 'runtime',
+		'snapshots']
 	for n in r.items {
 		if !n.is_element() {
 			continue
@@ -556,6 +601,7 @@ fn flow_serve_parse(src string, path string) FlowRunner {
 		// names a `[requires cap:…]` clause asks for.
 		out.authz_caps = ar.attr('capabilities').fields()
 	}
+	flow_serve_keys(r, mut out)
 	er := flow_serve_child(r, 'env') or {
 		flow_serve_refuse('the [runner …] document names no [env …]; a flow document names its acts and the runner must be TOLD where they live (flow.md §4.1, §4.23)')
 		return FlowRunner{}
@@ -740,6 +786,17 @@ fn flow_serve_bindings_element(r FlowRunner) string {
 // flow_serve_helpers is the driver's own vocabulary — the part that is the SAME
 // whatever the `[runner]` document says. It is written once, here, rather than
 // generated per binding, so the loop a reader audits is the loop that runs.
+// flow_serve_keys_helpers — only a runner with a `[snapshots …]` row carries
+// them (cx-platform-secrets#2): the keystore's libs and the boot guard.
+const flow_serve_keys_helpers = "[?lib 'cx-platform/secrets' as=cxsecrets]
+[?lib 'cx-platform/audit' as=cxaudit]
+[?lib 'cx-stdlib/env' as=cxenv]
+[?def fs--keyed scope=private impure [returns map] (\$oa::map \$ks \$key::string \$every::int)
+  [?match \$ks
+    [case [err] [?let [= \$l [\$cxlog:error [\$cx:emit \$ks]]] [\$cxenv:exit 2]]]
+    [else [\$map-put [\$map-put [\$map-put \$oa \"keystore\" \$ks] \"snapshot-key\" \$key] \"snapshot-every\" \$every]]]]
+"
+
 const flow_serve_helpers = "
 
 [; the document set arrives as the DATA document — the [docs …]-verified bytes
@@ -1212,6 +1269,9 @@ fn flow_serve_program(r FlowRunner, directives []string, acts []FlowCliAct, tick
 	b << "[?lib 'cx-stdlib/log' as=cxlog]"
 	b << directives.join('\n')
 	b << flow_serve_helpers
+	if r.snap_key != '' {
+		b << flow_serve_keys_helpers
+	}
 	// THE LOOP is the one def that must be GENERATED rather than written once:
 	// `[?sleep]` takes a DURATION LITERAL, never a bound value (measured —
 	// CXER0100), so the courier's cadence is spliced in as the literal the
@@ -1297,9 +1357,22 @@ fn flow_serve_program(r FlowRunner, directives []string, acts []FlowCliAct, tick
 			cs := r.authz_caps.map('"${flow_cli_quote(it)}"').join(' ')
 			seed += '\n[= \$az-caps [\$cxauthzstore:delegate \$az [delegation runner-caps [tenant "${t}"] [from [principal "${p}"]] [to [principal "${p}"]] [capabilities ${cs}] [over "/"] [assurance :t1] [signature "runner-authz"]]]]'
 		}
-		seed + '\n[= \$o [\$map-put \$o0 "authz" \$az]]'
+		seed + '\n[= \$oa [\$map-put \$o0 "authz" \$az]]'
 	} else {
-		'[= \$o \$o0]'
+		'[= \$oa \$o0]'
+	}
+	// cx-platform-secrets#2 — the keystore opens at boot in the SERVED profile
+	// (this process listens; secrets.md §9.2 (5)), its audit records bound on
+	// the runner's own journal, and the run opts carry the keystore beside the
+	// signing key's HANDLE: flow resolves the key through the seam at each
+	// anchor (flow.md §4.23). A keystore that refuses stops the boot here, before
+	// the ingress binds, with the refusal on stderr and exit 2.
+	if r.snap_key != '' {
+		b << '[= \$kab [\$cxaudit:bind \$j {tenant: "${flow_cli_tenant}"}]]'
+		b << '[= \$ks [\$cxsecrets:open [deployment name="${flow_cli_quote(r.name)}" ${r.runtime_src}] {served: true}]]'
+		b << '[= \$o [\$fs--keyed \$oa \$ks "${flow_cli_quote(r.snap_key)}" ${r.snap_every}]]'
+	} else {
+		b << '[= \$o \$oa]'
 	}
 	// §4.15's restore half, at BOOT, once per distinct bound document: `rearm`
 	// takes ONE `opts.flow` because every registry entry it builds is a call to
