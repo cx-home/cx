@@ -81,8 +81,13 @@ jobs:
           CX_DEPS_TOKEN: ${{ secrets.CX_DEPS_TOKEN }}
         run: sh scripts/deps_bootstrap.sh
 
+      # No cx exists yet to run cx-core-code's two build helpers in their cx
+      # forms (CXMACH-1 retired the shell forms, cx-private#1970), so this first
+      # build turns them off: the archive-alignment proof only proves (Apple's ld
+      # still refuses a misaligned archive at the link), and the portable-links
+      # repair is for an artifact that leaves the machine (this cx stays here).
       - name: Build cx (deps/ present, no release needed)
-        run: make build-vcx
+        run: make build-vcx CHECK_AR_ALIGN=true PORTABLE=true
 
       - name: Sync + verify the pinned repositories with the cx just built
         run: make deps-sync CX_BIN=deps/cx-core-code/vcx/target/cx
