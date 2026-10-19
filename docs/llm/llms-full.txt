@@ -3261,6 +3261,7 @@ it (§4).
 | S-41 | `xap` host → `flow` | the deployment document's `[on …]` rows as the binding set; `start`, `advance` and `rearm` over the deployment's journal; the courier as a `sched` cadence on the boot fiber | contribute authority — the host is a courier, and every step is admitted against the run's recorded basis (1265-WF-40b); serve a kind it does not declare; tick through `fleet` (WF-32) | `../xap/xap_feature_distribution_market.md` §6.3.1; `flow.md` §4.9, §4.23, §4.24 | in-process — the host runs the runner's law in its own runtime |
 | S-42 | `flow` → `xsp`, the XAP host's session | a `by=:peer` step to `to=peer:did:…` as a DELEGATED INTENT — `[delegated-intent run= step= to= from= [do …] [acted-on stream= seq= hash=]]` — carried over the executing environment's authenticated session, which it holds as a resolver row `[peer [xsp-auth-established …] [fn $carry]]`, and the `flow` semantic-feature token that session's transcript-covered selection must carry | open, authenticate or hold a session of its own; emit to a counterparty whose confirmed selection lacks `flow` (`CXER4962`, at validation and again when the runner emits); read the run id as an authority input | `flow.md` §4.12b; `xsp.md` §5.0 | XSP XAP (the counterparty's session — the resolver's `[peer …]` row) |
 | S-43 | `flow` → `vc`, `did` | the counterparty's `[step-ack …]` as a T1 claim (`[tier :t1]`, one principal signature): `[signature suite=ed25519 …]` over the claim's canonical normative form, verified fail-closed under the key the counterparty's DID resolves to, the suite gated first | complete, or on a wind-back compensate, a step on any ack that did not verify (`CXER4963`); accept a tier or a suite the claim does not name; hold a signing key of its own for the counterparty's half | `flow.md` §4.12b; `../stdlib/vc.md` §4 | in-process — verification is a pure function of the claim and the resolved key |
+| S-44 | `flow` → `secrets` | the runner's signing key, named by its HANDLE in `opts.snapshot-key` beside the host's `opts.keystore` and resolved through the one seam for `cx-platform/flow` at each anchor; the key lives for the one snapshot it signs (cx-platform-secrets#2) | carry the key itself — a key value in `opts.snapshot-key`, or a handle with no keystore, refuses `CXER4965`; no snapshot, err or log carries the key | `flow.md` §4.23; `secrets.md` §3 | in-process |
 
 **§2.2. The refused directions**
 
@@ -5380,7 +5381,8 @@ Run flags (the default action; flags bind BEFORE the resource):
   once on stderr, unless the program's [argspec] declares it.
   Capabilities are deny-by-default (spec/03-approved/core/security.md); grant explicitly:
     --allow-read --allow-write --allow-net --allow-env --allow-clock
-    --allow-random --allow-subprocess --allow-eval --allow-secret-reveal --allow-common --allow-all
+    --allow-random --allow-subprocess --allow-eval --allow-secret-reveal --allow-keychain
+    --allow-common --allow-all
     (three grants take an enforced scope: --allow-net=host[:port],
      --allow-read=PATH and --allow-write=PATH. A PATH is a directory-component
      subtree root — --allow-read=/data admits /data/x and refuses /database;
@@ -5390,8 +5392,9 @@ Run flags (the default action; flags bind BEFORE the resource):
     --probe is the preset for looking around without changing anything:
      it expands to --allow-read=. --allow-clock, so a probe that writes or
      reaches the network refuses with the ordinary capability error.
-    --allow-common is the common working set WITHOUT secret-reveal;
-    --allow-all additionally grants secret-reveal, which declassifies secrets.
+    --allow-common is the common working set WITHOUT secret-reveal and keychain;
+    --allow-all additionally grants secret-reveal, which declassifies secrets,
+    and keychain, which reads the OS keychain (env.md §3.6).
 
 Convert flags (the data reading; an explicit --from selects it):
   cx --from=FMT [--to=FMT] [--compact] [--lossless] [--include-root=DIR] [FILE]
