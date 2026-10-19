@@ -1057,6 +1057,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `sec-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | Owner decisions 2026-09-26 — the four designs of Letters 26–29: the connector kit (KIT-1…KIT-6), cross-company (XCO-1…XCO-5), the minimal keystore (SEC-1), the host's four choices (HOST-1…HOST-4) |
 | `sec-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | SEC-1 — the minimal keystore that expands without impact |
 | `sec-1` | [rulings_2026_09_26_owner_decisions_designs_l26_l29.md](rulings_2026_09_26_owner_decisions_designs_l26_l29.md) | Note 2026-09-26 — Letters 30, 31 and 32 = (a): the SEC-1 spec's three questions, and the letter's details recorded |
+| `seckc-1` | [rulings_2026_10_19_seckc_1_secrets_keychain_rung.md](rulings_2026_10_19_seckc_1_secrets_keychain_rung.md) | SECKC-1 — D1 = (a), D2 = (a): the keychain rung and the consumer interface; the later rungs stay §9.1's |
 | `seed-1` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | Owner decisions 2026-09-27 — Letters 46–50 and the org profile: KIT-4's shape (KIT4-1…3), the #1498 spec gaps (AA-7…9), HOST-4's seed made real (SEED-1), the host act's basis (HOSTB-1), the call spread's readings (SPREAD-2), the org-profile push (ORG-1) |
 | `seed-1` | [rulings_2026_09_27_owner_decisions_l46_l50.md](rulings_2026_09_27_owner_decisions_l46_l50.md) | SEED-1 — HOST-4's seed made real (L48 = (a)) |
 | `seq-1` | [rulings_2026_08_26_seq_classification.md](rulings_2026_08_26_seq_classification.md) | SEQ-1 — the filed mechanism is WRONG; this is not a port regression |
@@ -1811,4 +1812,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*399 ledger pages; 995 ids declared, 436 cited only.*
+*400 ledger pages; 996 ids declared, 436 cited only.*
