@@ -146,7 +146,8 @@ Run flags (the default action; flags bind BEFORE the resource):
   once on stderr, unless the program's [argspec] declares it.
   Capabilities are deny-by-default (spec/03-approved/core/security.md); grant explicitly:
     --allow-read --allow-write --allow-net --allow-env --allow-clock
-    --allow-random --allow-subprocess --allow-eval --allow-secret-reveal --allow-common --allow-all
+    --allow-random --allow-subprocess --allow-eval --allow-secret-reveal --allow-keychain
+    --allow-common --allow-all
     (three grants take an enforced scope: --allow-net=host[:port],
      --allow-read=PATH and --allow-write=PATH. A PATH is a directory-component
      subtree root — --allow-read=/data admits /data/x and refuses /database;
@@ -156,8 +157,9 @@ Run flags (the default action; flags bind BEFORE the resource):
     --probe is the preset for looking around without changing anything:
      it expands to --allow-read=. --allow-clock, so a probe that writes or
      reaches the network refuses with the ordinary capability error.
-    --allow-common is the common working set WITHOUT secret-reveal;
-    --allow-all additionally grants secret-reveal, which declassifies secrets.
+    --allow-common is the common working set WITHOUT secret-reveal and keychain;
+    --allow-all additionally grants secret-reveal, which declassifies secrets,
+    and keychain, which reads the OS keychain (env.md §3.6).
 
 Convert flags (the data reading; an explicit --from selects it):
   cx --from=FMT [--to=FMT] [--compact] [--lossless] [--include-root=DIR] [FILE]
