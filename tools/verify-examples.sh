@@ -197,7 +197,8 @@ check_scenario() {
 	fi
 	if [ "$rc" -ne 0 ]; then
 		SCEN_FAIL=$((SCEN_FAIL + 1))
-		FAIL_DETAILS+=("$rel/run.sh [driver exited $rc; a scenario driver must exit 0 and pin each command's own exit code in its output]")
+		FAIL_DETAILS+=("$rel/run.sh [driver exited $rc; a scenario driver must exit 0 and pin each command's own exit code in its output; its last lines:
+$(printf '%s\n' "$out" | tail -25 | sed 's/^/      /')]")
 		return
 	fi
 	if [ "$out" != "$(cat "$dir/expected.txt")" ]; then
