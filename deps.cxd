@@ -55,7 +55,7 @@ unchanged.
   [dep repo=cx-platform-db sha=1723f864755c2b84728c4c6499f5fe5746a671a0 module='db sql redis' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-net sha=85077c2fee55848513c62587cdce320a9f57a764 module='cx-platform/net cx-platform/http cx-platform/ftp cx-platform/sftp' v-fork=4660968c34e3609368f309ebd92e1d68c86fef66]
   [dep repo=cx-platform-mail sha=b8f1ced0c632534b9e5a2d3ce4c0b865f5d41495 module='cx-platform/imap cx-platform/smtp' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
-  [dep repo=cx-platform-store sha=d20ac493bbbc89983b4e57820fd03a91d84d0ac3 module='cx-platform/store cx-platform/journal cx-platform/live cx-platform/audit' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
+  [dep repo=cx-platform-store sha=404e19a23298edb0a741ac95683490f8ba3d87a6 module='cx-platform/store cx-platform/journal cx-platform/live cx-platform/audit' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-identity sha=952cd692eff8c5f6327e9cd92061b817b9bf0455 module='cx-platform/session cx-platform/authz-store cx-platform/did-web cx-platform/vc-revocation' v-fork=27cbbcdb10d2f8b208e530d17ec78488dfb7999f]
   [dep repo=cx-platform-connector sha=ce6e7323dec23981a1061ff03a95f880cd7415ab module='cx-platform/connector cx-platform/sync']
   [dep repo=cx-platform-secrets sha=b64cf9ccf439fa5a8c2ced0e7bcb6dc53bab0de6 module='cx-platform/secrets']
